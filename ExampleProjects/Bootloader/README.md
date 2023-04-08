@@ -88,39 +88,46 @@ This [ISBootloaderExample](https://github.com/inertialsense/inertial-sense-sdk/t
 
 ## Compile & Run (Linux/Mac)
 
-1. Create build directory
-``` bash
-$ cd inertial-sense-sdk/ExampleProjects/Bootloader
-$ mkdir build
-```
-2. Run cmake from within build directory
-``` bash
-$ cd build
-$ cmake ..
-```
-3. Compile using make
- ``` bash
- $ make
- ```
-4. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
-```bash
-$ sudo usermod -a -G dialout $USER
-$ sudo usermod -a -G plugdev $USER
-$ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
-(reboot computer)
-```
-5. Run executable
-``` bash
-$ ./bin/ISBootloaderExample /dev/ttyUSB0 921600 IS_uINS-3.hex
-```
+1. Install necessary dependencies
+   ``` bash
+   # For Debian/Ubuntu linux, install libusb-1.0-0-dev from packages
+   sudo apt update && sudo apt install libusb-1.0-0-dev
+   # For MacOS, install libusb using brew
+   brew install libusb
+   ```
+2. Create build directory
+   ``` bash
+   cd inertial-sense-sdk/ExampleProjects/Bootloader
+   mkdir build
+   ```
+3. Run cmake from within build directory
+   ``` bash
+   cd build
+   cmake ..
+   ```
+4. Compile using make
+   ``` bash
+   make
+   ```
+5. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
+   ```bash
+   sudo usermod -a -G dialout $USER
+   sudo usermod -a -G plugdev $USER
+   sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
+   (reboot computer)
+   ```
+6. Run executable
+   ``` bash
+   ./bin/ISBootloaderExample /dev/ttyUSB0 921600 IS_uINS-3.hex
+   ```
 ## Compile & Run (Windows MS Visual Studio)
 
 1. Open Visual Studio solution file (inertial-sense-sdk\ExampleProjects\Bootloader\VS_project\ISBootloaderExample.sln)
 2. Build (F7)
 3. Run executable
-``` bash
-C:\inertial-sense-sdk\ExampleProjects\Bootloader\VS_project\Release\ISBootloaderExample.exe COM3 921600 IS_uINS-3.hex
-```
+   ``` bash
+   C:\inertial-sense-sdk\ExampleProjects\Bootloader\VS_project\Release\ISBootloaderExample.exe COM3 921600 IS_uINS-3.hex
+   ```
 
 ## Summary
 

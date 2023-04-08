@@ -286,7 +286,7 @@ void spiTouINS_init(void)
 	XDMAC->XDMAC_GE = (XDMAC_GE_EN0 << DMA_CH_EVB_SPI_INS_RX);
 	
 //Configure task for processing incoming data
-	createTask(EVB_TASK_SPI_UINS_COM, spiTouINS_task,  "SPI_UINS",  TASK_SPI_TO_UINS_STACK_SIZE,  NULL, TASK_SPI_TO_UINS_PRIORITY,  TASK_SPI_TO_UINS_PERIOD_MS);
+	createTask(EVB_TASK_SPI_UINS_COM, spiTouINS_task,  "SPI_UINS",  TASK_SPI_TO_UINS_STACK_SIZE,  NULL, TASK_SPI_TO_UINS_PRIORITY,  TASK_SPI_TO_UINS_PERIOD_MS, TASK_SPI_TO_UINS_PERIOD_MS);
 
 //DMA for outgoing
 	cfg.mbr_sa = (uint32_t)TxBuf;

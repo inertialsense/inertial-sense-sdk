@@ -408,7 +408,7 @@ void board_IO_config(void)
 #ifdef CONF_BOARD_SERIAL_UINS_SER0
 		ioport_set_pin_peripheral_mode(UART_INS_SER0_RXD_PIN, UART_INS_SER0_RXD_FLAGS);
 		ioport_set_pin_peripheral_mode(UART_INS_SER0_TXD_PIN, UART_INS_SER0_TXD_FLAGS);
-		serInit(EVB2_PORT_UINS0, 921600, NULL, NULL);
+		serInit(EVB2_PORT_UINS0, 921600, NULL);
 #endif		
 	}
 	
@@ -454,7 +454,7 @@ void board_IO_config(void)
 #ifdef CONF_BOARD_SERIAL_UINS_SER1
         ioport_set_pin_peripheral_mode(UART_INS_SER1_TXD_PIN, UART_INS_SER1_TXD_FLAGS);
         ioport_set_pin_peripheral_mode(UART_INS_SER1_RXD_PIN, UART_INS_SER1_RXD_FLAGS);
-        serInit(EVB2_PORT_UINS1, 921600, NULL, NULL);
+        serInit(EVB2_PORT_UINS1, 921600, NULL);
 		ioport_set_pin_input_mode(SPI_INS_SCLK_PIN, 0, 0);
 		ioport_set_pin_input_mode(SPI_INS_CS_PIN, 0, 0);
 		ioport_set_pin_input_mode(SPI_INS_EN, 0, 0);
@@ -485,7 +485,7 @@ void board_IO_config(void)
 		ioport_set_pin_peripheral_mode(UART_XBEE_RXD_PIN, UART_XBEE_RXD_FLAGS);
 		ioport_set_pin_peripheral_mode(UART_XBEE_TXD_PIN, UART_XBEE_TXD_FLAGS);
 		ioport_set_pin_peripheral_mode(UART_XBEE_N_CTS_PIN, UART_XBEE_N_CTS_FLAGS);
-		serInit(EVB2_PORT_XBEE, 115200, NULL, NULL);
+		serInit(EVB2_PORT_XBEE, 115200, NULL);
 #if 0
 		ioport_set_pin_peripheral_mode(UART_XBEE_N_RTS_PIN, UART_XBEE_N_RTS_FLAGS);
 		ioport_set_pin_peripheral_mode(UART_XBEE_DTR_PIN, UART_XBEE_DTR_FLAGS);
@@ -700,7 +700,7 @@ void board_init()
 #ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_RXD_PIN, UART_EXT_RADIO_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_TXD_PIN, UART_EXT_RADIO_TXD_FLAGS);
-    serInit(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate, NULL, NULL);
+    serInit(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate, NULL);
 //     ioport_set_pin_dir(EXT_RADIO_RST, IOPORT_DIR_OUTPUT);
 //     ioport_set_pin_level(EXT_RADIO_RST, IOPORT_PIN_LEVEL_HIGH);         // Low assert
 #endif
@@ -710,13 +710,13 @@ void board_init()
     ioport_set_pin_peripheral_mode(UART_BTLE_TXD_PIN, UART_BTLE_TXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_BTLE_CTS_PIN, UART_XBEE_N_CTS_FLAGS);
     ioport_set_pin_peripheral_mode(UART_BTLE_RTS_PIN, UART_XBEE_N_RTS_FLAGS);
-    serInit(EVB2_PORT_BLE, 115200, NULL, NULL);
+    serInit(EVB2_PORT_BLE, 115200, NULL);
 #endif
 
 #ifdef CONF_BOARD_SERIAL_SP330          // RS232/RS422/RS485 converter
     ioport_set_pin_peripheral_mode(UART_SP330_RXD_PIN, UART_SP330_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_SP330_TXD_PIN, UART_SP330_TXD_FLAGS);
-    serInit(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate, NULL, NULL);
+    serInit(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate, NULL);
 	ioport_set_pin_output_mode(SP330_NSLEW_PIN, IOPORT_PIN_LEVEL_HIGH);         // Don't limit data rate to less than 250 Kbps
 	ioport_set_pin_output_mode(SP330_NFULL_DPLX_PIN, IOPORT_PIN_LEVEL_LOW);    // RS485 full duplex (RS232 N/A)
 	ioport_set_pin_output_mode(SP330_NSHDN_PIN, IOPORT_PIN_LEVEL_HIGH);         // Enable device
@@ -727,7 +727,7 @@ void board_init()
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_RXD_PIN, GPIO_H8_UART_RXD_FLAGS);
 	MATRIX->CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_TXD_PIN, GPIO_H8_UART_TXD_FLAGS);
-    serInit(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate, NULL, NULL);
+    serInit(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate, NULL);
 #endif
 
     //////////////////////////////////////////////////////////////////////////

@@ -29,6 +29,9 @@ DEG2RAD = 3.14159 / 180.0
 
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
+SHOW_GPS2 = 0
+SHOW_GPS_W_INS = 0
+
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
 sys.path.append(os.path.normpath(file_path + '/../math/src'))
@@ -124,17 +127,17 @@ class logPlot:
             ax[1].plot(time, ned[:,1])
             ax[2].plot(time, ned[:,2])
 
-            if(np.shape(self.active_devs)[0]==1):
+            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
-                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS1')
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+                ax[0].plot(timeGPS, nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                 ax[1].plot(timeGPS, nedGps[:, 1])
                 ax[2].plot(timeGPS, nedGps[:, 2])
 
-            if(np.shape(self.active_devs)[0]==1):
+            if(np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
-                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
-                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS2')
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                ax[0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                 ax[1].plot(timeGPS, nedGps[:, 1])
                 ax[2].plot(timeGPS, nedGps[:, 2])
 
@@ -174,19 +177,48 @@ class logPlot:
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
-            if(np.shape(self.active_devs)[0]==1):
-                self.drawNEDMapArrow(ax, ned, euler[:, 2])
+            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+                if (np.shape(self.active_devs)[0]==1):
+                    self.drawNEDMapArrow(ax, ned, euler[:, 2])
 
-                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS1_POS, 'lla'))
-                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS1')
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
 
-                nedGps = lla2ned(self.getData(d, DID_INS_2, 'lla')[0], self.getData(d, DID_GPS2_POS, 'lla'))
-                ax.plot(nedGps[:, 1], nedGps[:, 0], label='GPS2')
+                if SHOW_GPS2:
+                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                    ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
         ax.legend(ncol=2)
         ax.grid(True)
         self.saveFig(fig, 'posNEDMap')
+
+    def gpsPosNEDMap(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(1,1)
+        ax.set_xlabel('East (m)')
+        ax.set_ylabel('North (m)')
+        fig.suptitle('GPS NED Map - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        refLla = None
+        for d in self.active_devs:
+            lla = self.getData(d, DID_GPS1_POS, 'lla')
+            if len(lla) == 0:
+                continue
+            if refLla is None:
+                refLla = lla[0]
+
+            nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+            ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s" % (self.log.serials[d])))
+
+            if SHOW_GPS2:
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+
+        ax.set_aspect('equal', 'datalim')
+        ax.legend(ncol=2)
+        ax.grid(True)
+        self.saveFig(fig, 'gpsPosNEDMap')
 
     def posLLA(self, fig=None):
         if fig is None:
@@ -194,13 +226,13 @@ class logPlot:
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Latitude', 'deg')
         self.configureSubplot(ax[1], 'Longitude', 'deg')
-        self.configureSubplot(ax[2], 'Altitude', 'deg')
+        self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0].plot(time, self.getData(d, DID_INS_2, 'lla')[:,0], label=self.log.serials[d])
             ax[1].plot(time, self.getData(d, DID_INS_2, 'lla')[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2], label=self.log.serials[d])
+            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2])
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -228,20 +260,20 @@ class logPlot:
         ax = fig.subplots(3,1, sharex=True)
         self.configureSubplot(ax[0], 'Latitude', 'deg')
         self.configureSubplot(ax[1], 'Longitude', 'deg')
-        self.configureSubplot(ax[2], 'Altitude', 'deg')
+        self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('GPS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            ax[0].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,0], label=('GPS1 %s' % self.log.serials[d]))
+            ax[0].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,0], label=('%s' % self.log.serials[d]))
             ax[1].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,1])
             ax[2].plot(time, self.getData(d, DID_GPS1_POS, 'lla')[:,2])
 
             time = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
-            if (time.size):
+            if (time.size and SHOW_GPS2):
                 gpslla = self.getData(d, DID_GPS2_POS, 'lla')
                 if (gpslla.size):
                     if (np.any(gpslla)):
-                        ax[0].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,0], label='GPS2')
+                        ax[0].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,0], label=('%s GPS2' % self.log.serials[d]))
                         ax[1].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,1])
                         ax[2].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,2])
 
@@ -249,6 +281,11 @@ class logPlot:
         for a in ax:
             a.grid(True)
         self.saveFig(fig, 'gpsLLA')
+
+    def getGpsPosNED(self, device, did, refLla):
+        gpsTime = getTimeFromTowMs(self.getData(device, did, 'timeOfWeekMs'))
+        gpsNed = lla2ned(refLla, self.getData(device, did, 'lla'))
+        return [gpsTime, gpsNed]
 
     def gpsPosNED(self, fig=None):
         if fig is None:
@@ -263,23 +300,35 @@ class logPlot:
             if refLla is None:
                 refLla = self.getData(d, DID_GPS1_POS, 'lla')[0]
 
-            timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
-            ax[0].plot(timeGPS, nedGps[:, 0], label=self.log.serials[d])
-            ax[1].plot(timeGPS, nedGps[:, 1])
-            ax[2].plot(timeGPS, nedGps[:, 2])
+            [gpsTime, gpsNed] = self.getGpsPosNED(d, DID_GPS1_POS, refLla)
+            ax[0].plot(gpsTime, gpsNed[:, 0], label=self.log.serials[d])
+            ax[1].plot(gpsTime, gpsNed[:, 1])
+            ax[2].plot(gpsTime, gpsNed[:, 2])
 
-            if(np.shape(self.active_devs)[0]==1):
-                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
-                ax[0].plot(timeGPS, nedGps[:, 0], label='GPS2')
-                ax[1].plot(timeGPS, nedGps[:, 1])
-                ax[2].plot(timeGPS, nedGps[:, 2])
+            if (np.shape(self.active_devs)[0]==1) or SHOW_GPS2:
+                [gpsTime, gpsNed] = self.getGpsPosNED(d, DID_GPS2_POS, refLla)
+                ax[0].plot(gpsTime, gpsNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+                ax[1].plot(gpsTime, gpsNed[:, 1])
+                ax[2].plot(gpsTime, gpsNed[:, 2])
 
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
         self.saveFig(fig, 'gpsPosNED')
+
+    def getGpsVelNed(self, device, did, refLla):
+        gpsTime = getTimeFromTowMs(self.getData(device, did, 'timeOfWeekMs'))
+        status = self.getData(device, did, 'status')[0]
+        gpsVelNed = None
+        gpsVelEcef = None
+        if (status & 0x00008000):
+            gpsVelNed = self.getData(device, did, 'vel')    # NED velocity
+        else:
+            gpsVelEcef = self.getData(device, did, 'vel')   # ECEF velocity
+        if len(gpsVelEcef) > 0:
+            qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
+            gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
+        return [gpsTime, gpsVelNed]
 
     def gpsVelNED(self, fig=None):
         if fig is None:
@@ -289,20 +338,20 @@ class logPlot:
         self.configureSubplot(ax[1], 'GPS Velocity East', 'm/s')
         self.configureSubplot(ax[2], 'GPS Velocity Down', 'm/s')
         fig.suptitle('GPS Velocity NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        refLla = None
         for d in self.active_devs:
-            timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
-            status = self.getData(d, DID_GPS1_VEL, 'status')[0]
-            gpsVelEcef = None
-            if (status & 0x00008000):
-                gpsVelNed = self.getData(d, DID_GPS1_VEL, 'vel')    # NED velocity
-            else:
-                gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'vel')   # ECEF velocity
-            if len(gpsVelEcef) > 0:
-                qe2n = quat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
-                gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
-            ax[0].plot(timeGPS, gpsVelNed[:, 0], label=self.log.serials[d])
-            ax[1].plot(timeGPS, gpsVelNed[:, 1])
-            ax[2].plot(timeGPS, gpsVelNed[:, 2])
+            if refLla is None:
+                refLla = self.getData(d, DID_GPS1_POS, 'lla')[0]
+            [gpsTime, gpsVelNed] = self.getGpsVelNed(d, DID_GPS1_VEL, refLla)
+            ax[0].plot(gpsTime, gpsVelNed[:, 0], label=self.log.serials[d])
+            ax[1].plot(gpsTime, gpsVelNed[:, 1])
+            ax[2].plot(gpsTime, gpsVelNed[:, 2])
+
+            if SHOW_GPS2:
+                [gps2Time, gps2VelNed] = self.getGpsVelNed(d, DID_GPS2_VEL, refLla)
+                ax[0].plot(gps2Time, gps2VelNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+                ax[1].plot(gps2Time, gps2VelNed[:, 1])
+                ax[2].plot(gps2Time, gps2VelNed[:, 2])
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -317,26 +366,29 @@ class logPlot:
         self.configureSubplot(ax[1], 'Vel East', 'm/s')
         self.configureSubplot(ax[2], 'Vel Down', 'm/s')
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        refLla = None
         for d in self.active_devs:
+            if refLla is None:
+                refLla = self.getData(d, DID_INS_2, 'lla')[0]
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
             ax[0].plot(time, insVelNed[:,0], label=self.log.serials[d])
             ax[1].plot(time, insVelNed[:,1])
             ax[2].plot(time, insVelNed[:,2])
 
-            if np.shape(self.active_devs)[0] == 1 or 0:  # Show GPS if #devs is 1
+            if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
                 status = self.getData(d, DID_GPS1_VEL, 'status')[0]
                 if (status & 0x00008000):
                     gpsVelNed = self.getData(d, DID_GPS1_VEL, 'vel')    # NED velocity
                 else:
                     gpsVelEcef = self.getData(d, DID_GPS1_VEL, 'vel')   # ECEF velocity
-                qe2n = quat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
+                qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
                 if len(gpsVelEcef) > 0:
                     gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
                     #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
                     #gpsVelNed = R.dot(gpsVelEcef.T).T
-                    ax[0].plot(timeGPS, gpsVelNed[:, 0], label=('GPS %s' % self.log.serials[d]))
+                    ax[0].plot(timeGPS, gpsVelNed[:, 0], label=('%s GPS' % self.log.serials[d]))
                     ax[1].plot(timeGPS, gpsVelNed[:, 1])
                     ax[2].plot(timeGPS, gpsVelNed[:, 2])
 
@@ -1447,14 +1499,21 @@ class logPlot:
         self.configureSubplot(ax[2], 'Mag Z', 'gauss')
         fig.suptitle('Magnetometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = self.getData(d, DID_MAGNETOMETER, 'time')
-            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
-            if np.shape(towOffset)[0] != 0:
-                time = time + towOffset[-1]
-            mag = self.getData(d, DID_MAGNETOMETER, 'mag')
-            magX = mag[:,0]
-            magY = mag[:,1]
-            magZ = mag[:,2]
+            if 1:
+                time = self.getData(d, DID_MAGNETOMETER, 'time')
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if np.shape(towOffset)[0] != 0:
+                    time = time + towOffset[-1]
+                mag = self.getData(d, DID_MAGNETOMETER, 'mag')
+                magX = mag[:,0]
+                magY = mag[:,1]
+                magZ = mag[:,2]
+            else:
+                mag = self.getData(d, DID_SENSORS_UCAL, 'mag')
+                magX = mag[:,0]['xyz'][:,0]
+                magY = mag[:,0]['xyz'][:,1]
+                magZ = mag[:,0]['xyz'][:,2]
+                time = range(np.shape(magX)[0])
             ax[0].plot(time, magX, label=self.log.serials[d])
             ax[1].plot(time, magY)
             ax[2].plot(time, magZ)
@@ -1541,6 +1600,21 @@ class logPlot:
         ax[0].legend(ncol=2)
         for a in ax:
             a.grid(True)
+
+    def gpxDebugfArray(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(5,2, sharex=True)
+        fig.suptitle('GPX Debug float Array - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            debug_f = self.getData(d, DID_GPX_DEBUG_ARRAY, 'f')
+            for i in range(9):
+                ax[i%5, i//5].set_ylabel('f[' + str(i) +']')
+                ax[i%5, i//5].plot(debug_f[:,i], label=self.log.serials[d])
+        ax[0,0].legend(ncol=2)
+        for b in ax:
+            for a in b:
+                a.grid(True)
 
     def magDec(self, fig=None):
         if fig is None:

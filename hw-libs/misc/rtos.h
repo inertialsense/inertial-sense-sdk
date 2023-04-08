@@ -24,7 +24,7 @@ extern "C" {
 #if defined(PLATFORM_IS_EVB_2) && PLATFORM_IS_EVB_2
 #define RTOS_NUM_TASKS	(EVB_RTOS_NUM_TASKS)
 #else
-#define RTOS_NUM_TASKS	(UINS_RTOS_NUM_TASKS)
+#define RTOS_NUM_TASKS	(IMX_RTOS_NUM_TASKS)
 #endif
 
 #if defined(DBGPIO_START) && defined(DBGPIO_END)
@@ -51,7 +51,8 @@ int createTask(
 	unsigned short usStackDepth,
 	void *pvParameters,
 	unsigned portBASE_TYPE uxPriority,
-	portTickType xTimeIncrement);
+	portTickType xTimeIncrement,
+	uint32_t overrunMs);
 
 // Monitor state of RTOS (i.e. stack high water mark, unused words).
 void rtos_monitor(int numRtosTasks);

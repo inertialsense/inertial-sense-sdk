@@ -14,31 +14,35 @@ The following example projects are provide with the SDK to demonstrate various c
 
 The following steps will build executables for all of the example projects.
 
-1. Create build directory
-``` bash
-$ cd inertial-sense-sdk/ExampleProjects
-$ mkdir build
-```
-2. Run cmake from within build directory
-``` bash
-$ cd build
-$ cmake ..
-```
-3. Compile using make
- ``` bash
- $ make
- ```
-4. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
-```bash
-$ sudo usermod -a -G dialout $USER
-$ sudo usermod -a -G plugdev $USER
-$ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
-(reboot computer)
-```
-5. Run executable
-``` bash
-$ ./bin/[EXECUTABLE] /dev/ttyUSB0
-```
+1. Install necessary dependencies
+   ``` bash
+   sudo apt update && sudo apt install libusb-1.0-0-dev
+   ```
+2. Create build directory
+   ``` bash
+   cd inertial-sense-sdk/ExampleProjects
+   mkdir build
+   ```
+3. Run cmake from within build directory
+   ``` bash
+   cd build
+   cmake ..
+   ```
+4. Compile using make
+    ``` bash
+    make
+    ```
+5. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
+   ```bash
+   sudo usermod -a -G dialout $USER
+   sudo usermod -a -G plugdev $USER
+   sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
+   (reboot computer)
+   ```
+6. Run executable
+   ``` bash
+   ./bin/[EXECUTABLE] /dev/ttyUSB0
+   ```
 ## Compile & Run (Windows MS Visual Studio)
 
 The following steps will build executables for all of the example projects.
@@ -47,9 +51,9 @@ The following steps will build executables for all of the example projects.
 2. Select the "Release" Solution Configuration.
 3. Build (F7)
 4. Run executable
-``` bash
-C:\inertial-sense-sdk\ExampleProjects\Ascii\VS_project\Release\[EXECUTABLE.EXE] COM3
-```
+   ``` bash
+   C:\inertial-sense-sdk\ExampleProjects\Ascii\VS_project\Release\[EXECUTABLE.EXE] COM3
+   ```
 
 ## Summary
 

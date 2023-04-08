@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "protocol_nmea.h"
+#include <yaml-cpp/yaml.h>
 #include "InertialSense.h"
 #ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloaderThread.h"
@@ -78,12 +79,10 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		handlerGlobal(s->inertialSenseInterface, data, pHandle);
 	}
 
+	s->inertialSenseInterface->ProcessRxData(data, pHandle);
+
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:			s->devices[pHandle].devInfo = *(dev_info_t*)data->buf;			break;
-	case DID_SYS_CMD:			s->devices[pHandle].sysCmd = *(system_command_t*)data->buf;		break;
-	case DID_FLASH_CONFIG:		s->devices[pHandle].flashCfg = *(nvm_flash_cfg_t*)data->buf;	break;
-	case DID_EVB_FLASH_CFG:		s->devices[pHandle].evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;
 	case DID_GPS1_POS:
 		static time_t lastTime;
 		time_t currentTime = time(NULLPTR);
@@ -126,6 +125,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 InertialSense::~InertialSense()
 {
 	Close();
+	CloseServerConnection();	
 }
 
 bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
@@ -182,7 +182,10 @@ bool InertialSense::HasReceivedResponseFromAllDevices()
 		{
 			return false;
 		}
+
+		m_comManagerState.devices[i].syncState = SYNCHRONIZED;  	// Flash config was received just above.  Set sync to SYNCHRONIZED.
 	}
+
 	return true;
 }
 
@@ -490,7 +493,7 @@ bool InertialSense::UpdateClient()
 			case _PTYPE_UBLOX:
 			case _PTYPE_RTCM3:
 				m_clientServerByteCount += comm->dataHdr.size;
-				OnPacketReceived(comm->dataPtr, comm->dataHdr.size);
+				OnClientPacketReceived(comm->dataPtr, comm->dataHdr.size);
 
 				if (ptype == _PTYPE_RTCM3)
 				{
@@ -595,7 +598,6 @@ void InertialSense::Close()
 		serialPortClose(&m_comManagerState.devices[i].serialPort);
 	}
 	m_comManagerState.devices.clear();
-	CloseServerConnection();
 }
 
 vector<string> InertialSense::GetPorts()
@@ -646,32 +648,108 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	}
 }
 
-void InertialSense::SetSysCmd(const system_command_t& sysCmd, int pHandle)
+void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
+{
+	if (pHandle == -1)
+	{	// Send to all
+		for (size_t port = 0; port < m_comManagerState.devices.size(); port++)
+		{
+			SetSysCmd(command, port);
+		}
+	}
+	else
+	{	// Specific port
+		if ((size_t)pHandle >= m_comManagerState.devices.size())
+		{
+			return;
+		}
+
+		m_comManagerState.devices[pHandle].sysCmd.command = command;
+		m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
+		// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
+		comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(system_command_t), 0);
+	}
+}
+
+void InertialSense::UpdateFlashConfigSyncState(uint32_t rxChecksum, int pHandle)
+{
+	is_device_t &device = m_comManagerState.devices[pHandle];
+
+	switch (device.syncState)
+	{
+	case IMXSyncState::SYNCHRONIZING:				// Uploading.  Only accept if checksum matches.
+		if (rxChecksum == device.flashCfg.checksum)
+		{	// Flash configs match following upload
+			device.syncState = IMXSyncState::SYNCHRONIZED;
+		}
+		break;
+
+	case IMXSyncState::NOT_SYNCHRONIZED:			// Downloading.  Always accept input.
+		device.syncState = IMXSyncState::SYNCHRONIZED;
+		break;
+
+	default:
+	case IMXSyncState::SYNCHRONIZED:
+		if (rxChecksum != device.flashCfg.checksum)
+		{
+			device.syncState = IMXSyncState::NOT_SYNCHRONIZED;
+		}
+	}
+}
+
+bool InertialSense::GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+{
+	if ((size_t)pHandle >= m_comManagerState.devices.size())
+	{
+		pHandle = 0;
+	}
+
+	flashCfg = m_comManagerState.devices[pHandle].flashCfg;
+
+	return m_comManagerState.devices[pHandle].syncState == InertialSense::IMXSyncState::SYNCHRONIZED;
+}
+
+void InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
 		return;
 	}
 
-	m_comManagerState.devices[pHandle].sysCmd = sysCmd;
-	// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
-	comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(sysCmd), 0);
+	// Update checksum 
+	flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+
+	//Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
+	if (m_comManagerState.devices[pHandle].flashCfg.checksum == flashCfg.checksum)
+	{
+		//If checksum matches then we are already in sync
+		m_comManagerState.devices[pHandle].syncState = SYNCHRONIZED;
+        m_comManagerState.devices[pHandle].flashCfg = flashCfg;
+	}
+	else
+	{   
+        m_comManagerState.devices[pHandle].syncState = SYNCHRONIZING;
+        m_comManagerState.devices[pHandle].flashCfg = flashCfg;
+
+		// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
+        comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
+		Update();
+	}
 }
 
-void InertialSense::SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle)
+bool InertialSense::GetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
-		return;
+		pHandle = 0;
 	}
 
-	m_comManagerState.devices[pHandle].flashCfg = flashCfg;
-	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
-	Update();
+	evbFlashCfg = m_comManagerState.devices[pHandle].evbFlashCfg;
+
+	return true;
 }
 
-void InertialSense::SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle)
+void InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
@@ -682,6 +760,43 @@ void InertialSense::SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pH
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
 	comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &m_comManagerState.devices[pHandle].evbFlashCfg, sizeof(evb_flash_cfg_t), 0);
 	Update();
+}
+
+void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
+{
+	is_device_t &device = m_comManagerState.devices[pHandle];
+
+	switch (data->hdr.id)
+	{
+	case DID_DEV_INFO:			device.devInfo = *(dev_info_t*)data->buf;			break;
+	case DID_SYS_CMD:			device.sysCmd = *(system_command_t*)data->buf;		break;
+	case DID_EVB_FLASH_CFG:		device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;	
+	case DID_FLASH_CONFIG:
+		{
+			/* If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, 
+			*  the state is set to SYNCHRONIZED.  If they don't match, the state is set to NOT_SYNCHRONIZED, but the IMX flash config 
+			*  is copied to the local memory anyway so you know what the current flash is on the IMX.
+			*/
+			nvm_flash_cfg_t *flashConfig = (nvm_flash_cfg_t*)data->buf;
+			UpdateFlashConfigSyncState(flashConfig->checksum, pHandle);
+			
+			if (device.syncState != InertialSense::IMXSyncState::SYNCHRONIZING)
+			{	// Update only if not synchronizing (uploading)
+				device.flashCfg = *flashConfig;
+			}
+		}
+		break;
+	case DID_SYS_PARAMS:
+		{
+			/* When a new flash config is received by the IMX, if it is valid, the flash config is applied and a new checksum calculated.
+			*  That checksum is sent back to the SDK via a DID_SYS_PARAMS message. If the checksum matches the locally saved checksum
+			*  then the state is set to SYNCHRONIZED. If they differ, the state is set to NOT_SYNCHRONIZED. The user is left to make the 
+			*  final determination of the next actions.
+			*/
+			sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
+			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
+		}
+	}
 }
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
@@ -827,7 +942,7 @@ is_operation_result InertialSense::BootloadFile(
 	return IS_OP_OK;
 }
 
-bool InertialSense::OnPacketReceived(const uint8_t* data, uint32_t dataLength)
+bool InertialSense::OnClientPacketReceived(const uint8_t* data, uint32_t dataLength)
 {
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
@@ -996,4 +1111,230 @@ void InertialSense::CloseSerialPorts()
 		serialPortClose(&m_comManagerState.devices[i].serialPort);
 	}
 	m_comManagerState.devices.clear();
+}
+void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
+{
+	nvm_flash_cfg_t* outData = &m_comManagerState.devices[pHandle].flashCfg;
+
+	YAML::Node map = YAML::Node(YAML::NodeType::Map);
+
+    map["size"] 					= outData->size;
+    map["checksum"] 				= outData->checksum;
+    map["key"] 						= outData->key;
+    map["startupImuDtMs"] 			= outData->startupImuDtMs;
+    map["startupNavDtMs"] 			= outData->startupNavDtMs;
+    map["ser0BaudRate"] 			= outData->ser0BaudRate;
+    map["ser1BaudRate"] 			= outData->ser1BaudRate;
+
+    YAML::Node insRotation = YAML::Node(YAML::NodeType::Sequence);
+        insRotation.push_back(outData->insRotation[0]);
+        insRotation.push_back(outData->insRotation[1]);
+        insRotation.push_back(outData->insRotation[2]);
+    map["insRotation"] 				= insRotation;
+
+    YAML::Node insOffset = YAML::Node(YAML::NodeType::Sequence);
+        insOffset.push_back(outData->insOffset[0]);
+        insOffset.push_back(outData->insOffset[1]);
+        insOffset.push_back(outData->insOffset[2]);
+    map["insOffset"] 				= insOffset;
+
+    YAML::Node gps1AntOffset = YAML::Node(YAML::NodeType::Sequence);
+        gps1AntOffset.push_back(outData->gps1AntOffset[0]);
+        gps1AntOffset.push_back(outData->gps1AntOffset[1]);
+        gps1AntOffset.push_back(outData->gps1AntOffset[2]);
+    map["gps1AntOffset"] 			= gps1AntOffset;
+
+    map["insDynModel"] 				= (uint16_t)outData->insDynModel;
+    map["debug"] 					= (uint16_t)outData->debug;
+    map["gnssSatSigConst"] 			= outData->gnssSatSigConst;
+    map["sysCfgBits"] 				= outData->sysCfgBits;
+
+    YAML::Node refLla = YAML::Node(YAML::NodeType::Sequence);
+        refLla.push_back(outData->refLla[0]);
+        refLla.push_back(outData->refLla[1]);
+        refLla.push_back(outData->refLla[2]);
+    map["refLla"] 					= refLla;
+
+
+    YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
+        lastLla.push_back(outData->lastLla[0]);
+        lastLla.push_back(outData->lastLla[1]);
+        lastLla.push_back(outData->lastLla[2]);
+    map["lastLla"] 					= lastLla;
+
+    map["lastLlaTimeOfWeekMs"] 		= outData->lastLlaTimeOfWeekMs;
+    map["lastLlaWeek"] 				= outData->lastLlaWeek;
+    map["lastLlaUpdateDistance"] 	= outData->lastLlaUpdateDistance;
+    map["ioConfig"] 				= outData->ioConfig;
+    map["platformConfig"] 			= outData->platformConfig;
+
+
+    YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
+        gps2AntOffset.push_back(outData->gps2AntOffset[0]);
+        gps2AntOffset.push_back(outData->gps2AntOffset[1]);
+        gps2AntOffset.push_back(outData->gps2AntOffset[2]);
+    map["gps2AntOffset"] 			= gps2AntOffset;
+
+    YAML::Node zeroVelRotation = YAML::Node(YAML::NodeType::Sequence);
+        zeroVelRotation.push_back(outData->zeroVelRotation[0]);
+        zeroVelRotation.push_back(outData->zeroVelRotation[1]);
+        zeroVelRotation.push_back(outData->zeroVelRotation[2]);
+    map["zeroVelRotation"] 			= zeroVelRotation;
+
+    YAML::Node zeroVelOffset = YAML::Node(YAML::NodeType::Sequence);
+        zeroVelOffset.push_back(outData->zeroVelOffset[0]);
+        zeroVelOffset.push_back(outData->zeroVelOffset[1]);
+        zeroVelOffset.push_back(outData->zeroVelOffset[2]);
+    map["zeroVelOffset"] 			= zeroVelOffset;
+
+    map["gpsTimeUserDelay"] 		= outData->gpsTimeUserDelay;
+    map["magDeclination"] 			= outData->magDeclination;
+    map["gpsTimeSyncPeriodMs"] 		= outData->gpsTimeSyncPeriodMs;
+    map["startupGPSDtMs"] 			= outData->startupGPSDtMs;
+    map["RTKCfgBits"] 				= outData->RTKCfgBits;
+    map["sensorConfig"] 			= outData->sensorConfig;
+    map["gpsMinimumElevation"] 		= outData->gpsMinimumElevation;
+    map["ser2BaudRate"] 			= outData->ser2BaudRate;
+	map["wheelConfigBits"] 			= outData->wheelConfig.bits;
+
+	YAML::Node wheelCfgTransE_b2w 	= YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
+        wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[1]);
+        wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[2]);
+    map["wheelCfgTransE_b2w"] 		= wheelCfgTransE_b2w;
+
+	YAML::Node wheelCfgTransE_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[0]);
+        wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[1]);
+        wheelCfgTransE_b2wsig.push_back(outData->wheelConfig.transform.e_b2w_sigma[2]);
+    map["wheelCfgTransE_b2wsig"] 	= wheelCfgTransE_b2wsig;
+
+	YAML::Node wheelCfgTransT_b2w = YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[0]);
+        wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[1]);
+        wheelCfgTransT_b2w.push_back(outData->wheelConfig.transform.t_b2w[2]);
+    map["wheelCfgTransT_b2w"] 	= wheelCfgTransT_b2w;
+
+	YAML::Node wheelCfgTransT_b2wsig = YAML::Node(YAML::NodeType::Sequence);
+        wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[0]);
+        wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[1]);
+        wheelCfgTransT_b2wsig.push_back(outData->wheelConfig.transform.t_b2w_sigma[2]);
+    map["wheelCfgTransT_b2wsig"] 	= wheelCfgTransT_b2wsig;
+
+	map["wheelConfigTrackWidth"] 	= outData->wheelConfig.track_width;
+	map["wheelConfigRadius"] 		= outData->wheelConfig.radius;
+
+	std::ofstream fout(path);
+
+	YAML::Emitter emitter;
+    emitter.SetSeqFormat(YAML::Flow);
+	emitter << map;
+    fout << emitter.c_str();
+    fout.close();
+}
+
+int InertialSense::LoadFlashConfig(std::string path, int pHandle)
+{
+    try
+    {
+        nvm_flash_cfg_t* current_flash = &m_comManagerState.devices[pHandle].flashCfg;
+        YAML::Node inData = YAML::LoadFile(path);
+        current_flash->size                     = inData["size"].as<uint32_t>();
+        current_flash->checksum                 = inData["checksum"].as<uint32_t>();
+        current_flash->key                      = inData["key"].as<uint32_t>();
+        current_flash->startupImuDtMs           = inData["startupImuDtMs"].as<uint32_t>();
+        current_flash->startupNavDtMs           = inData["startupNavDtMs"].as<uint32_t>();
+        current_flash->ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
+        current_flash->ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
+
+        YAML::Node insRotation                  = inData["insRotation"];
+        current_flash->insRotation[0]           = insRotation[0].as<float>();
+        current_flash->insRotation[1]           = insRotation[1].as<float>();
+        current_flash->insRotation[2]           = insRotation[2].as<float>();
+
+        YAML::Node insOffset                    = inData["insOffset"];
+        current_flash->insOffset[0]             = insOffset[0].as<float>();
+        current_flash->insOffset[1]             = insOffset[1].as<float>();
+        current_flash->insOffset[2]             = insOffset[2].as<float>();
+
+        YAML::Node gps1AntOffset                = inData["gps1AntOffset"];
+        current_flash->gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
+        current_flash->gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
+        current_flash->gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
+
+        current_flash->insDynModel              = (uint8_t)inData["insDynModel"].as<uint16_t>();
+        current_flash->debug                    = (uint8_t)inData["debug"].as<uint16_t>();
+        current_flash->gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
+        current_flash->sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
+
+        YAML::Node refLla                       = inData["refLla"];
+        current_flash->refLla[0]                = refLla[0].as<double>();
+        current_flash->refLla[1]                = refLla[1].as<double>();
+        current_flash->refLla[2]                = refLla[2].as<double>();
+
+        YAML::Node lastLla                      = inData["lastLla"];
+        current_flash->lastLla[0]               = lastLla[0].as<double>();
+        current_flash->lastLla[1]               = lastLla[1].as<double>();
+        current_flash->lastLla[2]               = lastLla[2].as<double>();
+
+        current_flash->lastLlaTimeOfWeekMs      = inData["lastLlaTimeOfWeekMs"].as<uint32_t>();
+        current_flash->lastLlaWeek              = inData["lastLlaWeek"].as<uint32_t>();
+        current_flash->lastLlaUpdateDistance    = inData["lastLlaUpdateDistance"].as<float>();
+        current_flash->ioConfig                 = inData["ioConfig"].as<uint32_t>();
+        current_flash->platformConfig           = inData["platformConfig"].as<uint32_t>();
+
+
+        YAML::Node gps2AntOffset                = inData["gps2AntOffset"];
+        current_flash->gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
+        current_flash->gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
+        current_flash->gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
+
+        YAML::Node zeroVelRotation              = inData["zeroVelRotation"];
+        current_flash->zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
+        current_flash->zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
+        current_flash->zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
+
+        YAML::Node zeroVelOffset                = inData["zeroVelOffset"];
+        current_flash->zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
+        current_flash->zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
+        current_flash->zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
+
+        current_flash->gpsTimeUserDelay         = inData["gpsTimeUserDelay"].as<float>();
+        current_flash->magDeclination           = inData["magDeclination"].as<float>();
+        current_flash->gpsTimeSyncPeriodMs      = inData["gpsTimeSyncPeriodMs"].as<uint32_t>();
+        current_flash->startupGPSDtMs           = inData["startupGPSDtMs"].as<uint32_t>();
+        current_flash->RTKCfgBits               = inData["RTKCfgBits"].as<uint32_t>();
+        current_flash->sensorConfig             = inData["sensorConfig"].as<uint32_t>();
+        current_flash->gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
+        current_flash->ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
+
+        current_flash->wheelConfig.bits        	= inData["wheelConfigBits"].as<uint32_t>();
+
+		YAML::Node wheelCfgTransE_b2w			= inData["wheelCfgTransE_b2w"];
+		current_flash->wheelConfig.transform.e_b2w[0] 	= wheelCfgTransE_b2w[0].as<float>();
+		current_flash->wheelConfig.transform.e_b2w[1] 	= wheelCfgTransE_b2w[1].as<float>();
+		current_flash->wheelConfig.transform.e_b2w[2] 	= wheelCfgTransE_b2w[2].as<float>();
+
+		YAML::Node wheelCfgTransE_b2wsig			= inData["wheelCfgTransE_b2wsig"];
+		current_flash->wheelConfig.transform.e_b2w_sigma[0] 	= wheelCfgTransE_b2wsig[0].as<float>();
+		current_flash->wheelConfig.transform.e_b2w_sigma[1] 	= wheelCfgTransE_b2wsig[1].as<float>();
+		current_flash->wheelConfig.transform.e_b2w_sigma[2] 	= wheelCfgTransE_b2wsig[2].as<float>();
+
+		YAML::Node wheelCfgTransT_b2w			= inData["wheelCfgTransT_b2wsig"];
+		current_flash->wheelConfig.transform.t_b2w[0] 	= wheelCfgTransT_b2w[0].as<float>();
+		current_flash->wheelConfig.transform.t_b2w[1] 	= wheelCfgTransT_b2w[1].as<float>();
+		current_flash->wheelConfig.transform.t_b2w[2] 	= wheelCfgTransT_b2w[2].as<float>();
+
+		YAML::Node wheelCfgTransT_b2wsig			= inData["wheelCfgTransT_b2wsig"];
+		current_flash->wheelConfig.transform.t_b2w_sigma[0] 	= wheelCfgTransT_b2wsig[0].as<float>();
+		current_flash->wheelConfig.transform.t_b2w_sigma[1] 	= wheelCfgTransT_b2wsig[1].as<float>();
+		current_flash->wheelConfig.transform.t_b2w_sigma[2] 	= wheelCfgTransT_b2wsig[2].as<float>();
+    }
+    catch (const YAML::Exception& ex)
+    {
+        printf("[ERROR] --- There was an error parsing the YAML file: %s", ex.what());
+        return -1;
+    }
+    
+	return 0;
 }
