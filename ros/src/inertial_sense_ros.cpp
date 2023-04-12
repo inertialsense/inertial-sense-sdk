@@ -33,6 +33,10 @@
 
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
 
+/**
+ * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
+ * @param msg_odom - the nav_msgs::Odometry message to set the identity on.
+ */
 void odometryIdentity(nav_msgs::Odometry& msg_odom) {
     for (int row = 0; row < 6; row++) {
         for (int col = 0; col < 6; col++) {
@@ -2206,7 +2210,7 @@ ros::Time InertialSenseROS::ros_time_from_tow(const double tow)
 
 double InertialSenseROS::tow_from_ros_time(const ros::Time &rt)
 {
-    return (rt.sec - UNIX_TO_GPS_OFFSET - GPS_week_ * 604800) + rt.nsec * 1.0e-9;
+    return ((uint64_t)rt.sec - UNIX_TO_GPS_OFFSET - GPS_week_ * 604800) + rt.nsec * 1.0e-9;
 }
 
 ros::Time InertialSenseROS::ros_time_from_gtime(const uint64_t sec, double subsec)
