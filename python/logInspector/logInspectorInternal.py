@@ -2,15 +2,10 @@
 
 from logInspector import LogInspectorWindow
 
-import sys, os
+import sys, os, signal, ctypes
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QTreeView, QFileSystemModel,\
-    QHBoxLayout, QGridLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QRadioButton,\
-    QAbstractItemView, QMenu, QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox
-from PyQt5.QtGui import QMovie, QPicture, QIcon, QDropEvent, QClipboard
+from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
 from PyQt5.QtWidgets import QApplication
-import traceback
-import yaml
 
 
 class ChooseDevsDialog(QDialog):
@@ -70,8 +65,8 @@ class ChooseDevsDialog(QDialog):
 
 
 class logInspectorInternal(LogInspectorWindow):
-    def __init__(self, config, parent=None):
-        super(logInspectorInternal, self).__init__(config, parent)
+    def __init__(self, config):
+        super(logInspectorInternal, self).__init__(config)
         self.page = 0
 
     def createListIns(self):
@@ -156,22 +151,36 @@ class logInspectorInternal(LogInspectorWindow):
         super(logInspectorInternal, self).createListGps()
         self.addListItem('GPX Debug', 'gpxDebugfArray')
 
+def kill_handler(*args):
+    instance = QApplication.instance()
+    instance.quit()
+
 if __name__ == '__main__':
     if sys.version[0] != '3':
         raise Exception("You must use Python 3. The current version is " + sys.version)
 
+    if os.name == 'nt':
+        # On Windows, this is required to get the icon changed in the taskbar
+        myappid = 'InertialSense.PythonTools.LogInspector.Any'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
     app = QApplication(sys.argv)
-    MainWindow = QMainWindow()
 
     configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "config.yaml")
 
-    main = logInspectorInternal(configFilePath, MainWindow)
+    main = logInspectorInternal(configFilePath)
     main.setupUi()
-    # main.load(config['directory'])
+
+    # Allow the process to be killed with Ctrl-C from terminal
+    timer = QtCore.QTimer()
+    timer.start(200)
+    timer.timeout.connect(lambda: None)
+    signal.signal(signal.SIGINT, kill_handler)
+
     main.show()
 
     if len(sys.argv) > 1:
         directory = sys.argv[1]
         main.load(directory)
 
-    app.exec_()
+    app.exec()

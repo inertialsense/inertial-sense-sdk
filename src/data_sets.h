@@ -1135,7 +1135,7 @@ typedef struct PACKED
 	double					sensorTruePeriod;
 
 	/** Reserved */
-	float					reserved2;
+	uint32_t				flashCfgChecksum;
 	/** Reserved */
 	float					reserved3;
 
@@ -1202,28 +1202,29 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,
-    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,
-    SYS_CMD_ENABLE_SENSOR_STATS                     = 3,
-    SYS_CMD_ENABLE_RTOS_STATS                       = 4,
-    SYS_CMD_ZERO_MOTION                             = 5,
-    SYS_CMD_REF_POINT_STATIONARY                    = 6,
-    SYS_CMD_REF_POINT_MOVING                        = 7,
+    SYS_CMD_NONE                                    = 0,            // (uint32 inv: 4294967295)
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,            // (uint32 inv: 4294967294)
+    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,            // (uint32 inv: 4294967293)
+    SYS_CMD_ENABLE_SENSOR_STATS                     = 3,            // (uint32 inv: 4294967292)
+    SYS_CMD_ENABLE_RTOS_STATS                       = 4,            // (uint32 inv: 4294967291)
+    SYS_CMD_ZERO_MOTION                             = 5,            // (uint32 inv: 4294967290)
+    SYS_CMD_REF_POINT_STATIONARY                    = 6,            // (uint32 inv: 4294967289)
+    SYS_CMD_REF_POINT_MOVING                        = 7,            // (uint32 inv: 4294967288)
 
-    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,
+    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,           // (uint32 inv: 4294967285)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,           // (uint32 inv: 4294967284)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,           // (uint32 inv: 4294967283)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)
 
-    SYS_CMD_SAVE_FLASH                              = 97,
-    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,
-    SYS_CMD_SOFTWARE_RESET                          = 99,
-    SYS_CMD_MANF_UNLOCK                             = 1122334455,
-    SYS_CMD_MANF_FACTORY_RESET                      = 1357924680,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                         = 1357924681,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION              = 1357924682,	// SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_SAVE_FLASH                              = 97,           // (uint32 inv: 4294967198)
+    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,           // (uint32 inv: 4294967197)
+    SYS_CMD_SOFTWARE_RESET                          = 99,           // (uint32 inv: 4294967196)
+    SYS_CMD_MANF_UNLOCK                             = 1122334455,   // (uint32 inv: 3172632840) 
+    SYS_CMD_MANF_FACTORY_RESET                      = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                         = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION              = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
 enum eSerialPortBridge

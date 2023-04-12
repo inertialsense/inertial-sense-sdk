@@ -33,6 +33,10 @@
 
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
 
+/**
+ * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
+ * @param msg_odom - the nav_msgs::Odometry message to set the identity on.
+ */
 void odometryIdentity(nav_msgs::Odometry& msg_odom) {
     for (int row = 0; row < 6; row++) {
         for (int col = 0; col < 6; col++) {
@@ -390,12 +394,14 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.did_ins4, DID_INS_4, ins_4_t, INS4_callback);
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
+    nvm_flash_cfg_t flashCfg;
+    IS_.GetFlashConfig(flashCfg);
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
             ROS_INFO("Attempting to enable gps1/NavSatFix.");
             // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
-            uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
+            uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
                 msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
@@ -413,7 +419,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         if (rs_.gps2_navsatfix.enabled) {
             ROS_INFO("Attempting to enable gps2/NavSatFix.");
             // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
-            uint16_t gnssSatSigConst = IS_.GetFlashConfig().gnssSatSigConst;
+            uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
             if (gnssSatSigConst & GNSS_SAT_SIG_CONST_GPS) {
                 msg_NavSatFix.status.service |= NavSatFixService::SERVICE_GPS;
@@ -585,7 +591,8 @@ bool vecF64Match(double v1[], double v2[], int size=3)
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
-    nvm_flash_cfg_t current_flash_cfg = IS_.GetFlashConfig();
+    nvm_flash_cfg_t current_flash_cfg;
+    IS_.GetFlashConfig(current_flash_cfg);
     //ROS_INFO("Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
@@ -792,7 +799,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
-        if (RTK_base_) {
+        if (RTK_base_ && RTK_base_->enable) {
             if (RTK_base_->source_gps__usb_)
             {
                 ROS_INFO("InertialSense: RTK Base Configured.");
@@ -815,8 +822,8 @@ void InertialSenseROS::configure_rtk()
     else
     {
 
-        ROS_ERROR_COND(RTK_rover_ && RTK_base_, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
-        ROS_ERROR_COND(RTK_rover_ && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
+        ROS_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+        ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
         if (GNSS_Compass_)
         {
@@ -827,7 +834,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
-        if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
+        if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
@@ -835,7 +842,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
-        else if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
+        else if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover");
             if (RTK_base_) RTK_base_->enable = false;
@@ -846,7 +853,7 @@ void InertialSenseROS::configure_rtk()
 
             start_rtk_connectivity_watchdog_timer();
         }
-        else if (RTK_base_)
+        else if (RTK_base_ && RTK_base_->enable)
         {
             ROS_INFO("InertialSense: Configured as RTK Base");
             if (RTK_base_->source_gps__serial0_)
@@ -1983,8 +1990,9 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_flash_cfg_t current_flash = IS_.GetFlashConfig();
-    while (current_flash.refLla[0] == IS_.GetFlashConfig().refLla[0] && current_flash.refLla[1] == IS_.GetFlashConfig().refLla[1] && current_flash.refLla[2] == IS_.GetFlashConfig().refLla[2])
+    nvm_flash_cfg_t current_flash;
+    IS_.GetFlashConfig(current_flash);
+    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
         i++;
@@ -1994,7 +2002,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
         }
     }
 
-    if (current_lla_[0] == IS_.GetFlashConfig().refLla[0] && current_lla_[1] == IS_.GetFlashConfig().refLla[1] && current_lla_[2] == IS_.GetFlashConfig().refLla[2])
+    if (current_lla_[0] == current_flash.refLla[0] && current_lla_[1] == current_flash.refLla[1] && current_lla_[2] == current_flash.refLla[2])
     {
         comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
@@ -2017,8 +2025,9 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_flash_cfg_t current_flash = IS_.GetFlashConfig();
-    while (current_flash.refLla[0] == IS_.GetFlashConfig().refLla[0] && current_flash.refLla[1] == IS_.GetFlashConfig().refLla[1] && current_flash.refLla[2] == IS_.GetFlashConfig().refLla[2])
+    nvm_flash_cfg_t current_flash;
+    IS_.GetFlashConfig(current_flash);
+    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
         i++;
@@ -2028,7 +2037,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
         }
     }
 
-    if (req.lla[0] == IS_.GetFlashConfig().refLla[0] && req.lla[1] == IS_.GetFlashConfig().refLla[1] && req.lla[2] == IS_.GetFlashConfig().refLla[2])
+    if (req.lla[0] == current_flash.refLla[0] && req.lla[1] == current_flash.refLla[1] && req.lla[2] == current_flash.refLla[2])
     {
         comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
@@ -2201,7 +2210,7 @@ ros::Time InertialSenseROS::ros_time_from_tow(const double tow)
 
 double InertialSenseROS::tow_from_ros_time(const ros::Time &rt)
 {
-    return (rt.sec - UNIX_TO_GPS_OFFSET - GPS_week_ * 604800) + rt.nsec * 1.0e-9;
+    return ((uint64_t)rt.sec - UNIX_TO_GPS_OFFSET - GPS_week_ * 604800) + rt.nsec * 1.0e-9;
 }
 
 ros::Time InertialSenseROS::ros_time_from_gtime(const uint64_t sec, double subsec)

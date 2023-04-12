@@ -73,6 +73,7 @@ public:
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashCfg;
 		evb_flash_cfg_t evbFlashCfg;
+		uint8_t syncState;
 	};
 
 	struct com_manager_cpp_state_t
@@ -265,45 +266,35 @@ public:
 
 	/**
 	* Get the flash config, returns the latest flash config read from the uINS flash memory
-	* @param pHandle the pHandle to get flash config for
-	* @return the flash config
+	* @param flashCfg the flash config value
+	* @param pHandle the port pHandle to get flash config for
+	* @return bool whether the flash config is valid, currently synchronized
 	*/
-	nvm_flash_cfg_t GetFlashConfig(int pHandle = 0) 
-	{
-		if ((size_t)pHandle >= m_comManagerState.devices.size())
-		{
-			pHandle = 0;
-		}
-		return m_comManagerState.devices[pHandle].flashCfg;
-	}
-
-	/**
-	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
-	* @param pHandle the pHandle to get flash config for
-	* @return the EVB flash config
-	*/
-	evb_flash_cfg_t GetEvbFlashConfig(int pHandle = 0) 
-	{
-		if ((size_t)pHandle >= m_comManagerState.devices.size())
-		{
-			pHandle = 0;
-		}
-		return m_comManagerState.devices[pHandle].evbFlashCfg;
-	}
+	bool GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0); 
 
 	/**
 	* Set the flash config and update flash config on the uINS flash memory
 	* @param flashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
 	*/
-	void SetFlashConfig(const nvm_flash_cfg_t& flashCfg, int pHandle = 0);
+	void SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+
+	/**
+	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
+	* @param flashCfg the flash config value
+	* @param pHandle the port pHandle to get flash config for
+	* @return bool whether the EVB flash config is valid, currently synchronized
+	*/
+	bool GetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0); 
 
 	/**
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory
 	* @param evbFlashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
 	*/
-	void SetEvbFlashConfig(const evb_flash_cfg_t& evbFlashCfg, int pHandle = 0);
+	void SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
+
+	void ProcessRxData(p_data_t* data, int pHandle);
 
 	/**
 	* Broadcast binary data
@@ -401,11 +392,36 @@ public:
 		void (*waitAction)() = NULLPTR
 	);
 
+	/**
+	 * @brief LoadFlashConfig
+	 * @param path - Path to YAML flash config file
+	 * @param pHandle - Handle of current device
+	 * @return -1 for failure to upload file, 0 for success.
+	 */
+	int LoadFlashConfig(std::string path, int pHandle = 0);
+
+	/**
+	 * @brief SaveFlashConfigFile
+	 * @param path - Path to YAML flash config file
+	 * @param pHandle - Handle of current device
+	 */
+	void SaveFlashConfigFile(std::string path, int pHandle = 0);
+
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
+	// Sync state between this class and IMX device
+	enum IMXSyncState
+	{
+		NOT_SYNCHRONIZED    = 0,   // Download needed
+		SYNCHRONIZING       = 1,   // Uploading
+		SYNCHRONIZED        = 2,   // Flash config on IMX and locally match
+	};
+
+	int GetSyncState(int pHandle) { return m_comManagerState.devices[pHandle].syncState; }
+
 protected:
-	bool OnPacketReceived(const uint8_t* data, uint32_t dataLength);
+	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
 	void OnClientConnecting(cISTcpServer* server) OVERRIDE;
 	void OnClientConnected(cISTcpServer* server, socket_t socket) OVERRIDE;
 	void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
@@ -452,6 +468,7 @@ private:
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
 	static void BootloadStatusUpdate(void* obj, const char* str);
+	void UpdateFlashConfigSyncState(uint32_t rxChecksum, int pHandle);
 };
 
 #endif
