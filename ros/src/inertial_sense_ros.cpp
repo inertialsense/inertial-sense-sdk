@@ -795,7 +795,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
-        if (RTK_base_) {
+        if (RTK_base_ && RTK_base_->enable) {
             if (RTK_base_->source_gps__usb_)
             {
                 ROS_INFO("InertialSense: RTK Base Configured.");
@@ -818,8 +818,8 @@ void InertialSenseROS::configure_rtk()
     else
     {
 
-        ROS_ERROR_COND(RTK_rover_ && RTK_base_, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
-        ROS_ERROR_COND(RTK_rover_ && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
+        ROS_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+        ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
         if (GNSS_Compass_)
         {
@@ -830,7 +830,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
 
-        if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
+        if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
@@ -838,7 +838,7 @@ void InertialSenseROS::configure_rtk()
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
-        else if (RTK_rover_ && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
+        else if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
         {
             ROS_INFO("InertialSense: Configured as RTK Rover");
             if (RTK_base_) RTK_base_->enable = false;
@@ -849,7 +849,7 @@ void InertialSenseROS::configure_rtk()
 
             start_rtk_connectivity_watchdog_timer();
         }
-        else if (RTK_base_)
+        else if (RTK_base_ && RTK_base_->enable)
         {
             ROS_INFO("InertialSense: Configured as RTK Base");
             if (RTK_base_->source_gps__serial0_)
@@ -2021,7 +2021,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
-    nvm_flash_cfg_t current_flash; 
+    nvm_flash_cfg_t current_flash;
     IS_.GetFlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
