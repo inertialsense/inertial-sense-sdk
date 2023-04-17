@@ -1196,7 +1196,6 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
     map["sensorConfig"] 			= outData->sensorConfig;
     map["gpsMinimumElevation"] 		= outData->gpsMinimumElevation;
     map["ser2BaudRate"] 			= outData->ser2BaudRate;
-	map["wheelConfigBits"] 			= outData->wheelConfig.bits;
 
 	YAML::Node wheelCfgTransE_b2w 	= YAML::Node(YAML::NodeType::Sequence);
         wheelCfgTransE_b2w.push_back(outData->wheelConfig.transform.e_b2w[0]);
@@ -1224,6 +1223,7 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 
 	map["wheelConfigTrackWidth"] 	= outData->wheelConfig.track_width;
 	map["wheelConfigRadius"] 		= outData->wheelConfig.radius;
+    map["wheelConfigBits"] 			= outData->wheelConfig.bits;
 
 	std::ofstream fout(path);
 
@@ -1250,7 +1250,7 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.ser0BaudRate             = inData["ser0BaudRate"].as<uint32_t>();
         loaded_flash.ser1BaudRate             = inData["ser1BaudRate"].as<uint32_t>();
 
-        YAML::Node insRotation                  = inData["insRotation"];
+        YAML::Node insRotation                = inData["insRotation"];
         loaded_flash.insRotation[0]           = insRotation[0].as<float>();
         loaded_flash.insRotation[1]           = insRotation[1].as<float>();
         loaded_flash.insRotation[2]           = insRotation[2].as<float>();
@@ -1311,7 +1311,9 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.gpsMinimumElevation      = inData["gpsMinimumElevation"].as<float>();
         loaded_flash.ser2BaudRate             = inData["ser2BaudRate"].as<uint32_t>();
 
-        loaded_flash.wheelConfig.bits        	= inData["wheelConfigBits"].as<uint32_t>();
+        loaded_flash.wheelConfig.bits         = inData["wheelConfigBits"].as<uint32_t>();
+        loaded_flash.wheelConfig.radius       = inData["wheelConfigRadius"].as<float>();
+        loaded_flash.wheelConfig.track_width  = inData["wheelConfigTrackWidth"].as<float>();
 
 		YAML::Node wheelCfgTransE_b2w			= inData["wheelCfgTransE_b2w"];
         loaded_flash.wheelConfig.transform.e_b2w[0] 	= wheelCfgTransE_b2w[0].as<float>();
