@@ -174,6 +174,16 @@ void mul_Mat3x3_Trans_Mat3x3_d( ixMatrix3d result, const ixMatrix3d m1, const ix
 void mul_Mat3x3_Mat3x3_Trans( ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2 );
 void mul_Mat3x3_Mat3x3_Trans_d( ixMatrix3d result, const ixMatrix3d m1, const ixMatrix3d m2);
 
+/* Matrix addition
+ * result(3x3) = m1(3x3) + m2(3x3)
+ */
+void add_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2);
+
+/* Matrix subtraction
+ * result(3x3) = m1(3x3) - m2(3x3)
+ */
+void sub_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2);
+
 /* Matrix Multiply
  * result(1x2) = m(2x2) * v(2x1)
  */
