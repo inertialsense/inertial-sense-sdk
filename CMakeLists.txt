@@ -10,6 +10,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-f
 
 SET(BUILD_INERTIAL_SENSE_SDK 1)
 
+add_library(yaml-cpp STATIC IMPORTED)
+ set_target_properties(yaml-cpp PROPERTIES IMPORTED_LOCATION /home/siddirp/imx/SDK/src/yaml-cpp/build/libyaml-cpp.a)
+
 add_definitions(-DRTK_EMBEDDED)
 find_package(Threads REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -77,7 +80,7 @@ find_library(LIBUSB_LIBRARY
 )
 
 target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
-target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} ${YAML_CPP_LIBRARIES} m)
+target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} m yaml-cpp)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
 add_library( InertialSense::libinertialsense ALIAS InertialSense )
