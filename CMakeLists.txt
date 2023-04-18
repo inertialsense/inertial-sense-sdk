@@ -11,8 +11,6 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-f
 SET(BUILD_INERTIAL_SENSE_SDK 1)
 
 add_subdirectory(src/yaml-cpp)
-# add_library(yaml-cpp STATIC IMPORTED)
-#  set_target_properties(yaml-cpp PROPERTIES IMPORTED_LOCATION src/yaml)
 
 add_definitions(-DRTK_EMBEDDED)
 find_package(Threads REQUIRED)

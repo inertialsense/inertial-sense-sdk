@@ -17,7 +17,7 @@ pushd logInspector > /dev/null
 popd > /dev/null
 popd > /dev/null
 
-sudo apt install -y cmake unzip zip libyaml-cpp-dev
+sudo apt install -y cmake unzip zip 
 
 source ~/.bashrc
 
