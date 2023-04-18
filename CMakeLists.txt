@@ -4,13 +4,18 @@ project(inertial-sense-sdk)
 
 #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall  ")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall  ")
 
 
 SET(BUILD_INERTIAL_SENSE_SDK 1)
 
 add_subdirectory(src/yaml-cpp)
+include_directories(
+  ${CMAKE_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/src/yaml-cpp
+  ${CMAKE_SOURCE_DIR}/src/yaml-cpp/include
+  ${CMAKE_SOURCE_DIR}/src/yaml-cpp/include/yaml-cpp)
 # add_library(yaml-cpp STATIC IMPORTED)
 #  set_target_properties(yaml-cpp PROPERTIES IMPORTED_LOCATION src/yaml)
 
@@ -74,12 +79,12 @@ add_library(InertialSense
   src/tinyxmlparser.cpp
 )
 
-find_library(LIBUSB_LIBRARY
-	NAMES usb-1.0
-	PATH_SUFFIXES "lib" "lib32" "lib64"
-)
+# find_library(LIBUSB_LIBRARY
+# 	NAMES usb-1.0
+# 	PATH_SUFFIXES "lib" "lib32" "lib64"
+# )
 
-target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
+target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb src/yaml-cpp src/yaml-cpp/include/yaml-cpp)
 target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} m yaml-cpp)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
