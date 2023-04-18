@@ -84,7 +84,7 @@ add_library(InertialSense
 # 	PATH_SUFFIXES "lib" "lib32" "lib64"
 # )
 
-target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb src/yaml-cpp src/yaml-cpp/include/yaml-cpp)
+target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb src/yaml-cpp src/yaml-cpp/include/yaml-cpp ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src/yaml-cpp ${CMAKE_SOURCE_DIR}/src/yaml-cpp/include ${CMAKE_SOURCE_DIR}/src/yaml-cpp/include/yaml-cpp)
 target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} m yaml-cpp)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
