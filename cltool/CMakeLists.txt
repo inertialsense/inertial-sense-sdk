@@ -65,7 +65,7 @@ if (WIN32)
 target_link_libraries(cltool libusb-1.0.lib yaml-cpp.lib)
 else()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-target_link_libraries(cltool libusb-1.0.a pthread udev yaml-cpp m)
+target_link_libraries(cltool libusb-1.0.a udev yaml-cpp m)
 endif()
 
 endif()
