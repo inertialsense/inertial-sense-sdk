@@ -32,62 +32,9 @@ target_link_libraries(cltool InertialSense)
 
 else()	# Build only this project
 
-SET(SOURCES_COMMON
-	main.cpp
-	../src/cltool.cpp
-	../src/cltool_main.cpp
-	../src/com_manager.c
-	../src/convert_ins.cpp
-	../src/data_sets.c
-	../src/DataChunk.cpp
-	../src/DataChunkSorted.cpp
-	../src/DataCSV.cpp
-	../src/DataJSON.cpp
-	../src/DataKML.cpp
-	../src/DeviceLog.cpp
-	../src/DeviceLogCSV.cpp
-	../src/DeviceLogJSON.cpp
-	../src/DeviceLogKML.cpp
-	../src/DeviceLogSerial.cpp
-	../src/DeviceLogSorted.cpp
-	../src/ihex.c
-	../src/InertialSense.cpp
-	../src/ISBootloaderThread.cpp
-	../src/ISBootloaderBase.cpp
-    ../src/ISBootloaderISB.cpp
-	../src/ISBootloaderDFU.cpp
-	../src/ISBootloaderSAMBA.cpp
-	../src/ISBootloaderAPP.cpp
-	../hw-libs/bootloader/bootloaderShared.c
-	../src/ISClient.cpp
-	../src/ISComm.c
-	../src/ISDataMappings.cpp
-	../src/ISDisplay.cpp
-	../src/ISEarth.c
-	../src/ISFileManager.cpp
-	../src/ISLogFile.cpp
-	../src/ISLogger.cpp
-	../src/ISLogStats.cpp
-	../src/ISMatrix.c
-	../src/ISPose.c
-	../src/ISSerialPort.cpp
-	../src/ISStream.cpp
-	../src/ISTcpClient.cpp
-	../src/ISTcpServer.cpp
-	../src/ISUtilities.cpp
-	../src/linked_list.c
-	../src/message_stats.cpp
-	../src/protocol_nmea.cpp
-	../src/serialPort.c
-	../src/serialPortPlatform.c
-	../src/time_conversion.c
-	../src/tinystr.cpp
-	../src/tinyxml.cpp
-	../src/tinyxmlerror.cpp
-	../src/tinyxmlparser.cpp
-)
+FILE(GLOB SOURCES_ALL "main.cpp", "../src/*.c" "../src/*.cpp" "../src/*.h" "../hw-libs/bootloader/bootloaderShared.c")
 
-add_executable(cltool ${SOURCES_COMMON})
+add_executable(cltool ${SOURCES_ALL})
 
 if(WIN32)
 	target_include_directories(cltool PUBLIC
