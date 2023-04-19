@@ -1,6 +1,6 @@
 # instructions:
 # install cmake, put it in your path for ease of use
-# Linux: sudo apt install build-essential libudev-dev libusb-1.0-0-dev cmake
+# Linux: sudo apt install build-essential libudev-dev libusb-1.0-0-dev libyaml-cpp-dev cmake
 # Windows: Download and install msi from https://cmake.org/download/
 # cd into cltool dir
 # mkdir ./build
@@ -34,7 +34,7 @@ target_link_libraries(cltool InertialSense)
 else()	# Build only this project
 
 SET(SOURCES_COMMON
-main.cpp
+	main.cpp
 	../src/cltool.cpp
 	../src/cltool_main.cpp
 	../src/com_manager.c
@@ -132,6 +132,7 @@ if(WIN32)
 		../src/libusb/msvc
 	)
 else()
+	find_package(yaml-cpp REQUIRED)
 	add_executable(cltool ${SOURCES_COMMON} ${SOURCES_UNIX})
 	target_include_directories(cltool PUBLIC
 		../src/libusb/linux
@@ -147,12 +148,10 @@ target_include_directories(cltool PUBLIC
 target_link_directories(cltool PRIVATE ../src/libs)
 
 if (WIN32)
-target_link_libraries(cltool libusb-1.0.lib)
+target_link_libraries(cltool libusb-1.0.lib yaml-cpp.lib)
 else()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-target_link_libraries(cltool libusb-1.0.a pthread udev m)
+target_link_libraries(cltool libusb-1.0.a pthread udev yaml-cpp m)
 endif()
 
 endif()
-
-

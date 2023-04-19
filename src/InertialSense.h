@@ -35,17 +35,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 
-// include winsock on windows, and pthread if it is asked for
+// include winsock on windows
 #if PLATFORM_IS_WINDOWS
 
 #pragma comment (lib, "Ws2_32.lib")
-
-#if NEED_PTHREAD_WINDOWS
-
-// this must be in your library include path (src/libs in this repo)
-#pragma comment (lib, "pthreadVC3.lib")
-
-#endif
 
 #endif
 
