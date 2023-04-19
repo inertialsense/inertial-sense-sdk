@@ -8,7 +8,7 @@
 	# cmake -S . -B ./build
 # build from command line
 	# Windows: cmake --build ./build --target ALL_BUILD --config Release
-	# Linux: cmake --build ./build
+	# Linux: cmake --build ./build --config Release
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 
