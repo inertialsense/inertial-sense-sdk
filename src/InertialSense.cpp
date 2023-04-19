@@ -1114,7 +1114,6 @@ void InertialSense::CloseSerialPorts()
 }
 void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 {
-#if 1
 	nvm_flash_cfg_t* outData = &m_comManagerState.devices[pHandle].flashCfg;
 
 	YAML::Node map = YAML::Node(YAML::NodeType::Map);
@@ -1232,12 +1231,10 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 	emitter << map;
     fout << emitter.c_str();
     fout.close();
-#endif
 }
 
 int InertialSense::LoadFlashConfig(std::string path, int pHandle)
 {
-#if 1
     try
     {
         nvm_flash_cfg_t loaded_flash;
@@ -1343,6 +1340,5 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         return -1;
     }
 
-#endif
 	return 0;
 }
