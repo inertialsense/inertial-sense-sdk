@@ -32,11 +32,18 @@ target_link_libraries(cltool InertialSense)
 
 else()	# Build only this project
 
-FILE(GLOB SOURCES_ALL "main.cpp", "../src/*.c" "../src/*.cpp" "../src/*.h" "../hw-libs/bootloader/bootloaderShared.c")
+FILE(GLOB SOURCES_ALL
+	"main.cpp"
+	"../src/*.c"
+	"../src/*.cpp"
+	"../src/*.h"
+	"../hw-libs/bootloader/bootloaderShared.c"
+)
 
 add_executable(cltool ${SOURCES_ALL})
 
 if(WIN32)
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
 	target_include_directories(cltool PUBLIC
 		../src/libusb/msvc
 	)
