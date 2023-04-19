@@ -42,6 +42,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if NEED_PTHREAD_WINDOWS
 
+// this must be in your library include path (src/libs in this repo)
 #pragma comment (lib, "pthreadVC3.lib")
 
 #endif
