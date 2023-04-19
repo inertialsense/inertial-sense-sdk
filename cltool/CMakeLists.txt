@@ -1,6 +1,6 @@
 # instructions:
 # install cmake, put it in your path for ease of use
-# Linux: sudo apt install build-essential libudev-dev cmake
+# Linux: sudo apt install build-essential libudev-dev libusb-1.0-0-dev cmake
 # Windows: Download and install msi from https://cmake.org/download/
 # cd into cltool dir
 # mkdir ./build
@@ -150,7 +150,7 @@ if (WIN32)
 target_link_libraries(cltool libusb-1.0.lib)
 else()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-target_link_libraries(cltool pthread udev m)
+target_link_libraries(cltool libusb-1.0.a pthread udev m)
 endif()
 
 endif()
