@@ -59,10 +59,9 @@ target_include_directories(cltool PUBLIC
 	../src/libusb
 )
 
-target_link_directories(cltool PRIVATE ../src/libs)
-
 if (WIN32)
-target_link_libraries(cltool libusb-1.0.lib yaml-cpp.lib)
+target_link_directories(cltool PRIVATE ../src/libs)
+target_link_libraries(cltool)
 else()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 target_link_libraries(cltool libusb-1.0.a udev yaml-cpp m)
