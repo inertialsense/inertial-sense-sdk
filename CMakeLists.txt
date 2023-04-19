@@ -77,7 +77,7 @@ find_library(LIBUSB_LIBRARY
 )
 
 target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
-target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} ${YAML_CPP_LIBRARIES} m)
+target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} ${YAML_CPP_LIBRARIES} m yaml-cpp)
 target_compile_options(InertialSense PUBLIC -fPIC)
 
 add_library( InertialSense::libinertialsense ALIAS InertialSense )
