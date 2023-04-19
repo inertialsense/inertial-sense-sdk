@@ -174,6 +174,16 @@ void mul_Mat3x3_Trans_Mat3x3_d( ixMatrix3d result, const ixMatrix3d m1, const ix
 void mul_Mat3x3_Mat3x3_Trans( ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2 );
 void mul_Mat3x3_Mat3x3_Trans_d( ixMatrix3d result, const ixMatrix3d m1, const ixMatrix3d m2);
 
+/* Matrix addition
+ * result(3x3) = m1(3x3) + m2(3x3)
+ */
+void add_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2);
+
+/* Matrix subtraction
+ * result(3x3) = m1(3x3) - m2(3x3)
+ */
+void sub_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2);
+
 /* Matrix Multiply
  * result(1x2) = m(2x2) * v(2x1)
  */
@@ -223,6 +233,11 @@ void div_Mat3x3_X( ixMatrix3 result, const ixMatrix3 m, const f_t x );
  * result(3x3) = v1(3x1) * v2(1x3)
  */
 void mul_Vec3x1_Vec1x3( ixMatrix3 result, const ixVector3 v1, const ixVector3 v2 );
+
+/* Multiply
+ * result(2) = v1(2) * v2(2)
+ */
+void mul_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2);
 
 /* Multiply
  * result(3) = v1(3) * v2(3)
@@ -303,6 +318,12 @@ void div_Vec3d_X( ixVector3d result, const ixVector3d v, const double x );
  */
 void div_Vec4_X( ixVector4 result, const ixVector4 v, const f_t x );
 void div_Vec4d_X( ixVector4d result, const ixVector4d v, const double x );
+
+
+/* Add
+ * result(2) = v1(2) + v2(2)
+ */
+void add_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2);
 
 /* Add
  * result(3) = v1(3) + v2(3)

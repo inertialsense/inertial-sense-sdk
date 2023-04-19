@@ -415,6 +415,38 @@ void mul_Mat3x3_Mat3x3_Trans_d(ixMatrix3d result, const ixMatrix3d m1, const ixM
     result[8] = m1[6] * m2[6] + m1[7] * m2[7] + m1[8] * m2[8];
 }
 
+void add_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2)
+{
+	// Row 1
+	result[0] = m1[0] + m2[0];
+	result[1] = m1[1] + m2[1];
+	result[2] = m1[2] + m2[2];
+	// Row 2
+	result[3] = m1[3] + m2[3];
+	result[4] = m1[4] + m2[4];
+	result[5] = m1[5] + m2[5];
+	// Row 3
+	result[6] = m1[6] + m2[6];
+	result[7] = m1[7] + m2[7];
+	result[8] = m1[8] + m2[8];
+}
+
+void sub_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2)
+{
+	// Row 1
+	result[0] = m1[0] - m2[0];
+	result[1] = m1[1] - m2[1];
+	result[2] = m1[2] - m2[2];
+	// Row 2
+	result[3] = m1[3] - m2[3];
+	result[4] = m1[4] - m2[4];
+	result[5] = m1[5] - m2[5];
+	// Row 3
+	result[6] = m1[6] - m2[6];
+	result[7] = m1[7] - m2[7];
+	result[8] = m1[8] - m2[8];
+}
+
 void mul_Mat2x2_Vec2x1( ixVector2 result, const ixMatrix2 m, const ixVector2 v )
 {
     result[0] = m[0]*v[0] + m[1]*v[1];
@@ -520,6 +552,12 @@ void mul_Vec3x1_Vec1x3( ixMatrix3 result, const ixVector3 v1, const  ixVector3 v
 	result[6] = v1[2]*v2[0];
 	result[7] = v1[2]*v2[1];
 	result[8] = v1[2]*v2[2];
+}
+
+void mul_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2)
+{
+	result[0] = v1[0] * v2[0];
+	result[1] = v1[1] * v2[1];
 }
 
 void mul_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
@@ -711,6 +749,12 @@ void div_Vec4d_X( ixVector4d result, const ixVector4d v, const double x )
 	result[1] = v[1] * d;
 	result[2] = v[2] * d;
 	result[3] = v[3] * d;
+}
+
+void add_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2)
+{
+	result[0] = v1[0] + v2[0];
+	result[1] = v1[1] + v2[1];
 }
 
 void add_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )

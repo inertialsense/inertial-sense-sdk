@@ -143,30 +143,30 @@ if (!cltool_setupLogger(inertialSenseInterface))
 ## Compile & Run (Linux/Mac)
 
 1. Create build directory
-``` bash
-$ cd cltool
-$ mkdir build
-```
+   ``` bash
+   cd cltool
+   mkdir build
+   ```
 2. Run cmake from within build directory
-``` bash
-$ cd build
-$ cmake ..
-```
+   ``` bash
+   cd build
+   cmake ..
+   ```
 3. Compile using make
- ``` bash
- $ make
- ```
+    ``` bash
+    make
+    ```
 4. If necessary, add current user to the "dialout" group to read and write to the USB serial communication ports.  In some cases the Modem Manager must be disabled to prevent interference with serial communication. 
-```bash
-$ sudo usermod -a -G dialout $USER
-$ sudo usermod -a -G plugdev $USER
-$ sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
-(reboot computer)
-```
+   ```bash
+   sudo usermod -a -G dialout $USER
+   sudo usermod -a -G plugdev $USER
+   sudo systemctl disable ModemManager.service && sudo systemctl stop ModemManager.service
+   (reboot computer)
+   ```
 5. Run executable
-``` bash
-$ ./cltool
-```
+   ``` bash
+   ./cltool
+   ```
 
 ### Install udev rules for IMX-5 bootloader
 
@@ -181,9 +181,9 @@ sudo udevadm control --reload-rules
 2. Open Visual Studio solution file (inertial-sense-sdk/cltool/VS_project/cltool.sln)
 3. Build (F7)
 4. Run executable
-``` bash
-C:\inertial-sense-sdk\cltool\VS_project\Release\cltool.exe
-```
+   ``` bash
+   C:\inertial-sense-sdk\cltool\VS_project\Release\cltool.exe
+   ```
 
 
 ## Summary
