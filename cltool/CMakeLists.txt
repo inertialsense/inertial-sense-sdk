@@ -15,7 +15,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 project(cltool)
 
 if (WIN32)
-	add_definitions(-DNEED_PTHREAD_WINDOWS)
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
 else()
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
