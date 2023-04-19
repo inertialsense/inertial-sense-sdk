@@ -147,7 +147,7 @@ target_include_directories(cltool PUBLIC
 target_link_directories(cltool PRIVATE ../src/libs)
 
 if (WIN32)
-target_link_libraries(cltool)
+target_link_libraries(cltool libusb-1.0.lib)
 else()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 target_link_libraries(cltool pthread udev m)
