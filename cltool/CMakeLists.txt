@@ -34,7 +34,7 @@ target_link_libraries(cltool InertialSense)
 else()	# Build only this project
 
 SET(SOURCES_COMMON
-	main.cpp
+main.cpp
 	../src/cltool.cpp
 	../src/cltool_main.cpp
 	../src/com_manager.c
@@ -86,16 +86,6 @@ SET(SOURCES_COMMON
 	../src/tinyxml.cpp
 	../src/tinyxmlerror.cpp
 	../src/tinyxmlparser.cpp
-	../src/libusb/libusb/core.c
-	../src/libusb/libusb/descriptor.c
-	../src/libusb/libusb/hotplug.c
-	../src/libusb/libusb/io.c
-	../src/libusb/libusb/libusb.h
-	../src/libusb/libusb/libusbi.h
-	../src/libusb/libusb/strerror.c
-	../src/libusb/libusb/sync.c
-	../src/libusb/libusb/version.h
-	../src/libusb/libusb/version_nano.h
 )
 
 SET(SOURCES_UNIX
