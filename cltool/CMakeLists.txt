@@ -87,52 +87,13 @@ SET(SOURCES_COMMON
 	../src/tinyxmlparser.cpp
 )
 
-SET(SOURCES_UNIX
-	../src/libusb/libusb/os/events_posix.c
-	../src/libusb/libusb/os/events_posix.h
-	../src/libusb/libusb/os/linux_netlink.c
-	../src/libusb/libusb/os/linux_udev.c
-	../src/libusb/libusb/os/linux_usbfs.c
-	../src/libusb/libusb/os/threads_posix.c
-	../src/libusb/libusb/os/threads_posix.h
-)
-	
-SET(SOURCES_WINDOWS
-	../src/libusb/msvc/config.h
-	../src/libusb/libusb/os/events_windows.c
-	../src/libusb/libusb/os/events_windows.h
-	../src/libusb/libusb/os/windows_common.c
-	../src/libusb/libusb/os/windows_common.h
-	../src/libusb/libusb/os/windows_usbdk.c
-	../src/libusb/libusb/os/windows_usbdk.h
-	../src/libusb/libusb/os/windows_winusb.c
-	../src/libusb/libusb/os/windows_winusb.h
-	../src/libusb/libusb/os/threads_windows.c
-	../src/libusb/libusb/os/threads_windows.h
-)
-
-SET(SOURCES_OTHER
-	../src/libusb/libusb/os/darwin_usb.c
-	../src/libusb/libusb/os/darwin_usb.h
-	../src/libusb/libusb/os/haiku_pollfs.cpp
-	../src/libusb/libusb/os/haiku_usb.h
-	../src/libusb/libusb/os/haiku_usb_backend.cpp
-	../src/libusb/libusb/os/haiku_usb_raw.cpp
-	../src/libusb/libusb/os/haiku_usb_raw.h
-	../src/libusb/libusb/os/netbsd_usb.c
-	../src/libusb/libusb/os/null_usb.c
-	../src/libusb/libusb/os/openbsd_usb.c
-	../src/libusb/libusb/os/sunos_usb.c
-)
+add_executable(cltool ${SOURCES_COMMON})
 
 if(WIN32)
-	add_executable(cltool ${SOURCES_COMMON} ${SOURCES_WIN32})
 	target_include_directories(cltool PUBLIC
 		../src/libusb/msvc
 	)
 else()
-	find_package(yaml-cpp REQUIRED)
-	add_executable(cltool ${SOURCES_COMMON} ${SOURCES_UNIX})
 	target_include_directories(cltool PUBLIC
 		../src/libusb/linux
 	)
