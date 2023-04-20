@@ -2,9 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 
 project(ISLoggerExample)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-
+if (!WIN32)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+endif()
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
@@ -13,71 +14,44 @@ target_link_libraries(ISLoggerExample InertialSense)
 
 else()	# Build only this project
 
-add_executable(ISLoggerExample
-    ISLoggerExample.cpp
-	../../src/com_manager.c
-	../../src/convert_ins.cpp
-	../../src/data_sets.c
-	../../src/DataChunk.cpp
-	../../src/DataChunkSorted.cpp
-	../../src/DataCSV.cpp
-	../../src/DataJSON.cpp
-	../../src/DataKML.cpp
-	../../src/DeviceLog.cpp
-	../../src/DeviceLogCSV.cpp
-	../../src/DeviceLogJSON.cpp
-	../../src/DeviceLogKML.cpp
-	../../src/DeviceLogSerial.cpp
-	../../src/DeviceLogSorted.cpp
-	../../src/ihex.c
-	../../src/InertialSense.cpp
-	../../src/ISBootloaderBase.cpp
-	../../src/ISBootloaderThread.cpp
-	../../src/ISBootloaderAPP.cpp
-	../../src/ISBootloaderISB.cpp
-	../../src/ISBootloaderDFU.cpp
-	../../src/ISBootloaderSAMBA.cpp
+FILE(GLOB SOURCES_ALL
+	ISLoggerExample.cpp
+	../../src/*.c
+	../../src/*.cpp
+	../../src/*.h
 	../../hw-libs/bootloader/bootloaderShared.c
-	../../src/ISClient.cpp
-	../../src/ISComm.c
-	../../src/ISDataMappings.cpp
-	../../src/ISDisplay.cpp
-	../../src/ISEarth.c
-	../../src/ISFileManager.cpp
-	../../src/ISLogFile.cpp
-	../../src/ISLogger.cpp
-	../../src/ISLogStats.cpp
-	../../src/ISMatrix.c
-	../../src/ISPose.c
-	../../src/ISSerialPort.cpp
-	../../src/ISStream.cpp
-	../../src/ISTcpClient.cpp
-	../../src/ISTcpServer.cpp
-	../../src/ISUtilities.cpp
-	../../src/message_stats.cpp
-	../../src/protocol_nmea.cpp
-	../../src/linked_list.c
-	../../src/serialPort.c
-	../../src/serialPortPlatform.c
-	../../src/time_conversion.c
-	../../src/tinystr.cpp
-	../../src/tinyxml.cpp
-	../../src/tinyxmlerror.cpp
-	../../src/tinyxmlparser.cpp
 )
+
+add_executable(ISLoggerExample ${SOURCES_ALL})
 
 find_library(LIBUSB_LIBRARY
 	NAMES usb-1.0
 	PATH_SUFFIXES "lib" "lib32" "lib64"
 )
 
+if(WIN32)
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
+	target_include_directories(ISLoggerExample PUBLIC
+		../../src/libusb/msvc
+	)
+else()
+	target_include_directories(ISLoggerExample PUBLIC
+		../../src/libusb/linux
+	)
+endif()
+
 target_include_directories(ISLoggerExample PUBLIC
 	../../src
 	../../src/libusb/libusb
-	../../src/libusb/msvc
+	../../src/libusb
 )
 
-target_link_libraries(ISLoggerExample pthread ${LIBUSB_LIBRARY} m)
+if (WIN32)
+	target_link_directories(ISLoggerExample PRIVATE ../../src/libs)
+	target_link_libraries(ISLoggerExample)
+else()
+	target_link_libraries(ISLoggerExample pthread ${LIBUSB_LIBRARY} m)
+endif()
 
 endif()
 

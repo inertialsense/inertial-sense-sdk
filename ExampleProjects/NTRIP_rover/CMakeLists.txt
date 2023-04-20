@@ -2,8 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 
 project(ISNtripRoverExample)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+if (!WIN32)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+endif()
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
@@ -12,25 +14,39 @@ target_link_libraries(ISNtripRoverExample InertialSense)
 
 else()	# Build only this project
 
-add_executable(ISNtripRoverExample
+FILE(GLOB SOURCES_ALL
 	ISNtripRoverExample.cpp
-	../../src/data_sets.c
-	../../src/ISClient.cpp
-	../../src/ISComm.c
-	../../src/ISEarth.c
-	../../src/ISFileManager.cpp
-	../../src/ISMatrix.c
-	../../src/ISPose.c
-	../../src/ISSerialPort.cpp
-	../../src/ISStream.cpp
-	../../src/ISTcpClient.cpp
-	../../src/ISTcpServer.cpp
-	../../src/ISUtilities.cpp
-	../../src/protocol_nmea.cpp
-	../../src/serialPort.c
-	../../src/serialPortPlatform.c
+	../../src/*.c
+	../../src/*.cpp
+	../../src/*.h
+	../../hw-libs/bootloader/bootloaderShared.c
 )
-target_link_libraries(ISNtripRoverExample pthread)
+
+add_executable(ISNtripRoverExample ${SOURCES_ALL})
+
+if(WIN32)
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
+	target_include_directories(ISNtripRoverExample PUBLIC
+		../../src/libusb/msvc
+	)
+else()
+	target_include_directories(ISLoggeISNtripRoverExamplerExample PUBLIC
+		../../src/libusb/linux
+	)
+endif()
+
+target_include_directories(ISNtripRoverExample PUBLIC
+	../../src
+	../../src/libusb/libusb
+	../../src/libusb
+)
+
+if (WIN32)
+	target_link_directories(ISNtripRoverExample PRIVATE ../../src/libs)
+	target_link_libraries(ISNtripRoverExample)
+else()
+	target_link_libraries(ISNtripRoverExample pthread)
+endif()
 
 endif()
 

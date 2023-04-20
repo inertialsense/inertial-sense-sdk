@@ -7,7 +7,7 @@
 # create build files (on Windows this makes Visual Studio projects)
 	# cmake -S . -B ./build
 # build from command line
-	# Windows: cmake --build ./build --target ALL_BUILD --config Release
+	# Windows: cmake --build ./build --target ALL_BUILD --config Release -j 7
 	# Linux: cmake --build ./build --config Release
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
@@ -31,11 +31,11 @@ target_link_libraries(cltool InertialSense)
 else()	# Build only this project
 
 FILE(GLOB SOURCES_ALL
-	"main.cpp"
-	"../src/*.c"
-	"../src/*.cpp"
-	"../src/*.h"
-	"../hw-libs/bootloader/bootloaderShared.c"
+	main.cpp
+	../src/*.c
+	../src/*.cpp
+	../src/*.h
+	../hw-libs/bootloader/bootloaderShared.c
 )
 
 add_executable(cltool ${SOURCES_ALL})
@@ -58,11 +58,11 @@ target_include_directories(cltool PUBLIC
 )
 
 if (WIN32)
-target_link_directories(cltool PRIVATE ../src/libs)
-target_link_libraries(cltool)
+	target_link_directories(cltool PRIVATE ../src/libs)
+	target_link_libraries(cltool)
 else()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-target_link_libraries(cltool libusb-1.0.a udev yaml-cpp m)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+	target_link_libraries(cltool libusb-1.0.a udev yaml-cpp m)
 endif()
 
 endif()

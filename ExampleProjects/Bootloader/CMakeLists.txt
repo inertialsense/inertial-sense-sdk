@@ -2,9 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 
 project(ISBootloaderExample)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-
+if (!WIN32)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+endif()
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
@@ -13,40 +14,45 @@ target_link_libraries(ISBootloaderExample InertialSense)
 
 else()	# Build only this project
 
-add_executable(ISBootloaderExample
+FILE(GLOB SOURCES_ALL
 	ISBootloaderExample.cpp
-	../../src/data_sets.c
-	
+	../../src/*.c
+	../../src/*.cpp
+	../../src/*.h
 	../../hw-libs/bootloader/bootloaderShared.c
-	../../src/ihex.c
-	../../src/ISComm.c
-	../../src/serialPort.c
-	../../src/serialPortPlatform.c
-	../../src/ISSerialPort.cpp
-	../../src/ISBootloaderBase.cpp
-	../../src/ISBootloaderThread.cpp
-	../../src/ISBootloaderAPP.cpp
-	../../src/ISBootloaderISB.cpp
-	../../src/ISBootloaderDFU.cpp
-	../../src/ISBootloaderSAMBA.cpp
-	../../src/ISUtilities.cpp
-	../../src/ISStream.cpp
-	../../src/ISFileManager.cpp
 )
-target_link_libraries(ISBootloaderExample m)
+
+add_executable(ISBootloaderExample ${SOURCES_ALL})
 
 find_library(LIBUSB_LIBRARY
 	NAMES usb-1.0
 	PATH_SUFFIXES "lib" "lib32" "lib64"
 )
 
+if(WIN32)
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
+	target_include_directories(ISBootloaderExample PUBLIC
+		../../src/libusb/msvc
+	)
+else()
+	target_include_directories(ISBootloaderExample PUBLIC
+		../../src/libusb/linux
+	)
+endif()
+
 target_include_directories(ISBootloaderExample PUBLIC
 	../../src
 	../../src/libusb/libusb
-	../../src/libusb/msvc
+	../../src/libusb
 )
 
-target_link_libraries(ISBootloaderExample pthread ${LIBUSB_LIBRARY})
+if (WIN32)
+	target_link_directories(ISBootloaderExample PRIVATE ../../src/libs)
+	target_link_libraries(ISBootloaderExample)
+else()
+	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+	target_link_libraries(ISBootloaderExample pthread ${LIBUSB_LIBRARY} udev m)
+endif()
 
 endif()
 

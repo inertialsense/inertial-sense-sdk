@@ -2,9 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
 
 project(ISAsciiExample)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-
+if (!WIN32)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+endif()
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
@@ -20,6 +21,11 @@ add_executable(ISAsciiExample
     ../../src/serialPort.c
     ../../src/serialPortPlatform.c
 )
-target_link_libraries(ISAsciiExample m)
+
+if (WIN32)
+    target_link_libraries(ISAsciiExample)
+else()
+    target_link_libraries(ISAsciiExample m)
+endif()
 
 endif()
