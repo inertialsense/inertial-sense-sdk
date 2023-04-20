@@ -10,7 +10,7 @@ void connect_rtk_client(const std::string& rtk_correction_protocol, const std::s
   std::string rtk_server_username = "";
   std::string rtk_server_password = "";
 
-  int rtk_connection_attempt_limit = 10;
+  int rtk_connection_attempt_limit = 1;
   int rtk_connection_attempt_backoff = 2;
 
   // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
@@ -53,15 +53,8 @@ void connect_rtk_client(const std::string& rtk_correction_protocol, const std::s
 TEST(ReconnectionTestSuite, testReconnection)
 {
     const std::string rtk_correction_protocol = "RTCM3";
-    const std::string& rtk_server_IP = "127.0.0.1";
+    const std::string& rtk_server_IP = "66.219.246.93";
     const int rtk_server_port = 7777;
 
     connect_rtk_client(rtk_correction_protocol, rtk_server_IP, rtk_server_port);
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    ros::init(argc, argv, "test_publisher");
-    ros::NodeHandle nh;
-    return RUN_ALL_TESTS();
 }
