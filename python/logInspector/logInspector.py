@@ -360,6 +360,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListSection('INS/AHRS')
         self.addListItem('Pos NED Map', 'posNEDMap')
         self.addListItem('Pos NED', 'posNED')
+        self.addListItem('Pos NED 3D Map', 'posNED3DMap')
         self.addListItem('Pos LLA', 'posLLA')
         self.addListItem('Vel NED', 'velNED')
         self.addListItem('Vel UVW', 'velUVW')
@@ -502,8 +503,12 @@ class LogInspectorWindow(QMainWindow):
         downsampleLabel.setText("DS")
         self.downSampleInput = QSpinBox()
         self.downSampleInput.setValue(self.downsample)
+        self.downSample1PushButton = QPushButton("1")
+        self.downSample1PushButton.setFixedSize(20, 24)
+        self.downSample1PushButton.clicked.connect(self.changeDownSampleToOne)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
+        self.toolLayout.addWidget(self.downSample1PushButton)
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
         self.statusLabel = QLabel()
@@ -528,6 +533,12 @@ class LogInspectorWindow(QMainWindow):
 
     def changeDownSample(self, val):
         self.downsample = val
+        self.plotter.setDownSample(self.downsample)
+        self.updatePlot()
+
+    def changeDownSampleToOne(self):
+        self.downsample = 1
+        self.downSampleInput.setValue(self.downsample)
         self.plotter.setDownSample(self.downsample)
         self.updatePlot()
 

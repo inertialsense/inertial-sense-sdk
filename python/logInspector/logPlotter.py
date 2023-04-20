@@ -23,8 +23,10 @@ DEG2RAD = 3.14159 / 180.0
 
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
+# 0 disable GPS, 1 show if # devices == 0, 2 always show
+SHOW_HEADING_BUG = 1  
+SHOW_GPS_W_INS = 0  
 SHOW_GPS2 = 0
-SHOW_GPS_W_INS = 0
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -121,19 +123,19 @@ class logPlot:
             ax[1].plot(time, ned[:,1])
             ax[2].plot(time, ned[:,2])
 
-            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+            if(SHOW_GPS_W_INS and (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS==1)):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
                 ax[0].plot(timeGPS, nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                 ax[1].plot(timeGPS, nedGps[:, 1])
                 ax[2].plot(timeGPS, nedGps[:, 2])
 
-            if(np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
-                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
-                ax[0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
-                ax[1].plot(timeGPS, nedGps[:, 1])
-                ax[2].plot(timeGPS, nedGps[:, 2])
+                if(SHOW_GPS2):
+                    timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
+                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                    ax[0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+                    ax[1].plot(timeGPS, nedGps[:, 1])
+                    ax[2].plot(timeGPS, nedGps[:, 2])
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -141,10 +143,6 @@ class logPlot:
         self.saveFig(fig, 'posNED')
 
     def drawNEDMapArrow(self, ax, ned, heading):
-        # arrowLen = 0.2
-        # arrowWid = arrowLen/2
-        # arrows = np.array([arrowLen * 0.7 * np.cos(heading), arrowLen * 0.7 * np.sin(heading)]).T
-
         markersize = 10
         downsample = 6
         len = np.shape(heading)[0]
@@ -152,6 +150,54 @@ class logPlot:
             # ax.arrow(ned[i,1], ned[i,0], arrows[i,1], arrows[i,0], head_width=arrowWid, head_length=arrowLen, length_includes_head=True, fc='k', ec='k')
             ax.plot(ned[i,1], ned[i,0], marker=(3, 0, -heading[i]*(180.0/np.pi)), color='g', markersize=markersize, linestyle='None')
             ax.plot(ned[i,1], ned[i,0], marker=(2, 0, -heading[i]*(180.0/np.pi)), color='k', markersize=markersize, linestyle='None')
+
+    def drawNED3DMapArrow(self, ax, ned, heading):
+        markersize = 10
+        downsample = 6
+        len = np.shape(heading)[0]
+        for i in range(1, len, downsample):
+            # ax.arrow(ned[i,1], ned[i,0], arrows[i,1], arrows[i,0], head_width=arrowWid, head_length=arrowLen, length_includes_head=True, fc='k', ec='k')
+            ax.plot(ned[i,1], ned[i,0], -ned[i,2], marker=(3, 0, -heading[i]*(180.0/np.pi)), color='g', markersize=markersize, linestyle='None')
+            ax.plot(ned[i,1], ned[i,0], -ned[i,2], marker=(2, 0, -heading[i]*(180.0/np.pi)), color='k', markersize=markersize, linestyle='None')
+
+    def posNED3DMap(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        # ax = fig.subplots(1,1)
+        ax = fig.add_subplot(projection='3d')
+        ax.set_xlabel('East (m)')
+        ax.set_ylabel('North (m)')
+        # ax.set_zlabel('Down (m)')
+        fig.suptitle('NED 3D Map - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        refLla = None
+        for d in self.active_devs:
+            lla = self.getData(d, DID_INS_2, 'lla')
+            if len(lla) == 0:
+                continue
+            if refLla is None:
+                refLla = lla[0]
+            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
+            ax.plot(ned[:,1], ned[:,0], -ned[:,2], label=self.log.serials[d])
+
+            # if(SHOW_HEADING_BUG and (np.shape(self.active_devs)[0]==1 or SHOW_HEADING_BUG==1)):
+            #     if (np.shape(self.active_devs)[0]==1):
+            #         self.drawNED3DMapArrow(ax, ned, euler[:, 2])
+
+            if(SHOW_GPS_W_INS and (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS==1)):
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+                ax.plot(nedGps[:, 1], nedGps[:, 0], -nedGps[:, 2], label=("%s GPS1" % (self.log.serials[d])))
+
+                if SHOW_GPS2:
+                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                    ax.plot(nedGps[:, 1], nedGps[:, 0], -nedGps[:, 2], label=("%s GPS2" % (self.log.serials[d])))
+
+        ax.set_aspect('equal', 'datalim')
+        ax.grid(True)
+        # ax.legend(ncol=2)
+        ax.legend()
+        # plt.show()
+        # self.saveFig(fig, 'posNED3DMap')
 
     def posNEDMap(self, fig=None):
         if fig is None:
@@ -171,10 +217,11 @@ class logPlot:
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
-            if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+            if(SHOW_HEADING_BUG and (np.shape(self.active_devs)[0]==1 or SHOW_HEADING_BUG==1)):
                 if (np.shape(self.active_devs)[0]==1):
                     self.drawNEDMapArrow(ax, ned, euler[:, 2])
 
+            if(SHOW_GPS_W_INS and (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS==1)):
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
 
@@ -370,7 +417,7 @@ class logPlot:
             ax[1].plot(time, insVelNed[:,1])
             ax[2].plot(time, insVelNed[:,2])
 
-            if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
+            if(SHOW_GPS_W_INS and (np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS==1)):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
                 status = self.getData(d, DID_GPS1_VEL, 'status')[0]
                 if (status & 0x00008000):
