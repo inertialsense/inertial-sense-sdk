@@ -1,0 +1,90 @@
+# instructions:
+# install cmake, put it in your path for ease of use
+# Linux: sudo apt install build-essential libudev-dev libusb-1.0-0-dev libyaml-cpp-dev cmake
+# Windows: Download and install msi from https://cmake.org/download/
+# cd into project dir
+# mkdir ./build
+# create build files (on Windows this makes Visual Studio projects)
+	# cmake -S . -B ./build
+# build from command line
+	# Windows: cmake --build ./build --target ALL_BUILD --config Release
+	# Linux: cmake --build ./build --config Release
+
+# Linux compiler flags
+if (!WIN32)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+endif()
+
+# Run "cmake -DINCLUDE_LUNA_DATA_SETS=1 .."
+if(INCLUDE_LUNA_DATA_SETS)	
+    add_definitions(-DINCLUDE_LUNA_DATA_SETS)
+endif()
+
+# If we are static linked against the SDK, do that and stop, no need for other libraries as they are already linked to the sdk lib
+if(BUILD_INERTIAL_SENSE_SDK)
+
+	# Compile just main
+	add_executable(${CMAKE_PROJECT_NAME} ${PROJECT_SOURCE_DIR}/main.cpp)
+	
+	# Link the sdk lib
+	target_link_libraries(${CMAKE_PROJECT_NAME} InertialSense)
+	
+	# We are done
+	return()
+	
+endif()
+
+# Otherwise gather the sdk files and include them in the build
+FILE(GLOB SOURCES_SDK
+	"${PROJECT_SOURCE_DIR}/main.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/hw-libs/bootloader/bootloaderShared.c"
+)
+
+# Compile all sources
+add_executable(${CMAKE_PROJECT_NAME} ${SOURCES_SDK})
+
+# Setup include folders
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+	${CMAKE_CURRENT_LIST_DIR}/src
+	${CMAKE_CURRENT_LIST_DIR}/src/libusb
+	${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb
+	${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp
+	${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/yaml-cpp
+)
+
+if(WIN32)
+	# Windows specific include dir
+	target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+	)
+	
+	# yamlcpp needs to know it's a static lib
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
+	
+	# We need to ensure windows static libs are found
+	target_link_directories(${CMAKE_PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libs
+	)
+else()
+	# Linux specific include dir 
+	target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+	)
+	
+	# Set Linux compiler linker flag
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+	
+	# Link in Linux specific packages
+	target_link_libraries(${CMAKE_PROJECT_NAME} libusb-1.0.a udev yaml-cpp m)
+endif()
+
+if (WIN32)
+	
+else()
+	
+endif()
+
