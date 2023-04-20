@@ -18,18 +18,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderDFU.h"
 #endif
 
-#if PLATFORM_IS_WINDOWS
-
-#ifdef _DEBUG
-#pragma comment(lib, "libusb-1.0d.lib")
-#pragma comment(lib, "yaml-cppd.lib")
-#else
-#pragma comment(lib, "libusb-1.0.lib")
-#pragma comment(lib, "yaml-cpp.lib")
-#endif
-
-#endif
-
 using namespace std;
 
 static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)

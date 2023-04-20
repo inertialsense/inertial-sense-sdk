@@ -20,6 +20,9 @@ message("Project ${PROJECT_NAME}")
 
 if (WIN32)
 	# Windows compiler flags
+	set(CMAKE_VS_LINK_LIBRARY_DEPENDENCIES Yes)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL:NO")
+
 	if (IS_DEBUG)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MTd")
 	else()
@@ -66,9 +69,6 @@ if (BUILD_LIB)
 	# Add sdk sources to this project
 	add_library(${PROJECT_NAME} ${SOURCES_SDK})
 	
-	# Ensure other static libs are linked in, they become one with our static lib
-	set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_LIBRARY_DEPENDENCIES Yes)
-	
 	# Linux specific lib compiler option
 	if (NOT WIN32)	
 		target_compile_options(${PROJECT_NAME} PUBLIC -fPIC)
@@ -101,9 +101,19 @@ if(WIN32)
 	add_definitions(-DYAML_CPP_STATIC_DEFINE)
 	
 	# We need to ensure windows static libs are found
-	target_link_directories(${PROJECT_NAME} PUBLIC
-		${CMAKE_CURRENT_LIST_DIR}/src/libs
-	)
+	if (IS_DEBUG)
+		target_link_libraries(${PROJECT_NAME} PUBLIC
+			${CMAKE_CURRENT_LIST_DIR}/src/libs/libusb-1.0d.lib
+			${CMAKE_CURRENT_LIST_DIR}/src/libs/yaml-cppd.lib
+			Ws2_32.lib
+		)
+	else()
+		target_link_libraries(${PROJECT_NAME} PUBLIC
+			${CMAKE_CURRENT_LIST_DIR}/src/libs/libusb-1.d.lib
+			${CMAKE_CURRENT_LIST_DIR}/src/libs/yaml-cpp.lib
+			Ws2_32.lib
+		)
+	endif()
 else()
 	# Linux specific include dir 
 	target_include_directories(${PROJECT_NAME} PUBLIC
