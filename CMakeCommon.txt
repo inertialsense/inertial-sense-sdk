@@ -12,11 +12,14 @@
 	# Linux: cmake --build ./build --config Release
 
 SET(IS_DEBUG (CMAKE_BUILD_TYPE MATCHES "Debug"))
+if(NOT MAIN_CPP)
+  set(MAIN_CPP "main.cpp")
+endif()
 
 message("Project ${PROJECT_NAME}")
 
 if (WIN32)
-	# Windows compile flags
+	# Windows compiler flags
 	if (IS_DEBUG)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MTd")
 	else()
@@ -37,7 +40,7 @@ endif()
 if(BUILD_INERTIAL_SENSE_SDK AND NOT BUILD_LIB)
 
 	# Compile just main
-	add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/main.cpp)
+	add_executable(${PROJECT_NAME} ${PROJECT_DIR}/${MAIN_CPP})
 	
 	# Link the sdk lib
 	target_link_libraries(${PROJECT_NAME} InertialSense)
@@ -49,7 +52,7 @@ endif()
 
 # Otherwise gather the sdk files and include them in the build
 FILE(GLOB SOURCES_SDK
-	"${PROJECT_SOURCE_DIR}/main.cpp"
+	"${PROJECT_DIR}/${MAIN_CPP}"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
 	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
@@ -63,8 +66,11 @@ if (BUILD_LIB)
 	# Add sdk sources to this project
 	add_library(${PROJECT_NAME} ${SOURCES_SDK})
 	
-	# Windows specific lib compiler option
-	if (WIN32)	
+	# Ensure other static libs are linked in, they become one with our static lib
+	set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_LIBRARY_DEPENDENCIES Yes)
+	
+	# Linux specific lib compiler option
+	if (NOT WIN32)	
 		target_compile_options(${PROJECT_NAME} PUBLIC -fPIC)
 	endif()
 	

@@ -2,5 +2,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
 project(cltool)
 SET(PROJECT_NAME "cltool")
+SET(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 include(../CMakeCommon.txt)

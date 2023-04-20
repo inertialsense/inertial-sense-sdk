@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
 project(InertialSense)
 SET(PROJECT_NAME "InertialSense")
+SET(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 # Denote that all executables will be linking the sdk static library
 SET(BUILD_INERTIAL_SENSE_SDK 1)
@@ -18,4 +19,4 @@ SET(BUILD_LIB 0)
 
 # Build the other projects
 add_subdirectory(cltool)
-#add_subdirectory(ExampleProjects)
+add_subdirectory(ExampleProjects)

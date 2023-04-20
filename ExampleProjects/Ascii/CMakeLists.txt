@@ -1,31 +1,10 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
 project(ISAsciiExample)
+SET(PROJECT_NAME "ISAsciiExample")
+SET(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
+SET(MAIN_CPP "ISAsciiExample.c")
 
-if (!WIN32)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-endif()
+include(../../CMakeCommon.txt)
 
-if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
-
-add_executable(ISAsciiExample ISAsciiExample.c)
-target_link_libraries(ISAsciiExample InertialSense)
-
-else()	# Build only this project
-
-add_executable(ISAsciiExample
-    ISAsciiExample.c
-    ../../src/data_sets.c
-    ../../src/ISComm.c
-    ../../src/serialPort.c
-    ../../src/serialPortPlatform.c
-)
-
-if (WIN32)
-    target_link_libraries(ISAsciiExample)
-else()
-    target_link_libraries(ISAsciiExample m)
-endif()
-
-endif()
+SET(MAIN_CPP "")
