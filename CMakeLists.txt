@@ -21,6 +21,7 @@ FILE(GLOB SOURCES_ALL
   src/*.c
   src/*.cpp
   src/*.h
+	hw-libs/bootloader/bootloaderShared.c
 )
 
 add_library(InertialSense ${SOURCES_ALL})

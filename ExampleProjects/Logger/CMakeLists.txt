@@ -50,7 +50,7 @@ if (WIN32)
 	target_link_directories(ISLoggerExample PRIVATE ../../src/libs)
 	target_link_libraries(ISLoggerExample)
 else()
-	target_link_libraries(ISLoggerExample pthread ${LIBUSB_LIBRARY} m)
+	target_link_libraries(ISLoggerExample pthread ${LIBUSB_LIBRARY} yaml-cpp m)
 endif()
 
 endif()

@@ -24,13 +24,18 @@ FILE(GLOB SOURCES_ALL
 
 add_executable(ISNtripRoverExample ${SOURCES_ALL})
 
+find_library(LIBUSB_LIBRARY
+	NAMES usb-1.0
+	PATH_SUFFIXES "lib" "lib32" "lib64"
+)
+
 if(WIN32)
 	add_definitions(-DYAML_CPP_STATIC_DEFINE)
 	target_include_directories(ISNtripRoverExample PUBLIC
 		../../src/libusb/msvc
 	)
 else()
-	target_include_directories(ISLoggeISNtripRoverExamplerExample PUBLIC
+	target_include_directories(ISNtripRoverExample PUBLIC
 		../../src/libusb/linux
 	)
 endif()
@@ -45,7 +50,7 @@ if (WIN32)
 	target_link_directories(ISNtripRoverExample PRIVATE ../../src/libs)
 	target_link_libraries(ISNtripRoverExample)
 else()
-	target_link_libraries(ISNtripRoverExample pthread)
+	target_link_libraries(ISNtripRoverExample pthread ${LIBUSB_LIBRARY} yaml-cpp)
 endif()
 
 endif()
