@@ -6,10 +6,15 @@
 # cd into project dir
 # mkdir ./build
 # create build files (on Windows this makes Visual Studio projects)
-	# cmake -S . -B ./build
+	# cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=Release" # or Debug, only used for command line build, IDE ignores this
 # build from command line
-	# Windows: cmake --build ./build --target ALL_BUILD --config Release
-	# Linux: cmake --build ./build --config Release
+	# Windows: cmake --build ./build --target ALL_BUILD
+	# Linux: cmake --build ./build
+
+# Default to Release build
+if(NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE Debug ... FORCE)
+endif()
 
 # Set main file if not specified
 if(NOT MAIN_CPP)
