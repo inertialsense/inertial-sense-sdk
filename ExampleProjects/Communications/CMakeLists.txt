@@ -1,10 +1,17 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
+# Required: set the project
 project(ISCommunicationsExample)
-SET(PROJECT_NAME "ISCommunicationsExample")
-SET(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
-SET(MAIN_CPP "ISCommunicationsExample.c")
 
+# Required: set PROJECT_NAME to the same name as project in case of a multi-file build
+SET(PROJECT_NAME "ISCommunicationsExample")
+
+# Required: set the PROJECT_DIR to let the common cmake file know where this project lives
+SET(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
+# Required: set SOURCES_PROJECT to the code in this project, the files must go on their own lines
+set(SOURCES_PROJECT	"${PROJECT_DIR}/ISCommunicationsExample.c")
+
+# Everything is setup, use common template to build
 include(../../CMakeCommon.txt)
 
-SET(MAIN_CPP "")
