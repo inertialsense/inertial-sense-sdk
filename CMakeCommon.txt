@@ -5,11 +5,16 @@
 # Windows: Download and install msi from https://cmake.org/download/
 # cd into project dir
 # mkdir ./build
+# for the following steps the config in both must match - either Release or Debug
 # create build files (on Windows this makes Visual Studio projects)
 	# cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=Release" # or Debug, only used for command line build, IDE ignores this
 # build from command line
-	# Windows: cmake --build ./build --target ALL_BUILD
-	# Linux: cmake --build ./build
+	# cmake --build ./build --config Release # can use Debug as well
+
+# Default to Release build
+if(NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE Release ... FORCE)
+endif()
 
 # Set main file if not specified
 if(NOT MAIN_CPP)
