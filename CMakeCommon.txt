@@ -21,6 +21,12 @@ if(NOT MAIN_CPP)
   set(MAIN_CPP "main.cpp")
 endif()
 
+# Build multi-threaded code linking, not mulit-threaded dll
+if(WIN32)
+	set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+	set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+endif()
+
 message("Project ${PROJECT_NAME}")
 
 # Run "cmake -DINCLUDE_LUNA_DATA_SETS=1 .."
