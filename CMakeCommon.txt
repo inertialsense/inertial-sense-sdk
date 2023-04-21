@@ -11,14 +11,6 @@
 	# Windows: cmake --build ./build --target ALL_BUILD --config Release
 	# Linux: cmake --build ./build --config Release
 
-# Setup Debug and Release configurations
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-
-# Default to Release build
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
 # Set main file if not specified
 if(NOT MAIN_CPP)
   set(MAIN_CPP "main.cpp")
