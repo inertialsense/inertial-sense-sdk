@@ -141,9 +141,9 @@ int cComDataBuffer::ReadData(int pHandle, uint32_t dataId, vector<uint8_t>& data
 #else
     fstat(_fileno(file), &buf);
 #endif
-    size_t size = buf.st_size;
-    size_t pos = ftell(file);
-    size_t afterWriteOffset = size - pos;
+    long size = buf.st_size;
+    long pos = ftell(file);
+    long afterWriteOffset = size - pos;
     size_t read = 0;
 
     // read everything after write offset
