@@ -128,7 +128,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 # Threads
 find_package(Threads REQUIRED)
-target_link_libraries(${PROJECT_NAME} Threads::Threads)
+target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
 # Other settings
 if(WIN32)
