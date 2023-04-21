@@ -35,7 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 
-// include winsock on windows
+// use of InertialSense class requires winsock
 #if PLATFORM_IS_WINDOWS
 
 #pragma comment (lib, "Ws2_32.lib")
