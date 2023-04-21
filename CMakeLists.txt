@@ -26,7 +26,8 @@ include(${PROJECT_DIR}/CMakeCommon.txt)
 
 # Go back to building executables
 set(BUILD_LIB 0)
-	
+
+# Build example projects if not ignored
 if(NOT IGNORE_EXAMPLE_PROJECTS)
 
 	# Denote that all executables will be linking the sdk static library and not the sources directly

@@ -54,6 +54,9 @@ catkin_package(
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs
 )
 
+# We don't need the example projects
+set(IGNORE_EXAMPLE_PROJECTS 1)
+
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
