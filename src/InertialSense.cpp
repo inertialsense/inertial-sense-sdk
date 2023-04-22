@@ -488,12 +488,21 @@ bool InertialSense::UpdateClient()
 			int id = 0;
 			string str;
 
+			printf("Fowarding server data size: %d\n", comm->dataHdr.size);
+
 			switch (ptype)
 			{
 			case _PTYPE_UBLOX:
 			case _PTYPE_RTCM3:
 				m_clientServerByteCount += comm->dataHdr.size;
 				OnClientPacketReceived(comm->dataPtr, comm->dataHdr.size);
+
+				switch (ptype)
+				{
+				case _PTYPE_UBLOX:	printf("Forwarding UBLOX packet\n");	break;
+				case _PTYPE_RTCM3:	printf("Forwarding RTCM3 packet\n");	break;
+				default: break;
+				}
 
 				if (ptype == _PTYPE_RTCM3)
 				{
