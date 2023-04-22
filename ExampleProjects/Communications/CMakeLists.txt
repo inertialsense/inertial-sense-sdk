@@ -1,20 +1,35 @@
+# This example project does not use the CMakeCommon.txt file in the SDK/src folder
+# If you don't want to follow that pattern, you can create your own cmake file
+# The one define BUILD_INERTIAL_SENSE_SDK needs to be checked, and if on,
+#  link the InertialSense library only
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
-# Required: set the project
 project(ISCommunicationsExample)
 
-# Required: set PROJECT_NAME to the same name as project in case of a multi-file build
-set(PROJECT_NAME "ISCommunicationsExample")
+if(NOT WIN32)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+endif()
 
-# Required: set the PROJECT_DIR to let the common cmake file know where this project lives
-set(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
+if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
-# Required: set SOURCES_PROJECT to the code in this project, the files must go on their own lines
-set(SOURCES_PROJECT	"${PROJECT_DIR}/ISCommunicationsExample.c")
+add_executable(ISCommunicationsExample ISCommunicationsExample.c)
+target_link_libraries(ISCommunicationsExample InertialSense)
 
-# Optional: add any libraries this project needs
-#set(PROJECT_LIBS "")
+else()	# Build only this project
 
-# Everything is setup, use common template to build
-include(../../CMakeCommon.txt)
+add_executable(ISCommunicationsExample
+    ISCommunicationsExample.c
+    ../../src/data_sets.c
+    ../../src/ISComm.c
+    ../../src/ISMatrix.c
+    ../../src/ISPose.c
+    ../../src/serialPort.c
+    ../../src/serialPortPlatform.c
+)
 
+# If using ros, uncomment
+# target_link_libraries(ISCommunicationsExample m)
+
+endif()
