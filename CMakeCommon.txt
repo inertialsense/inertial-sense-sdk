@@ -80,15 +80,23 @@ file(GLOB SOURCES_SDK
 	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.h"
 )
 
-# On Windows, we compile lib usb from source, on Linux it's included as a built in library
+# Compile libusb from source
 if(WIN32)
 	file(GLOB SOURCES_LIB_USB
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
 		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
 	)
-	list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
+else()
+	file(GLOB SOURCES_LIB_USB
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*linux*"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
+	)
 endif()
+
+list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
 # Setup a lib or executable target
 if (BUILD_LIB)
@@ -157,7 +165,7 @@ else()
 	# Set Linux compiler linker flag
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 	
-	# Link in Linux specific packages
-	target_link_libraries(${PROJECT_NAME} udev m)
+	# Link in Linux specific packages, m is a ros lib
+	target_link_libraries(${PROJECT_NAME} m)
 endif()
 
