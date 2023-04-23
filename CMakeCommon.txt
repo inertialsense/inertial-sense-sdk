@@ -1,7 +1,7 @@
 # CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 # instructions:
 # install cmake, put it in your path for ease of use
-# Linux: sudo apt install build-essential libudev-dev libusb-1.0-0-dev cmake
+# Linux: sudo apt install build-essential libudev-dev cmake
 # Windows: Download and install msi from https://cmake.org/download/
 # cd into project dir
 # mkdir ./build
@@ -140,6 +140,11 @@ if(WIN32)
 	# We need to ensure windows static libs are found
 	target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
 else()
+	# Linux specific include dir
+	target_include_directories(${PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+	)	
+	
 	# Linux compiler flags
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
@@ -153,6 +158,6 @@ else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 	
 	# Link in Linux specific packages
-	target_link_libraries(${PROJECT_NAME} usb-1.0 udev m)
+	target_link_libraries(${PROJECT_NAME} udev m)
 endif()
 
