@@ -7,7 +7,7 @@ endif()
 
 if(NOT WIN32)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC")
-endif
+endif()
 
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
@@ -28,11 +28,6 @@ include_directories(
     ${SDK_DIR}/src
 )
 
-pybind11_add_module(log_reader
-    src/log_reader.cpp
-    include/log_reader.h
-)
-
 if(WIN32)
 	# Link WinSock and InertialSense library
 	target_link_libraries(${PROJECT_NAME} PRIVATE Ws2_32.lib InertialSense)
@@ -41,8 +36,13 @@ else()
 	target_link_libraries(${PROJECT_NAME} PRIVATE InertialSense)
 endif()
 
+pybind11_add_module(${PROJECT_NAME}
+    src/log_reader.cpp
+    include/log_reader.h
+)
+
 # Don't prepend wrapper library name with lib and add to Python libs.
-set_target_properties(log_reader PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
     PREFIX ""
     OUTPUT_NAME "log_reader"
     SUFFIX ".so"
