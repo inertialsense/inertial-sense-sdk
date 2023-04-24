@@ -29,7 +29,9 @@ add_executable(ISCommunicationsExample
     ../../src/serialPortPlatform.c
 )
 
-# If using ros, uncomment
-# target_link_libraries(ISCommunicationsExample m)
+if(NOT WIN32)
+	# Link in Linux specific packages
+	target_link_libraries(ISCommunicationsExample udev m)
+endif()
 
 endif()
