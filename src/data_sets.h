@@ -892,7 +892,7 @@ typedef struct PACKED
     /** (dBHz) Carrier to noise ratio (signal strength) */
     uint8_t					cno[3];
 
-    /** Status per frequency (see eSatStatus) */
+    /** Status per frequency (see eSatSvStatus) */
     uint8_t					status[3];
 
 } gps_sat_sv_t;
@@ -1338,6 +1338,9 @@ typedef struct PACKED
 
     /** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
     uint16_t				pashr;
+
+    /** Broadcast period multiple - ASCII NMEA satellite info. 0 to disable. */
+    uint16_t				gsv;
     
 } ascii_msgs_t;
 
@@ -1566,6 +1569,7 @@ typedef struct PACKED
 #define ASCII_RMC_BITS_PASHR			0x00000800		// 13 
 #define ASCII_RMC_BITS_PSTRB			0x00001000		// 14
 #define ASCII_RMC_BITS_INFO				0x00002000		//
+#define ASCII_RMC_BITS_GSV				0x00004000		// 15
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
@@ -1576,7 +1580,7 @@ typedef struct PACKED
     /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
     uint32_t				options;
     
-    /**  */
+    /** Message is streamed at it's period times this number */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
     /** ASCII NMEA data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */

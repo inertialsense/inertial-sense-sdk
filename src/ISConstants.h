@@ -358,6 +358,10 @@ extern void vPortFree(void* pv);
 #define M_PI (3.14159265358979323846f)
 #endif
 
+#ifndef M_PI_DP // Pi as double precision float
+#define M_PI_DP (3.14159265358979323846)
+#endif
+
 #ifndef RAD2DEG
 #define RAD2DEG(rad)    ((rad)*(180.0f/M_PI))
 #endif
