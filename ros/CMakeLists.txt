@@ -67,7 +67,7 @@ include_directories(include
 )
 
 add_subdirectory(.. devel)
-set(INERTIAL_SENSE_LIBRARY, ${PROJECT_NAME})
+set(INERTIAL_SENSE_LIBRARY ${PROJECT_NAME})
 
 add_library(inertial_sense_ros
     src/ParamHelper.cpp
