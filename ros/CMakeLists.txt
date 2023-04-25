@@ -54,10 +54,16 @@ catkin_package(
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs
 )
 
+# We don't need the example projects
+set(IGNORE_EXAMPLE_PROJECTS 1)
+
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
   ../src #This line of CMakeList.txt stays in .external file to reference submodule
+  ../src/libusb/libusb
+  ../src/libusb/linux
+  ../src/yaml-cpp
 )
 
 add_subdirectory(.. devel)

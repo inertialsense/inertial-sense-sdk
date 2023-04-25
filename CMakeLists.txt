@@ -1,86 +1,40 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
-project(inertial-sense-sdk)
+# Required: set the project
+project(InertialSense)
 
-#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-value -Wno-unused-parameter -Wno-missing-field-initializers")
+# Required: set PROJECT_NAME to the same name as project in case of a multi-file build
+set(PROJECT_NAME "InertialSense")
 
+# Required: set the PROJECT_DIR to let the common cmake file know where this project lives
+set(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
-SET(BUILD_INERTIAL_SENSE_SDK 1)
+# We will be building the SDK as a static library
+set(BUILD_LIB 1)
 
+# Custom definitions
 add_definitions(-DRTK_EMBEDDED)
-find_package(Threads REQUIRED)
-find_package(yaml-cpp REQUIRED)
 
-add_library(InertialSense
-  src/cltool.cpp
-  src/cltool_main.cpp
-  src/convert_ins.cpp
-  src/com_manager.c
-  src/data_sets.c
-  src/DataChunk.cpp
-  src/DataChunkSorted.cpp
-  src/DataCSV.cpp
-  src/DataJSON.cpp
-  src/DataKML.cpp
-  src/DeviceLog.cpp
-  src/DeviceLogCSV.cpp
-  src/DeviceLogJSON.cpp
-  src/DeviceLogKML.cpp
-  src/DeviceLogSerial.cpp
-  src/DeviceLogSorted.cpp
-  src/filters.cpp
-  src/ihex.c
-  src/InertialSense.cpp
-  src/ISBootloaderBase.cpp
-  src/ISBootloaderThread.cpp
-	src/ISBootloaderAPP.cpp
-  src/ISBootloaderISB.cpp
-	src/ISBootloaderDFU.cpp
-	src/ISBootloaderSAMBA.cpp
-	hw-libs/bootloader/bootloaderShared.c
-	src/ISClient.cpp
-  src/ISComm.c
-  src/ISDataMappings.cpp
-  src/ISDisplay.cpp
-  src/ISEarth.c
-  src/ISFileManager.cpp
-  src/ISLogFile.cpp
-  src/ISLogger.cpp
-  src/ISLogStats.cpp
-  src/ISMatrix.c
-  src/ISPose.c
-  src/ISSerialPort.cpp
-  src/ISStream.cpp
-  src/ISTcpClient.cpp
-  src/ISTcpServer.cpp
-  src/ISUtilities.cpp
-	src/message_stats.cpp
-  src/protocol_nmea.cpp
-  src/linked_list.c
-  src/ring_buffer.c
-  src/serialPort.c
-  src/serialPortPlatform.c
-  src/statistics.cpp
-  src/time_conversion.c
-  src/tinystr.cpp
-  src/tinyxml.cpp
-  src/tinyxmlerror.cpp
-  src/tinyxmlparser.cpp
-)
+# Required: set SOURCES_PROJECT, since we are the SDK, we don't need any files, but we add one to keep cmake happy
+set(SOURCES_PROJECT "${PROJECT_DIR}/src/InertialSense.h")
 
-find_library(LIBUSB_LIBRARY
-	NAMES usb-1.0
-	PATH_SUFFIXES "lib" "lib32" "lib64"
-)
+# Optional: add any libraries this project needs
+#set(PROJECT_LIBS "")
 
-target_include_directories(InertialSense PUBLIC src external src/libusb/libusb src/libusb)
-target_link_libraries(InertialSense pthread ${LIBUSB_LIBRARY} ${YAML_CPP_LIBRARIES} m yaml-cpp)
-target_compile_options(InertialSense PUBLIC -fPIC)
+# Get this project built (the static lib of the sdk)
+include(${PROJECT_DIR}/CMakeCommon.txt)
 
-add_library( InertialSense::libinertialsense ALIAS InertialSense )
+# Go back to building executables
+set(BUILD_LIB 0)
 
-add_subdirectory(cltool)
-add_subdirectory(ExampleProjects)
+# Build example projects if not ignored
+if(NOT IGNORE_EXAMPLE_PROJECTS)
+
+	# Denote that all executables will be linking the sdk static library and not the sources directly
+	set(BUILD_INERTIAL_SENSE_SDK 1)
+
+	# Build the other projects
+	add_subdirectory(cltool)
+	add_subdirectory(ExampleProjects)
+
+endif()
