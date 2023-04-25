@@ -1,0 +1,157 @@
+# CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
+# instructions:
+# install cmake, put it in your path for ease of use
+# Linux: sudo apt install build-essential libudev-dev cmake
+# Windows: Download and install msi from https://cmake.org/download/
+# cd into project dir
+# mkdir ./build
+# for the following steps the config in both must match - either Release or Debug
+# create build files (on Windows this makes Visual Studio projects)
+	# cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=Release" # or Debug, only used for command line build, IDE ignores this
+# build from command line
+	# cmake --build ./build --config Release # can use Debug as well
+
+# Default to Release build
+if(NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE Release ... FORCE)
+endif()
+
+# Project name is required
+if(NOT PROJECT_NAME)
+	message(FATAL_ERROR, "PROJECT_NAME is required")
+	return()
+elseif(NOT SOURCES_PROJECT)
+	message(FATAL_ERROR, "SOURCES_PROJECT is required for project ${PROJECT_NAME}")
+	return()
+endif()
+
+message("Project ${PROJECT_NAME}")
+
+# Run "cmake -DINCLUDE_LUNA_DATA_SETS=1 .."
+if(INCLUDE_LUNA_DATA_SETS)	
+    add_definitions(-DINCLUDE_LUNA_DATA_SETS)
+endif()
+
+# yamlcpp needs to know it's a static lib
+add_definitions(-DYAML_CPP_STATIC_DEFINE)
+
+# If we are static linked against the SDK, do that and stop, no need for other libraries as they are already linked to the sdk lib
+if(BUILD_INERTIAL_SENSE_SDK AND NOT BUILD_LIB)
+
+	# Compile project sources
+	add_executable(${PROJECT_NAME} ${SOURCES_PROJECT})
+	
+	# Link the sdk lib
+	target_link_libraries(${PROJECT_NAME} InertialSense)
+	
+	if(PROJECT_LIBS)
+		target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBS})
+		unset(PROJECT_LIBS)
+	endif()
+	
+	# Clear sources in case of multi-file build
+	unset(SOURCES_PROJECT)
+	
+	# We are done
+	return()
+	
+endif()
+
+# Otherwise gather the sdk files and include them in the build
+file(GLOB SOURCES_SDK
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/hw-libs/bootloader/bootloaderShared.c"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.h"
+)
+
+# Compile libusb from source
+if(WIN32)
+	file(GLOB SOURCES_LIB_USB
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
+	)
+else()
+	file(GLOB SOURCES_LIB_USB
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*linux*"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
+	)
+endif()
+
+list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
+
+# Setup a lib or executable target
+if (BUILD_LIB)
+	message("Building static lib for ${PROJECT_NAME}")
+	
+	# Add sdk sources to this project
+	add_library(${PROJECT_NAME} ${SOURCES_SDK} ${SOURCES_PROJECT})
+	
+	# Linux specific lib compiler option
+	if (NOT WIN32)	
+		target_compile_options(${PROJECT_NAME} PUBLIC -fPIC)
+	endif()
+	
+	# Alias for the static lib
+	add_library(${PROJECT_NAME}::libinertialsense ALIAS ${PROJECT_NAME})
+else()
+	message("Building executable for ${PROJECT_NAME}")
+	add_executable(${PROJECT_NAME} ${SOURCES_SDK} ${SOURCES_PROJECT})
+endif()
+
+# Clear sources in case of multi-file build
+unset(SOURCES_PROJECT)
+
+if(PROJECT_LIBS)
+	target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBS})
+	unset(PROJECT_LIBS)
+endif()
+	
+# Include paths
+target_include_directories(${PROJECT_NAME} PUBLIC
+	${CMAKE_CURRENT_LIST_DIR}/src
+	${CMAKE_CURRENT_LIST_DIR}/src/libusb
+	${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb
+	${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp
+	${CMAKE_CURRENT_LIST_DIR}/external
+)
+
+# Threads
+find_package(Threads REQUIRED)
+target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
+
+# Other settings
+if(WIN32)
+	# Windows specific include dir
+	target_include_directories(${PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+	)	
+	
+	# We need to ensure windows static libs are found
+	target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
+else()
+	# Linux specific include dir 
+	target_include_directories(${PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+	)
+	
+	# Linux compiler flags
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+		
+	# Set Linux compiler linker flag
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+	
+	# Link in Linux specific packages
+	target_link_libraries(${PROJECT_NAME} udev m)
+endif()
+
