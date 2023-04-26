@@ -2,7 +2,7 @@
  * @file ihex.c
  * @author Dave Cutting (davidcutting42@gmail.com)
  * @author Paul Stoffregen (paul@ece.orst.edu)
- * @brief Intel HEX file read routines for embedded firmware
+ * @brief Intel HEX file read routines
  * @note based on https://www.pjrc.com/tech/8051/ihex.c
  * 
  */
