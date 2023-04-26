@@ -1,0 +1,12 @@
+BasedOnStyle: Google
+ColumnLimit: 200
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+UseTab: Never
+IndentWidth: 4
+IndentExternBlock: NoIndent
+InsertNewlineAtEOF: true
+IncludeBlocks: Regroup
+IndentCaseBlocks: false
