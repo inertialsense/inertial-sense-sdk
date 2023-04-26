@@ -327,7 +327,7 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt)
 }
 
 
-#define CON_SCUL_INT_STEPS  4
+#define CON_SCUL_INT_STEPS  2
 
 void integratePimu( pimu_t *output, imu_t *imu, imu_t *imuLast )
 {
