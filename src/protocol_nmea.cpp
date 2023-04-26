@@ -148,18 +148,31 @@ double timeToGpst(gtime_t t, int *week)
 	return (double)(sec-(double)w*86400*7)+t.sec;
 }
 
-void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
-{
+
 #define SET_ASCII_RMCI(did, ascii_rmc_bits, period) { \
-	rmci.periodMultiple[(did)] = (uint8_t)(period); \
-	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
+	rmci.periodMultiple[did] = (uint8_t)(period); \
+	if (period) { \
+		rmci.bitsAscii |=  (ascii_rmc_bits); \
+	} else { \
+		rmci.bitsAscii &= ~(ascii_rmc_bits); \
+	} \
 }
 
 #define SET_ASCII_RMCI_GPS(did, ascii_rmc_bits, period) { \
-	if (period){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], (uint8_t)(period)); } \
-	if (period) { (rmci).bitsAscii |= (ascii_rmc_bits); } else { (rmci).bitsAscii &= ~(ascii_rmc_bits); } \
+	if (period){ \
+		if (rmci.periodMultiple[did]){ \
+			rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], (uint8_t)(period)); \
+		} else { \
+			rmci.periodMultiple[did] = (uint8_t)(period); \
+		} \
+		rmci.bitsAscii |=  (ascii_rmc_bits); \
+	} else { \
+		rmci.bitsAscii &= ~(ascii_rmc_bits); \
+	} \
 }
 
+void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
+{
 	SET_ASCII_RMCI(DID_IMU, ASCII_RMC_BITS_PIMU, tmp.pimu);
 	SET_ASCII_RMCI(DID_PIMU, ASCII_RMC_BITS_PPIMU, tmp.ppimu);
 	SET_ASCII_RMCI(DID_IMU_RAW, ASCII_RMC_BITS_PRIMU, tmp.primu);

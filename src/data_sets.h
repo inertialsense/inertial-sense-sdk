@@ -1516,7 +1516,7 @@ typedef struct PACKED
     /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
     uint32_t				options;
     
-    /**  */
+    /** Used for both the DID binary and ASCII NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
     /** ASCII NMEA data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */
