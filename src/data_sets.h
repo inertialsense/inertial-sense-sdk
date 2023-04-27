@@ -1261,20 +1261,20 @@ typedef struct PACKED
 	/** Broadcast period multiple - ASCII Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
 	uint16_t				primu;
 
-	/** Broadcast period multiple - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
-	uint16_t				gpgga;
+	/** Broadcast period multiple - ASCII NMEA GGA GNSS 3D location, fix, and accuracy. 0 to disable. */
+	uint16_t				gga;
 
-	/** Broadcast period multiple - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
-	uint16_t				gpgll;
+	/** Broadcast period multiple - ASCII NMEA GLL GNSS 2D location and time. 0 to disable. */
+	uint16_t				gll;
 
-	/** Broadcast period multiple - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
-	uint16_t				gpgsa;
+	/** Broadcast period multiple - ASCII NMEA GSA GNSS DOP and active satellites. 0 to disable. */
+	uint16_t				gsa;
 
 	/** Broadcast period multiple - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
-	uint16_t				gprmc;
+	uint16_t				rmc;
 	
 	/** Broadcast period multiple - ASCII NMEA Data and Time. 0 to disable. */
-	uint16_t				gpzda;
+	uint16_t				zda;
 
 	/** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
 	uint16_t				pashr;
@@ -1516,7 +1516,7 @@ typedef struct PACKED
     /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
     uint32_t				options;
     
-    /**  */
+    /** Used for both the DID binary and ASCII NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
     /** ASCII NMEA data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */
