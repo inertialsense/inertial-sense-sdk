@@ -26,6 +26,11 @@ enum eNmeaMsgIdUint
 	ASCII_MSG_ID_GPGS = 0x47504753,
 	ASCII_MSG_ID_GPRM = 0x4750524d,
 	ASCII_MSG_ID_GPZD = 0x47505a44,
+	ASCII_MSG_ID_GNGG = 0x474E4747,
+	ASCII_MSG_ID_GNGL = 0x474E474c,
+	ASCII_MSG_ID_GNGS = 0x474E4753,
+	ASCII_MSG_ID_GNRM = 0x474E524d,
+	ASCII_MSG_ID_GNZD = 0x474E5a44,
 	ASCII_MSG_ID_PASH = 0x50415348,
 };
 
@@ -74,7 +79,7 @@ int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-int nmea_gga_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
+int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
 
 //////////////////////////////////////////////////////////////////////////
 // NMEA parse

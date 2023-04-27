@@ -59,7 +59,12 @@ char *ASCII_to_f64(double *vec, char *ptr)
 
 char *ASCII_to_vec4u8(uint8_t vec[], char *ptr)
 {
-	SSCANF(ptr, "%2" SCNu8 ".%2" SCNu8 ".%2" SCNu8 ".%2" SCNu8, &vec[0], &vec[1], &vec[2], &vec[3]);
+	unsigned int v[4];
+	SSCANF(ptr, "%2u.%2u.%2u.%2u", &v[0], &v[1], &v[2], &v[3]);
+	vec[0] = (uint8_t)v[0];
+	vec[1] = (uint8_t)v[1];
+	vec[2] = (uint8_t)v[2];
+	vec[3] = (uint8_t)v[3];
 	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
@@ -117,12 +122,23 @@ char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 
 char *ASCII_to_char_array(char *dst, char *ptr, size_t max_len)
 {
-	STRNCPY(dst, ptr, max_len);
+	STRNCPY(dst, ptr, max_len-1);
 	dst[max_len-1] = 0;			// Must be null terminated
 	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
 
+char *ASCII_to_TimeOfDayMs(uint32_t *timeOfWeekMs, char *ptr)
+{
+	// HHMMSS.sss
+	int hours, minutes; 
+	float seconds;
+	SSCANF(ptr, "%02d%02d%f", &hours, &minutes, &seconds);
+	timeOfWeekMs[0] = hours*3600000 + minutes*60000 + (uint32_t)(seconds*1000.0f);
+	ptr = ASCII_find_next_field(ptr);
+
+	return ptr;
+}
 
 // All strings must be NULL terminated!
 char *ASCII_find_next_field(char *str)
@@ -221,8 +237,8 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
 
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gpgga);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gpgll);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gga);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gll);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gpgsa);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.gprmc);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.gpzda);
@@ -274,7 +290,7 @@ int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 		",%d"			// 6
 		",%s"			// 7
 		",%04d-%02d-%02d"		// 8
-		",%02d:%02d:02%d.02%d"	// 9
+		",%02d:%02d:%02d.%02d"	// 9
 		",%s",			// 10
 		(int)info.serialNumber,	// 1
 		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
@@ -283,7 +299,7 @@ int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 		info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3], // 5
 		(int)info.repoRevision,	// 6
 		info.manufacturer,		// 7
-		info.buildDate[1], info.buildDate[2], info.buildDate[3], // 8
+		info.buildDate[1]+2000, info.buildDate[2], info.buildDate[3], // 8
 		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
 		info.addInfo);			// 10
 		
@@ -461,8 +477,8 @@ static int asciiSnprintfLonToDegMin(char* a, size_t aSize, double v)
 static int asciiSnprintfGPSTimeOfLastFix(char* a, size_t aSize, uint32_t timeOfWeekMs)
 {
 	unsigned int millisecondsToday = timeOfWeekMs % 86400000;
-	unsigned int hours = millisecondsToday / 1000 / 60 / 60;
-	unsigned int minutes = (millisecondsToday / (1000 * 60)) % 60;
+	unsigned int hours = millisecondsToday / 3600000;
+	unsigned int minutes = (millisecondsToday / 60000) % 60;
 	unsigned int seconds = (millisecondsToday / 1000) % 60;
 	
 	return SNPRINTF(a, aSize, ",%02u%02u%02u", hours, minutes, seconds);
@@ -471,8 +487,8 @@ static int asciiSnprintfGPSTimeOfLastFix(char* a, size_t aSize, uint32_t timeOfW
 static int asciiSnprintfGPSTimeOfLastFixMilliseconds(char* a, size_t aSize, uint32_t timeOfWeekMs)
 {
 	unsigned int millisecondsToday = timeOfWeekMs % 86400000;
-	unsigned int hours = millisecondsToday / 1000 / 60 / 60;
-	unsigned int minutes = (millisecondsToday / (1000 * 60)) % 60;
+	unsigned int hours = millisecondsToday / 3600000;
+	unsigned int minutes = (millisecondsToday / 60000) % 60;
 	unsigned int seconds = (millisecondsToday / 1000) % 60;
 	unsigned int milliseconds = millisecondsToday % 1000;
 	
@@ -556,7 +572,7 @@ int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 // 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
 
 	int n = SNPRINTF(a, aSize, "$GPGGA");
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
+	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 2,3
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 4,5
 	n += SNPRINTF(a+n, aSize-n, 
@@ -570,7 +586,9 @@ int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 		(unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK),	// 7
 		pos.pDop,	// 8
 		pos.hMSL,	// 9,10
-		pos.hMSL - pos.lla[2]);	// 11,12 13,14
+		pos.hMSL - pos.lla[2]);	// 11,12 
+		// 13  time since last DGPS update
+		// 14  DGPS station ID number
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
 	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
@@ -601,7 +619,7 @@ int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	int n = SNPRINTF(a, aSize, "$GPGLL");
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 1,2
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 3,4
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS * 1000);	// 5
+	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - (pos.leapS * 1000));	// 5
 	n += SNPRINTF(a+n, aSize-n, ",A");	// 6
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
@@ -874,13 +892,20 @@ int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_char_array(info.manufacturer, ptr, DEVINFO_MANUFACTURER_STRLEN);
 
 	// uint8_t         buildDate[4];	YYYY-MM-DD
-	int year;
-	SSCANF(ptr, "%04d-%02" SCNu8 "-%02" SCNu8, &year, &info.buildDate[1], &info.buildDate[2]);
-	info.buildDate[2] = year - 2000;
+	unsigned int year, month, day;
+	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
+	info.buildDate[1] = (uint8_t)(year - 2000);
+	info.buildDate[2] = (uint8_t)(month);
+	info.buildDate[3] = (uint8_t)(day);
 	ptr = ASCII_find_next_field(ptr);
 	
 	// uint8_t         buildTime[4];	hh:mm:ss.ms
-	SSCANF(ptr, "%02" SCNu8 ":%02" SCNu8 ":%02" SCNu8 ".%02" SCNu8, &info.buildTime[0], &info.buildTime[1], &info.buildTime[2], &info.buildTime[3]);
+	unsigned int hour, minute, second, ms;
+	SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
+	info.buildTime[0] = (uint8_t)hour;
+	info.buildTime[1] = (uint8_t)minute;
+	info.buildTime[2] = (uint8_t)second;
+	info.buildTime[3] = (uint8_t)ms;
 	ptr = ASCII_find_next_field(ptr);
 	
 	// char            addInfo[DEVINFO_ADDINFO_STRLEN];
@@ -933,6 +958,9 @@ int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 	ptr = ASCII_to_vec3f(pimu.theta, ptr);
 	// XYZ linear acceleration
 	ptr = ASCII_to_vec3f(pimu.vel, ptr);
+
+	// Integration period 
+	ptr = ASCII_to_f32(&(pimu.dt), ptr);
 
 	return 0;
 }
@@ -997,6 +1025,7 @@ int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], 
 
 	// status
 	ptr = ASCII_to_u32(&(gpsPos.status), ptr);
+	gpsPos.satsUsed = gpsPos.status & GPS_STATUS_NUM_SATS_USED_MASK;
 
 	// LLA, MSL altitude
 	ptr = ASCII_to_vec3d(gpsPos.lla, ptr);
@@ -1021,19 +1050,22 @@ int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], 
 	return 0;
 }
 
-int nmea_gga_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
+int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
 	
-	// UTC time HHMMSS
+	// 1 - UTC time HHMMSS
+	uint32_t utcTimeOfDayMs;
+	ptr = ASCII_to_TimeOfDayMs(&utcTimeOfDayMs, ptr);
+	gpsPos.timeOfWeekMs = weekday*86400000 + utcTimeOfDayMs + gpsPos.leapS*1000;
 
-	// Latitude (deg)
+	// 2,3 - Latitude (deg)
 	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
-	// Longitude (deg)
-	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[1]), ptr);
+	// 4,5 - Longitude (deg)
+	ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
 
-	// Fix quality
+	// 6 - Fix quality
 	uint32_t fixQuality;
 	ptr = ASCII_to_u32(&fixQuality, ptr);
 	gpsPos.status &= ~GPS_STATUS_FIX_MASK;
@@ -1048,32 +1080,24 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], co
 	case 6:	gpsPos.status |= GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK;		break;
 	}
 
-	ptr = ASCII_to_u32(&(gpsPos.timeOfWeekMs), ptr);
-	ptr = ASCII_to_u32(&(gpsPos.week), ptr);
-	gpsVel.timeOfWeekMs = gpsPos.timeOfWeekMs;
+	// 7 - Satellites used
+	ptr = ASCII_to_u8(&(gpsPos.satsUsed), ptr);
+	gpsPos.status = gpsPos.satsUsed;
 
-	// status
-	ptr = ASCII_to_u32(&(gpsPos.status), ptr);
-
-	// LLA, MSL altitude
-	ptr = ASCII_to_vec3d(gpsPos.lla, ptr);
-	ptr = ASCII_to_f32(&(gpsPos.hMSL), ptr);
-
-	// pDop, hAcc, vAcc
+	// 8 - hDop
 	ptr = ASCII_to_f32(&(gpsPos.pDop), ptr);
-	ptr = ASCII_to_f32(&(gpsPos.hAcc), ptr);
-	ptr = ASCII_to_f32(&(gpsPos.vAcc), ptr);
 
-	// Velocity, sAcc
-	ptr = ASCII_to_vec3f(gpsVel.vel, ptr);
-	ptr = ASCII_to_f32(&(gpsVel.sAcc), ptr);
+	// 9,10 - MSL altitude
+	ptr = ASCII_to_f32(&(gpsPos.hMSL), ptr);
+	ptr = ASCII_find_next_field(ptr);
 
-	// cnoMean
-	ptr = ASCII_to_f32(&(gpsPos.cnoMean), ptr);
+	// 11,12 - Undulation
+	double undulation;
+	ptr = ASCII_to_f64(&(undulation), ptr);
+	gpsPos.lla[2] = gpsPos.hMSL - undulation;
 
-	// Time of Week offset, leapS
-	ptr = ASCII_to_f64(&(gpsPos.towOffset), ptr);
-	ptr = ASCII_to_u8(&(gpsPos.leapS), ptr);
+	// 13 - time since last DGPS update
+	// 14 - DGPS station ID number
 
 	return 0;
 }
@@ -1112,9 +1136,9 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	ptr = ASCII_find_next_field(ptr);			// PRIMU
 	if(*ptr!=','){ tmp.primu = (uint16_t)atoi(ptr); }
 	ptr = ASCII_find_next_field(ptr);			// gpgga
-	if(*ptr!=','){ tmp.gpgga = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gga = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgll
-	if(*ptr!=','){ tmp.gpgll = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gll = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgsa
 	if(*ptr!=','){ tmp.gpgsa = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gprmc

@@ -1262,10 +1262,10 @@ typedef struct PACKED
 	uint16_t				primu;
 
 	/** Broadcast period multiple - ASCII NMEA GPGGA GPS 3D location, fix, and accuracy. 0 to disable. */
-	uint16_t				gpgga;
+	uint16_t				gga;
 
 	/** Broadcast period multiple - ASCII NMEA GPGLL GPS 2D location and time. 0 to disable. */
-	uint16_t				gpgll;
+	uint16_t				gll;
 
 	/** Broadcast period multiple - ASCII NMEA GSA GPS DOP and active satellites. 0 to disable. */
 	uint16_t				gpgsa;
