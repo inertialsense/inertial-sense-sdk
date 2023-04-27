@@ -239,9 +239,9 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gga);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gll);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gpgsa);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.gprmc);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.gpzda);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gsa);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.rmc);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.zda);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
 }
 
@@ -1140,11 +1140,11 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	ptr = ASCII_find_next_field(ptr);			// gpgll
 	if(*ptr!=','){ tmp.gll = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpgsa
-	if(*ptr!=','){ tmp.gpgsa = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gsa = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gprmc
-	if(*ptr!=','){ tmp.gprmc = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.rmc = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gpzda
-	if(*ptr!=','){ tmp.gpzda = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.zda = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// pashr
 	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
 
