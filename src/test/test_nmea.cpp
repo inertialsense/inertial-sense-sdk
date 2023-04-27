@@ -3,10 +3,10 @@
 
 
 #define ASCII_BUF_LEN   200
-#define POS_LAT_DEG      40.330578
-#define POS_LON_DEG    -111.725816
-#define POS_ALT_M      1406.39
-
+#define POS_LAT_DEG     40.330578
+#define POS_LON_DEG     -111.725816
+#define POS_ALT_M       1406.39
+#define LEAP_SEC        18
 
 TEST(nmea, INFO)
 {
@@ -194,19 +194,60 @@ TEST(nmea, GGA)
     pos.lla[2] = POS_ALT_M;
     pos.hMSL = 89;
     pos.pDop = 6;
-    pos.leapS = 18;
+    pos.leapS = LEAP_SEC;
 
     char ascii_buf[ASCII_BUF_LEN] = { 0 };
     did_gps_to_nmea_gga(ascii_buf, ASCII_BUF_LEN, pos);
-    printf("%s\n", ascii_buf);
+    // printf("%s\n", ascii_buf);
     gps_pos_t result = {};
-    result.leapS = 18;
-    uint32_t weekday = pos.timeOfWeekMs / 86400000;
+    result.leapS = pos.leapS;
+     uint32_t weekday = pos.timeOfWeekMs / 86400000;
     nmea_gga_to_did_gps(result, ascii_buf, ASCII_BUF_LEN, weekday);
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
+TEST(nmea, GGL)
+{
+    gps_pos_t pos = {};
+    // pos.week = 12;
+    pos.timeOfWeekMs = 370659600;
+    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = POS_LON_DEG;
+    pos.leapS = LEAP_SEC;
 
+    char ascii_buf[ASCII_BUF_LEN] = { 0 };
+    did_gps_to_nmea_gll(ascii_buf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", ascii_buf);
+    gps_pos_t result = {};
+    result.leapS = pos.leapS;
+    uint32_t weekday = pos.timeOfWeekMs / 86400000;
+    nmea_gll_to_did_gps(result, ascii_buf, ASCII_BUF_LEN, weekday);
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
+TEST(nmea, GSA)
+{
+    gps_pos_t pos = {};
+    pos.pDop = 6;
+    pos.hAcc = 7;
+    pos.vAcc = 8;
+
+    gps_sat_t sat = {};
+	for (uint32_t i = 0; i < 10; i++)
+    {
+        sat.sat[i].svId = i+1;
+    }
+
+    char ascii_buf[ASCII_BUF_LEN] = { 0 };
+    did_gps_to_nmea_gsa(ascii_buf, ASCII_BUF_LEN, pos, sat);
+    printf("%s\n", ascii_buf);
+    gps_pos_t resultPos = {};
+    gps_sat_t resultSat = {};
+    nmea_gsa_to_did_gps(resultPos, resultSat, ascii_buf, ASCII_BUF_LEN);
+    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
+    ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
+}
 
 
 

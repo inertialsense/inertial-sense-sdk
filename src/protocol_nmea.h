@@ -21,16 +21,12 @@ enum eNmeaMsgIdUint
 	ASCII_MSG_ID_PRIM = 0x5052494d,
 	ASCII_MSG_ID_PINS = 0x50494e53,
 	ASCII_MSG_ID_PGPS = 0x50475053,
-	ASCII_MSG_ID_GPGG = 0x47504747,
-	ASCII_MSG_ID_GPGL = 0x4750474c,
-	ASCII_MSG_ID_GPGS = 0x47504753,
-	ASCII_MSG_ID_GPRM = 0x4750524d,
-	ASCII_MSG_ID_GPZD = 0x47505a44,
-	ASCII_MSG_ID_GNGG = 0x474E4747,
-	ASCII_MSG_ID_GNGL = 0x474E474c,
-	ASCII_MSG_ID_GNGS = 0x474E4753,
-	ASCII_MSG_ID_GNRM = 0x474E524d,
-	ASCII_MSG_ID_GNZD = 0x474E5a44,
+
+	ASCII_MSG_ID_GGA = 0x4747412c,
+	ASCII_MSG_ID_GLL = 0x474c4c2c,
+	ASCII_MSG_ID_GSA = 0x4753412c,
+	ASCII_MSG_ID_RMC = 0x524d432c,
+	ASCII_MSG_ID_ZDA = 0x5a44412c,
 	ASCII_MSG_ID_PASH = 0x50415348,
 };
 
@@ -80,6 +76,8 @@ int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
 int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
+int nmea_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
+int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const int aSize);
 
 //////////////////////////////////////////////////////////////////////////
 // NMEA parse

@@ -602,7 +602,7 @@ int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	     GLL          Geographic position, Latitude and Longitude
 	     4916.46,N    Latitude 49 deg. 16.45 min. North
 	     12311.12,W   Longitude 123 deg. 11.12 min. West
-	     225444       Fix taken at 22:54:44 UTC
+	     225444.800   Fix taken at 22:54:44.8 UTC
 	     A            Data Active or V (void)
 	     *iD          checksum data
 	*/
@@ -619,7 +619,7 @@ int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	int n = SNPRINTF(a, aSize, "$GPGLL");
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 1,2
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 3,4
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - (pos.leapS * 1000));	// 5
+	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
 	n += SNPRINTF(a+n, aSize-n, ",A");	// 6
 	
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
@@ -1098,6 +1098,63 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 
 	// 13 - time since last DGPS update
 	// 14 - DGPS station ID number
+
+	return 0;
+}
+
+int nmea_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxGGA,
+	
+	// 1,2 - Latitude (deg)
+	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
+	// 3,4 - Longitude (deg)
+	ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
+
+	// 5 - UTC time HHMMSS
+	uint32_t utcTimeOfDayMs;
+	ptr = ASCII_to_TimeOfDayMs(&utcTimeOfDayMs, ptr);
+	gpsPos.timeOfWeekMs = weekday*86400000 + utcTimeOfDayMs + gpsPos.leapS*1000;
+
+	// 6 - Valid (A=active, V=void)
+
+	return 0;
+}
+
+int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxGGA,
+	
+	// 1 - Auto selection of 2D or 3D
+	ptr = ASCII_find_next_field(ptr);
+
+	// 2 - Fix quality
+	uint32_t fixQuality;
+	ptr = ASCII_to_u32(&fixQuality, ptr);
+	gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+	switch(fixQuality)
+	{
+	default:														break;
+	case 2:	gpsPos.status |= GPS_STATUS_FIX_2D;						break;
+	case 3:	gpsPos.status |= GPS_STATUS_FIX_3D;						break;
+	}
+
+	// 3-14 - Sat ID
+	for (uint32_t i = 0; i < 12; i++)
+	{
+		ptr = ASCII_to_u8(&(sat.sat[i].svId), ptr);
+	}
+
+	// 15 - pDop
+	ptr = ASCII_to_f32(&(gpsPos.pDop), ptr);
+
+	// 16 - hDop (hAcc)
+	ptr = ASCII_to_f32(&(gpsPos.hAcc), ptr);
+
+	// 17 - vDop (vAcc)
+	ptr = ASCII_to_f32(&(gpsPos.vAcc), ptr);
 
 	return 0;
 }
