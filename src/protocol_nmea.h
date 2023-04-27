@@ -47,7 +47,7 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp);
 
 //////////////////////////////////////////////////////////////////////////
-// DID to NMEA
+// Binary to NMEA
 //////////////////////////////////////////////////////////////////////////
 int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info);
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek);
@@ -65,14 +65,16 @@ int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos);
 int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
 
 //////////////////////////////////////////////////////////////////////////
-// NMEA to DID
+// NMEA to Binary
 //////////////////////////////////////////////////////////////////////////
+int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize);
 int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize);
 int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize);
 int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
+int nmea_gga_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
 
 //////////////////////////////////////////////////////////////////////////
 // NMEA parse

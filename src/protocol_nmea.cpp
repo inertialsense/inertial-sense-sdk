@@ -57,6 +57,13 @@ char *ASCII_to_f64(double *vec, char *ptr)
 	return ptr;
 }
 
+char *ASCII_to_vec4u8(uint8_t vec[], char *ptr)
+{
+	SSCANF(ptr, "%2" SCNu8 ".%2" SCNu8 ".%2" SCNu8 ".%2" SCNu8, &vec[0], &vec[1], &vec[2], &vec[3]);
+	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
 char *ASCII_to_vec3f(float vec[], char *ptr)
 {
 	vec[0] = (float)atof(ptr);		ptr = ASCII_find_next_field(ptr);
@@ -79,6 +86,40 @@ char *ASCII_to_vec3d(double vec[], char *ptr)
 	vec[0] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
 	vec[1] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
 	vec[2] = atof(ptr);				ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
+char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
+{
+	int degrees;
+	SSCANF(ptr, "%02d", &degrees);	ptr += 2;
+	double minutes = atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	double decdegrees = ((double)degrees) + (minutes*0.01666666666666666666666666666666666);
+	if (ptr[0] == 'S') 	{ vec[0] = -decdegrees; }	// south
+	else 				{ vec[0] =  decdegrees; }	// north
+	ptr += 2;
+
+	return ptr;
+}
+
+char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
+{
+	int degrees;
+	SSCANF(ptr, "%03d", &degrees);	ptr += 3;
+	double minutes = atof(ptr);		ptr = ASCII_find_next_field(ptr);
+	double decdegrees = ((double)degrees) + (minutes*0.01666666666666666666666666666666666);
+	if (ptr[0] == 'W') 	{ vec[0] = -decdegrees; }	// west
+	else 				{ vec[0] =  decdegrees; }	// east
+	ptr += 2;
+
+	return ptr;
+}
+
+char *ASCII_to_char_array(char *dst, char *ptr, size_t max_len)
+{
+	STRNCPY(dst, ptr, max_len);
+	dst[max_len-1] = 0;			// Must be null terminated
+	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
 
@@ -190,7 +231,7 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 
 
 //////////////////////////////////////////////////////////////////////////
-// DID to NMEA
+// Binary to NMEA
 //////////////////////////////////////////////////////////////////////////
 
 int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
@@ -406,7 +447,7 @@ static int asciiSnprintfLatToDegMin(char* a, size_t aSize, double v)
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	return SNPRINTF(a, aSize, ",%02d%07.4lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
+	return SNPRINTF(a, aSize, ",%02d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
 }
 
 static int asciiSnprintfLonToDegMin(char* a, size_t aSize, double v)
@@ -414,7 +455,7 @@ static int asciiSnprintfLonToDegMin(char* a, size_t aSize, double v)
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	return SNPRINTF(a, aSize, ",%03d%07.4lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
+	return SNPRINTF(a, aSize, ",%03d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
 }
 
 static int asciiSnprintfGPSTimeOfLastFix(char* a, size_t aSize, uint32_t timeOfWeekMs)
@@ -803,8 +844,50 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 
 
 //////////////////////////////////////////////////////////////////////////
-// NMEA to DID
+// NMEA to Binary
 //////////////////////////////////////////////////////////////////////////
+
+int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[6];	// $INFO,
+	
+	// uint32_t        serialNumber;
+	ptr = ASCII_to_u32(&info.serialNumber, ptr);
+
+	// uint8_t         hardwareVer[4];
+	ptr = ASCII_to_vec4u8(info.hardwareVer, ptr);
+
+	// uint8_t         firmwareVer[4];
+	ptr = ASCII_to_vec4u8(info.firmwareVer, ptr);
+
+	// uint32_t        buildNumber;
+	ptr = ASCII_to_u32(&info.buildNumber, ptr);
+
+	// uint8_t         protocolVer[4];
+	ptr = ASCII_to_vec4u8(info.protocolVer, ptr);
+
+	// uint32_t        repoRevision;
+	ptr = ASCII_to_u32(&info.repoRevision, ptr);
+
+	// char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
+	ptr = ASCII_to_char_array(info.manufacturer, ptr, DEVINFO_MANUFACTURER_STRLEN);
+
+	// uint8_t         buildDate[4];	YYYY-MM-DD
+	int year;
+	SSCANF(ptr, "%04d-%02" SCNu8 "-%02" SCNu8, &year, &info.buildDate[1], &info.buildDate[2]);
+	info.buildDate[2] = year - 2000;
+	ptr = ASCII_find_next_field(ptr);
+	
+	// uint8_t         buildTime[4];	hh:mm:ss.ms
+	SSCANF(ptr, "%02" SCNu8 ":%02" SCNu8 ":%02" SCNu8 ".%02" SCNu8, &info.buildTime[0], &info.buildTime[1], &info.buildTime[2], &info.buildTime[3]);
+	ptr = ASCII_find_next_field(ptr);
+	
+	// char            addInfo[DEVINFO_ADDINFO_STRLEN];
+	ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
+
+	return 0;
+}
 
 int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 {
@@ -908,6 +991,63 @@ int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], 
 	char *ptr = (char *)&a[7];	// $PGPSP,
 	
 	// GPS timeOfWeekMs, week 
+	ptr = ASCII_to_u32(&(gpsPos.timeOfWeekMs), ptr);
+	ptr = ASCII_to_u32(&(gpsPos.week), ptr);
+	gpsVel.timeOfWeekMs = gpsPos.timeOfWeekMs;
+
+	// status
+	ptr = ASCII_to_u32(&(gpsPos.status), ptr);
+
+	// LLA, MSL altitude
+	ptr = ASCII_to_vec3d(gpsPos.lla, ptr);
+	ptr = ASCII_to_f32(&(gpsPos.hMSL), ptr);
+
+	// pDop, hAcc, vAcc
+	ptr = ASCII_to_f32(&(gpsPos.pDop), ptr);
+	ptr = ASCII_to_f32(&(gpsPos.hAcc), ptr);
+	ptr = ASCII_to_f32(&(gpsPos.vAcc), ptr);
+
+	// Velocity, sAcc
+	ptr = ASCII_to_vec3f(gpsVel.vel, ptr);
+	ptr = ASCII_to_f32(&(gpsVel.sAcc), ptr);
+
+	// cnoMean
+	ptr = ASCII_to_f32(&(gpsPos.cnoMean), ptr);
+
+	// Time of Week offset, leapS
+	ptr = ASCII_to_f64(&(gpsPos.towOffset), ptr);
+	ptr = ASCII_to_u8(&(gpsPos.leapS), ptr);
+
+	return 0;
+}
+
+int nmea_gga_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxGGA,
+	
+	// UTC time HHMMSS
+
+	// Latitude (deg)
+	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
+	// Longitude (deg)
+	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[1]), ptr);
+
+	// Fix quality
+	uint32_t fixQuality;
+	ptr = ASCII_to_u32(&fixQuality, ptr);
+	gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+	switch(fixQuality)
+	{
+	default:														break;
+	case 1:	gpsPos.status |= GPS_STATUS_FIX_3D;						break;
+	case 2:	gpsPos.status |= GPS_STATUS_FIX_DGPS;					break;
+	case 3:	gpsPos.status |= GPS_STATUS_FIX_TIME_ONLY;				break;
+	case 4:	gpsPos.status |= GPS_STATUS_FIX_RTK_FIX;				break;
+	case 5:	gpsPos.status |= GPS_STATUS_FIX_RTK_FLOAT;				break;
+	case 6:	gpsPos.status |= GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK;		break;
+	}
+
 	ptr = ASCII_to_u32(&(gpsPos.timeOfWeekMs), ptr);
 	ptr = ASCII_to_u32(&(gpsPos.week), ptr);
 	gpsVel.timeOfWeekMs = gpsPos.timeOfWeekMs;
