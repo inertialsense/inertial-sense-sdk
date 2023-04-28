@@ -37,12 +37,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define POWB2_F	40408299984661.453f	// = pow(6356752.31424518,2)
 #define ONE_MINUS_F 0.996647189335253 // (1 - f), where f = 1.0 / 298.257223563 is Earth flattening
 #define E_SQ  0.006694379990141 // e2 = 1 - (1-f)*(1-f) - square of first eccentricity
+#define E_SQ_f 0.006694379990141f
 #define E_PRIME_SQ 0.006739496742276 // ep2 = e2 / (1 - e2)
 #define E_POW4 4.481472345240464e-05 // e4 = e^4, first eccentricity power 4
 #define ONE_MINUS_E_SQ 0.993305620009859 // (1 - e^2)
 #define ONE_DIV_ONE_MINUS_E_SQ  1.006739496742276  // 1 / (1 - e^2)
 #define ONE_DIV_E_SQ  1.493790315865963e+02 // 1/e^2
 #define REQ 6378137.0         // Re - Equatorial radius, m
+#define REQ_f 6378137.0f
 #define REP 6356752.314245179 // Rp - Polar radius, m
 #define E2xREQ 42697.67270717795 // e2 * Re
 #define E2xREQdivIFE 42841.31151331153 // e2 * Re / (1 -f)
@@ -365,8 +367,8 @@ void ecef2lla_f(const float *Pe, float *LLA)
         iter++;
         val = z_i;
         sinmu = z_i / sqrtf(p2 + z_i * z_i);
-        v = REQ / sqrtf(1.0f - E_SQ * sinmu * sinmu);
-        z_i = Pe[2] + v * E_SQ * sinmu;
+        v = REQ_f / sqrtf(1.0f - E_SQ_f * sinmu * sinmu);
+        z_i = Pe[2] + v * E_SQ_f * sinmu;
         err = z_i - val;
     }
     LLA[0] = atan2f(z_i, p);
