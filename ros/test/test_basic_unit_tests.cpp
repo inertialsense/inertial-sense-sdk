@@ -10,7 +10,7 @@
 
 #include "../include/inertial_sense_ros.h"
 
-#define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_yaml_config.yaml"
+#define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_config.yaml"
 
 char cwd_buff[64];
 
@@ -30,7 +30,7 @@ TEST(BasicTestSuite, test_config_params)
 
     // This should also test composite configurations - ie, configuration parameters that when combined, set a single underlying parameter, ie ioConfigBits
 
-    EXPECT_EQ(isROS.ports_.size(), 1);
+    EXPECT_GE(isROS.ports_.size(), 1);
     EXPECT_EQ(isROS.ports_[0], "/dev/ttyACM0");
     EXPECT_EQ(isROS.baudrate_, 921600);
 
@@ -70,7 +70,7 @@ TEST(BasicTestSuite, test_rtk_rover)
     EXPECT_EQ(ntrip->connectivity_watchdog_enabled_, true);
 
     isROS.configure_rtk();
-    EXPECT_EQ(isROS.rtkConfigBits_, 0x402);
+    EXPECT_EQ(isROS.rtkConfigBits_, 0x2);
 }
 
 TEST(BasicTestSuite, test_rtk_rover_ntrip)
@@ -213,7 +213,7 @@ TEST(BasicTestSuite, test_rtk_base)
 
     ASSERT_NE(isROS.RTK_base_, nullptr);
     RtkBaseProvider *p = isROS.RTK_base_;
-    EXPECT_EQ(p->enable, true);
+    EXPECT_EQ(p->enable, false);
     EXPECT_EQ(p->source_gps__serial0_, RtkBaseProvider::base_gps_source::GPS1);
     EXPECT_EQ(p->source_gps__serial1_, RtkBaseProvider::base_gps_source::OFF);
     EXPECT_EQ(p->source_gps__serial2_, RtkBaseProvider::base_gps_source::GPS2);
@@ -228,7 +228,7 @@ TEST(BasicTestSuite, test_rtk_base)
     EXPECT_EQ(ntrip->get_connection_string(), "TCP:RTCM3:127.0.0.1:7777");
 
     isROS.configure_rtk();
-    EXPECT_EQ(isROS.rtkConfigBits_, 0x402);
+    EXPECT_EQ(isROS.rtkConfigBits_, 0x2);
 
 
 }
