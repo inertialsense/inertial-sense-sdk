@@ -47,11 +47,11 @@ static const double Ra = 6378137.0;			// (m) Earth equatorial radius
 #define REP 6356752.314245179 // Rp - Polar radius, m
 #define E2xREQ 42697.67270717795 // e2 * Re
 #define E2xREQdivIFE 42841.31151331153 // e2 * Re / (1 -f)
-#define GEQ 9.7803253359        // Equatorial gravity
-#define K_GRAV 0.00193185265241 // defined gravity constants
-#define K3_GRAV 3.0877e-6       // 
-#define K4_GRAV 4.0e-9          //
-#define K5_GRAV 7.2e-14         //
+#define GEQ 9.7803253359f        // Equatorial gravity
+#define K_GRAV 0.00193185265241f // defined gravity constants
+#define K3_GRAV 3.0877e-6f       // 
+#define K4_GRAV 4.0e-9f          //
+#define K5_GRAV 7.2e-14f         //
 
 #ifndef ECEF2LLA_METHOD
 #define ECEF2LLA_METHOD 5
