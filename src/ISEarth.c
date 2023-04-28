@@ -30,7 +30,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
 //_____ F U N C T I O N S __________________________________________________
-static const double Ra = 6378137.0;			// (m) Earth equatorial radius
 
 #define POWA2	40680631590769.000	// = pow(6378137.0,2)
 #define POWB2	40408299984661.453	// = pow(6356752.31424518,2)
@@ -178,11 +177,11 @@ void ecef2lla(const double *Pe, double *LLA)
     val = p - E_SQ * r0;
     U = sqrt(MAX(0.0, val * val + z2));
     V = sqrt(MAX(0, val * val + ONE_MINUS_E_SQ * z2));
-    z0 = POWB2 * Pe[2] / MAX(Ra * V, EPS);
+    z0 = POWB2 * Pe[2] / MAX(REQ * V, EPS);
     // Latitude
     LLA[0] = atan2(Pe[2] + E_PRIME_SQ * z0, p);
     // Altitude above planetary ellipsoid :
-    LLA[2] = U * (1.0 - POWB2 / MAX(Ra * V, EPS));
+    LLA[2] = U * (1.0 - POWB2 / MAX(REQ * V, EPS));
     // Avoid numerical issues at poles
     if (V < EPS) {
         LLA[0] = LLA[0] < 0.0 ? -0.5 * M_PI : 0.5 * M_PI;
@@ -196,9 +195,9 @@ void ecef2lla(const double *Pe, double *LLA)
 
     static const double Rb = 6356752.31424518;	// (m) Earth polar radius Rb = Ra * (1-f)   (from flattening, f = 1/298.257223563)
 
-    beta = atan2(Ra * Pe[2], Rb * p);
-    LLA[0] = atan2(Pe[2] + E_PRIME_SQ * Rb * pow(sin(beta), 3), p - E_SQ * Ra * pow(cos(beta), 3));
-    c = Ra / sqrt(1.0 - E_SQ * pow(sin(LLA[0]), 2));
+    beta = atan2(REQ * Pe[2], Rb * p);
+    LLA[0] = atan2(Pe[2] + E_PRIME_SQ * Rb * pow(sin(beta), 3), p - E_SQ * REQ * pow(cos(beta), 3));
+    c = REQ / sqrt(1.0 - E_SQ * pow(sin(LLA[0]), 2));
     LLA[2] = p / cos(LLA[0]) - c;
     // Correct for numerical instability in altitude near poles.
     // After this correction, error is about 2 millimeters, which is about the same as the numerical precision of the overall function
@@ -215,7 +214,7 @@ void ecef2lla(const double *Pe, double *LLA)
         iter++;
         val = z_i;
         sinmu = z_i / sqrt(p2 + z_i * z_i);
-        v = Ra / sqrt(1.0 - E_SQ * sinmu * sinmu);
+        v = REQ / sqrt(1.0 - E_SQ * sinmu * sinmu);
         z_i = Pe[2] + v * E_SQ * sinmu;
         err = z_i - val;
     }
@@ -570,7 +569,7 @@ void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ece
 double primeRadius(const double lat)
 {
     double slat = sin(lat);
-    return Ra/sqrt(1.0-E_SQ*slat*slat);
+    return REQ / sqrt(1.0-E_SQ*slat*slat);
 }
 
 
