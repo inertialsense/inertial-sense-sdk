@@ -157,7 +157,7 @@ int llaDegValid( double lla[3] );
 /* 
  * IGF-80 gravity model with WGS-84 ellipsoid refinement 
 */
-float gravity_igf80(double lat, double alt);
+float gravity_igf80(float lat, float alt);
 
 /*
  * Quaternion rotation to NED with respect to ECEF at specified LLA
