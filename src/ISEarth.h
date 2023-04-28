@@ -60,6 +60,7 @@ typedef ixMatrix4     ixMatrix4;
  * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m)
  */
 void ecef2lla(const double *Pe, double *LLA);
+void ecef2lla_f(const float *Pe, float *LLA);
 
 /*
  * Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates
