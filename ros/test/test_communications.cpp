@@ -28,9 +28,9 @@ public:
 };
 
 /***
- * This set of tests validates InertialSenseROS publishes the configured topics as DIDs come in from the InertialSense SDK.
+ * This set of tests validates that InertialSenseROS publishes the configured topics with each DID that comes in from the InertialSense SDK.
  *
- * The main function would bring up an instance of InertialSenseROS with a particular configurations, and starts its running.
+ * The main function would bring up an instance of InertialSenseROS with a particular configurations, and start its running.
  *
  * Each subsequent test brings up the ROS subscriber, and waits for a message to arrive.  If a message arrives before the timeout period,
  * the message contents are evaluated to ensure that the data is "reasonable" (ie, lat/lon are in -180-180, and -90-90, etc.
