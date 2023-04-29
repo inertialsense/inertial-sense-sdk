@@ -656,7 +656,7 @@ float gravity_igf80(float lat_rad, float alt)
     //double e2 = 0.00669437999013;
 
     sinmu2 = sinf(lat_rad) * sinf(lat_rad);
-    g0 = GEQ * (1.0f + K_GRAV * sinmu2) / sqrtf(1.0f - E_SQ * sinmu2);
+    g0 = GEQ * (1.0f + K_GRAV * sinmu2) / sqrtf(1.0f - E_SQ_f * sinmu2);
 
     // Free air correction
     return g0 - (K3_GRAV - K4_GRAV * sinmu2 - K5_GRAV * alt) * alt;
