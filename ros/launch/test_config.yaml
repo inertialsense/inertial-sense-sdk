@@ -1,0 +1,304 @@
+########################
+#
+#  Some semantics/things to note:
+#  - To simplify/reduce topics names, every "level" can have a "topic" which gets appended to the previous level.
+#    If a level doesn't have a "topic", or levels inbetween that don't have topics, nothing gets appended.
+#      -- I'm not sure if "topic" is the best word choice, but...
+#
+#  - The "top" level is really about configuring the EVB/INS, subsequent levels are "object-specific" configuration.
+#    In most cases, these "objects" are essentially sensor, or peripheral-specific, ie, gps1, or evb_radio.
+#    Everything that is related to that "object" should be underneath that level, creating additional levels if needed.
+#    Sensor objects (ins, gps1, mag, etc) will have either a "message" or a "messages" sublevel.
+#    Message means there is only 1 message published for that object, and does not define a "type".
+#    Messages is used when more than one message type can be published, and the label for the subsequent level is
+#    the message type. Messages can have sublevels, with each type being nested under its parent type.
+#
+#  - There are some things that I didn't know where to put, but I think its getting close
+#
+#  - We will assume defaults for all parameters, and the 'example.yaml' outlines those defaults. Anything that is
+#    using the default value should be commented out. As such, the actual example.yaml will have most every line
+#    commented out... I think the only exception is the top-level port... and even it *could* have a default.
+#
+#  - each "Message" or "Messages" nodes have a "topic" element. Should this topic value default to the coded value,
+#    or can it default to the parent node's name?  (ie, "raw/topic" will default to "raw".)
+#
+#  - I've called out specific things with FIXME's.  These should highlight in your IDE.
+#
+########################
+
+
+topic: "inertialsense"
+port: [/dev/ttyACM0, /dev/ttyACM1]
+baudrate: 921600
+enable_log: false
+publishTf: true                                 # Publish Transform Frame (TR)
+frame_id: ""                                    # FIXME: What is this?  is it just the FrameID to use in the ROS messages?
+mag_declination: 0.0
+ref_lla: [0.0, 0.0, 0.0]
+
+# Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
+# platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
+platform: 11                                    # PLATFORM_CFG_TYPE_EVB2_G2
+# platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
+
+# IMX ioConfig (see eIoConfig)
+# Set DID_FLASH_CONFIG.ioConfig: 0x025c2060
+# Set DID_FLASH_CONFIG.platformConfig: 0x0000000c
+# Set DID_FLASH_CONFIG.RTKCfgBits: 0x00000400
+# ioConfig: 0x026ca060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
+# ioConfig: 0x025CA060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8
+# ioConfig: 0x0244a060      # EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+
+# Service Points - should we allow these?  Or should they always be hardcoded?
+# service_endpoints:
+  # REF_LLA: "set_refLLA"                         # /value /current
+  # MAG_CAL: "mag_cal"                            # /single /multi
+  # FIRMWARE: "firmware"                          # /get /update
+
+# Publish the firmware upgrade progress/status
+firmware_status:
+  message:
+    topic: "firmware_status"
+    enable: true
+
+transform_frame:
+  # static_transform:
+  message:
+    topic: ""
+    enable: true
+
+ins:
+  rotation: [0, 0, 0]                           # Rotation in radians about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X.
+  offset: [0, 0 ,0]                             # X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame.
+  navigation_dt_ms: 16                          # EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
+  # navigation_dt_ms: 4                           # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
+  dynamic_model: 4                              # FIXME: these should be named types/srtring (PORTABLE, STATIONARY, AGV, UAV, etc)
+  enable_covariance: false                      # Include covariance data in odom_ins_... messages
+  messages:
+    odom_ins_enu:
+      topic: "odom_ins_enu"
+      enable: true
+    odom_ins_ned:
+      topic: "odom_ins_ned"
+      enable: true
+    odom_ins_ecef:
+      topic: "odom_ins_ecef"
+      enable: true
+    did_ins1:
+      topic: "ins_eul_uvw_ned"
+      enable: true
+    did_ins2:
+      topic: "ins_quat_uvw_lla"
+      enable: true
+    did_ins4:
+      topic: "ins_quat_ve_ecef"
+      enable: true
+    inl2_states:
+      topic: "inl2_states"
+      enable: true
+
+sensors:
+  messages:  
+    imu:              # Publish IMU angular rates and linear acceleration
+      topic: "imu"
+      enable: true
+      period: 1
+    pimu:             # Publish preintegrated IMU delta theta and delta velocity
+      topic: "pimu"
+      enable: true
+      period: 1
+    magnetometer:
+      topic: "mag"
+      enable: true
+      period: 1
+    barometer:
+      topic: "baro"
+      enable: true
+      period: 1
+    strobe_in:      # Publish the strobe input time
+      topic: "strobe_in"
+      enable: true
+
+gps1:
+  type: 'F9P'
+  antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
+  gpsTimeUserDelay: 0.0
+  messages:
+    pos_vel:
+      topic: "gps1/pos_vel"
+      enable: true
+      period: 1
+    navsatfix:
+      topic: "/NavSatFix"                        # /navsatfix
+      enable: true
+    info:
+      topic: "gps1/info"                        # inertialsense/gps1/info
+      enable: true
+      period: 5                                 # Publish every 1 second (200ms x 5)
+    raw:
+      topic: "gps1/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
+      enable: true
+      period: 5                                 # Publish every 1 second (200ms x 5)
+    rtk_pos_rel:
+      topic: "gps1/pos_vel"
+      enable: true
+      period: 1
+    rel:
+      enable: true
+      topic: "rel"
+    base:
+      topic: "base"
+      rel:
+        topic: "rel"
+      info:
+        topic: "info"
+    compass:
+      topic: "compass"
+      rel:
+        topic: "rel"
+      info:
+        topic: "info"
+
+gps2:
+  enable: false
+  type: 'F9P'
+  antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
+  gpsTimeUserDelay: 0.0
+  messages:
+    pos_vel:
+      topic: "gps2/pos_vel"
+      enable: false
+      period: 1
+    navsatfix:
+      topic: "/NavSatFix"                        # /navsatfix
+      enable: false
+    info:
+      topic: "gps2/info"                        # inertialsense/gps1/info
+      enable: false
+      period: 5                                 # Publish every 1 second (200ms x 5)
+    raw:
+      topic: "gps2/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
+      enable: false
+      period: 5                                 # Publish every 1 second (200ms x 5)
+    rtk_pos_rel:
+      topic: "gps2/rtk_rel_pos"
+      enable: false
+      period: 1
+    rel:
+      enable: false
+      topic: "rel"
+    base:
+      topic: "base"
+      rel:
+        topic: "rel"
+      info:
+        topic: "info"
+    compass:
+      topic: "compass"
+      rel:
+        topic: "rel"
+      info:
+        topic: "info"
+
+evb:
+  # http://docs.inertialsense.com/user-manual/hardware/EVB2/#configurations
+  cb_preset: 3                                  # EVB-2 Communications Bridge: 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
+  cb_options: 0
+  radio:                                        # use 900Mhz radio for corrections (base will TX, rover will RX)
+    enable: false
+    power: 3                                    # transmit power, ignored when in rover mode (RX)
+    preamble_id: 3                              # radio preamble id (this must match on both Base and Rover)
+    network_id: 41                              # radio network id (this must match on both Base and Rover)
+
+rtk_rover:
+  compassing_enable: false                      # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
+  positioning_enable: true                      # Enable RTK precision positioning at GPS1
+  correction_input: 
+    select: ntrip_example                       # Select correction input settings
+
+    ntrip_example:                              # Rename as needed
+      type: ntrip                               # configure NTRIP client provider (RTK Rover = TCP Client)
+      format: RTCM3
+      ip_address: '66.219.246.93'               # NTRIP service address
+      ip_port: 7777                             # NTRIP service port
+      # these following parameters are only valid for "client" modes
+      mount_point: ''                           # NTRIP service mount-point (if any)
+      username: ''                              # NTRIP service username (if any)
+      password: ''                              # NTRIP service password (if any)
+      connection_attempts:
+        limit: 1                                # every time we attempt to connect, only try one time
+        backoff: 2                              # default back off, ignored because only connecting once
+      watchdog:                                 # connectivity watchdog timer - reconnects if no RTK activity
+        enable: true
+        interval: 1                             # check every 1 second for traffic
+        timeout: 5                              # number of seconds of inactivity before attempting to reconnect
+
+    ntrip_example2:                             # Rename as needed
+      type: NTRIP                               # configure NTRIP client provider (RTK Rover = TCP Client)
+      format: RTCM3
+      ip_address: '66.219.246.93'               # NTRIP service address
+      ip_port: 7777                             # NTRIP service port
+
+    serial_example:
+      type: serial                              # host/pc serial port, always 8N1 - IS-Ros will open and forward data from the EVB to this port
+      format: RTCM3
+      port: /dev/ttyACM1                        # Serial port of local host where corrections can be read from (not the EVB/IMX port!)
+      baud_rate: 115200                         # Serial baud rate
+
+    ros_provider:
+      topic: "/rtcm3_corrections"
+      format: RTCM3
+      type: "ros_topic"                         # to/from ROS topics - ROS topic ot subscribe to, received RTCM3 corrections are passed to the EVB
+
+    xbee_radio:
+      type: "evb"
+      format: RTCM3
+      port: "xbee"
+
+  # Correction providers (input/output) are referenced as "pointers" from the "base" and "rover" sections above.
+  # You can define multiple providers, however only those referenced by "base" and "rover" will be used.  All others
+  # are ignored.  This is a convenience if you have multiple providers, and you intend to switch between them occasionally.
+  # Otherwise, you should remove all those that are unused.
+
+rtk_base:
+  enable: false                                 # implicitly enabled; here, explicitly disabled
+  correction_source:
+    imx_serial_0: gps1                          # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+    imx_serial_1: off                           # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+    imx_serial_2: gps2                          # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+    imx_usb: off                                # GPS from which RTK corrections are taken (either GPS1 or GPS2)
+
+  correction_outputs:
+    format: RTCM3
+    select: ntrip_1                             # This is one of the keys below, which defines which outputs to enable/use (this can be many).
+
+    # - ros_provider
+    # - xbee_radio
+    # RTK corrections
+    ntrip_1:
+      type: ntrip                               # configure NTRIP output provider (TCP Server)
+      ip_address: '127.0.0.1'                   # (required) NTRIP service address
+      ip_port: 7777                             # NTRIP service port, default 7777
+      # FIXME:  The following is fluff functionality that we probably shouldn't bother with, but someone might find it useful??
+      mount: ''                                 # (optional) NTRIP service mount-point, the mount this output maps to
+      authentication: "none"                    # (optional) specified the type of authentication that is used to validate a user (basic, oauth, rsa, etc)
+      username: ''                              # (optional) NTRIP service username which is required to connect to this service
+      password: ''                              # (optional) NTRIP service password
+      credentials: '/etc/ntrip/users.txt'       # alternatively to username/password, you can specify a credentials file (a list of 'username:password') which is used for authentication of multiple users
+
+    serial_1:
+      type: serial                              # host/pc serial port, always 8N1 - IS-Ros will open and forward data from the EVB to this port
+      port: "/dev/ttyACM0"                      # the host's local serial port to which data is written (not the EVB/IMX port!)
+      baud_rate: 115200
+      
+    # RTK corrections to/from ROS topics -
+    ros_provider:
+      type: ros_topic                           # publishes RTCM3 corrections onto the specific ROS topic
+      topic: "/rtcm3_corrections"               # the topic to publish on - this should *probably* be an absolute topic
+
+    # RTK corrections passed through the EVB - rover/inputs are always read from the EVB CB, base/outputs are always written to the EVB CB
+    xbee_radio:
+      type: evb                                 # routes the RTCM3 corrections back to the EVB, and onto the comm-bridge -- FIXME: Not sure if this works.. still trying to wrap my head around the limits of the comm-bridge.
+      port: "xbee"                              # FIXME: Maybe we don't need a port, since the comm-bridge configuration really handles this... it either goes to the EVB or it doesn't... or does it ALWAYS go to the EVB?
+
+

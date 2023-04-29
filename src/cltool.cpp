@@ -110,6 +110,19 @@ bool read_did_argument(stream_did_t *dataset, string s)
 	return false;
 }
 
+void print_dids()
+{
+#if defined(INCLUDE_LUNA_DATA_SETS)
+	for (eDataIDs id = 0; id < DID_COUNT; id++)
+#else
+	for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+#endif
+	{
+		printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+	}
+	cltool_outputHelp();
+}
+
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
 	// set defaults
@@ -183,15 +196,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-dids"))
 		{
-#if defined(INCLUDE_LUNA_DATA_SETS)
-			for (eDataIDs id = 0; id < DID_COUNT; id++)
-#else
-			for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
-#endif
-			{
-				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
-			}
-			cltool_outputHelp();
+			print_dids();
 			return false;
 		}
 		else if (startsWith(a, "-did") && (i + 1) < argc)
@@ -217,12 +222,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				}
 			}			
 		}
-		else if (startsWith(a, "-edit") && (i + 1) < argc)
+		else if (startsWith(a, "-edit"))
 		{
 			stream_did_t dataset = {};
-			if (read_did_argument(&dataset, argv[++i]))	// use next argument
+			if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))	// use next argument
 			{
 				g_commandLineOptions.datasetEdit = dataset;
+			}
+			else
+			{	// Invalid argument
+				print_dids();
+				return false;
 			}
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
@@ -474,8 +484,8 @@ void cltool_outputUsage()
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display" << endlbOn;
-    cout << "    -reset         " << boldOff << " Issue software reset.  Use caution." << endlbOn;
-    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB.  Use caution." << endlbOn;
+    cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
+    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB." << endlbOn;
     cout << "    -s" << boldOff << "              Scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
@@ -544,7 +554,8 @@ void cltool_outputHelp()
 
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-	nvm_flash_cfg_t flashCfg = inertialSenseInterface.GetFlashConfig();
+	nvm_flash_cfg_t flashCfg;
+	inertialSenseInterface.GetFlashConfig(flashCfg);
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashCfgString.length() < 2)
@@ -594,7 +605,8 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
-	evb_flash_cfg_t evbFlashCfg = inertialSenseInterface.GetEvbFlashConfig();
+	evb_flash_cfg_t evbFlashCfg;
+	inertialSenseInterface.GetEvbFlashConfig(evbFlashCfg);
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_EVB_FLASH_CFG);
 
 	if (flashCfgString.length() < 2)

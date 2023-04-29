@@ -370,7 +370,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
 	ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);
-    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "reserved3", reserved3, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
