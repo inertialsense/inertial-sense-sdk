@@ -548,7 +548,7 @@ f_t baro2msl( f_t pKPa )
 	if( pKPa <= _ZERO )
 		return _ZERO;
 	else
-		return (f_t)C_NEG_KT0_DIV_MG_F * _LOG( pKPa * (f_t)C_INV_P0_KPA_F );
+		return C_NEG_KT0_DIV_MG_F * _LOG( pKPa * C_INV_P0_KPA_F );
 }
 
 
@@ -583,7 +583,7 @@ f_t llaDegDistance( double lla1[3], double lla2[3] )
 void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA)
 {
 	deltaLLA[0] =  ned[0] * INV_EARTH_RADIUS_F;
-	deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(((f_t)llaRef[0]));
+	deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(llaRef[0]);
 	deltaLLA[2] = -ned[2];
 }
 
@@ -735,7 +735,7 @@ double meridonalRadius(const double lat)
 {
     double slat = sin(lat);
     double Rprime = primeRadius(lat);
-    return Rprime * (1-E_SQ) / (1.0-E_SQ*slat*slat);
+    return Rprime * (1.0-E_SQ) / (1.0-E_SQ*slat*slat);
 }
 
 
