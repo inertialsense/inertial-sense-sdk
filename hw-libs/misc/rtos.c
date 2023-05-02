@@ -51,9 +51,6 @@ int createTask
 
 	// Task call period - used within task and for CPU usage
 	g_rtos.task[index].periodMs = xTimeIncrement;
-#ifndef __INERTIAL_SENSE_EVB_2__
-	g_rtos_pro[index].periodTicks = time_usec_to_ticks(overrunMs * 1000U);
-#endif
 
 	// Task name
 	if (MAX_TASK_NAME_LEN > configMAX_TASK_NAME_LEN)
@@ -61,6 +58,7 @@ int createTask
 		memset(&g_rtos.task[index].name[configMAX_TASK_NAME_LEN], 0, MAX_TASK_NAME_LEN - configMAX_TASK_NAME_LEN);
 	}
 	strncpy(g_rtos.task[index].name, pcName, configMAX_TASK_NAME_LEN);
+    g_rtos.task[index].priority = (uint32_t)uxPriority;
 
 	// Create RTOS Task
 	if (xTaskCreate(pxTaskCode, pcName, usStackDepth, pvParameters, uxPriority, (TaskHandle_t * const)&g_rtos.task[index].handle) != pdPASS)
@@ -70,36 +68,62 @@ int createTask
 	return 0;
 }
 
+inline void set_hook_handler(uint32_t idx)
+{
+    vTaskSetApplicationTaskTag(NULL, (void*)idx);
+
+    g_rtos_pro[idx].tmpRunTimeTicks = 0UL;
+}
+
+inline void switch_task_in(uint32_t idx)
+{
+	g_rtos_pro[idx].profileStartTimeTicks = time_ticks_u32();
+}
+
+inline void switch_task_out(uint32_t idx)
+{
+    // Add runtime to counter
+    g_rtos_pro[idx].tmpRunTimeTicks += time_ticks_u32() - g_rtos_pro[idx].profileStartTimeTicks;
+}
+
+inline void delay_task(uint32_t idx)
+{
+    rtos_profile_t* prof = &g_rtos_pro[idx];
+
+    // Run finished, update
+	prof->runTimeTicks = prof->tmpRunTimeTicks;
+    prof->tmpRunTimeTicks = 0;
+
+    if (g_enRtosStats)
+    {
+        // set max run time if needed
+        if (prof->maxRunTimeTicks < prof->runTimeTicks)
+        {
+        	prof->maxRunTimeTicks = prof->runTimeTicks;
+        }
+        // Average runtime as rolling average
+        prof->averageRunTimeTicks = (0.999f)*((float)prof->averageRunTimeTicks) + (0.001f)*((float)prof->runTimeTicks);
+    }
+
+    prof->profileStartTimeTicks = time_ticks_u32();
+}
+
 void rtos_monitor(int numRtosTasks)
 {
-	int i;
-
-#if (configGENERATE_RUN_TIME_STATS == 1)
-	uint32_t ulTotalRunTime = portGET_RUN_TIME_COUNTER_VALUE();			// uint64_t gets truncated to uint32_t
-	float fTotalRunTime = ((float)ulTotalRunTime) * 1e-2;				// Percentage, so divide by 100
-#endif // (configGENERATE_RUN_TIME_STATS == 1)
-
-	TaskStatus_t status;
-
-	for (i=0; i<numRtosTasks; i++)
+	for (uint8_t i=0; i<numRtosTasks; i++)
 	{
-		// If updating free rtos, the idle and timer handles need to be passed through and set properly
-		// tasks.h: void vTaskStartScheduler( TaskHandle_t* idleTaskHandle, TaskHandle_t* timerTaskHandle ) PRIVILEGED_FUNCTION;
-		// timers.h: BaseType_t xTimerCreateTimerTask( TaskHandle_t* ) PRIVILEGED_FUNCTION;
-
-		void* handle = (void*)g_rtos.task[i].handle;
+        void* handle = (void*)g_rtos.task[i].handle;
 		if (handle)
 		{
-			vTaskGetInfo(handle, &status, 1, eRunning);
-			g_rtos.task[i].stackUnused = status.usStackHighWaterMark * sizeof(uint32_t);
-			g_rtos.task[i].priority    = status.uxCurrentPriority;
+// #if (configGENERATE_RUN_TIME_STATS == 1)
+            // Set to eRunning to omit the current task state from the info 
+			g_rtos.task[i].stackUnused = uxTaskGetStackHighWaterMark(handle);
 
-#if (configGENERATE_RUN_TIME_STATS == 1)
-			if (ulTotalRunTime) // Divide by zero
+			if (g_rtos.task[i].periodMs) // Divide by zero
 			{
-				g_rtos.task[i].cpuUsage = (float)status.ulRunTimeCounter / fTotalRunTime;
+				g_rtos.task[i].cpuUsage = time_ticksf_to_msecf(g_rtos_pro[i].averageRunTimeTicks) / (float)g_rtos.task[i].periodMs * 100.0f;
 			}
-#endif // (configGENERATE_RUN_TIME_STATS == 1)
+// #endif
 		}
 	}
 

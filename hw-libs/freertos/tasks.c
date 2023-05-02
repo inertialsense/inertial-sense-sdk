@@ -3725,6 +3725,7 @@ static void prvCheckTasksWaitingTermination( void )
 
 // Added by Inertial Sense
 
+#if( configGENERATE_RUN_TIME_STATS == 1 )
 #if( configUSE_TRACE_FACILITY == 1 )
 	void vTaskResetRunTimeCounter( TaskHandle_t xTask )
 	{
@@ -3736,6 +3737,7 @@ static void prvCheckTasksWaitingTermination( void )
 		pxTCB->ulRunTimeCounter = 0;
 	}
 #endif /* configUSE_TRACE_FACILITY */
+#endif /* configGENERATE_RUN_TIME_STATS */
 
 /*-----------------------------------------------------------*/
 

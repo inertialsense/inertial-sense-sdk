@@ -3932,11 +3932,11 @@ typedef enum
 	/** Task 0: Sample	*/
 	TASK_SAMPLE = 0,
 
+    /** Task 2: Communications */
+	TASK_COMMUNICATIONS,
+
 	/** Task 1: Nav */
 	TASK_NAV,
-
-	/** Task 2: Communications */
-	TASK_COMMUNICATIONS,
 
 	/** Task 3: Maintenance */
 	TASK_MAINTENANCE,
@@ -3991,7 +3991,7 @@ typedef struct PACKED
 	/** Task priority (0 - 8) */
 	uint32_t                priority;
 
-	/** Stack high water mark bytes */
+	/** Stack high water mark words (4 bytes) */
 	uint32_t                stackUnused;
 
 	/** Task period ms */
@@ -4037,9 +4037,11 @@ typedef struct PACKED
 
 	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
-
-	uint32_t 				periodTicks;
 	
+
+	/** Temporary run time microseconds */
+	uint32_t                tmpRunTimeTicks;
+
 } rtos_profile_t;
 
 /** (DID_RTOS_INFO) */

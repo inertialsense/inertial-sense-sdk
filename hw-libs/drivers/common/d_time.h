@@ -93,6 +93,14 @@ float time_ticksf_to_usecf(float ticks);
 float time_usecf_to_ticksf(float usec);
 
 /**
+ * @brief Convert ticks (float) to ms (float)
+ * 
+ * @param ticks 
+ * @return float 
+ */
+float time_ticksf_to_msecf(float ticks);
+
+/**
  * @brief Delay for a number of milliseconds
  * 
  * @param ms number of milliseconds to delay for
