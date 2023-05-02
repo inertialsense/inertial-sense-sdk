@@ -423,7 +423,7 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 	Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
 	Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
 	Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
-	Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
+	// Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
 
     for (int jj = 0; jj < Nsteps; jj++) 
 	{
