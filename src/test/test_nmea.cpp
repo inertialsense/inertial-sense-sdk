@@ -186,10 +186,12 @@ TEST(nmea, PGPSP)
 TEST(nmea, GGA)
 {
     gps_pos_t pos = {};
-    // pos.week = 12;
+    pos.week = 2260;
     pos.timeOfWeekMs = 370659600;
     pos.satsUsed = 34;
-    pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+    pos.status = 
+        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
     pos.lla[0] = POS_LAT_DEG;
     pos.lla[1] = POS_LON_DEG;
     pos.lla[2] = POS_ALT_M;
