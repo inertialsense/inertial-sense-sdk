@@ -586,7 +586,7 @@ int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 		(unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK),	// 7
 		pos.pDop,	// 8
 		pos.hMSL,	// 9,10
-		pos.hMSL - pos.lla[2]);	// 11,12 
+		pos.lla[2] - pos.hMSL);	// 11,12 Geoid separation = alt(HAE) - alt(MSL)
 		// 13  time since last DGPS update
 		// 14  DGPS station ID number
 	

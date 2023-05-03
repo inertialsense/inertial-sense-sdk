@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include "../../../SDK/src/protocol_nmea.h"
+#include "../protocol_nmea.h"
+#include "../ISEarth.h"
 
 
 #define ASCII_BUF_LEN   200
@@ -195,11 +196,18 @@ TEST(nmea, GGA)
     pos.hMSL = 89;
     pos.pDop = 6;
     pos.leapS = LEAP_SEC;
+	// Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+	ixVector3d lla;
+	lla[0] = DEG2RAD(pos.lla[0]);
+	lla[1] = DEG2RAD(pos.lla[1]);
+	lla[2] = pos.lla[2];		// Use ellipsoid altitude
+	lla2ecef(lla, pos.ecef);
 
     char ascii_buf[ASCII_BUF_LEN] = { 0 };
     did_gps_to_nmea_gga(ascii_buf, ASCII_BUF_LEN, pos);
     // printf("%s\n", ascii_buf);
     gps_pos_t result = {};
+    result.week = pos.week;
     result.leapS = pos.leapS;
      uint32_t weekday = pos.timeOfWeekMs / 86400000;
     nmea_gga_to_did_gps(result, ascii_buf, ASCII_BUF_LEN, weekday);
