@@ -398,7 +398,7 @@ float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast 
 void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dt)
 {
     ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
-    float dti, Kw, mag_theta2, mag_theta4, Kw0, Kw1, Kw2, div;
+    float dti, Kw, mag_theta2, mag_theta4, div;
 	static float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
 	static float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
 	static float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
