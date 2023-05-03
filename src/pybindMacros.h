@@ -27,9 +27,9 @@ PYBIND11_NUMPY_DTYPE(ins_2_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw,
 PYBIND11_NUMPY_DTYPE(ins_3_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw, lla, msl);
 PYBIND11_NUMPY_DTYPE(ins_4_t, week, timeOfWeek, insStatus, hdwStatus, qe2b, ve, ecef);
 PYBIND11_NUMPY_DTYPE(system_command_t, command, invCommand);
-PYBIND11_NUMPY_DTYPE(ascii_msgs_t, options, pimu, ppimu, pins1, pins2, pgpsp, primu, gpgga, gpgll, gpgsa, gprmc, gpzda, pashr);
+PYBIND11_NUMPY_DTYPE(ascii_msgs_t, options, pimu, ppimu, pins1, pins2, pgpsp, primu, gga, gll, gsa, rmc, zda, pashr);
 PYBIND11_NUMPY_DTYPE(rmc_t, bits, options);
-PYBIND11_NUMPY_DTYPE(sys_params_t, timeOfWeekMs, insStatus, hdwStatus, imuTemp, baroTemp, mcuTemp, sysStatus, imuPeriodMs, navPeriodMs, sensorTruePeriod, reserved2, reserved3, genFaultCode);
+PYBIND11_NUMPY_DTYPE(sys_params_t, timeOfWeekMs, insStatus, hdwStatus, imuTemp, baroTemp, mcuTemp, sysStatus, imuPeriodMs, navPeriodMs, sensorTruePeriod, flashCfgChecksum, reserved3, genFaultCode);
 PYBIND11_NUMPY_DTYPE(sys_sensors_t, time, temp, pqr, acc, mag, bar, barTemp, mslBar, humidity, vin, ana1, ana3, ana4);
 PYBIND11_NUMPY_DTYPE(nvm_flash_cfg_t, size, checksum, key, startupImuDtMs, startupNavDtMs, ser0BaudRate, ser1BaudRate, insRotation, insOffset, gps1AntOffset, insDynModel, debug, gnssSatSigConst, sysCfgBits, refLla, lastLla, lastLlaTimeOfWeekMs, lastLlaWeek, lastLlaUpdateDistance, ioConfig, platformConfig, gps2AntOffset, zeroVelRotation, zeroVelOffset, gpsTimeUserDelay, magDeclination, gpsTimeSyncPeriodMs, startupGPSDtMs, RTKCfgBits, sensorConfig, gpsMinimumElevation, ser2BaudRate, wheelConfig);
 PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, reserved);

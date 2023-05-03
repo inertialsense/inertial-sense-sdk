@@ -1,12 +1,9 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
 
 project(ExampleProjects)
+SET(PROJECT_NAME "ExampleProjects")
 
-#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
-
+# Add all the other sub projects
 add_subdirectory(Ascii)
 add_subdirectory(Bootloader)
 add_subdirectory(Communications)
