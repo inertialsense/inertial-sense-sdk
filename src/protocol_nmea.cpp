@@ -1126,10 +1126,10 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	ptr = ASCII_to_f32(&(gpsPos.hMSL), ptr);
 	ptr = ASCII_find_next_field(ptr);
 
-	// 11,12 - Undulation
-	double undulation;
-	ptr = ASCII_to_f64(&(undulation), ptr);
-	gpsPos.lla[2] = gpsPos.hMSL - undulation;
+	// 11,12 - Geoid separation = alt(HAE) - alt(MSL)
+	double geoidSep;
+	ptr = ASCII_to_f64(&(geoidSep), ptr);
+	gpsPos.lla[2] = gpsPos.hMSL + geoidSep;
 
 	// Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
 	ixVector3d lla;
