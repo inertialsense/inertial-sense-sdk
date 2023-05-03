@@ -216,6 +216,43 @@ TEST(nmea, GGA)
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
+TEST(nmea, did_gps_to_nmea_gga)
+{
+    char gga[ASCII_BUF_LEN] = {0};
+    snprintf(gga, ASCII_BUF_LEN, "$GNGGA,143712.600,4003.34247,N,11139.51850,W,2,12,0.47,1438.2,M,-18.8,M,,0131*4F");
+    gps_pos_t pos = {};
+    pos.week = 2260;
+    pos.timeOfWeekMs = 311839800;
+    // pos.satsUsed = 0;
+    pos.status = 
+        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    pos.lla[0] = POS_LAT_DEG;
+    pos.lla[1] = POS_LON_DEG;
+    pos.lla[2] = POS_ALT_M;
+    pos.hMSL = 89;
+    pos.pDop = 6;
+    pos.leapS = LEAP_SEC;
+	// Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+	ixVector3d lla;
+	lla[0] = DEG2RAD(pos.lla[0]);
+	lla[1] = DEG2RAD(pos.lla[1]);
+	lla[2] = pos.lla[2];		// Use ellipsoid altitude
+	lla2ecef(lla, pos.ecef);
+
+    char ascii_buf[ASCII_BUF_LEN] = { 0 };
+    did_gps_to_nmea_gga(ascii_buf, ASCII_BUF_LEN, pos);
+    printf("%s\n", gga);
+    printf("%s\n", ascii_buf);
+    gps_pos_t result = {};
+    result.week = pos.week;
+    result.leapS = pos.leapS;
+     uint32_t weekday = pos.timeOfWeekMs / 86400000;
+    nmea_gga_to_did_gps(result, ascii_buf, ASCII_BUF_LEN, weekday);
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+    ASSERT_EQ(memcmp(&gga, &ascii_buf, ASCII_BUF_LEN), 0);
+}
+
 TEST(nmea, GGL)
 {
     gps_pos_t pos = {};
