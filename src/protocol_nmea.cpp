@@ -1069,20 +1069,55 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	uint32_t fixQuality;
 	ptr = ASCII_to_u32(&fixQuality, ptr);
 	gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+	gpsPos.status |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+	gpsPos.hAcc = 0.0f;
+	gpsPos.vAcc = 0.0f;
 	switch(fixQuality)
 	{
-	default:														break;
-	case 1:	gpsPos.status |= GPS_STATUS_FIX_3D;						break;
-	case 2:	gpsPos.status |= GPS_STATUS_FIX_DGPS;					break;
-	case 3:	gpsPos.status |= GPS_STATUS_FIX_TIME_ONLY;				break;
-	case 4:	gpsPos.status |= GPS_STATUS_FIX_RTK_FIX;				break;
-	case 5:	gpsPos.status |= GPS_STATUS_FIX_RTK_FLOAT;				break;
-	case 6:	gpsPos.status |= GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK;		break;
+	default:	break;
+	case 1:		// Autonomous
+		gpsPos.status |= 
+			GPS_STATUS_FIX_3D | 
+			GPS_STATUS_FLAGS_FIX_OK;
+		gpsPos.hAcc = 1.5f;
+			break;
+	case 2:		// Differential
+		gpsPos.status |= 
+			GPS_STATUS_FIX_DGPS | 
+			GPS_STATUS_FLAGS_FIX_OK | 
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos.hAcc = 0.8f;
+		break;
+	case 3:		// Time only
+		gpsPos.status |= 
+			GPS_STATUS_FIX_TIME_ONLY;
+		gpsPos.hAcc = 0.8f;
+		break;
+	case 4:		// RTK fix
+		gpsPos.status |= 
+			GPS_STATUS_FIX_RTK_FIX |
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos.hAcc = 0.05f;
+		break;
+	case 5:		// RTK float
+		gpsPos.status |= 
+			GPS_STATUS_FIX_RTK_FLOAT |
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_DGPS_USED;				
+		gpsPos.hAcc = 0.4f;
+		break;
+	case 6:		// Dead reckoning
+		gpsPos.status |= 
+			GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK;
+		break;
 	}
 
 	// 7 - Satellites used
 	ptr = ASCII_to_u8(&(gpsPos.satsUsed), ptr);
-	gpsPos.status = gpsPos.satsUsed;
+	gpsPos.status |= gpsPos.satsUsed;	// GPS_STATUS_NUM_SATS_USED_MASK
 
 	// 8 - hDop
 	ptr = ASCII_to_f32(&(gpsPos.pDop), ptr);
@@ -1095,6 +1130,13 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	double undulation;
 	ptr = ASCII_to_f64(&(undulation), ptr);
 	gpsPos.lla[2] = gpsPos.hMSL - undulation;
+
+	// Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+	ixVector3d lla;
+	lla[0] = DEG2RAD(gpsPos.lla[0]);
+	lla[1] = DEG2RAD(gpsPos.lla[1]);
+	lla[2] = gpsPos.lla[2];		// Use ellipsoid altitude
+	lla2ecef(lla, gpsPos.ecef);
 
 	// 13 - time since last DGPS update
 	// 14 - DGPS station ID number
