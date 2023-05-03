@@ -399,6 +399,10 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 {
     ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
     float dti, Kw, mag_theta2, mag_theta4, Kw0, Kw1, Kw2, div;
+	static float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
+	static float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
+	static float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
+	// static float Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
 
     // for jj = 1: Nint
     //     wb = W0 + (jj - 1) / Nint * (W1 - W0);
@@ -419,11 +423,6 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 	cpy_Vec3_Vec3(wb, imuLast->pqr);
 	cpy_Vec3_Vec3(ab, imuLast->acc);
 	dti = dt * div;
-
-	Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
-	Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
-	Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
-	// Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
 
     for (int jj = 0; jj < Nsteps; jj++) 
 	{
