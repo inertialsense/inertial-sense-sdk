@@ -212,8 +212,8 @@ TEST(nmea, GGA)
 
     char ascii_buf[ASCII_BUF_LEN] = { 0 };
     int n = did_gps_to_nmea_gga(ascii_buf, ASCII_BUF_LEN, pos);
-    printf("%s\n", gga);
-    printf("%s\n", ascii_buf);
+    // printf("%s\n", gga);
+    // printf("%s\n", ascii_buf);
     ASSERT_EQ(memcmp(&gga, &ascii_buf, n), 0);
 
     gps_pos_t result = {};
@@ -260,7 +260,7 @@ TEST(nmea, GSA)
 
     char ascii_buf[ASCII_BUF_LEN] = { 0 };
     did_gps_to_nmea_gsa(ascii_buf, ASCII_BUF_LEN, pos, sat);
-    printf("%s\n", ascii_buf);
+    // printf("%s\n", ascii_buf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
     nmea_gsa_to_did_gps(resultPos, resultSat, ascii_buf, ASCII_BUF_LEN);
