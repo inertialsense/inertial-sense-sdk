@@ -2,6 +2,7 @@
 #include "protocol_nmea.h"
 #include "ISPose.h"
 #include "ISEarth.h"
+#include "data_sets.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -19,6 +20,52 @@ uint32_t ASCII_compute_checksum(uint8_t* str, int size)
 	}
 
 	return checksum;
+}
+
+static int gnssID_to_talkerID(char* a, uint8_t gnssId)
+{
+    a[0] = 'G';
+
+    switch (gnssId)
+    {
+    case SAT_SV_GNSS_ID_GPS:
+    case SAT_SV_GNSS_ID_SBS:
+        a[1] = 'P';
+        break;
+    case SAT_SV_GNSS_ID_GAL:
+        a[1] = 'A';
+        break;
+    case SAT_SV_GNSS_ID_BEI:
+        a[1] = 'B';
+        break;
+    case SAT_SV_GNSS_ID_QZS:
+    case SAT_SV_GNSS_ID_IME:
+        a[1] = 'Q';
+        break;
+    case SAT_SV_GNSS_ID_GLO:
+        a[1] = 'L';
+        break;
+    case SAT_SV_GNSS_ID_IRN:
+        a[1] = 'I';
+        break;
+    default:
+        a[1] = 'N';
+        break;
+    }
+
+	return 2;
+}
+
+static int asciiSnprintfNmeaTalker(char* a, size_t aSize, uint8_t gnssId=0)
+{
+	a[0] = '$';
+	return gnssID_to_talkerID(a+1, gnssId) + 1;
+}
+
+static int asciiSnprintfNmeaFooter(char* a, size_t aSize, int n)
+{
+	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
+	return n + SNPRINTF(a+n, aSize-n, "*%.2X\r\n", checkSum);
 }
 
 char *ASCII_to_u8(uint8_t *val, char *ptr)
@@ -252,35 +299,6 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 
 int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 {
-//     unsigned int checkSum = 0;
-//     serWrite(portNum, (unsigned char*)"$", 1);
-//     ASCII_PORT_WRITE_NO_FORMAT(portNum, "INFO", checkSum, 4);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.serialNumber);      // 1
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.hardwareVer[0]);    // 2
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.hardwareVer[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.hardwareVer[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.hardwareVer[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.firmwareVer[0]);    // 3
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.firmwareVer[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.firmwareVer[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.firmwareVer[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.buildNumber);       // 4
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.protocolVer[0]);    // 5
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.protocolVer[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.protocolVer[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.protocolVer[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.repoRevision);      // 6
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%s", devInfo.manufacturer);      // 7
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%04d", devInfo.buildDate[1]);    // 8
-//     ASCII_PORT_WRITE(portNum, a, checkSum, "-%02d", devInfo.buildDate[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, "-%02d", devInfo.buildDate[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%02d", devInfo.buildTime[0]);    // 9
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ":%02d", devInfo.buildTime[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ":%02d", devInfo.buildTime[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%02d", devInfo.buildTime[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%s", devInfo.addInfo);           // 10    
-//     ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
 	int n = SNPRINTF(a, aSize, "$INFO"
 		",%d"			// 1
 		",%d.%d.%d.%d"	// 2
@@ -303,9 +321,7 @@ int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
 		info.addInfo);			// 10
 		
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)
@@ -313,11 +329,9 @@ int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, un
 	int n = SNPRINTF(a, aSize, "$PTOW");
 	n += SNPRINTF(a+n, aSize-n, ",%.6lf", imuTow);			// 1
 	n += SNPRINTF(a+n, aSize-n, ",%.6lf", insTow);			// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", gpsWeek);			// 3
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	n += SNPRINTF(a+n, aSize-n, ",%u", gpsWeek);			// 3	
+
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[])
@@ -333,9 +347,7 @@ int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[
 	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[1]);		// 6
 	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[2]);		// 7
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
@@ -353,9 +365,7 @@ int did_pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 
 	n += SNPRINTF(a+n, aSize-n, ",%.3f", pimu.dt);			// 8
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
@@ -383,9 +393,7 @@ int did_ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.ned[1]);					// 15
 	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.ned[2]);					// 16
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
@@ -410,9 +418,7 @@ int did_ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
 	n += SNPRINTF(a+n, aSize-n, ",%.8lf", ins2.lla[1]);					// 13
 	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins2.lla[2]);					// 14
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);		
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
@@ -423,9 +429,7 @@ int did_strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.pin);			// 3
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.count);			// 4
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
@@ -453,9 +457,7 @@ int did_gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &
 	n += SNPRINTF(a+n, aSize-n, ",%.4lf", pos.towOffset);				// 16
 	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.leapS);		// 17
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 static int asciiSnprintfLatToDegMin(char* a, size_t aSize, double v)
@@ -463,7 +465,7 @@ static int asciiSnprintfLatToDegMin(char* a, size_t aSize, double v)
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	return SNPRINTF(a, aSize, ",%02d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
+	return SNPRINTF(a, aSize, ",%02d%08.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
 }
 
 static int asciiSnprintfLonToDegMin(char* a, size_t aSize, double v)
@@ -557,42 +559,18 @@ int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 	*47          the checksum data, always begins with *
 	*/
 
-// 	unsigned int checkSum = 0;
-// 	serWrite( portNum, (unsigned char*)"$", 1);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGGA", checkSum, 5);
-// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);										// 1
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');		// 2,3
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');		// 4,5	
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%u", (unsigned)(fixQuality));						// 6
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));	// 7
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.2f", pos.pDop);								// 8
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.2f,M", pos.hMSL);							// 9,10
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.2f,M", pos.hMSL - pos.lla[2]);			// 11,12
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",,", checkSum, 2);										// 13,14
-// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
-	int n = SNPRINTF(a, aSize, "$GPGGA");
+	int n = asciiSnprintfNmeaTalker(a, aSize);
+	n += SNPRINTF(a+n, aSize-n, "GGA");
 	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 2,3
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 4,5
-	n += SNPRINTF(a+n, aSize-n, 
-		",%u"		// 6
-		",%02u"		// 7
-		",%.2f"		// 8
-		",%.2f,M"	// 9,10
-		",%.2f,M"	// 11,12
-		",,", 		// 13,14
-		(unsigned int)fixQuality,											// 6
-		(unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK),	// 7
-		pos.pDop,	// 8
-		pos.hMSL,	// 9,10
-		pos.lla[2] - pos.hMSL);	// 11,12 Geoid separation = alt(HAE) - alt(MSL)
-		// 13  time since last DGPS update
-		// 14  DGPS station ID number
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)fixQuality);		// 6 - GPS quality
+	n += SNPRINTF(a+n, aSize-n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));		// 7 - Satellites used
+	n += SNPRINTF(a+n, aSize-n, ",%.2f", pos.pDop);						// 8 - HDop
+	n += SNPRINTF(a+n, aSize-n, ",%.2f,M", pos.hMSL);					// 9,10 - MSL altitude
+	n += SNPRINTF(a+n, aSize-n, ",%.2f,M", pos.lla[2] - pos.hMSL);		// 11,12 - Geoid separation
+	n += SNPRINTF(a+n, aSize-n, ",,"); 									// 13,14 - Age of differential, DGPS station ID number	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
@@ -607,24 +585,12 @@ int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	     *iD          checksum data
 	*/
 
-// 	unsigned int checkSum = 0;
-// 	serWrite( portNum, (unsigned char*)"$", 1);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGLL", checkSum, 5);
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');		// 1,2
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');		// 3,4
-// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);										// 5
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);										// 6
-// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
 	int n = SNPRINTF(a, aSize, "$GPGLL");
 	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 1,2
 	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 3,4
 	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
 	n += SNPRINTF(a+n, aSize-n, ",A");	// 6
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
@@ -664,27 +630,6 @@ int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sa
 		17   = VDOP
 	*/
 
-// 	unsigned int checkSum = 0;
-// 	serWrite( portNum, (unsigned char*)"$", 1);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGSA", checkSum, 5);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);							// 1
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(fixQuality));		// 2
-// 	for (uint32_t i = 0; i < 12; i++)												// 3-14
-// 	{
-// 		if(g_gps1Sat.sat[i].svId)
-// 		{
-// 			ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(g_gps1Sat.sat[i].svId));
-// 		}
-// 		else
-// 		{
-// 			ASCII_PORT_WRITE_NO_FORMAT(portNum, ",", checkSum, 1);
-// 		}
-// 	}
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.1f", pos.pDop);					// 15
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.1f", pos.hAcc);					// 16
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.1f", pos.vAcc);					// 17
-// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
 	int n = SNPRINTF(a, aSize, "$GPGSA"
 		",A"		// 1
 		",%02u",	// 2
@@ -708,11 +653,9 @@ int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sa
 		",%.1f",	// 17
 		pos.pDop,	// 15
 		pos.hAcc,	// 16
-		pos.vAcc);	// 17
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+		pos.vAcc);	// 17	
+
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
@@ -721,35 +664,6 @@ int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &ve
 	ixVector3 vel_ned_;
 	quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
 	quatConjRot(vel_ned_, qe2n, vel.vel);
-
-	// 	unsigned int checkSum = 0;
-	// 	serWrite(portNum, (unsigned char*)"$", 1);
-	// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPRMC", checkSum, 5);
-	// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);									// 1	// time of last fix
-	// 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
-	// 	{
-	// 		ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);								// 2	// A=active (good)
-	// 	}
-	// 	else
-	// 	{
-	// 		ASCII_PORT_WRITE_NO_FORMAT(portNum, ",V", checkSum, 2);								// 2	// V=void (bad,warning)
-	// 	}
-	// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');	// 3,4	// lat lon (degrees minutes)
-	// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');	// 5,6
-	//
-	// 	float speedInKnots = C_METERS_KNOTS_F * mag_Vec2(vel_ned_);
-	// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%05.1f", speedInKnots);						// 7	// speed in knots
-	// // 	float courseMadeTrue = atan2f(g_navInGpsA.velNed[1], g_navInGpsA.velNed[0]);
-	// 	float courseMadeTrue = 0.0f;
-	// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%05.1f", (courseMadeTrue*C_RAD2DEG_F));		// 8	// course made true
-	// 	asciiPortWriteGPSDateOfLastFix(portNum, a, checkSum);									// 9	// date of last fix UTC
-	//
-	// 	// Magnetic variation degrees (Easterly var. subtracts from true course), i.e. 020.3,E - left pad to 3 zero
-	// 	float magDec = g_nvmFlashCfg->magDeclination * C_RAD2DEG_F;
-	// 	bool positive = (magDec >= 0.0);
-	// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%05.1f,", abs(magDec));						// 10	// Magnetic variation
-	// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, (positive ? "E" : "W"), checkSum, 1);				// 11
-	// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
 
 	int n = SNPRINTF(a, aSize, "$GPRMC");
 	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1	// UTC time of last fix
@@ -785,9 +699,7 @@ int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &ve
 	fabsf(magDec),																				// 10	// Magnetic variation
 	(positive ? "E" : "W"));																	// 11
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
@@ -806,9 +718,7 @@ int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 	n += asciiSnprintfGPSDateOfLastFixCSV(a+n, aSize-n, pos);				// 2,3,4
 	n += SNPRINTF(a+n, aSize-n, ",00,00");									// 5,6
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma)
@@ -854,9 +764,7 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 	n += SNPRINTF(a+n, aSize-n, ",%d", fix);															//Field 11 - GPS Quality
 	n += SNPRINTF(a+n, aSize-n, ",%d", INS_STATUS_SOLUTION(ins1.insStatus) >= INS_STATUS_SOLUTION_NAV); //Field 12 - INS Status
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
 
