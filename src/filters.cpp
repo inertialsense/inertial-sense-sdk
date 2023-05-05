@@ -399,10 +399,10 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
 {
     ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
     float dti, Kw, mag_theta2, mag_theta4, div;
-	static float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
-	static float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
-	static float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
-	// static float Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
+    static float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
+    static float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
+    static float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
+    // static float Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
 
     // for jj = 1: Nint
     //     wb = W0 + (jj - 1) / Nint * (W1 - W0);
@@ -414,34 +414,34 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
     //     phi = phi + phi_dot * dt / Nint;
     //     dv = dv + (ab + cross(phi, ab)) * dt / Nint;
     // end
-	
-	div = 1.0f / (float)Nsteps;
+
+    div = 1.0f / (float)Nsteps;
     sub_Vec3_Vec3(deltaW, imu->pqr, imuLast->pqr);
     sub_Vec3_Vec3(deltaA, imu->acc, imuLast->acc);
-	mul_Vec3_X(deltaW, deltaW, div);
-	mul_Vec3_X(deltaA, deltaA, div);
-	cpy_Vec3_Vec3(wb, imuLast->pqr);
-	cpy_Vec3_Vec3(ab, imuLast->acc);
-	dti = dt * div;
+    mul_Vec3_X(deltaW, deltaW, div);
+    mul_Vec3_X(deltaA, deltaA, div);
+    cpy_Vec3_Vec3(wb, imuLast->pqr);
+    cpy_Vec3_Vec3(ab, imuLast->acc);
+    dti = dt * div;
 
     for (int jj = 0; jj < Nsteps; jj++) 
-	{
-	    // Coning and sculling integrals
-	    cross_Vec3(thxwb, theta, wb);
-	    cross_Vec3(thxthxwb, theta, thxwb);
-	    cross_Vec3(thxab, theta, ab);
+    {
+        // Coning and sculling integrals
+        cross_Vec3(thxwb, theta, wb);
+        cross_Vec3(thxthxwb, theta, thxwb);
+        cross_Vec3(thxab, theta, ab);
         cross_Vec3(thxthxab, theta, thxab);
         mag_theta2 = dot_Vec3(theta);
         mag_theta4 = mag_theta2 * mag_theta2;
-		Kw = Kw0 + mag_theta2 * Kw1 + mag_theta4 * Kw2; // + mag_theta4 * mag_theta2 * Kw3; <--- the last term is negligibly small
+        Kw = Kw0 + mag_theta2 * Kw1 + mag_theta4 * Kw2; // + mag_theta4 * mag_theta2 * Kw3; <--- the last term is negligibly small
         for (int i = 0; i < 3; i++) {
-		    theta[i] += (wb[i] + 0.5f * thxwb[i] + Kw * thxthxwb[i]) * dti;
-		    vel[i] += (ab[i] + thxab[i] + 0.5f * thxthxab[i]) * dti;
-		}
-		// Advance wb, ab (minor step)
-		add_Vec3_Vec3(wb, wb, deltaW);
-		add_Vec3_Vec3(ab, ab, deltaA);
-	}
+            theta[i] += (wb[i] + 0.5f * thxwb[i] + Kw * thxthxwb[i]) * dti;
+            vel[i] += (ab[i] + thxab[i] + 0.5f * thxthxab[i]) * dti;
+        }
+        // Advance wb, ab (minor step)
+        add_Vec3_Vec3(wb, wb, deltaW);
+        add_Vec3_Vec3(ab, ab, deltaA);
+    }
 }
 
 

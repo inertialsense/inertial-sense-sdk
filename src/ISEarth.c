@@ -180,7 +180,7 @@ void ecef2lla(const double *Pe, double *LLA)
     LLA[2] = U * (1.0 - POWB2 / MAX(REQ * V, EPS));
     // Avoid numerical issues at poles
     if (V < EPS) {
-        LLA[0] = LLA[0] < 0.0 ? -0.5 * M_PI : 0.5 * M_PI;
+        LLA[0] = LLA[0] < 0.0 ? -M_HALFPI : M_HALFPI;
         LLA[2] = fabs(Pe[2]) - REP;
     }
 
@@ -213,7 +213,7 @@ void ecef2lla(const double *Pe, double *LLA)
     LLA[0] = atan2(z_i, p);
     // Correct for numerical instability in altitude near poles
     if (fabs(Pe[1]) < 1.0 && fabs(Pe[2]) < 1.0) {
-        LLA[0] = LLA[0] < 0.0 ? -0.5 * M_PI : 0.5 * M_PI;
+        LLA[0] = LLA[0] < 0.0 ? -C_PIDIV2 : C_PIDIV2;
     }
     LLA[2] = sqrt(p2 + z_i * z_i) - v;
 
@@ -341,7 +341,7 @@ void ecef2lla_f(const float *Pe, float *LLA)
     LLA[2] = U * (1.0f - POWB2 / MAX(REQ * V, EPS));
     // Avoid numerical issues at poles
     if (V < EPS) {
-        LLA[0] = LLA[0] < 0.0f ? -0.5f * M_PI : 0.5f * M_PI;
+        LLA[0] = LLA[0] < 0.0f ? -M_HALFPI : M_HALFPI;
         LLA[2] = fabsf(Pe[2]) - REP;
     }
 
@@ -374,7 +374,7 @@ void ecef2lla_f(const float *Pe, float *LLA)
     LLA[0] = atan2f(z_i, p);
     // Correct for numerical instability in altitude near poles
     if (fabsf(Pe[1]) < 1.0f && fabsf(Pe[2]) < 1.0f) {
-        LLA[0] = LLA[0] < 0.0f ? -0.5f * M_PI : 0.5f * M_PI;
+        LLA[0] = LLA[0] < 0.0f ? -C_PIDIV2_F : C_PIDIV2_F;
     }
     LLA[2] = sqrtf(p2 + z_i * z_i) - v;
 
@@ -649,13 +649,14 @@ float gravity_igf80(float lat_rad, float alt)
     float g0, sinmu2;
 
     // Equatorial gravity
-    //float ge = 9.7803253359f;
+    // float ge = 9.7803253359f;
     // Defined constant k = (b*gp - a*ge) / a / ge;
-    //double k = 0.00193185265241;
+    // double k = 0.00193185265241;
     // Square of first eccentricity e^2 = 1 - (1 - f)^2 = 1 - (b/a)^2;
-    //double e2 = 0.00669437999013;
+    // double e2 = 0.00669437999013;
 
-    sinmu2 = sinf(lat_rad) * sinf(lat_rad);
+    sinmu2 = sinf(lat_rad);
+    sinmu2 *= sinmu2;
     g0 = GEQ * (1.0f + K_GRAV * sinmu2) / sqrtf(1.0f - E_SQ_f * sinmu2);
 
     // Free air correction
