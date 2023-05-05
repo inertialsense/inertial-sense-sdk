@@ -767,6 +767,146 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
+int did_gps_sat_to_nmea_gsv(char a[], const int aSize, gps_sat_t &sat)
+{
+
+
+#if 0
+#define GSV_BUF_LEN 80
+#define GSV_CNST_NUM 8
+
+    int n = 0;
+
+    struct
+    {
+        char str[GSV_BUF_LEN];
+        char *ptr;
+        char *restart_ptr;
+        uint8_t count;
+        uint8_t msg_idx;
+        uint8_t msg_sat_idx;
+    } gsv_cnst[GSV_CNST_NUM];
+
+    char talker[3];
+    uint16_t i;
+
+    // Parse list of satellites to determine how many are present
+    for (i = 0U; i < sat.numSats; i++)
+    {
+        if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L1)
+        {
+            gsv_cnst[sat.sat[i].gnssId - 1].count++;
+        }
+        if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L2)
+        {
+            gsv_cnst[sat.sat[i].gnssId - 1].count++;
+        }
+        if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L5)
+        {
+            gsv_cnst[sat.sat[i].gnssId - 1].count++;
+        }
+    }
+
+    // Fill out the header for each message in its own buffer
+    for (i = 0; i < GSV_CNST_NUM; i++)
+    {
+        if (gsv_cnst[i].count)
+        { // If there are svs in the list, add the header
+            gnssID_to_talkerID(i + 1, talker);
+            gsv_cnst[i].restart_ptr = gsv_cnst[i].str + SNPRINTF(gsv_cnst[i].str, GSV_BUF_LEN, "$%sGSV", talker);
+            gsv_cnst[i].msg_idx = 0U;
+            gsv_cnst[i].msg_sat_idx = 0U;
+            gsv_cnst[i].ptr = gsv_cnst[i].restart_ptr +
+                              write_gsv_stats(gsv_cnst[i].restart_ptr,
+                                              gsv_cnst[i].count,
+                                              gsv_cnst[i].msg_idx);
+        }
+        else
+        {
+            // Not using this constellation, null the string
+            gsv_cnst[i].str[0] = '\0';
+        }
+    }
+
+#define NUM_GSV_BANDS 3
+#define GSV_Ln_OFFSET 512
+
+    // Parse satellites one by one, adding them to the buffers
+    // When a buffer fills up, print the buffer out and restart the message
+    for (uint8_t j = 0U; j < sat.numSats; j++)
+    {
+        uint8_t idx = sat.sat[j].gnssId - 1;
+
+        for (uint8_t band = 0U; band < GSV_Ln_OFFSET; band++)
+        {
+            if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L1 << band)
+            {
+                if (gsv_cnst[idx].msg_sat_idx >= 3)
+                {
+                    // Print message out to user buffer
+                    uint8_t chksum;
+                    if (nmea_checksum(gsv_cnst[i].str, &chksum) == NMEAUTILS_SUCCESS)
+                    {
+                        n += SNPRINTF(a + n, aSize - n, "%s*%.2x\r\n", gsv_cnst[idx].ptr, chksum);
+                    }
+
+                    // Restart in new message
+                    if (gsv_cnst[idx].count)
+                    { // If there are still satellites left
+                        gsv_cnst[idx].msg_idx++;
+                        gsv_cnst[idx].msg_sat_idx = 0;
+                        gsv_cnst[idx].ptr = gsv_cnst[idx].restart_ptr +
+                                            write_gsv_stats(gsv_cnst[idx].restart_ptr,
+                                                            gsv_cnst[idx].count,
+                                                            gsv_cnst[idx].msg_idx);
+                    }
+                    else
+                    { // Done with this constellation, null the string
+                        gsv_cnst[idx].str[0] = '\0';
+                    }
+                }
+
+                // Fill a satellite, L2 and L5 have a 512 offset applied to id them
+                gsv_cnst[i].ptr += SNPRINTF(gsv_cnst[i].ptr, 16, ",%03u,%02u,%02u,%02u",
+                                            sat.sat[j].svId + (band ? GSV_Ln_OFFSET : 0),
+                                            sat.sat[j].elev,
+                                            sat.sat[j].azim,
+                                            sat.sat[j].cno[band]);
+
+                gsv_cnst[idx].count--;
+                gsv_cnst[idx].msg_sat_idx++;
+            }
+        }
+    }
+
+    // Fill out the header for each message in its own buffer
+    for (i = 0; i < GSV_CNST_NUM; i++)
+    {
+        if (gsv_cnst[i].str[0] != '\0')
+        {
+            uint8_t chksum;
+            if (nmea_checksum(gsv_cnst[i].str, &chksum) == NMEAUTILS_SUCCESS)
+            {
+                n += SNPRINTF(a + n, aSize - n, "%s*%.2x\r\n", gsv_cnst[i].ptr, chksum);
+            }
+
+            // Done with this constellation, null the string
+            gsv_cnst[i].str[0] = '\0';
+        }
+
+        if (gsv_cnst[i].count != 0)
+        {
+            // TODO: Throw an error, we left satellites on the table
+            while (1)
+                ;
+        }
+    }
+#endif
+
+
+    return n;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -1109,13 +1249,15 @@ int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const
 	return 0;
 }
 
+int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
+{
+}
 
-//////////////////////////////////////////////////////////////////////////
-// Parse NMEA Functions
-//////////////////////////////////////////////////////////////////////////
+
+
 
 // Returns RMC options
-uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
 	if(pHandle >= NUM_COM_PORTS)
@@ -1181,7 +1323,7 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 /* G_ZDA message
 *  Provides day/month/year fort calculating iTOW.
 */
-int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, double &year)
+int nmea_parse_zda(const char msg[], int msgSize, double &day, double &month, double &year)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1212,7 +1354,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 *   Number Satellites
 *   Altitude & Geoid separation
 */
-int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
+int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1354,7 +1496,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 *   Number Satellites
 *   Altitude & Geoid separation
 */	
-int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
+int nmea_parse_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1493,7 +1635,7 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 /* G_RMC Message
 * Provides speed (speed and course over ground)
 */
-int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags)
+int nmea_parse_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1539,7 +1681,7 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 /* G_GSA Message
 * Provides pDOP and navigation mode (saved to determine 2D/3D mode)
 */
-int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode)
+int nmea_parse_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1567,7 +1709,7 @@ int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMod
 * Provides satellite information
 * Multiple GSV messages will come in a block. We wait until block is finished before flagging data is ready.
 */
-int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSVmsg[2], int *satCount, uint32_t *cnoSum, uint32_t *cnoCount)
+int nmea_parse_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSVmsg[2], int *satCount, uint32_t *cnoSum, uint32_t *cnoCount)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];

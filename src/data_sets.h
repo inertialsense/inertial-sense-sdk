@@ -865,7 +865,7 @@ typedef struct PACKED
 /** GPS Satellite information */
 typedef struct PACKED
 {
-	/** GNSS identifier: 0 GPS, 1 SBAS, 2 Galileo, 3 BeiDou, 5 QZSS, 6 GLONASS */
+    /** GNSS identifier (see eSatSvGnssId) */
 	uint8_t					gnssId;			
 
 	/** Satellite identifier */
@@ -883,7 +883,7 @@ typedef struct PACKED
 	/** (m) Pseudo range residual */
 	int16_t					prRes;			
 
-	/** (see eSatSvFlags) */
+	/** (see eSatSvStatus) */
 	uint32_t				flags;			
 } gps_sat_sv_t;
 
