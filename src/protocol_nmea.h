@@ -64,6 +64,7 @@ int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sa
 int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination);
 int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos);
 int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
+int did_gps_sat_to_nmea_gsv_set(char a[], const int aSize, gps_sat_t &sat, int gnssId);
 int did_gps_sat_to_nmea_gsv(char a[], const int aSize, gps_sat_t &sat);
 
 

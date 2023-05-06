@@ -767,9 +767,39 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 	return asciiSnprintfNmeaFooter(a, aSize, n);
 }
 
+
+int did_gps_sat_to_nmea_gsv_set(char a[], const int aSize, gps_sat_t &sat, int gnssId)
+{
+	int svCnt=0;
+	int n=0;
+
+	for (int i=0; i<sat.numSats; i++)
+	{
+		if (sat.sat[i].gnssId == gnssId)
+		{
+			svCnt++;
+		}
+	}
+
+	if (svCnt)
+	{
+		printf("gnssId: %d   svCnt: %d\n", gnssId, svCnt);
+	}
+
+	return n;
+}
+
+
 int did_gps_sat_to_nmea_gsv(char a[], const int aSize, gps_sat_t &sat)
 {
+	int n=0;
 
+	for( int gnssId=1; gnssId<8; gnssId++)
+	{
+		n += did_gps_sat_to_nmea_gsv_set(a, aSize-n, sat, gnssId);
+	}
+
+	return n;
 
 #if 0
 #define GSV_BUF_LEN 80
@@ -793,18 +823,7 @@ int did_gps_sat_to_nmea_gsv(char a[], const int aSize, gps_sat_t &sat)
     // Parse list of satellites to determine how many are present
     for (i = 0U; i < sat.numSats; i++)
     {
-        if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L1)
-        {
-            gsv_cnst[sat.sat[i].gnssId - 1].count++;
-        }
-        if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L2)
-        {
-            gsv_cnst[sat.sat[i].gnssId - 1].count++;
-        }
-        if (sat.sat[i].flags & SAT_SV_FLAGS_FREQ_PRESENT_L5)
-        {
-            gsv_cnst[sat.sat[i].gnssId - 1].count++;
-        }
+		gsv_cnst[sat.sat[i].gnssId - 1].count++;
     }
 
     // Fill out the header for each message in its own buffer
@@ -901,10 +920,10 @@ int did_gps_sat_to_nmea_gsv(char a[], const int aSize, gps_sat_t &sat)
                 ;
         }
     }
+    return n;
 #endif
 
-
-    return n;
+	return 0;
 }
 
 
@@ -1251,6 +1270,7 @@ int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const
 
 int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
 {
+	return 0;
 }
 
 
