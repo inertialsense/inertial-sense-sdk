@@ -768,22 +768,48 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 }
 
 
+int prnToSvId(int gnssId, int prn)
+{
+	switch (gnssId+1)
+	{
+		case SAT_SV_GNSS_ID_SBS: return prn-87;
+	}
+
+	return prn;
+}
+
+
+
 int did_gps_sat_to_nmea_gsv_set(char a[], const int aSize, gps_sat_t &sat, int gnssId)
 {
-	int svCnt=0;
+	int numSats=0;
 	int n=0;
 
 	for (int i=0; i<sat.numSats; i++)
 	{
-		if (sat.sat[i].gnssId == gnssId)
+		gps_sat_sv_t &s = sat.sat[i];
+		if (s.gnssId == gnssId &&
+			s.cno > 0)
 		{
-			svCnt++;
+			numSats++;
 		}
 	}
 
-	if (svCnt)
+	if (numSats)
 	{
-		printf("gnssId: %d   svCnt: %d\n", gnssId, svCnt);
+		printf("gnssId: %d   numSats: %d\n", gnssId, numSats);
+	}
+
+	int numMsgs = numSats>>2;	// div 4
+	int msgNum = 1;
+
+	for (int msgNum = 1; msgNum<numMsgs; msgNum++)
+	{
+		// $xxGSV,numMsg,msgNum,numSats{,svid,elv,az,cno},signalId*cs\r\n
+		int n = asciiSnprintfNmeaTalker(a, aSize, gnssId);
+		n += SNPRINTF(a+n, aSize-n, "GSV");
+		n += SNPRINTF(a+n, aSize-n, ",%d,%d,%02d", numMsgs, msgNum, numSats);		// 1,2,3 - number of messages, message number, number of satellites in view
+		n = asciiSnprintfNmeaFooter(a, aSize, n);
 	}
 
 	return n;
@@ -794,7 +820,7 @@ int did_gps_sat_to_nmea_gsv(char a[], const int aSize, gps_sat_t &sat)
 {
 	int n=0;
 
-	for( int gnssId=1; gnssId<8; gnssId++)
+	for( int gnssId=0; gnssId<8; gnssId++)
 	{
 		n += did_gps_sat_to_nmea_gsv_set(a, aSize-n, sat, gnssId);
 	}

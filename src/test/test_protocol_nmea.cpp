@@ -294,13 +294,14 @@ TEST(protocol_nmea, GSV)
     gps_sat_t sat = {};
     sat.numSats = 44;
     sat.timeOfWeekMs = 572440400;
-    sat.sat[0].azim	88;
+    sat.sat[0].azim	= 88;
     sat.sat[0].cno = 45;
     sat.sat[0].elev = 28;
     sat.sat[0].flags = 5314911;
     sat.sat[0].gnssId = 0;
     sat.sat[0].prRes = 0;
     sat.sat[0].svId = 1;
+
     sat.sat[1].azim = 130;
     sat.sat[1].cno = 46;
     sat.sat[1].elev = 32;
@@ -308,6 +309,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[1].gnssId = 0;
     sat.sat[1].prRes = 7;
     sat.sat[1].svId = 7;
+
     sat.sat[2].azim = 43;
     sat.sat[2].cno = 35;
     sat.sat[2].elev = 2;
@@ -315,6 +317,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[2].gnssId = 0;
     sat.sat[2].prRes = 0;
     sat.sat[2].svId = 8;
+
     sat.sat[3].azim = 279;
     sat.sat[3].cno = 46;
     sat.sat[3].elev = 45;
@@ -322,6 +325,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[3].gnssId = 0;
     sat.sat[3].prRes = 1;
     sat.sat[3].svId = 13;
+
     sat.sat[4].azim = 0;
     sat.sat[4].cno = 47;
     sat.sat[4].elev = 72;
@@ -329,6 +333,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[4].gnssId = 0;
     sat.sat[4].prRes = 0;
     sat.sat[4].svId = 14;
+
     sat.sat[5].azim = 303;
     sat.sat[5].cno = 45;
     sat.sat[5].elev = 21;
@@ -336,6 +341,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[5].gnssId = 0;
     sat.sat[5].prRes = 6;
     sat.sat[5].svId = 15;
+
     sat.sat[6].azim = 196;
     sat.sat[6].cno = 45;
     sat.sat[6].elev = 60;
@@ -343,6 +349,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[6].gnssId = 0;
     sat.sat[6].prRes = 0;
     sat.sat[6].svId = 17;
+
     sat.sat[7].azim = 206;
     sat.sat[7].cno = 42;
     sat.sat[7].elev = 31;
@@ -350,6 +357,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[7].gnssId = 0;
     sat.sat[7].prRes = 5;
     sat.sat[7].svId = 19;
+
     sat.sat[8].azim = 58;
     sat.sat[8].cno = 46;
     sat.sat[8].elev = 23;
@@ -357,13 +365,15 @@ TEST(protocol_nmea, GSV)
     sat.sat[8].gnssId = 0;
     sat.sat[8].prRes = 8;
     sat.sat[8].svId = 21;
+
     sat.sat[9].azim = 0;
     sat.sat[9].cno = 0;
-    sat.sat[9].elev = 4294967205;
+    sat.sat[9].elev = 0;
     sat.sat[9].flags = 17;
     sat.sat[9].gnssId = 0;
     sat.sat[9].prRes = 0;
     sat.sat[9].svId = 29;
+
     sat.sat[10].azim = 129;
     sat.sat[10].cno = 49;
     sat.sat[10].elev = 67;
@@ -371,20 +381,24 @@ TEST(protocol_nmea, GSV)
     sat.sat[10].gnssId = 0;
     sat.sat[10].prRes = 3;
     sat.sat[10].svId = 30;
+
     sat.sat[11].azim = 0;
     sat.sat[11].cno = 0;
-    sat.sat[11].elev = 4294967205;
+    sat.sat[11].elev = 0;
     sat.sat[11].flags = 17;
     sat.sat[11].gnssId = 0;
     sat.sat[11].prRes = 0;
     sat.sat[11].svId = 31;
+
+    // SBAS svid 131-
     sat.sat[12].azim = 188;
     sat.sat[12].cno = 45;
     sat.sat[12].elev = 43;
     sat.sat[12].flags = 5314911;
     sat.sat[12].gnssId = 1;
     sat.sat[12].prRes = 3;
-    sat.sat[12].svId = 131;
+    sat.sat[12].svId = 131;         // gnssId 1, svId = 131 - 87 = 44
+
     sat.sat[13].azim = 206;
     sat.sat[13].cno = 43;
     sat.sat[13].elev = 40;
@@ -392,6 +406,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[13].gnssId = 1;
     sat.sat[13].prRes = 2;
     sat.sat[13].svId = 133;
+
     sat.sat[14].azim = 173;
     sat.sat[14].cno = 0;
     sat.sat[14].elev = 43;
@@ -399,6 +414,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[14].gnssId = 1;
     sat.sat[14].prRes = 0;
     sat.sat[14].svId = 138;
+
     sat.sat[15].azim = 72;
     sat.sat[15].cno = 44;
     sat.sat[15].elev = 30;
@@ -406,6 +422,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[15].gnssId = 2;
     sat.sat[15].prRes = 15;
     sat.sat[15].svId = 2;
+
     sat.sat[16].azim = 241;
     sat.sat[16].cno = 44;
     sat.sat[16].elev = 40;
@@ -413,6 +430,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[16].gnssId = 2;
     sat.sat[16].prRes = 5;
     sat.sat[16].svId = 7;
+
     sat.sat[17].azim = 189;
     sat.sat[17].cno = 36;
     sat.sat[17].elev = 15;
@@ -420,6 +438,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[17].gnssId = 2;
     sat.sat[17].prRes = 33;
     sat.sat[17].svId = 8;
+
     sat.sat[18].azim = 164;
     sat.sat[18].cno = 0;
     sat.sat[18].elev = 	9;
@@ -427,6 +446,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[18].gnssId = 2;
     sat.sat[18].prRes = 0;
     sat.sat[18].svId = 15;
+
     sat.sat[19].azim = 201;
     sat.sat[19].cno = 44;
     sat.sat[19].elev = 47;
@@ -434,13 +454,15 @@ TEST(protocol_nmea, GSV)
     sat.sat[19].gnssId = 2;
     sat.sat[19].prRes = 0;
     sat.sat[19].svId = 18;
+
     sat.sat[20].azim = 0;
     sat.sat[20].cno = 36;
-    sat.sat[20].elev = 4294967205;
+    sat.sat[20].elev = 0;
     sat.sat[20].flags = 7;
     sat.sat[20].gnssId = 2;
     sat.sat[20].prRes = 0;
     sat.sat[20].svId = 20;
+
     sat.sat[21].azim = 280;
     sat.sat[21].cno = 44;
     sat.sat[21].elev = 33;
@@ -448,6 +470,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[21].gnssId = 2;
     sat.sat[21].prRes = 7;
     sat.sat[21].svId = 27;
+
     sat.sat[22].azim = 2;
     sat.sat[22].cno = 47;
     sat.sat[22].elev = 71;
@@ -455,6 +478,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[22].gnssId = 2;
     sat.sat[22].prRes = 2;
     sat.sat[22].svId = 30;
+
     sat.sat[23].azim = 117;
     sat.sat[23].cno = 44;
     sat.sat[23].elev = 32;
@@ -462,6 +486,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[23].gnssId = 2;
     sat.sat[23].prRes = 4;
     sat.sat[23].svId = 34;
+
     sat.sat[24].azim = 58;
     sat.sat[24].cno = 44;
     sat.sat[24].elev = 25;
@@ -469,62 +494,71 @@ TEST(protocol_nmea, GSV)
     sat.sat[24].gnssId = 2;
     sat.sat[24].prRes = 15;
     sat.sat[24].svId = 36;
+
     sat.sat[25].azim = 0;
     sat.sat[25].cno = 0;
-    sat.sat[25].elev = 4294967205;
+    sat.sat[25].elev = 0;
     sat.sat[25].flags = 1;
     sat.sat[25].gnssId = 5;
     sat.sat[25].prRes = 0;
     sat.sat[25].svId = 2;
+
     sat.sat[26].azim = 0;
     sat.sat[26].cno = 0;
-    sat.sat[26].elev = 4294967205;
+    sat.sat[26].elev = 0;
     sat.sat[26].flags = 1;
     sat.sat[26].gnssId = 5;
     sat.sat[26].prRes = 0;
     sat.sat[26].svId = 3;
+
     sat.sat[27].azim = 0;
     sat.sat[27].cno = 0;
-    sat.sat[27].elev = 4294967205;
+    sat.sat[27].elev = 0;
     sat.sat[27].flags = 1;
     sat.sat[27].gnssId = 5;
     sat.sat[27].prRes = 0;
     sat.sat[27].svId = 4;
+
     sat.sat[28].azim = 0;
     sat.sat[28].cno = 0;
-    sat.sat[28].elev = 4294967205;
+    sat.sat[28].elev = 0;
     sat.sat[28].flags = 1;
     sat.sat[28].gnssId = 5;
     sat.sat[28].prRes = 0;
     sat.sat[28].svId = 5;
+
     sat.sat[29].azim = 0;
     sat.sat[29].cno = 0;
-    sat.sat[29].elev = 4294967205;
+    sat.sat[29].elev = 0;
     sat.sat[29].flags = 1;
     sat.sat[29].gnssId = 5;
     sat.sat[29].prRes = 0;
     sat.sat[29].svId = 6;
+
     sat.sat[30].azim = 0;
     sat.sat[30].cno = 0;
-    sat.sat[30].elev = 4294967205;
+    sat.sat[30].elev = 0;
     sat.sat[30].flags = 1;
     sat.sat[30].gnssId = 5;
     sat.sat[30].prRes = 0;
     sat.sat[30].svId = 8;
+
     sat.sat[31].azim = 0;
     sat.sat[31].cno = 0;
-    sat.sat[31].elev = 4294967205;
+    sat.sat[31].elev = 0;
     sat.sat[31].flags = 1;
     sat.sat[31].gnssId = 5;
     sat.sat[31].prRes = 0;
     sat.sat[31].svId = 9;
+
     sat.sat[32].azim = 0;
     sat.sat[32].cno = 0;
-    sat.sat[32].elev = 4294967205;
+    sat.sat[32].elev = 0;
     sat.sat[32].flags = 1;
     sat.sat[32].gnssId = 5;
     sat.sat[32].prRes = 0;
     sat.sat[32].svId = 10;
+
     sat.sat[33].azim = 221;
     sat.sat[33].cno = 39;
     sat.sat[33].elev = 8;
@@ -532,6 +566,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[33].gnssId = 6;
     sat.sat[33].prRes = 18;
     sat.sat[33].svId = 1;
+
     sat.sat[34].azim = 272;
     sat.sat[34].cno = 46;
     sat.sat[34].elev = 27;
@@ -539,6 +574,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[34].gnssId = 6;
     sat.sat[34].prRes = 37;
     sat.sat[34].svId = 2;
+
     sat.sat[35].azim = 325;
     sat.sat[35].cno = 43;
     sat.sat[35].elev = 15;
@@ -546,6 +582,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[35].gnssId = 6;
     sat.sat[35].prRes = 43;
     sat.sat[35].svId = 3;
+
     sat.sat[36].azim = 98;
     sat.sat[36].cno = 0;
     sat.sat[36].elev = 5;
@@ -553,6 +590,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[36].gnssId = 6;
     sat.sat[36].prRes = 0;
     sat.sat[36].svId = 10;
+
     sat.sat[37].azim = 65;
     sat.sat[37].cno = 51;
     sat.sat[37].elev = 48;
@@ -560,6 +598,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[37].gnssId = 6;
     sat.sat[37].prRes = 10;
     sat.sat[37].svId = 11;
+
     sat.sat[38].azim = 326;
     sat.sat[38].cno = 48;
     sat.sat[38].elev = 47;
@@ -567,6 +606,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[38].gnssId = 6;
     sat.sat[38].prRes = 14;
     sat.sat[38].svId = 12;
+
     sat.sat[39].azim = 296;
     sat.sat[39].cno = 32;
     sat.sat[39].elev = 8;
@@ -574,6 +614,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[39].gnssId = 6;
     sat.sat[39].prRes = 4;
     sat.sat[39].svId = 13;
+
     sat.sat[40].azim = 24;
     sat.sat[40].cno = 34;
     sat.sat[40].elev = 12;
@@ -581,6 +622,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[40].gnssId = 6;
     sat.sat[40].prRes = 36;
     sat.sat[40].svId = 20;
+
     sat.sat[41].azim = 79;
     sat.sat[41].cno = 49;
     sat.sat[41].elev = 54;
@@ -588,6 +630,7 @@ TEST(protocol_nmea, GSV)
     sat.sat[41].gnssId = 6;
     sat.sat[41].prRes = 30;
     sat.sat[41].svId = 21;
+
     sat.sat[42].azim = 151;
     sat.sat[42].cno = 46;
     sat.sat[42].elev = 39;
@@ -595,16 +638,14 @@ TEST(protocol_nmea, GSV)
     sat.sat[42].gnssId = 6;
     sat.sat[42].prRes = 6;
     sat.sat[42].svId = 22;
+
     sat.sat[43].azim = 0;
     sat.sat[43].cno = 49;
-    sat.sat[43].elev = 4294967205;
+    sat.sat[43].elev = 0;
     sat.sat[43].flags = 7;
     sat.sat[43].gnssId = 6;
     sat.sat[43].prRes = 0;
     sat.sat[43].svId = 255;
-
-
-
 
 
 #define ASCII_BUF2  1024
