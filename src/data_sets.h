@@ -1245,6 +1245,7 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)
+    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 16,           // (uint32 inv: 4294967279)
 
     SYS_CMD_SAVE_FLASH                              = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,           // (uint32 inv: 4294967197)
