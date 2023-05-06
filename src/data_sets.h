@@ -880,7 +880,7 @@ typedef struct PACKED
     /** (see eSatSvFlags) */
     uint8_t					flags;
 
-    /** (dBHz) Carrier to noise ratio (signal strength) */
+    /** (dBHz) Carrier to noise ratio (signal strength) per frequency */
     uint8_t					cno[3];
 
     /** Status per frequency (see eSatStatus) */
