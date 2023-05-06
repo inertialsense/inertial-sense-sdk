@@ -785,7 +785,7 @@ int did_gps_sat_to_nmea_gsv_set(char a[], const int aSize, gps_sat_t &sat, int g
 	int numSats=0;
 	int n=0;
 
-	for (int i=0; i<sat.numSats; i++)
+	for (uint32_t i=0; i<sat.numSats; i++)
 	{
 		gps_sat_sv_t &s = sat.sat[i];
 		if (s.gnssId == gnssId &&
@@ -1852,10 +1852,9 @@ int nmea_parse_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSV
 						svDest.svId = svid;
 						break;	
 				}
-				svDest.cno = cno;
+				svDest.cno[0] = cno;
 				svDest.elev = elv;
 				svDest.azim = az;
-				svDest.prRes = 0;
 				svDest.flags = 0;
 			}
 			

@@ -557,106 +557,74 @@ static void PopulateGPSCNOMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "numSats", numSats, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "svId[0]", sat[0].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[1]", sat[1].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[2]", sat[2].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[3]", sat[3].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[4]", sat[4].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[5]", sat[5].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[6]", sat[6].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[7]", sat[7].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[8]", sat[8].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[9]", sat[9].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[10]", sat[10].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[11]", sat[11].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[12]", sat[12].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[13]", sat[13].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[14]", sat[14].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[15]", sat[15].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[16]", sat[16].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[17]", sat[17].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[18]", sat[18].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[19]", sat[19].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[20]", sat[20].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[21]", sat[21].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[22]", sat[22].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[23]", sat[23].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[24]", sat[24].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[25]", sat[25].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[26]", sat[26].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[27]", sat[27].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[28]", sat[28].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[29]", sat[29].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[30]", sat[30].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[31]", sat[31].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[32]", sat[32].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[33]", sat[33].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[34]", sat[34].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[35]", sat[35].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[36]", sat[36].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[37]", sat[37].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[38]", sat[38].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[39]", sat[39].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[40]", sat[40].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[41]", sat[41].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[42]", sat[42].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[43]", sat[43].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[44]", sat[44].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[45]", sat[45].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[46]", sat[46].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[47]", sat[47].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[48]", sat[48].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "svId[49]", sat[49].svId, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[0]", sat[0].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[1]", sat[1].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[2]", sat[2].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[3]", sat[3].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[4]", sat[4].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[5]", sat[5].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[6]", sat[6].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[7]", sat[7].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[8]", sat[8].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[9]", sat[9].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[10]", sat[10].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[11]", sat[11].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[12]", sat[12].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[13]", sat[13].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[14]", sat[14].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[15]", sat[15].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[16]", sat[16].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[17]", sat[17].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[18]", sat[18].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[19]", sat[19].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[20]", sat[20].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[21]", sat[21].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[22]", sat[22].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[23]", sat[23].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[24]", sat[24].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[25]", sat[25].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[26]", sat[26].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[27]", sat[27].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[28]", sat[28].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[29]", sat[29].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[30]", sat[30].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[31]", sat[31].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[32]", sat[32].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[33]", sat[33].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[34]", sat[34].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[35]", sat[35].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[36]", sat[36].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[37]", sat[37].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[38]", sat[38].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[39]", sat[39].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[40]", sat[40].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[41]", sat[41].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[42]", sat[42].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[43]", sat[43].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[44]", sat[44].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[45]", sat[45].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[46]", sat[46].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[47]", sat[47].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[48]", sat[48].cno, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "cno[49]", sat[49].cno, 0, DataTypeUInt8, uint8_t, 0);
+
+#define ADD_MAP_SAT_INFO(n) \
+	ADD_MAP(m, totalSize, "sat" #n ".gnssId",    sat[n].gnssId,    0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".svId",      sat[n].svId,      0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".elev",      sat[n].elev,      0, DataTypeInt8,  int8_t,  0); \
+	ADD_MAP(m, totalSize, "sat" #n ".azim",      sat[n].azim,      0, DataTypeInt16, int16_t, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".flags",     sat[n].flags,     0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".cno[0]",    sat[n].cno[0],    0, DataTypeUInt8, uint8_t&, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".cno[1]",    sat[n].cno[1],    0, DataTypeUInt8, uint8_t&, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".cno[2]",    sat[n].cno[2],    0, DataTypeUInt8, uint8_t&, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".status[0]", sat[n].status[0], 0, DataTypeUInt8, uint8_t&, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".status[1]", sat[n].status[1], 0, DataTypeUInt8, uint8_t&, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".status[2]", sat[n].status[2], 0, DataTypeUInt8, uint8_t&, 0); 
+
+	ADD_MAP_SAT_INFO(0);
+	ADD_MAP_SAT_INFO(1);
+	ADD_MAP_SAT_INFO(2);
+	ADD_MAP_SAT_INFO(3);
+	ADD_MAP_SAT_INFO(4);
+	ADD_MAP_SAT_INFO(5);
+	ADD_MAP_SAT_INFO(6);
+	ADD_MAP_SAT_INFO(7);
+	ADD_MAP_SAT_INFO(8);
+	ADD_MAP_SAT_INFO(9);
+
+	ADD_MAP_SAT_INFO(10);
+	ADD_MAP_SAT_INFO(11);
+	ADD_MAP_SAT_INFO(12);
+	ADD_MAP_SAT_INFO(13);
+	ADD_MAP_SAT_INFO(14);
+	ADD_MAP_SAT_INFO(15);
+	ADD_MAP_SAT_INFO(16);
+	ADD_MAP_SAT_INFO(17);
+	ADD_MAP_SAT_INFO(18);
+	ADD_MAP_SAT_INFO(19);
+
+	ADD_MAP_SAT_INFO(20);
+	ADD_MAP_SAT_INFO(21);
+	ADD_MAP_SAT_INFO(22);
+	ADD_MAP_SAT_INFO(23);
+	ADD_MAP_SAT_INFO(24);
+	ADD_MAP_SAT_INFO(25);
+	ADD_MAP_SAT_INFO(26);
+	ADD_MAP_SAT_INFO(27);
+	ADD_MAP_SAT_INFO(28);
+	ADD_MAP_SAT_INFO(29);
+
+	ADD_MAP_SAT_INFO(30);
+	ADD_MAP_SAT_INFO(31);
+	ADD_MAP_SAT_INFO(32);
+	ADD_MAP_SAT_INFO(33);
+	ADD_MAP_SAT_INFO(34);
+	ADD_MAP_SAT_INFO(35);
+	ADD_MAP_SAT_INFO(36);
+	ADD_MAP_SAT_INFO(37);
+	ADD_MAP_SAT_INFO(38);
+	ADD_MAP_SAT_INFO(39);
+
+	ADD_MAP_SAT_INFO(40);
+	ADD_MAP_SAT_INFO(41);
+	ADD_MAP_SAT_INFO(42);
+	ADD_MAP_SAT_INFO(43);
+	ADD_MAP_SAT_INFO(44);
+	ADD_MAP_SAT_INFO(45);
+	ADD_MAP_SAT_INFO(46);
+	ADD_MAP_SAT_INFO(47);
+	ADD_MAP_SAT_INFO(48);
+	ADD_MAP_SAT_INFO(49);
 
     ASSERT_SIZE(totalSize);
 }
