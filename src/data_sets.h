@@ -46,8 +46,8 @@ typedef uint32_t eDataIDs;
 #define DID_FLASH_CONFIG                (eDataIDs)12 /** (nvm_flash_cfg_t) Flash memory configuration */
 #define DID_GPS1_POS                    (eDataIDs)13 /** (gps_pos_t) GPS 1 position data.  This comes from DID_GPS1_UBX_POS or DID_GPS1_RTK_POS, depending on whichever is more accurate. */
 #define DID_GPS2_POS                    (eDataIDs)14 /** (gps_pos_t) GPS 2 position data */
-#define DID_GPS1_SAT                    (eDataIDs)15 /** (gps_sat_t) GPS 1 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
-#define DID_GPS2_SAT                    (eDataIDs)16 /** (gps_sat_t) GPS 2 GNSS and sat identifiers, carrier to noise ratio (signal strength), elevation and azimuth angles, pseudo range residual. */
+#define DID_GPS1_SAT                    (eDataIDs)15 /** (gps_sat_t) GPS 1 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
+#define DID_GPS2_SAT                    (eDataIDs)16 /** (gps_sat_t) GPS 2 GNSS satellite information: sat identifiers, carrier to noise ratio, elevation and azimuth angles, pseudo range residual. */
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
@@ -76,7 +76,7 @@ typedef uint32_t eDataIDs;
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
-#define DID_UNUSED_45           		(eDataIDs)45 /** used to be internal DID_SYS_SENSORS_SIGMA */
+#define DID_GPS1_SIG                    (eDataIDs)45 /** (gps_sig_t) GPS 1 GNSS signal information. */
 #define DID_SENSORS_ADC_SIGMA           (eDataIDs)46 /** INTERNAL USE ONLY (sys_sensors_adc_t) */
 #define DID_REFERENCE_MAGNETOMETER      (eDataIDs)47 /** (magnetometer_t) Reference or truth magnetometer used for manufacturing calibration and testing */
 #define DID_INL2_STATES                 (eDataIDs)48 /** (inl2_states_t) INS Extended Kalman Filter (EKF) states */
@@ -115,7 +115,7 @@ typedef uint32_t eDataIDs;
 #define DID_EVB_FLASH_CFG               (eDataIDs)81 /** (evb_flash_cfg_t) EVB configuration. */
 #define DID_EVB_DEBUG_ARRAY             (eDataIDs)82 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_EVB_RTOS_INFO               (eDataIDs)83 /** (evb_rtos_info_t) EVB-2 RTOS information. */
-// #define DID_UNUSED_84                (eDataIDs)84 /** Unused */
+#define DID_GPS2_SIG                    (eDataIDs)84 /** (gps_sig_t) GPS 2 GNSS signal information. */
 #define DID_IMU_MAG                     (eDataIDs)85 /** (imu_mag_t) DID_IMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_PIMU_MAG                    (eDataIDs)86 /** (pimu_mag_t) DID_PIMU + DID_MAGNETOMETER. Only one of DID_IMU_MAG or DID_PIMU_MAG should be streamed simultaneously. */
 #define DID_GROUND_VEHICLE				(eDataIDs)87 /** (ground_vehicle_t) Static configuration for wheel transform measurements. */
@@ -148,7 +148,10 @@ typedef uint32_t eDataIDs;
 // END DATA IDENTIFIERS --------------------------------------------------------------------------
 
 /** Maximum number of satellite channels */
-#define MAX_NUM_SAT_CHANNELS 50
+#define MAX_NUM_SATELLITES 50
+
+/** Maximum number of satellite signals */
+#define MAX_NUM_SAT_SIGNALS 50
 
 /** Maximum length of device info manufacturer string (must be a multiple of 4) */
 #define DEVINFO_MANUFACTURER_STRLEN 24
@@ -877,20 +880,18 @@ typedef struct PACKED
     /** (deg) Azimuth (range: +/-180) */
     int16_t					azim;
 
-    /** (see eSatSvFlags) */
-    uint8_t					flags;
+    /** (dBHz) Carrier to noise ratio (signal strength) */
+    uint8_t					cno;
 
-    /** (dBHz) Carrier to noise ratio (signal strength) per frequency */
-    uint8_t					cno[3];
-
-    /** Status per frequency (see eSatStatus) */
-    uint8_t					status[3];
+    /** (see eSatSvStatus) */
+    uint16_t				status;
 
 } gps_sat_sv_t;
 
 /** Sat SV - GNSS System ID */
 enum eSatSvGnssId
 {
+    SAT_SV_GNSS_ID_UNKNOWN	= 0, 
     SAT_SV_GNSS_ID_GPS		= 1,	// GPS (USA)
     SAT_SV_GNSS_ID_SBS		= 2,	// SBAS (multiple regional systems, see flash config for selection)
     SAT_SV_GNSS_ID_GAL		= 3,	// Galileo (European Union)	
@@ -901,47 +902,42 @@ enum eSatSvGnssId
     SAT_SV_GNSS_ID_IME		= 8,	// IMES (Japan's Indoor Messaging System)
 };
 
-/** Sat SV - GNSS frequency index */
-enum eSatSvFreqIdx
-{
-    SAT_SV_FREQ_IDX_L1		= 0,		
-    SAT_SV_FREQ_IDX_L2		= 1,	
-    SAT_SV_FREQ_IDX_L5		= 2,	
-};
-
-/** GPS Sat Flags */
-enum eSatSvFlags
-{
-    SAT_SV_FLAGS_FREQ_PRESENT_L1			= 0x01,
-    SAT_SV_FLAGS_FREQ_PRESENT_L2			= 0x02,
-    SAT_SV_FLAGS_FREQ_PRESENT_L5			= 0x04,
-};
-
 /** GPS Sat Status */
 enum eSatSvStatus
 {
-    SAT_SV_STATUS_SV_USED_POS				= 0x01,
-    SAT_SV_STATUS_SV_USED_VEL				= 0x02,
-	SAT_SV_STATUS_SV_USED 					= SAT_SV_STATUS_SV_USED_POS,
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK	= 0xC0,	// 1=float, 2=fix
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET	= 6,
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT	= 1,	
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX	= 2,	
+	SAT_SV_STATUS_QUALITY_NO_SIGNAL					= 0x0000, 	// no signal
+    SAT_SV_STATUS_QUALITY_SEARCHING					= 0x0001, 	// searching signal
+    SAT_SV_STATUS_QUALITY_ACQUIRED					= 0x0002, 	// signal acquired
+    SAT_SV_STATUS_QUALITY_DETECTED					= 0x0003, 	// signal detected but unusable
+    SAT_SV_STATUS_QUALITY_CODE_TIME_SYNC			= 0x0004, 	// code locked and time synchronized
+    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC	= 0x0005, 	// code and carrier locked and time synchronized	
+    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_2	= 0x0006, 	// "
+    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_3	= 0x0007, 	// "
+	SAT_SV_STATUS_QUALITY_MASK 						= 0x0007,
+	SAT_SV_STATUS_USED 								= 0x0008,	// Used in the solution
+	SAT_SV_STATUS_HEALTH_UNKNOWN					= 0x0000,	// 0 = unknown
+	SAT_SV_STATUS_HEALTH_GOOD						= 0x0010,	// 1 = healthy
+	SAT_SV_STATUS_HEALTH_BAD 						= 0x0020,	// 2 = unhealthy
+	SAT_SV_STATUS_HEALTH_MASK 						= 0x0030,
 
-    // SAT_SV_FLAGS_QUALITYIND_MASK		= 0x00000007,
-    // SAT_SV_FLAGS_HEALTH_MASK			= 0x00000030,
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK			= 0x0300,	// 1=float, 2=fix
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET			= 8,
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT			= 1,	
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX			= 2,	
+
+    // SAT_SV_STATUS_HEALTH_MASK			= 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET		= 4,
-    // SAT_SV_FLAGS_DIFFCORR			= 0x00000040,
-    // SAT_SV_FLAGS_SMOOTHED			= 0x00000080,
-    // SAT_SV_FLAGS_ORBITSOURCE_MASK	= 0x00000700,
-    // SAT_SV_FLAGS_ORBITSOURCE_OFFSET	= 8,
-    // SAT_SV_FLAGS_EPHAVAIL			= 0x00000800,
-    // SAT_SV_FLAGS_ALMAVAIL			= 0x00001000,
-    // SAT_SV_FLAGS_ANOAVAIL			= 0x00002000,
-    // SAT_SV_FLAGS_AOPAVAIL			= 0x00004000,	
+    // SAT_SV_STATUS_DIFFCORR			= 0x00000040,
+    // SAT_SV_STATUS_SMOOTHED			= 0x00000080,
+    // SAT_SV_STATUS_ORBITSOURCE_MASK	= 0x00000700,
+    // SAT_SV_STATUS_ORBITSOURCE_OFFSET	= 8,
+    // SAT_SV_STATUS_EPHAVAIL			= 0x00000800,
+    // SAT_SV_STATUS_ALMAVAIL			= 0x00001000,
+    // SAT_SV_STATUS_ANOAVAIL			= 0x00002000,
+    // SAT_SV_STATUS_AOPAVAIL			= 0x00004000,	
 };
 
-/** (DID_GPS1_SAT) GPS satellite signal strength */
+/** (DID_GPS1_SAT, DID_GPS2_SAT) GPS satellite information */
 typedef struct PACKED
 {
     /** GPS time of week (since Sunday morning) in milliseconds */
@@ -949,8 +945,79 @@ typedef struct PACKED
     /** Number of satellites in the sky */
 	uint32_t				numSats;					
     /** Satellite information list */
-	gps_sat_sv_t			sat[MAX_NUM_SAT_CHANNELS];	
+	gps_sat_sv_t			sat[MAX_NUM_SATELLITES];	
 } gps_sat_t;
+
+enum eSatSvSigId
+{
+	SAT_SV_SIG_ID_GPS_L1CA			= 0,
+	SAT_SV_SIG_ID_GPS_L2_CL			= 3,
+	SAT_SV_SIG_ID_GPS_L2_CM			= 4,
+	SAT_SV_SIG_ID_GPS_L5_I			= 6,
+	SAT_SV_SIG_ID_GPS_L5_Q			= 7,
+	SAT_SV_SIG_ID_SBAS_L1_CA		= 0,
+	SAT_SV_SIG_ID_Galileo_E1_C2		= 0,
+	SAT_SV_SIG_ID_Galileo_E1_B2		= 1,
+	SAT_SV_SIG_ID_Galileo_E5_aI		= 3,
+	SAT_SV_SIG_ID_Galileo_E5_aQ		= 4,
+	SAT_SV_SIG_ID_Galileo_E5_bI		= 5,
+	SAT_SV_SIG_ID_Galileo_E5_bQ		= 6,
+	SAT_SV_SIG_ID_BeiDou_B1I_D1		= 0,
+	SAT_SV_SIG_ID_BeiDou_B1I_D2		= 1,
+	SAT_SV_SIG_ID_BeiDou_B2I_D1		= 2,
+	SAT_SV_SIG_ID_BeiDou_B2I_D2		= 3,
+	SAT_SV_SIG_ID_BeiDou_B1C		= 5,
+	SAT_SV_SIG_ID_BeiDou_B2a		= 7,
+	SAT_SV_SIG_ID_QZSS_L1CA			= 0,
+	SAT_SV_SIG_ID_QZSS_L1S			= 1,
+	SAT_SV_SIG_ID_QZSS_L2_CM		= 4,
+};
+
+enum eSatSigQuality
+{
+	SAT_SIG_QUALITY_NO_SIGNAL					= 0, 	// no signal
+	SAT_SIG_QUALITY_SEARCHING					= 1, 	// searching signal
+	SAT_SIG_QUALITY_ACQUIRED					= 2, 	// signal acquired
+	SAT_SIG_QUALITY_DETECTED					= 3, 	// signal detected but unusable
+	SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC			= 4, 	// code locked and time synchronized
+	SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC		= 5, 	// code and carrier locked and time synchronized
+	SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2	= 6, 	// "
+	SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3	= 7, 	// "
+};
+
+/** GPS satellite signal information */
+typedef struct PACKED
+{
+    /** GNSS identifier (see eSatSvGnssId) */
+    uint8_t					gnssId;
+
+    /** Satellite identifier */
+    uint8_t					svId;
+
+    /** Signal identifier, frequency description (eSatSvSigId) */
+    uint8_t					sigId;
+
+    /** (dBHz) Carrier to noise ratio (signal strength) */
+    uint8_t					cno;
+
+    /** Quality indicator (see eSatSigQuality) */
+    uint8_t					quality;
+
+    /** Status flags (see eSigStatus) */
+    uint16_t				status;
+
+} gps_sig_sv_t;
+
+/** (DID_GPS1_SIG, DID_GPS2_SIG) GPS satellite signal information */
+typedef struct PACKED
+{
+    /** GPS time of week (since Sunday morning) in milliseconds */
+	uint32_t                timeOfWeekMs;				
+    /** Number of satellite signals in the following satelliate signal list */
+	uint32_t				numSigs;					
+    /** Satellite signal list */
+	gps_sig_sv_t			sig[MAX_NUM_SAT_SIGNALS];	
+} gps_sig_t;
 
 #define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */

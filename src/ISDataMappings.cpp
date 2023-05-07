@@ -550,7 +550,7 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ASSERT_SIZE(totalSize);
 }
 
-static void PopulateGPSCNOMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+static void PopulateGpsSatMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
 {
 	typedef gps_sat_t MAP_TYPE;
 	map_name_to_info_t& m = mappings[id];
@@ -563,13 +563,8 @@ static void PopulateGPSCNOMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ADD_MAP(m, totalSize, "sat" #n ".svId",      sat[n].svId,      0, DataTypeUInt8, uint8_t, 0); \
 	ADD_MAP(m, totalSize, "sat" #n ".elev",      sat[n].elev,      0, DataTypeInt8,  int8_t,  0); \
 	ADD_MAP(m, totalSize, "sat" #n ".azim",      sat[n].azim,      0, DataTypeInt16, int16_t, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".flags",     sat[n].flags,     0, DataTypeUInt8, uint8_t, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".cno[0]",    sat[n].cno[0],    0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".cno[1]",    sat[n].cno[1],    0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".cno[2]",    sat[n].cno[2],    0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".status[0]", sat[n].status[0], 0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".status[1]", sat[n].status[1], 0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".status[2]", sat[n].status[2], 0, DataTypeUInt8, uint8_t&, 0); 
+	ADD_MAP(m, totalSize, "sat" #n ".cno",       sat[n].cno,       0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sat" #n ".status",    sat[n].status,    0, DataTypeUInt16, uint16_t, 0);
 
 	ADD_MAP_SAT_INFO(0);
 	ADD_MAP_SAT_INFO(1);
@@ -625,6 +620,80 @@ static void PopulateGPSCNOMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ADD_MAP_SAT_INFO(47);
 	ADD_MAP_SAT_INFO(48);
 	ADD_MAP_SAT_INFO(49);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+{
+	typedef gps_sig_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[id];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "numSigs", numSigs, 0, DataTypeUInt32, uint32_t, 0);
+
+#define ADD_MAP_SAT_SIG(n) \
+	ADD_MAP(m, totalSize, "sig" #n ".gnssId",    sig[n].gnssId,    0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sig" #n ".svId",      sig[n].svId,      0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sig" #n ".sigId",     sig[n].sigId,     0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sig" #n ".cno",       sig[n].cno,       0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sig" #n ".quality",   sig[n].quality,   0, DataTypeUInt8, uint8_t, 0); \
+	ADD_MAP(m, totalSize, "sig" #n ".status",    sig[n].status,    0, DataTypeUInt16, uint16_t, 0);
+
+	ADD_MAP_SAT_SIG(0);
+	ADD_MAP_SAT_SIG(1);
+	ADD_MAP_SAT_SIG(2);
+	ADD_MAP_SAT_SIG(3);
+	ADD_MAP_SAT_SIG(4);
+	ADD_MAP_SAT_SIG(5);
+	ADD_MAP_SAT_SIG(6);
+	ADD_MAP_SAT_SIG(7);
+	ADD_MAP_SAT_SIG(8);
+	ADD_MAP_SAT_SIG(9);
+
+	ADD_MAP_SAT_SIG(10);
+	ADD_MAP_SAT_SIG(11);
+	ADD_MAP_SAT_SIG(12);
+	ADD_MAP_SAT_SIG(13);
+	ADD_MAP_SAT_SIG(14);
+	ADD_MAP_SAT_SIG(15);
+	ADD_MAP_SAT_SIG(16);
+	ADD_MAP_SAT_SIG(17);
+	ADD_MAP_SAT_SIG(18);
+	ADD_MAP_SAT_SIG(19);
+
+	ADD_MAP_SAT_SIG(20);
+	ADD_MAP_SAT_SIG(21);
+	ADD_MAP_SAT_SIG(22);
+	ADD_MAP_SAT_SIG(23);
+	ADD_MAP_SAT_SIG(24);
+	ADD_MAP_SAT_SIG(25);
+	ADD_MAP_SAT_SIG(26);
+	ADD_MAP_SAT_SIG(27);
+	ADD_MAP_SAT_SIG(28);
+	ADD_MAP_SAT_SIG(29);
+
+	ADD_MAP_SAT_SIG(30);
+	ADD_MAP_SAT_SIG(31);
+	ADD_MAP_SAT_SIG(32);
+	ADD_MAP_SAT_SIG(33);
+	ADD_MAP_SAT_SIG(34);
+	ADD_MAP_SAT_SIG(35);
+	ADD_MAP_SAT_SIG(36);
+	ADD_MAP_SAT_SIG(37);
+	ADD_MAP_SAT_SIG(38);
+	ADD_MAP_SAT_SIG(39);
+
+	ADD_MAP_SAT_SIG(40);
+	ADD_MAP_SAT_SIG(41);
+	ADD_MAP_SAT_SIG(42);
+	ADD_MAP_SAT_SIG(43);
+	ADD_MAP_SAT_SIG(44);
+	ADD_MAP_SAT_SIG(45);
+	ADD_MAP_SAT_SIG(46);
+	ADD_MAP_SAT_SIG(47);
+	ADD_MAP_SAT_SIG(48);
+	ADD_MAP_SAT_SIG(49);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2447,8 +2516,8 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_RTK_POS);
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS1_VEL);
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
-	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
-	//PopulateGPSCNOMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
+	//PopulateGpsSatMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
+	//PopulateGpsSatMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
 	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS1_RTK_POS_REL);
 	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS2_RTK_CMP_REL);
 	PopulateGpsRtkMiscMappings(m_lookupInfo, DID_GPS1_RTK_POS_MISC);
