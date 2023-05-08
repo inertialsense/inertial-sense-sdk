@@ -60,6 +60,7 @@ typedef ixMatrix4     ixMatrix4;
  * Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m)
  */
 void ecef2lla(const double *Pe, double *LLA);
+void ecef2lla_f(const float *Pe, float *LLA);
 
 /*
  * Coordinate transformation from latitude/longitude/altitude (rad,rad,m) to ECEF coordinates
@@ -157,7 +158,7 @@ int llaDegValid( double lla[3] );
 /* 
  * IGF-80 gravity model with WGS-84 ellipsoid refinement 
 */
-float gravity_igf80(double lat, double alt);
+float gravity_igf80(float lat, float alt);
 
 /*
  * Quaternion rotation to NED with respect to ECEF at specified LLA
