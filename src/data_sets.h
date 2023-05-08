@@ -931,7 +931,7 @@ enum eSatSvStatus
 {
     SAT_SV_STATUS_SV_USED_POS				= 0x01,
     SAT_SV_STATUS_SV_USED_VEL				= 0x02,
-	SAT_SV_STATUS_SV_USED 					= SAT_SV_STATUS_SV_USED_POS,
+	SAT_SV_STATUS_SV_USED 					= SAT_SV_STATUS_SV_USED_POS | SAT_SV_STATUS_SV_USED_VEL,
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK	= 0xC0,	// 1=float, 2=fix
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET	= 6,
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT	= 1,	
@@ -4069,7 +4069,7 @@ typedef enum
 typedef enum
 {
     /** Task 0: Sample	*/
-    GPX_TASK_COMM = 0,
+    GPX_TASK_COM = 0,
 
     /** Task 1: Nav */
     GPX_TASK_RTK,
