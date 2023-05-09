@@ -28,7 +28,7 @@
 
 
 topic: "inertialsense"
-port: "/dev/ttyACM0"
+port: [/dev/ttyACM0, /dev/ttyACM1]
 baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
@@ -37,12 +37,14 @@ mag_declination: 0.0
 ref_lla: [0.0, 0.0, 0.0]
 
 # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
+platformConfig: 1                                 # PLATFORM_CFG_TYPE_NONE_ONBOARD_M8
 # platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
-platformConfig: 11                                # PLATFORM_CFG_TYPE_EVB2_G2
+# platformConfig: 11                              # PLATFORM_CFG_TYPE_EVB2_G2
 # platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
 
 # IMX ioConfig (see eIoConfig)
-ioConfig: 0x26CA060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
+ioConfig:  0x00112044
+# ioConfig: 0x26CA060       # EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
 # ioConfig: 0x025CA060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8
 # ioConfig: 0x0244a060      # EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
 
@@ -68,7 +70,7 @@ ins:
   rotation: [0, 0, 0]                           # Rotation in radians about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X.
   offset: [0, 0 ,0]                             # X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame.
   # navigation_dt_ms: 16                          # EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
-  navigation_dt_ms: 4                           # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
+  navigation_dt_ms: 16                           # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
   dynamic_model: 4                              # FIXME: these should be named types/srtring (PORTABLE, STATIONARY, AGV, UAV, etc)
   enable_covariance: false                      # Include covariance data in odom_ins_... messages
   messages:
@@ -117,7 +119,7 @@ sensors:
       enable: true
 
 gps1:
-  type: 'F9P'
+  type: 'M8'
   antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
   gpsTimeUserDelay: 0.0
   messages:
@@ -157,20 +159,21 @@ gps1:
         topic: "info"
 
 gps2:
-  type: 'F9P'
+  enabled: false
+  type: 'M8'
   antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
   gpsTimeUserDelay: 0.0
   messages:
     pos_vel:
       topic: "gps2/pos_vel"
-      enable: true
+      enable: false
       period: 1
     navsatfix:
       topic: "/NavSatFix"                        # /navsatfix
       enable: false
     info:
       topic: "gps2/info"                        # inertialsense/gps1/info
-      enable: true
+      enable: false
       period: 5                                 # Publish every 1 second (200ms x 5)
     raw:
       topic: "gps2/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
@@ -178,10 +181,10 @@ gps2:
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
       topic: "gps2/rtk_rel_pos"
-      enable: true
+      enable: false
       period: 1
     rel:
-      enable: true
+      enable: false
       topic: "rel"
     base:
       topic: "base"
@@ -262,6 +265,7 @@ rtk_rover:
   # Otherwise, you should remove all those that are unused.
 
 rtk_base:
+  enable: false
   correction_source:
     imx_serial_0: gps1                          # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
     imx_serial_1: off                           # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
@@ -270,7 +274,7 @@ rtk_base:
 
   correction_outputs:
     format: RTCM3
-    select: ntrip_1                             # This is one of the keys below, which defines which outputs to enable/use (this can be many).
+    select: ros_provider                             # This is one of the keys below, which defines which outputs to enable/use (this can be many).
 
     # - ros_provider
     # - xbee_radio

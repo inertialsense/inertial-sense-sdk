@@ -28,7 +28,7 @@
 
 
 topic: "inertialsense"
-port: /dev/ttyACM0
+port: [/dev/ttyACM0, /dev/ttyACM1]
 baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
@@ -70,8 +70,8 @@ transform_frame:
 ins:
   rotation: [0, 0, 0]                           # Rotation in radians about the X,Y,Z axes from Sensor Frame to Intermediate Output Frame.  Order applied: Z,Y,X.
   offset: [0, 0 ,0]                             # X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame.
-  # navigation_dt_ms: 16                          # EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
-  navigation_dt_ms: 4                           # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
+  navigation_dt_ms: 16                          # EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
+  # navigation_dt_ms: 4                           # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
   dynamic_model: 4                              # FIXME: these should be named types/srtring (PORTABLE, STATIONARY, AGV, UAV, etc)
   enable_covariance: false                      # Include covariance data in odom_ins_... messages
   messages:
@@ -261,6 +261,7 @@ rtk_rover:
   # Otherwise, you should remove all those that are unused.
 
 rtk_base:
+  enable: false                                 # implicitly enabled; here, explicitly disabled
   correction_source:
     imx_serial_0: gps1                          # GPS from which RTK corrections are taken (either GPS1 or GPS2)
     imx_serial_1: off                           # GPS from which RTK corrections are taken (either GPS1 or GPS2)
@@ -276,7 +277,7 @@ rtk_base:
     # RTK corrections
     ntrip_1:
       type: ntrip                               # configure NTRIP output provider (TCP Server)
-      ip_address: '127.0.0.1'               # (required) NTRIP service address
+      ip_address: '127.0.0.1'                   # (required) NTRIP service address
       ip_port: 7777                             # NTRIP service port, default 7777
       # FIXME:  The following is fluff functionality that we probably shouldn't bother with, but someone might find it useful??
       mount: ''                                 # (optional) NTRIP service mount-point, the mount this output maps to
