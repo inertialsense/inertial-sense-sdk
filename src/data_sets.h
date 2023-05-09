@@ -151,7 +151,7 @@ typedef uint32_t eDataIDs;
 #define MAX_NUM_SATELLITES 50
 
 /** Maximum number of satellite signals */
-#define MAX_NUM_SAT_SIGNALS 50
+#define MAX_NUM_SAT_SIGNALS 100
 
 /** Maximum length of device info manufacturer string (must be a multiple of 4) */
 #define DEVINFO_MANUFACTURER_STRLEN 24
@@ -951,26 +951,32 @@ typedef struct PACKED
 enum eSatSvSigId
 {
 	SAT_SV_SIG_ID_GPS_L1CA			= 0,
-	SAT_SV_SIG_ID_GPS_L2_CL			= 3,
-	SAT_SV_SIG_ID_GPS_L2_CM			= 4,
-	SAT_SV_SIG_ID_GPS_L5_I			= 6,
-	SAT_SV_SIG_ID_GPS_L5_Q			= 7,
-	SAT_SV_SIG_ID_SBAS_L1_CA		= 0,
-	SAT_SV_SIG_ID_Galileo_E1_C2		= 0,
-	SAT_SV_SIG_ID_Galileo_E1_B2		= 1,
-	SAT_SV_SIG_ID_Galileo_E5_aI		= 3,
-	SAT_SV_SIG_ID_Galileo_E5_aQ		= 4,
-	SAT_SV_SIG_ID_Galileo_E5_bI		= 5,
-	SAT_SV_SIG_ID_Galileo_E5_bQ		= 6,
-	SAT_SV_SIG_ID_BeiDou_B1I_D1		= 0,
-	SAT_SV_SIG_ID_BeiDou_B1I_D2		= 1,
-	SAT_SV_SIG_ID_BeiDou_B2I_D1		= 2,
-	SAT_SV_SIG_ID_BeiDou_B2I_D2		= 3,
+	SAT_SV_SIG_ID_GPS_L2CL			= 3,
+	SAT_SV_SIG_ID_GPS_L2CM			= 4,
+	SAT_SV_SIG_ID_GPS_L5I			= 6,
+	SAT_SV_SIG_ID_GPS_L5Q			= 7,
+	SAT_SV_SIG_ID_SBAS_L1CA			= 0,
+	SAT_SV_SIG_ID_Galileo_E1C2		= 0,
+	SAT_SV_SIG_ID_Galileo_E1B2		= 1,
+	SAT_SV_SIG_ID_Galileo_E5aI		= 3,
+	SAT_SV_SIG_ID_Galileo_E5aQ		= 4,
+	SAT_SV_SIG_ID_Galileo_E5bI		= 5,
+	SAT_SV_SIG_ID_Galileo_E5bQ		= 6,
+	SAT_SV_SIG_ID_BeiDou_B1ID1		= 0,
+	SAT_SV_SIG_ID_BeiDou_B1ID2		= 1,
+	SAT_SV_SIG_ID_BeiDou_B2ID1		= 2,
+	SAT_SV_SIG_ID_BeiDou_B2ID2		= 3,
 	SAT_SV_SIG_ID_BeiDou_B1C		= 5,
 	SAT_SV_SIG_ID_BeiDou_B2a		= 7,
 	SAT_SV_SIG_ID_QZSS_L1CA			= 0,
 	SAT_SV_SIG_ID_QZSS_L1S			= 1,
-	SAT_SV_SIG_ID_QZSS_L2_CM		= 4,
+	SAT_SV_SIG_ID_QZSS_L2CM			= 4,
+	SAT_SV_SIG_ID_QZSS_L2CL 		= 5,
+	SAT_SV_SIG_ID_QZSS_L5I 			= 8,
+	SAT_SV_SIG_ID_QZSS_L5Q 			= 9,
+	SAT_SV_SIG_ID_GLONASS_L1OF		= 0,
+	SAT_SV_SIG_ID_GLONASS_L2OF		= 2,
+	SAT_SV_SIG_ID_NAVIC_L5A			= 0, 
 };
 
 enum eSatSigQuality
@@ -1536,6 +1542,8 @@ typedef struct PACKED
 #define RMC_BITS_REFERENCE_PIMU         0x0000008000000000		// "
 #define RMC_BITS_IMU3_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
+#define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
+#define RMC_BITS_GPS2_SIG               0x0000080000000000      // "
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 

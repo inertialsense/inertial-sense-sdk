@@ -130,6 +130,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_GPS2_VEL] = sizeof(gps_vel_t);
 	sizeMap[DID_GPS1_SAT] = sizeof(gps_sat_t);
 	sizeMap[DID_GPS2_SAT] = sizeof(gps_sat_t);
+	sizeMap[DID_GPS1_SIG] = sizeof(gps_sig_t);
+	sizeMap[DID_GPS2_SIG] = sizeof(gps_sig_t);
 	sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
 	sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
 	sizeMap[DID_GPS1_RTK_POS] = sizeof(gps_pos_t);
@@ -2406,11 +2408,11 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_RTOS_INFO",                    // 38
 	"DID_DEBUG_ARRAY",                  // 39
 	"DID_SENSORS_MCAL",                 // 40
-	"Unused_41",                        // 41
+	"DID_GPS1_TIMEPULSE",               // 41
 	"DID_CAL_SC",                       // 42
 	"DID_CAL_SC1",                      // 43
 	"DID_CAL_SC2",                      // 44
-	"UNUSED_45",            			// 45
+	"DID_GPS1_SIG",            			// 45
 	"DID_SENSORS_ADC_SIGMA",            // 46
 	"DID_REFERENCE_MAGNETOMETER",       // 47
 	"DID_INL2_STATES",                  // 48
@@ -2449,7 +2451,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_EVB_FLASH_CFG",                // 81
 	"DID_EVB_DEBUG_ARRAY",              // 82
 	"DID_EVB_RTOS_INFO",                // 83
-	"DID_UNUSED_84",                    // 84
+	"DID_GPS2_SIG",                     // 84
 	"DID_IMU_MAG",                      // 85
 	"DID_PIMU_MAG",                     // 86
 	"DID_GROUND_VEHICLE",               // 87
@@ -2518,6 +2520,8 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
 	//PopulateGpsSatMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
 	//PopulateGpsSatMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
+	//PopulateGpsSigMappings(m_lookupInfo, DID_GPS1_SIG); // too much data, we don't want to log this
+	//PopulateGpsSigMappings(m_lookupInfo, DID_GPS2_SIG); // too much data, we don't want to log this
 	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS1_RTK_POS_REL);
 	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS2_RTK_CMP_REL);
 	PopulateGpsRtkMiscMappings(m_lookupInfo, DID_GPS1_RTK_POS_MISC);
