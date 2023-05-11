@@ -30,7 +30,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
 //_____ F U N C T I O N S __________________________________________________
-static const double Ra = 6378137.0;			// (m) Earth equatorial radius
 
 #define POWA2	40680631590769.000	// = pow(6378137.0,2)
 #define POWB2	40408299984661.453	// = pow(6356752.31424518,2)
@@ -38,20 +37,22 @@ static const double Ra = 6378137.0;			// (m) Earth equatorial radius
 #define POWB2_F	40408299984661.453f	// = pow(6356752.31424518,2)
 #define ONE_MINUS_F 0.996647189335253 // (1 - f), where f = 1.0 / 298.257223563 is Earth flattening
 #define E_SQ  0.006694379990141 // e2 = 1 - (1-f)*(1-f) - square of first eccentricity
+#define E_SQ_f 0.006694379990141f
 #define E_PRIME_SQ 0.006739496742276 // ep2 = e2 / (1 - e2)
 #define E_POW4 4.481472345240464e-05 // e4 = e^4, first eccentricity power 4
 #define ONE_MINUS_E_SQ 0.993305620009859 // (1 - e^2)
 #define ONE_DIV_ONE_MINUS_E_SQ  1.006739496742276  // 1 / (1 - e^2)
 #define ONE_DIV_E_SQ  1.493790315865963e+02 // 1/e^2
 #define REQ 6378137.0         // Re - Equatorial radius, m
+#define REQ_f 6378137.0f
 #define REP 6356752.314245179 // Rp - Polar radius, m
 #define E2xREQ 42697.67270717795 // e2 * Re
 #define E2xREQdivIFE 42841.31151331153 // e2 * Re / (1 -f)
-#define GEQ 9.7803253359        // Equatorial gravity
-#define K_GRAV 0.00193185265241 // defined gravity constants
-#define K3_GRAV 3.0877e-6       // 
-#define K4_GRAV 4.0e-9          //
-#define K5_GRAV 7.2e-14         //
+#define GEQ 9.7803253359f        // Equatorial gravity
+#define K_GRAV 0.00193185265241f // defined gravity constants
+#define K3_GRAV 3.0877e-6f       // 
+#define K4_GRAV 4.0e-9f          //
+#define K5_GRAV 7.2e-14f         //
 
 #ifndef ECEF2LLA_METHOD
 #define ECEF2LLA_METHOD 5
@@ -118,7 +119,6 @@ void ecef2lla(const double *Pe, double *LLA)
     // c = 1 / (R * e^2) * (p^2 + (1 - e^2) * z^2 * k^2) ^ (3/2)
     // Initial value k0 is a good start when h is near zero.
     // Even a single iteration produces a sufficiently accurate solution.
-    
 
     double z2 = Pe[2] * Pe[2];
 
@@ -135,11 +135,9 @@ void ecef2lla(const double *Pe, double *LLA)
     // Altitude above planetary ellipsoid
     LLA[2] = ONE_DIV_E_SQ * (1.0 / k - ONE_MINUS_E_SQ) * sqrt(p2 + z2_k_k);
 
-
 #elif ECEF2LLA_METHOD == 2
     // The Bowring's quartic equation of k can be solved by Ferrari's
     // solution.Then compute latitude and height as above.
-
 
     double z2 = Pe[2] * Pe[2];
     zeta = ONE_MINUS_E_SQ * z2 / POWA2;
@@ -153,15 +151,12 @@ void ecef2lla(const double *Pe, double *LLA)
     // Latitude
     LLA[0] = atan2(k * Pe[2], p);
     // Altitude above planetary ellipsoid :
-    LLA[2] = ONE_DIV_E_SQ * (1. / k - ONE_MINUS_E_SQ) * sqrt(p2 + z2 * k * k);
-
+    LLA[2] = ONE_DIV_E_SQ * (1.0 / k - ONE_MINUS_E_SQ) * sqrt(p2 + z2 * k * k);
 
 #elif ECEF2LLA_METHOD == 3
     double Rn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0, w,
                F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6, z_i, z2_k_k;
 
-
-    static const double Rb = 6356752.31424518;	// (m) Earth polar radius Rb = Ra * (1-f)   (from flattening, f = 1/298.257223563)
     double z2 = Pe[2] * Pe[2];
 
     // The Heikkinen's procedure using Ferrari's solution(see case 2 above)
@@ -177,34 +172,30 @@ void ecef2lla(const double *Pe, double *LLA)
     r0 = -(P * p * E_SQ) / (1.0 + Q) + sqrt(val);
     val = p - E_SQ * r0;
     U = sqrt(MAX(0.0, val * val + z2));
-    V = sqrt(MAX(0, val * val + ONE_MINUS_E_SQ * z2));
-    z0 = POWB2 * Pe[2] / MAX(Ra * V, EPS);
+    V = sqrt(MAX(0.0, val * val + ONE_MINUS_E_SQ * z2));
+    z0 = POWB2 * Pe[2] / MAX(REQ * V, EPS);
     // Latitude
     LLA[0] = atan2(Pe[2] + E_PRIME_SQ * z0, p);
     // Altitude above planetary ellipsoid :
-    LLA[2] = U * (1.0 - POWB2 / MAX(Ra * V, EPS));
+    LLA[2] = U * (1.0 - POWB2 / MAX(REQ * V, EPS));
     // Avoid numerical issues at poles
     if (V < EPS) {
-        LLA[0] = LLA[0] < 0.0 ? -0.5 * M_PI : 0.5 * M_PI;
-        LLA[2] = fabs(Pe[2]) - Rb;
+        LLA[0] = LLA[0] < 0.0 ? -M_HALFPI : M_HALFPI;
+        LLA[2] = fabs(Pe[2]) - REP;
     }
-
 
 #elif ECEF2LLA_METHOD == 4
     double pRn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0, w,
                F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6, z_i, z2_k_k;
 
-    static const double Rb = 6356752.31424518;	// (m) Earth polar radius Rb = Ra * (1-f)   (from flattening, f = 1/298.257223563)
-
-    beta = atan2(Ra * Pe[2], Rb * p);
-    LLA[0] = atan2(Pe[2] + E_PRIME_SQ * Rb * pow(sin(beta), 3), p - E_SQ * Ra * pow(cos(beta), 3));
-    c = Ra / sqrt(1.0 - E_SQ * pow(sin(LLA[0]), 2));
+    beta = atan2(REQ * Pe[2], REP * p);
+    LLA[0] = atan2(Pe[2] + E_PRIME_SQ * REP * pow(sin(beta), 3), p - E_SQ * REQ * pow(cos(beta), 3));
+    c = REQ / sqrt(1.0 - E_SQ * pow(sin(LLA[0]), 2));
     LLA[2] = p / cos(LLA[0]) - c;
     // Correct for numerical instability in altitude near poles.
     // After this correction, error is about 2 millimeters, which is about the same as the numerical precision of the overall function
     if (fabs(Pe[1]) < 1.0 && fabs(Pe[2]) < 1.0)
-        LLA[2] = fabs(Pe[2]) - Rb;
-
+        LLA[2] = fabs(Pe[2]) - REP;
 
 #elif ECEF2LLA_METHOD == 5
     double sinmu, v = 0.0, val, err = 1.0e6, z_i;
@@ -215,16 +206,177 @@ void ecef2lla(const double *Pe, double *LLA)
         iter++;
         val = z_i;
         sinmu = z_i / sqrt(p2 + z_i * z_i);
-        v = Ra / sqrt(1.0 - E_SQ * sinmu * sinmu);
+        v = REQ / sqrt(1.0 - E_SQ * sinmu * sinmu);
         z_i = Pe[2] + v * E_SQ * sinmu;
         err = z_i - val;
     }
     LLA[0] = atan2(z_i, p);
     // Correct for numerical instability in altitude near poles
     if (fabs(Pe[1]) < 1.0 && fabs(Pe[2]) < 1.0) {
-        LLA[0] = LLA[0] < 0.0 ? -0.5 * M_PI : 0.5 * M_PI;
+        LLA[0] = LLA[0] < 0.0 ? -C_PIDIV2 : C_PIDIV2;
     }
     LLA[2] = sqrt(p2 + z_i * z_i) - v;
+
+#endif
+}
+
+void ecef2lla_f(const float *Pe, float *LLA)
+{
+    int iter = 0;
+    float p, p2;
+
+    // Earth equatorial radius
+    // Re = 6378137; // m
+    // Square of first eccentricity
+    // e2 = 1 - (1-f)*(1-f);
+
+    p2 = Pe[0] * Pe[0] + Pe[1] * Pe[1];
+    p = sqrtf(p2);
+
+    // Longitude
+    LLA[1] = atan2f(Pe[1], Pe[0]);
+
+    // The original Bowring's irrational geodetic-latitude (mu) equation:
+    // k - 1 - e^2 * R * k / sqrt(p^2 + (1 - e^2) * z^2 * k^2) = 0
+    // where k = p / z * tan(mu)
+    // The latitude solution mu = atan2(k * z, p)
+    // The height is then calculated as
+    // h = 1 / e^2 * (1/k - 1/k0) * sqrt(p^2 + z^2 * k^2)
+    // k0 = 1 / (1 - e^2)
+    // Various methods can be used to solve Bowring's equation.
+
+#if ECEF2LLA_METHOD == 0
+    float Rn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0f, w,
+        F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6f, z_i, z2_k_k;
+
+    // Original Bowring's iterative procedure with additional trigonometric functions
+    // which typically converges after 2 or 3 iterations
+    beta = atan2f(Pe[2], ONE_MINUS_F * p); // reduced latitude, initial guess
+    // Precompute these values to speed-up computation
+    // B = e2 * Re; // >>> this is now E2xREQ
+    // A = e2 * Re / (1 - f); // >>> this is now E2xREQdivIFE
+    while (fabsf(err) > 1.0e-8f && iter < 5)
+    {
+        iter++;
+        val = LLA[0];
+        LLA[0] = atan2f(Pe[2] + E2xREQdivIFE * powf(sinf(beta), 3), p - E2xREQ * powf(cosf(beta), 3));
+        beta = atanf(ONE_MINUS_F * tan(LLA[0]));
+        err = LLA[0] - val;
+    }
+    // Radius of curvature in the vertical prime
+    sinmu = sinf(LLA[0]);
+    Rn = REQ / sqrtf(1.0f - E_SQ * sinmu * sinmu);
+    // Altitude above planetary ellipsoid
+    LLA[2] = p * cosf(LLA[0]) + (Pe[2] + E_SQ * Rn * sinmu) * sinmu - Rn;
+
+#elif ECEF2LLA_METHOD == 1
+    float Rn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0f, w,
+        F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6f, z_i, z2_k_k;
+
+    // The equation can be solved by Newton - Raphson iteration method :
+    // k_next = (c + (1 - e^2) * z^2 * k^3) / (c - p^2) =
+    //        = 1 + (p^2 + (1 - e^2) * z^2 * k^3) / (c - p^2)
+    // where
+    // c = 1 / (R * e^2) * (p^2 + (1 - e^2) * z^2 * k^2) ^ (3/2)
+    // Initial value k0 is a good start when h is near zero.
+    // Even a single iteration produces a sufficiently accurate solution.
+
+    float z2 = Pe[2] * Pe[2];
+
+    k = ONE_DIV_ONE_MINUS_E_SQ;
+    z2_k_k = z2 * k * k;
+    //    for (i = 0; i < 1; i++) {
+    val = p2 + ONE_MINUS_E_SQ * z2_k_k;
+    c = sqrtf(val * val * val) / E2xREQ;
+    k = 1 + (p2 + ONE_MINUS_E_SQ * z2_k_k * k) / (c - p2);
+    z2_k_k = z2 * k * k;
+    //        }
+        // Latitude
+    LLA[0] = atan2f(k * Pe[2], p);
+    // Altitude above planetary ellipsoid
+    LLA[2] = ONE_DIV_E_SQ * (1.0f / k - ONE_MINUS_E_SQ) * sqrtf(p2 + z2_k_k);
+
+#elif ECEF2LLA_METHOD == 2
+    // The Bowring's quartic equation of k can be solved by Ferrari's
+    // solution.Then compute latitude and height as above.
+
+    float z2 = Pe[2] * Pe[2];
+    zeta = ONE_MINUS_E_SQ * z2 / POWA2;
+    rho = 0.166666666666667f * (p2 / POWA2 + zeta - E_POW4);
+    s = E_POW4 * zeta * p2 / (4.0f * rho * rho * rho * POWA2);
+    t = powf(1.0f + s + sqrtf(s * (s + 2.0f)), 0.333333333333333f);
+    u = rho * (t + 1.0f + 1.0f / t);
+    v = sqrtf(u * u + E_POW4 * zeta);
+    w = E_SQ * (u + v - zeta) / (2.0f * v);
+    k = 1.0f + E_SQ * (sqrtf(u + v + w * w) + w) / (u + v);
+    // Latitude
+    LLA[0] = atan2f(k * Pe[2], p);
+    // Altitude above planetary ellipsoid :
+    LLA[2] = ONE_DIV_E_SQ * (1.0f / k - ONE_MINUS_E_SQ) * sqrtf(p2 + z2 * k * k);
+
+#elif ECEF2LLA_METHOD == 3
+    float Rn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0f, w,
+        F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6f, z_i, z2_k_k;
+
+    float z2 = Pe[2] * Pe[2];
+
+    // The Heikkinen's procedure using Ferrari's solution(see case 2 above)
+    F = 54.0f * POWB2 * z2;
+    G = p2 + ONE_MINUS_E_SQ * z2 - E_SQ * (POWA2 - POWB2);
+    G2 = G * G;
+    c = E_POW4 * F * p2 / (G2 * G);
+    s = powf(1.0f + c + sqrtf(c * (c + 2)), 0.333333333333333f);
+    k = s + 1.0f + 1.0f / s;
+    P = F / (3.0f * k * k * G2);
+    Q = sqrtf(1.0f + 2.0f * E_POW4 * P);
+    val = MAX(0.0f, 0.5f * POWA2 * (1.0f + 1.0f / Q) - P * z2 * ONE_MINUS_E_SQ / (Q * (1.0f + Q)) - 0.5f * P * p2);
+    r0 = -(P * p * E_SQ) / (1.0f + Q) + sqrtf(val);
+    val = p - E_SQ * r0;
+    U = sqrtf(MAX(0.0f, val * val + z2));
+    V = sqrtf(MAX(0.0f, val * val + ONE_MINUS_E_SQ * z2));
+    z0 = POWB2 * Pe[2] / MAX(REQ * V, EPS);
+    // Latitude
+    LLA[0] = atan2f(Pe[2] + E_PRIME_SQ * z0, p);
+    // Altitude above planetary ellipsoid :
+    LLA[2] = U * (1.0f - POWB2 / MAX(REQ * V, EPS));
+    // Avoid numerical issues at poles
+    if (V < EPS) {
+        LLA[0] = LLA[0] < 0.0f ? -M_HALFPI : M_HALFPI;
+        LLA[2] = fabsf(Pe[2]) - REP;
+    }
+
+#elif ECEF2LLA_METHOD == 4
+    float pRn, sinmu, beta, k, c, zeta, rho, s, t, u, v = 0.0f, w,
+        F, G, G2, P, Q, val, U, V, z0, r0, err = 1.0e6f, z_i, z2_k_k;
+
+    beta = atan2f(REQ * Pe[2], REP * p);
+    LLA[0] = atan2f(Pe[2] + E_PRIME_SQ * REP * powf(sin(beta), 3), p - E_SQ * REQ * powf(cosf(beta), 3));
+    c = REQ / sqrtf(1.0f - E_SQ * powf(sinf(LLA[0]), 2));
+    LLA[2] = p / cosf(LLA[0]) - c;
+    // Correct for numerical instability in altitude near poles.
+    // After this correction, error is about 2 millimeters, which is about the same as the numerical precision of the overall function
+    if (fabsf(Pe[1]) < 1.0f && fabsf(Pe[2]) < 1.0f)
+        LLA[2] = fabsf(Pe[2]) - REP;
+
+#elif ECEF2LLA_METHOD == 5
+    float sinmu, v = 0.0f, val, err = 1.0e6f, z_i;
+
+    z_i = Pe[2];
+    while (fabsf(err) > 1e-4f && iter < 10)
+    {
+        iter++;
+        val = z_i;
+        sinmu = z_i / sqrtf(p2 + z_i * z_i);
+        v = REQ_f / sqrtf(1.0f - E_SQ_f * sinmu * sinmu);
+        z_i = Pe[2] + v * E_SQ_f * sinmu;
+        err = z_i - val;
+    }
+    LLA[0] = atan2f(z_i, p);
+    // Correct for numerical instability in altitude near poles
+    if (fabsf(Pe[1]) < 1.0f && fabsf(Pe[2]) < 1.0f) {
+        LLA[0] = LLA[0] < 0.0f ? -C_PIDIV2_F : C_PIDIV2_F;
+    }
+    LLA[2] = sqrtf(p2 + z_i * z_i) - v;
 
 #endif
 }
@@ -396,7 +548,7 @@ f_t baro2msl( f_t pKPa )
 	if( pKPa <= _ZERO )
 		return _ZERO;
 	else
-		return (f_t)C_NEG_KT0_DIV_MG_F * _LOG( pKPa * (f_t)C_INV_P0_KPA_F );
+		return C_NEG_KT0_DIV_MG_F * _LOG( pKPa * C_INV_P0_KPA_F );
 }
 
 
@@ -431,7 +583,7 @@ f_t llaDegDistance( double lla1[3], double lla2[3] )
 void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA)
 {
 	deltaLLA[0] =  ned[0] * INV_EARTH_RADIUS_F;
-	deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(((f_t)llaRef[0]));
+	deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(llaRef[0]);
 	deltaLLA[2] = -ned[2];
 }
 
@@ -492,22 +644,23 @@ int llaDegValid( double lla[3] )
 }
 
 /* IGF-80 gravity model with WGS-84 ellipsoid refinement */
-float gravity_igf80(double lat_rad, double alt)
+float gravity_igf80(float lat_rad, float alt)
 {
-    double g0, sinmu2;
+    float g0, sinmu2;
 
     // Equatorial gravity
-    //float ge = 9.7803253359f;
+    // float ge = 9.7803253359f;
     // Defined constant k = (b*gp - a*ge) / a / ge;
-    //double k = 0.00193185265241;
+    // double k = 0.00193185265241;
     // Square of first eccentricity e^2 = 1 - (1 - f)^2 = 1 - (b/a)^2;
-    //double e2 = 0.00669437999013;
+    // double e2 = 0.00669437999013;
 
-    sinmu2 = sin(lat_rad) * sin(lat_rad);
-    g0 = GEQ * (1.0 + K_GRAV * sinmu2) / sqrt(1.0 - E_SQ * sinmu2);
+    sinmu2 = sinf(lat_rad);
+    sinmu2 *= sinmu2;
+    g0 = GEQ * (1.0f + K_GRAV * sinmu2) / sqrtf(1.0f - E_SQ_f * sinmu2);
 
     // Free air correction
-    return (float)( g0 - (K3_GRAV - K4_GRAV * sinmu2 - K5_GRAV * alt) * alt );
+    return g0 - (K3_GRAV - K4_GRAV * sinmu2 - K5_GRAV * alt) * alt;
 }
 
 
@@ -570,7 +723,7 @@ void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ece
 double primeRadius(const double lat)
 {
     double slat = sin(lat);
-    return Ra/sqrt(1.0-E_SQ*slat*slat);
+    return REQ / sqrt(1.0-E_SQ*slat*slat);
 }
 
 
@@ -583,7 +736,7 @@ double meridonalRadius(const double lat)
 {
     double slat = sin(lat);
     double Rprime = primeRadius(lat);
-    return Rprime * (1-E_SQ) / (1.0-E_SQ*slat*slat);
+    return Rprime * (1.0-E_SQ) / (1.0-E_SQ*slat*slat);
 }
 
 
