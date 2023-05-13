@@ -898,7 +898,7 @@ enum eSatSvGnssId
     SAT_SV_GNSS_ID_BEI		= 4,	// BeiDou (China)
     SAT_SV_GNSS_ID_QZS		= 5,	// QZSS (Japan)
     SAT_SV_GNSS_ID_GLO		= 6,	// GLONASS (Russia)	
-    SAT_SV_GNSS_ID_IRN		= 7,	// IRNSS (India)	
+    SAT_SV_GNSS_ID_IRN		= 7,	// IRNSS / NavIC (India)	
     SAT_SV_GNSS_ID_IME		= 8,	// IMES (Japan's Indoor Messaging System)
 };
 

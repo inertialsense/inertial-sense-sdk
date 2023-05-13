@@ -30,10 +30,17 @@ enum eNmeaMsgIdUint
 	ASCII_MSG_ID_PASH = 0x50415348,
 };
 
+enum eNmeaProtocolVersion
+{
+	NMEA_PROTOCOL_4P0 		= 40,	// 2.3 - 4.0
+	NMEA_PROTOCOL_4P1 		= 41,	// 4.1
+};
+
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
+void nema_set_protocol_version(int protocol_version);
 uint32_t ASCII_compute_checksum(uint8_t* str, int size);
 char *ASCII_find_next_field(char *str);
 char *ASCII_to_u8(uint8_t *val, char *ptr);
@@ -65,7 +72,7 @@ int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &ve
 int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos);
 int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
 int did_gps_sat_to_nmea_gsv_set(char a[], const int aSize, gps_sat_t &sat, int gnssId);
-int nmea_gsv(char a[], const int aSize, gps_sat_t &sat);
+int nmea_gsv(char a[], const int aSize, gps_sat_t &sat, gps_sig_t &sig);
 
 
 //////////////////////////////////////////////////////////////////////////
