@@ -274,27 +274,29 @@ TEST(protocol_nmea, GSA)
 
 TEST(protocol_nmea, GSV_binary_GSV)
 {
+    nema_set_protocol_version(NMEA_PROTOCOL_2P3);
+
     string buf;
 
     // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
-    buf += "$GPGSV,6,1,23" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"  "*7C\r\n";
-    buf += "$GPGSV,6,2,23" ",16,12,268,35" ",18,69,078,41" ",23,74,336,40" ",24,15,111,37"  "*79\r\n";
-    buf += "$GPGSV,6,3,23" ",26,02,239,31" ",27,35,307,38" ",29,12,162,37" ",32,14,199,39"  "*7B\r\n";
-    buf += "$GPGSV,6,4,23" ",44,43,188,43" ",46,40,206,43" ",10,48,267,45" ",15,37,053,26"  "*73\r\n";
-    buf += "$GPGSV,6,5,23" ",18,69,078,34" ",23,74,336,34" ",24,15,111,25" ",26,02,239,18"  "*75\r\n";
-    buf += "$GPGSV,6,6,23" ",27,35,307,27" ",29,12,162,21" ",32,14,199,25"                 "*46\r\n";
+    buf += "$GPGSV,6,1,23" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"      "*7C\r\n";
+    buf += "$GPGSV,6,2,23" ",16,12,268,35" ",18,69,078,41" ",23,74,336,40" ",24,15,111,37"      "*79\r\n";
+    buf += "$GPGSV,6,3,23" ",26,02,239,31" ",27,35,307,38" ",29,12,162,37" ",32,14,199,39"      "*7B\r\n";
+    buf += "$GPGSV,6,4,23" ",44,43,188,43" ",46,40,206,43" ",522,48,267,45" ",527,37,053,26"    "*73\r\n";
+    buf += "$GPGSV,6,5,23" ",530,69,078,34" ",535,74,336,34" ",536,15,111,25" ",538,02,239,18"  "*74\r\n";
+    buf += "$GPGSV,6,6,23" ",539,35,307,27" ",541,12,162,21" ",544,14,199,25"                   "*73\r\n";
     // Galileo
-    buf += "$GAGSV,2,1,08" ",05,65,144,41" ",09,39,052,43" ",34,71,341,42" ",36,46,105,39"  "*6A\r\n";
-    buf += "$GAGSV,2,2,08" ",05,65,144,30" ",09,39,052,30" ",34,71,341,27" ",36,46,105,30"  "*61\r\n";
+    buf += "$GAGSV,2,1,08" ",05,65,144,41" ",09,39,052,43" ",34,71,341,42" ",36,46,105,39"      "*6A\r\n";
+    buf += "$GAGSV,2,2,08" ",517,65,144,30" ",521,39,052,30" ",546,71,341,27" ",548,46,105,30"  "*64\r\n";
     // Beidou
-    buf += "$GBGSV,3,1,10" ",11,09,141,34" ",14,52,047,44" ",27,32,313,43" ",28,80,263,44"  "*64\r\n";
-    buf += "$GBGSV,3,2,10" ",33,81,039,43" ",41,43,230,42" ",43,33,148,42" ",58,,,44"       "*5B\r\n";
-    buf += "$GBGSV,3,3,10" ",11,09,141,16" ",14,52,047,32"                                  "*60\r\n";
-    // QZSS
-    buf += "$GQGSV,1,1,01" ",02,45,101,30"                                                  "*49\r\n";
-    // GLONASS
-    buf += "$GLGSV,2,1,07" ",65,85,260,33" ",66,28,217,30" ",72,36,034,35" ",81,20,324,33"  "*69\r\n";
-    buf += "$GLGSV,2,2,07" ",87,47,127,35" ",88,73,350,34" ",87,47,127,20"                  "*53\r\n";
+    buf += "$GBGSV,3,1,10" ",11,09,141,34" ",14,52,047,44" ",27,32,313,43" ",28,80,263,44"      "*64\r\n";
+    buf += "$GBGSV,3,2,10" ",33,81,039,43" ",41,43,230,42" ",43,33,148,42" ",58,,,44"           "*5B\r\n";
+    buf += "$GBGSV,3,3,10" ",11,09,141,16" ",14,52,047,32"                                      "*60\r\n";
+    // // QZSS
+    buf += "$GQGSV,1,1,01" ",02,45,101,30"                                                      "*49\r\n";
+    // // GLONASS
+    buf += "$GLGSV,2,1,07" ",65,85,260,33" ",66,28,217,30" ",72,36,034,35" ",81,20,324,33"      "*69\r\n";
+    buf += "$GLGSV,2,2,07" ",87,47,127,35" ",88,73,350,34" ",87,47,127,20"                      "*53\r\n";
 
     uint32_t cnoSum = 0, cnoCount = 0;
     gps_sat_t gpsSat = {};
@@ -362,7 +364,7 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
 
 
 #if 1
-TEST(protocol_nmea_4p11, binary_GSV_binary)
+TEST(protocol_nmea, binary_GSV_binary)
 {
     gps_sat_t gpsSat = {};
     gpsSat.numSats = 33;
@@ -1080,60 +1082,103 @@ TEST(protocol_nmea_4p11, binary_GSV_binary)
     // Check array out of bounds
     ASSERT_TRUE( sig < &(gpsSig.sig[MAX_NUM_SAT_SIGNALS]) );
 
-    nema_set_protocol_version(NMEA_PROTOCOL_4P10);
-    char abuf[ASCII_BUF2] = { 0 };
-    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
-    gps_sat_t outSat = {};
-    gps_sig_t outSig = {};
-    uint32_t cnoSum = 0, cnoCount = 0;
-
-    for (char *ptr = abuf; ptr < (abuf + abuf_n); )
     {
-        ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        nema_set_protocol_version(0);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
+        for (int i=0; i<outSat.numSats; i++)
+        {
+            gps_sat_sv_t &src = gpsSat.sat[i];
+            gps_sat_sv_t &dst = outSat.sat[i];
+            // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n", 
+            //     i,
+            //     src.gnssId, dst.gnssId, 
+            //     src.svId, dst.svId, 
+            //     src.cno, dst.cno, 
+            //     src.elev, dst.elev, 
+            //     src.azim, dst.azim);
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.elev == src.elev );
+            ASSERT_TRUE( dst.azim == src.azim );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+
+        ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
+        for (int i=0; i<outSig.numSigs; i++)
+        {
+            gps_sig_sv_t &src = gpsSig.sig[i];
+            gps_sig_sv_t &dst = outSig.sig[i];
+            // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n", 
+            //     i,
+            //     src.gnssId, dst.gnssId, 
+            //     src.svId, dst.svId, 
+            //     src.sigId, dst.sigId, 
+            //     src.quality, dst.quality,
+            //     src.cno, dst.cno
+            // );
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.sigId == src.sigId );
+            ASSERT_TRUE( dst.quality == src.quality );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
     }
 
-    // cout << "NMEA (" << abuf_n << "):\n" << abuf;
-
-    ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
-    for (int i=0; i<outSat.numSats; i++)
     {
-        gps_sat_sv_t &src = gpsSat.sat[i];
-        gps_sat_sv_t &dst = outSat.sat[i];
-        // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n", 
-        //     i,
-        //     src.gnssId, dst.gnssId, 
-        //     src.svId, dst.svId, 
-        //     src.cno, dst.cno, 
-        //     src.elev, dst.elev, 
-        //     src.azim, dst.azim);
-        ASSERT_TRUE( dst.gnssId == src.gnssId );
-        ASSERT_TRUE( dst.svId == src.svId );
-        ASSERT_TRUE( dst.elev == src.elev );
-        ASSERT_TRUE( dst.azim == src.azim );
-        ASSERT_TRUE( dst.cno == src.cno );
-    }
+        nema_set_protocol_version(0);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
-    ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
-    for (int i=0; i<outSig.numSigs; i++)
-    {
-        gps_sig_sv_t &src = gpsSig.sig[i];
-        gps_sig_sv_t &dst = outSig.sig[i];
-        // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n", 
-        //     i,
-        //     src.gnssId, dst.gnssId, 
-        //     src.svId, dst.svId, 
-        //     src.sigId, dst.sigId, 
-        //     src.quality, dst.quality,
-        //     src.cno, dst.cno
-        // );
-        ASSERT_TRUE( dst.gnssId == src.gnssId );
-        ASSERT_TRUE( dst.svId == src.svId );
-        ASSERT_TRUE( dst.sigId == src.sigId );
-        ASSERT_TRUE( dst.quality == src.quality );
-        ASSERT_TRUE( dst.cno == src.cno );
-    }
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
 
+        for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
+        for (int i=0; i<outSat.numSats; i++)
+        {
+            gps_sat_sv_t &src = gpsSat.sat[i];
+            gps_sat_sv_t &dst = outSat.sat[i];
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.elev == src.elev );
+            ASSERT_TRUE( dst.azim == src.azim );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+
+        ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
+        for (int i=0; i<outSig.numSigs; i++)
+        {
+            gps_sig_sv_t &src = gpsSig.sig[i];
+            gps_sig_sv_t &dst = outSig.sig[i];
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.sigId == src.sigId );
+            ASSERT_TRUE( dst.quality == src.quality );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+    }
 }
 #endif
 

@@ -8,6 +8,10 @@
 
 static int s_protocol_version = 0;
 
+
+uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
+
+
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
@@ -104,9 +108,24 @@ static int gnssId_to_talkerId(char* a, uint8_t gnssId)
 	return 2;
 }
 
-void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint8_t &svId)
+void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t &sigId)
 {
-	gnssId = SAT_SV_GNSS_ID_UNKNOWN;
+	uint16_t svIdLast = svId;
+	if (s_protocol_version < NMEA_PROTOCOL_4P10)
+	{
+		if (svId >= 512)
+		{	// < NMEA 4.10 method of detecting mult-frequency
+			svId -= 512;
+		}
+		else if (svId >= 256)
+		{	// < NMEA 4.10 method of detecting mult-frequency
+			svId -= 256;
+		}
+		else
+		{
+			sigId = 0;
+		}
+	}
 
 	switch(a[2])	// $Gx
 	{
@@ -121,13 +140,16 @@ void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint8_t &svId)
 			gnssId = SAT_SV_GNSS_ID_SBS;
 			if (svId <= 64){ svId += 87; }
 		}
-		else{ gnssId = SAT_SV_GNSS_ID_GPS; }	break;
-	case 'A':	gnssId = SAT_SV_GNSS_ID_GAL;	break;
-	case 'B':	gnssId = SAT_SV_GNSS_ID_BEI;	break;	
-	case 'L':	gnssId = SAT_SV_GNSS_ID_GLO; 	break;
-	case 'I':	gnssId = SAT_SV_GNSS_ID_IRN; 	break;
-	case 'Q':	gnssId = SAT_SV_GNSS_ID_QZS;	break;
+		else{ gnssId = SAT_SV_GNSS_ID_GPS; }		break;
+	case 'A':	gnssId = SAT_SV_GNSS_ID_GAL;		break;
+	case 'B':	gnssId = SAT_SV_GNSS_ID_BEI;		break;	
+	case 'L':	gnssId = SAT_SV_GNSS_ID_GLO; 		break;
+	case 'I':	gnssId = SAT_SV_GNSS_ID_IRN; 		break;
+	case 'Q':	gnssId = SAT_SV_GNSS_ID_QZS;		break;
+	default:	gnssId = SAT_SV_GNSS_ID_UNKNOWN;	break;
 	}
+
+	sigId = nmea2p3_svid_to_sigId(gnssId, svIdLast);
 }
 
 static int nmea_talker(char* a, int aSize, uint8_t gnssId=0)
@@ -919,7 +941,6 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 {
 	switch(gnssId)
 	{
-
     case SAT_SV_GNSS_ID_GPS:
 		switch(sigId)
 		{
@@ -1038,6 +1059,106 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 	return '0';
 }
 
+uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
+{
+	switch(gnssId)
+	{
+    case SAT_SV_GNSS_ID_GPS:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_GPS_L1CA:		return svId;
+		case SAT_SV_SIG_ID_GPS_L2CL:		
+		case SAT_SV_SIG_ID_GPS_L2CM:		return svId + 256;
+		case SAT_SV_SIG_ID_GPS_L5I:			
+		case SAT_SV_SIG_ID_GPS_L5Q:			return svId + 512;
+		}
+    case SAT_SV_GNSS_ID_SBS:
+		return 1;
+    case SAT_SV_GNSS_ID_GAL:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_Galileo_E1C2:
+		case SAT_SV_SIG_ID_Galileo_E1B2:	return svId;
+		case SAT_SV_SIG_ID_Galileo_E5aI:
+		case SAT_SV_SIG_ID_Galileo_E5aQ:	return svId + 256;
+		case SAT_SV_SIG_ID_Galileo_E5bI:
+		case SAT_SV_SIG_ID_Galileo_E5bQ:	return svId + 512;
+		}
+    case SAT_SV_GNSS_ID_BEI:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_BeiDou_B1D1:
+		case SAT_SV_SIG_ID_BeiDou_B1D2:		return svId;
+		case SAT_SV_SIG_ID_BeiDou_B2D1:
+		case SAT_SV_SIG_ID_BeiDou_B2D2:		return svId + 256;
+		case SAT_SV_SIG_ID_BeiDou_B1C:		return svId;
+		case SAT_SV_SIG_ID_BeiDou_B2a:		return svId + 512;
+		}
+    case SAT_SV_GNSS_ID_QZS:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_QZSS_L1CA:
+		case SAT_SV_SIG_ID_QZSS_L1S:		return svId;
+		case SAT_SV_SIG_ID_QZSS_L2CM:
+		case SAT_SV_SIG_ID_QZSS_L2CL:		return svId + 256;
+		case SAT_SV_SIG_ID_QZSS_L5I:
+		case SAT_SV_SIG_ID_QZSS_L5Q:		return svId + 512;
+		}
+    case SAT_SV_GNSS_ID_GLO:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_GLONASS_L1OF:	return svId;
+		case SAT_SV_SIG_ID_GLONASS_L2OF:	return svId + 256;
+		}
+    case SAT_SV_GNSS_ID_IRN:	// NavIC
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_NAVIC_L5A:		return svId + 512;
+		}
+	}
+
+	return '0';
+
+	return 0;
+}
+
+uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
+{
+	if (svId<256)
+	{	// L1/E1
+		return 0;
+	}
+
+	if (svId>=512)
+	{	// L5/E5 - most common band
+		switch(gnssId)
+		{
+		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L5Q;
+		case SAT_SV_GNSS_ID_SBS:	return 0;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5bQ;
+		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2a;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L5Q;
+		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
+		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
+		}
+	}
+	else
+	{	// L2/E2 - most common band
+		switch(gnssId)
+		{
+		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L2CL;
+		case SAT_SV_GNSS_ID_SBS:	return 0;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5aQ;
+		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2D1;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L2CL;
+		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
+		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
+		}
+	}
+
+	return 0;
+}
+
 int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
 {
 	// Apply offset to buffer
@@ -1071,10 +1192,15 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 					if (sat.gnssId == sig.gnssId &&
 						sat.svId == sig.svId)
 					{
-						nmea_sprint(a, aSize, n, ",%02u", prnToSvId(sig.gnssId, sig.svId));		// 4 + 4*msgNum... svid
-						nmea_print_u32(a, aSize, n, 2, sat.elev);								// 5 + 4*msgNum... elevation
-						nmea_print_u32(a, aSize, n, 3, sat.azim);								// 6 + 4*msgNum... azimuth
-						nmea_print_u32(a, aSize, n, 2, sig.cno);								// 7 + 4*msgNum... cno
+						uint16_t svId = prnToSvId(sig.gnssId, sig.svId);
+						if (s_protocol_version < NMEA_PROTOCOL_4P10)
+						{
+							svId = sigId_to_nmea2p3_svId(gnssId, sig.sigId, svId);
+						}
+						nmea_sprint(a, aSize, n, ",%02u", svId);				// 4 + 4*msgNum... svid
+						nmea_print_u32(a, aSize, n, 2, sat.elev);				// 5 + 4*msgNum... elevation
+						nmea_print_u32(a, aSize, n, 3, sat.azim);				// 6 + 4*msgNum... azimuth
+						nmea_print_u32(a, aSize, n, 2, sig.cno);				// 7 + 4*msgNum... cno
 						++cnt;
 						break;
 					}
@@ -2018,15 +2144,15 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 	// Payload: {svid,elv,az,cno} up to 4x
 	for(int i=0; i<satCnt; ++i)
 	{
-		uint8_t svId, elev, cno;
-		uint16_t azim;
+		uint8_t elev, cno;
+		uint16_t svId, azim;
 
-		ptr = ASCII_to_u8(&svId, ptr);		// 4 + 4x   svId
+		ptr = ASCII_to_u16(&svId, ptr);		// 4 + 4x   svId
 		ptr = ASCII_to_u8(&elev, ptr);		// 5 + 4x   elevation
 		ptr = ASCII_to_u16(&azim, ptr);		// 6 + 4x   azimuth
 		ptr = ASCII_to_u8(&cno, ptr);		// 7 + 4x   cno
 
-		talkerId_to_gnssId(a, gnssId, svId);
+		talkerId_to_gnssId(a, gnssId, svId, sigId);
 
 		// Add to satellite info list
 		for (int j=0;; j++)
@@ -2065,7 +2191,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					
 					dst.gnssId = gnssId;
 					dst.svId = svId;
-					dst.sigId = 0;	// This gets set at function end if using protocol > NMEA 4.1
+					dst.sigId = sigId;	// Gets set at function end if using protocol > NMEA 4.1
 					*sigIdPtr = &(dst.sigId);
 					sigIdPtr++;
 					dst.quality = SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3;
