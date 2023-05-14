@@ -35,11 +35,11 @@ TEST(protocol_nmea, INFO)
     info.buildDate[0] = 0;
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_dev_info_to_nmea_info(ascii_buf, ASCII_BUF_LEN, info);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_dev_info_to_nmea_info(abuf, ASCII_BUF_LEN, info);
+    // printf("%s\n", abuf);
     dev_info_t result = {};
-    nmea_info_to_did_dev_info(result, ascii_buf, ASCII_BUF_LEN);
+    nmea_info_to_did_dev_info(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&info, &result, sizeof(result)), 0);
 }
 
@@ -53,11 +53,11 @@ TEST(protocol_nmea, PIMU)
         imu.I.acc[i] = 20.0f+i;
     }
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_imu_to_nmea_pimu(ascii_buf, ASCII_BUF_LEN, imu, "$PIMU");
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_imu_to_nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PIMU");
+    // printf("%s\n", abuf);
     imu_t result = {};
-    nmea_pimu_to_did_imu(result, ascii_buf, ASCII_BUF_LEN);
+    nmea_pimu_to_did_imu(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&imu, &result, sizeof(result)), 0);
 }
 
@@ -71,11 +71,11 @@ TEST(protocol_nmea, PRIMU)
         imu.I.acc[i] = 20.0f+i;
     }
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_imu_to_nmea_pimu(ascii_buf, ASCII_BUF_LEN, imu, "$PRIMU");
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_imu_to_nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PRIMU");
+    // printf("%s\n", abuf);
     imu_t result = {};
-    nmea_pimu_to_did_rimu(result, ascii_buf, ASCII_BUF_LEN);
+    nmea_pimu_to_did_rimu(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&imu, &result, sizeof(result)), 0);
 }
 
@@ -90,11 +90,11 @@ TEST(protocol_nmea, PPIMU)
         pimu.vel[i] = 20.0f+i;
     }
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_pimu_to_nmea_ppimu(ascii_buf, ASCII_BUF_LEN, pimu);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_pimu_to_nmea_ppimu(abuf, ASCII_BUF_LEN, pimu);
+    // printf("%s\n", abuf);
     pimu_t result = {};
-    nmea_ppimu_to_did_pimu(result, ascii_buf, ASCII_BUF_LEN);
+    nmea_ppimu_to_did_pimu(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&pimu, &result, sizeof(result)), 0);
 }
 
@@ -115,11 +115,11 @@ TEST(protocol_nmea, PINS1)
     ins.lla[1] = POS_LON_DEG;
     ins.lla[2] = POS_ALT_M;
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_ins1_to_nmea_pins1(ascii_buf, ASCII_BUF_LEN, ins);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_ins1_to_nmea_pins1(abuf, ASCII_BUF_LEN, ins);
+    // printf("%s\n", abuf);
     ins_1_t result = {};
-    nmea_pins1_to_did_ins1(result, ascii_buf, ASCII_BUF_LEN);
+    nmea_pins1_to_did_ins1(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&ins, &result, sizeof(result)), 0);
 }
 
@@ -142,11 +142,11 @@ TEST(protocol_nmea, PINS2)
     ins.lla[1] = POS_LON_DEG;
     ins.lla[2] = POS_ALT_M;
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_ins2_to_nmea_pins2(ascii_buf, ASCII_BUF_LEN, ins);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_ins2_to_nmea_pins2(abuf, ASCII_BUF_LEN, ins);
+    // printf("%s\n", abuf);
     ins_2_t result = {};
-    nmea_pins2_to_did_ins2(result, ascii_buf, ASCII_BUF_LEN);
+    nmea_pins2_to_did_ins2(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&ins, &result, sizeof(result)), 0);
 }
 
@@ -175,12 +175,12 @@ TEST(protocol_nmea, PGPSP)
     pos.leapS = 12;
     vel.sAcc = 345;
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_gps_to_nmea_pgpsp(ascii_buf, ASCII_BUF_LEN, pos, vel);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_gps_to_nmea_pgpsp(abuf, ASCII_BUF_LEN, pos, vel);
+    // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
-    nmea_pgpsp_to_did_gps(resultPos, resultVel, ascii_buf, ASCII_BUF_LEN);
+    nmea_pgpsp_to_did_gps(resultPos, resultVel, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&vel, &resultVel, sizeof(resultVel)), 0);
 }
@@ -212,17 +212,17 @@ TEST(protocol_nmea, GGA)
 	lla[2] = pos.lla[2];		// Use ellipsoid altitude
 	lla2ecef(lla, pos.ecef);
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    int n = did_gps_to_nmea_gga(ascii_buf, ASCII_BUF_LEN, pos);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = did_gps_to_nmea_gga(abuf, ASCII_BUF_LEN, pos);
     // printf("%s\n", gga);
-    // printf("%s\n", ascii_buf);
-    ASSERT_EQ(memcmp(&gga, &ascii_buf, n), 0);
+    // printf("%s\n", abuf);
+    ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
 
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_gga_to_did_gps(result, ascii_buf, ASCII_BUF_LEN, weekday);
+    nmea_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     pos.hAcc = result.hAcc;
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -237,13 +237,13 @@ TEST(protocol_nmea, GGL)
     pos.lla[1] = POS_LON_DEG;
     pos.leapS = LEAP_SEC;
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_gps_to_nmea_gll(ascii_buf, ASCII_BUF_LEN, pos);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_gps_to_nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
     gps_pos_t result = {};
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_gll_to_did_gps(result, ascii_buf, ASCII_BUF_LEN, weekday);
+    nmea_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
@@ -260,49 +260,112 @@ TEST(protocol_nmea, GSA)
         sat.sat[i].svId = i+1;
     }
 
-    char ascii_buf[ASCII_BUF_LEN] = { 0 };
-    did_gps_to_nmea_gsa(ascii_buf, ASCII_BUF_LEN, pos, sat);
-    // printf("%s\n", ascii_buf);
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    did_gps_to_nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
+    // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
-    nmea_gsa_to_did_gps(resultPos, resultSat, ascii_buf, ASCII_BUF_LEN);
+    nmea_gsa_to_did_gps(resultPos, resultSat, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
 }
 
 #define ASCII_BUF2  2048
-char g_ascii_buf[ASCII_BUF2] = { 0 };
 
-#if 1
-TEST(protocol_nmea_4p11, GSV)
+TEST(protocol_nmea, GSV_binary_GSV)
 {
     string buf;
 
     // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
-    buf += "$GPGSV,4,1,14," "02,40,310,43," "08,07,324,31," "10,48,267,45," "15,37,053,45," "1*67\r\n";
-    buf += "$GPGSV,4,2,14," "16,12,268,35," "18,69,078,41," "23,74,336,40," "24,15,111,37," "1*62\r\n";
-    buf += "$GPGSV,4,3,14," "26,02,239,31," "27,35,307,38," "29,12,162,37," "32,14,199,39," "1*60\r\n";
-    buf += "$GPGSV,4,4,14," "44,43,188,43," "46,40,206,43,"                                 "1*65\r\n";
-    buf += "$GPGSV,3,1,09," "10,48,267,45," "15,37,053,26," "18,69,078,34," "23,74,336,34," "6*6C\r\n";
-    buf += "$GPGSV,3,2,09," "24,15,111,25," "26,02,239,18," "27,35,307,27," "29,12,162,21," "6*64\r\n";
-    buf += "$GPGSV,3,3,09," "32,14,199,25,"                                                 "6*58\r\n";
+    buf += "$GPGSV,6,1,23" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"  "*7C\r\n";
+    buf += "$GPGSV,6,2,23" ",16,12,268,35" ",18,69,078,41" ",23,74,336,40" ",24,15,111,37"  "*79\r\n";
+    buf += "$GPGSV,6,3,23" ",26,02,239,31" ",27,35,307,38" ",29,12,162,37" ",32,14,199,39"  "*7B\r\n";
+    buf += "$GPGSV,6,4,23" ",44,43,188,43" ",46,40,206,43" ",10,48,267,45" ",15,37,053,26"  "*73\r\n";
+    buf += "$GPGSV,6,5,23" ",18,69,078,34" ",23,74,336,34" ",24,15,111,25" ",26,02,239,18"  "*75\r\n";
+    buf += "$GPGSV,6,6,23" ",27,35,307,27" ",29,12,162,21" ",32,14,199,25"                 "*46\r\n";
     // Galileo
-    buf += "$GAGSV,1,1,04," "05,65,144,30," "09,39,052,30," "34,71,341,27," "36,46,105,30," "2*73\r\n";
-    buf += "$GAGSV,1,1,04," "05,65,144,41," "09,39,052,43," "34,71,341,42," "36,46,105,39," "7*7E\r\n";
+    buf += "$GAGSV,2,1,08" ",05,65,144,41" ",09,39,052,43" ",34,71,341,42" ",36,46,105,39"  "*6A\r\n";
+    buf += "$GAGSV,2,2,08" ",05,65,144,30" ",09,39,052,30" ",34,71,341,27" ",36,46,105,30"  "*61\r\n";
     // Beidou
-    buf += "$GBGSV,2,1,08," "11,09,141,34," "14,52,047,44," "27,32,313,43," "28,80,263,44," "1*71\r\n";
-    buf += "$GBGSV,2,2,08," "33,81,039,43," "41,43,230,42," "43,33,148,42," "58,,,44,"      "1*4E\r\n";
-    buf += "$GBGSV,1,1,02," "11,09,141,16," "14,52,047,32,"                                 "B*0D\r\n";
+    buf += "$GBGSV,3,1,10" ",11,09,141,34" ",14,52,047,44" ",27,32,313,43" ",28,80,263,44"  "*64\r\n";
+    buf += "$GBGSV,3,2,10" ",33,81,039,43" ",41,43,230,42" ",43,33,148,42" ",58,,,44"       "*5B\r\n";
+    buf += "$GBGSV,3,3,10" ",11,09,141,16" ",14,52,047,32"                                  "*60\r\n";
     // QZSS
-    buf += "$GQGSV,1,1,01," "02,,,30,"                                                      "1*65\r\n";
+    buf += "$GQGSV,1,1,01" ",02,45,101,30"                                                  "*49\r\n";
     // GLONASS
-    buf += "$GLGSV,2,1,06," "65,85,260,33," "66,28,217,30," "72,36,034,35," "81,20,324,33," "1*75\r\n";
-    buf += "$GLGSV,2,2,06," "87,47,127,35," "88,73,350,34,"                                 "1*75\r\n";
-    buf += "$GLGSV,1,1,01," "87,47,127,20,"                                                 "3*41\r\n";
-    buf += "$GLGSV,1,1,01," "80,01,343,,"                                                   "0*45\r\n";
+    buf += "$GLGSV,2,1,07" ",65,85,260,33" ",66,28,217,30" ",72,36,034,35" ",81,20,324,33"  "*69\r\n";
+    buf += "$GLGSV,2,2,07" ",87,47,127,35" ",88,73,350,34" ",87,47,127,20"                  "*53\r\n";
 
+    uint32_t cnoSum = 0, cnoCount = 0;
     gps_sat_t gpsSat = {};
-    gpsSat.numSats = 31;
+    gps_sig_t gpsSig = {};
+    for (char *ptr = (char*)(buf.c_str()); ptr < (buf.c_str() + buf.size()); )
+    {
+        ptr = nmea_parse_gsv(ptr, buf.size(), &gpsSat, &gpsSig, &cnoSum, &cnoCount);
+    }
+    char abuf[ASCII_BUF2] = { 0 };
+    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+    // cout << "Before (" << buf.size() << "):\n" << buf;
+    // cout << "After (" << abuf_n << "):\n" << abuf;
+
+    ASSERT_TRUE( abuf_n == buf.size() );
+    ASSERT_TRUE( memcmp(abuf, buf.c_str(), abuf_n) == 0 );
+}
+
+
+TEST(protocol_nmea_4p11, GSV_binary_GSV)
+{
+    nema_set_protocol_version(NMEA_PROTOCOL_4P10);
+
+    string buf;
+
+    // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
+    buf += "$GPGSV,4,1,14" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"  ",1" "*67\r\n";
+    buf += "$GPGSV,4,2,14" ",16,12,268,35" ",18,69,078,41" ",23,74,336,40" ",24,15,111,37"  ",1" "*62\r\n";
+    buf += "$GPGSV,4,3,14" ",26,02,239,31" ",27,35,307,38" ",29,12,162,37" ",32,14,199,39"  ",1" "*60\r\n";
+    buf += "$GPGSV,4,4,14" ",44,43,188,43" ",46,40,206,43"                                  ",1" "*65\r\n";
+    buf += "$GPGSV,3,1,09" ",10,48,267,45" ",15,37,053,26" ",18,69,078,34" ",23,74,336,34"  ",6" "*68\r\n";
+    buf += "$GPGSV,3,2,09" ",24,15,111,25" ",26,02,239,18" ",27,35,307,27" ",29,12,162,21"  ",6" "*64\r\n";
+    buf += "$GPGSV,3,3,09" ",32,14,199,25"                                                  ",6" "*58\r\n";
+    // Galileo
+    buf += "$GAGSV,1,1,04" ",05,65,144,41" ",09,39,052,43" ",34,71,341,42" ",36,46,105,39"  ",7" "*7E\r\n";
+    buf += "$GAGSV,1,1,04" ",05,65,144,30" ",09,39,052,30" ",34,71,341,27" ",36,46,105,30"  ",2" "*73\r\n";
+    // Beidou
+    buf += "$GBGSV,2,1,08" ",11,09,141,34" ",14,52,047,44" ",27,32,313,43" ",28,80,263,44"  ",1" "*71\r\n";
+    buf += "$GBGSV,2,2,08" ",33,81,039,43" ",41,43,230,42" ",43,33,148,42" ",58,,,44"       ",1" "*4E\r\n";
+    buf += "$GBGSV,1,1,02" ",11,09,141,16" ",14,52,047,32"                                  ",B" "*0D\r\n";
+    // QZSS
+    buf += "$GQGSV,1,1,01" ",02,45,101,30"                                                  ",1" "*54\r\n";
+    // GLONASS
+    buf += "$GLGSV,2,1,06" ",65,85,260,33" ",66,28,217,30" ",72,36,034,35" ",81,20,324,33"  ",1" "*75\r\n";
+    buf += "$GLGSV,2,2,06" ",87,47,127,35" ",88,73,350,34"                                  ",1" "*75\r\n";
+    buf += "$GLGSV,1,1,01" ",87,47,127,20"                                                  ",3" "*41\r\n";
+
+    uint32_t cnoSum = 0, cnoCount = 0;
+    gps_sat_t gpsSat = {};
+    gps_sig_t gpsSig = {};
+    char abuf[ASCII_BUF2] = { 0 };
+
+    for (char *ptr = (char*)(buf.c_str()); ptr < (buf.c_str() + buf.size()); )
+    {
+        ptr = nmea_parse_gsv(ptr, buf.size(), &gpsSat, &gpsSig, &cnoSum, &cnoCount);
+    }
+    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+    // cout << "Before (" << buf.size() << "):\n" << buf;
+    // cout << "After (" << abuf_n << "):\n" << abuf;
+
+    ASSERT_TRUE( abuf_n == buf.size() );
+    ASSERT_TRUE( memcmp(abuf, buf.c_str(), abuf_n) == 0 );
+}
+
+
+#if 1
+TEST(protocol_nmea_4p11, binary_GSV_binary)
+{
+    gps_sat_t gpsSat = {};
+    gpsSat.numSats = 33;
     gpsSat.timeOfWeekMs = 436693200;
     gps_sat_sv_t *sat = &(gpsSat.sat[0]);
     sat->azim = 310;
@@ -313,7 +376,7 @@ TEST(protocol_nmea_4p11, GSV)
     sat->svId = 2;
     sat++;
     sat->azim = 324;
-    sat->cno = 45;
+    sat->cno = 31;
     sat->elev = 07;
     sat->gnssId = 1;
     sat->status = 95;
@@ -334,7 +397,7 @@ TEST(protocol_nmea_4p11, GSV)
     sat->svId = 15;
     sat++;
     sat->azim = 268;
-    sat->cno = 35;
+    sat->cno = 37;
     sat->elev = 12;
     sat->gnssId = 1;
     sat->status = 95;
@@ -348,7 +411,7 @@ TEST(protocol_nmea_4p11, GSV)
     sat->svId = 18;
     sat++;
     sat->azim = 336;
-    sat->cno = 40;
+    sat->cno = 41;
     sat->elev = 74;
     sat->gnssId = 1;
     sat->status = 31;
@@ -369,21 +432,21 @@ TEST(protocol_nmea_4p11, GSV)
     sat->svId = 26;
     sat++;
     sat->azim = 307;
-    sat->cno = 38;
+    sat->cno = 41;
     sat->elev = 35;
     sat->gnssId = 1;
     sat->status = 95;
     sat->svId = 27;
     sat++;
     sat->azim = 162;
-    sat->cno = 37;
+    sat->cno = 36;
     sat->elev = 12;
     sat->gnssId = 1;
     sat->status = 31;
     sat->svId = 29;
     sat++;
     sat->azim = 199;
-    sat->cno = 39;
+    sat->cno = 40;
     sat->elev = 14;
     sat->gnssId = 1;
     sat->status = 95;
@@ -404,10 +467,10 @@ TEST(protocol_nmea_4p11, GSV)
     sat->svId = 133;
     sat++;
     sat->azim = 173;
-    sat->cno = 0;
+    sat->cno = 35;
     sat->elev = 43;
     sat->gnssId = 2;
-    sat->status = 1;
+    sat->status = 95;
     sat->svId = 138;
     sat++;
     sat->azim = 145;
@@ -515,13 +578,6 @@ TEST(protocol_nmea_4p11, GSV)
     sat->status = 31;
     sat->svId = 8;
     sat++;
-    sat->azim = 344;
-    sat->cno = 0;
-    sat->elev = 1;
-    sat->gnssId = 6;
-    sat->status = 17;
-    sat->svId = 16;
-    sat++;
     sat->azim = 324;
     sat->cno = 19;
     sat->elev = 19;
@@ -543,27 +599,6 @@ TEST(protocol_nmea_4p11, GSV)
     sat->status = 28;
     sat->svId = 24;
     sat++;
-    sat->azim = 374;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 40;
-    sat->status = 0;
-    sat->svId = 243;
-    sat++;
-    sat->azim = 374;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 239;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
     sat->azim = 0;
     sat->cno = 1;
     sat->elev = 1;
@@ -577,83 +612,6 @@ TEST(protocol_nmea_4p11, GSV)
     sat->gnssId = 0;
     sat->status = 0;
     sat->svId = 0;
-    sat++;
-    sat->azim = 3;
-    sat->cno = 0;
-    sat->elev = 4;
-    sat->gnssId = 7;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 72;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 1;
-    sat->elev = 0;
-    sat->gnssId = 1;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 82;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 1;
-    sat->elev = 18;
-    sat->gnssId = 160;
-    sat->status = 0;
-    sat->svId = 234;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 4;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 1;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 82;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 127;
-    sat->elev = 0;
-    sat->gnssId = 42;
-    sat->status = 0;
-    sat->svId = 66;
 
     // Check array out of bounds
     ASSERT_TRUE( sat < &(gpsSat.sat[MAX_NUM_SATELLITES]) );
@@ -661,7 +619,7 @@ TEST(protocol_nmea_4p11, GSV)
 
 
     gps_sig_t gpsSig = {};
-    gpsSig.numSigs = 58;
+    gpsSig.numSigs = 46;
     gpsSig.timeOfWeekMs = 436693200;
     gps_sig_sv_t *sig = &(gpsSig.sig[0]);
     sig->cno = 43;
@@ -670,13 +628,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->sigId = 0;
     sig->status = 361;
     sig->svId = 2;   
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 1;
-    sig->quality = 1;
-    sig->sigId = 4;
-    sig->status = 1;
-    sig->svId = 2;
     sig++;
     sig->cno = 31;
     sig->gnssId = 1;
@@ -694,22 +645,8 @@ TEST(protocol_nmea_4p11, GSV)
     sig++;
     sig->cno = 45;
     sig->gnssId = 1;
-    sig->quality = 4;
-    sig->sigId = 3;
-    sig->status = 41;
-    sig->svId = 10;
-    sig++;
-    sig->cno = 45;
-    sig->gnssId = 1;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 41;
-    sig->svId = 15;
-    sig++;
-    sig->cno = 27;
-    sig->gnssId = 1;
-    sig->quality = 7;
-    sig->sigId = 3;
     sig->status = 41;
     sig->svId = 15;
     sig++;
@@ -720,13 +657,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 361;
     sig->svId = 16;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 1;
-    sig->quality = 1;
-    sig->sigId = 4;
-    sig->status = 1;
-    sig->svId = 16;
-    sig++;
     sig->cno = 41;
     sig->gnssId = 1;
     sig->quality = 7;
@@ -734,24 +664,10 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 18;
     sig++;
-    sig->cno = 33;
-    sig->gnssId = 1;
-    sig->quality = 7;
-    sig->sigId = 3;
-    sig->status = 41;
-    sig->svId = 18;
-    sig++;
     sig->cno = 41;
     sig->gnssId = 1;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 41;
-    sig->svId = 23;
-    sig++;
-    sig->cno = 34;
-    sig->gnssId = 1;
-    sig->quality = 7;
-    sig->sigId = 3;
     sig->status = 41;
     sig->svId = 23;
     sig++;
@@ -776,24 +692,10 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 361;
     sig->svId = 27;
     sig++;
-    sig->cno = 23;
-    sig->gnssId = 1;
-    sig->quality = 4;
-    sig->sigId = 3;
-    sig->status = 9;
-    sig->svId = 27;
-    sig++;
     sig->cno = 36;
     sig->gnssId = 1;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 41;
-    sig->svId = 29;
-    sig++;
-    sig->cno = 25;
-    sig->gnssId = 1;
-    sig->quality = 4;
-    sig->sigId = 3;
     sig->status = 41;
     sig->svId = 29;
     sig++;
@@ -802,13 +704,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->quality = 7;
     sig->sigId = 0;
     sig->status = 361;
-    sig->svId = 32;
-    sig++;
-    sig->cno = 28;
-    sig->gnssId = 1;
-    sig->quality = 7;
-    sig->sigId = 3;
-    sig->status = 41;
     sig->svId = 32;
     sig++;
     sig->cno = 43;
@@ -825,24 +720,66 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 361;
     sig->svId = 133;
     sig++;
-    sig->cno = 0;
+    sig->cno = 35;
     sig->gnssId = 2;
-    sig->quality = 1;
+    sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 0;
+    sig->status = 361;
     sig->svId = 138;
+    sig++;
+    sig->cno = 45;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 41;
+    sig->svId = 10;
+    sig++;
+    sig->cno = 27;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 41;
+    sig->svId = 15;
+    sig++;
+    sig->cno = 33;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 41;
+    sig->svId = 18;
+    sig++;
+    sig->cno = 34;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 41;
+    sig->svId = 23;
+    sig++;
+    sig->cno = 23;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 9;
+    sig->svId = 27;
+    sig++;
+    sig->cno = 25;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 41;
+    sig->svId = 29;
+    sig++;
+    sig->cno = 28;
+    sig->gnssId = 1;
+    sig->quality = 7;
+    sig->sigId = 3;
+    sig->status = 41;
+    sig->svId = 32;
     sig++;
     sig->cno = 41;
     sig->gnssId = 3;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 41;
-    sig->svId = 5;
-    sig++;
-    sig->cno = 30;
-    sig->gnssId = 3;
-    sig->quality = 7;
-    sig->sigId = 6;
     sig->status = 41;
     sig->svId = 5;
     sig++;
@@ -853,24 +790,10 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 9;
     sig++;
-    sig->cno = 30;
-    sig->gnssId = 3;
-    sig->quality = 7;
-    sig->sigId = 6;
-    sig->status = 41;
-    sig->svId = 9;
-    sig++;
     sig->cno = 42;
     sig->gnssId = 3;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 41;
-    sig->svId = 34;
-    sig++;
-    sig->cno = 26;
-    sig->gnssId = 3;
-    sig->quality = 7;
-    sig->sigId = 6;
     sig->status = 41;
     sig->svId = 34;
     sig++;
@@ -881,6 +804,27 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 36;
     sig++;
+    sig->cno = 30;
+    sig->gnssId = 3;
+    sig->quality = 7;
+    sig->sigId = 6;
+    sig->status = 41;
+    sig->svId = 5;
+    sig++;
+    sig->cno = 30;
+    sig->gnssId = 3;
+    sig->quality = 7;
+    sig->sigId = 6;
+    sig->status = 41;
+    sig->svId = 9;
+    sig++;
+    sig->cno = 26;
+    sig->gnssId = 3;
+    sig->quality = 7;
+    sig->sigId = 6;
+    sig->status = 41;
+    sig->svId = 34;
+    sig++;
     sig->cno = 31;
     sig->gnssId = 3;
     sig->quality = 7;
@@ -895,24 +839,10 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 1;
     sig->svId = 11;
     sig++;
-    sig->cno = 21;
-    sig->gnssId = 4;
-    sig->quality = 4;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 11;
-    sig++;
     sig->cno = 44;
     sig->gnssId = 4;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 41;
-    sig->svId = 14;
-    sig++;
-    sig->cno = 30;
-    sig->gnssId = 4;
-    sig->quality = 7;
-    sig->sigId = 2;
     sig->status = 41;
     sig->svId = 14;
     sig++;
@@ -923,25 +853,11 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 27;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 4;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 27;
-    sig++;
     sig->cno = 44;
     sig->gnssId = 4;
     sig->quality = 7;
     sig->sigId = 0;
     sig->status = 41;
-    sig->svId = 28;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 4;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
     sig->svId = 28;
     sig++;
     sig->cno = 42;
@@ -951,13 +867,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 33;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 4;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 33;
-    sig++;
     sig->cno = 43;
     sig->gnssId = 4;
     sig->quality = 7;
@@ -965,25 +874,11 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 41;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 4;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 41;
-    sig++;
     sig->cno = 43;
     sig->gnssId = 4;
     sig->quality = 7;
     sig->sigId = 0;
     sig->status = 41;
-    sig->svId = 43;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 4;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
     sig->svId = 43;
     sig++;
     sig->cno = 43;
@@ -993,17 +888,24 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 2;
     sig->svId = 58;
     sig++;
+    sig->cno = 21;
+    sig->gnssId = 4;
+    sig->quality = 7;
+    sig->sigId = 2;
+    sig->status = 1;
+    sig->svId = 11;
+    sig++;
+    sig->cno = 30;
+    sig->gnssId = 4;
+    sig->quality = 7;
+    sig->sigId = 2;
+    sig->status = 41;
+    sig->svId = 14;
+    sig++;
     sig->cno = 31;
     sig->gnssId = 6;
     sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 1;
-    sig->svId = 1;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
     sig->status = 1;
     sig->svId = 1;
     sig++;
@@ -1014,13 +916,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 2;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 2;
-    sig++;
     sig->cno = 35;
     sig->gnssId = 6;
     sig->quality = 7;
@@ -1028,38 +923,10 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 8;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 8;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 0;
-    sig->status = 1;
-    sig->svId = 16;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 16;
-    sig++;
     sig->cno = 19;
     sig->gnssId = 6;
-    sig->quality = 3;
+    sig->quality = 7;
     sig->sigId = 0;
-    sig->status = 1;
-    sig->svId = 17;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
     sig->status = 1;
     sig->svId = 17;
     sig++;
@@ -1070,33 +937,12 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 41;
     sig->svId = 23;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 23;
-    sig++;
     sig->cno = 32;
     sig->gnssId = 6;
-    sig->quality = 4;
+    sig->quality = 7;
     sig->sigId = 0;
     sig->status = 41;
     sig->svId = 24;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 1;
-    sig->sigId = 2;
-    sig->status = 1;
-    sig->svId = 24;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 240;
-    sig->status = 0;
-    sig->svId = 0;
     sig++;
     sig->cno = 208;
     sig->gnssId = 0;
@@ -1105,40 +951,12 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 8978;
     sig->svId = 0;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 133;
-    sig->quality = 40;
-    sig->sigId = 0;
-    sig->status = 27395;
-    sig->svId = 1;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 33;
-    sig->quality = 0;
-    sig->sigId = 1;
-    sig->status = 336;
-    sig->svId = 133;
-    sig++;
     sig->cno = 1;
     sig->gnssId = 107;
     sig->quality = 0;
     sig->sigId = 133;
     sig->status = 256;
     sig->svId = 33;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 128;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 4;
     sig++;
     sig->cno = 15;
     sig->gnssId = 0;
@@ -1156,34 +974,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig++;
     sig->cno = 112;
     sig->gnssId = 1;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 2;
-    sig->sigId = 0;
-    sig->status = 1024;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 6;
-    sig->quality = 0;
-    sig->sigId = 1;
-    sig->status = 62;
-    sig->svId = 133;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 4352;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
     sig->quality = 0;
     sig->sigId = 0;
     sig->status = 0;
@@ -1209,20 +999,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->sigId = 0;
     sig->status = 8978;
     sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 133;
-    sig->quality = 40;
-    sig->sigId = 0;
-    sig->status = 27395;
-    sig->svId = 1;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 33;
-    sig->quality = 0;
-    sig->sigId = 1;
-    sig->status = 336;
-    sig->svId = 133;
     sig++;
     sig->cno = 1;
     sig->gnssId = 107;
@@ -1266,41 +1042,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 0;
     sig->svId = 0;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 208;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 4;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 3328;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
     sig->cno = 107;
     sig->gnssId = 0;
     sig->quality = 33;
@@ -1322,34 +1063,6 @@ TEST(protocol_nmea_4p11, GSV)
     sig->status = 19972;
     sig->svId = 0;
     sig++;
-    sig->cno = 0;
-    sig->gnssId = 133;
-    sig->quality = 107;
-    sig->sigId = 0;
-    sig->status = 5121;
-    sig->svId = 1;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 80;
-    sig->quality = 0;
-    sig->sigId = 127;
-    sig->status = 2;
-    sig->svId = 250;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 4;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 61440;
-    sig->svId = 6;
-    sig++;
-    sig->cno = 0;
-    sig->gnssId = 0;
-    sig->quality = 0;
-    sig->sigId = 0;
-    sig->status = 0;
-    sig->svId = 0;
-    sig++;
     sig->cno = 33;
     sig->gnssId = 90;
     sig->quality = 133;
@@ -1367,445 +1080,59 @@ TEST(protocol_nmea_4p11, GSV)
     // Check array out of bounds
     ASSERT_TRUE( sig < &(gpsSig.sig[MAX_NUM_SAT_SIGNALS]) );
 
+    nema_set_protocol_version(NMEA_PROTOCOL_4P10);
+    char abuf[ASCII_BUF2] = { 0 };
+    int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
-    nmea_gsv(g_ascii_buf, ASCII_BUF2, gpsSat, gpsSig);
-    // printf("%s\n", g_ascii_buf);
+    gps_sat_t outSat = {};
+    gps_sig_t outSig = {};
+    uint32_t cnoSum = 0, cnoCount = 0;
 
-    // cout << "buf size: " << buf.size() << "\n";
-    // cout << buf;
+    for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+    {
+        ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+    }
 
-    // gps_sat_t result = {};
-    // int lastGSVmsg[2] = {};
-    // int satCount = 0;
-    // uint32_t cnoSum = 0;
-    // uint32_t cnoCount = 0;
-    // nmea_parse_gsv(buf.c_str(), buf.size(), &result, lastGSVmsg, &satCount, &cnoSum, &cnoCount);
+    // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-}
-#endif
+    ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
+    for (int i=0; i<outSat.numSats; i++)
+    {
+        gps_sat_sv_t &src = gpsSat.sat[i];
+        gps_sat_sv_t &dst = outSat.sat[i];
+        // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n", 
+        //     i,
+        //     src.gnssId, dst.gnssId, 
+        //     src.svId, dst.svId, 
+        //     src.cno, dst.cno, 
+        //     src.elev, dst.elev, 
+        //     src.azim, dst.azim);
+        ASSERT_TRUE( dst.gnssId == src.gnssId );
+        ASSERT_TRUE( dst.svId == src.svId );
+        ASSERT_TRUE( dst.elev == src.elev );
+        ASSERT_TRUE( dst.azim == src.azim );
+        ASSERT_TRUE( dst.cno == src.cno );
+    }
 
-
-#if 0
-TEST(protocol_nmea, GSV)
-{
-    string buf;
-
-
-    // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
-    buf += "$GPGSV,6,1,14," "02,40,310,43," "08,07,324,31," "10,48,267,45," "15,37,053,45"      "*67\r\n";
-    buf += "$GPGSV,6,2,14," "16,12,268,35," "18,69,078,41," "23,74,336,40," "24,15,111,37"      "*62\r\n";
-    buf += "$GPGSV,6,3,14," "26,02,239,31," "27,35,307,38," "29,12,162,37," "32,14,199,39"      "*60\r\n";
-    buf += "$GPGSV,6,4,14," "44,43,188,43," "46,40,206,43," "522,48,267,45," "527,37,053,26"    "*65\r\n";
-    buf += "$GPGSV,6,5,14," "530,69,078,34," "535,74,336,34," "536,15,111,25," "538,02,239,18," "*64\r\n";
-    buf += "$GPGSV,6,6,14," "541,12,162,21," "544,14,199,25," "539,35,307,27"                   "*64\r\n";
-
-    // Galileo
-    buf += "$GAGSV,1,1,04," "05,65,144,30," "09,39,052,30," "34,71,341,27," "36,46,105,30," "2*73\r\n";
-    buf += "$GAGSV,1,1,04," "05,65,144,41," "09,39,052,43," "34,71,341,42," "36,46,105,39," "7*7E\r\n";
-    // Beidou
-    buf += "$GBGSV,2,1,08," "11,09,141,34," "14,52,047,44," "27,32,313,43," "28,80,263,44," "1*71\r\n";
-    buf += "$GBGSV,2,2,08," "33,81,039,43," "41,43,230,42," "43,33,148,42," "58,,,44,"      "1*4E\r\n";
-    buf += "$GBGSV,1,1,02," "11,09,141,16," "14,52,047,32,"                                 "B*0D\r\n";
-    // QZSS
-    buf += "$GQGSV,1,1,01," "02,,,30,"                                                      "1*65\r\n";
-    // GLONASS
-    buf += "$GLGSV,2,1,06," "65,85,260,33," "66,28,217,30," "72,36,034,35," "81,20,324,33," "1*75\r\n";
-    buf += "$GLGSV,2,2,06," "87,47,127,35," "88,73,350,34,"                                 "1*75\r\n";
-    buf += "$GLGSV,1,1,01," "87,47,127,20,"                                                 "3*41\r\n";
-    buf += "$GLGSV,1,1,01," "80,01,343,,"                                                   "0*45\r\n";
-
-
-    // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ... *checksum
-    buf += "$GPGSV,4,1,14," "02,40,310,43," "08,07,324,31," "10,48,267,45," "15,37,053,45"  "*67\r\n";
-    buf += "$GPGSV,4,2,14," "16,12,268,35," "18,69,078,41," "23,74,336,40," "24,15,111,37"  "*62\r\n";
-    buf += "$GPGSV,4,3,14," "26,02,239,31," "27,35,307,38," "29,12,162,37," "32,14,199,39"  "*60\r\n";
-    buf += "$GPGSV,4,4,14," "44,43,188,43," "46,40,206,43"                                  "*65\r\n";
-    // Galileo
-    buf += "$GAGSV,1,1,04," "05,65,144,30," "09,39,052,30," "34,71,341,27," "36,46,105,30"  "*73\r\n";
-    buf += "$GAGSV,1,1,04," "05,65,144,41," "09,39,052,43," "34,71,341,42," "36,46,105,39"  "*7E\r\n";
-    // Beidou
-    buf += "$GBGSV,2,1,08," "11,09,141,34," "14,52,047,44," "27,32,313,43," "28,80,263,44"  "*71\r\n";
-    buf += "$GBGSV,2,2,08," "33,81,039,43," "41,43,230,42," "43,33,148,42," "58,,,44"       "*4E\r\n";
-    buf += "$GBGSV,1,1,02," "11,09,141,16," "14,52,047,32"                                  "*0D\r\n";
-    // QZSS
-    buf += "$GQGSV,1,1,01," "02,,,30 "                                                      "*65\r\n";
-    // GLONASS
-    buf += "$GLGSV,2,1,06," "65,85,260,33," "66,28,217,30," "72,36,034,35," "81,20,324,33 " "*75\r\n";
-    buf += "$GLGSV,2,2,06," "87,47,127,35," "88,73,350,34"                                  "*75\r\n";
-    buf += "$GLGSV,1,1,01," "87,47,127,20"                                                  "*41\r\n";
-    buf += "$GLGSV,1,1,01," "80,01,343,"                                                    "*45\r\n";
-
-    gps_sat_t gpsSat = {};
-    gpsSat.numSats = 31;
-    gpsSat.timeOfWeekMs = 436693200;
-    gps_sat_sv_t *sat = &(gpsSat.sat[0]);
-    sat->azim = 310;
-    sat->cno = 43;
-    sat->elev = 40;
-    sat->gnssId = 1;
-    sat->status = 95;
-    sat->svId = 2;
-    sat++;
-    sat->azim = 324;
-    sat->cno = 45;
-    sat->elev = 07;
-    sat->gnssId = 1;
-    sat->status = 95;
-    sat->svId = 8;
-    sat++;
-    sat->azim = 267;
-    sat->cno = 45;
-    sat->elev = 48;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 10;
-    sat++;
-    sat->azim = 53;
-    sat->cno = 45;
-    sat->elev = 37;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 15;
-    sat++;
-    sat->azim = 268;
-    sat->cno = 35;
-    sat->elev = 12;
-    sat->gnssId = 1;
-    sat->status = 95;
-    sat->svId = 16;
-    sat++;
-    sat->azim = 78;
-    sat->cno = 41;
-    sat->elev = 69;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 18;
-    sat++;
-    sat->azim = 336;
-    sat->cno = 40;
-    sat->elev = 74;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 23;
-    sat++;
-    sat->azim = 111;
-    sat->cno = 37;
-    sat->elev = 15;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 24;
-    sat++;
-    sat->azim = 239;
-    sat->cno = 31;
-    sat->elev = 02;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 26;
-    sat++;
-    sat->azim = 307;
-    sat->cno = 38;
-    sat->elev = 35;
-    sat->gnssId = 1;
-    sat->status = 95;
-    sat->svId = 27;
-    sat++;
-    sat->azim = 162;
-    sat->cno = 37;
-    sat->elev = 12;
-    sat->gnssId = 1;
-    sat->status = 31;
-    sat->svId = 29;
-    sat++;
-    sat->azim = 199;
-    sat->cno = 39;
-    sat->elev = 14;
-    sat->gnssId = 1;
-    sat->status = 95;
-    sat->svId = 32;
-    sat++;
-    sat->azim = 188;
-    sat->cno = 43;
-    sat->elev = 43;
-    sat->gnssId = 2;
-    sat->status = 95;
-    sat->svId = 131;
-    sat++;
-    sat->azim = 206;
-    sat->cno = 43;
-    sat->elev = 40;
-    sat->gnssId = 2;
-    sat->status = 95;
-    sat->svId = 133;
-    sat++;
-    sat->azim = 173;
-    sat->cno = 0;
-    sat->elev = 43;
-    sat->gnssId = 2;
-    sat->status = 1;
-    sat->svId = 138;
-    sat++;
-    sat->azim = 145;
-    sat->cno = 41;
-    sat->elev = 65;
-    sat->gnssId = 3;
-    sat->status = 31;
-    sat->svId = 5;
-    sat++;
-    sat->azim = 53;
-    sat->cno = 43;
-    sat->elev = 39;
-    sat->gnssId = 3;
-    sat->status = 31;
-    sat->svId = 9;
-    sat++;
-    sat->azim = 340;
-    sat->cno = 42;
-    sat->elev = 71;
-    sat->gnssId = 3;
-    sat->status = 31;
-    sat->svId = 34;
-    sat++;
-    sat->azim = 104;
-    sat->cno = 40;
-    sat->elev = 47;
-    sat->gnssId = 3;
-    sat->status = 31;
-    sat->svId = 36;
-    sat++;
-    sat->azim = 141;
-    sat->cno = 36;
-    sat->elev = 9;
-    sat->gnssId = 4;
-    sat->status = 23;
-    sat->svId = 11;
-    sat++;
-    sat->azim = 47;
-    sat->cno = 44;
-    sat->elev = 52;
-    sat->gnssId = 4;
-    sat->status = 31;
-    sat->svId = 14;
-    sat++;
-    sat->azim = 313;
-    sat->cno = 38;
-    sat->elev = 31;
-    sat->gnssId = 4;
-    sat->status = 31;
-    sat->svId = 27;
-    sat++;
-    sat->azim = 267;
-    sat->cno = 44;
-    sat->elev = 79;
-    sat->gnssId = 4;
-    sat->status = 31;
-    sat->svId = 28;
-    sat++;
-    sat->azim = 40;
-    sat->cno = 42;
-    sat->elev = 82;
-    sat->gnssId = 4;
-    sat->status = 31;
-    sat->svId = 33;
-    sat++;
-    sat->azim = 230;
-    sat->cno = 43;
-    sat->elev = 43;
-    sat->gnssId = 4;
-    sat->status = 31;
-    sat->svId = 41;
-    sat++;
-    sat->azim = 148;
-    sat->cno = 43;
-    sat->elev = 34;
-    sat->gnssId = 4;
-    sat->status = 31;
-    sat->svId = 43;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 43;
-    sat->elev = 0;
-    sat->gnssId = 4;
-    sat->status = 39;
-    sat->svId = 58;
-    sat++;
-    sat->azim = 252;
-    sat->cno = 31;
-    sat->elev = 85;
-    sat->gnssId = 6;
-    sat->status = 23;
-    sat->svId = 1;
-    sat++;
-    sat->azim = 217;
-    sat->cno = 29;
-    sat->elev = 28;
-    sat->gnssId = 6;
-    sat->status = 31;
-    sat->svId = 2;
-    sat++;
-    sat->azim = 34;
-    sat->cno = 35;
-    sat->elev = 37;
-    sat->gnssId = 6;
-    sat->status = 31;
-    sat->svId = 8;
-    sat++;
-    sat->azim = 344;
-    sat->cno = 0;
-    sat->elev = 1;
-    sat->gnssId = 6;
-    sat->status = 17;
-    sat->svId = 16;
-    sat++;
-    sat->azim = 324;
-    sat->cno = 19;
-    sat->elev = 19;
-    sat->gnssId = 6;
-    sat->status = 19;
-    sat->svId = 17;
-    sat++;
-    sat->azim = 126;
-    sat->cno = 36;
-    sat->elev = 48;
-    sat->gnssId = 6;
-    sat->status = 31;
-    sat->svId = 23;
-    sat++;
-    sat->azim = 349;
-    sat->cno = 32;
-    sat->elev = 72;
-    sat->gnssId = 6;
-    sat->status = 28;
-    sat->svId = 24;
-    sat++;
-    sat->azim = 374;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 40;
-    sat->status = 0;
-    sat->svId = 243;
-    sat++;
-    sat->azim = 374;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 239;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 1;
-    sat->elev = 1;
-    sat->gnssId = 4;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 2;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 3;
-    sat->cno = 0;
-    sat->elev = 4;
-    sat->gnssId = 7;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 72;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 1;
-    sat->elev = 0;
-    sat->gnssId = 1;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 0;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 82;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 1;
-    sat->elev = 18;
-    sat->gnssId = 160;
-    sat->status = 0;
-    sat->svId = 234;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 4;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 1;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 0;
-    sat->elev = 0;
-    sat->gnssId = 82;
-    sat->status = 0;
-    sat->svId = 0;
-    sat++;
-    sat->azim = 0;
-    sat->cno = 127;
-    sat->elev = 0;
-    sat->gnssId = 42;
-    sat->status = 0;
-    sat->svId = 66;
-
-    // Check array out of bounds
-    ASSERT_TRUE( sat != &(gpsSat.sat[MAX_NUM_SATELLITES]) );
-
-
-
-    nmea_gsv(g_ascii_buf, ASCII_BUF2, gpsSat);
-    // printf("%s\n", g_ascii_buf);
-
-    // cout << "buf size: " << buf.size() << "\n";
-    // cout << buf;
-
-    // gps_sat_t result = {};
-    // int lastGSVmsg[2] = {};
-    // int satCount = 0;
-    // uint32_t cnoSum = 0;
-    // uint32_t cnoCount = 0;
-    // nmea_parse_gsv(buf.c_str(), buf.size(), &result, lastGSVmsg, &satCount, &cnoSum, &cnoCount);
+    ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
+    for (int i=0; i<outSig.numSigs; i++)
+    {
+        gps_sig_sv_t &src = gpsSig.sig[i];
+        gps_sig_sv_t &dst = outSig.sig[i];
+        // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n", 
+        //     i,
+        //     src.gnssId, dst.gnssId, 
+        //     src.svId, dst.svId, 
+        //     src.sigId, dst.sigId, 
+        //     src.quality, dst.quality,
+        //     src.cno, dst.cno
+        // );
+        ASSERT_TRUE( dst.gnssId == src.gnssId );
+        ASSERT_TRUE( dst.svId == src.svId );
+        ASSERT_TRUE( dst.sigId == src.sigId );
+        ASSERT_TRUE( dst.quality == src.quality );
+        ASSERT_TRUE( dst.cno == src.cno );
+    }
 
 }
 #endif
