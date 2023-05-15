@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../../../SDK/src/protocol_nmea.h"
+#include "protocol_nmea.h"
 
 
 #define ASCII_BUF_LEN   200
@@ -248,6 +248,3 @@ TEST(nmea, GSA)
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
 }
-
-
-

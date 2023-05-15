@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <stdlib.h>
-#include "../com_manager.h"
-#include "../../../SDK/src/data_sets.h"
+#include "com_manager.h"
+#include "data_sets.h"
 
 static imu_t g_imu;
 static ins_1_t g_ins1;
