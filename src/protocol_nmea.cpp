@@ -1169,7 +1169,7 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 	int numSigs = nmea_gsv_num_sat_sigs(gnssId, sigId, gsig);
 	int numMsgs = (numSigs+3) >> 2;	// divide by 4
 
-	int i=0;
+	uint32_t i=0;
 	for (int sigNum = 0; sigNum<numSigs; sigNum+=4)
 	{
 		int msgNum = (sigNum >> 2) + 1;	// (divide by 4) + 1
@@ -1186,7 +1186,7 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 			gps_sig_sv_t &sig = gsig.sig[i];
 			if (gsv_sig_match(gnssId, sigId, sig, noCno))
 			{	
-				for (int j=0; j<=gsat.numSats; j++)
+				for (uint32_t j=0; j<=gsat.numSats; j++)
 				{
 					gps_sat_sv_t &sat = gsat.sat[j];
 					if (sat.gnssId == sig.gnssId &&
@@ -2128,7 +2128,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 	char *ptr = (char *)&a[7];	// $GxGSV,
 	// $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
 		
-	int numMsgs, msgNum, numSigs;
+	int32_t numMsgs, msgNum, numSigs;
 	ptr = ASCII_to_i32(&numMsgs, ptr);			// 1 - number of messages
 	ptr = ASCII_to_i32(&msgNum, ptr);			// 2 - message number
 	ptr = ASCII_to_i32(&numSigs, ptr);			// 3 - number of satellite signals in view
@@ -2155,7 +2155,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 		talkerId_to_gnssId(a, gnssId, svId, sigId);
 
 		// Add to satellite info list
-		for (int j=0;; j++)
+		for (uint32_t j=0;; j++)
 		{
 			if (j >= gpsSat->numSats)
 			{	// Not in list
@@ -2180,7 +2180,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 		}
 
 		// Add to satellite signal list
-		for (int j=0;; j++)
+		for (uint32_t j=0;; j++)
 		{
 			if (j >= gpsSig->numSigs)
 			{	// Not in list
