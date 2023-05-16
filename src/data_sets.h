@@ -1382,7 +1382,10 @@ typedef struct PACKED
 
 	/** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
 	uint16_t				pashr;
-	
+
+	/** Broadcast period multiple - ASCII NMEA satelliate information. */
+	uint16_t				gsv;
+
 } ascii_msgs_t;
 
 typedef struct PACKED
@@ -1604,14 +1607,15 @@ typedef struct PACKED
 #define ASCII_RMC_BITS_PINS1			0x00000008		// 5
 #define ASCII_RMC_BITS_PINS2			0x00000010		// 6
 #define ASCII_RMC_BITS_PGPSP			0x00000020		// 7
-#define ASCII_RMC_BITS_GPGGA			0x00000040		// 8
-#define ASCII_RMC_BITS_GPGLL			0x00000080		// 9
-#define ASCII_RMC_BITS_GPGSA			0x00000100		// 10
-#define ASCII_RMC_BITS_GPRMC			0x00000200		// 11
-#define ASCII_RMC_BITS_GPZDA			0x00000400		// 12
+#define ASCII_RMC_BITS_GGA				0x00000040		// 8
+#define ASCII_RMC_BITS_GLL				0x00000080		// 9
+#define ASCII_RMC_BITS_GSA				0x00000100		// 10
+#define ASCII_RMC_BITS_RMC				0x00000200		// 11
+#define ASCII_RMC_BITS_ZDA				0x00000400		// 12
 #define ASCII_RMC_BITS_PASHR			0x00000800		// 13 
 #define ASCII_RMC_BITS_PSTRB			0x00001000		// 14
-#define ASCII_RMC_BITS_INFO				0x00002000		//
+#define ASCII_RMC_BITS_INFO				0x00002000		// 15
+#define ASCII_RMC_BITS_GSV				0x00004000		// 16 
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED

@@ -36,7 +36,7 @@ TEST(protocol_nmea, INFO)
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_dev_info_to_nmea_info(abuf, ASCII_BUF_LEN, info);
+    nmea_dev_info(abuf, ASCII_BUF_LEN, info);
     // printf("%s\n", abuf);
     dev_info_t result = {};
     nmea_info_to_did_dev_info(result, abuf, ASCII_BUF_LEN);
@@ -54,7 +54,7 @@ TEST(protocol_nmea, PIMU)
     }
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_imu_to_nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PIMU");
+    nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PIMU");
     // printf("%s\n", abuf);
     imu_t result = {};
     nmea_pimu_to_did_imu(result, abuf, ASCII_BUF_LEN);
@@ -72,7 +72,7 @@ TEST(protocol_nmea, PRIMU)
     }
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_imu_to_nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PRIMU");
+    nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PRIMU");
     // printf("%s\n", abuf);
     imu_t result = {};
     nmea_pimu_to_did_rimu(result, abuf, ASCII_BUF_LEN);
@@ -91,7 +91,7 @@ TEST(protocol_nmea, PPIMU)
     }
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_pimu_to_nmea_ppimu(abuf, ASCII_BUF_LEN, pimu);
+    nmea_ppimu(abuf, ASCII_BUF_LEN, pimu);
     // printf("%s\n", abuf);
     pimu_t result = {};
     nmea_ppimu_to_did_pimu(result, abuf, ASCII_BUF_LEN);
@@ -116,7 +116,7 @@ TEST(protocol_nmea, PINS1)
     ins.lla[2] = POS_ALT_M;
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_ins1_to_nmea_pins1(abuf, ASCII_BUF_LEN, ins);
+    nmea_pins1(abuf, ASCII_BUF_LEN, ins);
     // printf("%s\n", abuf);
     ins_1_t result = {};
     nmea_pins1_to_did_ins1(result, abuf, ASCII_BUF_LEN);
@@ -143,7 +143,7 @@ TEST(protocol_nmea, PINS2)
     ins.lla[2] = POS_ALT_M;
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_ins2_to_nmea_pins2(abuf, ASCII_BUF_LEN, ins);
+    nmea_pins2(abuf, ASCII_BUF_LEN, ins);
     // printf("%s\n", abuf);
     ins_2_t result = {};
     nmea_pins2_to_did_ins2(result, abuf, ASCII_BUF_LEN);
@@ -176,7 +176,7 @@ TEST(protocol_nmea, PGPSP)
     vel.sAcc = 345;
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_gps_to_nmea_pgpsp(abuf, ASCII_BUF_LEN, pos, vel);
+    nmea_pgpsp(abuf, ASCII_BUF_LEN, pos, vel);
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
@@ -213,7 +213,7 @@ TEST(protocol_nmea, GGA)
 	lla2ecef(lla, pos.ecef);
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    int n = did_gps_to_nmea_gga(abuf, ASCII_BUF_LEN, pos);
+    int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
     // printf("%s\n", gga);
     // printf("%s\n", abuf);
     ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
@@ -238,7 +238,7 @@ TEST(protocol_nmea, GGL)
     pos.leapS = LEAP_SEC;
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_gps_to_nmea_gll(abuf, ASCII_BUF_LEN, pos);
+    nmea_gll(abuf, ASCII_BUF_LEN, pos);
     // printf("%s\n", abuf);
     gps_pos_t result = {};
     result.leapS = pos.leapS;
@@ -261,7 +261,7 @@ TEST(protocol_nmea, GSA)
     }
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    did_gps_to_nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
+    nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
