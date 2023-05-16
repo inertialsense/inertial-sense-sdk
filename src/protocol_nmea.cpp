@@ -158,7 +158,7 @@ static int nmea_talker(char* a, int aSize, uint8_t gnssId=0)
 	return gnssId_to_talkerId(a+1, gnssId) + 1;
 }
 
-static int nmea_sprint_footer(char* a, int aSize, int &n)
+int nmea_sprint_footer(char* a, int aSize, int &n)
 {
 	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
 	n += ssnprintf(a+n, aSize-n, "*%.2X\r\n", checkSum);
@@ -434,7 +434,7 @@ int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, un
 int nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[])
 {
 	int n = ssnprintf(a, aSize, "%s", name);
-	nmea_sprint(a, aSize, n, ",%.3lf", imu.time);		// 1
+	nmea_sprint(a, aSize, n, ",%.3lf", imu.time);			// 1
 	
 	nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[0]);		// 2
 	nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[1]);		// 3
@@ -468,7 +468,7 @@ int nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 int nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 {
 	int n = ssnprintf(a, aSize, "$PINS1");
-	nmea_sprint(a, aSize, n, ",%.3lf", ins1.timeOfWeek);	// 1
+	nmea_sprint(a, aSize, n, ",%.3lf", ins1.timeOfWeek);			// 1
 
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.week);		// 2
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.insStatus);	// 3
@@ -482,9 +482,9 @@ int nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 	nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[1]);					// 9
 	nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[2]);					// 10
 
-	nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[0]);					// 11
-	nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[1]);					// 12
-	nmea_sprint(a, aSize, n, ",%.3lf", ins1.lla[2]);					// 13
+	nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[0]);				// 11
+	nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[1]);				// 12
+	nmea_sprint(a, aSize, n, ",%.3lf", ins1.lla[2]);				// 13
 
 	nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[0]);					// 14
 	nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[1]);					// 15
@@ -496,24 +496,24 @@ int nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 int nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
 {
 	int n = ssnprintf(a, aSize, "$PINS2");
-	nmea_sprint(a, aSize, n, ",%.3lf", ins2.timeOfWeek);				// 1
+	nmea_sprint(a, aSize, n, ",%.3lf", ins2.timeOfWeek);			// 1
 
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.week);		// 2
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.insStatus);	// 3
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.hdwStatus);	// 4
 	
-	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[0]);					// 5
-	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[1]);					// 6
-	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[2]);					// 7
-	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[3]);					// 8
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[0]);				// 5
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[1]);				// 6
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[2]);				// 7
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[3]);				// 8
 
 	nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[0]);					// 9
 	nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[1]);					// 10
 	nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[2]);					// 11
 
-	nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[0]);					// 12
-	nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[1]);					// 13
-	nmea_sprint(a, aSize, n, ",%.3lf", ins2.lla[2]);					// 14
+	nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[0]);				// 12
+	nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[1]);				// 13
+	nmea_sprint(a, aSize, n, ",%.3lf", ins2.lla[2]);				// 14
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -524,7 +524,7 @@ int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.week);			// 1
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.timeOfWeekMs);	// 2
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.pin);			// 3
-	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.count);			// 4
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.count);		// 4
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -534,25 +534,25 @@ int nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 	int n = ssnprintf(a, aSize, "$PGPSP");
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.timeOfWeekMs);	// 1
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.week);			// 2
-	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.status);		// 3
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.status);			// 3
 
-	nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[0]);					// 4
-	nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[1]);					// 5
-	nmea_sprint(a, aSize, n, ",%.2lf", pos.lla[2]);					// 6
+	nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[0]);						// 4
+	nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[1]);						// 5
+	nmea_sprint(a, aSize, n, ",%.2lf", pos.lla[2]);						// 6
 	
 	nmea_sprint(a, aSize, n, ",%.2f", pos.hMSL);						// 7
 	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);						// 8
 	nmea_sprint(a, aSize, n, ",%.2f", pos.hAcc);						// 9
 	nmea_sprint(a, aSize, n, ",%.2f", pos.vAcc);						// 10
 
-	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[0]);					// 11
-	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[1]);					// 12
-	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[2]);					// 13
+	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[0]);						// 11
+	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[1]);						// 12
+	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[2]);						// 13
 	nmea_sprint(a, aSize, n, ",%.2f", vel.sAcc);						// 14
 
-	nmea_sprint(a, aSize, n, ",%.1f", pos.cnoMean);					// 15
-	nmea_sprint(a, aSize, n, ",%.4lf", pos.towOffset);				// 16
-	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.leapS);		// 17
+	nmea_sprint(a, aSize, n, ",%.1f", pos.cnoMean);						// 15
+	nmea_sprint(a, aSize, n, ",%.4lf", pos.towOffset);					// 16
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.leapS);			// 17
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -1663,7 +1663,6 @@ int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
 
 
 
-
 // Returns RMC options
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
 {
@@ -1672,14 +1671,11 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	{
 		return 0;
 	}
-	char *ptr = (char *)msg;
 	
-	// Default to current settings
-	ascii_msgs_t tmp {};	// = asciiPeriod[pHandle];
-	uint32_t options = 0;
-	
-	ptr = ASCII_find_next_field(ptr);			// Options
-	if(*ptr!=','){ options = (uint16_t)atoi(ptr); }		
+	ascii_msgs_t tmp {};
+	uint32_t options = 0;	
+	char *ptr = (char *)&msg[6];				// $ASCB
+	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }		
 	ptr = ASCII_find_next_field(ptr);			// PIMU
 	if(*ptr!=','){ tmp.pimu = (uint16_t)atoi(ptr); }	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
@@ -1709,7 +1705,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 
 		
 	// Copy tmp to corresponding port(s)
-	switch(options&RMC_OPTIONS_PORT_MASK)
+	switch (options&RMC_OPTIONS_PORT_MASK)
 	{	
 	case 0xFF:	// All ports
 		for(int i=0; i<NUM_COM_PORTS; i++)
@@ -1729,6 +1725,69 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	return options;
 }
 
+uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
+{
+	(void)msgSize;
+	if(pHandle >= NUM_COM_PORTS)
+	{
+		return 0;
+	}
+	char *ptr = (char *)&msg[6];				// $ASCB
+	
+	ascii_msgs_t tmp {};
+	uint32_t options = 0;
+	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
+	ptr = ASCII_to_u32(&options, ptr);
+	uint32_t id;
+	uint16_t period;
+	for (int i=0; i<20; i++)
+	{
+		if(*ptr=='*'){ break; }
+		id = ((*ptr==',') ? 0 : atoi(ptr));
+		ptr = ASCII_find_next_field(ptr);
+		if(*ptr=='*'){ break; }
+		period = ((*ptr==',') ? 0 : (uint16_t)atoi(ptr));	
+		ptr = ASCII_find_next_field(ptr);
+
+		switch(id)
+		{
+		case NMEA_ASCII_MSG_ID_PIMU:	tmp.pimu    = period; break;
+		case NMEA_ASCII_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
+		case NMEA_ASCII_MSG_ID_PRIMU:	tmp.primu   = period; break;
+		case NMEA_ASCII_MSG_ID_PINS1:	tmp.pins1   = period; break;
+		case NMEA_ASCII_MSG_ID_PINS2:	tmp.pins2   = period; break;
+		case NMEA_ASCII_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
+		case NMEA_ASCII_MSG_ID_GGA:		tmp.gga     = period; break;
+		case NMEA_ASCII_MSG_ID_GLL:		tmp.gll     = period; break;
+		case NMEA_ASCII_MSG_ID_GSA:		tmp.gsa     = period; break;
+		case NMEA_ASCII_MSG_ID_RMC:		tmp.rmc     = period; break;
+		case NMEA_ASCII_MSG_ID_ZDA:		tmp.zda     = period; break;
+		case NMEA_ASCII_MSG_ID_PASHR:	tmp.pashr   = period; break;
+		case NMEA_ASCII_MSG_ID_GSV:		tmp.gsv     = period; break;
+		default: return 0;
+		}
+	}
+
+	// Copy tmp to corresponding port(s)
+	switch (options&RMC_OPTIONS_PORT_MASK)
+	{	
+	case 0xFF:	// All ports
+		for(int i=0; i<NUM_COM_PORTS; i++)
+		{
+			nmea_set_rmc_period_multiple(rmci[i], tmp);
+		}
+		break;
+		
+	default:	// Current port
+	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp);	break;
+	case RMC_OPTIONS_PORT_SER0:		nmea_set_rmc_period_multiple(rmci[0], tmp);			break;
+	case RMC_OPTIONS_PORT_SER1:		nmea_set_rmc_period_multiple(rmci[1], tmp);			break;
+	case RMC_OPTIONS_PORT_SER2:		nmea_set_rmc_period_multiple(rmci[2], tmp);			break;
+	case RMC_OPTIONS_PORT_USB:		nmea_set_rmc_period_multiple(rmci[3], tmp);			break;
+	}
+		
+	return options;
+}
 
 /* G_ZDA message
 *  Provides day/month/year fort calculating iTOW.
