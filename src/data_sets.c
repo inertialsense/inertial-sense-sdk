@@ -661,6 +661,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 		case DID_GPS2_VEL:				return RMC_BITS_GPS2_VEL;
 		case DID_GPS1_SAT:				return RMC_BITS_GPS1_SAT;
 		case DID_GPS2_SAT:				return RMC_BITS_GPS2_SAT;
+		case DID_GPS1_SIG:				return RMC_BITS_GPS1_SIG;
+		case DID_GPS2_SIG:				return RMC_BITS_GPS2_SIG;
 		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
 		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
 		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
@@ -699,11 +701,11 @@ uint32_t didToAsciiRmcBits(uint32_t dataId)
 		case DID_GPS1_POS:				
 			return 
 				ASCII_RMC_BITS_PGPSP |
-				ASCII_RMC_BITS_GPGGA |
-				ASCII_RMC_BITS_GPGLL |
-				ASCII_RMC_BITS_GPGSA |
-				ASCII_RMC_BITS_GPRMC |
-				ASCII_RMC_BITS_GPZDA |
+				ASCII_RMC_BITS_GGA |
+				ASCII_RMC_BITS_GLL |
+				ASCII_RMC_BITS_GSA |
+				ASCII_RMC_BITS_RMC |
+				ASCII_RMC_BITS_ZDA |
 				ASCII_RMC_BITS_PASHR;
 		case DID_DEV_INFO:				return ASCII_RMC_BITS_INFO;
 

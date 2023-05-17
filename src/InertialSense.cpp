@@ -94,7 +94,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 			gps_pos_t &gps = *((gps_pos_t*)data->buf);
 			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
-				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+				*s->clientBytesToSend = nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 			}
 		}
 	}

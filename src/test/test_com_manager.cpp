@@ -327,7 +327,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			{	// ASCII
 #if TEST_PROTO_ASCII
 				td.ptype = _PTYPE_ASCII_NMEA;
-				td.size = did_ins1_to_nmea_pins1((char*)td.data.buf, sizeof(td.data.buf), ins1);
+				td.size = nmea_pins1((char*)td.data.buf, sizeof(td.data.buf), ins1);
 #endif
 			}
 			else
@@ -363,7 +363,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			{	// ASCII
 #if TEST_PROTO_ASCII
 				td.ptype = _PTYPE_ASCII_NMEA;
-				td.size = did_gps_to_nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
+				td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
 #endif
 			}
 			else
