@@ -44,10 +44,6 @@ extern "C" {
 #	define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPS))
 #	define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPS))
 #	define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPS))
-#else	// Use fast inverse square root.  0.175% less accurate
-#	define recipNorm_Vec2(v)	(invSqrt(dot_Vec2(v)))
-#	define recipNorm_Vec3(v)	(invSqrt(dot_Vec3(v)))
-#	define recipNorm_Vec4(v)	(invSqrt(dot_Vec4(v)))
 #endif
 #	define recipNorm_Vec3d(v)	(1.0/_MAX(mag_Vec3d(v), EPS))
 #	define recipNorm_Vec4d(v)	(1.0/_MAX(mag_Vec4d(v), EPS))
