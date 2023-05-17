@@ -905,36 +905,36 @@ enum eSatSvGnssId
 /** GPS Sat Status */
 enum eSatSvStatus
 {
-	SAT_SV_STATUS_QUALITY_NO_SIGNAL					= 0x0000, 	// no signal
-    SAT_SV_STATUS_QUALITY_SEARCHING					= 0x0001, 	// searching signal
-    SAT_SV_STATUS_QUALITY_ACQUIRED					= 0x0002, 	// signal acquired
-    SAT_SV_STATUS_QUALITY_DETECTED					= 0x0003, 	// signal detected but unusable
-    SAT_SV_STATUS_QUALITY_CODE_TIME_SYNC			= 0x0004, 	// code locked and time synchronized
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC	= 0x0005, 	// code and carrier locked and time synchronized	
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_2	= 0x0006, 	// "
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_3	= 0x0007, 	// "
-	SAT_SV_STATUS_QUALITY_MASK 						= 0x0007,
-	SAT_SV_STATUS_USED 								= 0x0008,	// Used in the solution
-	SAT_SV_STATUS_HEALTH_UNKNOWN					= 0x0000,	// 0 = unknown
-	SAT_SV_STATUS_HEALTH_GOOD						= 0x0010,	// 1 = healthy
-	SAT_SV_STATUS_HEALTH_BAD 						= 0x0020,	// 2 = unhealthy
-	SAT_SV_STATUS_HEALTH_MASK 						= 0x0030,
+    SAT_SV_STATUS_QUALITY_NO_SIGNAL                 = 0x0000, 	// no signal
+    SAT_SV_STATUS_QUALITY_SEARCHING                 = 0x0001, 	// searching signal
+    SAT_SV_STATUS_QUALITY_ACQUIRED                  = 0x0002, 	// signal acquired
+    SAT_SV_STATUS_QUALITY_DETECTED                  = 0x0003, 	// signal detected but unusable
+    SAT_SV_STATUS_QUALITY_CODE_TIME_SYNC            = 0x0004, 	// code locked and time synchronized
+    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC    = 0x0005, 	// code and carrier locked and time synchronized	
+    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_2  = 0x0006, 	// "
+    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_3  = 0x0007, 	// "
+    SAT_SV_STATUS_QUALITY_MASK                      = 0x0007,
+    SAT_SV_STATUS_USED                              = 0x0008,	// Used in the solution
+    SAT_SV_STATUS_HEALTH_UNKNOWN                    = 0x0000,	// 0 = unknown
+    SAT_SV_STATUS_HEALTH_GOOD                       = 0x0010,	// 1 = healthy
+    SAT_SV_STATUS_HEALTH_BAD                        = 0x0020,	// 2 = unhealthy
+    SAT_SV_STATUS_HEALTH_MASK                       = 0x0030,
 
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK			= 0x0300,	// 1=float, 2=fix
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET			= 8,
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT			= 1,	
-    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX			= 2,	
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK           = 0x0300,	// 1=float, 2=fix
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET         = 8,
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,	
+    SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
 
-    // SAT_SV_STATUS_HEALTH_MASK			= 0x00000030,
-    // NAV_SAT_FLAGS_HEALTH_OFFSET		= 4,
-    // SAT_SV_STATUS_DIFFCORR			= 0x00000040,
-    // SAT_SV_STATUS_SMOOTHED			= 0x00000080,
-    // SAT_SV_STATUS_ORBITSOURCE_MASK	= 0x00000700,
-    // SAT_SV_STATUS_ORBITSOURCE_OFFSET	= 8,
-    // SAT_SV_STATUS_EPHAVAIL			= 0x00000800,
-    // SAT_SV_STATUS_ALMAVAIL			= 0x00001000,
-    // SAT_SV_STATUS_ANOAVAIL			= 0x00002000,
-    // SAT_SV_STATUS_AOPAVAIL			= 0x00004000,	
+    // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
+    // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
+    // SAT_SV_STATUS_DIFFCORR                          = 0x00000040,
+    // SAT_SV_STATUS_SMOOTHED                          = 0x00000080,
+    // SAT_SV_STATUS_ORBITSOURCE_MASK                  = 0x00000700,
+    // SAT_SV_STATUS_ORBITSOURCE_OFFSET                = 8,
+    // SAT_SV_STATUS_EPHAVAIL                          = 0x00000800,
+    // SAT_SV_STATUS_ALMAVAIL                          = 0x00001000,
+    // SAT_SV_STATUS_ANOAVAIL                          = 0x00002000,
+    // SAT_SV_STATUS_AOPAVAIL                          = 0x00004000,	
 };
 
 /** (DID_GPS1_SAT, DID_GPS2_SAT) GPS satellite information */
@@ -950,45 +950,45 @@ typedef struct PACKED
 
 enum eSatSvSigId
 {
-	SAT_SV_SIG_ID_GPS_L1CA			= 0,
-	SAT_SV_SIG_ID_GPS_L2CL			= 3,
-	SAT_SV_SIG_ID_GPS_L2CM			= 4,
-	SAT_SV_SIG_ID_GPS_L5I			= 6,
-	SAT_SV_SIG_ID_GPS_L5Q			= 7,
-	SAT_SV_SIG_ID_SBAS_L1CA			= 0,
-	SAT_SV_SIG_ID_Galileo_E1C2		= 0,
-	SAT_SV_SIG_ID_Galileo_E1B2		= 1,
-	SAT_SV_SIG_ID_Galileo_E5aI		= 3,
-	SAT_SV_SIG_ID_Galileo_E5aQ		= 4,
-	SAT_SV_SIG_ID_Galileo_E5bI		= 5,
-	SAT_SV_SIG_ID_Galileo_E5bQ		= 6,
-	SAT_SV_SIG_ID_BeiDou_B1D1		= 0,
-	SAT_SV_SIG_ID_BeiDou_B1D2		= 1,
-	SAT_SV_SIG_ID_BeiDou_B2D1		= 2,
-	SAT_SV_SIG_ID_BeiDou_B2D2		= 3,
-	SAT_SV_SIG_ID_BeiDou_B1C		= 5,
-	SAT_SV_SIG_ID_BeiDou_B2a		= 7,
-	SAT_SV_SIG_ID_QZSS_L1CA			= 0,
-	SAT_SV_SIG_ID_QZSS_L1S			= 1,
-	SAT_SV_SIG_ID_QZSS_L2CM			= 4,
-	SAT_SV_SIG_ID_QZSS_L2CL 		= 5,
-	SAT_SV_SIG_ID_QZSS_L5I 			= 8,
-	SAT_SV_SIG_ID_QZSS_L5Q 			= 9,
-	SAT_SV_SIG_ID_GLONASS_L1OF		= 0,
-	SAT_SV_SIG_ID_GLONASS_L2OF		= 2,
-	SAT_SV_SIG_ID_NAVIC_L5A			= 0, 
+    SAT_SV_SIG_ID_GPS_L1CA			= 0,
+    SAT_SV_SIG_ID_GPS_L2CL			= 3,
+    SAT_SV_SIG_ID_GPS_L2CM			= 4,
+    SAT_SV_SIG_ID_GPS_L5I			= 6,
+    SAT_SV_SIG_ID_GPS_L5Q			= 7,
+    SAT_SV_SIG_ID_SBAS_L1CA			= 0,
+    SAT_SV_SIG_ID_Galileo_E1C2		= 0,
+    SAT_SV_SIG_ID_Galileo_E1B2		= 1,
+    SAT_SV_SIG_ID_Galileo_E5aI		= 3,
+    SAT_SV_SIG_ID_Galileo_E5aQ		= 4,
+    SAT_SV_SIG_ID_Galileo_E5bI		= 5,
+    SAT_SV_SIG_ID_Galileo_E5bQ		= 6,
+    SAT_SV_SIG_ID_BeiDou_B1D1		= 0,
+    SAT_SV_SIG_ID_BeiDou_B1D2		= 1,
+    SAT_SV_SIG_ID_BeiDou_B2D1		= 2,
+    SAT_SV_SIG_ID_BeiDou_B2D2		= 3,
+    SAT_SV_SIG_ID_BeiDou_B1C		= 5,
+    SAT_SV_SIG_ID_BeiDou_B2a		= 7,
+    SAT_SV_SIG_ID_QZSS_L1CA			= 0,
+    SAT_SV_SIG_ID_QZSS_L1S			= 1,
+    SAT_SV_SIG_ID_QZSS_L2CM			= 4,
+    SAT_SV_SIG_ID_QZSS_L2CL 		= 5,
+    SAT_SV_SIG_ID_QZSS_L5I 			= 8,
+    SAT_SV_SIG_ID_QZSS_L5Q 			= 9,
+    SAT_SV_SIG_ID_GLONASS_L1OF		= 0,
+    SAT_SV_SIG_ID_GLONASS_L2OF		= 2,
+    SAT_SV_SIG_ID_NAVIC_L5A			= 0, 
 };
 
 enum eSatSigQuality
 {
-	SAT_SIG_QUALITY_NO_SIGNAL					= 0, 	// no signal
-	SAT_SIG_QUALITY_SEARCHING					= 1, 	// searching signal
-	SAT_SIG_QUALITY_ACQUIRED					= 2, 	// signal acquired
-	SAT_SIG_QUALITY_DETECTED					= 3, 	// signal detected but unusable
-	SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC			= 4, 	// code locked and time synchronized
-	SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC		= 5, 	// code and carrier locked and time synchronized
-	SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2	= 6, 	// "
-	SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3	= 7, 	// "
+    SAT_SIG_QUALITY_NO_SIGNAL                   = 0, 	// no signal
+    SAT_SIG_QUALITY_SEARCHING                   = 1, 	// searching signal
+    SAT_SIG_QUALITY_ACQUIRED                    = 2, 	// signal acquired
+    SAT_SIG_QUALITY_DETECTED                    = 3, 	// signal detected but unusable
+    SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC         = 4, 	// code locked and time synchronized
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC      = 5, 	// code and carrier locked and time synchronized
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2    = 6, 	// "
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3    = 7, 	// "
 };
 
 /** GPS satellite signal information */
