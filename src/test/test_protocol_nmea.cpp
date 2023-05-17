@@ -120,7 +120,7 @@ TEST(protocol_nmea, INFO)
     nmea_dev_info(abuf, ASCII_BUF_LEN, info);
     // printf("%s\n", abuf);
     dev_info_t result = {};
-    nmea_info_to_did_dev_info(result, abuf, ASCII_BUF_LEN);
+    nmea_parse_info(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&info, &result, sizeof(result)), 0);
 }
 
@@ -138,7 +138,7 @@ TEST(protocol_nmea, PIMU)
     nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PIMU");
     // printf("%s\n", abuf);
     imu_t result = {};
-    nmea_pimu_to_did_imu(result, abuf, ASCII_BUF_LEN);
+    nmea_parse_pimu(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&imu, &result, sizeof(result)), 0);
 }
 
@@ -156,7 +156,7 @@ TEST(protocol_nmea, PRIMU)
     nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PRIMU");
     // printf("%s\n", abuf);
     imu_t result = {};
-    nmea_pimu_to_did_rimu(result, abuf, ASCII_BUF_LEN);
+    nmea_parse_pimu_to_rimu(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&imu, &result, sizeof(result)), 0);
 }
 
@@ -175,7 +175,7 @@ TEST(protocol_nmea, PPIMU)
     nmea_ppimu(abuf, ASCII_BUF_LEN, pimu);
     // printf("%s\n", abuf);
     pimu_t result = {};
-    nmea_ppimu_to_did_pimu(result, abuf, ASCII_BUF_LEN);
+    nmea_parse_ppimu(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&pimu, &result, sizeof(result)), 0);
 }
 
@@ -200,7 +200,7 @@ TEST(protocol_nmea, PINS1)
     nmea_pins1(abuf, ASCII_BUF_LEN, ins);
     // printf("%s\n", abuf);
     ins_1_t result = {};
-    nmea_pins1_to_did_ins1(result, abuf, ASCII_BUF_LEN);
+    nmea_parse_pins1(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&ins, &result, sizeof(result)), 0);
 }
 
@@ -227,7 +227,7 @@ TEST(protocol_nmea, PINS2)
     nmea_pins2(abuf, ASCII_BUF_LEN, ins);
     // printf("%s\n", abuf);
     ins_2_t result = {};
-    nmea_pins2_to_did_ins2(result, abuf, ASCII_BUF_LEN);
+    nmea_parse_pins2(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&ins, &result, sizeof(result)), 0);
 }
 
@@ -261,7 +261,7 @@ TEST(protocol_nmea, PGPSP)
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
-    nmea_pgpsp_to_did_gps(resultPos, resultVel, abuf, ASCII_BUF_LEN);
+    nmea_parse_pgpsp(resultPos, resultVel, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&vel, &resultVel, sizeof(resultVel)), 0);
 }
@@ -1264,3 +1264,20 @@ TEST(protocol_nmea, binary_GSV_binary)
 #endif
 
 
+#if 0   // Used for user manual 
+TEST(protocol_nmea, test_generate_asce)
+{
+    uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
+
+    for (int id=0; id<=NMEA_ASCII_MSG_ID_GSV; id++)
+    {
+        char a[ASCII_BUF_LEN] = {};
+        int n=0;
+        nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", 0);
+        nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", id, 1);
+        nmea_sprint_footer(a, ASCII_BUF_LEN, n);
+        a[n] = 0;
+        printf("%s", a);
+    }
+}
+#endif

@@ -951,6 +951,7 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 		case SAT_SV_SIG_ID_GPS_L5I:			return '7';
 		case SAT_SV_SIG_ID_GPS_L5Q:			return '8';
 		}
+		break;
     case SAT_SV_GNSS_ID_SBS:
 		return 1;
     case SAT_SV_GNSS_ID_GAL:
@@ -963,6 +964,7 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 		case SAT_SV_SIG_ID_Galileo_E5bI:
 		case SAT_SV_SIG_ID_Galileo_E5bQ:	return '2';
 		}
+		break;
     case SAT_SV_GNSS_ID_BEI:
 		switch(sigId)
 		{
@@ -973,6 +975,7 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 		case SAT_SV_SIG_ID_BeiDou_B1C:		return '3';
 		case SAT_SV_SIG_ID_BeiDou_B2a:		return '5';
 		}
+		break;
     case SAT_SV_GNSS_ID_QZS:
 		switch(sigId)
 		{
@@ -983,17 +986,20 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
 		case SAT_SV_SIG_ID_QZSS_L5I:		return '7';
 		case SAT_SV_SIG_ID_QZSS_L5Q:		return '8';
 		}
+		break;
     case SAT_SV_GNSS_ID_GLO:
 		switch(sigId)
 		{
 		case SAT_SV_SIG_ID_GLONASS_L1OF:	return '1';
 		case SAT_SV_SIG_ID_GLONASS_L2OF:	return '3';
 		}
+		break;
     case SAT_SV_GNSS_ID_IRN:	// NavIC
 		switch(sigId)
 		{
 		case SAT_SV_SIG_ID_NAVIC_L5A:		return '7';
 		}
+		break;
 	}
 
 	return '0';
@@ -1012,6 +1018,7 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 		case '7':	return SAT_SV_SIG_ID_GPS_L5I;
 		case '8':	return SAT_SV_SIG_ID_GPS_L5Q;
 		}
+		break;
     case SAT_SV_GNSS_ID_SBS:
 		return 0;
     case SAT_SV_GNSS_ID_GAL:
@@ -1024,6 +1031,7 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 		// case '2':	return SAT_SV_SIG_ID_Galileo_E5bI;
 		case '2':	return SAT_SV_SIG_ID_Galileo_E5bQ;
 		}
+		break;
     case SAT_SV_GNSS_ID_BEI:
 		switch(nmeaSignalId)
 		{
@@ -1034,6 +1042,7 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 		case '3':	return SAT_SV_SIG_ID_BeiDou_B1C;
 		case '5':	return SAT_SV_SIG_ID_BeiDou_B2a;
 		}
+		break;
     case SAT_SV_GNSS_ID_QZS:
 		switch(nmeaSignalId)
 		{
@@ -1044,17 +1053,20 @@ uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
 		case '7':	return SAT_SV_SIG_ID_QZSS_L5I;
 		case '8':	return SAT_SV_SIG_ID_QZSS_L5Q;
 		}
+		break;
     case SAT_SV_GNSS_ID_GLO:
 		switch(nmeaSignalId)
 		{
 		case '1':	return SAT_SV_SIG_ID_GLONASS_L1OF;
 		case '3':	return SAT_SV_SIG_ID_GLONASS_L2OF;
 		}
+		break;
     case SAT_SV_GNSS_ID_IRN:	// NavIC
 		switch(nmeaSignalId)
 		{
 		case '7': 	return SAT_SV_SIG_ID_NAVIC_L5A;
 		}
+		break;
 	}
 
 	return '0';
@@ -1073,6 +1085,7 @@ uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
 		case SAT_SV_SIG_ID_GPS_L5I:			
 		case SAT_SV_SIG_ID_GPS_L5Q:			return svId + 512;
 		}
+		break;
     case SAT_SV_GNSS_ID_SBS:
 		return 1;
     case SAT_SV_GNSS_ID_GAL:
@@ -1085,6 +1098,7 @@ uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
 		case SAT_SV_SIG_ID_Galileo_E5bI:
 		case SAT_SV_SIG_ID_Galileo_E5bQ:	return svId + 512;
 		}
+		break;
     case SAT_SV_GNSS_ID_BEI:
 		switch(sigId)
 		{
@@ -1095,6 +1109,7 @@ uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
 		case SAT_SV_SIG_ID_BeiDou_B1C:		return svId;
 		case SAT_SV_SIG_ID_BeiDou_B2a:		return svId + 512;
 		}
+		break;
     case SAT_SV_GNSS_ID_QZS:
 		switch(sigId)
 		{
@@ -1105,20 +1120,21 @@ uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
 		case SAT_SV_SIG_ID_QZSS_L5I:
 		case SAT_SV_SIG_ID_QZSS_L5Q:		return svId + 512;
 		}
+		break;
     case SAT_SV_GNSS_ID_GLO:
 		switch(sigId)
 		{
 		case SAT_SV_SIG_ID_GLONASS_L1OF:	return svId;
 		case SAT_SV_SIG_ID_GLONASS_L2OF:	return svId + 256;
 		}
+		break;
     case SAT_SV_GNSS_ID_IRN:	// NavIC
 		switch(sigId)
 		{
 		case SAT_SV_SIG_ID_NAVIC_L5A:		return svId + 512;
 		}
+		break;
 	}
-
-	return '0';
 
 	return 0;
 }
@@ -1320,7 +1336,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////
 
-int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize)
+int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[6];	// $INFO,
@@ -1369,7 +1385,7 @@ int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
+int nmea_parse_pimu(imu_t &imu, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[6];	// $PIMU,
@@ -1385,7 +1401,7 @@ int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize)
+int nmea_parse_pimu_to_rimu(imu_t &imu, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PRIMU,
@@ -1401,7 +1417,7 @@ int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
+int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PPIMU,
@@ -1420,7 +1436,7 @@ int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
+int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PINS1,
@@ -1445,7 +1461,7 @@ int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
+int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PINS2,
@@ -1468,7 +1484,7 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
+int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PGPSP,
@@ -1701,8 +1717,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	ptr = ASCII_find_next_field(ptr);			// pashr
 	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gsv
-	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
-
+	if(*ptr!=','){ tmp.gsv = (uint16_t)atoi(ptr);	}
 		
 	// Copy tmp to corresponding port(s)
 	switch (options&RMC_OPTIONS_PORT_MASK)
