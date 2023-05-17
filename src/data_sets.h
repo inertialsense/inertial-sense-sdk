@@ -4069,7 +4069,7 @@ typedef enum
 typedef enum
 {
     /** Task 0: Sample	*/
-    GPX_TASK_COM = 0,
+    GPX_TASK_COMM = 0,
 
     /** Task 1: Nav */
     GPX_TASK_RTK,
