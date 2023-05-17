@@ -7,6 +7,7 @@
 enum eNmeaMsgIdUint
 {
 	ASCII_MSG_ID_ASCB = 0x41534342,		// ASCII messages broadcast periods
+	ASCII_MSG_ID_ASCE = 0x41534345,		// ASCII messages broadcast enable
 	ASCII_MSG_ID_STPB = 0x53545042,		// Stop broadcasts on all ports
 	ASCII_MSG_ID_STPC = 0x53545043,		// Stop broadcasts on current port
 	ASCII_MSG_ID_BLEN = 0x424c454e,		// Enable bootloader on uINS
