@@ -1600,21 +1600,24 @@ typedef struct PACKED
 	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
-#define NMEA_ASCII_MSG_ID_PIMU      0
-#define NMEA_ASCII_MSG_ID_PPIMU     1
-#define NMEA_ASCII_MSG_ID_PRIMU     2
-#define NMEA_ASCII_MSG_ID_PINS1     3
-#define NMEA_ASCII_MSG_ID_PINS2     4
-#define NMEA_ASCII_MSG_ID_PGPSP     5
-#define NMEA_ASCII_MSG_ID_GGA       6
-#define NMEA_ASCII_MSG_ID_GLL       7
-#define NMEA_ASCII_MSG_ID_GSA       8
-#define NMEA_ASCII_MSG_ID_RMC       9
-#define NMEA_ASCII_MSG_ID_ZDA       10
-#define NMEA_ASCII_MSG_ID_PASHR     11 
-#define NMEA_ASCII_MSG_ID_PSTRB     12
-#define NMEA_ASCII_MSG_ID_INFO      13
-#define NMEA_ASCII_MSG_ID_GSV       14 
+enum eNmeaAsciiMsgId
+{
+    NMEA_ASCII_MSG_ID_PIMU      = 0,
+    NMEA_ASCII_MSG_ID_PPIMU     = 1,
+    NMEA_ASCII_MSG_ID_PRIMU     = 2,
+    NMEA_ASCII_MSG_ID_PINS1     = 3,
+    NMEA_ASCII_MSG_ID_PINS2     = 4,
+    NMEA_ASCII_MSG_ID_PGPSP     = 5,
+    NMEA_ASCII_MSG_ID_GGA       = 6,
+    NMEA_ASCII_MSG_ID_GLL       = 7,
+    NMEA_ASCII_MSG_ID_GSA       = 8,
+    NMEA_ASCII_MSG_ID_RMC       = 9,
+    NMEA_ASCII_MSG_ID_ZDA       = 10,
+    NMEA_ASCII_MSG_ID_PASHR     = 11, 
+    NMEA_ASCII_MSG_ID_PSTRB     = 12,
+    NMEA_ASCII_MSG_ID_INFO      = 13,
+    NMEA_ASCII_MSG_ID_GSV       = 14
+}; 
 
 #define ASCII_RMC_BITS_PIMU    		(1<<NMEA_ASCII_MSG_ID_PIMU)
 #define ASCII_RMC_BITS_PPIMU   		(1<<NMEA_ASCII_MSG_ID_PPIMU)
