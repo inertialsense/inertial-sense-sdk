@@ -569,18 +569,8 @@ static void PopulateGpsSatMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 	ADD_MAP(m, totalSize, "sat" #n ".svId",      sat[n].svId,      0, DataTypeUInt8, uint8_t, 0); \
 	ADD_MAP(m, totalSize, "sat" #n ".elev",      sat[n].elev,      0, DataTypeInt8,  int8_t,  0); \
 	ADD_MAP(m, totalSize, "sat" #n ".azim",      sat[n].azim,      0, DataTypeInt16, int16_t, 0); \
-<<<<<<< HEAD
-	ADD_MAP(m, totalSize, "sat" #n ".flags",     sat[n].flags,     0, DataTypeUInt8, uint8_t, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".cno[0]",    sat[n].cno[0],    0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".cno[1]",    sat[n].cno[1],    0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".cno[2]",    sat[n].cno[2],    0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".status[0]", sat[n].status[0], 0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".status[1]", sat[n].status[1], 0, DataTypeUInt8, uint8_t&, 0); \
-	ADD_MAP(m, totalSize, "sat" #n ".status[2]", sat[n].status[2], 0, DataTypeUInt8, uint8_t&, 0); 
-=======
 	ADD_MAP(m, totalSize, "sat" #n ".cno",       sat[n].cno,       0, DataTypeUInt8, uint8_t, 0); \
 	ADD_MAP(m, totalSize, "sat" #n ".status",    sat[n].status,    0, DataTypeUInt16, uint16_t, 0);
->>>>>>> origin/SN-3319_nmea_additions
 
 	ADD_MAP_SAT_INFO(0);
 	ADD_MAP_SAT_INFO(1);

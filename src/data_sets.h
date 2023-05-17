@@ -1411,18 +1411,12 @@ typedef struct PACKED
 	/** Broadcast period multiple - ASCII NMEA Data and Time. 0 to disable. */
 	uint16_t				zda;
 
-<<<<<<< HEAD
-    /** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
-    uint16_t				pashr;
-    
-=======
 	/** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
 	uint16_t				pashr;
 
 	/** Broadcast period multiple - ASCII NMEA satelliate information. */
 	uint16_t				gsv;
 
->>>>>>> origin/SN-3319_nmea_additions
 } ascii_msgs_t;
 
 typedef struct PACKED
