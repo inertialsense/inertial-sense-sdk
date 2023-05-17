@@ -914,15 +914,7 @@ enum eSatSvGnssId
 /** GPS Sat Status */
 enum eSatSvStatus
 {
-    SAT_SV_STATUS_QUALITY_NO_SIGNAL                 = 0x0000, 	// no signal
-    SAT_SV_STATUS_QUALITY_SEARCHING                 = 0x0001, 	// searching signal
-    SAT_SV_STATUS_QUALITY_ACQUIRED                  = 0x0002, 	// signal acquired
-    SAT_SV_STATUS_QUALITY_DETECTED                  = 0x0003, 	// signal detected but unusable
-    SAT_SV_STATUS_QUALITY_CODE_TIME_SYNC            = 0x0004, 	// code locked and time synchronized
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC    = 0x0005, 	// code and carrier locked and time synchronized	
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_2  = 0x0006, 	// "
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_3  = 0x0007, 	// "
-    SAT_SV_STATUS_QUALITY_MASK                      = 0x0007,
+    SAT_SV_STATUS_SIGNAL_QUALITY_MASK               = 0x0007,   // see eSatSigQuality
     SAT_SV_STATUS_USED                              = 0x0008,	// Used in the solution
     SAT_SV_STATUS_HEALTH_UNKNOWN                    = 0x0000,	// 0 = unknown
     SAT_SV_STATUS_HEALTH_GOOD                       = 0x0010,	// 1 = healthy
@@ -1004,10 +996,22 @@ enum eSatSigQuality
     SAT_SIG_QUALITY_ACQUIRED                    = 2, 	// signal acquired
     SAT_SIG_QUALITY_DETECTED                    = 3, 	// signal detected but unusable
     SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC         = 4, 	// code locked and time synchronized
-    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC      = 5, 	// code and carrier locked and time synchronized
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_1    = 5, 	// code and carrier locked and time synchronized
     SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2    = 6, 	// "
     SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3    = 7, 	// "
 };
+
+enum eSatSigStatus
+{
+    SAT_SIG_STATUS_HEALTH_UNKNOWN                    = 0x0000,	// 0 = unknown
+    SAT_SIG_STATUS_HEALTH_GOOD                       = 0x0001,	// 1 = healthy
+    SAT_SIG_STATUS_HEALTH_BAD                        = 0x0002,	// 2 = unhealthy
+    SAT_SIG_STATUS_HEALTH_MASK                       = 0x0003,
+    SAT_SIG_STATUS_USED_IN_POSITION                  = 0x0004,  // Signal used in solution position 
+    SAT_SIG_STATUS_USED_IN_VELOCITY                  = 0x0008,  // Signal used in solution velocity 
+    SAT_SIG_STATUS_USED_IN_SOLUTION                  = (SAT_SIG_STATUS_USED_IN_POSITION | SAT_SIG_STATUS_USED_IN_VELOCITY),
+};
+
 
 /** GPS satellite signal information */
 typedef struct PACKED
@@ -1027,7 +1031,7 @@ typedef struct PACKED
     /** Quality indicator (see eSatSigQuality) */
     uint8_t					quality;
 
-    /** Status flags (see eSigStatus) */
+    /** Status flags (see eSatSigStatus) */
     uint16_t				status;
 
 } gps_sig_sv_t;

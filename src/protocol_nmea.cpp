@@ -2240,7 +2240,10 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					dst.elev = elev;
 					dst.azim = azim;
 					dst.cno = cno;
-					dst.status = SAT_SV_STATUS_USED | SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC;
+					dst.status = 
+						SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3 |
+						SAT_SV_STATUS_USED | 
+						SAT_SV_STATUS_HEALTH_GOOD;
 				}
 				break;
 			}
@@ -2267,7 +2270,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					sigIdPtr++;
 					dst.quality = SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3;
 					dst.cno = cno;
-					dst.status = 0;
+					dst.status = SAT_SIG_STATUS_HEALTH_GOOD | SAT_SIG_STATUS_USED_IN_SOLUTION;
 				}
 				break;
 			}
