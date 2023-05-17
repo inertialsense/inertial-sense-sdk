@@ -1152,9 +1152,9 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
 		{
 		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L5Q;
 		case SAT_SV_GNSS_ID_SBS:	return 0;
-		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5bQ;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5;
 		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2a;
-		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L5Q;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L5;
 		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
 		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
 		}
@@ -1165,9 +1165,9 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
 		{
 		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L2CL;
 		case SAT_SV_GNSS_ID_SBS:	return 0;
-		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5aQ;
-		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2D1;
-		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L2CL;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5a;
+		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L2;
 		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
 		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
 		}
