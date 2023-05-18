@@ -915,11 +915,13 @@ enum eSatSvGnssId
 enum eSatSvStatus
 {
     SAT_SV_STATUS_SIGNAL_QUALITY_MASK               = 0x0007,   // see eSatSigQuality
-    SAT_SV_STATUS_USED                              = 0x0008,	// Used in the solution
+    SAT_SV_STATUS_USED_IN_SOLUTION                  = 0x0008,	// Used in the solution
+    SAT_SV_STATUS_USED_IN_SOLUTION_OFFSET           = 3,
     SAT_SV_STATUS_HEALTH_UNKNOWN                    = 0x0000,	// 0 = unknown
     SAT_SV_STATUS_HEALTH_GOOD                       = 0x0010,	// 1 = healthy
     SAT_SV_STATUS_HEALTH_BAD                        = 0x0020,	// 2 = unhealthy
     SAT_SV_STATUS_HEALTH_MASK                       = 0x0030,
+    SAT_SV_STATUS_HEALTH_OFFSET                     = 4,
 
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK           = 0x0300,	// 1=float, 2=fix
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET         = 8,
@@ -1007,9 +1009,8 @@ enum eSatSigStatus
     SAT_SIG_STATUS_HEALTH_GOOD                       = 0x0001,	// 1 = healthy
     SAT_SIG_STATUS_HEALTH_BAD                        = 0x0002,	// 2 = unhealthy
     SAT_SIG_STATUS_HEALTH_MASK                       = 0x0003,
-    SAT_SIG_STATUS_USED_IN_POSITION                  = 0x0004,  // Signal used in solution position 
-    SAT_SIG_STATUS_USED_IN_VELOCITY                  = 0x0008,  // Signal used in solution velocity 
-    SAT_SIG_STATUS_USED_IN_SOLUTION                  = (SAT_SIG_STATUS_USED_IN_POSITION | SAT_SIG_STATUS_USED_IN_VELOCITY),
+    SAT_SIG_STATUS_USED_IN_SOLUTION                  = 0x0004,  // Signal is used in the solution
+    SAT_SIG_STATUS_USED_IN_SOLUTION_OFFSET           = 2,
 };
 
 

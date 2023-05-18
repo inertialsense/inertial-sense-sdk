@@ -2242,7 +2242,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					dst.cno = cno;
 					dst.status = 
 						SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3 |
-						SAT_SV_STATUS_USED | 
+						SAT_SV_STATUS_USED_IN_SOLUTION | 
 						SAT_SV_STATUS_HEALTH_GOOD;
 				}
 				break;
