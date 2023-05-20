@@ -950,9 +950,11 @@ enum eSatSvSigId
     SAT_SV_SIG_ID_GPS_L5I			= 6,
     SAT_SV_SIG_ID_GPS_L5Q			= 7,
     SAT_SV_SIG_ID_GPS_L5            = SAT_SV_SIG_ID_GPS_L5Q,
+
     SAT_SV_SIG_ID_SBAS_L1CA			= 0,
     SAT_SV_SIG_ID_SBAS_L2           = 1,
     SAT_SV_SIG_ID_SBAS_L5           = 2,
+
     SAT_SV_SIG_ID_Galileo_E1C2		= 0,
     SAT_SV_SIG_ID_Galileo_E1B2		= 1,
     SAT_SV_SIG_ID_Galileo_E1BC      = SAT_SV_SIG_ID_Galileo_E1B2,
@@ -962,6 +964,7 @@ enum eSatSvSigId
     SAT_SV_SIG_ID_Galileo_E5bI		= 5,
     SAT_SV_SIG_ID_Galileo_E5bQ		= 6,
     SAT_SV_SIG_ID_Galileo_E5        = SAT_SV_SIG_ID_Galileo_E5bQ,
+
     SAT_SV_SIG_ID_BeiDou_B1D1		= 0,
     SAT_SV_SIG_ID_BeiDou_B1D2		= 1,
     SAT_SV_SIG_ID_BeiDou_B2D1		= 2,
@@ -969,6 +972,7 @@ enum eSatSvSigId
     SAT_SV_SIG_ID_BeiDou_B2         = SAT_SV_SIG_ID_BeiDou_B2D1,
     SAT_SV_SIG_ID_BeiDou_B1C		= 5,
     SAT_SV_SIG_ID_BeiDou_B2a		= 7,
+
     SAT_SV_SIG_ID_QZSS_L1CA			= 0,
     SAT_SV_SIG_ID_QZSS_L1S			= 1,
     SAT_SV_SIG_ID_QZSS_L2CM			= 4,
@@ -977,8 +981,10 @@ enum eSatSvSigId
     SAT_SV_SIG_ID_QZSS_L5I 			= 8,
     SAT_SV_SIG_ID_QZSS_L5Q 			= 9,
     SAT_SV_SIG_ID_QZSS_L5           = SAT_SV_SIG_ID_QZSS_L5Q,
+
     SAT_SV_SIG_ID_GLONASS_L1OF		= 0,
     SAT_SV_SIG_ID_GLONASS_L2OF		= 2,
+
     SAT_SV_SIG_ID_NAVIC_L5A			= 0, 
 };
 

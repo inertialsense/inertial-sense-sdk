@@ -674,6 +674,7 @@ uint32_t didToAsciiRmcBits(uint32_t dataId)
 		case DID_IMU_RAW:				return ASCII_RMC_BITS_PRIMU;
 		case DID_INS_1:					return ASCII_RMC_BITS_PINS1;
 		case DID_INS_2:					return ASCII_RMC_BITS_PINS2;
+		case DID_GPS1_SAT:				return ASCII_RMC_BITS_GSV;				
 		case DID_GPS1_POS:				
 			return 
 				ASCII_RMC_BITS_PGPSP |

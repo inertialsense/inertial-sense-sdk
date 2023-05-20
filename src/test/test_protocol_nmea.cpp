@@ -4,6 +4,7 @@
 #include "../ISEarth.h"
 using namespace std;
 
+#define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }
 
 #define ASCII_BUF_LEN   200
 #define POS_LAT_DEG     40.330578
@@ -13,6 +14,8 @@ using namespace std;
 
 TEST(protocol_nmea, nmea_parse_ascb)
 {
+	PRINT_TEST_DESCRIPTION("Tests the $ASCB parser function nmea_parse_ascb().");
+
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
@@ -54,6 +57,8 @@ TEST(protocol_nmea, nmea_parse_ascb)
 
 TEST(protocol_nmea, nmea_parse_asce)
 {
+	PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");
+
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
