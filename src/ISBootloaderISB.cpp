@@ -60,37 +60,20 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 
 eImageSignature cISBootloaderISB::check_is_compatible()
 {
-    serialPortFlush(m_port);
-    //if (
-    sync(m_port);
-            //!= IS_OP_OK)
-    //{
-        //return IS_IMAGE_SIGN_ERROR;
-    //}
-    // {
-    //     for(int i = 0; i < 10; i++)
-    //     {
-    //         // Reset the device
-    //         if(serialPortWrite(m_port, (unsigned char*)":020000040500F5", 15) == 15)
-    //         {
-    //             break;
-    //         }
-
-    //         SLEEP_MS(10);
-    //     }
-
-    //     return IS_IMAGE_SIGN_ERROR;
-    // }
-
-    SLEEP_MS(100);
-
     uint8_t buf[14] = { 0 };
     int count = 0;
+
+    serialPortFlush(m_port);
+    serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
+    sync(m_port);
+
+    SLEEP_MS(100);
 
     for (int retry=0;; retry++)
     {
         // Send command
         serialPortFlush(m_port);
+        serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
         serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
 
         // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response

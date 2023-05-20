@@ -76,7 +76,7 @@ class SuperNPP():
 		### Compute RMS ##################################################
 		if self.computeRMS:
 			for subdir in self.subdirs:
-				sdir = subdir + "/post_processed"
+				sdir = str(subdir) + "/post_processed"
 				if self.log.load(sdir):
 					# Compute and output RMS Report
 					self.log.calculateRMS()
@@ -108,13 +108,13 @@ class SuperNPP():
 		print(serials)
 
 		if os.name == 'posix':
-			cmds = ['./navpp -d ' + folder + ' -s ' + str(s) + " -sd " + subdir for s in serials]
+			cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir for s in serials]
 			npp_build_folder = "../../../cpp/NavPostProcess/build"
 		else:
 			# cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
 			# npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
-			cmds = [r'.\navpp.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
-			npp_build_folder = "../../../cpp/NavPostProcess/build/Release"
+			cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
+			npp_build_folder = "../../../cpp/NavPostProcess/VS_project/x64/Release"
 
 		if self.startMode == 1:
 			for i in range(len(cmds)):
