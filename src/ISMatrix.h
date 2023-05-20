@@ -98,8 +98,6 @@ typedef struct
 #endif
 static __inline char is_zero( const f_t * f )
 {
-	if(f == NULL) return 0;
-
 	const uint32_t *x = (const uint32_t*) f;
 	return (*x == 0) ? 1 : 0;
 }
