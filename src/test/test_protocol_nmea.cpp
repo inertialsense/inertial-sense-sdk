@@ -4,6 +4,7 @@
 #include "../ISEarth.h"
 using namespace std;
 
+#define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }
 
 #define ASCII_BUF_LEN   200
 #define POS_LAT_DEG     40.330578
@@ -13,6 +14,8 @@ using namespace std;
 
 TEST(protocol_nmea, nmea_parse_ascb)
 {
+	PRINT_TEST_DESCRIPTION("Tests the $ASCB parser function nmea_parse_ascb().");
+
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
@@ -54,6 +57,8 @@ TEST(protocol_nmea, nmea_parse_ascb)
 
 TEST(protocol_nmea, nmea_parse_asce)
 {
+	PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");
+
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
@@ -444,7 +449,6 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
 }
 
 
-#if 1
 TEST(protocol_nmea, binary_GSV_binary)
 {
     gps_sat_t gpsSat = {};
@@ -1164,8 +1168,8 @@ TEST(protocol_nmea, binary_GSV_binary)
     ASSERT_TRUE( sig < &(gpsSig.sig[MAX_NUM_SAT_SIGNALS]) );
 
 
-    {
-        nema_set_protocol_version(0);
+    {   // Test NMEA protocol 2.3
+        nema_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
         int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
@@ -1220,8 +1224,8 @@ TEST(protocol_nmea, binary_GSV_binary)
         }
     }
 
-    {
-        nema_set_protocol_version(0);
+    {   // Test NMEA protocol 4.10
+        nema_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
         int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
@@ -1261,11 +1265,10 @@ TEST(protocol_nmea, binary_GSV_binary)
         }
     }
 }
-#endif
 
 
-#if 0   // Used for user manual 
-TEST(protocol_nmea, test_generate_asce)
+#if 0   // Uncomment to generate example NMEA strings for user manual documentation. 
+TEST(protocol_nmea, generate_example_nmea_for_user_manual)
 {
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 

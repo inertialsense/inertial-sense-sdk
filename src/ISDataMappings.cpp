@@ -2534,10 +2534,12 @@ cISDataMappings::cISDataMappings()
 	PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_RTK_POS);
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS1_VEL);
 	PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
-	//PopulateGpsSatMappings(m_lookupInfo, DID_GPS1_SAT); // too much data, we don't want to log this
-	//PopulateGpsSatMappings(m_lookupInfo, DID_GPS2_SAT); // too much data, we don't want to log this
-	//PopulateGpsSigMappings(m_lookupInfo, DID_GPS1_SIG); // too much data, we don't want to log this
-	//PopulateGpsSigMappings(m_lookupInfo, DID_GPS2_SIG); // too much data, we don't want to log this
+#if 0	// Too much data, we don't want to log this. WHJ
+	PopulateGpsSatMappings(m_lookupInfo, DID_GPS1_SAT);
+	PopulateGpsSatMappings(m_lookupInfo, DID_GPS2_SAT);
+	PopulateGpsSigMappings(m_lookupInfo, DID_GPS1_SIG);
+	PopulateGpsSigMappings(m_lookupInfo, DID_GPS2_SIG);
+#endif
 	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS1_RTK_POS_REL);
 	PopulateGpsRtkRelMappings(m_lookupInfo, DID_GPS2_RTK_CMP_REL);
 	PopulateGpsRtkMiscMappings(m_lookupInfo, DID_GPS1_RTK_POS_MISC);
