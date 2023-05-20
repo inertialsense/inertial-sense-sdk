@@ -386,7 +386,7 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_RMC, tmp.rmc);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_ZDA, tmp.zda);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GSV, tmp.gsv);
+	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, ASCII_RMC_BITS_GSV, tmp.gsv);
 }
 
 
