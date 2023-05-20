@@ -55,7 +55,7 @@ void nmea_print_u32(char buf[], int bufSize, int &offset, int precision, uint32_
 		offset += ssnprintf(buf, bufSize, ",%0*u", precision, value);
 	}
 	else
-	{	// Don't print for Zero
+	{	// Print nothing for Zero
 		buf[0] = ',';
 		offset++;
 	}
