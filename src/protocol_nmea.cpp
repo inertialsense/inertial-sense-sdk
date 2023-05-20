@@ -1,12 +1,65 @@
 #include <stdint.h>
+#include <stdarg.h>
 #include "protocol_nmea.h"
 #include "ISPose.h"
 #include "ISEarth.h"
+#include "data_sets.h"
+
+
+static int s_protocol_version = 0;
+
+
+uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
+
+void nema_set_protocol_version(int protocol_version)
+{ 
+	s_protocol_version = protocol_version; 
+}
+
+// Safe snprintf that prevents use of invalid size.
+// snprintf size (size_t) is unsigned and can wrap very large.
+int ssnprintf(char buf[], int bufSize, const char *fmt, ...) 
+{
+	if (bufSize<=0) return 0;		// Prevent snprintf w/ invalid size 
+    va_list args;
+    va_start(args, fmt);
+    int l = VSNPRINTF(buf, bufSize, fmt, args);
+    va_end(args);
+	return l;
+}
+
+void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...) 
+{
+	bufSize -= offset;
+	if (bufSize<=0) return;		// Prevent snprintf w/ invalid size 
+	buf += offset;
+    va_list args;
+    va_start(args, fmt);
+    offset += VSNPRINTF(buf, bufSize, fmt, args);
+    va_end(args);
+}
+
+void nmea_print_u32(char buf[], int bufSize, int &offset, int precision, uint32_t value)
+{
+	bufSize -= offset;
+	if (bufSize<=0) return;		// Prevent snprintf w/ invalid size
+	buf += offset;
+
+	if (value)
+	{	// Non-zero
+		offset += ssnprintf(buf, bufSize, ",%0*u", precision, value);
+	}
+	else
+	{	// Print nothing for Zero
+		buf[0] = ',';
+		offset++;
+	}
+}
 
 uint32_t ASCII_compute_checksum(uint8_t* str, int size)
 {
@@ -19,6 +72,97 @@ uint32_t ASCII_compute_checksum(uint8_t* str, int size)
 	}
 
 	return checksum;
+}
+
+static int gnssId_to_talkerId(char* a, uint8_t gnssId)
+{
+    a[0] = 'G';
+
+    switch (gnssId)
+    {
+    case SAT_SV_GNSS_ID_GPS:
+    case SAT_SV_GNSS_ID_SBS:
+        a[1] = 'P';
+        break;
+    case SAT_SV_GNSS_ID_GAL:
+        a[1] = 'A';
+        break;
+    case SAT_SV_GNSS_ID_BEI:
+        a[1] = 'B';
+        break;
+    case SAT_SV_GNSS_ID_QZS:
+    case SAT_SV_GNSS_ID_IME:
+        a[1] = 'Q';
+        break;
+    case SAT_SV_GNSS_ID_GLO:
+        a[1] = 'L';
+        break;
+    case SAT_SV_GNSS_ID_IRN:
+        a[1] = 'I';
+        break;
+    default:
+        a[1] = 'N';
+        break;
+    }
+
+	return 2;
+}
+
+void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t &sigId)
+{
+	uint16_t svIdLast = svId;
+	if (s_protocol_version < NMEA_PROTOCOL_4P10)
+	{
+		if (svId >= 512)
+		{	// < NMEA 4.10 method of detecting mult-frequency
+			svId -= 512;
+		}
+		else if (svId >= 256)
+		{	// < NMEA 4.10 method of detecting mult-frequency
+			svId -= 256;
+		}
+		else
+		{
+			sigId = 0;
+		}
+	}
+
+	switch(a[2])	// $Gx
+	{
+	case 'P':		// GPS, SBAS, QZSS
+		if (svId >= 193)
+		{
+			gnssId = SAT_SV_GNSS_ID_QZS;
+			if (svId >= 193){ svId -= 192; }
+		}
+		else if (svId > 32)
+		{
+			gnssId = SAT_SV_GNSS_ID_SBS;
+			if (svId <= 64){ svId += 87; }
+		}
+		else{ gnssId = SAT_SV_GNSS_ID_GPS; }		break;
+	case 'A':	gnssId = SAT_SV_GNSS_ID_GAL;		break;
+	case 'B':	gnssId = SAT_SV_GNSS_ID_BEI;		break;	
+	case 'L':	gnssId = SAT_SV_GNSS_ID_GLO; 		break;
+	case 'I':	gnssId = SAT_SV_GNSS_ID_IRN; 		break;
+	case 'Q':	gnssId = SAT_SV_GNSS_ID_QZS;		break;
+	default:	gnssId = SAT_SV_GNSS_ID_UNKNOWN;	break;
+	}
+
+	sigId = nmea2p3_svid_to_sigId(gnssId, svIdLast);
+}
+
+static int nmea_talker(char* a, int aSize, uint8_t gnssId=0)
+{
+	a[0] = '$';
+	return gnssId_to_talkerId(a+1, gnssId) + 1;
+}
+
+int nmea_sprint_footer(char* a, int aSize, int &n)
+{
+	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
+	n += ssnprintf(a+n, aSize-n, "*%.2X\r\n", checkSum);
+	return n;
 }
 
 char *ASCII_to_u8(uint8_t *val, char *ptr)
@@ -120,7 +264,7 @@ char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 	return ptr;
 }
 
-char *ASCII_to_char_array(char *dst, char *ptr, size_t max_len)
+char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 {
 	STRNCPY(dst, ptr, max_len-1);
 	dst[max_len-1] = 0;			// Must be null terminated
@@ -140,10 +284,9 @@ char *ASCII_to_TimeOfDayMs(uint32_t *timeOfWeekMs, char *ptr)
 	return ptr;
 }
 
-// All strings must be NULL terminated!
 char *ASCII_find_next_field(char *str)
 {
-	while(*str != 0 && *str != ',') //move down looking for end of string.
+	while(*str != 0 && *str != ',' && *str != '*') // move down looking for end of string.
 	++str;
 
 	if(*str == ',') //move past comma (if not at end of string)
@@ -237,12 +380,13 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
 
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGGA, tmp.gga);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGLL, tmp.gll);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPGSA, tmp.gsa);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPRMC, tmp.rmc);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GPZDA, tmp.zda);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GGA, tmp.gga);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GLL, tmp.gll);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GSA, tmp.gsa);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_RMC, tmp.rmc);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_ZDA, tmp.zda);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
+	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, ASCII_RMC_BITS_GSV, tmp.gsv);
 }
 
 
@@ -250,38 +394,9 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 // Binary to NMEA
 //////////////////////////////////////////////////////////////////////////
 
-int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
+int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 {
-//     unsigned int checkSum = 0;
-//     serWrite(portNum, (unsigned char*)"$", 1);
-//     ASCII_PORT_WRITE_NO_FORMAT(portNum, "INFO", checkSum, 4);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.serialNumber);      // 1
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.hardwareVer[0]);    // 2
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.hardwareVer[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.hardwareVer[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.hardwareVer[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.firmwareVer[0]);    // 3
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.firmwareVer[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.firmwareVer[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.firmwareVer[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.buildNumber);       // 4
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.protocolVer[0]);    // 5
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.protocolVer[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.protocolVer[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%d", devInfo.protocolVer[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%d", devInfo.repoRevision);      // 6
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%s", devInfo.manufacturer);      // 7
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%04d", devInfo.buildDate[1]);    // 8
-//     ASCII_PORT_WRITE(portNum, a, checkSum, "-%02d", devInfo.buildDate[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, "-%02d", devInfo.buildDate[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%02d", devInfo.buildTime[0]);    // 9
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ":%02d", devInfo.buildTime[1]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ":%02d", devInfo.buildTime[2]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ".%02d", devInfo.buildTime[3]);
-//     ASCII_PORT_WRITE(portNum, a, checkSum, ",%s", devInfo.addInfo);           // 10    
-//     ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
-	int n = SNPRINTF(a, aSize, "$INFO"
+	int n = ssnprintf(a, aSize, "$INFO"
 		",%d"			// 1
 		",%d.%d.%d.%d"	// 2
 		",%d.%d.%d.%d"	// 3
@@ -303,217 +418,213 @@ int did_dev_info_to_nmea_info(char a[], const int aSize, dev_info_t &info)
 		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
 		info.addInfo);			// 10
 		
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)
 {
-	int n = SNPRINTF(a, aSize, "$PTOW");
-	n += SNPRINTF(a+n, aSize-n, ",%.6lf", imuTow);			// 1
-	n += SNPRINTF(a+n, aSize-n, ",%.6lf", insTow);			// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", gpsWeek);			// 3
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	int n = ssnprintf(a, aSize, "$PTOW");
+	nmea_sprint(a, aSize, n, ",%.6lf", imuTow);			// 1
+	nmea_sprint(a, aSize, n, ",%.6lf", insTow);			// 2
+	nmea_sprint(a, aSize, n, ",%u", gpsWeek);			// 3	
+
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_imu_to_nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[])
+int nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[])
 {
-	int n = SNPRINTF(a, aSize, "%s", name);
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", imu.time);		// 1
+	int n = ssnprintf(a, aSize, "%s", name);
+	nmea_sprint(a, aSize, n, ",%.3lf", imu.time);			// 1
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[0]);		// 2
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[1]);		// 3
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", imu.I.pqr[2]);		// 4
+	nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[0]);		// 2
+	nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[1]);		// 3
+	nmea_sprint(a, aSize, n, ",%.4f", imu.I.pqr[2]);		// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[0]);		// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[1]);		// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", imu.I.acc[2]);		// 7
+	nmea_sprint(a, aSize, n, ",%.3f", imu.I.acc[0]);		// 5
+	nmea_sprint(a, aSize, n, ",%.3f", imu.I.acc[1]);		// 6
+	nmea_sprint(a, aSize, n, ",%.3f", imu.I.acc[2]);		// 7
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_pimu_to_nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
+int nmea_ppimu(char a[], const int aSize, pimu_t &pimu)
 {
-	int n = SNPRINTF(a, aSize, "$PPIMU");
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", pimu.time);		// 1
+	int n = ssnprintf(a, aSize, "$PPIMU");
+	nmea_sprint(a, aSize, n, ",%.3lf", pimu.time);		// 1
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[0]);	// 2
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[1]);	// 3
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.theta[2]);	// 4
+	nmea_sprint(a, aSize, n, ",%.4f", pimu.theta[0]);	// 2
+	nmea_sprint(a, aSize, n, ",%.4f", pimu.theta[1]);	// 3
+	nmea_sprint(a, aSize, n, ",%.4f", pimu.theta[2]);	// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[0]);		// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[1]);		// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", pimu.vel[2]);		// 7
+	nmea_sprint(a, aSize, n, ",%.4f", pimu.vel[0]);		// 5
+	nmea_sprint(a, aSize, n, ",%.4f", pimu.vel[1]);		// 6
+	nmea_sprint(a, aSize, n, ",%.4f", pimu.vel[2]);		// 7
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", pimu.dt);			// 8
+	nmea_sprint(a, aSize, n, ",%.3f", pimu.dt);			// 8
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_ins1_to_nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
+int nmea_pins1(char a[], const int aSize, ins_1_t &ins1)
 {
-	int n = SNPRINTF(a, aSize, "$PINS1");
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins1.timeOfWeek);	// 1
+	int n = ssnprintf(a, aSize, "$PINS1");
+	nmea_sprint(a, aSize, n, ",%.3lf", ins1.timeOfWeek);			// 1
 
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)ins1.week);		// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)ins1.insStatus);	// 3
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)ins1.hdwStatus);	// 4
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.week);		// 2
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.insStatus);	// 3
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins1.hdwStatus);	// 4
 
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins1.theta[0]);				// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins1.theta[1]);				// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins1.theta[2]);				// 7
+	nmea_sprint(a, aSize, n, ",%.4f", ins1.theta[0]);				// 5
+	nmea_sprint(a, aSize, n, ",%.4f", ins1.theta[1]);				// 6
+	nmea_sprint(a, aSize, n, ",%.4f", ins1.theta[2]);				// 7
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.uvw[0]);					// 8
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.uvw[1]);					// 9
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.uvw[2]);					// 10
+	nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[0]);					// 8
+	nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[1]);					// 9
+	nmea_sprint(a, aSize, n, ",%.3f", ins1.uvw[2]);					// 10
 
-	n += SNPRINTF(a+n, aSize-n, ",%.8lf", ins1.lla[0]);					// 11
-	n += SNPRINTF(a+n, aSize-n, ",%.8lf", ins1.lla[1]);					// 12
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins1.lla[2]);					// 13
+	nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[0]);				// 11
+	nmea_sprint(a, aSize, n, ",%.8lf", ins1.lla[1]);				// 12
+	nmea_sprint(a, aSize, n, ",%.3lf", ins1.lla[2]);				// 13
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.ned[0]);					// 14
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.ned[1]);					// 15
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins1.ned[2]);					// 16
+	nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[0]);					// 14
+	nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[1]);					// 15
+	nmea_sprint(a, aSize, n, ",%.3f", ins1.ned[2]);					// 16
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_ins2_to_nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
+int nmea_pins2(char a[], const int aSize, ins_2_t &ins2)
 {
-	int n = SNPRINTF(a, aSize, "$PINS2");
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins2.timeOfWeek);				// 1
+	int n = ssnprintf(a, aSize, "$PINS2");
+	nmea_sprint(a, aSize, n, ",%.3lf", ins2.timeOfWeek);			// 1
 
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)ins2.week);		// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)ins2.insStatus);	// 3
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)ins2.hdwStatus);	// 4
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.week);		// 2
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.insStatus);	// 3
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)ins2.hdwStatus);	// 4
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins2.qn2b[0]);					// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins2.qn2b[1]);					// 6
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins2.qn2b[2]);					// 7
-	n += SNPRINTF(a+n, aSize-n, ",%.4f", ins2.qn2b[3]);					// 8
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[0]);				// 5
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[1]);				// 6
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[2]);				// 7
+	nmea_sprint(a, aSize, n, ",%.4f", ins2.qn2b[3]);				// 8
 
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins2.uvw[0]);					// 9
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins2.uvw[1]);					// 10
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", ins2.uvw[2]);					// 11
+	nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[0]);					// 9
+	nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[1]);					// 10
+	nmea_sprint(a, aSize, n, ",%.3f", ins2.uvw[2]);					// 11
 
-	n += SNPRINTF(a+n, aSize-n, ",%.8lf", ins2.lla[0]);					// 12
-	n += SNPRINTF(a+n, aSize-n, ",%.8lf", ins2.lla[1]);					// 13
-	n += SNPRINTF(a+n, aSize-n, ",%.3lf", ins2.lla[2]);					// 14
+	nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[0]);				// 12
+	nmea_sprint(a, aSize, n, ",%.8lf", ins2.lla[1]);				// 13
+	nmea_sprint(a, aSize, n, ",%.3lf", ins2.lla[2]);				// 14
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);		
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_strobe_to_nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
+int nmea_pstrb(char a[], const int aSize, strobe_in_time_t &strobe)
 {
-	int n = SNPRINTF(a, aSize, "$PSTRB");
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.week);			// 1
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.timeOfWeekMs);	// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.pin);			// 3
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)strobe.count);			// 4
+	int n = ssnprintf(a, aSize, "$PSTRB");
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.week);			// 1
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.timeOfWeekMs);	// 2
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.pin);			// 3
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)strobe.count);		// 4
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_gps_to_nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
+int nmea_pgpsp(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel)
 {
-	int n = SNPRINTF(a, aSize, "$PGPSP");
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.timeOfWeekMs);	// 1
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.week);			// 2
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.status);		// 3
+	int n = ssnprintf(a, aSize, "$PGPSP");
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.timeOfWeekMs);	// 1
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.week);			// 2
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.status);			// 3
 
-	n += SNPRINTF(a+n, aSize-n, ",%.8lf", pos.lla[0]);					// 4
-	n += SNPRINTF(a+n, aSize-n, ",%.8lf", pos.lla[1]);					// 5
-	n += SNPRINTF(a+n, aSize-n, ",%.2lf", pos.lla[2]);					// 6
+	nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[0]);						// 4
+	nmea_sprint(a, aSize, n, ",%.8lf", pos.lla[1]);						// 5
+	nmea_sprint(a, aSize, n, ",%.2lf", pos.lla[2]);						// 6
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", pos.hMSL);						// 7
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", pos.pDop);						// 8
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", pos.hAcc);						// 9
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", pos.vAcc);						// 10
+	nmea_sprint(a, aSize, n, ",%.2f", pos.hMSL);						// 7
+	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);						// 8
+	nmea_sprint(a, aSize, n, ",%.2f", pos.hAcc);						// 9
+	nmea_sprint(a, aSize, n, ",%.2f", pos.vAcc);						// 10
 
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", vel.vel[0]);					// 11
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", vel.vel[1]);					// 12
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", vel.vel[2]);					// 13
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", vel.sAcc);						// 14
+	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[0]);						// 11
+	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[1]);						// 12
+	nmea_sprint(a, aSize, n, ",%.2f", vel.vel[2]);						// 13
+	nmea_sprint(a, aSize, n, ",%.2f", vel.sAcc);						// 14
 
-	n += SNPRINTF(a+n, aSize-n, ",%.1f", pos.cnoMean);					// 15
-	n += SNPRINTF(a+n, aSize-n, ",%.4lf", pos.towOffset);				// 16
-	n += SNPRINTF(a+n, aSize-n, ",%u", (unsigned int)pos.leapS);		// 17
+	nmea_sprint(a, aSize, n, ",%.1f", pos.cnoMean);						// 15
+	nmea_sprint(a, aSize, n, ",%.4lf", pos.towOffset);					// 16
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)pos.leapS);			// 17
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-static int asciiSnprintfLatToDegMin(char* a, size_t aSize, double v)
+static void nmea_latToDegMin(char* a, int aSize, int &offset, double v)
 {
+	aSize -= offset;
+	a += offset;
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	return SNPRINTF(a, aSize, ",%02d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
+	offset += ssnprintf(a, aSize, ",%02d%08.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
 }
 
-static int asciiSnprintfLonToDegMin(char* a, size_t aSize, double v)
+static void nmea_lonToDegMin(char* a, int aSize, int &offset, double v)
 {
+	aSize -= offset;
+	a += offset;
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	return SNPRINTF(a, aSize, ",%03d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
+	offset += ssnprintf(a, aSize, ",%03d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
 }
 
-static int asciiSnprintfGPSTimeOfLastFix(char* a, size_t aSize, uint32_t timeOfWeekMs)
+static void nmea_GPSTimeOfLastFix(char* a, int aSize, int &offset, uint32_t timeOfWeekMs)
 {
+	aSize -= offset;
+	a += offset;
 	unsigned int millisecondsToday = timeOfWeekMs % 86400000;
 	unsigned int hours = millisecondsToday / 3600000;
 	unsigned int minutes = (millisecondsToday / 60000) % 60;
 	unsigned int seconds = (millisecondsToday / 1000) % 60;
 	
-	return SNPRINTF(a, aSize, ",%02u%02u%02u", hours, minutes, seconds);
+	offset += ssnprintf(a, aSize, ",%02u%02u%02u", hours, minutes, seconds);
 }
 
-static int asciiSnprintfGPSTimeOfLastFixMilliseconds(char* a, size_t aSize, uint32_t timeOfWeekMs)
+static void nmea_GPSTimeOfLastFixMilliseconds(char* a, int aSize, int &offset, uint32_t timeOfWeekMs)
 {
+	aSize -= offset;
+	a += offset;
 	unsigned int millisecondsToday = timeOfWeekMs % 86400000;
 	unsigned int hours = millisecondsToday / 3600000;
 	unsigned int minutes = (millisecondsToday / 60000) % 60;
 	unsigned int seconds = (millisecondsToday / 1000) % 60;
 	unsigned int milliseconds = millisecondsToday % 1000;
 	
-	return SNPRINTF(a, aSize, ",%02u%02u%02u.%03u", hours, minutes, seconds, milliseconds);
+	offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", hours, minutes, seconds, milliseconds);
 }
 
-static int asciiSnprintfGPSDateOfLastFix(char* a, size_t aSize, gps_pos_t &pos)
+static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
+	aSize -= offset;
+	a += offset;
 	double julian = gpsToJulian(pos.week, pos.timeOfWeekMs, pos.leapS);
 	int32_t year, month, day, hours, minutes, seconds, milliseconds;
 	julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
 	
-	return SNPRINTF(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)(year-2000));
+	offset += ssnprintf(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)(year-2000));
 }
 
-static int asciiSnprintfGPSDateOfLastFixCSV(char* a, size_t aSize, gps_pos_t &pos)	//Comma Separated Values
+static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t &pos)	//Comma Separated Values
 {
+	aSize -= offset;
+	a += offset;
 	double julian = gpsToJulian(pos.week, pos.timeOfWeekMs, pos.leapS);
 	int32_t year, month, day, hours, minutes, seconds, milliseconds;
 	julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
 	
-	return SNPRINTF(a, aSize, ",%02u,%02u,%04u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
+	offset += ssnprintf(a, aSize, ",%02u,%02u,%04u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
 }
 
-int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
+int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 {
 	int fixQuality;
 	switch((pos.status&GPS_STATUS_FIX_MASK))
@@ -557,45 +668,21 @@ int did_gps_to_nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 	*47          the checksum data, always begins with *
 	*/
 
-// 	unsigned int checkSum = 0;
-// 	serWrite( portNum, (unsigned char*)"$", 1);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGGA", checkSum, 5);
-// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);										// 1
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');		// 2,3
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');		// 4,5	
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%u", (unsigned)(fixQuality));						// 6
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));	// 7
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.2f", pos.pDop);								// 8
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.2f,M", pos.hMSL);							// 9,10
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.2f,M", pos.hMSL - pos.lla[2]);			// 11,12
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",,", checkSum, 2);										// 13,14
-// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
-	int n = SNPRINTF(a, aSize, "$GPGGA");
-	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
-	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 2,3
-	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 4,5
-	n += SNPRINTF(a+n, aSize-n, 
-		",%u"		// 6
-		",%02u"		// 7
-		",%.2f"		// 8
-		",%.2f,M"	// 9,10
-		",%.2f,M"	// 11,12
-		",,", 		// 13,14
-		(unsigned int)fixQuality,											// 6
-		(unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK),	// 7
-		pos.pDop,	// 8
-		pos.hMSL,	// 9,10
-		pos.hMSL - pos.lla[2]);	// 11,12 
-		// 13  time since last DGPS update
-		// 14  DGPS station ID number
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "GGA");
+	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
+	nmea_latToDegMin(a, aSize, n, pos.lla[0]);			// 2,3
+	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);			// 4,5
+	nmea_sprint(a, aSize, n, ",%u", (unsigned int)fixQuality);		// 6 - GPS quality
+	nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));		// 7 - Satellites used
+	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);						// 8 - HDop
+	nmea_sprint(a, aSize, n, ",%.2f,M", pos.hMSL);					// 9,10 - MSL altitude
+	nmea_sprint(a, aSize, n, ",%.2f,M", pos.lla[2] - pos.hMSL);		// 11,12 - Geoid separation
+	nmea_sprint(a, aSize, n, ",,"); 									// 13,14 - Age of differential, DGPS station ID number	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
+int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 {
 	// NMEA GLL line - http://www.gpsinformation.org/dale/nmea.htm#GLL
 	/*
@@ -607,27 +694,15 @@ int did_gps_to_nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	     *iD          checksum data
 	*/
 
-// 	unsigned int checkSum = 0;
-// 	serWrite( portNum, (unsigned char*)"$", 1);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGLL", checkSum, 5);
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');		// 1,2
-// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');		// 3,4
-// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);										// 5
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);										// 6
-// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
-	int n = SNPRINTF(a, aSize, "$GPGLL");
-	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);			// 1,2
-	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);			// 3,4
-	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
-	n += SNPRINTF(a+n, aSize-n, ",A");	// 6
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	int n = ssnprintf(a, aSize, "$GPGLL");
+	nmea_latToDegMin(a, aSize, n, pos.lla[0]);			// 1,2
+	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);			// 3,4
+	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
+	nmea_sprint(a, aSize, n, ",A");	// 6
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
+int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 {
 	int fixQuality;
 	switch((pos.status&GPS_STATUS_FIX_MASK))
@@ -664,28 +739,7 @@ int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sa
 		17   = VDOP
 	*/
 
-// 	unsigned int checkSum = 0;
-// 	serWrite( portNum, (unsigned char*)"$", 1);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPGSA", checkSum, 5);
-// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);							// 1
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(fixQuality));		// 2
-// 	for (uint32_t i = 0; i < 12; i++)												// 3-14
-// 	{
-// 		if(g_gps1Sat.sat[i].svId)
-// 		{
-// 			ASCII_PORT_WRITE(portNum, a, checkSum, ",%02u", (unsigned)(g_gps1Sat.sat[i].svId));
-// 		}
-// 		else
-// 		{
-// 			ASCII_PORT_WRITE_NO_FORMAT(portNum, ",", checkSum, 1);
-// 		}
-// 	}
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.1f", pos.pDop);					// 15
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.1f", pos.hAcc);					// 16
-// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%.1f", pos.vAcc);					// 17
-// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
-	int n = SNPRINTF(a, aSize, "$GPGSA"
+	int n = ssnprintf(a, aSize, "$GPGSA"
 		",A"		// 1
 		",%02u",	// 2
 		(unsigned int)fixQuality);	// 1,2
@@ -694,103 +748,70 @@ int did_gps_to_nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sa
 	{
 		if(sat.sat[i].svId)
 		{
-			n += SNPRINTF(a+n, aSize-n, ",%02u", (unsigned)(sat.sat[i].svId));
+			nmea_sprint(a, aSize, n, ",%02u", (unsigned)(sat.sat[i].svId));
 		}
 		else
 		{
-			n += SNPRINTF(a+n, aSize-n, ",");
+			nmea_sprint(a, aSize, n, ",");
 		}
 	}
 		
-	n += SNPRINTF(a+n, aSize-n,
+	nmea_sprint(a, aSize, n,
 		",%.1f"		// 15
 		",%.1f"		// 16
 		",%.1f",	// 17
 		pos.pDop,	// 15
 		pos.hAcc,	// 16
-		pos.vAcc);	// 17
-	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+		pos.vAcc);	// 17	
+
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_gps_to_nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
+int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
 {
 	ixQuat qe2n;
 	ixVector3 vel_ned_;
 	quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
 	quatConjRot(vel_ned_, qe2n, vel.vel);
 
-	// 	unsigned int checkSum = 0;
-	// 	serWrite(portNum, (unsigned char*)"$", 1);
-	// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, "GPRMC", checkSum, 5);
-	// 	asciiPortWriteGPSTimeOfLastFix(portNum, a, checkSum);									// 1	// time of last fix
-	// 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
-	// 	{
-	// 		ASCII_PORT_WRITE_NO_FORMAT(portNum, ",A", checkSum, 2);								// 2	// A=active (good)
-	// 	}
-	// 	else
-	// 	{
-	// 		ASCII_PORT_WRITE_NO_FORMAT(portNum, ",V", checkSum, 2);								// 2	// V=void (bad,warning)
-	// 	}
-	// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[0], ",%02d", 'N', 'S');	// 3,4	// lat lon (degrees minutes)
-	// 	asciiPortWriteCoordDegMin(portNum, a, checkSum, pos.lla[1], ",%03d", 'E', 'W');	// 5,6
-	//
-	// 	float speedInKnots = C_METERS_KNOTS_F * mag_Vec2(vel_ned_);
-	// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%05.1f", speedInKnots);						// 7	// speed in knots
-	// // 	float courseMadeTrue = atan2f(g_navInGpsA.velNed[1], g_navInGpsA.velNed[0]);
-	// 	float courseMadeTrue = 0.0f;
-	// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%05.1f", (courseMadeTrue*C_RAD2DEG_F));		// 8	// course made true
-	// 	asciiPortWriteGPSDateOfLastFix(portNum, a, checkSum);									// 9	// date of last fix UTC
-	//
-	// 	// Magnetic variation degrees (Easterly var. subtracts from true course), i.e. 020.3,E - left pad to 3 zero
-	// 	float magDec = g_nvmFlashCfg->magDeclination * C_RAD2DEG_F;
-	// 	bool positive = (magDec >= 0.0);
-	// 	ASCII_PORT_WRITE(portNum, a, checkSum, ",%05.1f,", abs(magDec));						// 10	// Magnetic variation
-	// 	ASCII_PORT_WRITE_NO_FORMAT(portNum, (positive ? "E" : "W"), checkSum, 1);				// 11
-	// 	ASCII_PORT_WRITE_NO_CHECKSUM(portNum, a, "*%.2x\r\n", checkSum);
-
-	int n = SNPRINTF(a, aSize, "$GPRMC");
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1	// UTC time of last fix
+	int n = ssnprintf(a, aSize, "$GPRMC");
+	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1 - UTC time of last fix
 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
 	{
-		n += SNPRINTF(a+n, aSize-n, ",A");												// 2	// A=active (good)
+		nmea_sprint(a, aSize, n, ",A");												// 2 - A=active (good)
 	}
 	else
 	{
-		n += SNPRINTF(a+n, aSize-n, ",V");												// 2	// V=void (bad,warning)
+		nmea_sprint(a, aSize, n, ",V");												// 2 - V=void (bad,warning)
 	}
-	n += asciiSnprintfLatToDegMin(a+n, aSize-n, pos.lla[0]);							// 3,4	// lat (degrees minutes)
-	n += asciiSnprintfLonToDegMin(a+n, aSize-n, pos.lla[1]);							// 5,6	// lon (degrees minutes)
+	nmea_latToDegMin(a, aSize, n, pos.lla[0]);										// 3,4 - lat (degrees minutes)
+	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);										// 5,6 - lon (degrees minutes)
 	
 	float speedInKnots = C_METERS_KNOTS_F * mag_Vec2(vel_ned_);
 	// 	float courseMadeTrue = atan2f(g_navInGpsA.velNed[1], g_navInGpsA.velNed[0]);
 	float courseMadeTrue = 0.0f;
-	n += SNPRINTF(a+n, aSize-n,
+	nmea_sprint(a, aSize, n,
 	",%05.1f"		// 7
 	",%05.1f",		// 8
-	speedInKnots,																		// 7	// speed in knots
-	courseMadeTrue*C_RAD2DEG_F);														// 8	// course made true
+	speedInKnots,																	// 7 - speed in knots
+	courseMadeTrue*C_RAD2DEG_F);													// 8 - course made true
 	
-	n += asciiSnprintfGPSDateOfLastFix(a+n, aSize-n, pos);								// 9	// date of last fix UTC
+	nmea_GPSDateOfLastFix(a, aSize, n, pos);										// 9 - date of last fix UTC
 	
 	// Magnetic variation degrees (Easterly var. subtracts from true course), i.e. 020.3,E - left pad to 3 zero
 	float magDec = magDeclination * C_RAD2DEG_F;
 	bool positive = (magDec >= 0.0);
 	
-	n += SNPRINTF(a+n, aSize-n,
+	nmea_sprint(a, aSize, n,
 	",%05.1f"	// 10
 	",%s",		// 11
-	fabsf(magDec),																				// 10	// Magnetic variation
-	(positive ? "E" : "W"));																	// 11
+	fabsf(magDec),																	// 10 - Magnetic variation
+	(positive ? "E" : "W"));														// 11
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
+int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 {
 	// NMEA ZDA line - http://www.gpsinformation.org/dale/nmea.htm#ZDA
 	/*
@@ -801,17 +822,15 @@ int did_gps_to_nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 		*CC       checksum
 	*/
 
-	int n = SNPRINTF(a, aSize, "$GPZDA");									//Field 1
-	n += asciiSnprintfGPSTimeOfLastFix(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);		//Field 2 
-	n += asciiSnprintfGPSDateOfLastFixCSV(a+n, aSize-n, pos);				// 2,3,4
-	n += SNPRINTF(a+n, aSize-n, ",00,00");									// 5,6
+	int n = ssnprintf(a, aSize, "$GPZDA");
+	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);			// 1 
+	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
+	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
-	return n;	
+	return nmea_sprint_footer(a, aSize, n);
 }
 
-int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma)
+int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma)
 {
 	// NMEA PASHR - RT300 proprietary roll and pitch sentence
 	/*
@@ -829,18 +848,18 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 		hh - Checksum
 	*/
 	
-	int n = SNPRINTF(a, aSize, "$PASHR");																//Field 1 - Name
-	n += asciiSnprintfGPSTimeOfLastFixMilliseconds(a+n, aSize-n, pos.timeOfWeekMs - pos.leapS*1000);	//Field 2 - UTC Time
+	int n = ssnprintf(a, aSize, "$PASHR");															// 1 - Name
+	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);		// 2 - UTC Time
 
-	n += SNPRINTF(a+n, aSize-n, ",%.2f", RAD2DEG(ins1.theta[2]));										//Field 3 - Heading value in decimal degrees.
-	n += SNPRINTF(a+n, aSize-n, ",T");																	//Field 4 - T (heading respect to True North)
-	n += SNPRINTF(a+n, aSize-n, ",%+.2f", RAD2DEG(ins1.theta[0]));										//Field 5 - Roll in degrees
-	n += SNPRINTF(a+n, aSize-n, ",%+.2f", RAD2DEG(ins1.theta[1]));										//Field 6 - Pitch in degrees
-	n += SNPRINTF(a+n, aSize-n, ",%+.2f", heave);														//Field 7 - Heave
+	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));										// 3 - Heading value in decimal degrees.
+	nmea_sprint(a, aSize, n, ",T");																	// 4 - T (heading respect to True North)
+	nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[0]));										// 5 - Roll in degrees
+	nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[1]));										// 6 - Pitch in degrees
+	nmea_sprint(a, aSize, n, ",%+.2f", heave);														// 7 - Heave
 	
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", RAD2DEG(sigma.StdAttNed[0])); //roll accuracy	//8
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", RAD2DEG(sigma.StdAttNed[1])); //pitch accuracy	//9
-	n += SNPRINTF(a+n, aSize-n, ",%.3f", RAD2DEG(sigma.StdAttNed[2])); //heading accuracy	//10
+	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[0])); //roll accuracy	//8
+	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[1])); //pitch accuracy	//9
+	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[2])); //heading accuracy	//10
 	
 	int fix = 0;
 	if(INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GPS_NAV_FIX_POSITIONING_RTK_FLOAT)
@@ -851,11 +870,463 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 	{
 		fix = 1;
 	}
-	n += SNPRINTF(a+n, aSize-n, ",%d", fix);															//Field 11 - GPS Quality
-	n += SNPRINTF(a+n, aSize-n, ",%d", INS_STATUS_SOLUTION(ins1.insStatus) >= INS_STATUS_SOLUTION_NAV); //Field 12 - INS Status
+	nmea_sprint(a, aSize, n, ",%d", fix);															// 11 - GPS Quality
+	nmea_sprint(a, aSize, n, ",%d", INS_STATUS_SOLUTION(ins1.insStatus) >= INS_STATUS_SOLUTION_NAV); // 12 - INS Status
 	
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);
-	n += SNPRINTF(a+n, aSize-n, "*%.2x\r\n", checkSum);
+	return nmea_sprint_footer(a, aSize, n);
+}
+
+void print_string_n(char a[], int n)
+{
+	a[n] = '\0'; 
+	printf("%s", a);
+}
+
+int prnToSvId(int gnssId, int prn)
+{
+	switch (gnssId)
+	{
+	case SAT_SV_GNSS_ID_SBS: return prn-87;
+	}
+
+	return prn;
+}
+
+bool gsv_sig_match(uint8_t gnssId, uint8_t sigId, gps_sig_sv_t &s, bool noCno=false)
+{
+	if ((s.cno==0) != noCno)
+	{	// cno doesn't matches
+		return false;
+	}
+
+	switch (gnssId)
+	{
+	case SAT_SV_GNSS_ID_GPS:
+		if ((s.gnssId != gnssId) && (s.gnssId != SAT_SV_GNSS_ID_SBS))
+		{
+			return false;
+		}
+		break;
+
+	case SAT_SV_GNSS_ID_SBS:
+		return false;
+
+	default:
+		if (s.gnssId != gnssId)
+		{
+			return false;
+		}
+		break;
+	}
+
+	return (sigId == 0xFF) || (s.sigId == sigId);
+}
+
+int nmea_gsv_num_sat_sigs(uint8_t gnssId, uint8_t sigId, gps_sig_t &sig, bool noCno=false)
+{
+	int numSigs = 0;
+
+	for (uint32_t i=0; i<sig.numSigs; i++)
+	{
+		gps_sig_sv_t &s = sig.sig[i];
+		if (gsv_sig_match(gnssId, sigId, s, noCno))
+		{
+			numSigs++;
+		}
+	}
+
+	return numSigs;
+}
+
+uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
+{
+	switch(gnssId)
+	{
+    case SAT_SV_GNSS_ID_GPS:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_GPS_L1CA:		return '1';
+		case SAT_SV_SIG_ID_GPS_L2CL:		return '6';
+		case SAT_SV_SIG_ID_GPS_L2CM:		return '5';
+		case SAT_SV_SIG_ID_GPS_L5I:			return '7';
+		case SAT_SV_SIG_ID_GPS_L5Q:			return '8';
+		}
+		break;
+    case SAT_SV_GNSS_ID_SBS:
+		return 1;
+    case SAT_SV_GNSS_ID_GAL:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_Galileo_E1C2:
+		case SAT_SV_SIG_ID_Galileo_E1B2:	return '7';
+		case SAT_SV_SIG_ID_Galileo_E5aI:
+		case SAT_SV_SIG_ID_Galileo_E5aQ:	return '1';
+		case SAT_SV_SIG_ID_Galileo_E5bI:
+		case SAT_SV_SIG_ID_Galileo_E5bQ:	return '2';
+		}
+		break;
+    case SAT_SV_GNSS_ID_BEI:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_BeiDou_B1D1:
+		case SAT_SV_SIG_ID_BeiDou_B1D2:		return '1';
+		case SAT_SV_SIG_ID_BeiDou_B2D1:
+		case SAT_SV_SIG_ID_BeiDou_B2D2:		return 'B';
+		case SAT_SV_SIG_ID_BeiDou_B1C:		return '3';
+		case SAT_SV_SIG_ID_BeiDou_B2a:		return '5';
+		}
+		break;
+    case SAT_SV_GNSS_ID_QZS:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_QZSS_L1CA:		return '1';
+		case SAT_SV_SIG_ID_QZSS_L1S:		return '4';
+		case SAT_SV_SIG_ID_QZSS_L2CM:		return '5';
+		case SAT_SV_SIG_ID_QZSS_L2CL:		return '6';
+		case SAT_SV_SIG_ID_QZSS_L5I:		return '7';
+		case SAT_SV_SIG_ID_QZSS_L5Q:		return '8';
+		}
+		break;
+    case SAT_SV_GNSS_ID_GLO:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_GLONASS_L1OF:	return '1';
+		case SAT_SV_SIG_ID_GLONASS_L2OF:	return '3';
+		}
+		break;
+    case SAT_SV_GNSS_ID_IRN:	// NavIC
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_NAVIC_L5A:		return '7';
+		}
+		break;
+	}
+
+	return '0';
+}
+
+uint8_t nmea4p11_signalId_to_sigId(uint8_t gnssId, char nmeaSignalId)
+{
+	switch(gnssId)
+	{
+    case SAT_SV_GNSS_ID_GPS:
+		switch(nmeaSignalId)
+		{
+		case '1':	return SAT_SV_SIG_ID_GPS_L1CA;
+		case '6':	return SAT_SV_SIG_ID_GPS_L2CL;
+		case '5':	return SAT_SV_SIG_ID_GPS_L2CM;
+		case '7':	return SAT_SV_SIG_ID_GPS_L5I;
+		case '8':	return SAT_SV_SIG_ID_GPS_L5Q;
+		}
+		break;
+    case SAT_SV_GNSS_ID_SBS:
+		return 0;
+    case SAT_SV_GNSS_ID_GAL:
+		switch(nmeaSignalId)
+		{
+		case '7':	return SAT_SV_SIG_ID_Galileo_E1C2;
+		// case '7':	return SAT_SV_SIG_ID_Galileo_E1B2;
+		case '1':	return SAT_SV_SIG_ID_Galileo_E5aI;
+		// case '1':	return SAT_SV_SIG_ID_Galileo_E5aQ;
+		// case '2':	return SAT_SV_SIG_ID_Galileo_E5bI;
+		case '2':	return SAT_SV_SIG_ID_Galileo_E5bQ;
+		}
+		break;
+    case SAT_SV_GNSS_ID_BEI:
+		switch(nmeaSignalId)
+		{
+		case '1':	return SAT_SV_SIG_ID_BeiDou_B1D1;
+		// case '1': 	return SAT_SV_SIG_ID_BeiDou_B1D2;
+		case 'B':	return SAT_SV_SIG_ID_BeiDou_B2D1;
+		// case 'B':	return SAT_SV_SIG_ID_BeiDou_B2D2;
+		case '3':	return SAT_SV_SIG_ID_BeiDou_B1C;
+		case '5':	return SAT_SV_SIG_ID_BeiDou_B2a;
+		}
+		break;
+    case SAT_SV_GNSS_ID_QZS:
+		switch(nmeaSignalId)
+		{
+		case '1':	return SAT_SV_SIG_ID_QZSS_L1CA;
+		case '4':	return SAT_SV_SIG_ID_QZSS_L1S;
+		case '5':	return SAT_SV_SIG_ID_QZSS_L2CM;
+		case '6':	return SAT_SV_SIG_ID_QZSS_L2CL;
+		case '7':	return SAT_SV_SIG_ID_QZSS_L5I;
+		case '8':	return SAT_SV_SIG_ID_QZSS_L5Q;
+		}
+		break;
+    case SAT_SV_GNSS_ID_GLO:
+		switch(nmeaSignalId)
+		{
+		case '1':	return SAT_SV_SIG_ID_GLONASS_L1OF;
+		case '3':	return SAT_SV_SIG_ID_GLONASS_L2OF;
+		}
+		break;
+    case SAT_SV_GNSS_ID_IRN:	// NavIC
+		switch(nmeaSignalId)
+		{
+		case '7': 	return SAT_SV_SIG_ID_NAVIC_L5A;
+		}
+		break;
+	}
+
+	return '0';
+}
+
+uint16_t sigId_to_nmea2p3_svId(uint8_t gnssId, uint8_t sigId, uint16_t svId)
+{
+	switch(gnssId)
+	{
+    case SAT_SV_GNSS_ID_GPS:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_GPS_L1CA:		return svId;
+		case SAT_SV_SIG_ID_GPS_L2CL:		
+		case SAT_SV_SIG_ID_GPS_L2CM:		return svId + 256;
+		case SAT_SV_SIG_ID_GPS_L5I:			
+		case SAT_SV_SIG_ID_GPS_L5Q:			return svId + 512;
+		}
+		break;
+    case SAT_SV_GNSS_ID_SBS:
+		return 1;
+    case SAT_SV_GNSS_ID_GAL:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_Galileo_E1C2:
+		case SAT_SV_SIG_ID_Galileo_E1B2:	return svId;
+		case SAT_SV_SIG_ID_Galileo_E5aI:
+		case SAT_SV_SIG_ID_Galileo_E5aQ:	return svId + 256;
+		case SAT_SV_SIG_ID_Galileo_E5bI:
+		case SAT_SV_SIG_ID_Galileo_E5bQ:	return svId + 512;
+		}
+		break;
+    case SAT_SV_GNSS_ID_BEI:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_BeiDou_B1D1:
+		case SAT_SV_SIG_ID_BeiDou_B1D2:		return svId;
+		case SAT_SV_SIG_ID_BeiDou_B2D1:
+		case SAT_SV_SIG_ID_BeiDou_B2D2:		return svId + 256;
+		case SAT_SV_SIG_ID_BeiDou_B1C:		return svId;
+		case SAT_SV_SIG_ID_BeiDou_B2a:		return svId + 512;
+		}
+		break;
+    case SAT_SV_GNSS_ID_QZS:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_QZSS_L1CA:
+		case SAT_SV_SIG_ID_QZSS_L1S:		return svId;
+		case SAT_SV_SIG_ID_QZSS_L2CM:
+		case SAT_SV_SIG_ID_QZSS_L2CL:		return svId + 256;
+		case SAT_SV_SIG_ID_QZSS_L5I:
+		case SAT_SV_SIG_ID_QZSS_L5Q:		return svId + 512;
+		}
+		break;
+    case SAT_SV_GNSS_ID_GLO:
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_GLONASS_L1OF:	return svId;
+		case SAT_SV_SIG_ID_GLONASS_L2OF:	return svId + 256;
+		}
+		break;
+    case SAT_SV_GNSS_ID_IRN:	// NavIC
+		switch(sigId)
+		{
+		case SAT_SV_SIG_ID_NAVIC_L5A:		return svId + 512;
+		}
+		break;
+	}
+
+	return 0;
+}
+
+uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
+{
+	if (svId<256)
+	{	// L1/E1
+		return 0;
+	}
+
+	if (svId>=512)
+	{	// L5/E5 - most common band
+		switch(gnssId)
+		{
+		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L5Q;
+		case SAT_SV_GNSS_ID_SBS:	return 0;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5;
+		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2a;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L5;
+		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
+		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
+		}
+	}
+	else
+	{	// L2/E2 - most common band
+		switch(gnssId)
+		{
+		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L2CL;
+		case SAT_SV_GNSS_ID_SBS:	return 0;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5a;
+		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L2;
+		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
+		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
+		}
+	}
+
+	return 0;
+}
+
+int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
+{
+	// Apply offset to buffer
+	a += offset;
+	aSize -= offset;
+	char *bufStart = a;
+
+	int numSigs = nmea_gsv_num_sat_sigs(gnssId, sigId, gsig);
+	int numMsgs = (numSigs+3) >> 2;	// divide by 4
+
+	uint32_t i=0;
+	for (int sigNum = 0; sigNum<numSigs; sigNum+=4)
+	{
+		int msgNum = (sigNum >> 2) + 1;	// (divide by 4) + 1
+
+		// Message fields: $xxGSV,numMsg,msgNum,numSats,{svid,elv,az,cno,}signalId*cs\r\n
+		// Write message header: $xxGSV,numMsg,msgNum,numSats
+		int n = nmea_talker(a, aSize, gnssId);
+		nmea_sprint(a, aSize, n, "GSV");
+		nmea_sprint(a, aSize, n, ",%u,%u,%02u", numMsgs, msgNum, numSigs);		// 1,2,3 - numMsgs, msgNum, numSats in view
+
+		// Write message payload: {svid,elv,az,cno} up to 4x
+		for (int cnt=0; cnt<4 && i<=gsig.numSigs; i++)
+		{
+			gps_sig_sv_t &sig = gsig.sig[i];
+			if (gsv_sig_match(gnssId, sigId, sig, noCno))
+			{	
+				for (uint32_t j=0; j<=gsat.numSats; j++)
+				{
+					gps_sat_sv_t &sat = gsat.sat[j];
+					if (sat.gnssId == sig.gnssId &&
+						sat.svId == sig.svId)
+					{
+						uint16_t svId = prnToSvId(sig.gnssId, sig.svId);
+						if (s_protocol_version < NMEA_PROTOCOL_4P10)
+						{
+							svId = sigId_to_nmea2p3_svId(gnssId, sig.sigId, svId);
+						}
+						nmea_sprint(a, aSize, n, ",%02u", svId);				// 4 + 4*msgNum... svid
+						nmea_print_u32(a, aSize, n, 2, sat.elev);				// 5 + 4*msgNum... elevation
+						nmea_print_u32(a, aSize, n, 3, sat.azim);				// 6 + 4*msgNum... azimuth
+						nmea_print_u32(a, aSize, n, 2, sig.cno);				// 7 + 4*msgNum... cno
+						++cnt;
+						break;
+					}
+				}
+			}
+		}
+
+		// Write message footer
+		if (s_protocol_version >= NMEA_PROTOCOL_4P10)
+		{
+			nmea_sprint(a, aSize, n, ",%c", sigId_to_nmea4p11_signalId(gnssId, sigId));	// Signal ID
+		}
+		nmea_sprint_footer(a, aSize, n);
+
+		offset += n;
+		// Move buffer pointer
+		a += n;
+		aSize -= n;
+	} 
+
+	return a - bufStart;
+}
+
+
+int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
+{
+	if (s_protocol_version < NMEA_PROTOCOL_4P10)
+	{
+		return nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId);
+	}
+
+	uint8_t *sigIds;
+	uint8_t gpsSigIds[] = { 
+		SAT_SV_SIG_ID_GPS_L1CA,
+		SAT_SV_SIG_ID_GPS_L2CL,
+		SAT_SV_SIG_ID_GPS_L2CM,
+		SAT_SV_SIG_ID_GPS_L5I,
+		SAT_SV_SIG_ID_GPS_L5Q
+	};		
+	uint8_t galSigIds[] = { 
+		SAT_SV_SIG_ID_Galileo_E1C2,
+		SAT_SV_SIG_ID_Galileo_E1B2,
+		SAT_SV_SIG_ID_Galileo_E5aI,
+		SAT_SV_SIG_ID_Galileo_E5aQ,
+		SAT_SV_SIG_ID_Galileo_E5bI,
+		SAT_SV_SIG_ID_Galileo_E5bQ,
+	};		
+	uint8_t beiSigIds[] = { 
+		SAT_SV_SIG_ID_BeiDou_B1D1,
+		SAT_SV_SIG_ID_BeiDou_B1D2,
+		SAT_SV_SIG_ID_BeiDou_B2D1,
+		SAT_SV_SIG_ID_BeiDou_B2D2,
+		SAT_SV_SIG_ID_BeiDou_B1C,
+		SAT_SV_SIG_ID_BeiDou_B2a,
+	};		
+	uint8_t qzsSigIds[] = { 
+		SAT_SV_SIG_ID_QZSS_L1CA,
+		SAT_SV_SIG_ID_QZSS_L1S,
+		SAT_SV_SIG_ID_QZSS_L2CM,
+		SAT_SV_SIG_ID_QZSS_L2CL,
+		SAT_SV_SIG_ID_QZSS_L5I,
+		SAT_SV_SIG_ID_QZSS_L5Q,
+	};		
+	uint8_t gloSigIds[] = { 
+		SAT_SV_SIG_ID_GLONASS_L1OF,
+		SAT_SV_SIG_ID_GLONASS_L2OF,
+	};		
+	uint8_t nvcSigIds[] = { 
+		SAT_SV_SIG_ID_NAVIC_L5A,
+	};		
+	int numSigIds = 0;
+
+	int n = 0;
+	switch(gnssId)
+	{
+	case SAT_SV_GNSS_ID_GPS:	sigIds = gpsSigIds;		numSigIds = sizeof(gpsSigIds);	break;
+	case SAT_SV_GNSS_ID_GAL:	sigIds = galSigIds;		numSigIds = sizeof(galSigIds);	break;
+	case SAT_SV_GNSS_ID_BEI:	sigIds = beiSigIds;		numSigIds = sizeof(beiSigIds);	break;
+	case SAT_SV_GNSS_ID_QZS:	sigIds = qzsSigIds;		numSigIds = sizeof(qzsSigIds);	break;
+	case SAT_SV_GNSS_ID_GLO:	sigIds = gloSigIds;		numSigIds = sizeof(gloSigIds);	break;
+	case SAT_SV_GNSS_ID_IRN:	sigIds = nvcSigIds;		numSigIds = sizeof(nvcSigIds);	break;
+	return 0;
+	}
+
+	for (int i = 0; i<numSigIds; i++)
+	{
+		n += nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId, sigIds[i]);
+	}
+
+	return n;
+}
+
+int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
+{
+	int n=0;
+
+	// eSatSvGnssId
+	for (int gnssId=1; gnssId<=SAT_SV_GNSS_ID_IRN; gnssId++)
+	{
+		if (gnssId == SAT_SV_GNSS_ID_SBS) { continue; }
+		// printf("gnssId: %d\n", gnssId);
+
+		// With CNO
+		nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId);
+
+		// Zero CNO
+		// nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId, true);
+	}
+
 	return n;
 }
 
@@ -865,7 +1336,7 @@ int did_gps_to_nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &in
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////
 
-int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize)
+int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[6];	// $INFO,
@@ -914,7 +1385,7 @@ int nmea_info_to_did_dev_info(dev_info_t &info, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
+int nmea_parse_pimu(imu_t &imu, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[6];	// $PIMU,
@@ -930,7 +1401,7 @@ int nmea_pimu_to_did_imu(imu_t &imu, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize)
+int nmea_parse_pimu_to_rimu(imu_t &imu, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PRIMU,
@@ -946,7 +1417,7 @@ int nmea_pimu_to_did_rimu(imu_t &imu, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
+int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PPIMU,
@@ -965,7 +1436,7 @@ int nmea_ppimu_to_did_pimu(pimu_t &pimu, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
+int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PINS1,
@@ -990,7 +1461,7 @@ int nmea_pins1_to_did_ins1(ins_1_t &ins, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
+int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PINS2,
@@ -1013,7 +1484,7 @@ int nmea_pins2_to_did_ins2(ins_2_t &ins, const char a[], const int aSize)
 	return 0;
 }
 
-int nmea_pgpsp_to_did_gps(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
+int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $PGPSP,
@@ -1069,20 +1540,55 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	uint32_t fixQuality;
 	ptr = ASCII_to_u32(&fixQuality, ptr);
 	gpsPos.status &= ~GPS_STATUS_FIX_MASK;
+	gpsPos.status |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+	gpsPos.hAcc = 0.0f;
+	gpsPos.vAcc = 0.0f;
 	switch(fixQuality)
 	{
-	default:														break;
-	case 1:	gpsPos.status |= GPS_STATUS_FIX_3D;						break;
-	case 2:	gpsPos.status |= GPS_STATUS_FIX_DGPS;					break;
-	case 3:	gpsPos.status |= GPS_STATUS_FIX_TIME_ONLY;				break;
-	case 4:	gpsPos.status |= GPS_STATUS_FIX_RTK_FIX;				break;
-	case 5:	gpsPos.status |= GPS_STATUS_FIX_RTK_FLOAT;				break;
-	case 6:	gpsPos.status |= GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK;		break;
+	default:	break;
+	case 1:		// Autonomous
+		gpsPos.status |= 
+			GPS_STATUS_FIX_3D | 
+			GPS_STATUS_FLAGS_FIX_OK;
+		gpsPos.hAcc = 1.5f;
+			break;
+	case 2:		// Differential
+		gpsPos.status |= 
+			GPS_STATUS_FIX_DGPS | 
+			GPS_STATUS_FLAGS_FIX_OK | 
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos.hAcc = 0.8f;
+		break;
+	case 3:		// Time only
+		gpsPos.status |= 
+			GPS_STATUS_FIX_TIME_ONLY;
+		gpsPos.hAcc = 0.8f;
+		break;
+	case 4:		// RTK fix
+		gpsPos.status |= 
+			GPS_STATUS_FIX_RTK_FIX |
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_DGPS_USED;
+		gpsPos.hAcc = 0.05f;
+		break;
+	case 5:		// RTK float
+		gpsPos.status |= 
+			GPS_STATUS_FIX_RTK_FLOAT |
+			GPS_STATUS_FLAGS_FIX_OK |
+			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
+			GPS_STATUS_FLAGS_DGPS_USED;				
+		gpsPos.hAcc = 0.4f;
+		break;
+	case 6:		// Dead reckoning
+		gpsPos.status |= 
+			GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK;
+		break;
 	}
 
 	// 7 - Satellites used
 	ptr = ASCII_to_u8(&(gpsPos.satsUsed), ptr);
-	gpsPos.status = gpsPos.satsUsed;
+	gpsPos.status |= gpsPos.satsUsed;	// GPS_STATUS_NUM_SATS_USED_MASK
 
 	// 8 - hDop
 	ptr = ASCII_to_f32(&(gpsPos.pDop), ptr);
@@ -1091,10 +1597,17 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	ptr = ASCII_to_f32(&(gpsPos.hMSL), ptr);
 	ptr = ASCII_find_next_field(ptr);
 
-	// 11,12 - Undulation
-	double undulation;
-	ptr = ASCII_to_f64(&(undulation), ptr);
-	gpsPos.lla[2] = gpsPos.hMSL - undulation;
+	// 11,12 - Geoid separation = alt(HAE) - alt(MSL)
+	double geoidSep;
+	ptr = ASCII_to_f64(&(geoidSep), ptr);
+	gpsPos.lla[2] = gpsPos.hMSL + geoidSep;
+
+	// Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+	ixVector3d lla;
+	lla[0] = DEG2RAD(gpsPos.lla[0]);
+	lla[1] = DEG2RAD(gpsPos.lla[1]);
+	lla[2] = gpsPos.lla[2];		// Use ellipsoid altitude
+	lla2ecef(lla, gpsPos.ecef);
 
 	// 13 - time since last DGPS update
 	// 14 - DGPS station ID number
@@ -1159,27 +1672,26 @@ int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const
 	return 0;
 }
 
+int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
+{
+	return 0;
+}
 
-//////////////////////////////////////////////////////////////////////////
-// Parse NMEA Functions
-//////////////////////////////////////////////////////////////////////////
+
 
 // Returns RMC options
-uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
 	if(pHandle >= NUM_COM_PORTS)
 	{
 		return 0;
 	}
-	char *ptr = (char *)msg;
 	
-	// Default to current settings
-	ascii_msgs_t tmp {};	// = asciiPeriod[pHandle];
-	uint32_t options = 0;
-	
-	ptr = ASCII_find_next_field(ptr);			// Options
-	if(*ptr!=','){ options = (uint16_t)atoi(ptr); }		
+	ascii_msgs_t tmp {};
+	uint32_t options = 0;	
+	char *ptr = (char *)&msg[6];				// $ASCB
+	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }		
 	ptr = ASCII_find_next_field(ptr);			// PIMU
 	if(*ptr!=','){ tmp.pimu = (uint16_t)atoi(ptr); }	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
@@ -1192,22 +1704,23 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ tmp.pgpsp = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PRIMU
 	if(*ptr!=','){ tmp.primu = (uint16_t)atoi(ptr); }
-	ptr = ASCII_find_next_field(ptr);			// gpgga
+	ptr = ASCII_find_next_field(ptr);			// gga
 	if(*ptr!=','){ tmp.gga = (uint16_t)atoi(ptr);	}
-	ptr = ASCII_find_next_field(ptr);			// gpgll
+	ptr = ASCII_find_next_field(ptr);			// gll
 	if(*ptr!=','){ tmp.gll = (uint16_t)atoi(ptr);	}
-	ptr = ASCII_find_next_field(ptr);			// gpgsa
+	ptr = ASCII_find_next_field(ptr);			// gsa
 	if(*ptr!=','){ tmp.gsa = (uint16_t)atoi(ptr);	}
-	ptr = ASCII_find_next_field(ptr);			// gprmc
+	ptr = ASCII_find_next_field(ptr);			// rmc
 	if(*ptr!=','){ tmp.rmc = (uint16_t)atoi(ptr);	}
-	ptr = ASCII_find_next_field(ptr);			// gpzda
+	ptr = ASCII_find_next_field(ptr);			// zda
 	if(*ptr!=','){ tmp.zda = (uint16_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// pashr
 	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
-
+	ptr = ASCII_find_next_field(ptr);			// gsv
+	if(*ptr!=','){ tmp.gsv = (uint16_t)atoi(ptr);	}
 		
 	// Copy tmp to corresponding port(s)
-	switch(options&RMC_OPTIONS_PORT_MASK)
+	switch (options&RMC_OPTIONS_PORT_MASK)
 	{	
 	case 0xFF:	// All ports
 		for(int i=0; i<NUM_COM_PORTS; i++)
@@ -1227,11 +1740,74 @@ uint32_t parse_nmea_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	return options;
 }
 
+uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
+{
+	(void)msgSize;
+	if(pHandle >= NUM_COM_PORTS)
+	{
+		return 0;
+	}
+	char *ptr = (char *)&msg[6];				// $ASCB
+	
+	ascii_msgs_t tmp {};
+	uint32_t options = 0;
+	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
+	ptr = ASCII_to_u32(&options, ptr);
+	uint32_t id;
+	uint16_t period;
+	for (int i=0; i<20; i++)
+	{
+		if(*ptr=='*'){ break; }
+		id = ((*ptr==',') ? 0 : atoi(ptr));
+		ptr = ASCII_find_next_field(ptr);
+		if(*ptr=='*'){ break; }
+		period = ((*ptr==',') ? 0 : (uint16_t)atoi(ptr));	
+		ptr = ASCII_find_next_field(ptr);
+
+		switch(id)
+		{
+		case NMEA_ASCII_MSG_ID_PIMU:	tmp.pimu    = period; break;
+		case NMEA_ASCII_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
+		case NMEA_ASCII_MSG_ID_PRIMU:	tmp.primu   = period; break;
+		case NMEA_ASCII_MSG_ID_PINS1:	tmp.pins1   = period; break;
+		case NMEA_ASCII_MSG_ID_PINS2:	tmp.pins2   = period; break;
+		case NMEA_ASCII_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
+		case NMEA_ASCII_MSG_ID_GGA:		tmp.gga     = period; break;
+		case NMEA_ASCII_MSG_ID_GLL:		tmp.gll     = period; break;
+		case NMEA_ASCII_MSG_ID_GSA:		tmp.gsa     = period; break;
+		case NMEA_ASCII_MSG_ID_RMC:		tmp.rmc     = period; break;
+		case NMEA_ASCII_MSG_ID_ZDA:		tmp.zda     = period; break;
+		case NMEA_ASCII_MSG_ID_PASHR:	tmp.pashr   = period; break;
+		case NMEA_ASCII_MSG_ID_GSV:		tmp.gsv     = period; break;
+		default: return 0;
+		}
+	}
+
+	// Copy tmp to corresponding port(s)
+	switch (options&RMC_OPTIONS_PORT_MASK)
+	{	
+	case 0xFF:	// All ports
+		for(int i=0; i<NUM_COM_PORTS; i++)
+		{
+			nmea_set_rmc_period_multiple(rmci[i], tmp);
+		}
+		break;
+		
+	default:	// Current port
+	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp);	break;
+	case RMC_OPTIONS_PORT_SER0:		nmea_set_rmc_period_multiple(rmci[0], tmp);			break;
+	case RMC_OPTIONS_PORT_SER1:		nmea_set_rmc_period_multiple(rmci[1], tmp);			break;
+	case RMC_OPTIONS_PORT_SER2:		nmea_set_rmc_period_multiple(rmci[2], tmp);			break;
+	case RMC_OPTIONS_PORT_USB:		nmea_set_rmc_period_multiple(rmci[3], tmp);			break;
+	}
+		
+	return options;
+}
 
 /* G_ZDA message
 *  Provides day/month/year fort calculating iTOW.
 */
-int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, double &year)
+int nmea_parse_zda(const char msg[], int msgSize, double &day, double &month, double &year)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1262,7 +1838,7 @@ int parse_nmea_zda(const char msg[], int msgSize, double &day, double &month, do
 *   Number Satellites
 *   Altitude & Geoid separation
 */
-int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
+int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1404,7 +1980,7 @@ int parse_nmea_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 *   Number Satellites
 *   Altitude & Geoid separation
 */	
-int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
+int nmea_parse_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1543,7 +2119,7 @@ int parse_nmea_gga(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 /* G_RMC Message
 * Provides speed (speed and course over ground)
 */
-int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags)
+int nmea_parse_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1589,7 +2165,7 @@ int parse_nmea_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 /* G_GSA Message
 * Provides pDOP and navigation mode (saved to determine 2D/3D mode)
 */
-int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode)
+int nmea_parse_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMode)
 {
 	(void)msgSize;
 	char *ptr = (char *)&msg[7];
@@ -1617,118 +2193,107 @@ int parse_nmea_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMod
 * Provides satellite information
 * Multiple GSV messages will come in a block. We wait until block is finished before flagging data is ready.
 */
-int parse_nmea_gsv(const char msg[], int msgSize, gps_sat_t* gpsSat, int lastGSVmsg[2], int *satCount, uint32_t *cnoSum, uint32_t *cnoCount)
+char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount)
 {
-	(void)msgSize;
-	char *ptr = (char *)&msg[7];
-	//$xxGSV,numMsg,msgNum,numSV{,svid,elv,az,cno},signalId*cs<CR><LF>
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxGSV,
+	// $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
 		
-	//numMsg
-	//int numMsg = atoi(ptr);
-	ptr = ASCII_find_next_field(ptr);
+	int32_t numMsgs, msgNum, numSigs;
+	ptr = ASCII_to_i32(&numMsgs, ptr);			// 1 - number of messages
+	ptr = ASCII_to_i32(&msgNum, ptr);			// 2 - message number
+	ptr = ASCII_to_i32(&numSigs, ptr);			// 3 - number of satellite signals in view
 
-	//msgNum
-	int msgNum = atoi(ptr);
-	ptr = ASCII_find_next_field(ptr);
-		
-	//numSV
-	int numSV = atoi(ptr);
-	ptr = ASCII_find_next_field(ptr);
-		
-	//For some reason the ZED-F9P outputs double messages with the second set having a zero signal strength for satellites for protocol version 27.10 & 27.11
-	// (Data sheet for ZED-F9P indicates this message is only supported in version 27.11)
-	//Only process the first message
-	if(lastGSVmsg[0] != msg[2] || lastGSVmsg[1] < msgNum)
+	uint8_t gnssId = SAT_SV_GNSS_ID_UNKNOWN;
+	uint8_t sigId = 0;
+	uint8_t *sigIds[4] = { NULL };
+	uint8_t **sigIdPtr = sigIds;
+			
+	// Process up to 4 satellites
+	int satCnt = _MIN(numSigs - (msgNum - 1) * 4, 4);
+
+	// Payload: {svid,elv,az,cno} up to 4x
+	for(int i=0; i<satCnt; ++i)
 	{
-		//save message
-		lastGSVmsg[0] = msg[2];
-		lastGSVmsg[1] = msgNum;
-			
-		//Process up to 4 satellites
-		int countSat = numSV - (msgNum - 1) * 4;
-		if(countSat > 4)
-			countSat = 4;
+		uint8_t elev, cno;
+		uint16_t svId, azim;
 
-		for(int i=0;i<countSat;++i)
+		ptr = ASCII_to_u16(&svId, ptr);		// 4 + 4x   svId
+		ptr = ASCII_to_u8(&elev, ptr);		// 5 + 4x   elevation
+		ptr = ASCII_to_u16(&azim, ptr);		// 6 + 4x   azimuth
+		ptr = ASCII_to_u8(&cno, ptr);		// 7 + 4x   cno
+
+		talkerId_to_gnssId(a, gnssId, svId, sigId);
+
+		// Add to satellite info list
+		for (uint32_t j=0;; j++)
 		{
-			//svid
-			uint8_t svid = (uint8_t)atoi(ptr);
-			ptr = ASCII_find_next_field(ptr);
-			
-			//elv
-			uint8_t elv = (uint8_t)atoi(ptr);
-			ptr = ASCII_find_next_field(ptr);
-			
-			//az
-			uint16_t az = (uint16_t)atoi(ptr);
-			ptr = ASCII_find_next_field(ptr);
-			
-			//cno
-			uint8_t cno = (uint8_t)atoi(ptr);
-			ptr = ASCII_find_next_field(ptr);
-			
-			//Save data (only if there is room available)
-			if(*satCount < MAX_NUM_SAT_CHANNELS && gpsSat)
-			{
-				auto& svDest = gpsSat->sat[(*satCount)++];
-				//IDs are different based on the GNSS type, convert to be the same as UBX message
-				switch(msg[2])
-				{
-					default:
-					case 'P':	//GPS, SBAS, QZSS
-						if(svid >= 193)	//QZSS
-						{
-							svDest.gnssId = 5;
-							if(svid >= 193)
-								svDest.svId = svid-192;
-							else
-								svDest.svId = svid;
-						}
-						else if(svid > 32)	//SBAS
-						{
-							svDest.gnssId = 1;
-							if(svid <= 64)
-								svDest.svId = svid + 87;
-							else
-								svDest.svId = svid;
-						}
-						else //GPS
-						{
-							svDest.gnssId = 0;
-							svDest.svId = svid;
-						}
-						break;
-					case 'L':	//GLONASS
-						svDest.gnssId = 6;
-						if(svid >= 65)
-							svDest.svId = svid - 64;
-						else
-							svDest.svId = svid;
-						break;
-					case 'A':	//Galileo
-						svDest.gnssId = 2;
-						svDest.svId = svid;
-						break;
-					case 'B':	//BeiDou
-						svDest.gnssId = 3;
-						svDest.svId = svid;
-						break;	
+			if (j >= gpsSat->numSats)
+			{	// Not in list
+				if(gpsSat->numSats < MAX_NUM_SATELLITES)
+				{	// Add to list
+					auto& dst = gpsSat->sat[gpsSat->numSats];
+					gpsSat->numSats++;
+					
+					dst.gnssId = gnssId;
+					dst.svId = svId;
+					dst.elev = elev;
+					dst.azim = azim;
+					dst.cno = cno;
+					dst.status = 
+						SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3 |
+						SAT_SV_STATUS_USED_IN_SOLUTION | 
+						SAT_SV_STATUS_HEALTH_GOOD;
 				}
-				svDest.cno = cno;
-				svDest.elev = elv;
-				svDest.azim = az;
-				svDest.prRes = 0;
-				svDest.flags = 0;
+				break;
 			}
-			
-			// Calculate the sum and count of non-zero cno values, in order to calculate the cnoMean
-			if (cno != 0)
-			{
-				(*cnoSum) += cno;
-				++(*cnoCount);
+			if ((gnssId == gpsSat->sat[j].gnssId) && (svId == gpsSat->sat[j].svId)) 
+			{ 
+				break; 
+			}	// already in list
+		}
+
+		// Add to satellite signal list
+		for (uint32_t j=0;; j++)
+		{
+			if (j >= gpsSig->numSigs)
+			{	// Not in list
+				if(gpsSig->numSigs < MAX_NUM_SAT_SIGNALS)
+				{	// Add to list
+					auto& dst = gpsSig->sig[gpsSig->numSigs];
+					gpsSig->numSigs++;
+					
+					dst.gnssId = gnssId;
+					dst.svId = svId;
+					dst.sigId = sigId;	// Gets set at function end if using protocol > NMEA 4.1
+					*sigIdPtr = &(dst.sigId);
+					sigIdPtr++;
+					dst.quality = SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3;
+					dst.cno = cno;
+					dst.status = SAT_SIG_STATUS_HEALTH_GOOD | SAT_SIG_STATUS_USED_IN_SOLUTION;
+				}
+				break;
 			}
+		}
+
+		// Calculate the sum and count of non-zero cno values, in order to calculate the cnoMean
+		if (cno != 0)
+		{
+			(*cnoSum) += cno;
+			++(*cnoCount);
 		}
 	}
 
-	return 0;
+	if (s_protocol_version >= NMEA_PROTOCOL_4P10)
+	{
+		uint8_t sigId = nmea4p11_signalId_to_sigId(gnssId, *ptr);	// nmea signal ID
+		ptr = ASCII_find_next_field(ptr);
+		for (int i=0; i<4 && sigIds[i]!=NULL; i++)
+		{	// Retroactivly set sigId satSig list
+			*(sigIds[i]) = sigId;
+		}
+	}
+	
+	// Move past checksum
+	return ptr + 5;
 }

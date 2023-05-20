@@ -103,7 +103,7 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 			if ((s_rx.gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{	// GPS position is valid
 				char buf[512];
-				int n = did_gps_to_nmea_gga(buf, sizeof(buf), s_rx.gps);
+				int n = nmea_gga(buf, sizeof(buf), s_rx.gps);
 				clientStream->Write(buf, n);
 				printf("Sending position to Base: \n%s\n", string(buf,n).c_str());
 			}
