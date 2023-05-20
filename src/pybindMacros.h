@@ -75,7 +75,6 @@ PYBIND11_NUMPY_DTYPE(debug_array_t, i, f, lf);
 PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(imu_mag_t, imu, mag);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
-// PYBIND11_NUMPY_DTYPE(pos_measurement_t, timeOfWeek, ecef, psi, accuracyCovUD);
 // PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps, can_receive_address);
 
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);

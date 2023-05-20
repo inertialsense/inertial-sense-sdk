@@ -905,20 +905,14 @@ enum eSatSvGnssId
 /** GPS Sat Status */
 enum eSatSvStatus
 {
-    SAT_SV_STATUS_QUALITY_NO_SIGNAL                 = 0x0000, 	// no signal
-    SAT_SV_STATUS_QUALITY_SEARCHING                 = 0x0001, 	// searching signal
-    SAT_SV_STATUS_QUALITY_ACQUIRED                  = 0x0002, 	// signal acquired
-    SAT_SV_STATUS_QUALITY_DETECTED                  = 0x0003, 	// signal detected but unusable
-    SAT_SV_STATUS_QUALITY_CODE_TIME_SYNC            = 0x0004, 	// code locked and time synchronized
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC    = 0x0005, 	// code and carrier locked and time synchronized	
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_2  = 0x0006, 	// "
-    SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC_3  = 0x0007, 	// "
-    SAT_SV_STATUS_QUALITY_MASK                      = 0x0007,
-    SAT_SV_STATUS_USED                              = 0x0008,	// Used in the solution
+    SAT_SV_STATUS_SIGNAL_QUALITY_MASK               = 0x0007,   // see eSatSigQuality
+    SAT_SV_STATUS_USED_IN_SOLUTION                  = 0x0008,	// Used in the solution
+    SAT_SV_STATUS_USED_IN_SOLUTION_OFFSET           = 3,
     SAT_SV_STATUS_HEALTH_UNKNOWN                    = 0x0000,	// 0 = unknown
     SAT_SV_STATUS_HEALTH_GOOD                       = 0x0010,	// 1 = healthy
     SAT_SV_STATUS_HEALTH_BAD                        = 0x0020,	// 2 = unhealthy
     SAT_SV_STATUS_HEALTH_MASK                       = 0x0030,
+    SAT_SV_STATUS_HEALTH_OFFSET                     = 4,
 
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_MASK           = 0x0300,	// 1=float, 2=fix
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET         = 8,
@@ -955,25 +949,34 @@ enum eSatSvSigId
     SAT_SV_SIG_ID_GPS_L2CM			= 4,
     SAT_SV_SIG_ID_GPS_L5I			= 6,
     SAT_SV_SIG_ID_GPS_L5Q			= 7,
+    SAT_SV_SIG_ID_GPS_L5            = SAT_SV_SIG_ID_GPS_L5Q,
     SAT_SV_SIG_ID_SBAS_L1CA			= 0,
+    SAT_SV_SIG_ID_SBAS_L2           = 1,
+    SAT_SV_SIG_ID_SBAS_L5           = 2,
     SAT_SV_SIG_ID_Galileo_E1C2		= 0,
     SAT_SV_SIG_ID_Galileo_E1B2		= 1,
+    SAT_SV_SIG_ID_Galileo_E1BC      = SAT_SV_SIG_ID_Galileo_E1B2,
     SAT_SV_SIG_ID_Galileo_E5aI		= 3,
     SAT_SV_SIG_ID_Galileo_E5aQ		= 4,
+    SAT_SV_SIG_ID_Galileo_E5a       = SAT_SV_SIG_ID_Galileo_E5aQ,
     SAT_SV_SIG_ID_Galileo_E5bI		= 5,
     SAT_SV_SIG_ID_Galileo_E5bQ		= 6,
+    SAT_SV_SIG_ID_Galileo_E5        = SAT_SV_SIG_ID_Galileo_E5bQ,
     SAT_SV_SIG_ID_BeiDou_B1D1		= 0,
     SAT_SV_SIG_ID_BeiDou_B1D2		= 1,
     SAT_SV_SIG_ID_BeiDou_B2D1		= 2,
     SAT_SV_SIG_ID_BeiDou_B2D2		= 3,
+    SAT_SV_SIG_ID_BeiDou_B2         = SAT_SV_SIG_ID_BeiDou_B2D1,
     SAT_SV_SIG_ID_BeiDou_B1C		= 5,
     SAT_SV_SIG_ID_BeiDou_B2a		= 7,
     SAT_SV_SIG_ID_QZSS_L1CA			= 0,
     SAT_SV_SIG_ID_QZSS_L1S			= 1,
     SAT_SV_SIG_ID_QZSS_L2CM			= 4,
     SAT_SV_SIG_ID_QZSS_L2CL 		= 5,
+    SAT_SV_SIG_ID_QZSS_L2           = SAT_SV_SIG_ID_QZSS_L2CL,
     SAT_SV_SIG_ID_QZSS_L5I 			= 8,
     SAT_SV_SIG_ID_QZSS_L5Q 			= 9,
+    SAT_SV_SIG_ID_QZSS_L5           = SAT_SV_SIG_ID_QZSS_L5Q,
     SAT_SV_SIG_ID_GLONASS_L1OF		= 0,
     SAT_SV_SIG_ID_GLONASS_L2OF		= 2,
     SAT_SV_SIG_ID_NAVIC_L5A			= 0, 
@@ -986,10 +989,21 @@ enum eSatSigQuality
     SAT_SIG_QUALITY_ACQUIRED                    = 2, 	// signal acquired
     SAT_SIG_QUALITY_DETECTED                    = 3, 	// signal detected but unusable
     SAT_SIG_QUALITY_CODE_LOCK_TIME_SYNC         = 4, 	// code locked and time synchronized
-    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC      = 5, 	// code and carrier locked and time synchronized
+    SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_1    = 5, 	// code and carrier locked and time synchronized
     SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_2    = 6, 	// "
     SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3    = 7, 	// "
 };
+
+enum eSatSigStatus
+{
+    SAT_SIG_STATUS_HEALTH_UNKNOWN                    = 0x0000,	// 0 = unknown
+    SAT_SIG_STATUS_HEALTH_GOOD                       = 0x0001,	// 1 = healthy
+    SAT_SIG_STATUS_HEALTH_BAD                        = 0x0002,	// 2 = unhealthy
+    SAT_SIG_STATUS_HEALTH_MASK                       = 0x0003,
+    SAT_SIG_STATUS_USED_IN_SOLUTION                  = 0x0004,  // Signal is used in the solution
+    SAT_SIG_STATUS_USED_IN_SOLUTION_OFFSET           = 2,
+};
+
 
 /** GPS satellite signal information */
 typedef struct PACKED
@@ -1009,7 +1023,7 @@ typedef struct PACKED
     /** Quality indicator (see eSatSigQuality) */
     uint8_t					quality;
 
-    /** Status flags (see eSigStatus) */
+    /** Status flags (see eSatSigStatus) */
     uint16_t				status;
 
 } gps_sig_sv_t;
@@ -1234,7 +1248,7 @@ typedef struct PACKED
 	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
 	uint32_t				navPeriodMs;
 	
-	/** Actual sample period relative to GPS PPS */
+    /** Actual sample period relative to GPS PPS (sec) */
 	double					sensorTruePeriod;
 
 	/** Reserved */

@@ -55,7 +55,7 @@ void nmea_print_u32(char buf[], int bufSize, int &offset, int precision, uint32_
 		offset += ssnprintf(buf, bufSize, ",%0*u", precision, value);
 	}
 	else
-	{	// Don't print for Zero
+	{	// Print nothing for Zero
 		buf[0] = ',';
 		offset++;
 	}
@@ -386,7 +386,7 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_RMC, tmp.rmc);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_ZDA, tmp.zda);
 	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GSV, tmp.gsv);
+	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, ASCII_RMC_BITS_GSV, tmp.gsv);
 }
 
 
@@ -1152,9 +1152,9 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
 		{
 		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L5Q;
 		case SAT_SV_GNSS_ID_SBS:	return 0;
-		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5bQ;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5;
 		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2a;
-		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L5Q;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L5;
 		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
 		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
 		}
@@ -1165,9 +1165,9 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
 		{
 		case SAT_SV_GNSS_ID_GPS:	return SAT_SV_SIG_ID_GPS_L2CL;
 		case SAT_SV_GNSS_ID_SBS:	return 0;
-		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5aQ;
-		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2D1;
-		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L2CL;
+		case SAT_SV_GNSS_ID_GAL:	return SAT_SV_SIG_ID_Galileo_E5a;
+		case SAT_SV_GNSS_ID_BEI:	return SAT_SV_SIG_ID_BeiDou_B2;
+		case SAT_SV_GNSS_ID_QZS:	return SAT_SV_SIG_ID_QZSS_L2;
 		case SAT_SV_GNSS_ID_GLO:	return SAT_SV_SIG_ID_GLONASS_L2OF;
 		case SAT_SV_GNSS_ID_IRN:	return SAT_SV_SIG_ID_NAVIC_L5A;  // NavIC
 		}
@@ -2240,7 +2240,10 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					dst.elev = elev;
 					dst.azim = azim;
 					dst.cno = cno;
-					dst.status = SAT_SV_STATUS_USED | SAT_SV_STATUS_QUALITY_CODE_CARRIER_TIME_SYNC;
+					dst.status = 
+						SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3 |
+						SAT_SV_STATUS_USED_IN_SOLUTION | 
+						SAT_SV_STATUS_HEALTH_GOOD;
 				}
 				break;
 			}
@@ -2267,7 +2270,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					sigIdPtr++;
 					dst.quality = SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3;
 					dst.cno = cno;
-					dst.status = 0;
+					dst.status = SAT_SIG_STATUS_HEALTH_GOOD | SAT_SIG_STATUS_USED_IN_SOLUTION;
 				}
 				break;
 			}
