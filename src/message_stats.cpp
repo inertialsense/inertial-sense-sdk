@@ -124,7 +124,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 		}
 		break;
 
-	case _PTYPE_ASCII_NMEA:
+	case _PTYPE_NMEA:
 		if (msgStats.nmea.find(id) == msgStats.nmea.end())
 		{	// Create new 
 			msgStats.nmea[id] = createNewMsgStats(timeMs);
@@ -204,7 +204,7 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 
 	if (!msgStats.nmea.empty())
 	{
-		str.append("ASCII: __________________________________\n");
+		str.append("NMEA: __________________________________\n");
 		str.append("  ID   Count  dtMs  Description\n");
 		std::map<int, msg_stats_t>::iterator it;
 		for (it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)

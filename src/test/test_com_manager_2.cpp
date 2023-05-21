@@ -93,7 +93,7 @@ static void disableBcastFnc(CMHANDLE cmHandle, int pHandle)
 
 static int asciiMessageHandler(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength)
 {
-	uint32_t messageIdUInt = ASCII_MESSAGEID_TO_UINT(messageId);
+	uint32_t messageIdUInt = NMEA_MESSAGEID_TO_UINT(messageId);
 
 	// comWrite(ASCII_COM_USART_NUM, line, lineLength); // echo back
 

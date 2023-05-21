@@ -1766,19 +1766,19 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 
 		switch(id)
 		{
-		case NMEA_ASCII_MSG_ID_PIMU:	tmp.pimu    = period; break;
-		case NMEA_ASCII_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
-		case NMEA_ASCII_MSG_ID_PRIMU:	tmp.primu   = period; break;
-		case NMEA_ASCII_MSG_ID_PINS1:	tmp.pins1   = period; break;
-		case NMEA_ASCII_MSG_ID_PINS2:	tmp.pins2   = period; break;
-		case NMEA_ASCII_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
-		case NMEA_ASCII_MSG_ID_GGA:		tmp.gga     = period; break;
-		case NMEA_ASCII_MSG_ID_GLL:		tmp.gll     = period; break;
-		case NMEA_ASCII_MSG_ID_GSA:		tmp.gsa     = period; break;
-		case NMEA_ASCII_MSG_ID_RMC:		tmp.rmc     = period; break;
-		case NMEA_ASCII_MSG_ID_ZDA:		tmp.zda     = period; break;
-		case NMEA_ASCII_MSG_ID_PASHR:	tmp.pashr   = period; break;
-		case NMEA_ASCII_MSG_ID_GSV:		tmp.gsv     = period; break;
+		case NMEA_MSG_ID_PIMU:	tmp.pimu    = period; break;
+		case NMEA_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
+		case NMEA_MSG_ID_PRIMU:	tmp.primu   = period; break;
+		case NMEA_MSG_ID_PINS1:	tmp.pins1   = period; break;
+		case NMEA_MSG_ID_PINS2:	tmp.pins2   = period; break;
+		case NMEA_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
+		case NMEA_MSG_ID_GGA:		tmp.gga     = period; break;
+		case NMEA_MSG_ID_GLL:		tmp.gll     = period; break;
+		case NMEA_MSG_ID_GSA:		tmp.gsa     = period; break;
+		case NMEA_MSG_ID_RMC:		tmp.rmc     = period; break;
+		case NMEA_MSG_ID_ZDA:		tmp.zda     = period; break;
+		case NMEA_MSG_ID_PASHR:	tmp.pashr   = period; break;
+		case NMEA_MSG_ID_GSV:		tmp.gsv     = period; break;
 		default: return 0;
 		}
 	}

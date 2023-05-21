@@ -479,7 +479,7 @@ void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
 				}
 				break;
 				
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				break;
 
 			case _PTYPE_UBLOX:
@@ -693,29 +693,29 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		}
 		break;
 
-	case _PTYPE_ASCII_NMEA:
+	case _PTYPE_NMEA:
 		{
-			uint32_t messageIdUInt = ASCII_MESSAGEID_TO_UINT(&(dataPtr[1]));
+			uint32_t messageIdUInt = NMEA_MESSAGEID_TO_UINT(&(dataPtr[1]));
 			if(comm->dataHdr.size == 10)
 			{	// 4 character commands (i.e. "$STPB*14\r\n")
 				switch (messageIdUInt)
 				{
-				case ASCII_MSG_ID_BLEN: // Enable bootloader (uINS)
+				case NMEA_MSG_UINT_BLEN: // Enable bootloader (uINS)
 					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
 
 					// Disable EVB broadcasts
 					g_ermc.bits = 0;
 					break;
 							
-				case ASCII_MSG_ID_EBLE: // Enable bootloader (EVB)
+				case NMEA_MSG_UINT_EBLE: // Enable bootloader (EVB)
 					// Disable uINS bootloader if host enables EVB bootloader
 					g_uInsBootloaderEnableTimeMs = 0;
 					
 					enable_bootloader(PORT_SEL_USB);
 					break;				
 
-				case ASCII_MSG_ID_STPB:
-				case ASCII_MSG_ID_STPC:	
+				case NMEA_MSG_UINT_STPB:
+				case NMEA_MSG_UINT_STPC:	
 					// Disable EVB communications
 					g_ermc.bits = 0;
 					break;
@@ -723,10 +723,10 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				break;							
 			}
 			else
-			{	// General ASCII							
+			{	// General NMEA							
 				switch (messageIdUInt)
 				{
-				case ASCII_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
+				case NMEA_MSG_UINT_NELB: // SAM bootloader assistant (SAM-BA) enable
 					if (comm->dataHdr.size == 22 &&
 // 									(pHandle == EVB2_PORT_USB) && 
 						strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
@@ -736,7 +736,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 					break;
 					
 				default:
-					// Disable uINS bootloader if host sends larger ASCII sentence
+					// Disable uINS bootloader if host sends larger NMEA sentence
 					g_uInsBootloaderEnableTimeMs = 0;
 					break;
 				}				
@@ -807,7 +807,7 @@ void sendRadio(uint8_t *data, int dataSize, bool sendXbee, bool sendXrad)
 				{
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
-				case _PTYPE_ASCII_NMEA:
+				case _PTYPE_NMEA:
 					if(sendXbee){ comWrite(EVB2_PORT_XBEE, comm.dataPtr, comm.dataHdr.size, LED_XBEE_TXD_PIN); }
 					if(sendXrad){ comWrite(EVB2_PORT_XRADIO, comm.dataPtr, comm.dataHdr.size, 0); }
 					break;

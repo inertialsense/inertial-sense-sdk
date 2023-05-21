@@ -437,7 +437,7 @@ bool InertialSense::UpdateServer()
 				id = comm->dataHdr.id;
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
 					uint8_t *pStart = comm->dataPtr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
@@ -522,7 +522,7 @@ bool InertialSense::UpdateClient()
 				id = comm->dataHdr.id;
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
 					uint8_t *pStart = comm->dataPtr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
@@ -559,7 +559,7 @@ void InertialSense::SetCallbacks(
 	pfnComManagerGenMsgHandler handlerUblox, 
 	pfnComManagerGenMsgHandler handlerRtcm3)
 {
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, ASCII (NMEA), ublox, and RTCM3.
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
 	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
 }
 

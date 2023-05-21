@@ -367,7 +367,7 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 					}
 					break;
 
-				case _PTYPE_ASCII_NMEA:
+				case _PTYPE_NMEA:
 					if (cmInstance->cmMsgHandlerAscii)
 					{
 						error = (uint8_t)cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);

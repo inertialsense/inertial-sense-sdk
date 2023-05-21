@@ -664,8 +664,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 	}
 }
 
-// Convert DID to ASCII message out control mask
-uint32_t didToAsciiRmcBits(uint32_t dataId)
+// Convert DID to NMEA message out control mask
+uint32_t didToNmeaRmcBits(uint32_t dataId)
 {
 	switch (dataId)
 	{

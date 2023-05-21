@@ -1625,38 +1625,38 @@ typedef struct PACKED
 
 enum eNmeaAsciiMsgId
 {
-    NMEA_ASCII_MSG_ID_PIMU      = 0,
-    NMEA_ASCII_MSG_ID_PPIMU     = 1,
-    NMEA_ASCII_MSG_ID_PRIMU     = 2,
-    NMEA_ASCII_MSG_ID_PINS1     = 3,
-    NMEA_ASCII_MSG_ID_PINS2     = 4,
-    NMEA_ASCII_MSG_ID_PGPSP     = 5,
-    NMEA_ASCII_MSG_ID_GGA       = 6,
-    NMEA_ASCII_MSG_ID_GLL       = 7,
-    NMEA_ASCII_MSG_ID_GSA       = 8,
-    NMEA_ASCII_MSG_ID_RMC       = 9,
-    NMEA_ASCII_MSG_ID_ZDA       = 10,
-    NMEA_ASCII_MSG_ID_PASHR     = 11, 
-    NMEA_ASCII_MSG_ID_PSTRB     = 12,
-    NMEA_ASCII_MSG_ID_INFO      = 13,
-    NMEA_ASCII_MSG_ID_GSV       = 14
+    NMEA_MSG_ID_PIMU      = 0,
+    NMEA_MSG_ID_PPIMU     = 1,
+    NMEA_MSG_ID_PRIMU     = 2,
+    NMEA_MSG_ID_PINS1     = 3,
+    NMEA_MSG_ID_PINS2     = 4,
+    NMEA_MSG_ID_PGPSP     = 5,
+    NMEA_MSG_ID_GGA       = 6,
+    NMEA_MSG_ID_GLL       = 7,
+    NMEA_MSG_ID_GSA       = 8,
+    NMEA_MSG_ID_RMC       = 9,
+    NMEA_MSG_ID_ZDA       = 10,
+    NMEA_MSG_ID_PASHR     = 11, 
+    NMEA_MSG_ID_PSTRB     = 12,
+    NMEA_MSG_ID_INFO      = 13,
+    NMEA_MSG_ID_GSV       = 14
 }; 
 
-#define NMEA_RMC_BITS_PIMU    		(1<<NMEA_ASCII_MSG_ID_PIMU)
-#define NMEA_RMC_BITS_PPIMU   		(1<<NMEA_ASCII_MSG_ID_PPIMU)
-#define NMEA_RMC_BITS_PRIMU   		(1<<NMEA_ASCII_MSG_ID_PRIMU)
-#define NMEA_RMC_BITS_PINS1   		(1<<NMEA_ASCII_MSG_ID_PINS1)
-#define NMEA_RMC_BITS_PINS2   		(1<<NMEA_ASCII_MSG_ID_PINS2)
-#define NMEA_RMC_BITS_PGPSP   		(1<<NMEA_ASCII_MSG_ID_PGPSP)
-#define NMEA_RMC_BITS_GGA     		(1<<NMEA_ASCII_MSG_ID_GGA)
-#define NMEA_RMC_BITS_GLL     		(1<<NMEA_ASCII_MSG_ID_GLL)
-#define NMEA_RMC_BITS_GSA     		(1<<NMEA_ASCII_MSG_ID_GSA)
-#define NMEA_RMC_BITS_RMC     		(1<<NMEA_ASCII_MSG_ID_RMC)
-#define NMEA_RMC_BITS_ZDA     		(1<<NMEA_ASCII_MSG_ID_ZDA)
-#define NMEA_RMC_BITS_PASHR   		(1<<NMEA_ASCII_MSG_ID_PASHR)
-#define NMEA_RMC_BITS_PSTRB   		(1<<NMEA_ASCII_MSG_ID_PSTRB)
-#define NMEA_RMC_BITS_INFO    		(1<<NMEA_ASCII_MSG_ID_INFO)
-#define NMEA_RMC_BITS_GSV     		(1<<NMEA_ASCII_MSG_ID_GSV)
+#define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)
+#define NMEA_RMC_BITS_PPIMU   		(1<<NMEA_MSG_ID_PPIMU)
+#define NMEA_RMC_BITS_PRIMU   		(1<<NMEA_MSG_ID_PRIMU)
+#define NMEA_RMC_BITS_PINS1   		(1<<NMEA_MSG_ID_PINS1)
+#define NMEA_RMC_BITS_PINS2   		(1<<NMEA_MSG_ID_PINS2)
+#define NMEA_RMC_BITS_PGPSP   		(1<<NMEA_MSG_ID_PGPSP)
+#define NMEA_RMC_BITS_GGA     		(1<<NMEA_MSG_ID_GGA)
+#define NMEA_RMC_BITS_GLL     		(1<<NMEA_MSG_ID_GLL)
+#define NMEA_RMC_BITS_GSA     		(1<<NMEA_MSG_ID_GSA)
+#define NMEA_RMC_BITS_RMC     		(1<<NMEA_MSG_ID_RMC)
+#define NMEA_RMC_BITS_ZDA     		(1<<NMEA_MSG_ID_ZDA)
+#define NMEA_RMC_BITS_PASHR   		(1<<NMEA_MSG_ID_PASHR)
+#define NMEA_RMC_BITS_PSTRB   		(1<<NMEA_MSG_ID_PSTRB)
+#define NMEA_RMC_BITS_INFO    		(1<<NMEA_MSG_ID_INFO)
+#define NMEA_RMC_BITS_GSV     		(1<<NMEA_MSG_ID_GSV)
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
@@ -1667,7 +1667,7 @@ typedef struct PACKED
     /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
     uint32_t				options;
     
-    /** Used for both the DID binary and ASCII NMEA messages.  */
+    /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
     /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
@@ -4464,7 +4464,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 /** Convert DID to realtime message bits */
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
 
-uint32_t didToAsciiRmcBits(uint32_t dataId);
+uint32_t didToNmeaRmcBits(uint32_t dataId);
 
 
 //Time conversion constants

@@ -74,9 +74,9 @@ TEST(protocol_nmea, nmea_parse_asce)
     char a[ASCII_BUF_LEN] = {};
     int n=0;
 	nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", options);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_ASCII_MSG_ID_PINS2, r.periodMultiple[DID_INS_2]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_ASCII_MSG_ID_PPIMU, r.periodMultiple[DID_PIMU]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_ASCII_MSG_ID_GGA,   r.periodMultiple[DID_GPS1_POS]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.periodMultiple[DID_INS_2]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PPIMU, r.periodMultiple[DID_PIMU]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GGA,   r.periodMultiple[DID_GPS1_POS]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
     rmci_t outRmci[NUM_COM_PORTS] = {};
@@ -1272,7 +1272,7 @@ TEST(protocol_nmea, generate_example_nmea_for_user_manual)
 {
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
-    for (int id=0; id<=NMEA_ASCII_MSG_ID_GSV; id++)
+    for (int id=0; id<=NMEA_MSG_ID_GSV; id++)
     {
         char a[ASCII_BUF_LEN] = {};
         int n=0;
