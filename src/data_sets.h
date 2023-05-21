@@ -1367,22 +1367,22 @@ typedef struct PACKED
 	/** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
 	uint32_t				options;
 
-	/** Broadcast period multiple - NMEA ASCII IMU data. 0 to disable. */
+	/** Broadcast period multiple - NMEA IMU data. 0 to disable. */
 	uint16_t				pimu;
 
-	/** Broadcast period multiple - NMEA ASCII preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
+	/** Broadcast period multiple - NMEA preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
 	uint16_t				ppimu;
 	
-	/** Broadcast period multiple - NMEA ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
+	/** Broadcast period multiple - NMEA INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
 	uint16_t				pins1;
 
-	/** Broadcast period multiple - NMEA ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
+	/** Broadcast period multiple - NMEA INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
 	uint16_t				pins2;
 	
-	/** Broadcast period multiple - NMEA ASCII GPS position data. 0 to disable. */
+	/** Broadcast period multiple - NMEA GPS position data. 0 to disable. */
 	uint16_t				pgpsp;
 
-	/** Broadcast period multiple - NMEA ASCII Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
+	/** Broadcast period multiple - NMEA Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
 	uint16_t				primu;
 
 	/** Broadcast period multiple - NMEA standard GGA GNSS 3D location, fix, and accuracy. 0 to disable. */
@@ -1405,6 +1405,9 @@ typedef struct PACKED
 
 	/** Broadcast period multiple - NMEA standard satelliate information. */
 	uint16_t				gsv;
+
+	/** Reserved */
+	uint16_t				reserved;
 
 } nmea_msgs_t;
 
