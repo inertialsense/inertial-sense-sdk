@@ -2375,7 +2375,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
 	"DID_INS_2",                        // 5
 	"DID_GPS1_UBX_POS",                 // 6
 	"DID_SYS_CMD",                      // 7
-	"DID_ASCII_BCAST_PERIOD",           // 8
+	"DID_NMEA_BCAST_PERIOD",            // 8
 	"DID_RMC",                          // 9
 	"DID_SYS_PARAMS",                   // 10
 	"DID_SYS_SENSORS",                  // 11

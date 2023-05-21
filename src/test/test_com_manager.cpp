@@ -38,7 +38,7 @@ typedef struct
 	{
 		dev_info_t			devInfo;
 		nvm_flash_cfg_t		nvmFlashCfg;
-		ascii_msgs_t		asciiMsgs;
+		nmea_msgs_t		nmeaMsgs;
 	}						msgs = { 0 };
 
 	// Used to simulate serial ports
@@ -118,7 +118,7 @@ int msgHandlerAscii(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 		switch (messageIdUInt)
 		{
 		case ASCII_MSG_ID_ASCB:	// query ASCII message broadcast rates
-		// 		writeAsciiBcastPeriod(cmHandle, pHandle, NULLPTR);
+		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
 			break;
 
 		case ASCII_MSG_ID_STPB: // stop all broadcasts on all ports

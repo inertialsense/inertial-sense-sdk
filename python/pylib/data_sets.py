@@ -11,7 +11,7 @@ DID_INS_1                       = 4
 DID_INS_2                       = 5
 DID_GPS1_UBX_POS                = 6
 DID_CONFIG                      = 7
-DID_ASCII_BCAST_PERIOD          = 8
+DID_NMEA_BCAST_PERIOD           = 8
 DID_RMC                         = 9
 DID_SYS_PARAMS                  = 10
 DID_SYS_SENSORS                 = 11
@@ -114,7 +114,7 @@ did_name_lookup = {
  DID_INS_2 : "ins2",
  DID_GPS1_UBX_POS : "gps1UbxPos",
  DID_CONFIG : "config",
- DID_ASCII_BCAST_PERIOD : "asciiBcastPeriod",
+ DID_NMEA_BCAST_PERIOD : "nmeaBcastPeriod",
  DID_RMC : "rmc",
  DID_SYS_PARAMS : "sysParams",
  DID_SYS_SENSORS : "sysSensors",

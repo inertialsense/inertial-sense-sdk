@@ -164,7 +164,6 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 // 	comManagerRegisterInstance(&(cm2->cm), DID_NVR_USERPAGE_G1, 0, 0, g_nvmU1, 0, sizeof(nvm_group_1_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_FLASH_CONFIG, 0, 0, &g_nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_RTOS_INFO, 0, 0, &g_rtos, 0, sizeof(rtos_info_t), 0);
-	// comManagerRegisterInstance(&(cm2->cm), DID_ASCII_BCAST_PERIOD, 0, 0, &g_asciiPeriod, &g_asciiPeriod, sizeof(ascii_msgs_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_SYS_CMD, 0, 0, &g_sysCmd, &g_sysCmd, sizeof(system_command_t), 0);
 	comManagerRegisterInstance(&(cm2->cm), DID_DEBUG_ARRAY, 0, 0, &g_debug, &g_debug, sizeof(debug_array_t), 0);
 // 	comManagerRegisterInstance(&(cm2->cm), DID_FEATURE_BITS, 0, 0, 0, 0, sizeof(feature_bits_t), 0);

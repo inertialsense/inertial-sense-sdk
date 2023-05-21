@@ -481,14 +481,14 @@ void InertialSenseROS::start_log()
 
 void InertialSenseROS::configure_ascii_output()
 {
-    //  ascii_msgs_t msgs = {};
+    //  nmea_msgs_t msgs = {};
     //  msgs.options = (NMEA_message_ports & NMEA_SER0) ? RMC_OPTIONS_PORT_SER0 : 0; // output on serial 0
     //  msgs.options |= (NMEA_message_ports & NMEA_SER1) ? RMC_OPTIONS_PORT_SER1 : 0; // output on serial 1
     //  msgs.gpgga = (NMEA_message_configuration & NMEA_GPGGA) ? NMEA_rate : 0;
     //  msgs.gpgll = (NMEA_message_configuration & NMEA_GPGLL) ? NMEA_rate : 0;
     //  msgs.gpgsa = (NMEA_message_configuration & NMEA_GPGSA) ? NMEA_rate : 0;
     //  msgs.gprmc = (NMEA_message_configuration & NMEA_GPRMC) ? NMEA_rate : 0;
-    //  IS_.SendData(DID_ASCII_BCAST_PERIOD, (uint8_t*)(&msgs), sizeof(ascii_msgs_t), 0);
+    //  IS_.SendData(DID_NMEA_BCAST_PERIOD, (uint8_t*)(&msgs), sizeof(nmea_msgs_t), 0);
 }
 
 /**
