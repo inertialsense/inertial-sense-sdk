@@ -1673,21 +1673,21 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_GSV       = 14
 }; 
 
-#define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)
-#define NMEA_RMC_BITS_PPIMU   		(1<<NMEA_MSG_ID_PPIMU)
-#define NMEA_RMC_BITS_PRIMU   		(1<<NMEA_MSG_ID_PRIMU)
-#define NMEA_RMC_BITS_PINS1   		(1<<NMEA_MSG_ID_PINS1)
-#define NMEA_RMC_BITS_PINS2   		(1<<NMEA_MSG_ID_PINS2)
-#define NMEA_RMC_BITS_PGPSP   		(1<<NMEA_MSG_ID_PGPSP)
-#define NMEA_RMC_BITS_GGA     		(1<<NMEA_MSG_ID_GGA)
-#define NMEA_RMC_BITS_GLL     		(1<<NMEA_MSG_ID_GLL)
-#define NMEA_RMC_BITS_GSA     		(1<<NMEA_MSG_ID_GSA)
-#define NMEA_RMC_BITS_RMC     		(1<<NMEA_MSG_ID_RMC)
-#define NMEA_RMC_BITS_ZDA     		(1<<NMEA_MSG_ID_ZDA)
-#define NMEA_RMC_BITS_PASHR   		(1<<NMEA_MSG_ID_PASHR)
-#define NMEA_RMC_BITS_PSTRB   		(1<<NMEA_MSG_ID_PSTRB)
-#define NMEA_RMC_BITS_INFO    		(1<<NMEA_MSG_ID_INFO)
-#define NMEA_RMC_BITS_GSV     		(1<<NMEA_MSG_ID_GSV)
+#define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
+#define NMEA_RMC_BITS_PPIMU         (1<<NMEA_MSG_ID_PPIMU)
+#define NMEA_RMC_BITS_PRIMU         (1<<NMEA_MSG_ID_PRIMU)
+#define NMEA_RMC_BITS_PINS1         (1<<NMEA_MSG_ID_PINS1)
+#define NMEA_RMC_BITS_PINS2         (1<<NMEA_MSG_ID_PINS2)
+#define NMEA_RMC_BITS_PGPSP         (1<<NMEA_MSG_ID_PGPSP)
+#define NMEA_RMC_BITS_GGA           (1<<NMEA_MSG_ID_GGA)
+#define NMEA_RMC_BITS_GLL           (1<<NMEA_MSG_ID_GLL)
+#define NMEA_RMC_BITS_GSA           (1<<NMEA_MSG_ID_GSA)
+#define NMEA_RMC_BITS_RMC           (1<<NMEA_MSG_ID_RMC)
+#define NMEA_RMC_BITS_ZDA           (1<<NMEA_MSG_ID_ZDA)
+#define NMEA_RMC_BITS_PASHR         (1<<NMEA_MSG_ID_PASHR)
+#define NMEA_RMC_BITS_PSTRB         (1<<NMEA_MSG_ID_PSTRB)
+#define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
+#define NMEA_RMC_BITS_GSV           (1<<NMEA_MSG_ID_GSV)
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
