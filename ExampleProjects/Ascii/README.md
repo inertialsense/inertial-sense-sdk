@@ -1,6 +1,6 @@
 # SDK: ASCII Communications Example Project
 
-This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Ascii) project demonstrates ASCII NMEA communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.  See the [ASCII protocol](../protocol_ascii) section for details on the ASCII packet structures. 
+This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Ascii) project demonstrates NMEA communications with the <a href="https://inertialsense.com">InertialSense</a> products (uINS, uAHRS, and uIMU) using the Inertial Sense SDK.  See the [ASCII protocol](../protocol_ascii) section for details on the ASCII packet structures. 
 
 ## Files
 

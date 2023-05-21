@@ -6,27 +6,27 @@
 
 enum eNmeaMsgIdUint
 {
-	ASCII_MSG_ID_ASCB = 0x41534342,		// ASCII messages broadcast periods
-	ASCII_MSG_ID_ASCE = 0x41534345,		// ASCII messages broadcast enable
-	ASCII_MSG_ID_STPB = 0x53545042,		// Stop broadcasts on all ports
-	ASCII_MSG_ID_STPC = 0x53545043,		// Stop broadcasts on current port
-	ASCII_MSG_ID_BLEN = 0x424c454e,		// Enable bootloader on uINS
-	ASCII_MSG_ID_SRST = 0x53525354,		// Software reset
-	ASCII_MSG_ID_INFO = 0x494e464f,		// Device info
-	ASCII_MSG_ID_PERS = 0x50455253,		// Save perstent messages
+	NMEA_MSG_UINT_ASCB = 0x41534342,		// "ASCB" - NMEA messages broadcast periods
+	NMEA_MSG_UINT_ASCE = 0x41534345,		// "ASCE" - NMEA messages broadcast enable
+	NMEA_MSG_UINT_STPB = 0x53545042,		// "STPB" - Stop broadcasts on all ports
+	NMEA_MSG_UINT_STPC = 0x53545043,		// "STPC" - Stop broadcasts on current port
+	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on uINS
+	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
+	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
+	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
 
-	ASCII_MSG_ID_PIMU = 0x50494d55,		// $PIMUx
-	ASCII_MSG_ID_PPIM = 0x5050494d,		// $PPIMx
-	ASCII_MSG_ID_PRIM = 0x5052494d,		// $PRIMx
-	ASCII_MSG_ID_PINS = 0x50494e53,		// $PINSx
-	ASCII_MSG_ID_PGPS = 0x50475053,		// $PGPSx
-	ASCII_MSG_ID_PASH = 0x50415348,		// $PASHx
+	NMEA_MSG_UINT_PIMU = 0x50494d55,		// "PIMU"
+	NMEA_MSG_UINT_PPIM = 0x5050494d,		// "PPIM"
+	NMEA_MSG_UINT_PRIM = 0x5052494d,		// "PRIM"
+	NMEA_MSG_UINT_PINS = 0x50494e53,		// "PINS"
+	NMEA_MSG_UINT_PGPS = 0x50475053,		// "PGPS"
+	NMEA_MSG_UINT_PASH = 0x50415348,		// "PASH"
 	
-	ASCII_MSG_ID_GGA = 0x4747412c,		// $xxGGA
-	ASCII_MSG_ID_GLL = 0x474c4c2c,		// $xxGLL
-	ASCII_MSG_ID_GSA = 0x4753412c,		// $xxGSA
-	ASCII_MSG_ID_RMC = 0x524d432c, 		// $xxRMC
-	ASCII_MSG_ID_ZDA = 0x5a44412c, 		// $xxZDA
+	NMEA_MSG_UINT_GGA = 0x4747412c,			// "GGA,"
+	NMEA_MSG_UINT_GLL = 0x474c4c2c,			// "GLL,"
+	NMEA_MSG_UINT_GSA = 0x4753412c,			// "GSA,"
+	NMEA_MSG_UINT_RMC = 0x524d432c, 		// "RMC,"
+	NMEA_MSG_UINT_ZDA = 0x5a44412c, 		// "ZDA,"
 };
 
 enum eNmeaProtocolVersion
@@ -52,7 +52,7 @@ char *ASCII_to_vec4f(float vec[], char *ptr);
 char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
-void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp);
+void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp);
 
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA

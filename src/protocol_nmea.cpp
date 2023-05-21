@@ -352,9 +352,9 @@ double timeToGpst(gtime_t t, int *week)
 #define SET_ASCII_RMCI(did, ascii_rmc_bits, period) { \
 	rmci.periodMultiple[did] = (uint8_t)(period); \
 	if (period) { \
-		rmci.bitsAscii |=  (ascii_rmc_bits); \
+		rmci.bitsNmea |=  (ascii_rmc_bits); \
 	} else { \
-		rmci.bitsAscii &= ~(ascii_rmc_bits); \
+		rmci.bitsNmea &= ~(ascii_rmc_bits); \
 	} \
 }
 
@@ -365,28 +365,28 @@ double timeToGpst(gtime_t t, int *week)
 		} else { \
 			rmci.periodMultiple[did] = (uint8_t)(period); \
 		} \
-		rmci.bitsAscii |=  (ascii_rmc_bits); \
+		rmci.bitsNmea |=  (ascii_rmc_bits); \
 	} else { \
-		rmci.bitsAscii &= ~(ascii_rmc_bits); \
+		rmci.bitsNmea &= ~(ascii_rmc_bits); \
 	} \
 }
 
-void nmea_set_rmc_period_multiple(rmci_t &rmci, ascii_msgs_t tmp)
+void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 {
-	SET_ASCII_RMCI(DID_IMU, ASCII_RMC_BITS_PIMU, tmp.pimu);
-	SET_ASCII_RMCI(DID_PIMU, ASCII_RMC_BITS_PPIMU, tmp.ppimu);
-	SET_ASCII_RMCI(DID_IMU_RAW, ASCII_RMC_BITS_PRIMU, tmp.primu);
-	SET_ASCII_RMCI(DID_INS_1, ASCII_RMC_BITS_PINS1, tmp.pins1);
-	SET_ASCII_RMCI(DID_INS_2, ASCII_RMC_BITS_PINS2, tmp.pins2);
+	SET_ASCII_RMCI(DID_IMU, NMEA_RMC_BITS_PIMU, tmp.pimu);
+	SET_ASCII_RMCI(DID_PIMU, NMEA_RMC_BITS_PPIMU, tmp.ppimu);
+	SET_ASCII_RMCI(DID_IMU_RAW, NMEA_RMC_BITS_PRIMU, tmp.primu);
+	SET_ASCII_RMCI(DID_INS_1, NMEA_RMC_BITS_PINS1, tmp.pins1);
+	SET_ASCII_RMCI(DID_INS_2, NMEA_RMC_BITS_PINS2, tmp.pins2);
 
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PGPSP, tmp.pgpsp);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GGA, tmp.gga);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GLL, tmp.gll);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_GSA, tmp.gsa);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_RMC, tmp.rmc);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_ZDA, tmp.zda);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, ASCII_RMC_BITS_PASHR, tmp.pashr);
-	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, ASCII_RMC_BITS_GSV, tmp.gsv);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_PGPSP, tmp.pgpsp);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GGA, tmp.gga);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GLL, tmp.gll);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GSA, tmp.gsa);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_RMC, tmp.rmc);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_ZDA, tmp.zda);
+	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_PASHR, tmp.pashr);
+	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, NMEA_RMC_BITS_GSV, tmp.gsv);
 }
 
 
@@ -1688,7 +1688,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 		return 0;
 	}
 	
-	ascii_msgs_t tmp {};
+	nmea_msgs_t tmp {};
 	uint32_t options = 0;	
 	char *ptr = (char *)&msg[6];				// $ASCB
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }		
@@ -1749,7 +1749,7 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	}
 	char *ptr = (char *)&msg[6];				// $ASCB
 	
-	ascii_msgs_t tmp {};
+	nmea_msgs_t tmp {};
 	uint32_t options = 0;
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
 	ptr = ASCII_to_u32(&options, ptr);
@@ -1766,19 +1766,19 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 
 		switch(id)
 		{
-		case NMEA_ASCII_MSG_ID_PIMU:	tmp.pimu    = period; break;
-		case NMEA_ASCII_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
-		case NMEA_ASCII_MSG_ID_PRIMU:	tmp.primu   = period; break;
-		case NMEA_ASCII_MSG_ID_PINS1:	tmp.pins1   = period; break;
-		case NMEA_ASCII_MSG_ID_PINS2:	tmp.pins2   = period; break;
-		case NMEA_ASCII_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
-		case NMEA_ASCII_MSG_ID_GGA:		tmp.gga     = period; break;
-		case NMEA_ASCII_MSG_ID_GLL:		tmp.gll     = period; break;
-		case NMEA_ASCII_MSG_ID_GSA:		tmp.gsa     = period; break;
-		case NMEA_ASCII_MSG_ID_RMC:		tmp.rmc     = period; break;
-		case NMEA_ASCII_MSG_ID_ZDA:		tmp.zda     = period; break;
-		case NMEA_ASCII_MSG_ID_PASHR:	tmp.pashr   = period; break;
-		case NMEA_ASCII_MSG_ID_GSV:		tmp.gsv     = period; break;
+		case NMEA_MSG_ID_PIMU:	tmp.pimu    = period; break;
+		case NMEA_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
+		case NMEA_MSG_ID_PRIMU:	tmp.primu   = period; break;
+		case NMEA_MSG_ID_PINS1:	tmp.pins1   = period; break;
+		case NMEA_MSG_ID_PINS2:	tmp.pins2   = period; break;
+		case NMEA_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
+		case NMEA_MSG_ID_GGA:		tmp.gga     = period; break;
+		case NMEA_MSG_ID_GLL:		tmp.gll     = period; break;
+		case NMEA_MSG_ID_GSA:		tmp.gsa     = period; break;
+		case NMEA_MSG_ID_RMC:		tmp.rmc     = period; break;
+		case NMEA_MSG_ID_ZDA:		tmp.zda     = period; break;
+		case NMEA_MSG_ID_PASHR:	tmp.pashr   = period; break;
+		case NMEA_MSG_ID_GSV:		tmp.gsv     = period; break;
 		default: return 0;
 		}
 	}

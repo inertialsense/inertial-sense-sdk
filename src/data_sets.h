@@ -39,7 +39,7 @@ typedef uint32_t eDataIDs;
 #define DID_INS_2                       (eDataIDs)5  /** (ins_2_t) INS output: quaternion rotation w/ respect to NED, ellipsoid altitude */
 #define DID_GPS1_RCVR_POS               (eDataIDs)6  /** (gps_pos_t) GPS 1 position data from GNSS receiver. */
 #define DID_SYS_CMD                     (eDataIDs)7  /** (system_command_t) System commands. Both the command and invCommand fields must be set at the same time for a command to take effect. */
-#define DID_ASCII_BCAST_PERIOD          (eDataIDs)8  /** (ascii_msgs_t) Broadcast period for ASCII messages */
+#define DID_NMEA_BCAST_PERIOD           (eDataIDs)8  /** (nmea_msgs_t) Set broadcast periods for NMEA messages */
 #define DID_RMC                         (eDataIDs)9  /** (rmc_t) Realtime Message Controller (RMC). The data sets available through RMC are driven by the availability of the data. The RMC provides updates from various data sources (i.e. sensors) as soon as possible with minimal latency. Several of the data sources (sensors) output data at different data rates that do not all correspond. The RMC is provided so that broadcast of sensor data is done as soon as it becomes available. All RMC messages can be enabled using the standard Get Data packet format. */
 #define DID_SYS_PARAMS                  (eDataIDs)10 /** (sys_params_t) System parameters / info */
 #define DID_SYS_SENSORS                 (eDataIDs)11 /** (sys_sensors_t) System sensor information */
@@ -1392,52 +1392,55 @@ enum eSerialPortBridge
     SERIAL_PORT_BRIDGE_SER2_TO_SER1     = 17,
 };
 
-/** (DID_ASCII_BCAST_PERIOD) ASCII broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
+/** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
     /** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
     uint32_t				options;
 
-    /** Broadcast period multiple - ASCII IMU data. 0 to disable. */
-    uint16_t				pimu;
+	/** Broadcast period multiple - NMEA IMU data. 0 to disable. */
+	uint16_t				pimu;
 
-    /** Broadcast period multiple - ASCII preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
-    uint16_t				ppimu;
-    
-    /** Broadcast period multiple - ASCII INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
-    uint16_t				pins1;
+	/** Broadcast period multiple - NMEA preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
+	uint16_t				ppimu;
+	
+	/** Broadcast period multiple - NMEA INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
+	uint16_t				pins1;
 
-    /** Broadcast period multiple - ASCII INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
-    uint16_t				pins2;
-    
-    /** Broadcast period multiple - ASCII GPS position data. 0 to disable. */
-    uint16_t				pgpsp;
+	/** Broadcast period multiple - NMEA INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
+	uint16_t				pins2;
+	
+	/** Broadcast period multiple - NMEA GPS position data. 0 to disable. */
+	uint16_t				pgpsp;
 
-    /** Broadcast period multiple - ASCII Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
-    uint16_t				primu;
+	/** Broadcast period multiple - NMEA Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
+	uint16_t				primu;
 
-	/** Broadcast period multiple - ASCII NMEA GGA GNSS 3D location, fix, and accuracy. 0 to disable. */
+	/** Broadcast period multiple - NMEA standard GGA GNSS 3D location, fix, and accuracy. 0 to disable. */
 	uint16_t				gga;
 
-	/** Broadcast period multiple - ASCII NMEA GLL GNSS 2D location and time. 0 to disable. */
+	/** Broadcast period multiple - NMEA standard GLL GNSS 2D location and time. 0 to disable. */
 	uint16_t				gll;
 
-	/** Broadcast period multiple - ASCII NMEA GSA GNSS DOP and active satellites. 0 to disable. */
+	/** Broadcast period multiple - NMEA standard GSA GNSS DOP and active satellites. 0 to disable. */
 	uint16_t				gsa;
 
-	/** Broadcast period multiple - ASCII NMEA recommended minimum specific GPS/Transit data. 0 to disable. */
+	/** Broadcast period multiple - NMEA standard recommended minimum specific GPS/Transit data. 0 to disable. */
 	uint16_t				rmc;
 	
-	/** Broadcast period multiple - ASCII NMEA Data and Time. 0 to disable. */
+	/** Broadcast period multiple - NMEA standard Data and Time. 0 to disable. */
 	uint16_t				zda;
 
-	/** Broadcast period multiple - ASCII NMEA Inertial Attitude Data. 0 to disable. */
+	/** Broadcast period multiple - NMEA standard Inertial Attitude Data. 0 to disable. */
 	uint16_t				pashr;
 
-	/** Broadcast period multiple - ASCII NMEA satelliate information. */
+	/** Broadcast period multiple - NMEA standard satelliate information. */
 	uint16_t				gsv;
 
-} ascii_msgs_t;
+	/** Reserved */
+	uint16_t				reserved;
+
+} nmea_msgs_t;
 
 typedef struct PACKED
 {
@@ -1653,38 +1656,38 @@ typedef struct PACKED
 
 enum eNmeaAsciiMsgId
 {
-    NMEA_ASCII_MSG_ID_PIMU      = 0,
-    NMEA_ASCII_MSG_ID_PPIMU     = 1,
-    NMEA_ASCII_MSG_ID_PRIMU     = 2,
-    NMEA_ASCII_MSG_ID_PINS1     = 3,
-    NMEA_ASCII_MSG_ID_PINS2     = 4,
-    NMEA_ASCII_MSG_ID_PGPSP     = 5,
-    NMEA_ASCII_MSG_ID_GGA       = 6,
-    NMEA_ASCII_MSG_ID_GLL       = 7,
-    NMEA_ASCII_MSG_ID_GSA       = 8,
-    NMEA_ASCII_MSG_ID_RMC       = 9,
-    NMEA_ASCII_MSG_ID_ZDA       = 10,
-    NMEA_ASCII_MSG_ID_PASHR     = 11, 
-    NMEA_ASCII_MSG_ID_PSTRB     = 12,
-    NMEA_ASCII_MSG_ID_INFO      = 13,
-    NMEA_ASCII_MSG_ID_GSV       = 14
+    NMEA_MSG_ID_PIMU      = 0,
+    NMEA_MSG_ID_PPIMU     = 1,
+    NMEA_MSG_ID_PRIMU     = 2,
+    NMEA_MSG_ID_PINS1     = 3,
+    NMEA_MSG_ID_PINS2     = 4,
+    NMEA_MSG_ID_PGPSP     = 5,
+    NMEA_MSG_ID_GGA       = 6,
+    NMEA_MSG_ID_GLL       = 7,
+    NMEA_MSG_ID_GSA       = 8,
+    NMEA_MSG_ID_RMC       = 9,
+    NMEA_MSG_ID_ZDA       = 10,
+    NMEA_MSG_ID_PASHR     = 11, 
+    NMEA_MSG_ID_PSTRB     = 12,
+    NMEA_MSG_ID_INFO      = 13,
+    NMEA_MSG_ID_GSV       = 14
 }; 
 
-#define ASCII_RMC_BITS_PIMU    		(1<<NMEA_ASCII_MSG_ID_PIMU)
-#define ASCII_RMC_BITS_PPIMU   		(1<<NMEA_ASCII_MSG_ID_PPIMU)
-#define ASCII_RMC_BITS_PRIMU   		(1<<NMEA_ASCII_MSG_ID_PRIMU)
-#define ASCII_RMC_BITS_PINS1   		(1<<NMEA_ASCII_MSG_ID_PINS1)
-#define ASCII_RMC_BITS_PINS2   		(1<<NMEA_ASCII_MSG_ID_PINS2)
-#define ASCII_RMC_BITS_PGPSP   		(1<<NMEA_ASCII_MSG_ID_PGPSP)
-#define ASCII_RMC_BITS_GGA     		(1<<NMEA_ASCII_MSG_ID_GGA)
-#define ASCII_RMC_BITS_GLL     		(1<<NMEA_ASCII_MSG_ID_GLL)
-#define ASCII_RMC_BITS_GSA     		(1<<NMEA_ASCII_MSG_ID_GSA)
-#define ASCII_RMC_BITS_RMC     		(1<<NMEA_ASCII_MSG_ID_RMC)
-#define ASCII_RMC_BITS_ZDA     		(1<<NMEA_ASCII_MSG_ID_ZDA)
-#define ASCII_RMC_BITS_PASHR   		(1<<NMEA_ASCII_MSG_ID_PASHR)
-#define ASCII_RMC_BITS_PSTRB   		(1<<NMEA_ASCII_MSG_ID_PSTRB)
-#define ASCII_RMC_BITS_INFO    		(1<<NMEA_ASCII_MSG_ID_INFO)
-#define ASCII_RMC_BITS_GSV     		(1<<NMEA_ASCII_MSG_ID_GSV)
+#define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)
+#define NMEA_RMC_BITS_PPIMU   		(1<<NMEA_MSG_ID_PPIMU)
+#define NMEA_RMC_BITS_PRIMU   		(1<<NMEA_MSG_ID_PRIMU)
+#define NMEA_RMC_BITS_PINS1   		(1<<NMEA_MSG_ID_PINS1)
+#define NMEA_RMC_BITS_PINS2   		(1<<NMEA_MSG_ID_PINS2)
+#define NMEA_RMC_BITS_PGPSP   		(1<<NMEA_MSG_ID_PGPSP)
+#define NMEA_RMC_BITS_GGA     		(1<<NMEA_MSG_ID_GGA)
+#define NMEA_RMC_BITS_GLL     		(1<<NMEA_MSG_ID_GLL)
+#define NMEA_RMC_BITS_GSA     		(1<<NMEA_MSG_ID_GSA)
+#define NMEA_RMC_BITS_RMC     		(1<<NMEA_MSG_ID_RMC)
+#define NMEA_RMC_BITS_ZDA     		(1<<NMEA_MSG_ID_ZDA)
+#define NMEA_RMC_BITS_PASHR   		(1<<NMEA_MSG_ID_PASHR)
+#define NMEA_RMC_BITS_PSTRB   		(1<<NMEA_MSG_ID_PSTRB)
+#define NMEA_RMC_BITS_INFO    		(1<<NMEA_MSG_ID_INFO)
+#define NMEA_RMC_BITS_GSV     		(1<<NMEA_MSG_ID_GSV)
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
@@ -1695,11 +1698,11 @@ typedef struct PACKED
     /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
     uint32_t				options;
     
-    /** Used for both the DID binary and ASCII NMEA messages.  */
+    /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
-    /** ASCII NMEA data stream enable bits for the specified ports.  (see ASCII_RMC_BITS_...) */
-    uint32_t                bitsAscii;
+    /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
+    uint32_t                bitsNmea;
 
 } rmci_t;
 
@@ -4557,7 +4560,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 /** Convert DID to realtime message bits */
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
 
-uint32_t didToAsciiRmcBits(uint32_t dataId);
+uint32_t didToNmeaRmcBits(uint32_t dataId);
 
 
 //Time conversion constants

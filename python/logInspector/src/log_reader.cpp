@@ -136,7 +136,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_INS_2, dev_log_->ins2 );
         HANDLE_MSG( DID_GPS1_RCVR_POS, dev_log_->gps1UbxPos );
         HANDLE_MSG( DID_SYS_CMD, dev_log_->sysCmd );
-        // HANDLE_MSG( DID_ASCII_BCAST_PERIOD, dev_log_->asciiBcastPeriod );
+        // HANDLE_MSG( DID_NMEA_BCAST_PERIOD, dev_log_->nmeaBcastPeriod );
         // HANDLE_MSG( DID_RMC, dev_log_->rmc );
         HANDLE_MSG( DID_SYS_PARAMS, dev_log_->sysParams );
         HANDLE_MSG( DID_SYS_SENSORS, dev_log_->sysSensors );
@@ -229,7 +229,7 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_INS_2, dev_log_->ins2, device_id );
     forward_message( DID_GPS1_RCVR_POS, dev_log_->gps1UbxPos, device_id );
     forward_message( DID_SYS_CMD, dev_log_->sysCmd, device_id );
-    // forward_message( DID_ASCII_BCAST_PERIOD, dev_log_->asciiBcastPeriod, device_id );
+    // forward_message( DID_NMEA_BCAST_PERIOD, dev_log_->nmeaBcastPeriod, device_id );
     // forward_message( DID_RMC, dev_log_->rmc, device_id );
     forward_message( DID_SYS_PARAMS, dev_log_->sysParams, device_id );
     forward_message( DID_SYS_SENSORS, dev_log_->sysSensors, device_id );
