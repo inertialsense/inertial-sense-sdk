@@ -654,7 +654,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 	{	// Send to all
 		for (size_t port = 0; port < m_comManagerState.devices.size(); port++)
 		{
-			SetSysCmd(command, port);
+			SetSysCmd(command, (int)port);
 		}
 	}
 	else

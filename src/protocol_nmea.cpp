@@ -2236,7 +2236,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					gpsSat->numSats++;
 					
 					dst.gnssId = gnssId;
-					dst.svId = svId;
+					dst.svId = (uint8_t)svId;
 					dst.elev = elev;
 					dst.azim = azim;
 					dst.cno = cno;
@@ -2264,7 +2264,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					gpsSig->numSigs++;
 					
 					dst.gnssId = gnssId;
-					dst.svId = svId;
+					dst.svId = (uint8_t)svId;
 					dst.sigId = sigId;	// Gets set at function end if using protocol > NMEA 4.1
 					*sigIdPtr = &(dst.sigId);
 					sigIdPtr++;
