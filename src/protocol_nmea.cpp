@@ -694,7 +694,8 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	     *iD          checksum data
 	*/
 
-	int n = ssnprintf(a, aSize, "$GPGLL");
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "GLL");
 	nmea_latToDegMin(a, aSize, n, pos.lla[0]);			// 1,2
 	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);			// 3,4
 	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
@@ -739,7 +740,9 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 		17   = VDOP
 	*/
 
-	int n = ssnprintf(a, aSize, "$GPGSA"
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "GSA");
+	int n = ssnprintf(a, aSize,
 		",A"		// 1
 		",%02u",	// 2
 		(unsigned int)fixQuality);	// 1,2
@@ -774,7 +777,8 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
 	quatConjRot(vel_ned_, qe2n, vel.vel);
 
-	int n = ssnprintf(a, aSize, "$GPRMC");
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "RMC");
 	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1 - UTC time of last fix
 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
 	{
@@ -822,7 +826,8 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 		*CC       checksum
 	*/
 
-	int n = ssnprintf(a, aSize, "$GPZDA");
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "ZDA");
 	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);			// 1 
 	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
 	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
@@ -849,7 +854,7 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 	*/
 	
 	int n = ssnprintf(a, aSize, "$PASHR");															// 1 - Name
-	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);		// 2 - UTC Time
+	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);				// 2 - UTC Time
 
 	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));										// 3 - Heading value in decimal degrees.
 	nmea_sprint(a, aSize, n, ",T");																	// 4 - T (heading respect to True North)
