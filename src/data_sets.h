@@ -1045,6 +1045,7 @@ typedef struct PACKED
 	gps_sig_sv_t			sig[MAX_NUM_SAT_SIGNALS];	
 } gps_sig_t;
 
+typedef uint8_t         gps_extension_ver_t[30]
 #define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */
 typedef struct PACKED
@@ -1052,9 +1053,9 @@ typedef struct PACKED
     /** Software version */
 	uint8_t                 swVersion[30];
     /** Hardware version */
-	uint8_t                 hwVersion[10];		
-    /** Extension */
-	uint8_t                 extension[GPS_VER_NUM_EXTENSIONS][30];		
+    uint8_t                 hwVersion[10];		
+    /** Extension 30 bytes array description  */
+	gps_extension_ver_t     extension[GPS_VER_NUM_EXTENSIONS];		
 } gps_version_t;
 
 // (DID_INL2_STATES) INL2 - INS Extended Kalman Filter (EKF) states
