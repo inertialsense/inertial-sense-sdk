@@ -1045,7 +1045,7 @@ typedef struct PACKED
 	gps_sig_sv_t			sig[MAX_NUM_SAT_SIGNALS];	
 } gps_sig_t;
 
-typedef uint8_t         gps_extension_ver_t[30]
+typedef uint8_t         gps_extension_ver_t[30];
 #define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */
 typedef struct PACKED
