@@ -1238,7 +1238,7 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 		aSize -= n;
 	} 
 
-	return a - bufStart;
+	return (int)(a - bufStart);
 }
 
 
