@@ -1284,3 +1284,23 @@ TEST(protocol_nmea, generate_example_nmea_for_user_manual)
     }
 }
 #endif
+
+
+#if 0   // Uncomment to generate example NMEA strings for select customer. 
+TEST(protocol_nmea, generate_example_nmea_for_customer)
+{
+    uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
+
+    char a[ASCII_BUF_LEN] = {};
+    int n=0;
+    nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", 0);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GGA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GLL, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GSA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_ZDA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GSV, 1);
+    nmea_sprint_footer(a, ASCII_BUF_LEN, n);
+    a[n] = 0;
+    printf("%s", a);
+}
+#endif

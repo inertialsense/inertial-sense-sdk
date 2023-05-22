@@ -742,7 +742,7 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "GSA");
-	int n = ssnprintf(a, aSize,
+	nmea_sprint(a, aSize, n,
 		",A"		// 1
 		",%02u",	// 2
 		(unsigned int)fixQuality);	// 1,2
