@@ -276,7 +276,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		offsetsIns2,			//  5: DID_INS_2
 		offsetsGps,				//  6: DID_GPS1_POS
         0,  					//  7: DID_SYS_CMD
-		0,						//  8: DID_ASCII_BCAST_PERIOD
+		0,						//  8: DID_NMEA_BCAST_PERIOD
 		offsetsRmc,				//  9: DID_RMC
 		offsetsSysParams,		// 10: DID_SYS_PARAMS
 		offsetsOnlyTimeFirst,	// 11: DID_SYS_SENSORS
@@ -466,7 +466,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						//  5: DID_INS_2
 		0,						//  6: DID_GPS1_POS
 		0,						//  7: DID_SYS_CMD
-		0,						//  8: DID_ASCII_BCAST_PERIOD
+		0,						//  8: DID_NMEA_BCAST_PERIOD
 		0,						//  9: DID_RMC
 		0,						// 10: DID_SYS_PARAMS
 		0,						// 11: DID_SYS_SENSORS
@@ -661,6 +661,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 		case DID_GPS2_VEL:				return RMC_BITS_GPS2_VEL;
 		case DID_GPS1_SAT:				return RMC_BITS_GPS1_SAT;
 		case DID_GPS2_SAT:				return RMC_BITS_GPS2_SAT;
+		case DID_GPS1_SIG:				return RMC_BITS_GPS1_SIG;
+		case DID_GPS2_SIG:				return RMC_BITS_GPS2_SIG;
 		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
 		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
 		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
@@ -686,26 +688,27 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 	}
 }
 
-// Convert DID to ASCII message out control mask
-uint32_t didToAsciiRmcBits(uint32_t dataId)
+// Convert DID to NMEA message out control mask
+uint32_t didToNmeaRmcBits(uint32_t dataId)
 {
 	switch (dataId)
 	{
-		case DID_IMU:					return ASCII_RMC_BITS_PIMU;
-		case DID_PIMU:					return ASCII_RMC_BITS_PPIMU;
-		case DID_IMU_RAW:				return ASCII_RMC_BITS_PRIMU;
-		case DID_INS_1:					return ASCII_RMC_BITS_PINS1;
-		case DID_INS_2:					return ASCII_RMC_BITS_PINS2;
+		case DID_IMU:					return NMEA_RMC_BITS_PIMU;
+		case DID_PIMU:					return NMEA_RMC_BITS_PPIMU;
+		case DID_IMU_RAW:				return NMEA_RMC_BITS_PRIMU;
+		case DID_INS_1:					return NMEA_RMC_BITS_PINS1;
+		case DID_INS_2:					return NMEA_RMC_BITS_PINS2;
+		case DID_GPS1_SAT:				return NMEA_RMC_BITS_GSV;				
 		case DID_GPS1_POS:				
 			return 
-				ASCII_RMC_BITS_PGPSP |
-				ASCII_RMC_BITS_GPGGA |
-				ASCII_RMC_BITS_GPGLL |
-				ASCII_RMC_BITS_GPGSA |
-				ASCII_RMC_BITS_GPRMC |
-				ASCII_RMC_BITS_GPZDA |
-				ASCII_RMC_BITS_PASHR;
-		case DID_DEV_INFO:				return ASCII_RMC_BITS_INFO;
+				NMEA_RMC_BITS_PGPSP |
+				NMEA_RMC_BITS_GGA |
+				NMEA_RMC_BITS_GLL |
+				NMEA_RMC_BITS_GSA |
+				NMEA_RMC_BITS_RMC |
+				NMEA_RMC_BITS_ZDA |
+				NMEA_RMC_BITS_PASHR;
+		case DID_DEV_INFO:				return NMEA_RMC_BITS_INFO;
 
 		default:                        return 0;
 	}

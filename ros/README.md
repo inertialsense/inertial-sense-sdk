@@ -328,7 +328,7 @@ __*Note: These values must be clear for TCP configuration to work__
       -  8 = airborne 4G
       -  9 = wrist
 
-**ASCII Output Configuration - NOT CURRENTLY SUPPORTED**
+**NMEA Output Configuration - NOT CURRENTLY SUPPORTED**
 - `~ser1_baud_rate` (int, default: 921600)
    -  baud rate for serial1 port used for external NMEA messaging (located on H6-5) [serial port hardware connections](http://docs.inertialsense.com/user-manual/Setup_Integration/hardware_integration/#pin-definition)
 - `~NMEA_rate` (int, default: 0)

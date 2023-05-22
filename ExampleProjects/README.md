@@ -4,7 +4,7 @@ The following example projects are provide with the SDK to demonstrate various c
 
 ## Example Projects
 
-* [Ascii Communications](Ascii/README) - How to communicate using ASCII NMEA protocol using SDK.
+* [Ascii Communications](Ascii/README) - How to communicate using NMEA protocol using SDK.
 * [Binary Communications](Communications/README) - How to communicate using InertialSense binary protocol using SDK. 
 * [Bootloader](bootloader/README) - How to update firmware on the InertialSense products using SDK.
 * [Logger ](Logger/README) - How to data log using using SDK.

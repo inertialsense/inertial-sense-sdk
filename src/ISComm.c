@@ -350,13 +350,13 @@ static protocol_type_t processAsciiPkt(is_comm_instance_t* instance)
 			dataCheckSum ^= (int)*ptr;
 		}
 		if (actualCheckSum == dataCheckSum)
-		{	// valid ASCII Data
+		{	// valid NMEA Data
 			// Update data pointer and info
 			instance->dataPtr = instance->pktPtr = head;
 			instance->dataHdr.id = 0;
 			instance->dataHdr.size = (uint32_t)(instance->buf.scan - head);
 			instance->dataHdr.offset = 0;
-			return _PTYPE_ASCII_NMEA;
+			return _PTYPE_NMEA;
 		}
 	}
 
@@ -884,7 +884,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			{
 				return processAsciiPkt(instance);
 			}
-			//Check for invalid bytes in ASCII string and exit if found.
+			//Check for invalid bytes in NMEA string and exit if found.
 			if (byte == PSC_START_BYTE || byte == PSC_END_BYTE || byte == 0)
 			{
 				instance->hasStartByte = 0;

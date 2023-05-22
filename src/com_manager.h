@@ -150,7 +150,7 @@ typedef void(*pfnComManagerDisableBroadcasts)(CMHANDLE cmHandle, int pHandle);
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(CMHANDLE cmHandle, int pHandle, p_data_hdr_t *dataHdr);
 
-// ASCII message handler function, return 1 if message handled
+// NMEA message handler function, return 1 if message handled
 // typedef int(*pfnComManagerAsciiMessageHandler)(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength);
 
 // Generic message handler function, return 1 if message handled
@@ -249,7 +249,7 @@ typedef struct
 	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
 	pfnComManagerAsapMsg cmMsgHandlerRmc;
 
-	// Message handler - ASCII
+	// Message handler - NMEA
 	pfnComManagerGenMsgHandler cmMsgHandlerAscii;
 
 	// Message handler - Ublox
@@ -536,7 +536,7 @@ void comManagerRegisterInstance(CMHANDLE cmInstance, uint32_t dataId, pfnComMana
 Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
 
 @param msgFunc handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
-@param msgFunc handler for ASCII messages.
+@param msgFunc handler for NMEA messages.
 @param msgFunc handler for ublox messages.
 @param msgFunc handler for RTCM3 messages.
 */
