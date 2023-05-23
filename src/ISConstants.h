@@ -20,13 +20,16 @@ extern "C" {
 #undef _MATH_DEFINES_DEFINED
 #define _MATH_DEFINES_DEFINED
 #include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
 #include <limits.h>
+
+#ifndef ARM
+#include <stdio.h>
+#endif
 
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
@@ -350,8 +353,10 @@ extern void vPortFree(void* pv);
 #define OFFSET_OF_MEMBER_INDEX_SUBMEMBER(type, member, i, submember) (offsetof(type, member[0].submember) + (i) * MEMBER_ITEM_SIZE(type, member))
 #endif
 
+#ifndef __ZEPHYR__
 #ifndef STRINGIFY
 #define STRINGIFY(x) #x
+#endif
 #endif
 
 #ifndef M_PI
@@ -412,7 +417,11 @@ extern void vPortFree(void* pv);
 #define PRE_PROC_COMBINE(X, Y) X##Y
 #ifndef STATIC_ASSERT
 // #define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
+#ifdef __cplusplus
 #define STATIC_ASSERT(exp) static_assert(exp, #exp)
+#else
+#define STATIC_ASSERT(exp) _Static_assert(exp, #exp)
+#endif
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE

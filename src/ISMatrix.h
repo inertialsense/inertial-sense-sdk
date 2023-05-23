@@ -19,6 +19,7 @@ extern "C" {
 
 #include "ISConstants.h"
 
+#include <math.h>
 #include <string.h>
 
 //_____ M A C R O S ________________________________________________________
