@@ -34,7 +34,7 @@ struct DeviceLog
     std::vector<ins_2_t> ins2;
     std::vector<gps_pos_t> gps1UbxPos;
     std::vector<system_command_t> sysCmd;
-//    std::vector<ascii_msgs_t> asciiBcastPeriod;
+//    std::vector<nmea_msgs_t> nmeaBcastPeriod;
 //    std::vector<rmc_t> rmc;
     std::vector<sys_params_t> sysParams;
     std::vector<sys_sensors_t> sysSensors;

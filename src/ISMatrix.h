@@ -44,10 +44,6 @@ extern "C" {
 #	define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPS))
 #	define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPS))
 #	define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPS))
-#else	// Use fast inverse square root.  0.175% less accurate
-#	define recipNorm_Vec2(v)	(invSqrt(dot_Vec2(v)))
-#	define recipNorm_Vec3(v)	(invSqrt(dot_Vec3(v)))
-#	define recipNorm_Vec4(v)	(invSqrt(dot_Vec4(v)))
 #endif
 #	define recipNorm_Vec3d(v)	(1.0/_MAX(mag_Vec3d(v), EPS))
 #	define recipNorm_Vec4d(v)	(1.0/_MAX(mag_Vec4d(v), EPS))
@@ -102,34 +98,11 @@ typedef struct
 #endif
 static __inline char is_zero( const f_t * f )
 {
-	const unsigned int * x = (const unsigned int*) f;
-
-	if (*x == 0)
-		return 1;
-	return 0;
+	const uint32_t *x = (const uint32_t*) f;
+	return (*x == 0) ? 1 : 0;
 }
 #if !defined(PLATFORM_IS_WINDOWS)
 #pragma GCC diagnostic pop
-#endif
-
-
-#if 0
-// Fast inverse square-root
-// See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
-static __inline float invSqrt(float number)
-{
-	volatile long i;
-	volatile float x, y;
-	volatile const float f = 1.5F;
-
-	x = number * 0.5F;
-	y = number;
-	i = * (( long * ) &y);
-	i = 0x5f375a86 - ( i >> 1 );
-	y = * (( float * ) &i);
-	y = y * ( f - ( x * y * y ) );
-	return y;
-}
 #endif
 
 

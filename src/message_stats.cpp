@@ -124,14 +124,14 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 		}
 		break;
 
-	case _PTYPE_ASCII_NMEA:
-		if (msgStats.ascii.find(id) == msgStats.ascii.end())
+	case _PTYPE_NMEA:
+		if (msgStats.nmea.find(id) == msgStats.nmea.end())
 		{	// Create new 
-			msgStats.ascii[id] = createNewMsgStats(timeMs);
+			msgStats.nmea[id] = createNewMsgStats(timeMs);
 		}
 
 		{	// Update count and timestamps
-			updateTimeMs(msgStats.ascii[id], timeMs);
+			updateTimeMs(msgStats.nmea[id], timeMs);
 		}
 		break;
 
@@ -202,12 +202,12 @@ string messageStatsSummary(mul_msg_stats_t &msgStats)
 		}
 	}
 
-	if (!msgStats.ascii.empty())
+	if (!msgStats.nmea.empty())
 	{
-		str.append("ASCII: __________________________________\n");
+		str.append("NMEA: __________________________________\n");
 		str.append("  ID   Count  dtMs  Description\n");
 		std::map<int, msg_stats_t>::iterator it;
-		for (it = msgStats.ascii.begin(); it != msgStats.ascii.end(); it++)
+		for (it = msgStats.nmea.begin(); it != msgStats.nmea.end(); it++)
 		{
 			msg_stats_t &s = it->second;
 			int dtMs = (s.prevTimeMs ? (s.timeMs - s.prevTimeMs) : 0);

@@ -79,7 +79,7 @@ typedef enum
 	_PTYPE_INERTIAL_SENSE_DATA  = 0xEFFFFFFF,				/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
 	_PTYPE_INERTIAL_SENSE_CMD   = 0xDFFFFFFF,				/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
 	_PTYPE_INERTIAL_SENSE_ACK   = 0xCFFFFFFF,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
-	_PTYPE_ASCII_NMEA           = 0xBFFFFFFF,				/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
+	_PTYPE_NMEA                 = 0xBFFFFFFF,				/** Protocol Type: NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
 } protocol_type_t;
@@ -225,7 +225,7 @@ typedef struct
 	uint32_t            size;
 } bufTxRxPtr_t;
 
-/** Types of values allowed in ASCII data */
+/** Types of values allowed in NMEA data */
 typedef enum
 {
 	/** 32 bit integer */
@@ -241,8 +241,8 @@ typedef enum
 	asciiTypeDouble = 3
 } asciiDataType;
 
-/** create a uint from an ASCII message id that is the same, regardless of CPU architecture */
-#define ASCII_MESSAGEID_TO_UINT(c4) ((uint32_t)(c4)[0] << 24 | ((uint32_t)(c4)[1] << 16) | ((uint32_t)(c4)[2] << 8) | ((uint32_t)(c4)[3]))
+/** create a uint from an NMEA message id that is the same, regardless of CPU architecture */
+#define NMEA_MESSAGEID_TO_UINT(c4) ((uint32_t)(c4)[0] << 24 | ((uint32_t)(c4)[1] << 16) | ((uint32_t)(c4)[2] << 8) | ((uint32_t)(c4)[3]))
 
 enum ePktHdrFlags
 {
@@ -272,10 +272,10 @@ is performed).
 */
 enum ePktSpecialChars
 {
-	/** Dollar sign ($), used by ASCII protocol to signify start of message (36) */
+	/** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
 	PSC_ASCII_START_BYTE = 0x24,
 
-	/** New line (\n), used by ASCII protocol to signify end of message (10) */
+	/** New line (\n), used by NMEA protocol to signify end of message (10) */
 	PSC_ASCII_END_BYTE = 0x0A,
 
 	/** Binary packet start byte, must only exist at the very start of a binary packet and no where else (255) */
@@ -297,7 +297,7 @@ enum ePktSpecialChars
 	RTCM3_START_BYTE = 0xD3
 };
 
-/** Represents an ASCII message and how it is mapped to a structure in memory */
+/** Represents an NMEA message and how it is mapped to a structure in memory */
 typedef struct
 {
 	/** the message, always 4 characters long */
@@ -472,7 +472,7 @@ typedef struct
 	/** Enable protocol parsing: Inertial Sense binary */
 	uint8_t enableISB;
 
-	/** Enable protocol parsing: ASCII NMEA */
+	/** Enable protocol parsing: NMEA */
 	uint8_t enableASCII;
 
 	/** Enable protocol parsing: ublox */
@@ -503,7 +503,7 @@ typedef struct
 	/** Start byte */
 	uint32_t hasStartByte;
 
-	/** Used to validate ublox, RTCM, and ASCII packets */
+	/** Used to validate ublox, RTCM, and NMEA packets */
 	int32_t parseState;
 
 	/** Data identifier (DID), size and offset */
@@ -561,7 +561,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 				break;
 			case _PTYPE_RTCM3:
 				break;
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				break;
 			}
 		}
@@ -601,7 +601,7 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
 				break;
 			case _PTYPE_RTCM3:
 				break;
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				break;
 			}
 		}

@@ -92,7 +92,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 			gps_pos_t &gps = *((gps_pos_t*)data->buf);
 			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
-				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+				*s->clientBytesToSend = nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 			}
 		}
 	}
@@ -437,7 +437,7 @@ bool InertialSense::UpdateServer()
 				id = comm->dataHdr.id;
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
 					uint8_t *pStart = comm->dataPtr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
@@ -522,7 +522,7 @@ bool InertialSense::UpdateClient()
 				id = comm->dataHdr.id;
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
 					uint8_t *pStart = comm->dataPtr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
@@ -559,7 +559,7 @@ void InertialSense::SetCallbacks(
 	pfnComManagerGenMsgHandler handlerUblox, 
 	pfnComManagerGenMsgHandler handlerRtcm3)
 {
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, ASCII (NMEA), ublox, and RTCM3.
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
 	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
 }
 
@@ -654,7 +654,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 	{	// Send to all
 		for (size_t port = 0; port < m_comManagerState.devices.size(); port++)
 		{
-			SetSysCmd(command, port);
+			SetSysCmd(command, (int)port);
 		}
 	}
 	else

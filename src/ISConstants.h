@@ -146,8 +146,10 @@ extern void vPortFree(void* pv);
 #if PLATFORM_IS_EMBEDDED
 #include "../hw-libs/printf/printf.h"	// Use embedded-safe SNPRINTF
 #define SNPRINTF snprintf_
+#define VSNPRINTF vsnprintf_
 #else
 #define SNPRINTF snprintf
+#define VSNPRINTF vsnprintf
 #endif
 
 
@@ -555,6 +557,9 @@ extern void vPortFree(void* pv);
 #define C_DEG2RAD_F     0.017453292519943295769236907684886f
 #define C_RAD2DEG       57.295779513082320876798154814105
 #define C_RAD2DEG_F     57.295779513082320876798154814105f
+
+#define C_KMPH2MPS      0.277777777777777777
+#define C_KMPH2MPS_F    0.277777777777777777f
 
 #define C_MM2M           0.001
 #define C_MM2M_F         0.001f

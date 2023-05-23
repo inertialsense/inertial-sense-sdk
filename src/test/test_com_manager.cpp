@@ -38,7 +38,7 @@ typedef struct
 	{
 		dev_info_t			devInfo;
 		nvm_flash_cfg_t		nvmFlashCfg;
-		ascii_msgs_t		asciiMsgs;
+		nmea_msgs_t		nmeaMsgs;
 	}						msgs = { 0 };
 
 	// Used to simulate serial ports
@@ -107,9 +107,9 @@ void writeNvrUserpageFlashCfg(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 }
 
 // return 1 on success, 0 on failure
-int msgHandlerAscii(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
 {
-	int messageIdUInt = ASCII_MESSAGEID_TO_UINT(msg + 1);
+	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
 
@@ -117,36 +117,36 @@ int msgHandlerAscii(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 	{	// 4 character commands (i.e. "$STPB*14\r\n")
 		switch (messageIdUInt)
 		{
-		case ASCII_MSG_ID_ASCB:	// query ASCII message broadcast rates
-		// 		writeAsciiBcastPeriod(cmHandle, pHandle, NULLPTR);
+		case NMEA_MSG_UINT_ASCB:	// query NMEA message broadcast rates
+		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
 			break;
 
-		case ASCII_MSG_ID_STPB: // stop all broadcasts on all ports
+		case NMEA_MSG_UINT_STPB: // stop all broadcasts on all ports
 			disableBroadcasts(cmHandle, -1);
 			break;
 
-		case ASCII_MSG_ID_STPC: // stop all broadcasts on current port
+		case NMEA_MSG_UINT_STPC: // stop all broadcasts on current port
 			disableBroadcasts(cmHandle, pHandle);
 			break;
 
-		case ASCII_MSG_ID_BLEN: // bootloader enable
+		case NMEA_MSG_UINT_BLEN: // bootloader enable
 			break;
 
-		case ASCII_MSG_ID_SRST: // soft reset
+		case NMEA_MSG_UINT_SRST: // soft reset
 			break;
 
-		case ASCII_MSG_ID_INFO: // query device version information
+		case NMEA_MSG_UINT_INFO: // query device version information
 			break;
 
-		case ASCII_MSG_ID_PERS: // Save persistent messages to flash memory
+		case NMEA_MSG_UINT_PERS: // Save persistent messages to flash memory
 			break;
 		}
 	}
 	else
-	{	// General ASCII messages
+	{	// General NMEA messages
 		switch (messageIdUInt)
 		{
-		case ASCII_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
+		case NMEA_MSG_UINT_NELB: // SAM bootloader assistant (SAM-BA) enable
 // 			if (msgSize == 22 &&	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
 // 				(pHandle == COM0_PORT_NUM || pHandle == USB_PORT_NUM) &&
 // 				strncmp((const char*)(msg + 6), "!!SAM-BA!!", 6) == 0)
@@ -266,7 +266,7 @@ bool initComManager(test_data_t &t)
 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
 	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
-	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerAscii, msgHandlerUblox, msgHandlerRtcm3);
+	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3);
 
 	// Enable/disable protocols
 	s_cmPort.comm.config.enableISB = TEST_PROTO_IS;
@@ -327,10 +327,10 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			ins1.ned[2] = i * 3.456f;
 
 			if (j == 3 )
-			{	// ASCII
+			{	// NMEA
 #if TEST_PROTO_ASCII
-				td.ptype = _PTYPE_ASCII_NMEA;
-				td.size = did_ins1_to_nmea_pins1((char*)td.data.buf, sizeof(td.data.buf), ins1);
+				td.ptype = _PTYPE_NMEA;
+				td.size = nmea_pins1((char*)td.data.buf, sizeof(td.data.buf), ins1);
 #endif
 			}
 			else
@@ -363,10 +363,10 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			gps.leapS = (uint8_t)i;
 
 			if ((j == 5 || TEST_PROTO_IS == 0) && TEST_PROTO_ASCII)
-			{	// ASCII
+			{	// NMEA
 #if TEST_PROTO_ASCII
-				td.ptype = _PTYPE_ASCII_NMEA;
-				td.size = did_gps_to_nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
+				td.ptype = _PTYPE_NMEA;
+				td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
 #endif
 			}
 			else
@@ -381,13 +381,13 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			break;
 
 #if TEST_PROTO_ASCII
-		case 6:		// ASCII command - Stop all broadcasts
-			td.ptype = _PTYPE_ASCII_NMEA;
+		case 6:		// NMEA command - Stop all broadcasts
+			td.ptype = _PTYPE_NMEA;
 			td.size = snprintf((char*)td.data.buf, PKT_BUF_SIZE, "$STPB*15\r\n");
 			break;
 
-		case 7:		// ASCII command - Stop broadcast on current port
-			td.ptype = _PTYPE_ASCII_NMEA;
+		case 7:		// NMEA command - Stop broadcast on current port
+			td.ptype = _PTYPE_NMEA;
 			td.size = snprintf((char*)td.data.buf, PKT_BUF_SIZE, "$STPC*14\r\n");
 			break;
 #endif
@@ -487,7 +487,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			case PSC_START_BYTE:
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				DEBUG_PRINTF("NMEA: %.30s...\n", td.data.buf);
 				break;
 			case _PTYPE_UBLOX:
@@ -537,7 +537,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
 			break;
 
-		case _PTYPE_ASCII_NMEA:
+		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
 			td.pktSize = td.size;
@@ -584,7 +584,7 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 			case _PTYPE_RTCM3:
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
 				break;
 			}
@@ -626,7 +626,7 @@ TEST(ComManager, BasicTxTest)
 			comManagerSendDataNoAckInstance(&tcm.cm, 0, td.did, &td.data, td.size, 0);
 			break;
 
-		case _PTYPE_ASCII_NMEA:
+		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
 			portWrite(&(tcm.cm), 0, td.data.buf, td.size);
@@ -829,7 +829,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
 					break;
 
-				case _PTYPE_ASCII_NMEA:
+				case _PTYPE_NMEA:
 					DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
 					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
 					break;
@@ -911,7 +911,7 @@ TEST(ComManager, Evb2DataForwardTest)
 				switch (ptype)
 				{
 				case _PTYPE_INERTIAL_SENSE_DATA:
-				case _PTYPE_ASCII_NMEA:
+				case _PTYPE_NMEA:
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
 				{
@@ -982,7 +982,7 @@ TEST(ComManager, Evb2DataForwardTest)
 					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
 					break;
 
-				case _PTYPE_ASCII_NMEA:
+				case _PTYPE_NMEA:
 					DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
 					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
 					break;
