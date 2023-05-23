@@ -26,10 +26,7 @@ extern "C" {
 #include <inttypes.h>
 #include <time.h>
 #include <limits.h>
-
-#ifndef ARM
 #include <stdio.h>
-#endif
 
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
