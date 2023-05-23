@@ -31,10 +31,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISConstants.h"
 
-#ifdef USE_IS_INTERNAL
-#	include "../../cpp/libs/families/imx/IS_internal.h"
-#endif
-
 using namespace std;
 
 
@@ -227,4 +223,3 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	csv += "\n";
 	return true;
 }
-
