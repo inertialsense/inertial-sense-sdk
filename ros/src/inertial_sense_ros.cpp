@@ -207,6 +207,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
+    if(ports_.size() < 1)
+    {
+        //No ports specified. Use default
+        ports_.push_back("/dev/ttyACM0");
+    }
+
     ph.nodeParam("baudrate", baudrate_, 921600);
     ph.nodeParam("frame_id", frame_id_, "body");
     ph.nodeParam("enable_log", log_enabled_, false);
@@ -235,7 +241,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     YAML::Node insNode = ph.node(node, "ins");
     ph.nodeParamVec("rotation", 3, insRotation_);
     ph.nodeParamVec("offset", 3, insOffset_);
-    ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, 4);
+    ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, 8);
 
     std::vector<std::string> dyn_model_set{ "INS_DYN_MODEL_PORTABLE",
                                             " << UNKNOWN >> ",
@@ -298,6 +304,9 @@ void InertialSenseROS::load_params(YAML::Node &node)
     YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
     if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
         RTK_base_ = new RtkBaseProvider(rtkBaseNode);
+
+    YAML::Node diagNode = ph.node(node, "diagnostics");
+    ph.nodeParam("enable", rs_.diagnostics.enabled);
 
     // Print entire yaml node tree
     // printf("Node Tree:\n");
@@ -1630,6 +1639,7 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *con
 void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg)
 {
     inertial_sense_ros::RTKRel rtk_rel;
+    std::string fixStatusString;
     if (abs(GPS_towOffset_) > 0.001)
     {
         rtk_rel.header.stamp = ros_time_from_week_and_tow(GPS_week_, msg->timeOfWeekMs / 1000.0);
@@ -1639,22 +1649,27 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         if (fixStatus == GPS_STATUS_FIX_3D)
         {
             rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_3D;
+            fixStatusString = "GPS_STATUS_FIX_3D";
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_SINGLE)
         {
             rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_SINGLE;
+            fixStatusString = "GPS_STATUS_FIX_RTK_SINGLE";
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_FLOAT)
         {
             rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FLOAT;
+            fixStatusString = "GPS_STATUS_FIX_RTK_FLOAT";
         }
         else if (fixStatus == GPS_STATUS_FIX_RTK_FIX)
         {
             rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FIX;
+            fixStatusString = "GPS_STATUS_FIX_RTK_FIX";
         }
         else if (msg->status & GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD)
         {
             rtk_rel.eGpsStatusFix = inertial_sense_ros::RTKRel::GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD;
+            fixStatusString = "GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD";
         }
 
         rtk_rel.vector_base_to_rover.x = msg->baseToRoverVector[0];
@@ -1669,19 +1684,28 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
     case DID_GPS1_RTK_POS_REL:
         rs_.rtk_pos.streamingCheck(DID, rs_.rtk_pos.streamingRel);
         rs_.rtk_pos.pubRel.publish(rtk_rel);
+
+        diagnostics_.rtkPos_arRatio = rtk_rel.ar_ratio;
+        diagnostics_.rtkPos_diffAge = rtk_rel.differential_age;
+        diagnostics_.rtkPos_fixType = fixStatusString;
+        diagnostics_.rtkPos_hdgBaseToRov = rtk_rel.heading_base_to_rover;
+        diagnostics_.rtkPos_disToBase = rtk_rel.distance_base_to_rover;
+
         break;
 
     case DID_GPS2_RTK_CMP_REL:
         rs_.rtk_cmp.streamingCheck(DID, rs_.rtk_cmp.streamingRel);
         rs_.rtk_cmp.pubRel.publish(rtk_rel);
+        
+
+        diagnostics_.rtkCmp_arRatio = rtk_rel.ar_ratio;
+        diagnostics_.rtkCmp_diffAge = rtk_rel.differential_age;
+        diagnostics_.rtkCmp_fixType = fixStatusString;
+        diagnostics_.rtkCmp_hdgBaseToRov = rtk_rel.heading_base_to_rover;
+        diagnostics_.rtkCmp_disToBase = rtk_rel.distance_base_to_rover;
         break;
     }
 
-    // save for diagnostics TODO - Add more diagnostic info
-    diagnostic_ar_ratio_ = rtk_rel.ar_ratio;
-    diagnostic_differential_age_ = rtk_rel.differential_age;
-    diagnostic_heading_base_to_rover_ = rtk_rel.heading_base_to_rover;
-    diagnostic_fix_type_ = rtk_rel.eGpsStatusFix;
 }
 
 void InertialSenseROS::GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg)
@@ -1907,73 +1931,80 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
     diagnostic_msgs::DiagnosticArray diag_array;
     diag_array.header.stamp = ros::Time::now();
 
-    // CNO mean
-    diagnostic_msgs::DiagnosticStatus cno_mean;
-    cno_mean.name = "CNO Mean";
-    cno_mean.level = diagnostic_msgs::DiagnosticStatus::OK;
-    cno_mean.message = std::to_string(msg_gps1.cno);
+    //Create Status
+    diagnostic_msgs::DiagnosticStatus rtkDiagnostics;
+    rtkDiagnostics.name = "RTK Diagnostics";
+    rtkDiagnostics.level = diagnostic_msgs::DiagnosticStatus::OK;
+    rtkDiagnostics.message = "RTK Rel Data";
     diag_array.status.push_back(cno_mean);
 
-    if (rs_.rtk_pos.enabled)
-    {
-        diagnostic_msgs::DiagnosticStatus rtk_status;
-        rtk_status.name = "RTK";
-        rtk_status.level = diagnostic_msgs::DiagnosticStatus::OK;
-        std::string rtk_message;
+    // CNO mean
+    diagnostic_msgs::KeyValue cno_mean;
+    cno_mean.key = "CNO Mean";
+    cno_mean.value = std::to_string(msg_gps1.cno);
+    rtkDiagnostics.status.push_back(cno_mean);
 
-        // AR ratio
-        diagnostic_msgs::KeyValue ar_ratio;
-        ar_ratio.key = "AR Ratio";
-        ar_ratio.value = std::to_string(diagnostic_ar_ratio_);
-        rtk_status.values.push_back(ar_ratio);
-        if (diagnostic_fix_type_ == inertial_sense_ros::RTKRel::GPS_STATUS_FIX_3D)
-        {
-            rtk_status.level = diagnostic_msgs::DiagnosticStatus::WARN;
-            rtk_message = "3D: " + std::to_string(diagnostic_ar_ratio_);
-        }
-        else if (diagnostic_fix_type_ == inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_SINGLE)
-        {
-            rtk_status.level = diagnostic_msgs::DiagnosticStatus::WARN;
-            rtk_message = "Single: " + std::to_string(diagnostic_ar_ratio_);
-        }
-        else if (diagnostic_fix_type_ == inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FLOAT)
-        {
-            rtk_message = "Float: " + std::to_string(diagnostic_ar_ratio_);
-        }
-        else if (diagnostic_fix_type_ == inertial_sense_ros::RTKRel::GPS_STATUS_FIX_RTK_FIX)
-        {
-            rtk_message = "Fix: " + std::to_string(diagnostic_ar_ratio_);
-        }
-        else if (diagnostic_fix_type_ == inertial_sense_ros::RTKRel::GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD)
-        {
-            rtk_message = "Fix and Hold: " + std::to_string(diagnostic_ar_ratio_);
-        }
-        else
-        {
-            rtk_message = "Unknown Fix: " + std::to_string(diagnostic_ar_ratio_);
-        }
+    // RTK Pos AR Ratio
+    diagnostic_msgs::KeyValue rtkPos_arRatio;
+    cno_mean.key = "RTK Pos AR Ratio";
+    cno_mean.value = std::to_string(diagnostics_.rtkPos_arRatio);
+    rtkDiagnostics.status.push_back(rtkPos_arRatio);
 
-        // Differential age
-        diagnostic_msgs::KeyValue differential_age;
-        differential_age.key = "Differential Age";
-        differential_age.value = std::to_string(diagnostic_differential_age_);
-        rtk_status.values.push_back(differential_age);
-        if (diagnostic_differential_age_ > 1.5)
-        {
-            rtk_status.level = diagnostic_msgs::DiagnosticStatus::WARN;
-            rtk_message += " Differential Age Large";
-        }
+    // RTK Pos Diff Age
+    diagnostic_msgs::KeyValue rtkPos_diffAge;
+    cno_mean.key = "RTK Pos Diff Age";
+    cno_mean.value = std::to_string(diagnostics_.rtkPos_diffAge);
+    rtkDiagnostics.status.push_back(rtkPos_diffAge);
 
-        // Heading base to rover
-        diagnostic_msgs::KeyValue heading_base_to_rover;
-        heading_base_to_rover.key = "Heading Base to Rover (rad)";
-        heading_base_to_rover.value = std::to_string(diagnostic_heading_base_to_rover_);
-        rtk_status.values.push_back(heading_base_to_rover);
+    // RTK Pos Fix Type
+    diagnostic_msgs::KeyValue rtkPos_fixType;
+    cno_mean.key = "RTK Pos Fix Type";
+    cno_mean.value = diagnostics_.rtkPos_fixType;
+    rtkDiagnostics.status.push_back(rtkPos_fixType);
 
-        rtk_status.message = rtk_message;
-        diag_array.status.push_back(rtk_status);
-    }
+    // RTK Pos Hdg Base to Rover
+    diagnostic_msgs::KeyValue rtkPos_hdgBaseToRov;
+    cno_mean.key = "RTK Pos Hdg Base to Rover";
+    cno_mean.value = std::to_string(diagnostics_.rtkPos_hdgBaseToRov);
+    rtkDiagnostics.status.push_back(rtkPos_hdgBaseToRov);
 
+    // RTK Pos Distance Base to Rover
+    diagnostic_msgs::KeyValue rtkPos_distanceToRover;
+    cno_mean.key = "RTK Pos Distance to Rover";
+    cno_mean.value = std::to_string(diagnostics_.rtkPos_distanceToRover);
+    rtkDiagnostics.status.push_back(rtkPos_distanceToRover);
+
+    // RTK Cmp AR Ratio
+    diagnostic_msgs::KeyValue rtkCmp_arRatio;
+    cno_mean.key = "RTK Cmp AR Ratio";
+    cno_mean.value = std::to_string(diagnostics_.rtkCmp_arRatio);
+    rtkDiagnostics.status.push_back(rtkCmp_arRatio);
+
+    // RTK Cmp Diff Age
+    diagnostic_msgs::KeyValue rtkCmp_diffAge;
+    cno_mean.key = "RTK Cmp Diff Age";
+    cno_mean.value = std::to_string(diagnostics_.rtkCmp_diffAge);
+    rtkDiagnostics.status.push_back(rtkCmp_diffAge);
+
+    // RTK Cmp Fix Type
+    diagnostic_msgs::KeyValue rtkCmp_fixType;
+    cno_mean.key = "RTK Cmp Fix Type";
+    cno_mean.value = diagnostics_.rtkCmp_fixType;
+    rtkDiagnostics.status.push_back(rtkCmp_fixType);
+
+    // RTK Cmp Hdg Base to Rover
+    diagnostic_msgs::KeyValue rtkCmp_hdgBaseToRov;
+    cno_mean.key = "RTK Cmp Hdg Base to Rover";
+    cno_mean.value = std::to_string(diagnostics_.rtkCmp_hdgBaseToRov);
+    rtkDiagnostics.status.push_back(rtkCmp_hdgBaseToRov);
+
+    // RTK Cmp Distance Base to Rover
+    diagnostic_msgs::KeyValue rtkCmp_distanceToRover;
+    cno_mean.key = "RTK Cmp Distance to Rover";
+    cno_mean.value = std::to_string(diagnostics_.rtkCmp_distanceToRover);
+    rtkDiagnostics.status.push_back(rtkCmp_distanceToRover);
+
+    
     rs_.diagnostics.pub.publish(diag_array);
 }
 
