@@ -7,7 +7,7 @@
 
 
 static int s_protocol_version = 0;
-static uint8_t s_gnssId = 0;	// GNSS multi-constellation (see eSatSvGnssId)
+static uint8_t s_gnssId = 0;	// 0 = GNSS multi-constellation, $GNxxx NMEA (see eSatSvGnssId)
 
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
