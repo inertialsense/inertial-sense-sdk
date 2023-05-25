@@ -143,7 +143,9 @@ extern void vPortFree(void* pv);
 
 #endif 
 
-#if PLATFORM_IS_EMBEDDED
+#if __ZEPHYR__
+#define SNPRINTF snprintfcb
+#elif PLATFORM_IS_EMBEDDED
 #include "printf.h"		// Use embedded-safe SNPRINTF
 #define SNPRINTF snprintf_
 #else
