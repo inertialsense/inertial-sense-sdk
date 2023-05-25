@@ -1685,6 +1685,7 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         rs_.rtk_pos.streamingCheck(DID, rs_.rtk_pos.streamingRel);
         rs_.rtk_pos.pubRel.publish(rtk_rel);
 
+        diagnostics_.rtkPos_timeStamp = rtk_rel.header.stamp.toSec();
         diagnostics_.rtkPos_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkPos_diffAge = rtk_rel.differential_age;
         diagnostics_.rtkPos_fixType = fixStatusString;
@@ -1697,7 +1698,7 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         rs_.rtk_cmp.streamingCheck(DID, rs_.rtk_cmp.streamingRel);
         rs_.rtk_cmp.pubRel.publish(rtk_rel);
         
-
+        diagnostics_.rtkCmp_timeStamp = rtk_rel.header.stamp.toSec();
         diagnostics_.rtkCmp_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkCmp_diffAge = rtk_rel.differential_age;
         diagnostics_.rtkCmp_fixType = fixStatusString;
