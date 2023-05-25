@@ -2825,8 +2825,6 @@ POP_PACK
 
 PUSH_PACK_8
 
-#ifndef GPX_1
-
 /** time struct */
 typedef struct
 {
@@ -2928,13 +2926,9 @@ typedef struct PACKED
     uint8_t raw_dat_queue_overrun;
 } rtk_debug_t;
 
-#endif
-
 POP_PACK
 
 PUSH_PACK_1
-
-#ifndef GPX_1
 
 /** (DID_GPS_RTK_OPT) RTK processing options */
 typedef struct
@@ -3403,8 +3397,6 @@ typedef struct
     alm_t alm;			/* almanac */
 } ion_model_utc_alm_t;
 
-#endif	// GPX-1
-
 /** RTK solution status */
 typedef enum
 {
@@ -3595,7 +3587,6 @@ typedef enum
 
 typedef union PACKED
 {   
-#ifndef GPX_1
     /** Satellite observation data */
     obsd_t              obs[MAX_OBSERVATION_COUNT_IN_RTK_MESSAGE];
     
@@ -3614,11 +3605,9 @@ typedef union PACKED
     /** Ionosphere model and UTC parameters */
     ion_model_utc_alm_t ion;
 
-
     /** Byte buffer */
     uint8_t             buf[GPS_RAW_MESSAGE_BUF_SIZE];
 
-#endif
 } uGpsRawData;
 
 /** Message wrapper for DID_GPS1_RAW, DID_GPS2_RAW, and DID_GPS_BASE_RAW.  The contents of data can vary for this message and are determined by `dataType` field. */
