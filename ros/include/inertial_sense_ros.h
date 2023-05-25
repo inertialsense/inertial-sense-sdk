@@ -348,7 +348,7 @@ public:
      */
     void transform_6x6_covariance(float Pout[36], float Pin[36], ixMatrix3 R1, ixMatrix3 R2);
 
-    struct inertial_sense_ros
+    typedef struct
     {
         float rtkPos_arRatio = 0;
         float rtkPos_diffAge = 0;
