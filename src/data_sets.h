@@ -891,7 +891,7 @@ typedef struct PACKED
 /** Sat SV - GNSS System ID */
 enum eSatSvGnssId
 {
-    SAT_SV_GNSS_ID_UNKNOWN	= 0, 
+    SAT_SV_GNSS_ID_UNKNOWN	= 0, 	// Unknown or GNSS (multi-constellation)
     SAT_SV_GNSS_ID_GPS		= 1,	// GPS (USA)
     SAT_SV_GNSS_ID_SBS		= 2,	// SBAS (multiple regional systems, see flash config for selection)
     SAT_SV_GNSS_ID_GAL		= 3,	// Galileo (European Union)	
