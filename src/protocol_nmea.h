@@ -40,6 +40,7 @@ enum eNmeaProtocolVersion
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
 void nema_set_protocol_version(int protocol_version);
+void nmea_set_gnss_id(int gnssId);
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...);
 int nmea_sprint_footer(char* a, int aSize, int &n);
 char *ASCII_find_next_field(char *str);

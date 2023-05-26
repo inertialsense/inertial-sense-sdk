@@ -7,10 +7,10 @@
 
 
 static int s_protocol_version = 0;
+static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
-
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
@@ -19,6 +19,11 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 void nema_set_protocol_version(int protocol_version)
 { 
 	s_protocol_version = protocol_version; 
+}
+
+void nmea_set_gnss_id(int gnssId)
+{
+	s_gnssId = gnssId;
 }
 
 // Safe snprintf that prevents use of invalid size.
@@ -152,7 +157,7 @@ void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t
 	sigId = nmea2p3_svid_to_sigId(gnssId, svIdLast);
 }
 
-static int nmea_talker(char* a, int aSize, uint8_t gnssId=0)
+static int nmea_talker(char* a, int aSize, uint8_t gnssId=s_gnssId)
 {
 	a[0] = '$';
 	return gnssId_to_talkerId(a+1, gnssId) + 1;
@@ -742,12 +747,9 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "GSA");
-	nmea_sprint(a, aSize, n,
-		",A"		// 1
-		",%02u",	// 2
-		(unsigned int)fixQuality);	// 1,2
+	nmea_sprint(a, aSize, n, ",A,%02u",	(unsigned int)fixQuality);		// 1,2
 		
-	for (uint32_t i = 0; i < 12; i++)												// 3-14
+	for (uint32_t i = 0; i < 12; i++)									// 3-14
 	{
 		if(sat.sat[i].svId)
 		{
