@@ -350,14 +350,14 @@ public:
 
     typedef struct
     {
-        float rtkPos_timeStamp = 0;
+        uint32_t rtkPos_timeStamp = 0;
         float rtkPos_arRatio = 0;
         float rtkPos_diffAge = 0;
         std::string rtkPos_fixType = "";
         float rtkPos_hdgBaseToRov = 0;
         float rtkPos_distanceToRover = 0;
         
-        float rtkCmp_timeStamp = 0;
+        uint32_t rtkCmp_timeStamp = 0;
         float rtkCmp_arRatio = 0;
         float rtkCmp_diffAge = 0;
         std::string rtkCmp_fixType = "";

@@ -1685,7 +1685,7 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         rs_.rtk_pos.streamingCheck(DID, rs_.rtk_pos.streamingRel);
         rs_.rtk_pos.pubRel.publish(rtk_rel);
 
-        diagnostics_.rtkPos_timeStamp = rtk_rel.header.stamp.toSec();
+        diagnostics_.rtkPos_timeStamp = msg->timeOfWeekMs;
         diagnostics_.rtkPos_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkPos_diffAge = rtk_rel.differential_age;
         diagnostics_.rtkPos_fixType = fixStatusString;
@@ -1698,7 +1698,7 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         rs_.rtk_cmp.streamingCheck(DID, rs_.rtk_cmp.streamingRel);
         rs_.rtk_cmp.pubRel.publish(rtk_rel);
         
-        diagnostics_.rtkCmp_timeStamp = rtk_rel.header.stamp.toSec();
+        diagnostics_.rtkCmp_timeStamp = msg->timeOfWeekMs;
         diagnostics_.rtkCmp_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkCmp_diffAge = rtk_rel.differential_age;
         diagnostics_.rtkCmp_fixType = fixStatusString;
@@ -1937,75 +1937,86 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
     rtkDiagnostics.name = "RTK Diagnostics";
     rtkDiagnostics.level = diagnostic_msgs::DiagnosticStatus::OK;
     rtkDiagnostics.message = "RTK Rel Data";
-    diag_array.status.push_back(rtkDiagnostics);
-
+    
     // CNO mean
     diagnostic_msgs::KeyValue cno_mean;
     cno_mean.key = "CNO Mean";
     cno_mean.value = std::to_string(msg_gps1.cno);
     rtkDiagnostics.values.push_back(cno_mean);
 
+    //Timestamp
+    diagnostic_msgs::KeyValue rtkPos_timeStamp;
+    rtkPos_timeStamp.key = "RTK Pos Timestamp";
+    rtkPos_timeStamp.value = std::to_string(diagnostics_.rtkPos_timeStamp);
+    rtkDiagnostics.values.push_back(rtkPos_timeStamp);
+
     // RTK Pos AR Ratio
     diagnostic_msgs::KeyValue rtkPos_arRatio;
-    cno_mean.key = "RTK Pos AR Ratio";
-    cno_mean.value = std::to_string(diagnostics_.rtkPos_arRatio);
+    rtkPos_arRatio.key = "RTK Pos AR Ratio";
+    rtkPos_arRatio.value = std::to_string(diagnostics_.rtkPos_arRatio);
     rtkDiagnostics.values.push_back(rtkPos_arRatio);
 
     // RTK Pos Diff Age
     diagnostic_msgs::KeyValue rtkPos_diffAge;
-    cno_mean.key = "RTK Pos Diff Age";
-    cno_mean.value = std::to_string(diagnostics_.rtkPos_diffAge);
+    rtkPos_diffAge.key = "RTK Pos Diff Age";
+    rtkPos_diffAge.value = std::to_string(diagnostics_.rtkPos_diffAge);
     rtkDiagnostics.values.push_back(rtkPos_diffAge);
 
     // RTK Pos Fix Type
     diagnostic_msgs::KeyValue rtkPos_fixType;
-    cno_mean.key = "RTK Pos Fix Type";
-    cno_mean.value = diagnostics_.rtkPos_fixType;
+    rtkPos_fixType.key = "RTK Pos Fix Type";
+    rtkPos_fixType.value = diagnostics_.rtkPos_fixType;
     rtkDiagnostics.values.push_back(rtkPos_fixType);
 
     // RTK Pos Hdg Base to Rover
     diagnostic_msgs::KeyValue rtkPos_hdgBaseToRov;
-    cno_mean.key = "RTK Pos Hdg Base to Rover";
-    cno_mean.value = std::to_string(diagnostics_.rtkPos_hdgBaseToRov);
+    rtkPos_hdgBaseToRov.key = "RTK Pos Hdg Base to Rover";
+    rtkPos_hdgBaseToRov.value = std::to_string(diagnostics_.rtkPos_hdgBaseToRov);
     rtkDiagnostics.values.push_back(rtkPos_hdgBaseToRov);
 
     // RTK Pos Distance Base to Rover
     diagnostic_msgs::KeyValue rtkPos_distanceToRover;
-    cno_mean.key = "RTK Pos Distance to Rover";
-    cno_mean.value = std::to_string(diagnostics_.rtkPos_distanceToRover);
+    rtkPos_distanceToRover.key = "RTK Pos Distance to Rover";
+    rtkPos_distanceToRover.value = std::to_string(diagnostics_.rtkPos_distanceToRover);
     rtkDiagnostics.values.push_back(rtkPos_distanceToRover);
+
+    //Timestamp
+    diagnostic_msgs::KeyValue rtkCmp_timeStamp;
+    rtkCmp_timeStamp.key = "RTK Cmp Timestamp";
+    rtkCmp_timeStamp.value = std::to_string(diagnostics_.rtkCmp_timeStamp);
+    rtkDiagnostics.values.push_back(rtkCmp_timeStamp);
 
     // RTK Cmp AR Ratio
     diagnostic_msgs::KeyValue rtkCmp_arRatio;
-    cno_mean.key = "RTK Cmp AR Ratio";
-    cno_mean.value = std::to_string(diagnostics_.rtkCmp_arRatio);
+    rtkCmp_arRatio.key = "RTK Cmp AR Ratio";
+    rtkCmp_arRatio.value = std::to_string(diagnostics_.rtkCmp_arRatio);
     rtkDiagnostics.values.push_back(rtkCmp_arRatio);
 
     // RTK Cmp Diff Age
     diagnostic_msgs::KeyValue rtkCmp_diffAge;
-    cno_mean.key = "RTK Cmp Diff Age";
-    cno_mean.value = std::to_string(diagnostics_.rtkCmp_diffAge);
+    rtkCmp_diffAge.key = "RTK Cmp Diff Age";
+    rtkCmp_diffAge.value = std::to_string(diagnostics_.rtkCmp_diffAge);
     rtkDiagnostics.values.push_back(rtkCmp_diffAge);
 
     // RTK Cmp Fix Type
     diagnostic_msgs::KeyValue rtkCmp_fixType;
-    cno_mean.key = "RTK Cmp Fix Type";
-    cno_mean.value = diagnostics_.rtkCmp_fixType;
+    rtkCmp_fixType.key = "RTK Cmp Fix Type";
+    rtkCmp_fixType.value = diagnostics_.rtkCmp_fixType;
     rtkDiagnostics.values.push_back(rtkCmp_fixType);
 
     // RTK Cmp Hdg Base to Rover
     diagnostic_msgs::KeyValue rtkCmp_hdgBaseToRov;
-    cno_mean.key = "RTK Cmp Hdg Base to Rover";
-    cno_mean.value = std::to_string(diagnostics_.rtkCmp_hdgBaseToRov);
+    rtkCmp_hdgBaseToRov.key = "RTK Cmp Hdg Base to Rover";
+    rtkCmp_hdgBaseToRov.value = std::to_string(diagnostics_.rtkCmp_hdgBaseToRov);
     rtkDiagnostics.values.push_back(rtkCmp_hdgBaseToRov);
 
     // RTK Cmp Distance Base to Rover
     diagnostic_msgs::KeyValue rtkCmp_distanceToRover;
-    cno_mean.key = "RTK Cmp Distance to Rover";
-    cno_mean.value = std::to_string(diagnostics_.rtkCmp_distanceToRover);
+    rtkCmp_distanceToRover.key = "RTK Cmp Distance to Rover";
+    rtkCmp_distanceToRover.value = std::to_string(diagnostics_.rtkCmp_distanceToRover);
     rtkDiagnostics.values.push_back(rtkCmp_distanceToRover);
 
-    
+    diag_array.status.push_back(rtkDiagnostics);
     rs_.diagnostics.pub.publish(diag_array);
 }
 
