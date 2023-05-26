@@ -31,7 +31,7 @@
 
 #include "ParamHelper.h"
 
-#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_INFO("%s response received", cISDataMappings::GetDataSetName(DID)); }
+#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
 
 /**
  * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
@@ -54,6 +54,10 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     rs_.gps1.enabled = true;
     rs_.gps1.topic = "/gps";
 
+    if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+    {
+        ros::console::notifyLoggerLevelsChanged();
+    }
     load_params(paramNode);
 }
 
@@ -183,12 +187,12 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     if (useParamSvr)
     {
-        ROS_INFO( "Loading configuration from ROS Parameter Server." );
+        ROS_INFO("InertialSenseROS: Loading configuration from ROS Parameter Server." );
         ParamHelper::paramServerToYamlNode(node, "/");
     }
     else
     {
-        ROS_INFO( "Loading configuration from YAML tree." );
+        ROS_INFO("InertialSenseROS: Loading configuration from YAML tree." );
     }
 
     // Default values appear in the 3rd parameter
@@ -323,7 +327,7 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 
 #define CONFIG_STREAM(stream, did, type, cb_fun) \
     if((stream.enabled) && !(stream.streaming)){ \
-        ROS_INFO("Attempting to enable %s (%d) data stream.", cISDataMappings::GetDataSetName(did), did); \
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did), did); \
         SET_CALLBACK(did, type, cb_fun, stream.period); \
         if (!firstrun) \
             return; \
@@ -331,13 +335,13 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 
 #define CONFIG_STREAM_GPS(stream, did_pos, cb_fun_pos, did_vel, cb_fun_vel) \
     if((stream.enabled) && !(stream.streaming_pos)){ \
-        ROS_INFO("Attempting to enable %s (%d) data stream.", cISDataMappings::GetDataSetName(did_pos), did_pos); \
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did_pos), did_pos); \
         SET_CALLBACK(did_pos, gps_pos_t, cb_fun_pos, stream.period); \
         if (!firstrun) \
             return; \
     } \
     if((stream.enabled) && !(stream.streaming_vel)){ \
-        ROS_INFO("Attempting to enable %s (%d) data stream.", cISDataMappings::GetDataSetName(did_vel), did_vel); \
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did_vel), did_vel); \
         SET_CALLBACK(did_vel, gps_vel_t, cb_fun_vel, stream.period); \
         if (!firstrun) \
             return; \
@@ -347,12 +351,12 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 {
     if (!rs_.gps1.streaming_pos) // we always need GPS for Fix status
     {
-        ROS_INFO("Attempting to enable GPS1 Pos data stream.");
+        //ROS_DEBUG("InertialSenseROS: Attempting to enable GPS1 Pos data stream");
         SET_CALLBACK(DID_GPS1_POS, gps_pos_t, GPS_pos_callback, rs_.gps1.period);
     }
     if (!flashConfigStreaming_)
     {
-        ROS_INFO("Attempting to enable flash config data stream.");
+        ROS_DEBUG("InertialSenseROS: Attempting to enable flash config data stream");
         SET_CALLBACK(DID_FLASH_CONFIG, nvm_flash_cfg_t, flash_config_callback, 0);
         if (!firstrun)
             return;
@@ -360,7 +364,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
     if (rs_.odom_ins_ned.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
-        ROS_INFO("Attempting to enable odom INS NED data stream.");
+        ROS_DEBUG("InertialSenseROS: Attempting to enable odom INS NED data stream");
 
         SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need NED
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
@@ -372,7 +376,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
     if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
     {
-        ROS_INFO("Attempting to enable odom INS ECEF data stream.");
+        ROS_DEBUG("InertialSenseROS: Attempting to enable odom INS ECEF data stream");
         SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need quaternion and ecef
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
@@ -383,7 +387,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
     if (rs_.odom_ins_enu.enabled  && !(rs_.did_ins4.streaming && imuStreaming_))
     {
-        ROS_INFO("Attempting to enable odom INS ENU data stream.");
+        ROS_DEBUG("InertialSenseROS: Attempting to enable odom INS ENU data stream");
         SET_CALLBACK(DID_INS_4, ins_4_t, INS4_callback, rs_.did_ins4.period);                     // Need ENU
         SET_CALLBACK(DID_PIMU, pimu_t, preint_IMU_callback, rs_.pimu.period);                     // Need angular rate data from IMU
         rs_.imu.enabled = true;
@@ -394,7 +398,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
     if (covariance_enabled_ && !insCovarianceStreaming_)
     {
-        ROS_INFO("Attempting to enable %s data stream.", cISDataMappings::GetDataSetName(DID_ROS_COVARIANCE_POSE_TWIST));
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s data stream", cISDataMappings::GetDataSetName(DID_ROS_COVARIANCE_POSE_TWIST));
         SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200);
     }
 
@@ -408,7 +412,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
-            ROS_INFO("Attempting to enable gps1/NavSatFix.");
+            ROS_DEBUG("InertialSenseROS: Attempting to enable gps1/NavSatFix");
             // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
             uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
@@ -426,7 +430,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
             }
         }
         if (rs_.gps2_navsatfix.enabled) {
-            ROS_INFO("Attempting to enable gps2/NavSatFix.");
+            ROS_DEBUG("InertialSenseROS: Attempting to enable gps2/NavSatFix");
             // Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS
             uint16_t gnssSatSigConst = flashCfg.gnssSatSigConst;
 
@@ -471,7 +475,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     {
         data_streams_enabled_ = true;
         data_stream_timer_.stop();
-        ROS_INFO("Inertial Sense ROS data streams successfully enabled.");
+        ROS_INFO("InertialSenseROS: All data streams successfully enabled");
         return;
     }
 }
@@ -480,20 +484,20 @@ void InertialSenseROS::start_log()
 {
     std::string filename = getenv("HOME");
     filename += "/Documents/Inertial_Sense/Logs/" + cISLogger::CreateCurrentTimestamp();
-    ROS_INFO_STREAM("Creating log in " << filename << " folder");
+    ROS_INFO_STREAM("InertialSenseROS: Creating log in " << filename << " folder");
     IS_.SetLoggerEnabled(true, filename, cISLogger::LOGTYPE_DAT, RMC_PRESET_PPD_GROUND_VEHICLE);
 }
 
 void InertialSenseROS::configure_ascii_output()
 {
-    //  ascii_msgs_t msgs = {};
+    //  nmea_msgs_t msgs = {};
     //  msgs.options = (NMEA_message_ports & NMEA_SER0) ? RMC_OPTIONS_PORT_SER0 : 0; // output on serial 0
     //  msgs.options |= (NMEA_message_ports & NMEA_SER1) ? RMC_OPTIONS_PORT_SER1 : 0; // output on serial 1
     //  msgs.gpgga = (NMEA_message_configuration & NMEA_GPGGA) ? NMEA_rate : 0;
     //  msgs.gpgll = (NMEA_message_configuration & NMEA_GPGLL) ? NMEA_rate : 0;
     //  msgs.gpgsa = (NMEA_message_configuration & NMEA_GPGSA) ? NMEA_rate : 0;
     //  msgs.gprmc = (NMEA_message_configuration & NMEA_GPRMC) ? NMEA_rate : 0;
-    //  IS_.SendData(DID_ASCII_BCAST_PERIOD, (uint8_t*)(&msgs), sizeof(ascii_msgs_t), 0);
+    //  IS_.SendData(DID_NMEA_BCAST_PERIOD, (uint8_t*)(&msgs), sizeof(nmea_msgs_t), 0);
 }
 
 /**
@@ -510,13 +514,13 @@ bool InertialSenseROS::connect(float timeout)
     do {
         std::string cur_port = *ports_iterator;
         /// Connect to the uINS
-        ROS_INFO("Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+        ROS_INFO("InertialSenseROS: Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
         sdk_connected_ = IS_.Open(cur_port.c_str(), baudrate_);
         if (!sdk_connected_) {
-            ROS_ERROR("inertialsense: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+            ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sleep(1); // is this a good idea?
         } else {
-            ROS_INFO("Connected to uINS %d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            ROS_INFO("InertialSenseROS: Connected to uINS %d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }
@@ -602,16 +606,16 @@ void InertialSenseROS::configure_flash_parameters()
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
     IS_.GetFlashConfig(current_flash_cfg);
-    //ROS_INFO("Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
+    //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {
-        ROS_INFO("navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
+        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
         reboot = true;
     }
     if (current_flash_cfg.ioConfig != ioConfigBits_)
     {
-        ROS_INFO("ioConfig change from 0x%08X to 0x%08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
+        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
         reboot = true;
     }
 
@@ -679,16 +683,16 @@ void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& conf
 
         int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
         if (config.connected_) {
-            ROS_INFO_STREAM("Successfully connected to RTK server [" << RTK_connection  << "]. [Attempt " << RTK_connection_attempt_count << "]");
+            ROS_INFO_STREAM("InertialSenseROS: Successfully connected to RTK server [" << RTK_connection  << "]. [Attempt " << RTK_connection_attempt_count << "]");
             break;
         }
         // fall-through
 
         // ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
         if (RTK_connection_attempt_count < config.connection_attempt_limit_) {
-            ROS_WARN_STREAM("Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Will try again in " << sleep_duration << " seconds.");
+            ROS_WARN_STREAM("InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Will try again in " << sleep_duration << " seconds.");
         } else {
-            ROS_ERROR_STREAM("Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Giving up.");
+            ROS_ERROR_STREAM("InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Giving up.");
         }
         ros::Duration(sleep_duration).sleep(); // we will always sleep on a failure...
     }
@@ -767,9 +771,9 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
     // [type]:[ip/url]:[port]
     std::string RTK_connection = config.get_connection_string();
     if (IS_.CreateHost(RTK_connection))
-        ROS_INFO_STREAM("Successfully started RTK Base NTRIP correction server at" << RTK_connection);
+        ROS_INFO_STREAM("InertialSenseROS: Successfully started RTK Base NTRIP correction server at" << RTK_connection);
     else
-        ROS_ERROR_STREAM("Failed to start RTK Base NTRIP correction server at " << RTK_connection);
+        ROS_ERROR_STREAM("InertialSenseROS: Failed to start RTK Base NTRIP correction server at " << RTK_connection);
 }
 
 
@@ -781,7 +785,7 @@ void InertialSenseROS::configure_rtk()
         if (RTK_rover_)
         {
             if (RTK_rover_->correction_input && (RTK_rover_->correction_input->type_ == "ntrip")) {
-                ROS_INFO("InertialSense: RTK Rover Configured.");
+                ROS_INFO("InertialSenseROS: Configuring RTK Rover");
                 rs_.rtk_pos.enabled = true;
                 connect_rtk_client(*(RtkRoverCorrectionProvider_Ntrip *) RTK_rover_->correction_input);
                 rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
@@ -791,7 +795,7 @@ void InertialSenseROS::configure_rtk()
                 start_rtk_connectivity_watchdog_timer();
             }
             if (RTK_rover_->correction_input && (RTK_rover_->correction_input->type_ == "evb")) {
-                ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
+                ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
                 rs_.rtk_pos.enabled = true;
                 if (RTK_base_) RTK_base_->enable = false;
                 rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
@@ -801,7 +805,7 @@ void InertialSenseROS::configure_rtk()
         }
         if (GNSS_Compass_)
         {
-            ROS_INFO("InertialSense: Dual GNSS (compassing) configured");
+            ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             rs_.rtk_cmp.enabled = true;
             rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
@@ -809,19 +813,15 @@ void InertialSenseROS::configure_rtk()
         }
 
         if (RTK_base_ && RTK_base_->enable) {
-            if (RTK_base_->source_gps__usb_)
-            {
-                ROS_INFO("InertialSense: RTK Base Configured.");
+            ROS_INFO("InertialSenseROS: Configuring RTK Base");
+            if (RTK_base_->source_gps__usb_) {
                 rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB;
             }
-            if (RTK_base_->source_gps__serial0_)
-            {
-                ROS_INFO("InertialSense: RTK Base Configured.");
+            if (RTK_base_->source_gps__serial0_) {
                 rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2;
             }
             RtkBaseCorrectionProvider_Ntrip* ntrip_provider = (RtkBaseCorrectionProvider_Ntrip*)RTK_base_->getProvidersByType("ntrip");
-            if (ntrip_provider != nullptr)
-            {
+            if (ntrip_provider != nullptr) {
                 start_rtk_server(*ntrip_provider);
             }
         }
@@ -836,7 +836,7 @@ void InertialSenseROS::configure_rtk()
 
         if (GNSS_Compass_)
         {
-            ROS_INFO("InertialSense: Configured as dual GNSS (compassing)");
+            ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
             rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
@@ -845,7 +845,7 @@ void InertialSenseROS::configure_rtk()
 
         if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "evb")
         {
-            ROS_INFO("InertialSense: Configured as RTK Rover with radio enabled");
+            ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
             rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
@@ -853,7 +853,7 @@ void InertialSenseROS::configure_rtk()
         }
         else if (RTK_rover_ && RTK_rover_->enable && RTK_rover_->correction_input && RTK_rover_->correction_input->type_ == "ntrip")
         {
-            ROS_INFO("InertialSense: Configured as RTK Rover");
+            ROS_INFO("InertialSenseROS: Configuring as RTK Rover");
             if (RTK_base_) RTK_base_->enable = false;
             rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
@@ -864,7 +864,7 @@ void InertialSenseROS::configure_rtk()
         }
         else if (RTK_base_ && RTK_base_->enable)
         {
-            ROS_INFO("InertialSense: Configured as RTK Base");
+            ROS_INFO("InertialSenseROS: Configured as RTK Base");
             if (RTK_base_->source_gps__serial0_)
                 rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
             if (RTK_base_->source_gps__usb_)
@@ -876,7 +876,7 @@ void InertialSenseROS::configure_rtk()
         }
         IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&rtkConfigBits_), sizeof(rtkConfigBits_), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
-    ROS_INFO("Setting rtkConfigBits: 0x%08x", rtkConfigBits_);
+    ROS_INFO("InertialSenseROS: Setting rtkConfigBits: 0x%08x", rtkConfigBits_);
 }
 
 void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
@@ -887,7 +887,7 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
     refLla_[1] = msg->refLla[1];
     refLla_[2] = msg->refLla[2];
     refLLA_known = true;
-    ROS_INFO("refLla was set");
+    ROS_DEBUG("InertialSenseROS: refLla was set");
 }
 
 void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
@@ -953,7 +953,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 
     if (!refLLA_known)
     {
-        ROS_INFO("REFERENCE LLA MUST BE RECEIVED");
+        ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from uINS/IMX");
         return;
     }
     if (rs_.did_ins4.enabled)
@@ -1926,7 +1926,7 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
     if (!diagnosticsStreaming_)
     {
         diagnosticsStreaming_ = true;
-        ROS_INFO("Diagnostics response received");
+        ROS_INFO("InertialSenseROS: Diagnostics response received");
     }
     // Create diagnostic objects
     diagnostic_msgs::DiagnosticArray diag_array;

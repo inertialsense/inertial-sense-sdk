@@ -28,7 +28,7 @@
 
 
 topic: "inertialsense"
-port: "/dev/ttyACM0"
+port: [/dev/ttyACM0, /dev/ttyACM1]
 baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
@@ -37,12 +37,14 @@ mag_declination: 0.0
 ref_lla: [0.0, 0.0, 0.0]
 
 # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
+platformConfig: 1                                 # PLATFORM_CFG_TYPE_NONE_ONBOARD_M8
 # platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
-platformConfig: 11                                # PLATFORM_CFG_TYPE_EVB2_G2
+# platformConfig: 11                              # PLATFORM_CFG_TYPE_EVB2_G2
 # platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
 
 # IMX ioConfig (see eIoConfig)
-ioConfig: 0x26CA060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
+ioConfig:  0x00112044
+# ioConfig: 0x26CA060       # EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
 # ioConfig: 0x025CA060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8
 # ioConfig: 0x0244a060      # EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
 
@@ -117,7 +119,7 @@ sensors:
       enable: true
 
 gps1:
-  type: 'F9P'
+  type: 'M8'
   antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
   gpsTimeUserDelay: 0.0
   messages:
@@ -157,7 +159,8 @@ gps1:
         topic: "info"
 
 gps2:
-  type: 'F9P'
+  enabled: false
+  type: 'M8'
   antenna_offset: [0, 0, 0]                     # X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna
   gpsTimeUserDelay: 0.0
   messages:
@@ -178,10 +181,10 @@ gps2:
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
       topic: "gps2/rtk_rel_pos"
-      enable: true
+      enable: false
       period: 1
     rel:
-      enable: true
+      enable: false
       topic: "rel"
     base:
       topic: "base"
@@ -271,7 +274,7 @@ rtk_base:
 
   correction_outputs:
     format: RTCM3
-    select: ntrip_1                             # This is one of the keys below, which defines which outputs to enable/use (this can be many).
+    select: ros_provider                             # This is one of the keys below, which defines which outputs to enable/use (this can be many).
 
     # - ros_provider
     # - xbee_radio
