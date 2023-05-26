@@ -7,10 +7,10 @@
 
 
 static int s_protocol_version = 0;
+static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
-
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
@@ -19,6 +19,11 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 void nema_set_protocol_version(int protocol_version)
 { 
 	s_protocol_version = protocol_version; 
+}
+
+void nmea_set_gnss_id(int gnssId)
+{
+	s_gnssId = gnssId;
 }
 
 // Safe snprintf that prevents use of invalid size.
@@ -152,7 +157,7 @@ void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t
 	sigId = nmea2p3_svid_to_sigId(gnssId, svIdLast);
 }
 
-static int nmea_talker(char* a, int aSize, uint8_t gnssId=0)
+static int nmea_talker(char* a, int aSize, uint8_t gnssId=s_gnssId)
 {
 	a[0] = '$';
 	return gnssId_to_talkerId(a+1, gnssId) + 1;
@@ -694,7 +699,8 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 	     *iD          checksum data
 	*/
 
-	int n = ssnprintf(a, aSize, "$GPGLL");
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "GLL");
 	nmea_latToDegMin(a, aSize, n, pos.lla[0]);			// 1,2
 	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);			// 3,4
 	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
@@ -739,12 +745,11 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 		17   = VDOP
 	*/
 
-	int n = ssnprintf(a, aSize, "$GPGSA"
-		",A"		// 1
-		",%02u",	// 2
-		(unsigned int)fixQuality);	// 1,2
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "GSA");
+	nmea_sprint(a, aSize, n, ",A,%02u",	(unsigned int)fixQuality);		// 1,2
 		
-	for (uint32_t i = 0; i < 12; i++)												// 3-14
+	for (uint32_t i = 0; i < 12; i++)									// 3-14
 	{
 		if(sat.sat[i].svId)
 		{
@@ -774,7 +779,8 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
 	quatConjRot(vel_ned_, qe2n, vel.vel);
 
-	int n = ssnprintf(a, aSize, "$GPRMC");
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "RMC");
 	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1 - UTC time of last fix
 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
 	{
@@ -822,7 +828,8 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 		*CC       checksum
 	*/
 
-	int n = ssnprintf(a, aSize, "$GPZDA");
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "ZDA");
 	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);			// 1 
 	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
 	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
