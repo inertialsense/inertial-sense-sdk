@@ -900,7 +900,8 @@ typedef struct PACKED
 /** Sat SV - GNSS System ID */
 enum eSatSvGnssId
 {
-    SAT_SV_GNSS_ID_UNKNOWN      = 0, 
+    SAT_SV_GNSS_ID_UNKNOWN      = 0,
+    SAT_SV_GNSS_ID_GNSS         = 0, 	// (multi-constellation)
     SAT_SV_GNSS_ID_GPS          = 1,	// GPS (USA)
     SAT_SV_GNSS_ID_SBS          = 2,	// SBAS (multiple regional systems, see flash config for selection)
     SAT_SV_GNSS_ID_GAL          = 3,	// Galileo (European Union)	
@@ -2078,27 +2079,31 @@ enum eSysConfigBits
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
-    /*! GPS  */
-    GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
-    /*! QZSS  */
-    GNSS_SAT_SIG_CONST_QZSS                             = (uint16_t)0x000C,
-    /*! Galileo  */
-    GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
-    /*! BeiDou  */
-    GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
-    /*! GLONASS  */
-    GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
-    /*! SBAS  */
-    GNSS_SAT_SIG_CONST_SBAS                             = (uint16_t)0x1000,
-    
-    /*! GNSS default */
-    GNSS_SAT_SIG_CONST_DEFAULT = \
-        GNSS_SAT_SIG_CONST_GPS | \
-        GNSS_SAT_SIG_CONST_SBAS | \
-        GNSS_SAT_SIG_CONST_QZSS | \
-        GNSS_SAT_SIG_CONST_GAL | \
-        GNSS_SAT_SIG_CONST_GLO | \
-        GNSS_SAT_SIG_CONST_BDS
+	/*! GPS  */
+	GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
+	/*! QZSS  */
+	GNSS_SAT_SIG_CONST_QZS                              = (uint16_t)0x000C,
+	/*! Galileo  */
+	GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
+	/*! BeiDou  */
+	GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
+	/*! GLONASS  */
+	GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
+	/*! SBAS  */
+	GNSS_SAT_SIG_CONST_SBS                              = (uint16_t)0x1000,
+	/*! IRNSS / NavIC  */
+	GNSS_SAT_SIG_CONST_IRN                              = (uint16_t)0x2000,
+	/*! IMES  */
+	GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
+
+	/*! GNSS default */
+	GNSS_SAT_SIG_CONST_DEFAULT = \
+		GNSS_SAT_SIG_CONST_GPS | \
+		GNSS_SAT_SIG_CONST_SBS | \
+		GNSS_SAT_SIG_CONST_QZS | \
+		GNSS_SAT_SIG_CONST_GAL | \
+		GNSS_SAT_SIG_CONST_GLO | \
+		GNSS_SAT_SIG_CONST_BDS
 };
 
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
