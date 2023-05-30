@@ -481,7 +481,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			DEBUG_PRINTF("[%2d] ", (int)testDeque.size());
 			switch (td.ptype)
 			{
-			case PSC_START_BYTE:
+			case PSC_ISB_PREAMBLE:
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
 			case _PTYPE_NMEA:

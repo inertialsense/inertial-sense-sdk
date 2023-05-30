@@ -119,7 +119,7 @@ static uint8_t* encodeByteAddToBuffer(uint32_t val, uint8_t* ptrDest)
 	{
 	case PSC_ASCII_START_BYTE:
 	case PSC_ASCII_END_BYTE:
-	case PSC_START_BYTE:
+	case PSC_ISB_PREAMBLE:
 	case PSC_END_BYTE:
 	case PSC_RESERVED_KEY:
 	case UBLOX_START_BYTE1:
@@ -847,7 +847,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		// Check for start byte if we haven't found it yet
 		if (instance->hasStartByte == 0)
 		{
-			if((byte == PSC_START_BYTE			&& (instance->config.enabledMask & ENABLE_PROTOCOL_ISB)) ||
+			if((byte == PSC_ISB_PREAMBLE			&& (instance->config.enabledMask & ENABLE_PROTOCOL_ISB)) ||
 				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_ASCII)) ||
 				(byte == UBLOX_START_BYTE1		&& (instance->config.enabledMask & ENABLE_PROTOCOL_UBLOX)) ||
 				(byte == RTCM3_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_RTCM3)) ||
@@ -873,7 +873,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		// If we have a start byte, process the data type
 		switch (instance->hasStartByte)
 		{
-		case PSC_START_BYTE:
+		case PSC_ISB_PREAMBLE:
 			if (byte == PSC_END_BYTE)
 			{
 				return processInertialSensePkt(instance);
@@ -885,7 +885,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 				return processAsciiPkt(instance);
 			}
 			//Check for invalid bytes in NMEA string and exit if found.
-			if (byte == PSC_START_BYTE || byte == PSC_END_BYTE || byte == 0)
+			if (byte == PSC_ISB_PREAMBLE || byte == PSC_END_BYTE || byte == 0)
 			{
 				instance->hasStartByte = 0;
 				instance->parseState = -1;
@@ -1117,17 +1117,12 @@ int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t
 	{
 	case PSC_ASCII_START_BYTE:
 	case PSC_ASCII_END_BYTE:
-	case PSC_START_BYTE:
-	case PSC_END_BYTE:
+	case PSC_ISB_PREAMBLE:
 	case RTCM3_START_BYTE:
 	case UBLOX_START_BYTE1:
 		// corrupt data
 		return -1;
 
-	case PSC_RESERVED_KEY:
-		// skip special byte
-		val = (~(*ptrSrc++) & 0x000000FF);
-		// fall through
 	default:
 		*checksum ^= (val << shift);
 		*((*_ptrDest)++) = (uint8_t)val;
@@ -1159,7 +1154,7 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	// Packet header -------------------------------------------------------------------------------------------
-	*ptrDest++ = PSC_START_BYTE;
+	*ptrDest++ = PSC_ISB_PREAMBLE;
 
 	// PID
 	if (ptrDest >= ptrDestEnd)

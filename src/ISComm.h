@@ -183,20 +183,33 @@ n-2			Checksum low byte
 n-1			Packet end byte
 */
 
-// Packet IDs	
-typedef uint32_t ePacketIDs;
+// Packet IDs
+// typedef uint32_t ePacketIDs;
 
-#define PID_INVALID                         (ePacketIDs)0   /** Invalid packet id */
-#define PID_ACK                             (ePacketIDs)1   /** (ACK) received valid packet */
-#define PID_NACK                            (ePacketIDs)2   /** (NACK) received invalid packet */
-#define PID_GET_DATA                        (ePacketIDs)3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
-#define PID_DATA                            (ePacketIDs)4   /** Data sent in response to PID_GET_DATA (no PID_ACK is sent) */
-#define PID_SET_DATA                        (ePacketIDs)5   /** Data sent, such as configuration options.  PID_ACK is sent in response. */
-#define PID_STOP_BROADCASTS_ALL_PORTS       (ePacketIDs)6   /** Stop all data broadcasts on all ports. Responds with an ACK */
-#define PID_STOP_DID_BROADCAST              (ePacketIDs)7   /** Stop a specific broadcast */
-#define PID_STOP_BROADCASTS_CURRENT_PORT    (ePacketIDs)8   /** Stop all data broadcasts on current port. Responds with an ACK */
-#define PID_COUNT                           (ePacketIDs)9   /** The number of packet identifiers, keep this at the end! */
-#define PID_MAX_COUNT                       (ePacketIDs)32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
+typedef enum
+{
+	PID_DID_MASK                            = 0x07FF, 
+	PID_MASK                                = 0xF800, 
+	PID_INVALID                             = 0,        // Invalid packet id
+	PID_ACK                                 = 1,        // (ACK) received valid packet
+	PID_NACK                                = 2,        // (NACK) received invalid packet
+	PID_GET_DATA                            = 3,        // Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data.
+	PID_DATA                                = 4,        // Data sent in response to PID_GET_DATA (no PID_ACK is sent)
+	PID_SET_DATA                            = 5,        // Data sent, such as configuration options.  PID_ACK is sent in response.
+	PID_STOP_BROADCASTS_ALL_PORTS           = 6,        // Stop all data broadcasts on all ports. Responds with an ACK
+	PID_STOP_DID_BROADCAST                  = 7,        // Stop a specific broadcast
+	PID_STOP_BROADCASTS_CURRENT_PORT        = 8,        // Stop all data broadcasts on current port. Responds with an ACK
+	PID_COUNT                               = 9,        // The number of packet identifiers, keep this at the end!
+	PID_MAX_COUNT                           = 32,       // The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK)
+} eISBPacketId;
+
+typedef enum
+{
+	ISB_FLAGS_PAYLOAD_SIZE_MASK             = 0x07FF,   // (11 bits) Packet payload size in bytes.
+	ISB_FLAGS_MASK                          = 0xF800,   // (5 bits) Packet flags mask
+	ISB_FLAGS_EXTENDED_PAYLOAD              = 0x0800,   // Payload is larger than 2048 bytes and extends into next packet.
+	ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x1000,   // The first two bytes of the payload are the byte offset of the payload data into the data set.
+} eIsbPacketFlags;
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct
@@ -284,14 +297,8 @@ enum ePktSpecialChars
 	/** New line (\n), used by NMEA protocol to signify end of message (10) */
 	PSC_ASCII_END_BYTE = 0x0A,
 
-	/** Binary packet start byte, must only exist at the very start of a binary packet and no where else (255) */
-	PSC_START_BYTE = 0xFF,
-
-	/** Binary packet end byte, must only exist at the end of a binary packet and no where else (254) */
-	PSC_END_BYTE = 0xFE,
-
-	/** Encoded byte marker, must only be used to prefix encoded bytes (253) */
-	PSC_RESERVED_KEY = 0xFD,
+	/** Inertial Sense Binary packet start preamble (255, 36) */
+	PSC_ISB_PREAMBLE = 0x24FF,
 
 	/** Ublox start byte 1 (181) */
 	UBLOX_START_BYTE1 = 0xB5,
@@ -332,22 +339,14 @@ typedef struct
 typedef struct
 {
 	/** Packet start byte, always 0xFF */
-	uint8_t             startByte;
+	uint16_t            preamble;
 
-	/** Packet identifier (see ePacketIDs) */
-	uint8_t             pid;
+	/** Packet identifier (see eISBPacketId) */
+	uint16_t            pid;
 
-	/** Packet counter, for ACK and retry */
-	uint8_t             counter;
-
-	/**
-	Packet flags (see ePktHdrFlags)
-	Bit 0 : unset means big endian, set means little endian format
-	Bit 1 : unset means no valid communication received yet, set means valid communication received
-	Bit 2 : unset means no more related packets available, set means additional packet(s) available related to this packet
-	Bit 3 : unset means perform swap, set means do not swap
-	*/
+	/** Payload size and packet flags (see eIsbPayloadSize) */
 	uint8_t             flags;
+
 } packet_hdr_t;
 
 /** Represents the 4 bytes that end each binary packet */

@@ -688,7 +688,7 @@ int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bu
 	pkt_info_t pkt = { 0 };
 
 	// Create Packet String (start to end byte)
-	pkt.hdr.startByte = PSC_START_BYTE;
+	pkt.hdr.preamble = PSC_ISB_PREAMBLE;
 	pkt.hdr.pid = pktInfo;
 	pkt.hdr.flags = pktFlags;
 
@@ -1004,7 +1004,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->pHandle = pHandle;
 
 	// Packet parameters
-	msg->pkt.hdr.startByte = PSC_START_BYTE;
+	msg->pkt.hdr.preamble = PSC_ISB_PREAMBLE;
 	msg->pkt.hdr.pid = PID_DATA;
 
 	// Data Header
@@ -1510,7 +1510,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 	memcpy(ePkt->pktBody, data, dataSize);
 
 	// Update ePkt pkt header and body info
-	ePkt->pkt.hdr.startByte = PSC_START_BYTE;
+	ePkt->pkt.hdr.preamble = PSC_ISB_PREAMBLE;
 	ePkt->pkt.hdr.pid = pid;
 	ePkt->pkt.body.ptr = ePkt->pktBody; // point to ePkt buffer "pktBody"
 	ePkt->pkt.body.size = dataSize;
