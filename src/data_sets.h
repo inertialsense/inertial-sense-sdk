@@ -502,11 +502,23 @@ typedef struct PACKED
     /** Manufacturer name */
     char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
 
-    /** Build date, little endian order: [0] = status ('r'=release, 'd'=debug), [1] = year-2000, [2] = month, [3] = day.  Reversed byte order for big endian systems */
-    uint8_t         buildDate[4];
+	/** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=CANDIDATE, 'r'=PRODUCTION, 'd'=debug) */
+	uint8_t         builtType;
+    /** Build date year */
+	uint8_t         buildDateYear;
+    /** Build date month */
+	uint8_t         buildDateMonth;
+    /** Build date day */
+	uint8_t         buildDateDay;
 
-    /** Build date, little endian order: [0] = hour, [1] = minute, [2] = second, [3] = millisecond.  Reversed byte order for big endian systems */
-    uint8_t         buildTime[4];
+    /** Build time hour */
+    uint8_t         buildTimeHour;
+    /** Build time minute */
+    uint8_t         buildTimeMinute;
+    /** Build time second */
+    uint8_t         buildTimeSecond;
+    /** Build time millisecond */
+    uint8_t         buildTimeMs;
 
     /** Additional info */
     char            addInfo[DEVINFO_ADDINFO_STRLEN];
