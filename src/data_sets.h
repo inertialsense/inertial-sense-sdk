@@ -474,7 +474,6 @@ typedef struct PACKED
 
 }pos_measurement_t;
 
-
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
 {
@@ -502,11 +501,24 @@ typedef struct PACKED
     /** Manufacturer name */
     char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
 
-    /** Build date, little endian order: [0] = status ('r'=release, 'd'=debug), [1] = year-2000, [2] = month, [3] = day.  Reversed byte order for big endian systems */
-    uint8_t         buildDate[4];
+	/** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug) */
+	uint8_t         buildType;
+    
+    /** Build date year - 2000 */
+	uint8_t         buildYear;
+    /** Build date month */
+	uint8_t         buildMonth;
+    /** Build date day */
+	uint8_t         buildDay;
 
-    /** Build date, little endian order: [0] = hour, [1] = minute, [2] = second, [3] = millisecond.  Reversed byte order for big endian systems */
-    uint8_t         buildTime[4];
+    /** Build time hour */
+    uint8_t         buildHour;
+    /** Build time minute */
+    uint8_t         buildMinute;
+    /** Build time second */
+    uint8_t         buildSecond;
+    /** Build time millisecond */
+    uint8_t         buildMillisecond;
 
     /** Additional info */
     char            addInfo[DEVINFO_ADDINFO_STRLEN];
