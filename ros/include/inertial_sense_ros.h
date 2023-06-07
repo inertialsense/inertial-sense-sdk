@@ -392,7 +392,6 @@ public:
     inertial_sense_ros::GPSInfo msg_gps1_info;
     inertial_sense_ros::GPSInfo msg_gps2_info;
     
-
     float poseCov_[36], twistCov_[36];
 
     // Connection to the uINS

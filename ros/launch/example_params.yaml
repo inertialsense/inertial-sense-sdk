@@ -215,7 +215,7 @@ rtk_rover:
     gps2: compassing                            # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
     gps3: none                                  # Disable RTK corrections at GPS3
 
-  positioning_enable: true                     # Enable RTK precision positioning at GPS1
+  positioning_enable: false                     # Enable RTK precision positioning at GPS1
   compassing_enable: false                      # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
   correction_input:
     select: ntrip_example                       # Select correction input settings
@@ -230,12 +230,12 @@ rtk_rover:
       username: ''                              # NTRIP service username (if any)
       password: ''                              # NTRIP service password (if any)
       connection_attempts:
-        limit: 1000                                # every time we attempt to connect, only try one time
+        limit: 1                                # every time we attempt to connect, only try one time
         backoff: 2                              # default back off, ignored because only connecting once
       watchdog:                                 # connectivity watchdog timer - reconnects if no RTK activity
         enable: true
-        interval: 2                             # check every 1 second for traffic
-        timeout: 1                              # number of seconds of inactivity before attempting to reconnect
+        interval: 1                             # check every 1 second for traffic
+        timeout: 5                              # number of seconds of inactivity before attempting to reconnect
 
     ntrip_example2:                             # Rename as needed
       type: ntrip                               # configure NTRIP client provider (RTK Rover = TCP Client)
@@ -267,9 +267,9 @@ rtk_rover:
 rtk_base:
   enable: false
   correction_source:
-    imx_serial_0: off                          # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
+    imx_serial_0: gps1                          # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
     imx_serial_1: off                           # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
-    imx_serial_2: off                          # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
+    imx_serial_2: gps2                          # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
     imx_usb: off                                # GPS from which RTK corrections are taken (either off, GPS1 or GPS2)
 
   correction_outputs:
