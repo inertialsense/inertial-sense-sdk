@@ -113,11 +113,15 @@ TEST(protocol_nmea, INFO)
     }
     info.repoRevision = 789;
     snprintf(info.manufacturer, DEVINFO_MANUFACTURER_STRLEN, "manufacturer string 123");
-    for (int i=0; i<4; i++)
-    {
-        info.buildDate[i] = i;
-        info.buildTime[i] = i+4;
-    }
+    info.buildType = 'r'
+    info.buildYear = 23;
+    info.buildMonth = 6;
+    info.buildDay = 9;
+    info.buildHour = 12;
+    info.buildMinute = 8;
+    info.buildSecond = 20;
+    info.buildMillisecond = 23;
+
     info.buildType = 0;
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 

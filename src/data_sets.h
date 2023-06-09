@@ -133,7 +133,7 @@ typedef uint32_t eDataIDs;
 
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
-#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (rtos_info_t) GPX RTOs info */
+#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
@@ -4442,7 +4442,7 @@ typedef union PACKED
     dev_info_t				devInfo;
     ins_1_t					ins1;
     ins_2_t					ins2;
-     ins_3_t					ins3;
+    ins_3_t					ins3;
     ins_4_t					ins4;
     imu_t					imu;
     imu3_t					imu3;
