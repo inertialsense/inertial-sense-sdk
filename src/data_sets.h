@@ -4161,26 +4161,26 @@ typedef struct
 typedef enum
 {
     /** Task 0: Sample	*/
-    TASK_SAMPLE = 0,
+    IMX_TASK_SAMPLE = 0,
 
     /** Task 1: Nav */
-    TASK_NAV,
+    IMX_TASK_NAV,
 
     /** Task 2: Communications */
-    TASK_COMMUNICATIONS,
+    IMX_TASK_COMMUNICATIONS,
 
     /** Task 3: Maintenance */
-    TASK_MAINTENANCE,
+    IMX_TASK_MAINTENANCE,
 
     /** Task 4: Idle */
-    TASK_IDLE,
+    IMX_TASK_IDLE,
 
     /** Task 5: Timer */
-    TASK_TIMER,
+    IMX_TASK_TIMER,
 
 	/** Number of RTOS tasks */
 	IMX_RTOS_NUM_TASKS                 // Keep last
-} eRtosTask;
+} eImxRtosTask;
 
 /** RTOS tasks */
 typedef enum
@@ -4190,6 +4190,12 @@ typedef enum
 
     /** Task 1: Nav */
     GPX_TASK_RTK,
+
+    /** Task 2: Idle */
+    GPX_TASK_IDLE,
+
+    /** Task 3: Timer */
+    GPX_TASK_TIMER,
 
     /** Number of RTOS tasks */
     GPX_RTOS_NUM_TASKS,					// Keep last
@@ -4222,6 +4228,20 @@ typedef enum
     /** Number of RTOS tasks */
     EVB_RTOS_NUM_TASKS                  // Keep last
 } eEvbRtosTask;
+
+/** RTOS tasks */
+typedef enum
+{
+#if defined(GPX_1)
+    TASK_IDLE           = GPX_TASK_IDLE,
+    TASK_TIMER          = GPX_TASK_TIMER,
+	RTOS_NUM_TASKS      = GPX_RTOS_NUM_TASKS
+#else   // IMX_5    
+    TASK_IDLE           = IMX_TASK_IDLE,
+    TASK_TIMER          = IMX_TASK_TIMER,
+	RTOS_NUM_TASKS      = IMX_RTOS_NUM_TASKS
+#endif
+} eRtosTask;
 
 /** Max task name length - do not change */
 #define MAX_TASK_NAME_LEN 12
@@ -4302,7 +4322,7 @@ typedef struct PACKED
 
 } rtos_info_t;
 
-/** (DID_EVB_RTOS_INFO) */
+/** (DID_GPX_RTOS_INFO) */
 typedef struct PACKED
 {
     /** Heap high water mark bytes */
@@ -4315,9 +4335,27 @@ typedef struct PACKED
     uint32_t				freeSize;
 
     /** Tasks */
+    rtos_task_t             task[GPX_RTOS_NUM_TASKS];
+
+} gpx_rtos_info_t;
+
+/** (DID_EVB_RTOS_INFO) */
+typedef struct PACKED
+{
+    /** Heap high water mark bytes */
+    uint32_t                freeHeapSize;
+
+	/** Total memory allocated using RTOS pvPortMalloc() */
+	uint32_t				mallocSize;
+
+	/** Total memory freed using RTOS vPortFree() */
+	uint32_t				freeSize;
+
+    /** Tasks */
     rtos_task_t             task[EVB_RTOS_NUM_TASKS];
 
 } evb_rtos_info_t;
+
 enum
 {
     CID_INS_TIME,
