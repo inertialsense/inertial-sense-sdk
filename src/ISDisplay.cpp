@@ -1417,19 +1417,19 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 		info.firmwareVer[1],
 		info.firmwareVer[2],
 		info.firmwareVer[3],
-		info.buildDate[0],
+		info.buildType,
 		info.buildNumber,
-		info.buildDate[1] + 2000,
-		info.buildDate[2],
-		info.buildDate[3]
+		info.buildYear + 2000,
+		info.buildMonth,
+		info.buildDay
 	);
 
 	if (full)
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d, Proto %d.%d.%d.%d",
-			info.buildTime[0],
-			info.buildTime[1],
-			info.buildTime[2],
+			info.buildHour,
+			info.buildMinute,
+			info.buildSecond,
 			info.protocolVer[0],
 			info.protocolVer[1],
 			info.protocolVer[2],

@@ -244,14 +244,14 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     ADD_MAP(m, totalSize, "protocolVer[3]", protocolVer[3], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "repoRevision", repoRevision, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "manufacturer", manufacturer, DEVINFO_MANUFACTURER_STRLEN, DataTypeString, char[DEVINFO_MANUFACTURER_STRLEN], 0);
-    ADD_MAP(m, totalSize, "buildDate[0]", buildDate[0], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildDate[1]", buildDate[1], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildDate[2]", buildDate[2], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildDate[3]", buildDate[3], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildTime[0]", buildTime[0], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildTime[1]", buildTime[1], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildTime[2]", buildTime[2], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "buildTime[3]", buildTime[3], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "buildType", buildType, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildYear", buildYear, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildMonth", buildMonth, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildDay", buildDay, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildHour", buildHour, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildMinute", buildMinute, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildSecond", buildSecond, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "buildMillisecond", buildMillisecond, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "addInfo", addInfo, DEVINFO_ADDINFO_STRLEN, DataTypeString, char[DEVINFO_ADDINFO_STRLEN], 0);
 
     ASSERT_SIZE(totalSize);

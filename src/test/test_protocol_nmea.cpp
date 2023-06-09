@@ -118,7 +118,7 @@ TEST(protocol_nmea, INFO)
         info.buildDate[i] = i;
         info.buildTime[i] = i+4;
     }
-    info.buildDate[0] = 0;
+    info.buildType = 0;
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 
     char abuf[ASCII_BUF_LEN] = { 0 };
