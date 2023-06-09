@@ -419,8 +419,8 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3], // 5
 		(int)info.repoRevision,	// 6
 		info.manufacturer,		// 7
-		info.buildDate[1]+2000, info.buildDate[2], info.buildDate[3], // 8
-		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
+		info.buildYear+2000, info.buildMonth, info.buildDay, // 8
+		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
 		info.addInfo);			// 10
 		
 	return nmea_sprint_footer(a, aSize, n);
@@ -1372,18 +1372,18 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
-	info.buildDate[1] = (uint8_t)(year - 2000);
-	info.buildDate[2] = (uint8_t)(month);
-	info.buildDate[3] = (uint8_t)(day);
+	info.buildYear = (uint8_t)(year - 2000);
+	info.buildMonth = (uint8_t)(month);
+	info.buildDay = (uint8_t)(day);
 	ptr = ASCII_find_next_field(ptr);
 	
 	// uint8_t         buildTime[4];	hh:mm:ss.ms
 	unsigned int hour, minute, second, ms;
 	SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
-	info.buildTime[0] = (uint8_t)hour;
-	info.buildTime[1] = (uint8_t)minute;
-	info.buildTime[2] = (uint8_t)second;
-	info.buildTime[3] = (uint8_t)ms;
+	info.buildHour = (uint8_t)hour;
+	info.buildMinute = (uint8_t)minute;
+	info.buildSecond = (uint8_t)second;
+	info.buildMillisecond = (uint8_t)ms;
 	ptr = ASCII_find_next_field(ptr);
 	
 	// char            addInfo[DEVINFO_ADDINFO_STRLEN];

@@ -20,7 +20,7 @@ PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd, velCmdSlew, vel,
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_t, timeMs, dt, current_mode, status, vehicle, wheel_l, wheel_r, potV_l, potV_r);
 
 // Public Types
-PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
+PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildType, buildYear, buildMonth, buildDay, buildHour, buildMinute, buildSecond, buildMillisecond, addInfo);
 PYBIND11_NUMPY_DTYPE(system_fault_t, status, g1Task, g2FileNum, g3LineNum, g4, g5Lr, pc, psr);
 PYBIND11_NUMPY_DTYPE(pimu_t, time, dt, status, theta, vel);
 PYBIND11_NUMPY_DTYPE(ins_1_t, week, timeOfWeek, insStatus, hdwStatus, theta, uvw, lla, ned);
