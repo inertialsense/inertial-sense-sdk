@@ -160,6 +160,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
 	sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
+	sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
 	sizeMap[DID_GPX_RTOS_INFO] = sizeof(rtos_info_t);
 	sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
 
@@ -1029,6 +1030,35 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "wheelConfig.transform.t_b2w_sigma[2]", wheelConfig.transform.t_b2w_sigma[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "wheelConfig.track_width", wheelConfig.track_width, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelConfig.radius", wheelConfig.radius, 0, DataTypeFloat, float, 0);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef gpx_flash_cfg_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_GPX_FLASH_CFG];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "ser0BaudRate", ser0BaudRate, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "ser1BaudRate", ser1BaudRate, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "ser2BaudRate", ser2BaudRate, 0, DataTypeUInt32, uint32_t, 0);
+	ADD_MAP(m, totalSize, "startupGPSDtMs", startupGPSDtMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "gps1AntOffset[0]", gps1AntOffset[0], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "gps1AntOffset[1]", gps1AntOffset[1], 0, DataTypeFloat, float&, 0);
+    ADD_MAP(m, totalSize, "gps1AntOffset[2]", gps1AntOffset[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "gps2AntOffset[0]", gps2AntOffset[0], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "gps2AntOffset[1]", gps2AntOffset[1], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "gps2AntOffset[2]", gps2AntOffset[2], 0, DataTypeFloat, float&, 0);
+	ADD_MAP(m, totalSize, "gnssSatSigConst", gnssSatSigConst, 0, DataTypeUInt16, uint16_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "dynamicModel", dynamicModel, 0, DataTypeUInt8, uint8_t, 0);
+	ADD_MAP(m, totalSize, "debug", debug, 0, DataTypeUInt8, uint8_t, 0);
+	ADD_MAP(m, totalSize, "gpsTimeSyncPeriodMs", gpsTimeSyncPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "gpsTimeUserDelay", gpsTimeUserDelay, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2561,7 +2591,7 @@ cISDataMappings::cISDataMappings()
 	PopulateInfieldCalMappings(m_lookupInfo);
 
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
-	// DID_GPX_FLASH_CFG
+	PopulateGpxFlashCfgMappings(m_lookupInfo);
 	// DID_GPX_RTOS_INFO
 	// DID_GPX_STATUS
 	PopulateDebugArrayMappings(m_lookupInfo, DID_GPX_DEBUG_ARRAY);

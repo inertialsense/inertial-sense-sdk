@@ -2744,7 +2744,7 @@ typedef struct PACKED
     /** Hardware platform specifying the IMX carrier board type (i.e. RUG, EVB, IG) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.  */
     uint32_t				platformConfig;
 
-    /** X,Y,Z offset in meters from DOD_ Frame origin to GPS 2 antenna. */
+    /** X,Y,Z offset in meters in Sensor Frame origin to GPS 2 antenna. */
     float					gps2AntOffset[3];
 
     /** Euler (roll, pitch, yaw) rotation in radians from INS Sensor Frame to Intermediate ZeroVelocity Frame.  Order applied: heading, pitch, roll. */
@@ -3761,6 +3761,45 @@ typedef struct
 
     /** Manufacturer method for restoring flash defaults */
     uint32_t                key;
+
+    /** Serial port 0 baud rate in bits per second */
+    uint32_t				ser0BaudRate;
+
+    /** Serial port 1 baud rate in bits per second */
+    uint32_t				ser1BaudRate;
+
+    /** Serial port 2 baud rate in bits per second */
+    uint32_t				ser2BaudRate;
+
+    /** GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
+    uint32_t				startupGPSDtMs;
+
+    /** X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna. */
+    float					gps1AntOffset[3];
+
+    /** X,Y,Z offset in meters in Sensor Frame to GPS 2 antenna. */
+    float					gps2AntOffset[3];
+ 
+    /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
+    uint16_t				gnssSatSigConst;
+
+    /** Dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    uint8_t					dynamicModel;
+
+    /** Debug */
+    uint8_t					debug;
+
+    /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
+    uint32_t				gpsTimeSyncPeriodMs;
+
+    /** (sec) User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.  */
+    float                   gpsTimeUserDelay;
+
+    /** Minimum elevation of a satellite above the horizon to be used in the solution (radians). Low elevation satellites may provide degraded accuracy, due to the long signal path through the atmosphere. */
+    float                   gpsMinimumElevation;
+
+    /** RTK configuration bits (see eRTKConfigBits). */
+    uint32_t				RTKCfgBits;
 
 } gpx_flash_cfg_t;
 
