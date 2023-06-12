@@ -2663,16 +2663,16 @@ typedef struct PACKED
 
 typedef enum
 {
-    INS_DYN_MODEL_PORTABLE       	= 0,
-    INS_DYN_MODEL_STATIONARY        = 2,
-    INS_DYN_MODEL_PEDESTRIAN        = 3,
-    INS_DYN_MODEL_GROUND_VEHICLE    = 4,
-    INS_DYN_MODEL_MARINE            = 5,
-    INS_DYN_MODEL_AIRBORNE_1G       = 6,
-    INS_DYN_MODEL_AIRBORNE_2G       = 7,
-    INS_DYN_MODEL_AIRBORNE_4G       = 8,
-    INS_DYN_MODEL_WRIST             = 9,
-    INS_DYN_MODEL_INDOOR            = 10
+    DYNAMIC_MODEL_PORTABLE       	= 0,
+    DYNAMIC_MODEL_STATIONARY        = 2,
+    DYNAMIC_MODEL_PEDESTRIAN        = 3,
+    DYNAMIC_MODEL_GROUND_VEHICLE    = 4,
+    DYNAMIC_MODEL_MARINE            = 5,
+    DYNAMIC_MODEL_AIRBORNE_1G       = 6,
+    DYNAMIC_MODEL_AIRBORNE_2G       = 7,
+    DYNAMIC_MODEL_AIRBORNE_4G       = 8,
+    DYNAMIC_MODEL_WRIST             = 9,
+    DYNAMIC_MODEL_INDOOR            = 10
 } eInsDynModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
@@ -2712,7 +2712,7 @@ typedef struct PACKED
     float					gps1AntOffset[3];
  
     /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
-    uint8_t					insDynModel;
+    uint8_t					dynamicModel;
 
     /** Debug */
     uint8_t					debug;

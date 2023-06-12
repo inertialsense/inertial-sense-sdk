@@ -383,7 +383,7 @@ class cDevice:
             ('insRotation', (f32, 3)),
             ('insOffset', (f32, 3)),
             ('gps1AntOffset', (f32, 3)),
-            ('insDynModel', u32),
+            ('dynamicModel', u32),
             ('sysCfgBits', u32),
             ('refLla', (f64, 3)),
             ('lastLla', (f64, 3)),
