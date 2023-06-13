@@ -4666,14 +4666,14 @@ Gets the offsets and lengths of strings given a data id
 */
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
-/** Convert DID to realtime message bits */
+/** DID to RMC bit look-up table */
 extern const uint64_t g_didToRmcBit[DID_COUNT];
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
 
-/** Convert DID to NMEA message out control mask */
+/** DID to NMEA RMC bit look-up table */
 extern const uint64_t g_didToNmeaRmcBit[DID_COUNT];
 
-/** Convert DID to GPX RMC message output control mask */
+/** DID to GPX RMC bit look-up table */
 extern const uint64_t g_gpxDidToGrmcBit[DID_COUNT];
 
 //Time conversion constants

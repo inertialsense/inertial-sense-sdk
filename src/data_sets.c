@@ -637,7 +637,7 @@ uint32_t flashChecksum32(const void* data, int size)
 	return checksum32((const uint8_t*)data + 8, size - 8);
 }
 
-// Convert DID to RMC message output control mask
+// DID to RMC bit look-up table
 const uint64_t g_didToRmcBit[DID_COUNT] = 
 {
 	[DID_INS_1]               = RMC_BITS_INS1,
@@ -691,7 +691,7 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 	else                            { return defaultRmcBits; }
 }
 
-// Convert DID to NMEA message output control mask
+// DID to NMEA RMC bit look-up table
 const uint64_t g_didToNmeaRmcBit[DID_COUNT] = 
 {
 	[DID_IMU]                   = NMEA_RMC_BITS_PIMU,
@@ -711,7 +711,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
 
-// Convert DID to GPX RMC message output control mask
+// DID to GPX RMC bit look-up table
 const uint64_t g_gpxDidToGrmcBit[DID_COUNT] = 
 {
     [DID_GPX_DEV_INFO]           = GRMC_BITS_DEV_INFO,
