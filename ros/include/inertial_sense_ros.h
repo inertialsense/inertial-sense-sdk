@@ -387,7 +387,7 @@ public:
     float insOffset_[3] = {0, 0, 0};
     double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero
     float magDeclination_;
-    int dynamicModel_;
+    int insDynModel_;
     bool refLLA_known = false;
 
     uint32_t ioConfigBits_ = 0;                 // this is read directly from the config,
