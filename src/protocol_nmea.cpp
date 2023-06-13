@@ -16,7 +16,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
 
-void nema_set_protocol_version(int protocol_version)
+void nmea_set_protocol_version(int protocol_version)
 { 
 	s_protocol_version = protocol_version; 
 }
@@ -376,22 +376,66 @@ double timeToGpst(gtime_t t, int *week)
 	} \
 }
 
+void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
+{
+	uint32_t bitsNmea = (1<<nmeaId);
+	int did = 0;
+
+	switch (nmeaId)
+	{
+	case NMEA_MSG_ID_PIMU:      did = DID_IMU; break;
+	case NMEA_MSG_ID_PPIMU:     did = DID_PIMU; break;
+	case NMEA_MSG_ID_PRIMU:     did = DID_IMU_RAW; break;
+	case NMEA_MSG_ID_PINS1:     did = DID_INS_1; break;
+	case NMEA_MSG_ID_PINS2:     did = DID_INS_2; break;
+	case NMEA_MSG_ID_PGPSP:     
+	case NMEA_MSG_ID_GGA:       
+	case NMEA_MSG_ID_GLL:       
+	case NMEA_MSG_ID_GSA:       
+	case NMEA_MSG_ID_RMC:       
+	case NMEA_MSG_ID_ZDA:       
+	case NMEA_MSG_ID_PASHR:     
+	case NMEA_MSG_ID_PSTRB:     
+	case NMEA_MSG_ID_INFO:      
+	case NMEA_MSG_ID_GSV:       did = DID_GPS1_POS; break;	
+	default: return;
+	}
+
+	if (did == DID_GPS1_POS)
+	{	// DID_GPS1_POS shared by multiple NMEA messages
+		if (rmci.periodMultiple[did]){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], periodMultiple); } 
+		else                         { rmci.periodMultiple[did] = periodMultiple; }
+	}
+	else
+	{	// Unshared DIDs
+		rmci.periodMultiple[did] = periodMultiple;
+	}
+
+	if (periodMultiple)
+	{
+		rmci.bitsNmea |=  (bitsNmea);
+	} 
+	else 
+	{
+		rmci.bitsNmea &= ~(bitsNmea);
+	}
+}
+
 void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 {
-	SET_ASCII_RMCI(DID_IMU, NMEA_RMC_BITS_PIMU, tmp.pimu);
-	SET_ASCII_RMCI(DID_PIMU, NMEA_RMC_BITS_PPIMU, tmp.ppimu);
-	SET_ASCII_RMCI(DID_IMU_RAW, NMEA_RMC_BITS_PRIMU, tmp.primu);
-	SET_ASCII_RMCI(DID_INS_1, NMEA_RMC_BITS_PINS1, tmp.pins1);
-	SET_ASCII_RMCI(DID_INS_2, NMEA_RMC_BITS_PINS2, tmp.pins2);
-
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_PGPSP, tmp.pgpsp);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GGA, tmp.gga);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GLL, tmp.gll);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GSA, tmp.gsa);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_RMC, tmp.rmc);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_ZDA, tmp.zda);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_PASHR, tmp.pashr);
-	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, NMEA_RMC_BITS_GSV, tmp.gsv);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PIMU,  tmp.pimu);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PPIMU, tmp.ppimu);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PRIMU, tmp.primu);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PINS1, tmp.pins1);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PINS2, tmp.pins2);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PGPSP, tmp.pgpsp);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GGA,   tmp.gga);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GLL,   tmp.gll);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GSA,   tmp.gsa);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_RMC,   tmp.rmc);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_ZDA,   tmp.zda);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PASHR, tmp.pashr);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GSV,   tmp.gsv);	
 }
 
 

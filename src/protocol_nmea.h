@@ -39,7 +39,8 @@ enum eNmeaProtocolVersion
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
-void nema_set_protocol_version(int protocol_version);
+void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple);
+void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...);
 int nmea_sprint_footer(char* a, int aSize, int &n);

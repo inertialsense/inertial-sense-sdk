@@ -364,7 +364,7 @@ TEST(protocol_nmea, GSA)
 
 TEST(protocol_nmea, GSV_binary_GSV)
 {
-    nema_set_protocol_version(NMEA_PROTOCOL_2P3);
+    nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
 
     string buf;
 
@@ -408,7 +408,7 @@ TEST(protocol_nmea, GSV_binary_GSV)
 
 TEST(protocol_nmea_4p11, GSV_binary_GSV)
 {
-    nema_set_protocol_version(NMEA_PROTOCOL_4P10);
+    nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
 
     string buf;
 
@@ -1173,7 +1173,7 @@ TEST(protocol_nmea, binary_GSV_binary)
 
 
     {   // Test NMEA protocol 2.3
-        nema_set_protocol_version(NMEA_PROTOCOL_2P3);
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
         int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
@@ -1229,7 +1229,7 @@ TEST(protocol_nmea, binary_GSV_binary)
     }
 
     {   // Test NMEA protocol 4.10
-        nema_set_protocol_version(NMEA_PROTOCOL_4P10);
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
         int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
