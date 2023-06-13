@@ -222,7 +222,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	// Set parse enable flags
 	instance->config.enabledMask = 
 		ENABLE_PROTOCOL_ISB |
-		ENABLE_PROTOCOL_ASCII |
+		ENABLE_PROTOCOL_NMEA |
 		ENABLE_PROTOCOL_UBLOX |
 		ENABLE_PROTOCOL_RTCM3 |
 		ENABLE_PROTOCOL_SPARTN |
@@ -848,7 +848,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		if (instance->hasStartByte == 0)
 		{
 			if((byte == PSC_START_BYTE			&& (instance->config.enabledMask & ENABLE_PROTOCOL_ISB)) ||
-				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_ASCII)) ||
+				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_NMEA)) ||
 				(byte == UBLOX_START_BYTE1		&& (instance->config.enabledMask & ENABLE_PROTOCOL_UBLOX)) ||
 				(byte == RTCM3_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_RTCM3)) ||
 				(byte == SPARTN_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_SPARTN)) ||

@@ -16,7 +16,7 @@ extern "C"
 #endif
 
 #define TEST_PROTO_IS		1
-#define TEST_PROTO_ASCII	1
+#define TEST_PROTO_NMEA		1
 #define TEST_PROTO_UBLOX	1
 #define TEST_PROTO_RTCM3	1
 #define TEST_PROTO_SPARTN	1
@@ -266,7 +266,7 @@ bool initComManager(test_data_t &t)
 
 	// Enable/disable protocols
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_IS);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ASCII * TEST_PROTO_ASCII);
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
@@ -325,7 +325,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 
 			if (j == 3 )
 			{	// NMEA
-#if TEST_PROTO_ASCII
+#if TEST_PROTO_NMEA
 				td.ptype = _PTYPE_NMEA;
 				td.size = nmea_pins1((char*)td.data.buf, sizeof(td.data.buf), ins1);
 #endif
@@ -359,9 +359,9 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			gps.towOffset = (double)i*123.4;
 			gps.leapS = (uint8_t)i;
 
-			if ((j == 5 || TEST_PROTO_IS == 0) && TEST_PROTO_ASCII)
+			if ((j == 5 || TEST_PROTO_IS == 0) && TEST_PROTO_NMEA)
 			{	// NMEA
-#if TEST_PROTO_ASCII
+#if TEST_PROTO_NMEA
 				td.ptype = _PTYPE_NMEA;
 				td.size = nmea_gga((char*)td.data.buf, sizeof(td.data.buf), gps);
 #endif
@@ -377,7 +377,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			}
 			break;
 
-#if TEST_PROTO_ASCII
+#if TEST_PROTO_NMEA
 		case 6:		// NMEA command - Stop all broadcasts
 			td.ptype = _PTYPE_NMEA;
 			td.size = snprintf((char*)td.data.buf, PKT_BUF_SIZE, "$STPB*15\r\n");
