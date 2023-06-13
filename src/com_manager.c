@@ -945,7 +945,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	broadcast_msg_t* msg = 0;
 
 	// Validate the request
-	if (req->id >= DID_COUNT_UINS)
+	if (req->id >= DID_COUNT)
 	{
 		// invalid data id
 		return -1;
@@ -957,7 +957,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		return 0;
 	}
 	// if size is 0 and offset is 0, set size to full data struct size
-	else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT_UINS)
+	else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT)
 	{
 		req->size = cmInstance->regData[req->id].dataSet.size;
 	}

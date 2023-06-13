@@ -637,7 +637,8 @@ uint32_t flashChecksum32(const void* data, int size)
 	return checksum32((const uint8_t*)data + 8, size - 8);
 }
 
-const uint64_t g_didToRmcBit[DID_COUNT_UINS] = 
+// Convert DID to RMC message output control mask
+const uint64_t g_didToRmcBit[DID_COUNT] = 
 {
 	[DID_INS_1]               = RMC_BITS_INS1,
 	[DID_INS_2]               = RMC_BITS_INS2,
@@ -679,6 +680,8 @@ const uint64_t g_didToRmcBit[DID_COUNT_UINS] =
 	[DID_GROUND_VEHICLE]      = RMC_BITS_GROUND_VEHICLE,
 	[DID_IMU_MAG]             = RMC_BITS_IMU_MAG,
 	[DID_PIMU_MAG]            = RMC_BITS_PIMU_MAG,
+	[DID_GPX_RTOS_INFO]       = RMC_BITS_GPX_RTOS_INFO,
+	[DID_GPX_DEBUG_ARRAY]     = RMC_BITS_GPX_DEBUG,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -688,8 +691,8 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 	else                            { return defaultRmcBits; }
 }
 
-// Convert DID to NMEA message out control mask
-const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS] = 
+// Convert DID to NMEA message output control mask
+const uint64_t g_didToNmeaRmcBit[DID_COUNT] = 
 {
 	[DID_IMU]                   = NMEA_RMC_BITS_PIMU,
 	[DID_PIMU]                  = NMEA_RMC_BITS_PPIMU,
@@ -706,6 +709,28 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS] =
 		NMEA_RMC_BITS_ZDA |
 		NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
+};
+
+// Convert DID to GPX RMC message output control mask
+const uint64_t g_gpxDidToGrmcBit[DID_COUNT] = 
+{
+    [DID_GPX_DEV_INFO]           = GRMC_BITS_DEV_INFO,
+    [DID_GPX_FLASH_CFG]          = GRMC_BITS_FLASH_CFG,
+    [DID_GPX_RTOS_INFO]          = GRMC_BITS_RTOS_INFO,
+    [DID_GPX_STATUS]             = GRMC_BITS_STATUS,
+    [DID_GPX_DEBUG_ARRAY]        = GRMC_BITS_DEBUG_ARRAY,
+    [DID_GPS1_POS]               = GRMC_BITS_GPS1_POS,
+    [DID_GPS1_VEL]               = GRMC_BITS_GPS1_VEL,
+    [DID_GPS1_RAW]               = GRMC_BITS_GPS1_RAW,
+    [DID_GPS1_SAT]               = GRMC_BITS_GPS1_SAT,
+    [DID_GPS1_SIG]               = GRMC_BITS_GPS1_SIG,
+    [DID_GPS1_VERSION]           = GRMC_BITS_GPS1_VERSION,
+    [DID_GPS2_POS]               = GRMC_BITS_GPS2_POS,
+    [DID_GPS2_VEL]               = GRMC_BITS_GPS2_VEL,
+    [DID_GPS2_SAT]               = GRMC_BITS_GPS2_SAT,
+    [DID_GPS2_SIG]               = GRMC_BITS_GPS2_SIG,
+    [DID_GPS2_RAW]               = GRMC_BITS_GPS2_RAW,
+    [DID_GPS2_VERSION]           = GRMC_BITS_GPS2_VERSION,
 };
 
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)

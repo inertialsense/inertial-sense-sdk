@@ -1616,6 +1616,8 @@ typedef struct PACKED
 #define RMC_BITS_IMU_RAW                0x0000020000000000
 #define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
 #define RMC_BITS_GPS2_SIG               0x0000080000000000      // "
+#define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000      // 1ms
+#define RMC_BITS_GPX_DEBUG              0x0000200000000000      // 1ms
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -1714,13 +1716,33 @@ typedef struct PACKED
     uint32_t				options;
     
     /** Used for both the DID binary and NMEA messages.  */
-    uint8_t                 periodMultiple[DID_COUNT_UINS];
+    uint8_t                 periodMultiple[DID_COUNT];
 
     /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
     uint32_t                bitsNmea;
 
 } rmci_t;
 
+// GPX Realtime Message Controller (GRMC) - message broadcast mechanism.
+#define GRMC_BITS_DEV_INFO      0x0000000000000001
+#define GRMC_BITS_FLASH_CFG     0x0000000000000002
+#define GRMC_BITS_STATUS        0x0000000000000004
+#define GRMC_BITS_RTOS_INFO     0x0000000000000008
+#define GRMC_BITS_DEBUG_ARRAY   0x0000000000000010
+
+#define GRMC_BITS_GPS1_POS      0x0000000000001000
+#define GRMC_BITS_GPS1_VEL      0x0000000000002000
+#define GRMC_BITS_GPS1_SAT      0x0000000000004000
+#define GRMC_BITS_GPS1_SIG      0x0000000000008000
+#define GRMC_BITS_GPS1_RAW      0x0000000000010000
+#define GRMC_BITS_GPS1_VERSION  0x0000000000020000
+
+#define GRMC_BITS_GPS2_POS      0x0000000000100000
+#define GRMC_BITS_GPS2_VEL      0x0000000000200000
+#define GRMC_BITS_GPS2_SAT      0x0000000000400000
+#define GRMC_BITS_GPS2_SIG      0x0000000000800000
+#define GRMC_BITS_GPS2_RAW      0x0000000001000000
+#define GRMC_BITS_GPS2_VERSION  0x0000000002000000
 
 /** (DID_IO) Input/Output */
 typedef struct PACKED
@@ -4643,11 +4665,14 @@ Gets the offsets and lengths of strings given a data id
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
 /** Convert DID to realtime message bits */
-extern const uint64_t g_didToRmcBit[DID_COUNT_UINS];
+extern const uint64_t g_didToRmcBit[DID_COUNT];
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
 
 /** Convert DID to NMEA message out control mask */
-extern const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS];
+extern const uint64_t g_didToNmeaRmcBit[DID_COUNT];
+
+/** Convert DID to GPX RMC message output control mask */
+extern const uint64_t g_gpxDidToGrmcBit[DID_COUNT];
 
 //Time conversion constants
 #define SECONDS_PER_WEEK        604800
