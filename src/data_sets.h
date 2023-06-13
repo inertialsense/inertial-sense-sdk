@@ -4643,10 +4643,11 @@ Gets the offsets and lengths of strings given a data id
 uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength);
 
 /** Convert DID to realtime message bits */
+extern const uint64_t g_didToRmcBit[DID_COUNT_UINS];
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits);
 
-uint32_t didToNmeaRmcBits(uint32_t dataId);
-
+/** Convert DID to NMEA message out control mask */
+extern const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS];
 
 //Time conversion constants
 #define SECONDS_PER_WEEK        604800

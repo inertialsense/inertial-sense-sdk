@@ -637,82 +637,76 @@ uint32_t flashChecksum32(const void* data, int size)
 	return checksum32((const uint8_t*)data + 8, size - 8);
 }
 
-// Convert DID to message out control mask
+const uint64_t g_didToRmcBit[DID_COUNT_UINS] = 
+{
+	[DID_INS_1]               = RMC_BITS_INS1,
+	[DID_INS_2]               = RMC_BITS_INS2,
+	[DID_INS_3]               = RMC_BITS_INS3,
+	[DID_INS_4]               = RMC_BITS_INS4,
+	[DID_IMU3_UNCAL]          = RMC_BITS_IMU3_UNCAL,
+	[DID_IMU3_RAW]            = RMC_BITS_IMU3_RAW,
+	[DID_IMU_RAW]             = RMC_BITS_IMU_RAW,
+	[DID_IMU]                 = RMC_BITS_IMU,
+	[DID_PIMU]                = RMC_BITS_PIMU,
+	[DID_REFERENCE_IMU]       = RMC_BITS_REFERENCE_IMU,
+	[DID_REFERENCE_PIMU]      = RMC_BITS_REFERENCE_PIMU,
+	[DID_BAROMETER]           = RMC_BITS_BAROMETER,
+	[DID_MAGNETOMETER]        = RMC_BITS_MAGNETOMETER,
+	[DID_GPS1_POS]            = RMC_BITS_GPS1_POS,
+	[DID_GPS2_POS]            = RMC_BITS_GPS2_POS,
+	[DID_GPS1_VEL]            = RMC_BITS_GPS1_VEL,
+	[DID_GPS2_VEL]            = RMC_BITS_GPS2_VEL,
+	[DID_GPS1_SAT]            = RMC_BITS_GPS1_SAT,
+	[DID_GPS2_SAT]            = RMC_BITS_GPS2_SAT,
+	[DID_GPS1_SIG]            = RMC_BITS_GPS1_SIG,
+	[DID_GPS2_SIG]            = RMC_BITS_GPS2_SIG,
+	[DID_GPS1_RAW]            = RMC_BITS_GPS1_RAW,
+	[DID_GPS2_RAW]            = RMC_BITS_GPS2_RAW,
+	[DID_GPS_BASE_RAW]        = RMC_BITS_GPS_BASE_RAW,
+	[DID_GPS1_RCVR_POS]       = RMC_BITS_GPS1_UBX_POS,
+	[DID_GPS1_RTK_POS]        = RMC_BITS_GPS1_RTK_POS,
+	[DID_GPS1_RTK_POS_REL]    = RMC_BITS_GPS1_RTK_POS_REL,
+	[DID_GPS1_RTK_POS_MISC]   = RMC_BITS_GPS1_RTK_POS_MISC,
+	[DID_GPS2_RTK_CMP_REL]    = RMC_BITS_GPS1_RTK_HDG_REL,
+	[DID_GPS2_RTK_CMP_MISC]   = RMC_BITS_GPS1_RTK_HDG_MISC,
+	[DID_STROBE_IN_TIME]      = RMC_BITS_STROBE_IN_TIME,
+	[DID_DIAGNOSTIC_MESSAGE]  = RMC_BITS_DIAGNOSTIC_MESSAGE,
+	[DID_INL2_NED_SIGMA]      = RMC_BITS_INL2_NED_SIGMA,
+	[DID_RTK_STATE]           = RMC_BITS_RTK_STATE,
+	[DID_RTK_CODE_RESIDUAL]   = RMC_BITS_RTK_CODE_RESIDUAL,
+	[DID_RTK_PHASE_RESIDUAL]  = RMC_BITS_RTK_PHASE_RESIDUAL,
+	[DID_WHEEL_ENCODER]       = RMC_BITS_WHEEL_ENCODER,
+	[DID_GROUND_VEHICLE]      = RMC_BITS_GROUND_VEHICLE,
+	[DID_IMU_MAG]             = RMC_BITS_IMU_MAG,
+	[DID_PIMU_MAG]            = RMC_BITS_PIMU_MAG,
+};
+
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
 {
-	switch (dataId)
-	{
-		case DID_INS_1:					return RMC_BITS_INS1;
-		case DID_INS_2:					return RMC_BITS_INS2;
-		case DID_INS_3:					return RMC_BITS_INS3;
-		case DID_INS_4:					return RMC_BITS_INS4;
-		case DID_IMU3_UNCAL:			return RMC_BITS_IMU3_UNCAL;
-		case DID_IMU3_RAW:				return RMC_BITS_IMU3_RAW;
-		case DID_IMU_RAW:				return RMC_BITS_IMU_RAW;
-		case DID_IMU:					return RMC_BITS_IMU;
-		case DID_PIMU:					return RMC_BITS_PIMU;
-		case DID_REFERENCE_IMU:		    return RMC_BITS_REFERENCE_IMU;
-		case DID_REFERENCE_PIMU:		return RMC_BITS_REFERENCE_PIMU;
-		case DID_BAROMETER:				return RMC_BITS_BAROMETER;
-		case DID_MAGNETOMETER:			return RMC_BITS_MAGNETOMETER;
-		case DID_GPS1_POS:				return RMC_BITS_GPS1_POS;
-		case DID_GPS2_POS:				return RMC_BITS_GPS2_POS;
-		case DID_GPS1_VEL:				return RMC_BITS_GPS1_VEL;
-		case DID_GPS2_VEL:				return RMC_BITS_GPS2_VEL;
-		case DID_GPS1_SAT:				return RMC_BITS_GPS1_SAT;
-		case DID_GPS2_SAT:				return RMC_BITS_GPS2_SAT;
-		case DID_GPS1_SIG:				return RMC_BITS_GPS1_SIG;
-		case DID_GPS2_SIG:				return RMC_BITS_GPS2_SIG;
-		case DID_GPS1_RAW:				return RMC_BITS_GPS1_RAW;
-		case DID_GPS2_RAW:				return RMC_BITS_GPS2_RAW;
-		case DID_GPS_BASE_RAW:			return RMC_BITS_GPS_BASE_RAW;
-		case DID_GPS1_RCVR_POS:			return RMC_BITS_GPS1_UBX_POS;
-		case DID_GPS1_RTK_POS:			return RMC_BITS_GPS1_RTK_POS;
-		case DID_GPS1_RTK_POS_REL:		return RMC_BITS_GPS1_RTK_POS_REL;
-		case DID_GPS1_RTK_POS_MISC:		return RMC_BITS_GPS1_RTK_POS_MISC;
-		case DID_GPS2_RTK_CMP_REL:		return RMC_BITS_GPS1_RTK_HDG_REL;
-		case DID_GPS2_RTK_CMP_MISC:		return RMC_BITS_GPS1_RTK_HDG_MISC;
-		case DID_STROBE_IN_TIME:		return RMC_BITS_STROBE_IN_TIME;
-		case DID_DIAGNOSTIC_MESSAGE:	return RMC_BITS_DIAGNOSTIC_MESSAGE;		
-		case DID_INL2_NED_SIGMA:		return RMC_BITS_INL2_NED_SIGMA;
-        case DID_RTK_STATE:         	return RMC_BITS_RTK_STATE;
-        case DID_RTK_CODE_RESIDUAL:     return RMC_BITS_RTK_CODE_RESIDUAL;
-        case DID_RTK_PHASE_RESIDUAL:    return RMC_BITS_RTK_PHASE_RESIDUAL;
-		case DID_WHEEL_ENCODER:         return RMC_BITS_WHEEL_ENCODER;
-		case DID_GROUND_VEHICLE:        return RMC_BITS_GROUND_VEHICLE;
-		case DID_IMU_MAG:               return RMC_BITS_IMU_MAG;
-		case DID_PIMU_MAG: 				return RMC_BITS_PIMU_MAG;
-		
-		case DID_DEV_INFO:				return devInfoRmcBits;		// This allows the dev info to respond instantly when first connected.
-		default:                        return defaultRmcBits;
-	}
+	if (dataId == DID_DEV_INFO)     { return devInfoRmcBits; }		// This allows the dev info to respond instantly when first connected.
+	else if (g_didToRmcBit[dataId]) { return g_didToRmcBit[dataId]; }
+	else                            { return defaultRmcBits; }
 }
 
 // Convert DID to NMEA message out control mask
-uint32_t didToNmeaRmcBits(uint32_t dataId)
+const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS] = 
 {
-	switch (dataId)
-	{
-		case DID_IMU:					return NMEA_RMC_BITS_PIMU;
-		case DID_PIMU:					return NMEA_RMC_BITS_PPIMU;
-		case DID_IMU_RAW:				return NMEA_RMC_BITS_PRIMU;
-		case DID_INS_1:					return NMEA_RMC_BITS_PINS1;
-		case DID_INS_2:					return NMEA_RMC_BITS_PINS2;
-		case DID_GPS1_SAT:				return NMEA_RMC_BITS_GSV;				
-		case DID_GPS1_POS:				
-			return 
-				NMEA_RMC_BITS_PGPSP |
-				NMEA_RMC_BITS_GGA |
-				NMEA_RMC_BITS_GLL |
-				NMEA_RMC_BITS_GSA |
-				NMEA_RMC_BITS_RMC |
-				NMEA_RMC_BITS_ZDA |
-				NMEA_RMC_BITS_PASHR;
-		case DID_DEV_INFO:				return NMEA_RMC_BITS_INFO;
-
-		default:                        return 0;
-	}
-}
+	[DID_IMU]                   = NMEA_RMC_BITS_PIMU,
+	[DID_PIMU]                  = NMEA_RMC_BITS_PPIMU,
+	[DID_IMU_RAW]               = NMEA_RMC_BITS_PRIMU,
+	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
+	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
+	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GSV,
+	[DID_GPS1_POS]				=
+		NMEA_RMC_BITS_PGPSP |
+		NMEA_RMC_BITS_GGA |
+		NMEA_RMC_BITS_GLL |
+		NMEA_RMC_BITS_GSA |
+		NMEA_RMC_BITS_RMC |
+		NMEA_RMC_BITS_ZDA |
+		NMEA_RMC_BITS_PASHR,
+	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
+};
 
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)
 {
