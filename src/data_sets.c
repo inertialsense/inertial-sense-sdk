@@ -731,6 +731,10 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GPS2_SIG]               = GRMC_BITS_GPS2_SIG,
     [DID_GPS2_RAW]               = GRMC_BITS_GPS2_RAW,
     [DID_GPS2_VERSION]           = GRMC_BITS_GPS2_VERSION,
+	[DID_GPS1_RTK_POS_MISC]      = GMRC_BITS_GPS1_RTK_POS_MISC,
+	[DID_GPS1_RTK_POS_REL]       = GMRC_BITS_GPS1_RTK_POS_REL,
+	[DID_GPS2_RTK_CMP_MISC]      = GMRC_BITS_GPS2_RTK_CMP_MISC,
+	[DID_GPS2_RTK_CMP_REL]       = GMRC_BITS_GPS2_RTK_CMP_REL,
 };
 
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)
