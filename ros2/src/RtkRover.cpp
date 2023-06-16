@@ -1,0 +1,211 @@
+/***************************************************************************************
+ *
+ * @Copyright 2023, Inertial Sense Inc. <devteam@inertialsense.com>
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ***************************************************************************************/
+
+#include "RtkRover.h"
+
+void RtkRoverProvider::configure(YAML::Node& node) {
+    if (node.IsDefined() && !node.IsNull()) {
+        ph_.setCurrentNode(node);
+        ph_.nodeParam(node, "compassing_enable", compassing_enable, false);
+        ph_.nodeParam(node, "positioning_enable", positioning_enable, false);
+
+        if (node["correction_input"].IsDefined() && !node["correction_input"].IsNull()) {
+            std::string correction_src = node["correction_input"]["select"].as<std::string>();
+            YAML::Node inputNode = node["correction_input"][correction_src];
+            if (inputNode.IsDefined() && !inputNode.IsNull()) {
+                correction_input = RtkRoverCorrectionProviderFactory::buildCorrectionProvider(nh_, inputNode);
+                if (correction_input == nullptr) {
+                    RCLCPP_ERROR_STREAM(nh_->get_logger(),"Unable to configure RosRoverCorrectionProviders. Please validate the configuration:\n\n" << node << "\n\n");
+                }
+            } else {
+                RCLCPP_ERROR_STREAM(nh_->get_logger(),"The specified Correction Provider [" << correction_src << "] can't be located in the config. Please validate the configuration:\n\n" << node << "\n\n");
+            }
+        } else {
+            RCLCPP_ERROR_STREAM(nh_->get_logger(),"No \"correction_input\" configuration has been provided.  Please validate the configuration:\n\n" << node << "\n\n");
+        }
+    } else {
+        RCLCPP_ERROR(nh_->get_logger(),"Unable to configure RosRoverProvider. The YAML node was null or undefined.");
+    }
+}
+
+/*
+ *==================  RtkRoverCorrectionProvider_Ntrip ==================*
+ */
+void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
+    if (node.IsDefined() && !node.IsNull()) {
+        this->ph_.setCurrentNode(node);
+        this->ph_.nodeParam("type", this->type_, "NTRIP");
+        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
+        this->ph_.nodeParam("ip_address", ip_);
+        this->ph_.nodeParam("ip_port", port_);
+        this->ph_.nodeParam("mount_point", mount_point_);
+        this->ph_.nodeParam("username", username_);
+        this->ph_.nodeParam("password", password_);
+        this->ph_.setCurrentNode(node["connection_attempts"]);
+        this->ph_.nodeParam("limit", connection_attempt_limit_, 1);
+        this->ph_.nodeParam("backoff", connection_attempt_backoff_, 2);
+        this->ph_.setCurrentNode(node["watchdog"]);
+        this->ph_.nodeParam("enable", connectivity_watchdog_enabled_, true);
+        this->ph_.nodeParam("interval", connectivity_watchdog_timer_frequency_, 1);
+    } else {
+        RCLCPP_ERROR(nh_->get_logger(),"Unable to configure RtkRoverCorrectionProvider_Ntrip. The YAML node was null or undefined.");
+    }
+}
+
+std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
+    std::string RTK_connection = "TCP:" + this->protocol_ + ":" + ip_ + ":" + std::to_string(port_);
+    if (!mount_point_.empty() || !username_.empty())
+        RTK_connection.append(":" + mount_point_);
+    if (!username_.empty()) {
+        RTK_connection.append(":" + username_);
+        if (!password_.empty())
+            RTK_connection.append(":" + password_);
+    }
+
+    return RTK_connection;
+}
+
+void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
+{
+    if (this->is_ == nullptr) {
+        RCLCPP_FATAL(nh_->get_logger(), "RTK Client connection requested, but configureIS() hasn't been called in the provider.");
+        rclcpp::shutdown();
+        connecting_ = false;
+        return;
+    }
+    connecting_ = true;
+
+    // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+    std::string RTK_connection = get_connection_string();
+
+    int RTK_connection_attempt_count = 0;
+    while (RTK_connection_attempt_count < connection_attempt_limit_)
+    {
+        ++RTK_connection_attempt_count;
+
+        bool connected = this->is_->OpenConnectionToServer(RTK_connection);
+
+        if (connected)
+        {
+            RCLCPP_INFO_STREAM(nh_->get_logger(), "Successfully connected to " << RTK_connection << " RTK server");
+            break;
+        }
+        else
+        {
+            RCLCPP_ERROR_STREAM(nh_->get_logger(),"Failed to connect to base server at " << RTK_connection);
+
+            if (RTK_connection_attempt_count >= connection_attempt_limit_)
+            {
+                RCLCPP_ERROR_STREAM(nh_->get_logger(),"Giving up after " << RTK_connection_attempt_count << " failed attempts");
+            }
+            else
+            {
+                int sleep_duration = RTK_connection_attempt_count * connection_attempt_backoff_;
+                RCLCPP_WARN_STREAM(nh_->get_logger(), "Retrying connection in " << sleep_duration << " seconds");
+                rclcpp::sleep_for(std::chrono::seconds(sleep_duration));
+            }
+        }
+    }
+
+    connecting_ = false;
+}
+
+void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback()
+{
+    if (connecting_ && (this->is_ != nullptr))
+        return;
+
+    int latest_byte_count = this->is_->GetClientServerByteCount();
+    if (traffic_total_byte_count_ == latest_byte_count)
+    {
+        ++data_transmission_interruption_count_;
+
+        if (data_transmission_interruption_count_ >= data_transmission_interruption_limit_)
+        {
+            RCLCPP_WARN(nh_->get_logger(), "RTK transmission interruption, reconnecting...");
+            connect_rtk_client();
+        }
+    }
+    else
+    {
+        traffic_total_byte_count_ = latest_byte_count;
+        data_transmission_interruption_count_ = 0;
+    }
+}
+
+void RtkRoverCorrectionProvider_Ntrip::start_connectivity_watchdog_timer()
+{
+    if (!connectivity_watchdog_enabled_) {
+        return;
+    }
+
+    if(!connectivity_watchdog_timer_) {
+        auto period = std::chrono::duration<float>(1/connectivity_watchdog_timer_frequency_);
+        connectivity_watchdog_timer_ = nh_->create_wall_timer(period, std::bind(&RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback, this));
+    }
+
+    connectivity_watchdog_timer_->reset();
+}
+
+void RtkRoverCorrectionProvider_Ntrip::stop_connectivity_watchdog_timer()
+{
+    connectivity_watchdog_timer_->cancel();
+    traffic_total_byte_count_ = 0;
+    data_transmission_interruption_count_ = 0;
+}
+
+/*
+ *==================  RtkRoverCorrectionProvider_Serial ==================*
+ */
+void RtkRoverCorrectionProvider_Serial::configure(YAML::Node& node) {
+    if (node.IsDefined() && !node.IsNull()) {
+        this->ph_.setCurrentNode(node);
+        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
+        this->ph_.nodeParam("port", port_);
+        this->ph_.nodeParam("baud_rate", baud_rate_);
+    } else {
+        RCLCPP_ERROR(nh_->get_logger(),"Unable to configure RtkRoverCorrectionProvider_Serial. The YAML node was null or undefined.");
+    }
+}
+
+/*
+ *==================  RtkRoverCorrectionProvider_ROS ==================*
+ */
+void RtkRoverCorrectionProvider_ROS::configure(YAML::Node& node) {
+    if (node.IsDefined() && !node.IsNull()) {
+        this->ph_.setCurrentNode(node);
+        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
+        this->ph_.nodeParam("topic", topic_);
+    } else {
+        RCLCPP_ERROR(nh_->get_logger(),"Unable to configure RtkRoverCorrectionProvider_ROS. The YAML node was null or undefined.");
+    }
+}
+
+/*
+ *==================  RtkRoverCorrectionProvider_EVB ==================*
+ */
+void RtkRoverCorrectionProvider_EVB::configure(YAML::Node& node) {
+    if (node.IsDefined() && !node.IsNull()) {
+        this->ph_.setCurrentNode(node);
+        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
+        this->ph_.nodeParam("port", port_);
+    } else {
+        RCLCPP_ERROR(nh_->get_logger(),"Unable to configure RtkRoverCorrectionProvider_EVB. The YAML node was null or undefined.");
+    }
+}
+
