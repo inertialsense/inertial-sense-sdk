@@ -112,36 +112,6 @@ int validateBaudRate(unsigned int baudRate)
 	return -1;
 }
 
-// Replace special character with encoded equivalent and add to buffer
-static uint8_t* encodeByteAddToBuffer(uint32_t val, uint8_t* ptrDest)
-{
-	switch (val)
-	{
-	case PSC_ASCII_START_BYTE:
-	case PSC_ASCII_END_BYTE:
-	case PSC_ISB_PREAMBLE:
-	case PSC_END_BYTE:
-	case PSC_RESERVED_KEY:
-	case UBLOX_START_BYTE1:
-	case RTCM3_START_BYTE:
-		if (s_packetEncodingEnabled)
-		{
-			*ptrDest++ = PSC_RESERVED_KEY;
-			*ptrDest++ = (uint8_t)~val;
-		}
-		else
-		{
-			*ptrDest++ = (uint8_t)val;
-		}
-		break;
-	default:
-		*ptrDest++ = (uint8_t)val;
-		break;
-	}
-
-	return ptrDest;
-}
-
 static int dataIdShouldSwap(uint32_t dataId)
 {
 	switch (dataId)
@@ -848,7 +818,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		if (instance->hasStartByte == 0)
 		{
 			if((byte == PSC_ISB_PREAMBLE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_ISB)) ||
-				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_NMEA)) ||
+				(byte == PSC_NMEA_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_NMEA)) ||
 				(byte == UBLOX_START_BYTE1		&& (instance->config.enabledMask & ENABLE_PROTOCOL_UBLOX)) ||
 				(byte == RTCM3_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_RTCM3)) ||
 				(byte == SPARTN_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_SPARTN)) ||
@@ -874,18 +844,19 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		switch (instance->hasStartByte)
 		{
 		case PSC_ISB_PREAMBLE:
-			if (byte == PSC_END_BYTE)
+			ptype = processInertialSensePkt(instance);
+			if (ptype != _PTYPE_NONE)
 			{
-				return processInertialSensePkt(instance);
+				return ptype;
 			}
 			break;
-		case PSC_ASCII_START_BYTE:
+		case PSC_NMEA_START_BYTE:
 			if (byte == PSC_ASCII_END_BYTE)
 			{
 				return processAsciiPkt(instance);
 			}
-			//Check for invalid bytes in NMEA string and exit if found.
-			if (byte == PSC_ISB_PREAMBLE || byte == PSC_END_BYTE || byte == 0)
+			// Check for invalid bytes in NMEA string and exit if found.
+			if (byte == PSC_ISB_PREAMBLE || byte == 0)
 			{
 				instance->hasStartByte = 0;
 				instance->parseState = -1;
@@ -1115,7 +1086,7 @@ int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t
 	uint32_t val = *ptrSrc++;
 	switch (val)
 	{
-	case PSC_ASCII_START_BYTE:
+	case PSC_NMEA_START_BYTE:
 	case PSC_ASCII_END_BYTE:
 	case PSC_ISB_PREAMBLE:
 	case RTCM3_START_BYTE:
@@ -1162,7 +1133,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	val = hdr->pid;
-	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 	checkSumValue ^= val;
 
 	// Counter
@@ -1171,7 +1141,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	val = hdr->counter;
-	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 	checkSumValue ^= (val << 8);
 
 	// Flags
@@ -1180,7 +1149,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	val = hdr->flags | additionalPktFlags | CPU_IS_LITTLE_ENDIAN | CM_PKT_FLAGS_CHECKSUM_24_BIT;
-	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 	checkSumValue ^= (val << 16);
 
 	// Packet body ----------------------------------------------------------------------------------------------
@@ -1200,8 +1168,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 
 			// reset if shifter equals 24
 			shifter *= (shifter != 24);
-
-			ptrDest = encodeByteAddToBuffer(val, ptrDest);
 		}
 	}
 
@@ -1213,7 +1179,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	val = (uint8_t)((checkSumValue >> 16) & 0xFF);
-	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 
 	// checksum byte 2
 	if (ptrDest >= ptrDestEnd)
@@ -1221,7 +1186,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	val = (uint8_t)(checkSumValue >> 8) & 0xFF;
-	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 
 	// checksum byte 1
 	if (ptrDest >= ptrDestEnd)
@@ -1229,7 +1193,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 		return -1;
 	}
 	val = (uint8_t)(checkSumValue & 0xFF);
-	ptrDest = encodeByteAddToBuffer(val, ptrDest);
 
 	// packet end byte
 	if (ptrDest >= ptrDestEnd)

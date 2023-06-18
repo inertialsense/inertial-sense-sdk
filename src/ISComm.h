@@ -292,7 +292,7 @@ is performed).
 enum ePktSpecialChars
 {
 	/** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
-	PSC_ASCII_START_BYTE = 0x24,
+	PSC_NMEA_START_BYTE = 0x24,
 
 	/** New line (\n), used by NMEA protocol to signify end of message (10) */
 	PSC_ASCII_END_BYTE = 0x0A,
