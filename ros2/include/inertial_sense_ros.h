@@ -80,7 +80,7 @@
 
 using namespace std::placeholders;
 
-class InertialSenseROS //: SerialListener
+class InertialSenseROS : public rclcpp::Node//: SerialListener
 {
 public:
     typedef enum
@@ -198,7 +198,6 @@ public:
     float diagnostic_ar_ratio_, diagnostic_differential_age_, diagnostic_heading_base_to_rover_;
     uint diagnostic_fix_type_;
 
-    rclcpp::Node::SharedPtr nh_;
     rclcpp::Node::SharedPtr nh_private_;
 
     struct

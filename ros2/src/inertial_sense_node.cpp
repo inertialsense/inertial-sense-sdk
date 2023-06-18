@@ -37,7 +37,7 @@ int main(int argc, char**argv)
             std::cout << "Loading file \"" << paramYamlPath << "\" failed.  Using default parameters.\n\n";
             node = YAML::Node(YAML::NodeType::Undefined);
         }
-        
+
         ros_node = std::make_shared<InertialSenseROS>(node);
     }
     else
@@ -48,7 +48,7 @@ int main(int argc, char**argv)
     ros_node->initialize();
     while (rclcpp::ok())
     {
-        rclcpp::spin_some(ros_node->nh_);
+        rclcpp::spin_some(ros_node);
         ros_node->update();
     }
     rclcpp::shutdown();
