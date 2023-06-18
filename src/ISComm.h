@@ -186,7 +186,6 @@ n-1			Packet end byte
 // Packet IDs
 // typedef uint32_t ePacketIDs;
 
-<<<<<<< Updated upstream
 typedef enum
 {
 	PID_DID_MASK                            = 0x07FF, 
@@ -211,19 +210,6 @@ typedef enum
 	ISB_FLAGS_EXTENDED_PAYLOAD              = 0x0800,   // Payload is larger than 2048 bytes and extends into next packet.
 	ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x1000,   // The first two bytes of the payload are the byte offset of the payload data into the data set.
 } eIsbPacketFlags;
-=======
-#define PID_INVALID                         (ePacketIDs)0   /** Invalid packet id */
-#define PID_ACK                             (ePacketIDs)1   /** (ACK) received valid packet */
-#define PID_NACK                            (ePacketIDs)2   /** (NACK) received invalid packet */
-#define PID_GET_DATA                        (ePacketIDs)3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
-#define PID_DATA                            (ePacketIDs)4   /** Data sent in response to PID_GET_DATA (no PID_ACK is sent) */
-#define PID_SET_DATA                        (ePacketIDs)5   /** Data sent, such as configuration options.  PID_ACK is sent in response as a confirmation. */
-#define PID_STOP_BROADCASTS_ALL_PORTS       (ePacketIDs)6   /** Stop all data broadcasts on all ports. Responds with an ACK */
-#define PID_STOP_DID_BROADCAST              (ePacketIDs)7   /** Stop a specific broadcast */
-#define PID_STOP_BROADCASTS_CURRENT_PORT    (ePacketIDs)8   /** Stop all data broadcasts on current port. Responds with an ACK */
-#define PID_COUNT                           (ePacketIDs)9   /** The number of packet identifiers, keep this at the end! */
-#define PID_MAX_COUNT                       (ePacketIDs)32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
->>>>>>> Stashed changes
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct
