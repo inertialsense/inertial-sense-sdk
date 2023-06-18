@@ -16,7 +16,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
 
-void nema_set_protocol_version(int protocol_version)
+void nmea_set_protocol_version(int protocol_version)
 { 
 	s_protocol_version = protocol_version; 
 }
@@ -376,22 +376,70 @@ double timeToGpst(gtime_t t, int *week)
 	} \
 }
 
+void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
+{
+	uint32_t bitsNmea = (1<<nmeaId);
+	int did = 0;
+
+	switch (nmeaId)
+	{
+	case NMEA_MSG_ID_PIMU:      did = DID_IMU; break;
+	case NMEA_MSG_ID_PPIMU:     did = DID_PIMU; break;
+	case NMEA_MSG_ID_PRIMU:     did = DID_IMU_RAW; break;
+	case NMEA_MSG_ID_PINS1:     did = DID_INS_1; break;
+	case NMEA_MSG_ID_PINS2:     did = DID_INS_2; break;
+	case NMEA_MSG_ID_PGPSP:     
+	case NMEA_MSG_ID_GGA:       
+	case NMEA_MSG_ID_GLL:       
+	case NMEA_MSG_ID_GSA:       
+	case NMEA_MSG_ID_RMC:       
+	case NMEA_MSG_ID_ZDA:       
+	case NMEA_MSG_ID_PASHR:     
+	case NMEA_MSG_ID_PSTRB:     
+	case NMEA_MSG_ID_INFO:      
+	case NMEA_MSG_ID_GSV:       did = DID_GPS1_POS; break;	
+	default: return;
+	}
+
+	if (did == DID_GPS1_POS)
+	{	// DID_GPS1_POS shared by multiple NMEA messages
+		if (periodMultiple)
+		{
+			if (rmci.periodMultiple[did]){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], periodMultiple); } 
+			else                         { rmci.periodMultiple[did] = periodMultiple; }
+			rmci.bitsNmea |=  (bitsNmea);
+		} 
+		else 
+		{
+			rmci.bitsNmea &= ~(bitsNmea);
+		}
+	}
+	else
+	{	// Unshared DIDs
+		rmci.periodMultiple[did] = periodMultiple;
+		if (periodMultiple) {
+			rmci.bitsNmea |=  (bitsNmea);
+		} else {
+			rmci.bitsNmea &= ~(bitsNmea);
+		}
+	}
+}
+
 void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 {
-	SET_ASCII_RMCI(DID_IMU, NMEA_RMC_BITS_PIMU, tmp.pimu);
-	SET_ASCII_RMCI(DID_PIMU, NMEA_RMC_BITS_PPIMU, tmp.ppimu);
-	SET_ASCII_RMCI(DID_IMU_RAW, NMEA_RMC_BITS_PRIMU, tmp.primu);
-	SET_ASCII_RMCI(DID_INS_1, NMEA_RMC_BITS_PINS1, tmp.pins1);
-	SET_ASCII_RMCI(DID_INS_2, NMEA_RMC_BITS_PINS2, tmp.pins2);
-
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_PGPSP, tmp.pgpsp);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GGA, tmp.gga);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GLL, tmp.gll);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_GSA, tmp.gsa);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_RMC, tmp.rmc);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_ZDA, tmp.zda);
-	SET_ASCII_RMCI_GPS(DID_GPS1_POS, NMEA_RMC_BITS_PASHR, tmp.pashr);
-	SET_ASCII_RMCI_GPS(DID_GPS1_SAT, NMEA_RMC_BITS_GSV, tmp.gsv);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PIMU,  tmp.pimu);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PPIMU, tmp.ppimu);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PRIMU, tmp.primu);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PINS1, tmp.pins1);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PINS2, tmp.pins2);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PGPSP, tmp.pgpsp);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GGA,   tmp.gga);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GLL,   tmp.gll);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GSA,   tmp.gsa);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_RMC,   tmp.rmc);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_ZDA,   tmp.zda);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_PASHR, tmp.pashr);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GSV,   tmp.gsv);	
 }
 
 
@@ -419,8 +467,8 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3], // 5
 		(int)info.repoRevision,	// 6
 		info.manufacturer,		// 7
-		info.buildDate[1]+2000, info.buildDate[2], info.buildDate[3], // 8
-		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
+		info.buildYear+2000, info.buildMonth, info.buildDay, // 8
+		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
 		info.addInfo);			// 10
 		
 	return nmea_sprint_footer(a, aSize, n);
@@ -1372,18 +1420,18 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
-	info.buildDate[1] = (uint8_t)(year - 2000);
-	info.buildDate[2] = (uint8_t)(month);
-	info.buildDate[3] = (uint8_t)(day);
+	info.buildYear = (uint8_t)(year - 2000);
+	info.buildMonth = (uint8_t)(month);
+	info.buildDay = (uint8_t)(day);
 	ptr = ASCII_find_next_field(ptr);
 	
 	// uint8_t         buildTime[4];	hh:mm:ss.ms
 	unsigned int hour, minute, second, ms;
 	SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
-	info.buildTime[0] = (uint8_t)hour;
-	info.buildTime[1] = (uint8_t)minute;
-	info.buildTime[2] = (uint8_t)second;
-	info.buildTime[3] = (uint8_t)ms;
+	info.buildHour = (uint8_t)hour;
+	info.buildMinute = (uint8_t)minute;
+	info.buildSecond = (uint8_t)second;
+	info.buildMillisecond = (uint8_t)ms;
 	ptr = ASCII_find_next_field(ptr);
 	
 	// char            addInfo[DEVINFO_ADDINFO_STRLEN];

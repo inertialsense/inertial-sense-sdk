@@ -241,19 +241,19 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParamVec("offset", 3, insOffset_);
     ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, 4);
 
-    std::vector<std::string> dyn_model_set{ "INS_DYN_MODEL_PORTABLE",
+    std::vector<std::string> dyn_model_set{ "DYNAMIC_MODEL_PORTABLE",
                                             " << UNKNOWN >> ",
-                                            "INS_DYN_MODEL_STATIONARY",
-                                            "INS_DYN_MODEL_PEDESTRIAN",
-                                            "INS_DYN_MODEL_GROUND_VEHICLE",
-                                            "INS_DYN_MODEL_MARINE",
-                                            "INS_DYN_MODEL_AIRBORNE_1G",
-                                            "INS_DYN_MODEL_AIRBORNE_2G",
-                                            "INS_DYN_MODEL_AIRBORNE_4G",
-                                            "INS_DYN_MODEL_WRIST",
-                                            "INS_DYN_MODEL_INDOOR" };
+                                            "DYNAMIC_MODEL_STATIONARY",
+                                            "DYNAMIC_MODEL_PEDESTRIAN",
+                                            "DYNAMIC_MODEL_GROUND_VEHICLE",
+                                            "DYNAMIC_MODEL_MARINE",
+                                            "DYNAMIC_MODEL_AIRBORNE_1G",
+                                            "DYNAMIC_MODEL_AIRBORNE_2G",
+                                            "DYNAMIC_MODEL_AIRBORNE_4G",
+                                            "DYNAMIC_MODEL_WRIST",
+                                            "DYNAMIC_MODEL_INDOOR" };
 
-    ph.nodeParamEnum("dynamic_model", insDynModel_, dyn_model_set, INS_DYN_MODEL_AIRBORNE_4G);
+    ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, DYNAMIC_MODEL_AIRBORNE_4G);
     ph.nodeParam("enable_covariance", covariance_enabled_, false);
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
     ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu");
@@ -627,7 +627,7 @@ void InertialSenseROS::configure_flash_parameters()
         current_flash_cfg.ioConfig != ioConfigBits_ ||
         current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
         // current_flash_cfg.magDeclination != magDeclination_ ||
-        current_flash_cfg.insDynModel != insDynModel_ ||
+        current_flash_cfg.dynamicModel != dynamicModel_ ||
         current_flash_cfg.platformConfig != platformConfig_
         )
     {
@@ -646,7 +646,7 @@ void InertialSenseROS::configure_flash_parameters()
         current_flash_cfg.ioConfig = ioConfigBits_;
         current_flash_cfg.gpsTimeUserDelay = gpsTimeUserDelay_;
         current_flash_cfg.magDeclination = magDeclination_;
-        current_flash_cfg.insDynModel = insDynModel_;
+        current_flash_cfg.dynamicModel = dynamicModel_;
         current_flash_cfg.platformConfig = platformConfig_;
 
         IS_.SendData(DID_FLASH_CONFIG, (uint8_t *)(&current_flash_cfg), sizeof (nvm_flash_cfg_t), 0);

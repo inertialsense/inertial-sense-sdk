@@ -1139,7 +1139,7 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
         gps1AntOffset.push_back(outData->gps1AntOffset[2]);
     map["gps1AntOffset"] 			= gps1AntOffset;
 
-    map["insDynModel"] 				= (uint16_t)outData->insDynModel;
+    map["dynamicModel"] 				= (uint16_t)outData->dynamicModel;
     map["debug"] 					= (uint16_t)outData->debug;
     map["gnssSatSigConst"] 			= outData->gnssSatSigConst;
     map["sysCfgBits"] 				= outData->sysCfgBits;
@@ -1257,7 +1257,7 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
         loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
 
-        loaded_flash.insDynModel              = (uint8_t)inData["insDynModel"].as<uint16_t>();
+        loaded_flash.dynamicModel              = (uint8_t)inData["dynamicModel"].as<uint16_t>();
         loaded_flash.debug                    = (uint8_t)inData["debug"].as<uint16_t>();
         loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
         loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();

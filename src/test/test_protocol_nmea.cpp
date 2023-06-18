@@ -113,12 +113,16 @@ TEST(protocol_nmea, INFO)
     }
     info.repoRevision = 789;
     snprintf(info.manufacturer, DEVINFO_MANUFACTURER_STRLEN, "manufacturer string 123");
-    for (int i=0; i<4; i++)
-    {
-        info.buildDate[i] = i;
-        info.buildTime[i] = i+4;
-    }
-    info.buildDate[0] = 0;
+    info.buildType = 'r';
+    info.buildYear = 23;
+    info.buildMonth = 6;
+    info.buildDay = 9;
+    info.buildHour = 12;
+    info.buildMinute = 8;
+    info.buildSecond = 20;
+    info.buildMillisecond = 23;
+
+    info.buildType = 0;
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 
     char abuf[ASCII_BUF_LEN] = { 0 };
@@ -360,7 +364,7 @@ TEST(protocol_nmea, GSA)
 
 TEST(protocol_nmea, GSV_binary_GSV)
 {
-    nema_set_protocol_version(NMEA_PROTOCOL_2P3);
+    nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
 
     string buf;
 
@@ -404,7 +408,7 @@ TEST(protocol_nmea, GSV_binary_GSV)
 
 TEST(protocol_nmea_4p11, GSV_binary_GSV)
 {
-    nema_set_protocol_version(NMEA_PROTOCOL_4P10);
+    nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
 
     string buf;
 
@@ -1169,7 +1173,7 @@ TEST(protocol_nmea, binary_GSV_binary)
 
 
     {   // Test NMEA protocol 2.3
-        nema_set_protocol_version(NMEA_PROTOCOL_2P3);
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
         char abuf[ASCII_BUF2] = { 0 };
         int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
@@ -1225,7 +1229,7 @@ TEST(protocol_nmea, binary_GSV_binary)
     }
 
     {   // Test NMEA protocol 4.10
-        nema_set_protocol_version(NMEA_PROTOCOL_4P10);
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
         char abuf[ASCII_BUF2] = { 0 };
         int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
