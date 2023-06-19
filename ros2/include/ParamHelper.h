@@ -57,7 +57,7 @@ public:
         nodeParam(msgNode, "enable", th.enabled, enabledDefault);
         nodeParam(msgNode, "period", th.period, periodDefault);
         return true;
-    };
+    }
 
     //template <typename T>
     //bool msgParamsImplicit(TopicHelper<T> &th, std::string key, std::string topicDefault, bool enabledDefault=true, int periodDefault=1)

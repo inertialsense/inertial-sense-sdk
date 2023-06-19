@@ -75,6 +75,7 @@
                             [this](InertialSense *i, p_data_t *data, int pHandle)           \
                             {                                                               \
                                 /* ROS_INFO("Got message %d", DID);*/                       \
+                                (void)pHandle;(void)i;                                      \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
 
@@ -128,7 +129,7 @@ public:
     bool sdk_connected_ = false;
     bool log_enabled_ = false;
     bool covariance_enabled_;
-    int platformConfig_ = 0;
+    uint32_t platformConfig_ = 0;
 
     std::string frame_id_;
 
@@ -380,7 +381,7 @@ public:
     // Flash parameters
     // navigation_dt_ms, EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
     // navigation_dt_ms, EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
-    int ins_nav_dt_ms_;
+    uint32_t ins_nav_dt_ms_;
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
     double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero

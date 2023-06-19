@@ -49,6 +49,7 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters) : Node("inertial_sense")
 {
+    (void)configFlashParameters;
     nh_private_ = this->create_sub_node("sub");
     br = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
@@ -66,6 +67,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 }
 
 void InertialSenseROS::initialize(bool configFlashParameters) {
+    (void)configFlashParameters;
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = this->create_service<std_srvs::srv::Trigger>("set_refLLA_current", std::bind(&InertialSenseROS::set_current_position_as_refLLA, this, _1, _2));
@@ -1060,7 +1062,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             msg_odom_ned.pose.pose.orientation.z = qn2b[3]; // z
 
             // Linear Velocity
-            ixVector3 result, theta;
+            ixVector3 result;
 
             quatConjRot(result, qe2n, msg->ve);
 
@@ -1146,7 +1148,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 
             // Linear Velocity
                 //same as NED but rearranged.
-            ixVector3 result, theta;
+            ixVector3 result;
             quatConjRot(result, qe2n, msg->ve);
 
             msg_odom_enu.twist.twist.linear.x = result[1];
@@ -1322,7 +1324,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
             msg_NavSatFix.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs / 1.0e3);
             msg_NavSatFix.header.frame_id = frame_id_;
             msg_NavSatFix.status.status = -1;                           // Assume no Fix
-            if (msg->status & GPS_STATUS_FIX_MASK >= GPS_STATUS_FIX_2D) // Check for fix and set
+            if ((msg->status & GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_2D) // Check for fix and set
             {
                 msg_NavSatFix.status.status = NavSatFixStatusFixType::STATUS_FIX;
             }
@@ -1332,7 +1334,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
                 msg_NavSatFix.status.status = NavSatFixStatusFixType::STATUS_SBAS_FIX;
             }
 
-            if (msg->status & GPS_STATUS_FIX_MASK >= GPS_STATUS_FIX_RTK_SINGLE) // Check for any RTK fix
+            if ((msg->status & GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_RTK_SINGLE) // Check for any RTK fix
             {
                 msg_NavSatFix.status.status = NavSatFixStatusFixType::STATUS_GBAS_FIX;
             }
@@ -2066,6 +2068,7 @@ void InertialSenseROS::reset_device()
 
 void InertialSenseROS::update_firmware_srv_callback(const std::shared_ptr<inertial_sense_ros::srv::FirmwareUpdate::Request> req, std::shared_ptr<inertial_sense_ros::srv::FirmwareUpdate::Response> res)
 {
+    (void)res;(void)req;
     //   IS_.Close();
     //   vector<InertialSense::bootload_result_t> results = IS_.BootloadFile("*", req->filename, 921600);
     //   if (!results[0].error.empty())
