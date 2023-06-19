@@ -45,7 +45,7 @@ int main(int argc, char**argv)
         ros_node = std::make_shared<InertialSenseROS>();
     }
 
-    ros_node->initialize();
+    ros_node->initialize(false);
     while (rclcpp::ok())
     {
         rclcpp::spin_some(ros_node);

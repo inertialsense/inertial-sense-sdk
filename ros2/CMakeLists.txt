@@ -71,10 +71,10 @@ target_link_libraries(inertial_sense_node inertial_sense_ros_lib) # ${ament_LIBR
 ament_target_dependencies(inertial_sense_node rclcpp rosgraph_msgs std_msgs std_srvs geometry_msgs sensor_msgs nav_msgs diagnostic_msgs tf2_ros tf2_geometry_msgs)
 
 ament_export_dependencies(
-  # rosidl_default_runtime 
+  # rosidl_default_runtime
   std_msgs
-  rclcpp 
-  sensor_msgs 
+  rclcpp
+  sensor_msgs
   geometry_msgs
   rosgraph_msgs
   diagnostic_msgs
@@ -84,11 +84,15 @@ ament_export_dependencies(
 ament_export_include_directories(include)
 ament_export_libraries(inertial_sense_ros_lib)
 
-install(TARGETS inertial_sense_node DESTINATION lib/{PROJECT_NAME})
+install(TARGETS inertial_sense_node DESTINATION lib/${PROJECT_NAME})
 install(TARGETS
   inertial_sense_ros_lib
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 ament_package()

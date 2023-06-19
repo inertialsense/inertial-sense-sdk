@@ -30,9 +30,9 @@ protected:
 public:
     std::string type_;
     std::string protocol_; // format
-    RtkRoverCorrectionProvider(rclcpp::Node::SharedPtr nh, YAML::Node& node, const std::string& t) : ph_(node), type_(t), nh_(nh) { };
+    RtkRoverCorrectionProvider(rclcpp::Logger l, YAML::Node& node, const std::string& t) : ph_(node), type_(t), l_(l) { };
     virtual void configure(YAML::Node& node) = 0;
-    rclcpp::Node::SharedPtr nh_;
+    rclcpp::Logger l_;
 };
 
 class RtkRoverCorrectionProvider_Ntrip : public RtkRoverCorrectionProvider {
@@ -57,12 +57,12 @@ public:
     float connectivity_watchdog_timer_frequency_ = 1;
     rclcpp::TimerBase::SharedPtr connectivity_watchdog_timer_;
 
-    RtkRoverCorrectionProvider_Ntrip(rclcpp::Node::SharedPtr nh, YAML::Node& node) : RtkRoverCorrectionProvider(nh, node, "ntrip") { configure(node); }
+    RtkRoverCorrectionProvider_Ntrip(rclcpp::Logger l, YAML::Node& node) : RtkRoverCorrectionProvider(l, node, "ntrip") { configure(node); }
     void configure(YAML::Node& node);
     std::string get_connection_string();
     void connect_rtk_client();
-    void start_connectivity_watchdog_timer();
-    void stop_connectivity_watchdog_timer();
+    //void start_connectivity_watchdog_timer(rclcpp::Node::SharedPtr nh);
+    //void stop_connectivity_watchdog_timer();
     void connectivity_watchdog_timer_callback();
 
 };
@@ -71,21 +71,21 @@ class RtkRoverCorrectionProvider_Serial : public RtkRoverCorrectionProvider {
 public:
     std::string port_ = "/dev/ttyACM0";
     int baud_rate_ = 115200;
-    RtkRoverCorrectionProvider_Serial(rclcpp::Node::SharedPtr nh, YAML::Node& node) : RtkRoverCorrectionProvider(nh, node, "serial") { configure(node); }
+    RtkRoverCorrectionProvider_Serial(rclcpp::Logger l, YAML::Node& node) : RtkRoverCorrectionProvider(l, node, "serial") { configure(node); }
     virtual void configure(YAML::Node& node);
 };
 
 class RtkRoverCorrectionProvider_ROS : public RtkRoverCorrectionProvider {
 public:
     std::string topic_ = "/rtcm3_corrections";
-    RtkRoverCorrectionProvider_ROS(rclcpp::Node::SharedPtr nh, YAML::Node& node) : RtkRoverCorrectionProvider(nh, node, "ros_topic"){ configure(node); }
+    RtkRoverCorrectionProvider_ROS(rclcpp::Logger l, YAML::Node& node) : RtkRoverCorrectionProvider(l, node, "ros_topic"){ configure(node); }
     virtual void configure(YAML::Node& node);
 };
 
 class RtkRoverCorrectionProvider_EVB : public RtkRoverCorrectionProvider {
 public:
     std::string port_ = "xbee";
-    RtkRoverCorrectionProvider_EVB(rclcpp::Node::SharedPtr nh, YAML::Node &node) : RtkRoverCorrectionProvider(nh, node, "evb") { configure(node); }
+    RtkRoverCorrectionProvider_EVB(rclcpp::Logger l, YAML::Node &node) : RtkRoverCorrectionProvider(l, node, "evb") { configure(node); }
     virtual void configure(YAML::Node &node);
 };
 
@@ -101,23 +101,23 @@ public:
     bool positioning_enable = false;    // Enable RTK precision positioning at GPS1
 
     RtkRoverCorrectionProvider* correction_input;
-    RtkRoverProvider(rclcpp::Node::SharedPtr nh, YAML::Node node) : ph_((YAML::Node&)node), nh_(nh) { configure(node); }
-    rclcpp::Node::SharedPtr nh_;
+    RtkRoverProvider(rclcpp::Logger l, YAML::Node node) : ph_((YAML::Node&)node), l_(l) { configure(node); }
+    rclcpp::Logger l_;
     void configure(YAML::Node& n);
 };
 
 class RtkRoverCorrectionProviderFactory {
 public:
-    static RtkRoverCorrectionProvider* buildCorrectionProvider(rclcpp::Node::SharedPtr nh, YAML::Node &node) {
+    static RtkRoverCorrectionProvider* buildCorrectionProvider(rclcpp::Logger l, YAML::Node &node) {
         if (node.IsDefined() && !node.IsNull()) {
             std::string type = node["type"].as<std::string>();
             std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-            if (type == "ntrip") return new RtkRoverCorrectionProvider_Ntrip(nh, node);
-            else if (type == "serial") return new RtkRoverCorrectionProvider_Serial(nh, node);
-            else if (type == "evb") return new RtkRoverCorrectionProvider_EVB(nh, node);
-            else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(nh, node);
+            if (type == "ntrip") return new RtkRoverCorrectionProvider_Ntrip(l, node);
+            else if (type == "serial") return new RtkRoverCorrectionProvider_Serial(l, node);
+            else if (type == "evb") return new RtkRoverCorrectionProvider_EVB(l, node);
+            else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(l, node);
         } else {
-            RCLCPP_ERROR(nh->get_logger(), "Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
+            RCLCPP_ERROR(l, "Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
         }
         return nullptr;
     }

@@ -47,9 +47,8 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
     }
 }
 
-InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters) : Node("inertial_sense")
+InertialSenseROS::InertialSenseROS(YAML::Node paramNode) : Node("inertial_sense")
 {
-    (void)configFlashParameters;
     nh_private_ = this->create_sub_node("sub");
     br = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
@@ -66,8 +65,48 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
     load_params(paramNode);
 }
 
-void InertialSenseROS::initialize(bool configFlashParameters) {
-    (void)configFlashParameters;
+void InertialSenseROS::initialize(bool configFlashParameters)
+{
+    RCLCPP_INFO(this->get_logger(), "======  Starting Inertial Sense ROS2  ======");
+
+    initializeIS(configFlashParameters);
+    if (sdk_connected_) {
+        initializeROS();
+
+        if (log_enabled_) {
+            start_log();    // Start log should happen last
+        }
+
+        // configure_ascii_output(); // Currently not functional
+    }
+}
+
+void InertialSenseROS::terminate() {
+    IS_.Close();
+    IS_.CloseServerConnection();
+    sdk_connected_ = false;
+
+    // ROS equivelant to shutdown advertisers, etc.
+}
+
+void InertialSenseROS::initializeIS(bool configFlashParameters) {
+    if (connect()) {
+        // Check protocol and firmware version
+        firmware_compatiblity_check();
+
+        IS_.StopBroadcasts(true);
+        configure_data_streams(true);
+        configure_rtk();
+        IS_.SavePersistent();
+
+        if (configFlashParameters)
+        {   // Set IMX flash parameters (flash write) after everything else so processor stall doesn't interfere with communications.
+            configure_flash_parameters();
+        }
+    }
+}
+
+void InertialSenseROS::initializeROS() {
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = this->create_service<std_srvs::srv::Trigger>("set_refLLA_current", std::bind(&InertialSenseROS::set_current_position_as_refLLA, this, _1, _2));
@@ -260,7 +299,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
     if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
-        RTK_rover_ = new RtkRoverProvider(this->shared_from_this(), rtkRoverNode);
+        RTK_rover_ = new RtkRoverProvider(this->get_logger(), rtkRoverNode);
 
     YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
     if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
