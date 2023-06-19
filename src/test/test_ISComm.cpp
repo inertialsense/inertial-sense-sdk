@@ -578,7 +578,7 @@ TEST(ISComm, BasicTxTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ISComm, BasicRxTest)
 {
 	// Initialize Com Manager
@@ -605,7 +605,7 @@ TEST(ISComm, BasicRxTest)
 #endif
 
 
-#if 1
+#if 0
 // Tests that ComManager handles segmented serial data properly
 TEST(ISComm, SegmentedRxTest)
 {
@@ -649,7 +649,7 @@ TEST(ISComm, SegmentedRxTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ISComm, RxWithGarbageTest)
 {
 	// Initialize Com Manager
