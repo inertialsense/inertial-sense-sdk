@@ -1306,7 +1306,7 @@ int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &
 	case SAT_SV_GNSS_ID_QZS:	sigIds = qzsSigIds;		numSigIds = sizeof(qzsSigIds);	break;
 	case SAT_SV_GNSS_ID_GLO:	sigIds = gloSigIds;		numSigIds = sizeof(gloSigIds);	break;
 	case SAT_SV_GNSS_ID_IRN:	sigIds = nvcSigIds;		numSigIds = sizeof(nvcSigIds);	break;
-	return 0;
+	default: return 0;
 	}
 
 	for (int i = 0; i<numSigIds; i++)
