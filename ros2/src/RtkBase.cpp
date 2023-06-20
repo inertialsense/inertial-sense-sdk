@@ -18,7 +18,7 @@
 
 #include "RtkBase.h"
 
-typename RtkBaseProvider::base_gps_source RtkBaseProvider::gpsSourceParamToEnum(YAML::Node& n, std::string v, std::string d) {
+RtkBaseProvider::base_gps_source RtkBaseProvider::gpsSourceParamToEnum(YAML::Node& n, std::string v, std::string d) {
     std::string param = d;
     ph_.nodeParam(n, v, param, d);
     std::transform(param.begin(), param.end(), param.begin(), ::tolower);
@@ -71,7 +71,7 @@ void RtkBaseProvider::configure(YAML::Node& node) {
 }
 
 RtkBaseCorrectionProvider* RtkBaseProvider::getProvidersByType(std::string type) {
-    typename std::vector<const RtkBaseCorrectionProvider*>::iterator iter;
+    std::vector<const RtkBaseCorrectionProvider*>::iterator iter;
     for (iter = correction_outputs_.begin(); iter != correction_outputs_.end(); iter++) {
         if ((*iter)->type_ == type)
             return (RtkBaseCorrectionProvider*)*iter;
@@ -85,13 +85,13 @@ RtkBaseCorrectionProvider* RtkBaseProvider::getProvidersByType(std::string type)
  */
 void RtkBaseCorrectionProvider_Ntrip::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("ip_address", ip_);
-        this->ph_.nodeParam("ip_port", port_);
-        this->ph_.nodeParam("mount_mount", mount_point_);
-        this->ph_.nodeParam("username", username_);
-        this->ph_.nodeParam("password", password_);
-        this->ph_.nodeParam("credentials", credentials_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("ip_address", ip_);
+        ph_.nodeParam("ip_port", port_);
+        ph_.nodeParam("mount_mount", mount_point_);
+        ph_.nodeParam("username", username_);
+        ph_.nodeParam("password", password_);
+        ph_.nodeParam("credentials", credentials_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkBaseCorrectionProvider_Ntrip. The YAML node was null or undefined.");
     }
@@ -107,9 +107,9 @@ std::string RtkBaseCorrectionProvider_Ntrip::get_connection_string() {
  */
 void RtkBaseCorrectionProvider_Serial::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("port", port_);
-        this->ph_.nodeParam("baud_rate", baud_rate_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("port", port_);
+        ph_.nodeParam("baud_rate", baud_rate_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkBaseCorrectionProvider_Serial. The YAML node was null or undefined.");
     }
@@ -120,8 +120,8 @@ void RtkBaseCorrectionProvider_Serial::configure(YAML::Node& node) {
  */
 void RtkBaseCorrectionProvider_ROS::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("topic", topic_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("topic", topic_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkBaseCorrectionProvider_ROS. The YAML node was null or undefined.");
     }
@@ -132,8 +132,8 @@ void RtkBaseCorrectionProvider_ROS::configure(YAML::Node& node) {
  */
 void RtkBaseCorrectionProvider_EVB::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("port", port_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("port", port_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkBaseCorrectionProvider_EVB. The YAML node was null or undefined.");
     }

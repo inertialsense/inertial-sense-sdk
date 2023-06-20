@@ -48,27 +48,27 @@ void RtkRoverProvider::configure(YAML::Node& node) {
  */
 void RtkRoverCorrectionProvider_Ntrip::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("type", this->type_, "NTRIP");
-        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
-        this->ph_.nodeParam("ip_address", ip_);
-        this->ph_.nodeParam("ip_port", port_);
-        this->ph_.nodeParam("mount_point", mount_point_);
-        this->ph_.nodeParam("username", username_);
-        this->ph_.nodeParam("password", password_);
-        this->ph_.setCurrentNode(node["connection_attempts"]);
-        this->ph_.nodeParam("limit", connection_attempt_limit_, 1);
-        this->ph_.nodeParam("backoff", connection_attempt_backoff_, 2);
-        this->ph_.setCurrentNode(node["watchdog"]);
-        this->ph_.nodeParam("enable", connectivity_watchdog_enabled_, true);
-        this->ph_.nodeParam("interval", connectivity_watchdog_timer_frequency_, 1);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("type", type_, "NTRIP");
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("ip_address", ip_);
+        ph_.nodeParam("ip_port", port_);
+        ph_.nodeParam("mount_point", mount_point_);
+        ph_.nodeParam("username", username_);
+        ph_.nodeParam("password", password_);
+        ph_.setCurrentNode(node["connection_attempts"]);
+        ph_.nodeParam("limit", connection_attempt_limit_, 1);
+        ph_.nodeParam("backoff", connection_attempt_backoff_, 2);
+        ph_.setCurrentNode(node["watchdog"]);
+        ph_.nodeParam("enable", connectivity_watchdog_enabled_, true);
+        ph_.nodeParam("interval", connectivity_watchdog_timer_frequency_, 1);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkRoverCorrectionProvider_Ntrip. The YAML node was null or undefined.");
     }
 }
 
 std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
-    std::string RTK_connection = "TCP:" + this->protocol_ + ":" + ip_ + ":" + std::to_string(port_);
+    std::string RTK_connection = "TCP:" + protocol_ + ":" + ip_ + ":" + std::to_string(port_);
     if (!mount_point_.empty() || !username_.empty())
         RTK_connection.append(":" + mount_point_);
     if (!username_.empty()) {
@@ -82,7 +82,7 @@ std::string RtkRoverCorrectionProvider_Ntrip::get_connection_string() {
 
 void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
 {
-    if (this->is_ == nullptr) {
+    if (is_ == nullptr) {
         RCLCPP_FATAL(l_, "RTK Client connection requested, but configureIS() hasn't been called in the provider.");
         rclcpp::shutdown();
         connecting_ = false;
@@ -98,7 +98,7 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
     {
         ++RTK_connection_attempt_count;
 
-        bool connected = this->is_->OpenConnectionToServer(RTK_connection);
+        bool connected = is_->OpenConnectionToServer(RTK_connection);
 
         if (connected)
         {
@@ -127,10 +127,10 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
 
 void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback()
 {
-    if (connecting_ && (this->is_ != nullptr))
+    if (connecting_ && (is_ != nullptr))
         return;
 
-    int latest_byte_count = this->is_->GetClientServerByteCount();
+    int latest_byte_count = is_->GetClientServerByteCount();
     if (traffic_total_byte_count_ == latest_byte_count)
     {
         ++data_transmission_interruption_count_;
@@ -174,10 +174,10 @@ void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback()
  */
 void RtkRoverCorrectionProvider_Serial::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
-        this->ph_.nodeParam("port", port_);
-        this->ph_.nodeParam("baud_rate", baud_rate_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("port", port_);
+        ph_.nodeParam("baud_rate", baud_rate_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkRoverCorrectionProvider_Serial. The YAML node was null or undefined.");
     }
@@ -188,9 +188,9 @@ void RtkRoverCorrectionProvider_Serial::configure(YAML::Node& node) {
  */
 void RtkRoverCorrectionProvider_ROS::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
-        this->ph_.nodeParam("topic", topic_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("topic", topic_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkRoverCorrectionProvider_ROS. The YAML node was null or undefined.");
     }
@@ -201,9 +201,9 @@ void RtkRoverCorrectionProvider_ROS::configure(YAML::Node& node) {
  */
 void RtkRoverCorrectionProvider_EVB::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
-        this->ph_.setCurrentNode(node);
-        this->ph_.nodeParam("format", this->protocol_, "RTCM3");
-        this->ph_.nodeParam("port", port_);
+        ph_.setCurrentNode(node);
+        ph_.nodeParam("format", protocol_, "RTCM3");
+        ph_.nodeParam("port", port_);
     } else {
         RCLCPP_ERROR(l_,"Unable to configure RtkRoverCorrectionProvider_EVB. The YAML node was null or undefined.");
     }

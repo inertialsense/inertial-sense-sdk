@@ -75,6 +75,7 @@
                             [this](InertialSense *i, p_data_t *data, int pHandle)           \
                             {                                                               \
                                 (void)pHandle;(void)i;                                      \
+                                /* ROS_INFO("Got message %d", DID);*/                       \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
                             })
 
@@ -147,11 +148,6 @@ public:
         ENU
     } ltcf;
 
-    //rclcpp::PublisherBase::SharedPtr did_ins_1_pub_;
-    //rclcpp::PublisherBase::SharedPtr did_ins_2_pub_;
-    //rclcpp::PublisherBase::SharedPtr odom_ins_ned_pub_;
-    //rclcpp::PublisherBase::SharedPtr odom_ins_ecef_pub_;
-    //rclcpp::PublisherBase::SharedPtr odom_ins_enu_pub_;
     rclcpp::Publisher<std_msgs::msg::Header>::SharedPtr strobe_pub_;
     rclcpp::TimerBase::SharedPtr obs_bundle_timer_;
     rclcpp::Time last_obs_time_1_;
@@ -289,11 +285,11 @@ public:
     };
 
     /**
-     *@brief ros_time_from_week_and_tow
-     *Get current ROS time from week and tow
-     *@param week Weeks since January 6th, 1980
-     *@param timeOfWeek Time of week (since Sunday morning) in seconds, GMT
-     *@return equivalent ros::Time
+     * @brief ros_time_from_week_and_tow
+     * Get current ROS time from week and tow
+     * @param week Weeks since January 6th, 1980
+     * @param timeOfWeek Time of week (since Sunday morning) in seconds, GMT
+     * @return equivalent ros::Time
      */
     rclcpp::Time ros_time_from_week_and_tow(const uint32_t week, const double timeOfWeek);
 
@@ -310,7 +306,6 @@ public:
      * @param tow Time of Week (seconds)
      * @return equivalent ros::Time
      */
-
     rclcpp::Time ros_time_from_tow(const double tow);
 
     double tow_from_ros_time(const rclcpp::Time &rt);
