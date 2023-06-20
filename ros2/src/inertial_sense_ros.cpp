@@ -886,7 +886,7 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
 
 void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
 {
-    rs_.did_ins1.streamingCheck(this->shared_from_this(), DID);
+    rs_.did_ins1.streamingCheck(this->get_logger(), DID);
 
     // Standard DID_INS_1 message
     if (rs_.did_ins1.enabled)
@@ -916,7 +916,7 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
 
 void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
 {
-    rs_.did_ins2.streamingCheck(this->shared_from_this(), DID);
+    rs_.did_ins2.streamingCheck(this->get_logger(), DID);
 
     if (rs_.did_ins2.enabled)
     {
@@ -943,7 +943,7 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
 
 void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
-    rs_.did_ins4.streamingCheck(this->shared_from_this(), DID);
+    rs_.did_ins4.streamingCheck(this->get_logger(), DID);
 
     if (!refLLA_known)
     {
@@ -1214,7 +1214,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 
 void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *const msg)
 {
-    rs_.inl2_states.streamingCheck(this->shared_from_this(), DID);
+    rs_.inl2_states.streamingCheck(this->get_logger(), DID);
 
     msg_inl2_states.header.stamp = ros_time_from_tow(msg->timeOfWeek);
     msg_inl2_states.header.frame_id = frame_id_;
@@ -1301,7 +1301,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
     switch (DID)
     {
     case DID_GPS1_POS:
-        rs_.gps1.streamingCheck(this->shared_from_this(), DID, rs_.gps1.streaming_pos);
+        rs_.gps1.streamingCheck(this->get_logger(), DID, rs_.gps1.streaming_pos);
         gps1_pos = *msg;
         primaryGpsDid = DID;
 
@@ -1328,7 +1328,7 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
         break;
 
     case DID_GPS2_POS:
-        rs_.gps2.streamingCheck(this->shared_from_this(), DID, rs_.gps2.streaming_pos);
+        rs_.gps2.streamingCheck(this->get_logger(), DID, rs_.gps2.streaming_pos);
         gps2_pos = *msg;
         if (rs_.gps2.enabled && msg->status & GPS_STATUS_FIX_MASK)
         {
@@ -1400,7 +1400,7 @@ void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg
     switch (DID)
     {
     case DID_GPS1_VEL:
-        rs_.gps1.streamingCheck(this->shared_from_this(), DID, rs_.gps1.streaming_vel);
+        rs_.gps1.streamingCheck(this->get_logger(), DID, rs_.gps1.streaming_vel);
         gps1_vel = *msg;
         if (rs_.gps1.enabled && abs(GPS_towOffset_) > 0.001)
         {
@@ -1413,7 +1413,7 @@ void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg
         break;
 
     case DID_GPS2_VEL:
-        rs_.gps2.streamingCheck(this->shared_from_this(), DID, rs_.gps2.streaming_vel);
+        rs_.gps2.streamingCheck(this->get_logger(), DID, rs_.gps2.streaming_vel);
         gps2_vel = *msg;
         if (rs_.gps2.enabled && abs(GPS_towOffset_) > 0.001)
         {
@@ -1483,8 +1483,8 @@ void InertialSenseROS::GPS_info_callback(eDataIDs DID, const gps_sat_t *const ms
 {
     switch (DID)
     {
-    case DID_GPS1_SAT:  rs_.gps1_info.streamingCheck(this->shared_from_this(), DID);   break;
-    case DID_GPS2_SAT:  rs_.gps2_info.streamingCheck(this->shared_from_this(), DID);   break;
+    case DID_GPS1_SAT:  rs_.gps1_info.streamingCheck(this->get_logger(), DID);   break;
+    case DID_GPS2_SAT:  rs_.gps2_info.streamingCheck(this->get_logger(), DID);   break;
     default: return;
     }
 
@@ -1515,7 +1515,7 @@ void InertialSenseROS::mag_callback(eDataIDs DID, const magnetometer_t *const ms
         return;
     }
 
-    rs_.magnetometer.streamingCheck(this->shared_from_this(), DID);
+    rs_.magnetometer.streamingCheck(this->get_logger(), DID);
     sensor_msgs::msg::MagneticField mag_msg;
     mag_msg.header.stamp = ros_time_from_start_time(msg->time);
     mag_msg.header.frame_id = frame_id_;
@@ -1532,7 +1532,7 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
         return;
     }
 
-    rs_.barometer.streamingCheck(this->shared_from_this(), DID);
+    rs_.barometer.streamingCheck(this->get_logger(), DID);
     sensor_msgs::msg::FluidPressure baro_msg;
     baro_msg.header.stamp = ros_time_from_start_time(msg->time);
     baro_msg.header.frame_id = frame_id_;
@@ -1547,7 +1547,7 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
 
     if (rs_.pimu.enabled)
     {
-        rs_.pimu.streamingCheck(this->shared_from_this(), DID);
+        rs_.pimu.streamingCheck(this->get_logger(), DID);
         msg_pimu.header.stamp = ros_time_from_start_time(msg->time);
         msg_pimu.header.frame_id = frame_id_;
         msg_pimu.dtheta.x = msg->theta[0];
@@ -1562,7 +1562,7 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
 
     if (rs_.imu.enabled)
     {
-        rs_.imu.streamingCheck(this->shared_from_this(), DID);
+        rs_.imu.streamingCheck(this->get_logger(), DID);
         msg_imu.header.stamp = ros_time_from_start_time(msg->time);
         msg_imu.header.frame_id = frame_id_;
         if (msg->dt != 0.0f)
@@ -1600,12 +1600,12 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *con
     switch (DID)
     {
     case DID_GPS1_RTK_POS_MISC:
-        rs_.rtk_pos.streamingCheck(this->shared_from_this(), DID);
+        rs_.rtk_pos.streamingCheck(this->get_logger(), DID);
         rs_.rtk_pos.pubInfo->publish(rtk_info);
         break;
 
     case DID_GPS2_RTK_CMP_MISC:
-        rs_.rtk_cmp.streamingCheck(this->shared_from_this(), DID);
+        rs_.rtk_cmp.streamingCheck(this->get_logger(), DID);
         rs_.rtk_cmp.pubInfo->publish(rtk_info);
         break;
     }
@@ -1651,12 +1651,12 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
     switch (DID)
     {
     case DID_GPS1_RTK_POS_REL:
-        rs_.rtk_pos.streamingCheck(this->shared_from_this(), DID, rs_.rtk_pos.streamingRel);
+        rs_.rtk_pos.streamingCheck(this->get_logger(), DID, rs_.rtk_pos.streamingRel);
         rs_.rtk_pos.pubRel->publish(rtk_rel);
         break;
 
     case DID_GPS2_RTK_CMP_REL:
-        rs_.rtk_cmp.streamingCheck(this->shared_from_this(), DID, rs_.rtk_cmp.streamingRel);
+        rs_.rtk_cmp.streamingCheck(this->get_logger(), DID, rs_.rtk_cmp.streamingRel);
         rs_.rtk_cmp.pubRel->publish(rtk_rel);
         break;
     }
@@ -1672,9 +1672,9 @@ void InertialSenseROS::GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg
 {
     switch (DID)
     {
-    case DID_GPS1_RAW:        rs_.gps1_raw.streamingCheck(this->shared_from_this(), DID);     break;
-    case DID_GPS2_RAW:        rs_.gps2_raw.streamingCheck(this->shared_from_this(), DID);     break;
-    case DID_GPS_BASE_RAW:    rs_.gpsbase_raw.streamingCheck(this->shared_from_this(), DID);  break;
+    case DID_GPS1_RAW:        rs_.gps1_raw.streamingCheck(this->get_logger(), DID);     break;
+    case DID_GPS2_RAW:        rs_.gps2_raw.streamingCheck(this->get_logger(), DID);     break;
+    case DID_GPS_BASE_RAW:    rs_.gpsbase_raw.streamingCheck(this->get_logger(), DID);  break;
     }
 
     switch (msg->dataType)

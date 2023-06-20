@@ -30,16 +30,16 @@ class TopicHelper
 {
 public:
 
-    void streamingCheck(rclcpp::Node::SharedPtr nh_, eDataIDs did)
+    void streamingCheck(rclcpp::Logger l, eDataIDs did)
     {
-        streamingCheck(nh_, did, streaming);
+        streamingCheck(l, did, streaming);
     }
-    void streamingCheck(rclcpp::Node::ConstSharedPtr nh_, eDataIDs did, bool &stream)
+    void streamingCheck(rclcpp::Logger l, eDataIDs did, bool &stream)
     {
         if (!stream)
         {
             stream = true;
-            RCLCPP_DEBUG(nh_->get_logger(), "%s response received", cISDataMappings::GetDataSetName(did));
+            RCLCPP_DEBUG(l, "%s response received", cISDataMappings::GetDataSetName(did));
         }
     }
 
