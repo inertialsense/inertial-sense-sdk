@@ -53,13 +53,12 @@ ioConfig:  0x025ca046
   # REF_LLA: "set_refLLA"                         # /value /current
   # MAG_CAL: "mag_cal"                            # /single /multi
   # FIRMWARE: "firmware"                          # /get /update
-RTKCfgBits: 0x00000000
 
 # Publish the firmware upgrade progress/status
 firmware_status:
   message:
     topic: "firmware_status"
-    enable: true
+    enable: false
 
 transform_frame:
   # static_transform:
