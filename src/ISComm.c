@@ -37,8 +37,6 @@ const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
 	IS_BAUDRATE_9600 
 };
 
-static int s_packetEncodingEnabled = 1;
-
 
 /**
 * Calculate 24 bit crc used in formats like RTCM3 - note that no bounds checking is done on buffer
@@ -268,13 +266,14 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 
 	packet2_t *pkt = (packet2_t*)(instance->buf.head);	
 	int payload_size = pkt->hdr.flags & ISB_FLAGS_PAYLOAD_SIZE_MASK;
-	int pkt_size = payload_size+sizeof(packet_hdr_t);
+	int pkt_size = sizeof(packet_hdr_t) + payload_size + 2;		// Header + payload + footer (checksum)
 	if (numBytes < pkt_size)
 	{	// Wait for entire packet
 		return _PTYPE_NONE;
 	}
 
-	checksum16_u *cksum = (checksum16_u*)(((uint8_t*)pkt) + payload_size);
+	uint8_t *dataPtr = ((uint8_t*)pkt)+sizeof(packet_hdr_t);
+	checksum16_u *cksum = (checksum16_u*)(dataPtr + payload_size);
 	int bytes_cksum = pkt_size - 4;
 	if (cksum->ck != isb_checksum16(((uint8_t*)pkt) + 2, bytes_cksum))
 	{	// Invalid checksum
@@ -286,7 +285,6 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 	reset_parser(instance);
 
 	instance->ackNeeded = 0;
-	uint8_t *dataPtr = ((uint8_t*)pkt)+sizeof(packet_hdr_t);
 	uint8_t ptype = pkt->hdr.ptype >> PKT_TYPE_OFFSET;
 	if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
 	{	// Offset is first two bytes in payload  
@@ -392,22 +390,15 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 {
 	switch (instance->parseState)
 	{
-	case 1: // preamble 2
-		if (*(instance->buf.scan - 1) != UBLOX_START_BYTE2)
-		{
-			// corrupt data
-			instance->rxErrorCount++;
-			reset_parser(instance);
-			return _PTYPE_PARSE_ERROR;
-		}
-		// fall through
+	case 0: // Preamble 1 & 2
+		instance->parseState = 2;
+		break;
 	case 2: // class id
 		// fall through
 	case 3: // message id
 		// fall through
 	case 4: // length byte 1
 		// fall through
-	case 0:
 		instance->parseState++;
 		break;
 
@@ -432,18 +423,13 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 		{
 			// end of ublox packet, if checksum passes, send the external id
 			instance->hasStartByte = 0;
-			uint8_t actualChecksum1 = *(instance->buf.scan - 2);
-			uint8_t actualChecksum2 = *(instance->buf.scan - 1);
-			uint8_t calcChecksum1 = 0;
-			uint8_t calcChecksum2 = 0;
-
-			// calculate checksum, skipping the first two preamble bytes and the last two bytes which are the checksum
-			for (uint8_t* ptr = instance->buf.head + 2, *ptrEnd = instance->buf.scan - 2; ptr < ptrEnd; ptr++)
-			{
-				calcChecksum1 += *ptr;
-				calcChecksum2 += calcChecksum1;
-			}
-			if (actualChecksum1 == calcChecksum1 && actualChecksum2 == calcChecksum2)
+			uint16_t actualChecksum = *((uint16_t*)(instance->buf.scan - 2));
+			uint8_t* cksum_start = instance->buf.head + 2;
+			uint8_t* cksum_end   = instance->buf.scan - 2;
+			uint32_t cksum_size  = cksum_end - cksum_start; 
+			checksum16_u cksum;
+			cksum.ck = fletcher16(cksum_start, cksum_size);
+			if (actualChecksum == cksum.ck)
 			{	// Checksum passed - Valid ublox packet
 				// Update data pointer and info
 				instance->dataPtr = instance->buf.head;
@@ -1083,88 +1069,6 @@ int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
     return is_encode_binary_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
 }
 
-void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum)
-{
-	// int state = 0;
-	// uint8_t* currentPtr = (*ptrSrcEnd) - 1;
-	// memset(ftr, 0, sizeof(uint32_t));
-
-	// // we need a state machine to ensure we don't overrun ptrSrcEnd
-	// while (state != 7 && currentPtr > ptrSrc)
-	// {
-	// 	switch (state)
-	// 	{
-	// 	case 0: // packet end byte
-	// 		ftr->stopByte = *currentPtr--;
-	// 		state = 1;
-	// 		break;
-
-	// 	case 1: // packet checksum 1
-	// 		ftr->cksum1 = *currentPtr--;
-	// 		state = (3 - (*currentPtr == PSC_RESERVED_KEY));
-	// 		break;
-
-	// 	case 2: // packet checksum 1 is encoded
-	// 		ftr->cksum1 = ~ftr->cksum1;
-	// 		currentPtr--;
-	// 		state = 3;
-	// 		break;
-
-	// 	case 3: // packet checksum 2
-	// 		ftr->cksum2 = *currentPtr--;
-	// 		state = (5 - (*currentPtr == PSC_RESERVED_KEY));
-	// 		break;
-
-	// 	case 4: // packet checksum 2 is encoded
-	// 		ftr->cksum2 = ~ftr->cksum2;
-	// 		currentPtr--;
-	// 		state = 5;
-	// 		break;
-
-	// 	case 5: // packet checksum 3
-	// 		ftr->cksum3 = *currentPtr;
-	// 		state = (7 - (*(currentPtr - 1) == PSC_RESERVED_KEY));
-	// 		break;
-
-	// 	case 6: // packet checksum 3 is encoded
-	// 		ftr->cksum3 = ~ftr->cksum3;
-	// 		currentPtr--;
-	// 		state = 7;
-	// 		break;
-
-	// 	default:
-	// 		break;
-	// 	}
-	// }
-	// *ptrSrcEnd = currentPtr;
-	// *checksum = ((uint32_t)ftr->cksum1) | (0x0000FF00 & ((uint32_t)ftr->cksum2 << 8)) | (0x00FF0000 & ((uint32_t)ftr->cksum3 << 16));
-}
-
-int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift)
-{
-	uint8_t* ptrSrc = *_ptrSrc;
-
-	// packet id byte
-	uint32_t val = *ptrSrc++;
-	switch (val)
-	{
-	case PSC_NMEA_START_BYTE:
-	case PSC_ASCII_END_BYTE:
-	case PSC_ISB_PREAMBLE:
-	case RTCM3_START_BYTE:
-	case UBLOX_START_BYTE1:
-		// corrupt data
-		return -1;
-
-	default:
-		*checksum ^= (val << shift);
-		*((*_ptrDest)++) = (uint8_t)val;
-	}
-	*_ptrSrc = ptrSrc;
-
-	return 0;
-}
-
 int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength)
 {
 	// Ensure data size is small enough, assuming packet size could double after encoding.
@@ -1267,82 +1171,6 @@ int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packe
 	return 0;
 }
 
-// This function will decode a packet in place if altBuf is NULL.
-int is_decode_binary_packet(packet_t* pkt, unsigned char* pbuf, int pbufSize)
-{
-	// before we even get in this method, we can be assured that pbuf starts with a packet start byte and ends with a packet end byte
-	// all other data can potentially be garbage
-	if (pbufSize < 8)
-	{
-		// corrupt data
-		return -1;
-	}
-
-	// decode the body and calculate checksum
-	uint8_t* ptrSrc = pbuf;
-	uint8_t* ptrSrcEnd = pbuf + pbufSize;
-	packet_ftr_t ftr;
-	uint32_t actualCheckSumValue;
-
-	// is_decode_binary_packet_footer(&ftr, ptrSrc, &ptrSrcEnd, &actualCheckSumValue);
-	// uint32_t shifter = 0;
-	// uint32_t checkSumValue = CHECKSUM_SEED;
-
-	// // start packet byte
-	uint8_t* ptrDest = (uint8_t*)&pkt->hdr;
-	// *ptrDest++ = *ptrSrc++;
-
-	// if
-	// (
-	// 	// packet id
-	// 	is_decode_binary_packet_byte(&ptrSrc, &ptrDest, &checkSumValue, 0) ||
-
-	// 	// packet counter
-	// 	is_decode_binary_packet_byte(&ptrSrc, &ptrDest, &checkSumValue, 8) ||
-
-	// 	// packet flags
-	// 	is_decode_binary_packet_byte(&ptrSrc, &ptrDest, &checkSumValue, 16)
-	// )
-	// {
-	// 	return -1;
-	// }
-
-	// // decode the body - start shift 0
-	// ptrDest = pkt->body.ptr;
-	// while (ptrSrc < ptrSrcEnd)
-	// {
-	// 	if (is_decode_binary_packet_byte(&ptrSrc, &ptrDest, &checkSumValue, shifter))
-	// 	{
-	// 		return -1;
-	// 	}
-
-	// 	shifter += 8;
-
-	// 	// reset if shifter equals 24
-	// 	shifter *= (shifter != 24);
-	// }
-
-	// if (actualCheckSumValue != checkSumValue)
-	// {
-	// 	// corrupt data
-	// 	return -1;
-	// }
-
-	pkt->body.size = (uint32_t)(ptrDest - pkt->body.ptr);
-	if (pkt->body.size > MAX_PKT_BODY_SIZE)
-	{
-		return -1;
-	}
-
-	// if the endianness of the packet doesn't match our CPU, we need to flip the data so it will be correct for our CPU architecture
-	// else if (pkt->body.size != 0 && (pkt->hdr.flags & CM_PKT_FLAGS_ENDIANNESS_MASK) != CPU_IS_LITTLE_ENDIAN)
-	// {
-	// 	swapPacket(pkt);
-	// }
-
-	return 0;
-}
-
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
 {
     if ((data->hdr.size + data->hdr.offset) <= maxsize)
@@ -1381,11 +1209,6 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
     {
         return -1;
     }
-}
-
-void is_enable_packet_encoding(int enabled)
-{
-	s_packetEncodingEnabled = enabled;
 }
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */

@@ -2068,8 +2068,8 @@ typedef struct PACKED
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
 enum eSysConfigBits
 {
-	UNUSED1                                             = (int)0x00000001,
-	UNUSED2                                             = (int)0x00000002,
+	SYS_CFG_BITS_UNUSED1                                = (int)0x00000001,
+	SYS_CFG_BITS_UNUSED2                                = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
 	/*! Disable mag declination estimation */
@@ -2103,14 +2103,15 @@ enum eSysConfigBits
 
     /** Disable wheel encoder fusion */
     SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
-    /** Disable packet encoding, binary data will have all bytes as is */
-    SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
+
+    SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
+    SYS_CFG_BITS_UNUSED4                                = (int)0x00400000,
+    SYS_CFG_BITS_UNUSED5                                = (int)0x00800000,
 
     /** Use reference IMU in EKF instead of onboard IMU */
     SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
     /** Reference point stationary on strobe input */
     SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT	= (int)0x02000000,
-
 };
 
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */

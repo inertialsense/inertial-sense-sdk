@@ -16,9 +16,9 @@ extern "C"
 #endif
 
 #define TEST_PROTO_IS		1
-#define TEST_PROTO_NMEA		0
-#define TEST_PROTO_UBLOX	0
-#define TEST_PROTO_RTCM3	0
+#define TEST_PROTO_NMEA		1
+#define TEST_PROTO_UBLOX	1
+#define TEST_PROTO_RTCM3	1
 #define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
@@ -28,7 +28,7 @@ extern "C"
 #define DEBUG_PRINTF	
 #endif
 
-#define PORT_BUFFER_SIZE	100
+#define PORT_BUFFER_SIZE	8192
 
 typedef struct
 {
@@ -193,37 +193,6 @@ int msgHandlerRtcm3(int pHandle, const uint8_t* msg, int msgSize)
 }
 
 
-#define NUM_HANDLES			1
-static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
-static uint8_t				s_comm_buffer[NUM_HANDLES*PKT_BUF_SIZE] = { 0 };
-// static com_manager_port_t	s_cmPort = {};
-
-// bool initComManager(test_data_t &t)
-// {
-// 	// Init ComManager
-// 	com_manager_init_t cmInit = {};
-// 	cmInit.broadcastMsg = t.cmBufBcastMsg;
-// 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-// 	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, 0, TASK_PERIOD_MS, 0, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
-// 	{	// Fail to init
-// 		return false;
-// 	}
-
-// 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
-// 	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
-
-// 	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR);
-
-// 	// Enable/disable protocols
-// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_IS);
-// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
-// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
-// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
-// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
-
-// 	return true;
-// }
-
 static is_comm_instance_t g_comm;
 #define COM_BUFFER_SIZE 4096
 static uint8_t g_comm_buffer[COM_BUFFER_SIZE] = {0};
@@ -237,7 +206,6 @@ bool init(test_data_t &t)
 
 	is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE);
 
-	// return initComManager(t);
 	return true;
 }
 
@@ -506,7 +474,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 }
 
 
-void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
+void parseDataPortBuf(std::deque<data_holder_t> &testDeque, ring_buf_t &portTxBuf)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
@@ -515,9 +483,9 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 	protocol_type_t ptype;
 	uDatasets dataWritten;
 
-	while (ringBufUsed(&t.portTxBuf)>0)
+	while (ringBufUsed(&portTxBuf)>0 && testDeque.size()>0)
 	{
-		ringBufRead(&t.portTxBuf, &c, 1);
+		ringBufRead(&portTxBuf, &c, 1);
 
 		if((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE)
 		{
@@ -561,7 +529,7 @@ void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 
 
 #if 1
-TEST(ISComm, BasicTxTest)
+TEST(ISComm, BasicTxRxTest)
 {
 	// Initialize Com Manager
 	init(tcm);
@@ -586,45 +554,18 @@ TEST(ISComm, BasicTxTest)
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
-			// portWrite(&(tcm.cm), 0, td.data.buf, td.size);
+			portWrite(0, td.data.buf, td.size);
 			break;
 		}
 
 	}
 
 	// Test that data parsed from Tx port matches deque data
-	parseDataPortTxBuf(g_testTxDeque, tcm);
+	parseDataPortBuf(g_testTxDeque, tcm.portTxBuf);
 
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
 	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
-}
-#endif
-
-
-#if 0
-TEST(ISComm, BasicRxTest)
-{
-	// Initialize Com Manager
-	init(tcm);
-
-	// Generate and add data to deque
-	generateData(g_testRxDeque);
-
-	// Add deque data to Rx port ring buffer
-	addDequeToRingBuf(g_testRxDeque, &tcm.portRxBuf);
-
-	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
-
-	while (!ringBufEmpty(&tcm.portRxBuf))
-	{
-		// Step Com Manager and check that was received correctly inside postRxRead()
-		comManagerStepInstance(&tcm.cm);	// 2048 byte limit each step
-	}
-
-	// Check that no data was left behind 
-	EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
 }
 #endif
 
@@ -639,7 +580,6 @@ TEST(ISComm, SegmentedRxTest)
 	// Initialize temporary ring buffer
 	ringBufInit(&tmpRBuf, buffer, sizeof(buffer), 1);
 
-	// Initialize Com Manager
 	init(tcm);
 
 	// Generate and add data to deque

@@ -717,10 +717,6 @@ uint16_t xor_checksum16(const uint8_t* data, uint32_t size);
 // -------------------------------------------------------------------------------------------------------------------------------
 // common encode / decode for com manager and simple interface
 int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
-int is_decode_binary_packet(packet_t *pkt, unsigned char* pbuf, int pbufSize);
-int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
-void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
-void is_enable_packet_encoding(int enabled); // default is enabled
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
