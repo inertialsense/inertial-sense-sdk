@@ -22,7 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 PUSH_PACK_1
 
-/** Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
+/** Represents the complete packet body of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
 typedef struct
 {
 	/** Serial order of data structure.  Used to re-serialize data.  */

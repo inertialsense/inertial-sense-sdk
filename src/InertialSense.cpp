@@ -615,13 +615,13 @@ vector<string> InertialSense::GetPorts()
 
 void InertialSense::StopBroadcasts(bool allPorts)
 {
-    uint8_t pid = (allPorts ? PID_STOP_BROADCASTS_ALL_PORTS : PID_STOP_BROADCASTS_CURRENT_PORT);
+    uint8_t ptype = (allPorts ? PKT_TYPE_STOP_BROADCASTS_ALL_PORTS : PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT);
 
 	// Stop all broadcasts
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the uINS.
-		comManagerSend((int)i, pid, 0, 0, 0);
+		comManagerSend((int)i, ptype, 0, 0, 0);
 	}
 }
 

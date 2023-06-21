@@ -28,7 +28,7 @@ extern "C"
 #define DEBUG_PRINTF	
 #endif
 
-#define PORT_BUFFER_SIZE	8192
+#define PORT_BUFFER_SIZE	100
 
 typedef struct
 {
@@ -68,6 +68,20 @@ std::deque<data_holder_t> g_testTxDeque;
 
 
 
+int portRead(int pHandle, unsigned char* buf, int len)
+{
+	return ringBufRead(&tcm.portRxBuf, buf, len);
+}
+
+int portWrite(int pHandle, unsigned char* buf, int len)
+{
+	if (ringBufWrite(&tcm.portTxBuf, buf, len))
+	{	// Buffer overflow
+		DEBUG_PRINTF("tcm.portTxBuf ring buffer overflow: %d !!!\n", ringBufUsed(&tcm.portTxBuf) + len);
+		EXPECT_TRUE(false);
+	}
+	return len;
+}
 
 // return 1 on success, 0 on failure
 int msgHandlerNmea(int pHandle, const uint8_t* msg, int msgSize)
@@ -182,33 +196,38 @@ int msgHandlerRtcm3(int pHandle, const uint8_t* msg, int msgSize)
 #define NUM_HANDLES			1
 static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
 static uint8_t				s_comm_buffer[NUM_HANDLES*PKT_BUF_SIZE] = { 0 };
-static com_manager_port_t	s_cmPort = {};
+// static com_manager_port_t	s_cmPort = {};
 
-bool initComManager(test_data_t &t)
-{
-	// Init ComManager
-	com_manager_init_t cmInit = {};
-	cmInit.broadcastMsg = t.cmBufBcastMsg;
-	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, 0, TASK_PERIOD_MS, 0, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
-	{	// Fail to init
-		return false;
-	}
+// bool initComManager(test_data_t &t)
+// {
+// 	// Init ComManager
+// 	com_manager_init_t cmInit = {};
+// 	cmInit.broadcastMsg = t.cmBufBcastMsg;
+// 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
+// 	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, 0, TASK_PERIOD_MS, 0, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
+// 	{	// Fail to init
+// 		return false;
+// 	}
 
-	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
-	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
+// 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
+// 	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
-	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR);
+// 	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR);
 
-	// Enable/disable protocols
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_IS);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
+// 	// Enable/disable protocols
+// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_IS);
+// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
+// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
+// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
+// 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
 
-	return true;
-}
+// 	return true;
+// }
+
+static is_comm_instance_t g_comm;
+#define COM_BUFFER_SIZE 4096
+static uint8_t g_comm_buffer[COM_BUFFER_SIZE] = {0};
+
 
 bool init(test_data_t &t)
 {
@@ -216,7 +235,10 @@ bool init(test_data_t &t)
 	ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
 	ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
 
-	return initComManager(t);
+	is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE);
+
+	// return initComManager(t);
+	return true;
 }
 
 
@@ -243,21 +265,21 @@ void generateData(std::deque<data_holder_t> &testDeque)
 		case 3:
 			// INS 1
 			ins1.timeOfWeek = (double)i;
-			ins1.week = i;
+			ins1.week = i + 100;
 			ins1.insStatus = i;
 			ins1.hdwStatus = i;
-			ins1.theta[0] = i * 2.0f;
-			ins1.theta[1] = i * 3.0f;
-			ins1.theta[2] = i * 4.0f;
-			ins1.uvw[0] = i * 5.0f;
-			ins1.uvw[1] = i * 6.0f;
-			ins1.uvw[2] = i * 7.0f;
+			ins1.theta[0] = i + 0.2f;
+			ins1.theta[1] = i - 0.3f;
+			ins1.theta[2] = i + 0.4f;
+			ins1.uvw[0] = i - 0.5f;
+			ins1.uvw[1] = i + 0.6f;
+			ins1.uvw[2] = i - 0.7f;
 			ins1.lla[0] = 40.330565516;
 			ins1.lla[1] = -111.725787806;
 			ins1.lla[2] = 1408.565264;
-			ins1.ned[0] = i * 1.234f;
-			ins1.ned[1] = i * 2.345f;
-			ins1.ned[2] = i * 3.456f;
+			ins1.ned[0] = i + 1.234f;
+			ins1.ned[1] = i - 2.345f;
+			ins1.ned[2] = i + 3.456f;
 
 			if (j == 3 )
 			{	// NMEA
@@ -431,7 +453,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 				break;
 			}
 
-			if (byteSize + td.size < (PORT_BUFFER_SIZE*3)/4)	// Allow room for packet headers
+			if (byteSize + td.size < (PORT_BUFFER_SIZE*9)/10)	// Allow room for packet headers
 			{
 				byteSize += td.size;
 
@@ -553,16 +575,18 @@ TEST(ISComm, BasicTxTest)
 		data_holder_t td = g_testTxDeque[i];
 
 		// Send data - writes data to tcm.txBuf
+		int n;
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			// comManagerSendDataNoAckInstance(&tcm.cm, 0, td.did, &td.data, td.size, 0);
+			n = is_comm_data(&g_comm, td.did, 0, td.size, td.data.buf);
+			portWrite(0, g_comm.buf.start, n);
 			break;
 
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
-			portWrite(&(tcm.cm), 0, td.data.buf, td.size);
+			// portWrite(&(tcm.cm), 0, td.data.buf, td.size);
 			break;
 		}
 

@@ -66,7 +66,7 @@ int asciiMessageCompare(const void* elem1, const void* elem2);
 
 //  Packet Retry
 void stepPacketRetry(com_manager_t* cmInstance);
-packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pid, unsigned char data[], unsigned int dataSize);
+packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t ptype, unsigned char data[], unsigned int dataSize);
 void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt);
 void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt);
 
@@ -573,9 +573,9 @@ void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId
 
 	data.ptr = (uint8_t*)&request;
 	data.size = sizeof(request);
-	comManagerSendInstance(cmInstance, pHandle, PID_GET_DATA, 0, &data, 0);
+	comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_GET_DATA, 0, &data, 0);
 
-	// comManagerSendEnsured(pHandle, PID_GET_DATA, (unsigned char*)&request, sizeof(request));
+	// comManagerSendEnsured(pHandle, PKT_TYPE_GET_DATA, (unsigned char*)&request, sizeof(request));
 }
 
 void comManagerGetDataRmc(int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
@@ -613,7 +613,7 @@ int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId
 	data.ptr = (uint8_t*)dataPtr;
 	data.size = dataSize;
 
-	return comManagerSendInstance(cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, 0);
+	return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_SET_DATA, &bodyHdr, &data, 0);
 }
 
 int comManagerSendDataNoAck(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
@@ -637,7 +637,7 @@ int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, uint32_t d
 	data.ptr = (uint8_t*)dataPtr;
 	data.size = dataSize;
 
-	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_DATA, &bodyHdr, &data, 0);
+	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PKT_TYPE_DATA, &bodyHdr, &data, 0);
 }
 
 int comManagerSendRawData(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
@@ -661,7 +661,7 @@ int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dat
 	data.ptr = (uint8_t*)dataPtr;
 	data.size = dataSize;
 
-	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, CM_PKT_FLAGS_RAW_DATA_NO_SWAP);
+	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PKT_TYPE_SET_DATA, &bodyHdr, &data, CM_PKT_FLAGS_RAW_DATA_NO_SWAP);
 }
 
 int comManagerDisableData(int pHandle, uint32_t dataId)
@@ -675,7 +675,7 @@ int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dat
 	data.ptr  = (uint8_t*)&dataId;
 	data.size = 4;
 
-	return comManagerSendInstance(cmInstance, pHandle, PID_STOP_DID_BROADCAST, 0, &data, 0);
+	return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_STOP_DID_BROADCAST, 0, &data, 0);
 }
 
 int comManagerSend(int pHandle, uint8_t pktInfo, bufPtr_t *bodyHdr, bufPtr_t *txData, uint8_t pFlags)
@@ -689,7 +689,7 @@ int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bu
 
 	// Create Packet String (start to end byte)
 	pkt.hdr.preamble = PSC_ISB_PREAMBLE;
-	pkt.hdr.pid = pktInfo;
+	pkt.hdr.ptype = pktInfo;
 	pkt.hdr.flags = pktFlags;
 
 	if (bodyHdr)
@@ -746,7 +746,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 	p_data_t			*data = (p_data_t*)(pkt->body.ptr);
 	p_data_hdr_t		*dataHdr;
 	registered_data_t	*regd = NULL;
-	uint8_t		pid = (uint8_t)(pkt->hdr.pid);
+	uint8_t		ptype = (uint8_t)(pkt->hdr.ptype);
 
 	com_manager_port_t *port = &(cmInstance->ports[pHandle]);
 	port->status.flags |= CM_PKT_FLAGS_RX_VALID_DATA; // communication received
@@ -755,13 +755,13 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 	// Packet read success
 	port->status.rxPktCount++;
 
-	switch (pid)
+	switch (ptype)
 	{
 	default:    // Data ID Unknown
 		return -1;
 
-	case PID_SET_DATA:
-	case PID_DATA:
+	case PKT_TYPE_SET_DATA:
+	case PKT_TYPE_DATA:
 		dataHdr = &(data->hdr);
 
 		// Validate Data
@@ -861,21 +861,21 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 
 #endif
 
-		// Reply w/ ACK for PID_SET_DATA
-		if (pid == PID_SET_DATA)
+		// Reply w/ ACK for PKT_TYPE_SET_DATA
+		if (ptype == PKT_TYPE_SET_DATA)
 		{
-			sendAck(cmInstance, pHandle, pkt, PID_ACK);
+			sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
 		}
 		break;
 
-	case PID_GET_DATA:
+	case PKT_TYPE_GET_DATA:
 		if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t *)(data)))
 		{
-			sendAck(cmInstance, pHandle, pkt, PID_NACK);
+			sendAck(cmInstance, pHandle, pkt, PKT_TYPE_NACK);
 		}
 		break;
 
-	case PID_STOP_BROADCASTS_ALL_PORTS:
+	case PKT_TYPE_STOP_BROADCASTS_ALL_PORTS:
 		comManagerDisableBroadcastsInstance(cmInstance, -1);
 
 		// Call disable broadcasts callback if exists
@@ -883,10 +883,10 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		{
 			cmInstance->disableBcastFnc(cmInstance, -1);
 		}
-		sendAck(cmInstance, pHandle, pkt, PID_ACK);
+		sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
 		break;
 
-	case PID_STOP_BROADCASTS_CURRENT_PORT:
+	case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
 		comManagerDisableBroadcastsInstance(cmInstance, pHandle);
 
 		// Call disable broadcasts callback if exists
@@ -894,22 +894,22 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		{
 			cmInstance->disableBcastFnc(cmInstance, pHandle);
 		}
-		sendAck(cmInstance, pHandle, pkt, PID_ACK);
+		sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
 		break;
 
-	case PID_STOP_DID_BROADCAST:
+	case PKT_TYPE_STOP_DID_BROADCAST:
 		disableDidBroadcast(cmInstance, pHandle, (p_data_disable_t *)(data));
 		break;
 
-	case PID_NACK:
-	case PID_ACK:
+	case PKT_TYPE_NACK:
+	case PKT_TYPE_ACK:
 		// Remove retry from linked list if necessary
 		updatePacketRetryAck(cmInstance, pkt);
 
 		// Call general ack callback
 		if (cmInstance->pstAckFnc)
 		{
-			cmInstance->pstAckFnc(cmInstance, pHandle, (p_ack_t*)(pkt->body.ptr), pid);
+			cmInstance->pstAckFnc(cmInstance, pHandle, (p_ack_t*)(pkt->body.ptr), ptype);
 		}
 		break;
 	}
@@ -1005,7 +1005,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 
 	// Packet parameters
 	msg->pkt.hdr.preamble = PSC_ISB_PREAMBLE;
-	msg->pkt.hdr.pid = PID_DATA;
+	msg->pkt.hdr.ptype = PKT_TYPE_DATA;
 
 	// Data Header
 	msg->dataHdr.id = req->id;
@@ -1179,11 +1179,11 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 	packet_t pkt;
 	pkt.hdr = msg->hdr;
 
-	switch (pkt.hdr.pid)
+	switch (pkt.hdr.ptype)
 	{
 		// Large data support - breaks data up into separate packets for Tx
-		case PID_DATA:
-		case PID_SET_DATA:
+		case PKT_TYPE_DATA:
+		case PKT_TYPE_SET_DATA:
 		{
 			if (msg->bodyHdr.size == 0)
 			{	// No data
@@ -1277,14 +1277,13 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned cha
 
 	// Create and Send request packet
 	p_ack_t ack = { 0 };
-	ack.hdr.pktInfo = pkt->hdr.pid;
-	ack.hdr.pktCounter = pkt->hdr.counter;
+	ack.hdr.pktInfo = pkt->hdr.ptype;
 	ackSize = sizeof(p_ack_hdr_t);
 
 	// Set ack body
-	switch (pkt->hdr.pid)
+	switch (pkt->hdr.ptype)
 	{
-	case PID_SET_DATA:
+	case PKT_TYPE_SET_DATA:
 // 		memcpy(ack.body.buf, (p_data_hdr_t*)(pkt->body.ptr), sizeof(p_data_hdr_t));
 		ack.body.dataHdr = *((p_data_hdr_t*)(pkt->body.ptr));
 		ackSize += sizeof(p_data_hdr_t);
@@ -1329,7 +1328,7 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 	void* encodedPacket = pkt->buf;
 	int encodedPacketLength = PKT_BUF_SIZE - 1;
 	packet_hdr_t* hdr = &dPkt->hdr;
-	hdr->counter = (uint8_t)(port->comm.txPktCount++);
+	port->comm.txPktCount++;
 
 	pkt->size = is_encode_binary_packet(srcBuffer, srcBufferLength, hdr, additionalPktFlags | port->status.flags, encodedPacket, encodedPacketLength);
 	return (-1 * ((int)pkt->size < 8));
@@ -1386,7 +1385,7 @@ void stepPacketRetry(com_manager_t* cmInstance)
 *
 *	@return Pointer to retry packet.  The header info must be populated.
 */
-packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pid, unsigned char data[], unsigned int dataSize)
+packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t ptype, unsigned char data[], unsigned int dataSize)
 {
 	int32_t i;
 	ensured_pkt_t *ePkt = 0;
@@ -1422,13 +1421,13 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 
 		// Found enabled retry w/ matching packet ID and data size
 		if (ePkt->counter >= 0 &&
-		ePkt->pkt.hdr.pid == pid		&&
+		ePkt->pkt.hdr.ptype == ptype		&&
 		ePkt->pkt.body.size == dataSize &&
 		ePkt->pHandle == pHandle)
 		{
-			switch (pid)
+			switch (ptype)
 			{
-			case PID_GET_DATA:
+			case PKT_TYPE_GET_DATA:
 				getData1 = (p_data_get_t*)data;
 				getData2 = (p_data_get_t*)ePkt->pktBody;
 
@@ -1439,7 +1438,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 				searching = 0;
 				break;
 
-			case PID_STOP_BROADCASTS_ALL_PORTS:
+			case PKT_TYPE_STOP_BROADCASTS_ALL_PORTS:
 				searching = 0;
 				break;
 
@@ -1511,7 +1510,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pi
 
 	// Update ePkt pkt header and body info
 	ePkt->pkt.hdr.preamble = PSC_ISB_PREAMBLE;
-	ePkt->pkt.hdr.pid = pid;
+	ePkt->pkt.hdr.ptype = ptype;
 	ePkt->pkt.body.ptr = ePkt->pktBody; // point to ePkt buffer "pktBody"
 	ePkt->pkt.body.size = dataSize;
 	ePkt->pHandle = pHandle;
@@ -1557,17 +1556,17 @@ void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt)
 	}
 
 	// Update last retry indicator
-	for (i = cmInstance->maxEnsuredPackets - 1; i >= 0; i--)
-	{
+	// for (i = cmInstance->maxEnsuredPackets - 1; i >= 0; i--)
+	// {
 		// Current is enabled so stop
-		if (cmInstance->ensuredPackets[i].counter >= 0)
-		{
-			break;
-		}
+		// if (cmInstance->ensuredPackets[i].counter >= 0)
+		// {
+		// 	break;
+		// }
 
-		// Indicate no more retries in list
-		cmInstance->ensuredPackets[i].counter = -2;
-	}
+		// // Indicate no more retries in list
+		// cmInstance->ensuredPackets[i].counter = -2;
+	// }
 }
 
 void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
@@ -1598,7 +1597,7 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 		}
 
 		// Check packet info matches
-		if (ack->hdr.pktInfo == ePkt->pkt.hdr.pid)
+		if (ack->hdr.pktInfo == ePkt->pkt.hdr.ptype)
 		{
 			p_data_hdr_t *dHdr, *eHdr;
 
@@ -1606,11 +1605,11 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 			{
 				default:
 				// Custom/Specific Packets
-				case PID_STOP_BROADCASTS_ALL_PORTS: // No body ID available
+				case PKT_TYPE_STOP_BROADCASTS_ALL_PORTS: // No body ID available
 				ePkt->counter = -1;                 // indicate disabled retry
 				break;
 
-				case PID_SET_DATA:
+				case PKT_TYPE_SET_DATA:
 				dHdr = &(ack->body.dataHdr);
 				eHdr = (p_data_hdr_t*)(ePkt->pktBody);
 

@@ -601,6 +601,12 @@ void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 	EXPECT_FALSE(ringBufWrite(dst, buf, len));
 }
 
+/* Test cases:
+ - Rx: Single packet.
+ - Rx: >2048 bytes received at once with multiple all valid packets.
+ - Rx: bytes between valid packets.
+*/
+
 
 #if 1
 TEST(ComManager, BasicTxTest)

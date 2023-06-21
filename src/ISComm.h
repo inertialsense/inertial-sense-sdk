@@ -76,9 +76,9 @@ typedef enum
 {
 	_PTYPE_PARSE_ERROR = 0xFFFFFFFF,		/** Invalid data or checksum error */
 	_PTYPE_NONE = 0,						/** No complete valid data available yet */
-	_PTYPE_INERTIAL_SENSE_DATA,				/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
-	_PTYPE_INERTIAL_SENSE_CMD,				/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
-	_PTYPE_INERTIAL_SENSE_ACK,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
+	_PTYPE_INERTIAL_SENSE_DATA,				/** Protocol Type: Inertial Sense binary data (PKT_TYPE_SET_DATA, PKT_TYPE_DATA) */
+	_PTYPE_INERTIAL_SENSE_CMD,				/** Protocol Type: Inertial Sense binary command (PKT_TYPE_GET_DATA, PKT_TYPE_STOP_BROADCASTS...) */
+	_PTYPE_INERTIAL_SENSE_ACK,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PKT_TYPE_ACK, PKT_TYPE_NACK)  */
 	_PTYPE_NMEA,							/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX,							/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3,							/** Protocol Type: RTCM3 binary */
@@ -188,20 +188,21 @@ n-1			Packet end byte
 
 typedef enum
 {
-	PID_DID_MASK                            = 0x07FF, 
-	PID_MASK                                = 0xF800, 
-	PID_INVALID                             = 0,        // Invalid packet id
-	PID_ACK                                 = 1,        // (ACK) received valid packet
-	PID_NACK                                = 2,        // (NACK) received invalid packet
-	PID_GET_DATA                            = 3,        // Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data.
-	PID_DATA                                = 4,        // Data sent in response to PID_GET_DATA (no PID_ACK is sent)
-	PID_SET_DATA                            = 5,        // Data sent, such as configuration options.  PID_ACK is sent in response.
-	PID_STOP_BROADCASTS_ALL_PORTS           = 6,        // Stop all data broadcasts on all ports. Responds with an ACK
-	PID_STOP_DID_BROADCAST                  = 7,        // Stop a specific broadcast
-	PID_STOP_BROADCASTS_CURRENT_PORT        = 8,        // Stop all data broadcasts on current port. Responds with an ACK
-	PID_COUNT                               = 9,        // The number of packet identifiers, keep this at the end!
-	PID_MAX_COUNT                           = 32,       // The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK)
-} eISBPacketId;
+	PKT_TYPE_DID_MASK                            = 0x07FF, 
+	PKT_TYPE_MASK                                = 0xF800,
+	PKT_TYPE_OFFSET                              = 11, 
+	PKT_TYPE_INVALID                             = 0,        // Invalid packet id
+	PKT_TYPE_ACK                                 = 1,        // (ACK) received valid packet
+	PKT_TYPE_NACK                                = 2,        // (NACK) received invalid packet
+	PKT_TYPE_GET_DATA                            = 3,        // Request for data to be broadcast, response is PKT_TYPE_DATA. See data structures for list of possible broadcast data.
+	PKT_TYPE_DATA                                = 4,        // Data sent in response to PKT_TYPE_GET_DATA (no PKT_TYPE_ACK is sent)
+	PKT_TYPE_SET_DATA                            = 5,        // Data sent, such as configuration options.  PKT_TYPE_ACK is sent in response.
+	PKT_TYPE_STOP_BROADCASTS_ALL_PORTS           = 6,        // Stop all data broadcasts on all ports. Responds with an ACK
+	PKT_TYPE_STOP_DID_BROADCAST                  = 7,        // Stop a specific broadcast
+	PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT        = 8,        // Stop all data broadcasts on current port. Responds with an ACK
+	PKT_TYPE_COUNT                               = 9,        // The number of packet identifiers, keep this at the end!
+	PKT_TYPE_MAX_COUNT                           = 32,       // The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK)
+} eISBPacketType;
 
 typedef enum
 {
@@ -209,7 +210,7 @@ typedef enum
 	ISB_FLAGS_MASK                          = 0xF800,   // (5 bits) Packet flags mask
 	ISB_FLAGS_EXTENDED_PAYLOAD              = 0x0800,   // Payload is larger than 2048 bytes and extends into next packet.
 	ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x1000,   // The first two bytes of the payload are the byte offset of the payload data into the data set.
-} eIsbPacketFlags;
+} eISBPacketFlags;
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct
@@ -297,8 +298,14 @@ enum ePktSpecialChars
 	/** New line (\n), used by NMEA protocol to signify end of message (10) */
 	PSC_ASCII_END_BYTE = 0x0A,
 
-	/** Inertial Sense Binary packet start preamble (255, 36) */
-	PSC_ISB_PREAMBLE = 0x24FF,
+	/** Inertial Sense Binary packet preamble (start) byte 1 (239) */
+	PSC_ISB_PREAMBLE_BYTE1 = 0xEF,
+
+	/** Inertial Sense Binary packet preamble (start) byte 2 (74) */
+	PSC_ISB_PREAMBLE_BYTE2 = 0x49,
+
+	/** Inertial Sense Binary packet start preamble (239, 74) */
+	PSC_ISB_PREAMBLE = PSC_ISB_PREAMBLE_BYTE2<<8 | PSC_ISB_PREAMBLE_BYTE1,
 
 	/** Ublox start byte 1 (181) */
 	UBLOX_START_BYTE1 = 0xB5,
@@ -341,13 +348,15 @@ typedef struct
 	/** Packet start byte, always 0xFF */
 	uint16_t            preamble;
 
-	/** Packet identifier (see eISBPacketId) */
-	uint16_t            pid;
+	/** Packet identifier (see eISBPacketType) */
+	uint16_t            ptype;
 
-	/** Payload size and packet flags (see eIsbPayloadSize) */
-	uint8_t             flags;
+	/** Payload size and packet flags (see eISBPacketFlags) */
+	uint16_t            flags;
 
 } packet_hdr_t;
+
+#define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2)		// Packet header + checksum, no payload
 
 /** Represents the 4 bytes that end each binary packet */
 typedef struct
@@ -375,6 +384,24 @@ typedef struct
 	bufPtr_t            body;
 } packet_t;
 
+/** Represents a packet header and body */
+typedef struct
+{
+	/** Packet header */
+	packet_hdr_t        hdr;
+
+	/** Packet body */
+	union
+	{
+		uint8_t         data;
+		struct
+		{
+			uint16_t    offset;
+			uint8_t     offsetData;
+		}               offset;
+	}                   body;
+} packet2_t;
+
 /** Represents a packet header, packet body and a buffer with data to send */
 typedef struct
 {
@@ -383,7 +410,7 @@ typedef struct
 	bufPtr_t            txData;                 // Pointer and size of data to send
 } pkt_info_t;
 
-/** Specifies the data id, size and offset of a PID_DATA and PID_DATA_SET packet */
+/** Specifies the data id, size and offset of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
 typedef struct
 {
 	/** Data identifier (see eDataIDs) */
@@ -396,7 +423,7 @@ typedef struct
 	uint32_t            offset;
 } p_data_hdr_t;
 
-/** Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
+/** Represents the complete packet body of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
 typedef struct
 {
 	/** Header with id, size and offset */
@@ -406,7 +433,7 @@ typedef struct
 	uint8_t             buf[MAX_DATASET_SIZE];
 } p_data_t, p_data_set_t;
 
-/** Represents the complete body of a PID_DATA_GET packet */
+/** Represents the complete body of a PKT_TYPE_DATA_GET packet */
 typedef struct
 {
 	/** ID of data being requested */
@@ -513,9 +540,9 @@ typedef struct
 	uint32_t rxErrorCount;
 
 	/** Start byte */
-	uint32_t hasStartByte;
+	uint8_t hasStartByte;
 
-	/** Used to validate ublox, RTCM, and NMEA packets */
+	/** Used to validate ISB, ublox, RTCM, and NMEA packets */
 	int32_t parseState;
 
 	/** Data identifier (DID), size and offset */
@@ -662,12 +689,12 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
 */
-int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data);
 
 /**
 * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
 */
-int is_comm_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data);
 
 /**
 * Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
@@ -683,6 +710,7 @@ int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
 */
 int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
 
+uint16_t xor_checksum16(const uint8_t* data, uint32_t size);
 
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions

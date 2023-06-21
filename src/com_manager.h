@@ -411,7 +411,7 @@ request.size = sizeof(ins_1_t);
 request.bc_period_ms = 50;
 data.ptr = (uint8_t*)&request;
 data.size = sizeof(request);
-comManagerSend(pHandle, PID_GET_DATA, 0, &data)
+comManagerSend(pHandle, PKT_TYPE_GET_DATA, 0, &data)
 @endcode
 */
 int comManagerSend(int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
