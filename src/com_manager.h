@@ -21,9 +21,6 @@ extern "C" {
 #include "ISComm.h"
 #include "linked_list.h"
 
-// allow packet continuation or not. If enabled, an extra 1K buffer is allocated globally for each pHandle instance.
-#define ENABLE_PACKET_CONTINUATION 0
-
 /**
 Types of pass through data where the com manager will simply forward the data on to a pass through handler
 */

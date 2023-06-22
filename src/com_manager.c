@@ -231,7 +231,7 @@ int initComManagerInstanceInternal
 		for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
 		{
 			cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
-			cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
+			cmInstance->ensuredPackets[i].pkt.payload.ptr = cmInstance->ensuredPackets[i].pktBody;
 		}
 	}
 
@@ -623,7 +623,7 @@ int comManagerSendDataNoAck(int pHandle, uint32_t dataId, void *dataPtr, int dat
 
 int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
 {
-	p_data_hdr_t hdr;
+	p_data_hdr_t hdr;  //We need to remove all instances of p_data_hdr_t
 	bufPtr_t bodyHdr, data;
 
 	// Data Header
@@ -694,7 +694,7 @@ int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bu
 
 	if (bodyHdr)
 	{
-		pkt.bodyHdr = *bodyHdr;
+		// pkt.bodyHdr = *bodyHdr;
 	}
 	if (txData)
 	{
@@ -743,7 +743,7 @@ int findAsciiMessage(const void * a, const void * b)
 */
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 {
-	p_data_t			*data = (p_data_t*)(pkt->body.ptr);
+	p_data_t			*data = (p_data_t*)(pkt->payload.ptr);
 	p_data_hdr_t		*dataHdr;
 	registered_data_t	*regd = NULL;
 	uint8_t		ptype = (uint8_t)(pkt->hdr.ptype);
@@ -909,7 +909,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		// Call general ack callback
 		if (cmInstance->pstAckFnc)
 		{
-			cmInstance->pstAckFnc(cmInstance, pHandle, (p_ack_t*)(pkt->body.ptr), ptype);
+			cmInstance->pstAckFnc(cmInstance, pHandle, (p_ack_t*)(pkt->payload.ptr), ptype);
 		}
 		break;
 	}
@@ -1012,8 +1012,8 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	msg->dataHdr.size = req->size;
 	msg->dataHdr.offset = req->offset;
 	msg->pkt.hdr.flags = cmInstance->regData[req->id].pktFlags;
-	msg->pkt.bodyHdr.ptr = (uint8_t *)&msg->dataHdr;
-	msg->pkt.bodyHdr.size = sizeof(msg->dataHdr);
+	// msg->pkt.bodyHdr.ptr = (uint8_t *)&msg->dataHdr;
+	// msg->pkt.bodyHdr.size = sizeof(msg->dataHdr);
 	msg->pkt.txData.size = req->size;
 	if (dataSetPtr->txPtr)
 	{
@@ -1171,92 +1171,90 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 {
 	pfnComManagerSend sendCallback = cmInstance->sendPacketCallback;
 	if (sendCallback == 0)
-	{
+	{	// sendCallback is required
 		return -1;
 	}
 
 	buffer_t bufToSend;
-	packet_t pkt;
-	pkt.hdr = msg->hdr;
+	is_comm_instance_t *comm = &(cmInstance->ports[pHandle].comm);
+	packet2_t *pkt = (packet2_t*)comm->buf.start;
+	pkt->hdr = msg->hdr;
+	uint8_t ptype = pkt->hdr.flags & PKT_TYPE_MASK;
 
-	switch (pkt.hdr.ptype)
+	switch (ptype)
 	{
 		// Large data support - breaks data up into separate packets for Tx
 		case PKT_TYPE_DATA:
 		case PKT_TYPE_SET_DATA:
 		{
-			if (msg->bodyHdr.size == 0)
+			if (msg->hdr.payloadSize == 0 || msg->txData.size == 0)
 			{	// No data
 				return -1;
 			}
-			
-			// Setup packet and encoding state
-			buffer_t bufToEncode;
-			p_data_hdr_t hdr = *(p_data_hdr_t*)msg->bodyHdr.ptr;
-			p_data_hdr_t* hdrToSend = (p_data_hdr_t*)bufToEncode.buf;
-			uint32_t size = hdr.size;
-			uint32_t offset = 0;
-			uint32_t id = hdr.id;
-			pkt.body.ptr = bufToEncode.buf;
 
-#if ENABLE_PACKET_CONTINUATION
+		    // is_comm_encode_isb_packet(cmInstance->ports[pHandle], pkt.hdr.ptype, pkt.hdr.ptype&PKT_TYPE_DID_MASK, size, offset, data);
+		    // is_comm_encode_isb_packet(comm, ptype, pkt->hdr.ptype&PKT_TYPE_DID_MASK, pkt->hdr.flags, offset, msg->txData);
 
-			while (size > 0)
-			{
-				
-#endif
-				
-				// Assign data header values
-				hdrToSend->size = _MIN(size, MAX_P_DATA_BODY_SIZE);
-				hdrToSend->offset = hdr.offset + offset;
-				hdrToSend->id = id;
-
-				// copy the data to send to bufToEncode, skipping the data header - since we had to create that data header, we now have to append the actual data
-				memcpy(bufToEncode.buf + sizeof(p_data_hdr_t), msg->txData.ptr + offset, hdrToSend->size);
-				
-				// reduce size by the amount sent - if packet continuation is off, this must become 0 otherwise we fail
-				size -= hdrToSend->size;
-				
-#if ENABLE_PACKET_CONTINUATION
-
-				// increment offset for the next packet
-				offset += hdrToSend->size;
-				
-#else
-
-				if (size > 0)
-				{
-					// data was too large to fit in one packet, fail
-					return -1;
-				}
-				
-#endif
-
-				// Set data body size
-				pkt.body.size = sizeof(p_data_hdr_t) + hdrToSend->size;
-
-				// Encode the packet, handling special characters, etc.
-				if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
-				{
-					return -1;
-				}
-
-				// Send the packet using the specified callback
-				sendCallback(cmInstance, pHandle, bufToSend.buf, bufToSend.size);
-				
-#if ENABLE_PACKET_CONTINUATION
-
+			uint8_t *payload = &(pkt->payload.data);
+			uint16_t payload_size = msg->txData.size;
+			if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
+			{	// Offset in payload
+				pkt->payload.offset = msg->offset;
+				payload += 2;
+				payload_size += 2;
 			}
+			memcpy(payload, msg->txData.ptr, msg->txData.size);
 			
-#endif
+			uint16_t pkt_size = payload_size + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
 
+			is_comm_encode_isb_packet_cksum(&pkt, pkt_size);
+
+
+			// // Setup packet and encoding state
+			// buffer_t bufToEncode;
+			// p_data_hdr_t hdr = *(p_data_hdr_t*)msg->bodyHdr.ptr;
+			// p_data_hdr_t* hdrToSend = (p_data_hdr_t*)bufToEncode.buf;
+			// uint32_t size = hdr.size;
+			// uint32_t offset = 0;
+			// uint32_t id = hdr.id;
+			// pkt.payload.ptr = bufToEncode.buf;
+				
+			// // Assign data header values
+			// hdrToSend->size = _MIN(size, MAX_P_DATA_BODY_SIZE);
+			// hdrToSend->offset = hdr.offset + offset;
+			// hdrToSend->id = id;
+
+			// // copy the data to send to bufToEncode, skipping the data header - since we had to create that data header, we now have to append the actual data
+			// memcpy(bufToEncode.buf + sizeof(p_data_hdr_t), msg->txData.ptr + offset, hdrToSend->size);
+			
+			// // reduce size by the amount sent - if packet continuation is off, this must become 0 otherwise we fail
+			// size -= hdrToSend->size;
+			
+			// if (size > 0)
+			// {
+			// 	// data was too large to fit in one packet, fail
+			// 	return -1;
+			// }
+			
+			// // Set data body size
+			// pkt.payload.size = sizeof(p_data_hdr_t) + hdrToSend->size;
+
+			// // Encode the packet, handling special characters, etc.
+			// if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
+			// {
+			// 	return -1;
+			// }
+
+			// Send the packet using the specified callback
+			sendCallback(cmInstance, pHandle, bufToSend.buf, bufToSend.size);
+				
 		} break;
 
 		// Single packet commands/data sets. No data header, just body.
 		default:
 		{
 			// Assign packet pointer and encode data as is
-			pkt.body = msg->txData;
+			// pkt.payload = msg->txData;
 			if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, 0))
 			{
 				return -1;
@@ -1285,7 +1283,7 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned cha
 	{
 	case PKT_TYPE_SET_DATA:
 // 		memcpy(ack.body.buf, (p_data_hdr_t*)(pkt->body.ptr), sizeof(p_data_hdr_t));
-		ack.body.dataHdr = *((p_data_hdr_t*)(pkt->body.ptr));
+		ack.body.dataHdr = *((p_data_hdr_t*)(pkt->payload.ptr));
 		ackSize += sizeof(p_data_hdr_t);
 		break;
 	}
@@ -1323,14 +1321,17 @@ int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, pa
 {
 	com_manager_port_t *port = &(cmInstance->ports[pHandle]);
 	
-	void* srcBuffer = dPkt->body.ptr;
-	int srcBufferLength = dPkt->body.size;
+	void* srcBuffer = dPkt->payload.ptr;
+	int srcBufferLength = dPkt->payload.size;
 	void* encodedPacket = pkt->buf;
 	int encodedPacketLength = PKT_BUF_SIZE - 1;
 	packet_hdr_t* hdr = &dPkt->hdr;
 	port->comm.txPktCount++;
 
 	pkt->size = is_encode_binary_packet(srcBuffer, srcBufferLength, hdr, additionalPktFlags | port->status.flags, encodedPacket, encodedPacketLength);
+	
+	// is_comm_data(cmInstance->ports[pHandle], )
+
 	return (-1 * ((int)pkt->size < 8));
 }
 
@@ -1422,7 +1423,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pt
 		// Found enabled retry w/ matching packet ID and data size
 		if (ePkt->counter >= 0 &&
 		ePkt->pkt.hdr.ptype == ptype		&&
-		ePkt->pkt.body.size == dataSize &&
+		ePkt->pkt.payload.size == dataSize &&
 		ePkt->pHandle == pHandle)
 		{
 			switch (ptype)
@@ -1447,7 +1448,7 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pt
 #if !ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
 
 				// Match: first character
-				if (ePkt->pkt.body.ptr[0] == data[0])
+				if (ePkt->pkt.payload.ptr[0] == data[0])
 				{
 					searching = 0;
 				}
@@ -1510,9 +1511,9 @@ packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pt
 
 	// Update ePkt pkt header and body info
 	ePkt->pkt.hdr.preamble = PSC_ISB_PREAMBLE;
-	ePkt->pkt.hdr.ptype = ptype;
-	ePkt->pkt.body.ptr = ePkt->pktBody; // point to ePkt buffer "pktBody"
-	ePkt->pkt.body.size = dataSize;
+	ePkt->pkt.hdr.flags = ptype;
+	ePkt->pkt.payload.ptr = ePkt->pktBody; // point to ePkt buffer "pktBody"
+	ePkt->pkt.payload.size = dataSize;
 	ePkt->pHandle = pHandle;
 
 	return &(ePkt->pkt);
@@ -1548,7 +1549,7 @@ void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt)
 		}
 
 		// Found packet response expected.  Remove from retry list.
-		if (ePkt->pktBody[0] == pkt->body.ptr[0])
+		if (ePkt->pktBody[0] == pkt->payload.ptr[0])
 		{
 			// Indicate disabled retry
 			ePkt->counter = -1;
@@ -1576,7 +1577,7 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 	p_ack_t *ack;
 	uint8_t ackInfo;
 
-	ack = (p_ack_t*)(pkt->body.ptr);
+	ack = (p_ack_t*)(pkt->payload.ptr);
 	ackInfo = (uint8_t)(ack->hdr.pktInfo);
 
 	// Search for retries that match packet received.  If found, removed it from the retry list.
@@ -1597,7 +1598,7 @@ void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
 		}
 
 		// Check packet info matches
-		if (ack->hdr.pktInfo == ePkt->pkt.hdr.ptype)
+		if (ack->hdr.pktInfo == ePkt->pkt.hdr.flags & )
 		{
 			p_data_hdr_t *dHdr, *eHdr;
 

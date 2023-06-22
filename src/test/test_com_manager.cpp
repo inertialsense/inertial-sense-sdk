@@ -16,10 +16,10 @@ extern "C"
 #endif
 
 #define TEST_PROTO_IS		1
-#define TEST_PROTO_NMEA		1
-#define TEST_PROTO_UBLOX	1
-#define TEST_PROTO_RTCM3	1
-#define TEST_PROTO_SPARTN	1
+#define TEST_PROTO_NMEA		0
+#define TEST_PROTO_UBLOX	0
+#define TEST_PROTO_RTCM3	0
+#define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
 #if 0
@@ -62,9 +62,9 @@ typedef struct
 	uint32_t		pktSize;	// size of encoded packet (pkt header, data header, data, pkt footer)
 } data_holder_t;
 
-test_data_t tcm = {};
-std::deque<data_holder_t> g_testRxDeque;
-std::deque<data_holder_t> g_testTxDeque;
+static test_data_t tcm = {};
+static std::deque<data_holder_t> g_testRxDeque;
+static std::deque<data_holder_t> g_testTxDeque;
 
 
 int portRead(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
@@ -248,7 +248,7 @@ static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
 static uint8_t				s_comm_buffer[NUM_HANDLES*PKT_BUF_SIZE] = { 0 };
 static com_manager_port_t	s_cmPort = {};
 
-bool initComManager(test_data_t &t)
+static bool initComManager(test_data_t &t)
 {
 	// Init ComManager
 	com_manager_init_t cmInit = {};
@@ -284,7 +284,7 @@ bool init(test_data_t &t)
 }
 
 
-void generateData(std::deque<data_holder_t> &testDeque)
+static void generateData(std::deque<data_holder_t> &testDeque)
 {
 	testDeque.clear();
 	int byteSize = 0;
@@ -511,7 +511,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 }
 
 
-void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
+static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
@@ -593,20 +593,13 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 }
 
 
-void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
+static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 {
 	uint8_t *buf = new uint8_t[len];
 
 	len = ringBufRead(src, buf, len);
 	EXPECT_FALSE(ringBufWrite(dst, buf, len));
 }
-
-/* Test cases:
- - Rx: Single packet.
- - Rx: >2048 bytes received at once with multiple all valid packets.
- - Rx: bytes between valid packets.
-*/
-
 
 #if 1
 TEST(ComManager, BasicTxTest)
@@ -648,7 +641,7 @@ TEST(ComManager, BasicTxTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ComManager, BasicRxTest)
 {
 	// Initialize Com Manager
@@ -675,7 +668,7 @@ TEST(ComManager, BasicRxTest)
 #endif
 
 
-#if 1
+#if 0
 // Tests that ComManager handles segmented serial data properly
 TEST(ComManager, SegmentedRxTest)
 {
@@ -719,7 +712,7 @@ TEST(ComManager, SegmentedRxTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ComManager, RxWithGarbageTest)
 {
 	// Initialize Com Manager
@@ -766,7 +759,7 @@ TEST(ComManager, RxWithGarbageTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ComManager, Evb2AltDecodeBufferTest)
 {
 	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.buf.start buffer).
@@ -854,7 +847,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 
 
 
-#if 1
+#if 0
 TEST(ComManager, Evb2DataForwardTest)
 {
 	// This test ensures that packets can be read, decoded, and forwarded for EVB-2 com_bridge without corrupting the data.

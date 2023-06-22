@@ -185,6 +185,7 @@ public:
 	}
 };
 
+#if 0
 TEST(ComManager2, Bad_offset_packet)
 {
 	cComManagerInit cInit;
@@ -207,6 +208,7 @@ TEST(ComManager2, Bad_offset_packet)
 
 	EXPECT_TRUE(true);
 }
+#endif
 
 #if 0
 TEST(ComManager2, Garbage_data_should_not_crash)

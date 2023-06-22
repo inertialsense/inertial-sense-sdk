@@ -62,9 +62,9 @@ typedef struct
 	uint32_t		pktSize;	// size of encoded packet (pkt header, data header, data, pkt footer)
 } data_holder_t;
 
-test_data_t tcm = {};
-std::deque<data_holder_t> g_testRxDeque;
-std::deque<data_holder_t> g_testTxDeque;
+static test_data_t tcm = {};
+static std::deque<data_holder_t> g_testRxDeque;
+static std::deque<data_holder_t> g_testTxDeque;
 
 
 
@@ -198,7 +198,7 @@ static is_comm_instance_t g_comm;
 static uint8_t g_comm_buffer[COM_BUFFER_SIZE] = {0};
 
 
-bool init(test_data_t &t)
+static bool init(test_data_t &t)
 {
 	// Init Port Buffers
 	ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
@@ -210,7 +210,7 @@ bool init(test_data_t &t)
 }
 
 
-void generateData(std::deque<data_holder_t> &testDeque)
+static void generateData(std::deque<data_holder_t> &testDeque)
 {
 	testDeque.clear();
 	int byteSize = 0;
@@ -474,20 +474,72 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 }
 
 
-void parseDataPortBuf(std::deque<data_holder_t> &testDeque, ring_buf_t &portTxBuf)
+void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 {
-	is_comm_instance_t		comm;
-	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_instance_t &comm = g_comm;
 	unsigned char c;
 	protocol_type_t ptype;
 	uDatasets dataWritten;
 
-	while (ringBufUsed(&portTxBuf)>0 && testDeque.size()>0)
+	while (ringBufUsed(&ringBuf)>0 && testDeque.size()>0)
 	{
-		ringBufRead(&portTxBuf, &c, 1);
+		ringBufRead(&ringBuf, &c, 1);
 
 		if((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE)
+		{
+			data_holder_t td = testDeque.front();
+			testDeque.pop_front();
+
+			switch (ptype)
+			{
+			case _PTYPE_IS_V1_DATA:
+				// Found data
+				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
+
+				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
+
+				EXPECT_EQ(td.did, comm.dataHdr.id);
+				break;
+
+			case _PTYPE_UBLOX:
+			case _PTYPE_RTCM3:
+				break;
+
+			case _PTYPE_NMEA:
+				DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
+				break;
+			}
+
+			EXPECT_EQ(td.size, comm.dataHdr.size);
+			EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, td.size) == 0);
+		}
+		else
+		{
+			if (ringBufUsed(&ringBuf) == 0)
+			{
+				return;
+			}
+		}
+	}
+}
+
+
+void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
+{
+	is_comm_instance_t &comm = g_comm;
+	unsigned char c;
+	protocol_type_t ptype;
+	uDatasets dataWritten;
+
+	while (ringBufUsed(&ringBuf)>0 && testDeque.size()>0)
+	{
+		int n = ringBufUsed(&ringBuf);
+		ringBufRead(&ringBuf, comm.buf.tail, n);
+
+        // Update comm buffer tail pointer
+        comm.buf.tail += n;
+
+        while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE) 
 		{
 			data_holder_t td = testDeque.front();
 			testDeque.pop_front();
@@ -519,7 +571,7 @@ void parseDataPortBuf(std::deque<data_holder_t> &testDeque, ring_buf_t &portTxBu
 }
 
 
-void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
+static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 {
 	uint8_t *buf = new uint8_t[len];
 
@@ -527,9 +579,56 @@ void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 	EXPECT_FALSE(ringBufWrite(dst, buf, len));
 }
 
+/* Test cases:
+ - Rx: Single packet.
+ - Rx: >2048 bytes received at once with multiple all valid packets.
+ - Rx: bytes between valid packets.
+ - Rx: data with non-zero offset (so offset exists in payload)
+*/
 
 #if 1
-TEST(ISComm, BasicTxRxTest)
+TEST(ISComm, BasicTxRxByteTest)
+{
+	// Initialize Com Manager
+	init(tcm);
+
+	// Generate and add data to deque
+	generateData(g_testTxDeque);
+
+	// Use Com Manager to send deque data to Tx port ring buffer
+	for(int i=0; i<g_testTxDeque.size(); i++)
+	{
+		data_holder_t td = g_testTxDeque[i];
+
+		// Send data - writes data to tcm.txBuf
+		int n;
+		switch (td.ptype)
+		{
+		default:	// IS binary
+			n = is_comm_data(&g_comm, td.did, 0, td.size, td.data.buf);
+			portWrite(0, g_comm.buf.start, n);
+			break;
+
+		case _PTYPE_NMEA:
+		case _PTYPE_UBLOX:
+		case _PTYPE_RTCM3:
+			portWrite(0, td.data.buf, td.size);
+			break;
+		}
+	}
+
+	// Test that data parsed from Tx port matches deque data
+	parseRingBufByte(g_testTxDeque, tcm.portTxBuf);
+
+	// Check that we got all data
+	EXPECT_TRUE(g_testTxDeque.empty());
+	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+}
+#endif
+
+
+#if 1
+TEST(ISComm, BasicTxRxMultiByteTest)
 {
 	// Initialize Com Manager
 	init(tcm);
@@ -561,7 +660,7 @@ TEST(ISComm, BasicTxRxTest)
 	}
 
 	// Test that data parsed from Tx port matches deque data
-	parseDataPortBuf(g_testTxDeque, tcm.portTxBuf);
+	parseRingBufMultiByte(g_testTxDeque, tcm.portTxBuf);
 
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
@@ -570,7 +669,7 @@ TEST(ISComm, BasicTxRxTest)
 #endif
 
 
-#if 0
+#if 1
 // Tests that ComManager handles segmented serial data properly
 TEST(ISComm, SegmentedRxTest)
 {
@@ -600,9 +699,8 @@ TEST(ISComm, SegmentedRxTest)
 
 		while (!ringBufEmpty(&tcm.portRxBuf))
 		{
-			// Step Com Manager and check that was received correctly inside postRxRead()
-			// comManagerStepInstance(&tcm.cm);
-			// comManagerStepInstance(&tcm.cm);
+			// Test that data parsed from Rx port matches deque data
+			parseRingBufByte(g_testRxDeque, tcm.portRxBuf);
 		}
 	}
 
@@ -613,7 +711,48 @@ TEST(ISComm, SegmentedRxTest)
 #endif
 
 
-#if 0
+#if 1
+// Tests that ComManager handles segmented serial data properly
+TEST(ISComm, BlastRxTest)
+{
+	ring_buf_t tmpRBuf;
+	uint8_t buffer[8192];
+
+	// Initialize temporary ring buffer
+	ringBufInit(&tmpRBuf, buffer, sizeof(buffer), 1);
+
+	init(tcm);
+
+	// Generate and add data to deque
+	generateData(g_testRxDeque);
+
+	// Add deque data to temporary ring buffer
+	addDequeToRingBuf(g_testRxDeque, &tmpRBuf);
+
+	DEBUG_PRINTF("Checking Data:\n");
+
+	// Divide data written to Com Manager into pieces
+	int bytesToWrite = ringBufFree(&tcm.portRxBuf);
+	while (!ringBufEmpty(&tmpRBuf) && !g_testRxDeque.empty())
+	{
+		// Partial write of data
+		ringBuftoRingBufWrite(&tcm.portRxBuf, &tmpRBuf, bytesToWrite);
+
+		while (!ringBufEmpty(&tcm.portRxBuf))
+		{
+			// Test that data parsed from Rx port matches deque data
+			parseRingBufByte(g_testRxDeque, tcm.portRxBuf);
+		}
+	}
+
+	// Check that no data was left behind 
+	EXPECT_TRUE(g_testRxDeque.empty());
+	EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
+}
+#endif
+
+
+#if 1
 TEST(ISComm, RxWithGarbageTest)
 {
 	// Initialize Com Manager
@@ -649,8 +788,8 @@ TEST(ISComm, RxWithGarbageTest)
 
 	while (!ringBufEmpty(&tcm.portRxBuf))
 	{
-		// Step Com Manager and check that was received correctly inside postRxRead()
-		// comManagerStepInstance(&tcm.cm);	// 2048 byte limit each step
+		// Test that data parsed from Rx port matches deque data
+		parseRingBufByte(g_testRxDeque, tcm.portRxBuf);
 	}
 
 	// Check that no data was left behind 
