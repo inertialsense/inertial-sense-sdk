@@ -411,8 +411,8 @@ data.size = sizeof(request);
 comManagerSend(pHandle, PKT_TYPE_GET_DATA, 0, &data)
 @endcode
 */
-int comManagerSend(int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
-int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags);
+int comManagerSend(int pHandle, uint8_t pktFlags, bufPtr_t* bodyHdr, bufPtr_t* txData);
+int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktFlags, bufPtr_t* bodyHdr, bufPtr_t* txData);
 
 /**
 Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
