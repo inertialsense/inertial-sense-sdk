@@ -19,7 +19,7 @@ extern "C"
 #define TEST_PROTO_NMEA		1
 #define TEST_PROTO_UBLOX	1
 #define TEST_PROTO_RTCM3	1
-#define TEST_PROTO_SPARTN	0
+#define TEST_PROTO_SPARTN	1
 
 #define TASK_PERIOD_MS		1				// 1 KHz
 #if 0
@@ -665,6 +665,91 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
 	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+}
+#endif
+
+
+#if 1
+uint8_t g_test[100] = {0};
+TEST(ISComm, TxPtrRxTest)
+{
+	// Initialize Com Manager
+	init(tcm);
+
+	// Generate and add data to deque
+	generateData(g_testTxDeque);
+
+	// Use Com Manager to send deque data to Tx port ring buffer
+	for(int i=0; i<g_testTxDeque.size(); i++)
+	{
+		data_holder_t td = g_testTxDeque[i];
+
+		// Send data - writes data to tcm.txBuf
+		int n;
+		switch (td.ptype)
+		{
+		default:	// IS binary
+		{
+			is_comm_encode_isb_packet_ptr(&g_comm, PKT_TYPE_DATA, td.did, td.size, 0, td.data.buf);
+			n = is_comm_copy_isb_packet_ptr_to_buf(&g_comm, g_comm.buf.start, g_comm.buf.size);
+			portWrite(0, g_comm.buf.start, n);
+		}
+			break;
+
+		case _PTYPE_NMEA:
+		case _PTYPE_UBLOX:
+		case _PTYPE_RTCM3:
+			portWrite(0, td.data.buf, td.size);
+			break;
+		}
+
+	}
+
+	// Test that data parsed from Tx port matches deque data
+	parseRingBufMultiByte(g_testTxDeque, tcm.portTxBuf);
+
+	// Check that we got all data
+	EXPECT_TRUE(g_testTxDeque.empty());
+	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+}
+#endif
+
+
+#if 1
+TEST(ISComm, TxRxWithOffsetTest)
+{
+	// Initialize Com Manager
+	init(tcm);
+
+	ins_1_t txIns1 = {};
+	txIns1.timeOfWeek = 1.234;
+	txIns1.theta[2] = 2.345f;
+	int n;
+
+	n = is_comm_data(&g_comm, DID_INS_1, offsetof(ins_1_t,timeOfWeek), sizeof(double), &txIns1.timeOfWeek);
+	portWrite(0, g_comm.buf.start, n);
+	n = is_comm_data(&g_comm, DID_INS_1, offsetof(ins_1_t,theta[2]), sizeof(float), &txIns1.theta[2]);
+	portWrite(0, g_comm.buf.start, n);
+
+	{
+		is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE);
+		ins_1_t rxIns1 = {};
+
+		int n = ringBufUsed(&tcm.portTxBuf);
+		ringBufRead(&tcm.portTxBuf, g_comm.buf.tail, n);
+		g_comm.buf.tail += n;
+
+		// Read timeOfWeek
+        EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
+		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.dataHdr.id, g_comm.dataHdr.size);
+		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
+		// Read theta[2]
+        EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
+		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.dataHdr.id, g_comm.dataHdr.size);
+		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
+
+		EXPECT_TRUE( memcmp(&txIns1, &rxIns1, sizeof(rxIns1)) == 0 );
+	}
 }
 #endif
 

@@ -54,22 +54,6 @@ typedef struct
 	int32_t                 pHandle;
 } broadcast_msg_t;
 
-/* Contains data to implement ensured packet delivery */
-typedef struct
-{
-	/* Packet struct */
-	packet_t                pkt;
-
-	/* Packet contents/body */
-	uint8_t                 pktBody[PKT_BUF_SIZE];
-
-	/* Count down counter between retries.  < 0 means disabled. -2 means no more enabled beyond this. */
-	int                     counter;
-
-	/* Port packet was sent on */
-	int                     pHandle;
-} ensured_pkt_t;
-
 /** Contains status for the com manager */
 typedef struct  
 {
@@ -90,11 +74,6 @@ typedef struct
 	valid data : flags & CM_PKT_FLAGS_RX_VALID_DATA
 	*/
 	uint8_t flags;
-
-	/** info needed to retry after a message send failure */
-	int16_t retryCount;
-	protocol_type_t ptype_retry;
-
 } com_manager_status_t;
 
 /** Buffers used in com manager */
@@ -102,10 +81,6 @@ typedef struct
 {
 	broadcast_msg_t* broadcastMsg;
 	uint32_t broadcastMsgSize;			// MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t)
-
-	ensured_pkt_t* ensuredPackets;		
-	uint32_t ensuredPacketsSize;		// cmInstance->maxEnsuredPackets * sizeof(ensured_pkt_t)
-
 } com_manager_init_t;
 
 enum eComManagerErrorType
@@ -120,7 +95,6 @@ Since most messages use the RMC (real-time message controller) now, this can be 
 
 // Convenience macros for creating Com Manager buffers
 #define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
-#define COM_MANAGER_BUF_SIZE_ENSURED_PKTS(max_num_ensured_pkts)	((max_num_ensured_pkts)*sizeof(ensured_pkt_t))
 
 // com manager instance / handle is a void*
 typedef void* CMHANDLE;
@@ -220,25 +194,14 @@ typedef struct
 	
 	// Array of port
 	com_manager_port_t *ports;
-		
-	// ensured packets
-	ensured_pkt_t* ensuredPackets;
-
+	
 	broadcast_msg_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
-
-	int32_t lastEnsuredPacketIndex;
 
 	// Number of communication ports
 	int32_t numHandles;
 
-	// max number of packets to ensured delivery at one time.  Adjust based on available memory.
-	int32_t maxEnsuredPackets;
-
 	// processing interval
 	int32_t stepPeriodMilliseconds;
-
-	// Ensure retry count
-	int32_t ensureRetryCount;
 
 	// user defined pointer
 	void* userPointer;
@@ -270,9 +233,7 @@ The global com manager is used by the functions that do not have the Instance su
 The instance functions can be ignored, unless you have a reason to have two com managers in the same process.
 
 @param numHandles the max number of serial ports possible
-@param maxEnsuredPackets the max number of ensured packets
 @param stepPeriodMilliseconds how many milliseconds you are waiting in between calls to comManagerStep
-@param retryCount the number of times to retry failed packets
 @param readFnc read data from the serial port represented by pHandle
 @param sendFnc send data to the serial port represented by pHandle
 @param txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
@@ -289,9 +250,7 @@ comManagerInit(20, 20, 10, 25, staticReadPacket, staticSendPacket, NULL, staticP
 int comManagerInit
 (
 	int numHandles,
-	int maxEnsuredPackets,
 	int stepPeriodMilliseconds,
-	int retryCount,
 	pfnComManagerRead readFnc,
 	pfnComManagerSend sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
@@ -308,9 +267,7 @@ int comManagerInitInstance
 (
 	CMHANDLE cmHandle,
 	int numHandles,
-	int maxEnsuredPackets,
 	int stepPeriodMilliseconds,
-	int retryCount,
 	pfnComManagerRead readFnc,
 	pfnComManagerSend sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
@@ -431,18 +388,6 @@ comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 */
 int comManagerSendData(int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset);
 int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset);
-
-/**
-Same as comManagerSend, except that the com manager may retry the send if an ACK is not received
-
-@param pHandle the port handle to send the packet to
-@param pktInfo the type of packet (PID)
-@param bodyHdr optional, can contain information about the actual data of the body (txData), usually the data id, offset and size
-@param txData optional, the actual body of the packet
-@return 0 if success, anything else if failure
-*/
-int comManagerSendEnsured(int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize);
-int comManagerSendEnsuredInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize);
 
 // INTERNAL FUNCTIONS...
 /**

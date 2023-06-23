@@ -132,13 +132,10 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	com_manager_init_t cmBuffers = { 0 };
 	cmBuffers.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	cmBuffers.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-#define NUM_ENSURED_PKTS 20
-	cmBuffers.ensuredPacketsSize = COM_MANAGER_BUF_SIZE_ENSURED_PKTS(NUM_ENSURED_PKTS);
-	cmBuffers.ensuredPackets = new ensured_pkt_t[NUM_ENSURED_PKTS];
 	com_manager_port_t *cmPort = new com_manager_port_t();
 
-	comManagerInitInstance(&(cm1->cm), 1, 10, 10, 10, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort);
-	comManagerInitInstance(&(cm2->cm), 1, 2, 5, 3, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort);
+	comManagerInitInstance(&(cm1->cm), 1, 10, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort);
+	comManagerInitInstance(&(cm2->cm), 1,  5, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort);
 	cm1->cm2 = cm2;
 	cm2->cm2 = cm1;
 	comManagerAssignUserPointer(&(cm1->cm), cm1);

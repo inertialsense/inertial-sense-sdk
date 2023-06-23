@@ -254,7 +254,7 @@ static bool initComManager(test_data_t &t)
 	com_manager_init_t cmInit = {};
 	cmInit.broadcastMsg = t.cmBufBcastMsg;
 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, 0, TASK_PERIOD_MS, 0, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
+	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
 	{	// Fail to init
 		return false;
 	}

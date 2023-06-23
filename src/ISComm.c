@@ -90,23 +90,23 @@ unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len)
 	return crc;
 }
 
-uint16_t is_comm_fletcher16(uint16_t cksum_init, const uint8_t* data, uint32_t size)
+uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size)
 {
 	checksum16_u cksum = { cksum_init };
 	for (int i=0; i<size; i++)
 	{
-		cksum.a += data[i];
+		cksum.a += ((uint8_t*)data)[i];
 		cksum.b += cksum.a;
 	}	
 	return cksum.ck;
 }
 
-uint16_t is_comm_xor16(uint16_t cksum_init, const uint8_t* data, uint32_t size)
+uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
 {	
 	checksum16_u cksum = { cksum_init };
 	for (int i=0; i<size; i++)
 	{
-		cksum.a ^= data[i];
+		cksum.a ^= ((uint8_t*)data)[i];
 		cksum.b ^= cksum.a;
 	}
 	return cksum.ck;
@@ -247,7 +247,7 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 		return _PTYPE_NONE;
 	}
 
-	packet2_t *pkt = (packet2_t*)(instance->buf.head);	
+	packet_buf_t *pkt = (packet_buf_t*)(instance->buf.head);	
 	int payload_size = pkt->hdr.payloadSize;
 	int pkt_size = sizeof(packet_hdr_t) + payload_size + 2;		// Header + payload + footer (checksum)
 	if (numBytes < pkt_size)
@@ -255,10 +255,10 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 		return _PTYPE_NONE;
 	}
 
-	uint8_t *dataPtr = ((uint8_t*)pkt)+sizeof(packet_hdr_t);
-	checksum16_u *psum = (checksum16_u*)(dataPtr + payload_size);
-	int bytes_cksum = pkt_size - 4;	
-	if (psum->ck != is_comm_isb_checksum16(ISB_CHECKSUM16_INIT, ((uint8_t*)pkt) + 2, bytes_cksum))
+	uint8_t *payload = ((uint8_t*)pkt)+sizeof(packet_hdr_t);
+	checksum16_u *psum = (checksum16_u*)(payload + payload_size);
+	int bytes_cksum = pkt_size - 2;	
+	if (psum->ck != is_comm_isb_checksum16(0, pkt, bytes_cksum))
 	{	// Invalid checksum
 		return _PTYPE_PARSE_ERROR;
 	}
@@ -271,15 +271,15 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 	if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
 	{	// Offset is first two bytes in payload  
 		instance->dataHdr.size = _MAX(payload_size-2, 0);
-		instance->dataHdr.offset = *((uint16_t*)dataPtr);
+		instance->dataHdr.offset = *((uint16_t*)payload);
 		// Data starts after offset if data size is non-zero
-		instance->dataPtr = (instance->dataHdr.size ? dataPtr+2 : NULL);
+		instance->dataPtr = (instance->dataHdr.size ? payload+2 : NULL);
 	}
 	else
 	{	// No offset
 		instance->dataHdr.size = payload_size;
 		instance->dataHdr.offset = 0;
-		instance->dataPtr = (payload_size ? dataPtr : NULL);
+		instance->dataPtr = (payload_size ? payload : NULL);
 	}
 
 	uint8_t ptype = pkt->hdr.flags & PKT_TYPE_MASK;
@@ -964,74 +964,118 @@ int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t off
 	hdr.flags = PKT_TYPE_GET_DATA;
 	(uint8_t)instance->txPktCount++;
 
-	return is_encode_binary_packet(&request, sizeof(request), &hdr, 0, instance->buf.start, instance->buf.size);
+	return is_comm_encode_isb_packet(&request, sizeof(request), &hdr, 0, instance->buf.start, instance->buf.size);
 }
 
 int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits)
 {
-	return 	is_comm_set_data(instance, DID_RMC, offsetof(rmc_t,bits), sizeof(uint64_t), (void*)&rmcBits);
+	return is_comm_set_data(instance, DID_RMC, offsetof(rmc_t,bits), sizeof(uint64_t), (void*)&rmcBits);
 }
 
-int is_comm_encode_isb_packet_header_payload(uint8_t *buf, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
-	packet2_t *pkt = (packet2_t*)buf;
+	packet_t *pkt = &(instance->pkt);
 
-	// Payload
-	uint8_t *payload = &(pkt->payload.data);
-	uint16_t payload_size = data_size;
-	if (offset)
-	{	// Offset in payload
-		flags |= ISB_FLAGS_PAYLOAD_W_OFFSET;
-		pkt->payload.offset = offset;
-		payload += 2;
-		payload_size += 2;
-	}
-	memcpy(payload, data, data_size);
-
-	// Packet Header
+	// Header
 	pkt->hdr.preamble = PSC_ISB_PREAMBLE;
 	pkt->hdr.flags = flags;
 	pkt->hdr.did = did;
-	pkt->hdr.payloadSize = payload_size;
+	pkt->hdr.payloadSize = data_size;
 
-	uint16_t pkt_size = payload_size + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
-	return pkt_size;
+	// Payload
+	if (offset)
+	{	// Offset in payload
+		pkt->hdr.flags |= ISB_FLAGS_PAYLOAD_W_OFFSET;
+		pkt->hdr.payloadSize += 2;
+		pkt->offset = offset;
+	}
+	pkt->payload.ptr = data;
+	pkt->payload.size = data_size;
+	pkt->pktSize = pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
+
+	// Footer
+	pkt->checksum = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
+	if (offset)
+	{
+		pkt->checksum = is_comm_isb_checksum16(pkt->checksum, &pkt->offset, sizeof(pkt->offset));
+	}
+	pkt->checksum = is_comm_isb_checksum16(pkt->checksum, data, data_size);
+
+	instance->txPktCount++;
 }
 
-void is_comm_encode_isb_packet_cksum(uint8_t *pkt, uint16_t pkt_size)
+int is_comm_encode_isb_packet_buf(uint8_t* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
-	// Packet Footer / Checksum
-	uint8_t *cksum_start = pkt + 2;						// exclude preamble
-	uint16_t *cksum = (uint16_t*)(pkt + pkt_size - 2);	// exclude preamble
-	uint32_t cksum_size = ((uint8_t*)cksum) - cksum_start;
-	*cksum = is_comm_isb_checksum16(ISB_CHECKSUM16_INIT, cksum_start, cksum_size);
-}
-
-int is_comm_encode_isb_packet(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
-{
-	if (data_size + sizeof(packet_hdr_t) + 4 > instance->buf.size)
-	{	// Packet size (header + payload offset + payload + checksum) is large than buffer size
+	int pktSize = data_size + sizeof(packet_hdr_t) + (offset ? 4 : 2);		// Pkt header + payload + checksum (+2 if offset)
+	if (pktSize > buf_size)
+	{	// Packet size large than buffer size
 		return -1;
 	}
 
-	// Header and Payload
-	uint16_t pkt_size = is_comm_encode_isb_packet_header_payload(instance->buf.start, flags, did, data_size, offset, data);
+	packet_buf_t *pkt = (packet_buf_t*)buf;
+
+	// Header
+	pkt->hdr.preamble = PSC_ISB_PREAMBLE;
+	pkt->hdr.flags = flags;
+	pkt->hdr.did = did;
+	pkt->hdr.payloadSize = data_size;
+
+	// Payload
+	uint8_t *payload = &(pkt->payload.data);
+	if (offset)
+	{	// Offset in payload
+		pkt->hdr.flags |= ISB_FLAGS_PAYLOAD_W_OFFSET;
+		pkt->hdr.payloadSize += 2;
+		pkt->payload.offset = offset;
+		payload += 2;
+	}
+	memcpy(payload, data, data_size);
 
 	// Footer
-	is_comm_encode_isb_packet_cksum(instance->buf.start, pkt_size);
+	int cksum_offset = pktSize-2;
+	uint16_t *cksum = (uint16_t*)(buf + cksum_offset);
+	*cksum = is_comm_isb_checksum16(0, buf, cksum_offset);
 
-	instance->txPktCount++;
-	return pkt_size;
+	return pktSize;
+}
+
+int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size)
+{
+	if (instance->pkt.pktSize > buf_size)
+	{	// Packet size large than buffer size
+		return -1;
+	}
+
+	uint8_t *ptr = buf;
+
+#define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
+
+	// Header
+	MEMCPY_INC(ptr, &(instance->pkt.hdr), sizeof(instance->pkt.hdr));
+
+	// Offset (optional)
+	if (instance->pkt.offset)
+	{
+		MEMCPY_INC(ptr, &(instance->pkt.offset), sizeof(instance->pkt.offset));
+	}
+
+	// Payload
+	MEMCPY_INC(ptr, instance->pkt.payload.ptr, instance->pkt.payload.size);
+
+	// Checksum
+	MEMCPY_INC(ptr, &(instance->pkt.checksum), sizeof(instance->pkt.checksum));
+
+	return instance->pkt.pktSize;
 }
 
 int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data)
 {
-    return is_comm_encode_isb_packet(instance, PKT_TYPE_SET_DATA, did, size, offset, data);
+    return is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_SET_DATA, did, size, offset, data);
 }    
 
 int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data)
 {
-    return is_comm_encode_isb_packet(instance, PKT_TYPE_DATA, did, size, offset, data);    
+    return is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_DATA, did, size, offset, data);    
 }    
 
 int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance)
@@ -1040,7 +1084,7 @@ int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance)
     hdr.flags = PKT_TYPE_STOP_BROADCASTS_ALL_PORTS;
     instance->txPktCount++;
 
-    return is_encode_binary_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
+    return is_comm_encode_isb_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
 }
 
 int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
@@ -1049,10 +1093,10 @@ int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
     hdr.flags = PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT;
     instance->txPktCount++;
 
-    return is_encode_binary_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
+    return is_comm_encode_isb_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
 }
 
-int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength)
+int is_comm_encode_isb_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength)
 {
 	// Ensure data size is small enough, assuming packet size could double after encoding.
 	if (srcBufferLength > MAX_PKT_BODY_SIZE)

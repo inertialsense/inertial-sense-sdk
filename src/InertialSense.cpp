@@ -1032,10 +1032,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
 	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-#define NUM_ENSURED_PKTS 10
-	if (m_cmInit.ensuredPackets) { delete [] m_cmInit.ensuredPackets; }
-	m_cmInit.ensuredPacketsSize = COM_MANAGER_BUF_SIZE_ENSURED_PKTS(NUM_ENSURED_PKTS);
-	m_cmInit.ensuredPackets = new ensured_pkt_t[NUM_ENSURED_PKTS];
 	if (comManagerInit((int)m_comManagerState.devices.size(), NUM_ENSURED_PKTS, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
 	{	// Error
 		return false;

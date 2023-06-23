@@ -341,8 +341,17 @@ typedef struct
 	/** Packet header */
 	packet_hdr_t        hdr;
 
+	/** Data offset (optional) */
+	uint16_t            offset;
+
 	/** Packet payload */
 	bufPtr_t            payload;
+
+	/** Packet checksum */
+	uint16_t            checksum;
+
+	/** Packet size */
+	uint16_t            pktSize;
 } packet_t;
 
 /** Represents a packet header and body */
@@ -357,7 +366,7 @@ typedef struct
 		uint8_t         data;
 		uint16_t        offset;
 	}                   payload;
-} packet2_t;
+} packet_buf_t;
 
 /** Represents a packet header, packet body and a buffer with data to send */
 typedef struct
@@ -365,6 +374,8 @@ typedef struct
 	packet_hdr_t        hdr;                    // Packet header
 	uint16_t            offset;                 // data offset
 	bufPtr_t            txData;                 // Pointer and size of data to send
+	uint16_t            hdrCksum;               // Checksum of header only
+	uint16_t            pktSize;                // Size of packet
 } pkt_info_t;
 
 /** Specifies the data id, size and offset of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
@@ -654,20 +665,6 @@ int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset
 int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data);
 
 /**
-* Encode a binary packet - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
-* @param instance the comm instance passed to is_comm_init
-* @param flags the packet type and flags (see eISBPacketFlags)
-* @param did the data id to set on the device (see DID_* at top of this file)
-* @param payload_size the number of bytes to set on the data structure on the device
-* @param offset the offset to start setting data at on the data structure on the device
-* @param data the actual data to change on the data structure on the device - this should have at least size bytes available
-* @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
-* @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
-*/
-int is_comm_encode_isb_packet(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t payload_size, uint16_t offset, void* data);
-void is_comm_encode_isb_packet_cksum(uint8_t *pkt, uint16_t pkt_size);
-
-/**
 * Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
 * @param instance the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
@@ -681,9 +678,8 @@ int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
 */
 int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
 
-uint16_t is_comm_fletcher16(uint16_t cksum_init, const uint8_t* data, uint32_t size);
-uint16_t is_comm_xor16(uint16_t cksum_init, const uint8_t* data, uint32_t size);
-#define ISB_CHECKSUM16_INIT     0xAAAA
+uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size);
+uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 #define is_comm_isb_checksum16  is_comm_fletcher16
 // #define is_comm_isb_checksum16  is_comm_xor16
 
@@ -692,7 +688,10 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const uint8_t* data, uint32_t size);
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
 // common encode / decode for com manager and simple interface
-int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
+int is_comm_encode_isb_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
+void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_encode_isb_packet_buf(uint8_t* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size);
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
