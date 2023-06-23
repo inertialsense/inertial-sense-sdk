@@ -90,33 +90,25 @@ unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len)
 	return crc;
 }
 
-uint16_t fletcher16(const uint8_t* data, uint32_t size)
+uint16_t is_comm_fletcher16(uint16_t cksum_init, const uint8_t* data, uint32_t size)
 {
-	checksum16_u cksum;
-	cksum.ck = 0;
-	
+	checksum16_u cksum = { cksum_init };
 	for (int i=0; i<size; i++)
 	{
 		cksum.a += data[i];
 		cksum.b += cksum.a;
-	}
-	
+	}	
 	return cksum.ck;
 }
 
-uint16_t isb_checksum16(const uint8_t* data, uint32_t size)
-{
-	checksum16_u cksum;
-	cksum.ck = 0xAAAA;
-	
-	for (int i=0;;)
+uint16_t is_comm_xor16(uint16_t cksum_init, const uint8_t* data, uint32_t size)
+{	
+	checksum16_u cksum = { cksum_init };
+	for (int i=0; i<size; i++)
 	{
-		if (i>=size) break;
-		cksum.a ^= data[i++];
-		if (i>=size) break;
-		cksum.b ^= data[i++];
+		cksum.a ^= data[i];
+		cksum.b ^= cksum.a;
 	}
-	
 	return cksum.ck;
 }
 
@@ -264,9 +256,9 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 	}
 
 	uint8_t *dataPtr = ((uint8_t*)pkt)+sizeof(packet_hdr_t);
-	checksum16_u *cksum = (checksum16_u*)(dataPtr + payload_size);
-	int bytes_cksum = pkt_size - 4;
-	if (cksum->ck != isb_checksum16(((uint8_t*)pkt) + 2, bytes_cksum))
+	checksum16_u *psum = (checksum16_u*)(dataPtr + payload_size);
+	int bytes_cksum = pkt_size - 4;	
+	if (psum->ck != is_comm_isb_checksum16(ISB_CHECKSUM16_INIT, ((uint8_t*)pkt) + 2, bytes_cksum))
 	{	// Invalid checksum
 		return _PTYPE_PARSE_ERROR;
 	}
@@ -419,7 +411,7 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 			uint8_t* cksum_end   = instance->buf.scan - 2;
 			uint32_t cksum_size  = cksum_end - cksum_start; 
 			checksum16_u cksum;
-			cksum.ck = fletcher16(cksum_start, cksum_size);
+			cksum.ck = is_comm_fletcher16(0, cksum_start, cksum_size);
 			if (actualChecksum == cksum.ck)
 			{	// Checksum passed - Valid ublox packet
 				// Update data pointer and info
@@ -1012,8 +1004,7 @@ void is_comm_encode_isb_packet_cksum(uint8_t *pkt, uint16_t pkt_size)
 	uint8_t *cksum_start = pkt + 2;						// exclude preamble
 	uint16_t *cksum = (uint16_t*)(pkt + pkt_size - 2);	// exclude preamble
 	uint32_t cksum_size = ((uint8_t*)cksum) - cksum_start;
-	// *cksum = fletcher16(cksum_start, cksum_size);
-	*cksum = isb_checksum16(cksum_start, cksum_size);
+	*cksum = is_comm_isb_checksum16(ISB_CHECKSUM16_INIT, cksum_start, cksum_size);
 }
 
 int is_comm_encode_isb_packet(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)

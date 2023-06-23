@@ -681,7 +681,12 @@ int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
 */
 int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
 
-uint16_t xor_checksum16(const uint8_t* data, uint32_t size);
+uint16_t is_comm_fletcher16(uint16_t cksum_init, const uint8_t* data, uint32_t size);
+uint16_t is_comm_xor16(uint16_t cksum_init, const uint8_t* data, uint32_t size);
+#define ISB_CHECKSUM16_INIT     0xAAAA
+#define is_comm_isb_checksum16  is_comm_fletcher16
+// #define is_comm_isb_checksum16  is_comm_xor16
+
 
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
