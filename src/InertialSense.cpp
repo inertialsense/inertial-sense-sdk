@@ -411,23 +411,23 @@ bool InertialSense::UpdateServer()
 			case _PTYPE_RTCM3:
 			case _PTYPE_UBLOX:
 				// forward data on to connected clients
-				m_clientServerByteCount += comm->dataHdr.size;
-				if (m_tcpServer.Write(comm->dataPtr, comm->dataHdr.size) != (int)comm->dataHdr.size)
+				m_clientServerByteCount += comm->pkt.data.size;
+				if (m_tcpServer.Write(comm->pkt.data.ptr, comm->pkt.data.size) != (int)comm->pkt.data.size)
 				{
 					cout << endl << "Failed to write bytes to tcp server!" << endl;
 				}
 				if (ptype == _PTYPE_RTCM3)
 				{
-					// len = messageStatsGetbitu(comm->dataPtr, 14, 10);
-					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
-					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					// len = messageStatsGetbitu(comm->pkt.data.ptr, 14, 10);
+					id = messageStatsGetbitu(comm->pkt.data.ptr, 24, 12);
+					if ((id == 1029) && (comm->pkt.data.size < 1024))
 					{
-						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+						str = string().assign(reinterpret_cast<char*>(comm->pkt.data.ptr + 12), comm->pkt.data.size - 12);
 					}
 				}
 				else if (ptype == _PTYPE_UBLOX)
 				{
-					id = *((uint16_t*)(&comm->dataPtr[2]));
+					id = *((uint16_t*)(&comm->pkt.data.ptr[2]));
 				}
 				break;
 
@@ -436,12 +436,12 @@ bool InertialSense::UpdateServer()
 
 			case _PTYPE_IS_V1_DATA:
 			case _PTYPE_IS_V1_CMD:
-				id = comm->dataHdr.id;
+				id = comm->pkt.hdr.id;
 				break;
 
 			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
-					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pStart = comm->pkt.data.ptr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
 					pStart = _MAX(pStart, pEnd - 8);
 					memcpy(&id, pStart, (pEnd - pStart));
@@ -494,20 +494,20 @@ bool InertialSense::UpdateClient()
 			{
 			case _PTYPE_UBLOX:
 			case _PTYPE_RTCM3:
-				m_clientServerByteCount += comm->dataHdr.size;
-				OnClientPacketReceived(comm->dataPtr, comm->dataHdr.size);
+				m_clientServerByteCount += comm->pkt.data.size;
+				OnClientPacketReceived(comm->pkt.data.ptr, comm->pkt.data.size);
 
 				if (ptype == _PTYPE_RTCM3)
 				{
-					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
-					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					id = messageStatsGetbitu(comm->pkt.data.ptr, 24, 12);
+					if ((id == 1029) && (comm->pkt.data.size < 1024))
 					{
-						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+						str = string().assign(reinterpret_cast<char*>(comm->pkt.data.ptr + 12), comm->pkt.data.size - 12);
 					}
 				}
 				else if (ptype == _PTYPE_UBLOX)
 				{
-					id = *((uint16_t*)(&comm->dataPtr[2]));
+					id = *((uint16_t*)(&comm->pkt.data.ptr[2]));
 				}
 				break;
 
@@ -521,12 +521,12 @@ bool InertialSense::UpdateClient()
 
 			case _PTYPE_IS_V1_DATA:
 			case _PTYPE_IS_V1_CMD:
-				id = comm->dataHdr.id;
+				id = comm->pkt.hdr.id;
 				break;
 
 			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
-					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pStart = comm->pkt.data.ptr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
 					pStart = _MAX(pStart, pEnd - 8);
 					memcpy(&id, pStart, (pEnd - pStart));
@@ -639,7 +639,7 @@ void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, ui
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  4.) Send data to the uINS.  
-		comManagerSendData((int)i, dataId, data, length, offset);
+		comManagerSendData((int)i, data, dataId, length, offset);
 	}
 }
 
@@ -647,7 +647,7 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 {
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRawData((int)i, dataId, data, length, offset);
+		comManagerSendRawData((int)i, data, dataId, length, offset);
 	}
 }
 
@@ -670,7 +670,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 		m_comManagerState.devices[pHandle].sysCmd.command = command;
 		m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
 		// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
-		comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(system_command_t), 0);
+		comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 	}
 }
 
@@ -735,7 +735,7 @@ void InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
         m_comManagerState.devices[pHandle].flashCfg = flashCfg;
 
 		// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-        comManagerSendData(pHandle, DID_FLASH_CONFIG, &m_comManagerState.devices[pHandle].flashCfg, sizeof(nvm_flash_cfg_t), 0);
+        comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
 		Update();
 	}
 }
@@ -761,7 +761,7 @@ void InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 
 	m_comManagerState.devices[pHandle].evbFlashCfg = evbFlashCfg;
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &m_comManagerState.devices[pHandle].evbFlashCfg, sizeof(evb_flash_cfg_t), 0);
+	comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].evbFlashCfg, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), 0);
 	Update();
 }
 
@@ -1032,7 +1032,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
 	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), NUM_ENSURED_PKTS, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
+	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
 	{	// Error
 		return false;
 	}
@@ -1088,7 +1088,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// setup com manager again if serial ports dropped out with new count of serial ports
 		if (removedSerials)
 		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
 		}
 	}
 

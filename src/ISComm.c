@@ -93,7 +93,7 @@ unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len)
 uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size)
 {
 	checksum16_u cksum = { cksum_init };
-	for (int i=0; i<size; i++)
+	for (uint32_t i=0; i<size; i++)
 	{
 		cksum.a += ((uint8_t*)data)[i];
 		cksum.b += cksum.a;
@@ -104,7 +104,7 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
 {	
 	checksum16_u cksum = { cksum_init };
-	for (int i=0; i<size; i++)
+	for (uint32_t i=0; i<size; i++)
 	{
 		cksum.a ^= ((uint8_t*)data)[i];
 		cksum.b ^= cksum.a;
@@ -156,22 +156,22 @@ static int dataIdShouldSwap(uint32_t dataId)
 static void swapPacket(packet_t* pkt)
 {
 	uint8_t ptype = pkt->hdr.flags & PKT_TYPE_MASK;
-	if (pkt->payload.size < sizeof(p_data_hdr_t) || (ptype != PKT_TYPE_DATA && ptype != PKT_TYPE_SET_DATA))
+	if (pkt->data.size < sizeof(p_data_hdr_t) || (ptype != PKT_TYPE_DATA && ptype != PKT_TYPE_SET_DATA))
 	{	// swap entire packet, not a data packet
-		flipEndianess32(pkt->payload.ptr, pkt->payload.size);
+		flipEndianess32(pkt->data.ptr, pkt->data.size);
 	}
 	else
 	{	// swap header
-		flipEndianess32(pkt->payload.ptr, sizeof(p_data_hdr_t));
+		flipEndianess32(pkt->data.ptr, sizeof(p_data_hdr_t));
 
 		// get header
-		p_data_hdr_t* dataHdr = (p_data_hdr_t*)pkt->payload.ptr;
+		p_data_hdr_t* dataHdr = (p_data_hdr_t*)pkt->data.ptr;
 
 		// if dev_info_t, swap only the uint32 fields, this data structure is handled special as it contains char[] arrays and uint32_t in the same struct
-		if (dataHdr->id == DID_DEV_INFO && pkt->payload.size == sizeof(p_data_hdr_t) + sizeof(dev_info_t))
+		if (dataHdr->id == DID_DEV_INFO && pkt->data.size == sizeof(p_data_hdr_t) + sizeof(dev_info_t))
 		{
 			// swap only the pieces that need swapping
-			dev_info_t* devInfo = (dev_info_t*)(pkt->payload.ptr + sizeof(p_data_hdr_t));
+			dev_info_t* devInfo = (dev_info_t*)(pkt->data.ptr + sizeof(p_data_hdr_t));
 			devInfo->buildNumber = SWAP32(devInfo->buildNumber);
 			devInfo->repoRevision = SWAP32(devInfo->repoRevision);
 			devInfo->serialNumber = SWAP32(devInfo->serialNumber);
@@ -179,12 +179,12 @@ static void swapPacket(packet_t* pkt)
 		else if (dataIdShouldSwap(dataHdr->id))
 		{
 			// swap entire packet body
-			flipEndianess32(pkt->payload.ptr + sizeof(p_data_hdr_t), pkt->payload.size - sizeof(p_data_hdr_t));
+			flipEndianess32(pkt->data.ptr + sizeof(p_data_hdr_t), pkt->data.size - sizeof(p_data_hdr_t));
 
 			// flip doubles
 			uint16_t* offsets;
 			uint16_t offsetsLength;
-			uint8_t* dataBuf = pkt->payload.ptr + sizeof(p_data_hdr_t);
+			uint8_t* dataBuf = pkt->data.ptr + sizeof(p_data_hdr_t);
 
 			// flip doubles back if needed
 			if ((offsets = getDoubleOffsets(dataHdr->id, &offsetsLength)))
@@ -219,15 +219,11 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 		ENABLE_PROTOCOL_SPARTN |
 		ENABLE_PROTOCOL_SONY;
 	
-	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
 	instance->hasStartByte = 0;
-	memset(&instance->dataHdr, 0, sizeof(p_data_hdr_t));
-	instance->dataPtr = instance->buf.start;
     instance->ackNeeded = 0;
 	memset(&instance->pkt, 0, sizeof(packet_t));
-	instance->pkt.payload.ptr = instance->buf.start;
-	instance->pkt.payload.size = 0;
+	instance->pkt.data.ptr = instance->buf.start;
 	instance->altDecodeBuf = NULL;
 }
 
@@ -237,68 +233,75 @@ static inline void reset_parser(is_comm_instance_t *instance)
 	instance->buf.head = instance->buf.scan;
 }
 
-static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
+static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numBytes)
 {
-	// Packet to decode into
-	// uint8_t* head;
-
 	if (numBytes < MIN_PACKET_SIZE)
 	{	// Wait for packet header
 		return _PTYPE_NONE;
 	}
 
-	packet_buf_t *pkt = (packet_buf_t*)(instance->buf.head);	
-	int payload_size = pkt->hdr.payloadSize;
-	int pkt_size = sizeof(packet_hdr_t) + payload_size + 2;		// Header + payload + footer (checksum)
-	if (numBytes < pkt_size)
+	uint8_t *buf = instance->buf.head;
+	packet_buf_t *pkt_buf = (packet_buf_t*)(instance->buf.head);
+	packet_t *pkt = &(instance->pkt);
+	packet_hdr_t *hdr = &(pkt->hdr);
+	hdr->payloadSize = pkt_buf->hdr.payloadSize;
+	pkt->size = sizeof(packet_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
+	if (numBytes < pkt->size)
 	{	// Wait for entire packet
 		return _PTYPE_NONE;
 	}
 
-	uint8_t *payload = ((uint8_t*)pkt)+sizeof(packet_hdr_t);
-	checksum16_u *psum = (checksum16_u*)(payload + payload_size);
-	int bytes_cksum = pkt_size - 2;	
-	if (psum->ck != is_comm_isb_checksum16(0, pkt, bytes_cksum))
+	uint8_t *payload = buf + sizeof(packet_hdr_t);
+	checksum16_u *cksum = (checksum16_u*)(payload + hdr->payloadSize);
+	int bytes_cksum = pkt->size - 2;	
+	if (cksum->ck != is_comm_isb_checksum16(0, buf, bytes_cksum))
 	{	// Invalid checksum
 		return _PTYPE_PARSE_ERROR;
 	}
 
-	// Valid packet
-	instance->pktPtr = instance->buf.head;
-	reset_parser(instance);
+	// Found valid packet
 
-	instance->ackNeeded = 0;
+	// Header
+	pkt->hdr.preamble  = pkt_buf->hdr.preamble;
+	pkt->hdr.flags     = pkt_buf->hdr.flags;
+	pkt->hdr.id        = pkt_buf->hdr.id;
+
+	// Payload
 	if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
 	{	// Offset is first two bytes in payload  
-		instance->dataHdr.size = _MAX(payload_size-2, 0);
-		instance->dataHdr.offset = *((uint16_t*)payload);
+		pkt->data.size = _MAX(hdr->payloadSize-2, 0);
+		pkt->data.ptr  = (pkt->data.size ? payload+2 : NULL);
+		pkt->offset    = *((uint16_t*)payload);
 		// Data starts after offset if data size is non-zero
-		instance->dataPtr = (instance->dataHdr.size ? payload+2 : NULL);
 	}
 	else
 	{	// No offset
-		instance->dataHdr.size = payload_size;
-		instance->dataHdr.offset = 0;
-		instance->dataPtr = (payload_size ? payload : NULL);
+		pkt->data.size = hdr->payloadSize;
+		pkt->data.ptr  = (hdr->payloadSize ? payload : NULL);
+		pkt->offset    = 0;
 	}
+
+	// Footer
+	pkt->checksum = cksum->ck;
+
+	instance->ackNeeded = 0;
+	reset_parser(instance);  
 
 	uint8_t ptype = pkt->hdr.flags & PKT_TYPE_MASK;
 	switch (ptype)
 	{
 	case PKT_TYPE_SET_DATA:
 	case PKT_TYPE_DATA:
-		instance->dataHdr.id = pkt->hdr.did;
-
 		// ensure offset and size are in bounds - check the size independent of offset because the size could be a
 		//  negative number in case of corrupt data
-		if (instance->dataHdr.id > DID_NULL &&
-// 				instance->dataHdr.id < DID_COUNT &&		// Commented out to allow support for Luna EVB data sets
-			instance->dataHdr.size <= MAX_DATASET_SIZE //&&
-// 					instance->dataHdr.offset <= MAX_DATASET_SIZE &&
-// 					instance->dataHdr.offset + instance->dataHdr.size <= MAX_DATASET_SIZE
+		if (pkt->hdr.id > DID_NULL &&
+// 				pkt->hdr.id < DID_COUNT &&		// Commented out to allow support for Luna EVB data sets
+			pkt->data.size <= MAX_DATASET_SIZE //&&
+// 					pkt->offset <= MAX_DATASET_SIZE &&
+// 					pkt->offset + pkt->payload.size <= MAX_DATASET_SIZE
 			)
 		{
-			if(ptype==PKT_TYPE_SET_DATA)
+			if (ptype==PKT_TYPE_SET_DATA)
 			{	// acknowledge valid data received
 				instance->ackNeeded = PKT_TYPE_ACK;
 			}
@@ -312,8 +315,8 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, int numBytes)
 		break;
 			
 	case PKT_TYPE_GET_DATA:
-		if (instance->dataHdr.id > DID_NULL &&
-			instance->dataHdr.size <= MAX_DATASET_SIZE )
+		if (pkt->hdr.id > DID_NULL &&
+			pkt->data.size <= MAX_DATASET_SIZE )
 		{
 			// Update data pointer
 			// instance->dataPtr = pkt->body.ptr + sizeof(p_data_hdr_t);
@@ -356,10 +359,10 @@ static protocol_type_t processAsciiPkt(is_comm_instance_t* instance)
 		if (actualCheckSum == dataCheckSum)
 		{	// valid NMEA Data
 			// Update data pointer and info
-			instance->dataPtr = instance->pktPtr = head;
-			instance->dataHdr.id = 0;
-			instance->dataHdr.size = (uint32_t)(instance->buf.scan - head);
-			instance->dataHdr.offset = 0;
+			instance->pkt.data.ptr  = head;
+			instance->pkt.data.size = instance->pkt.size = (uint32_t)(instance->buf.scan - head);
+			instance->pkt.hdr.id   = 0;
+			instance->pkt.offset    = 0;
 			return _PTYPE_NMEA;
 		}
 	}
@@ -415,11 +418,10 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 			if (actualChecksum == cksum.ck)
 			{	// Checksum passed - Valid ublox packet
 				// Update data pointer and info
-				instance->dataPtr = instance->buf.head;
-				instance->dataHdr.id = 0;
-				instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
-				instance->dataHdr.offset = 0;
-				instance->pktPtr = instance->buf.head;
+				instance->pkt.data.ptr  = instance->buf.head;
+				instance->pkt.data.size = instance->pkt.size = (uint32_t)(instance->buf.scan - instance->buf.head);
+				instance->pkt.hdr.id   = 0;
+				instance->pkt.offset    = 0;
 				reset_parser(instance);
 				return _PTYPE_UBLOX;
 			}
@@ -473,11 +475,10 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 			if (actualCRC == correctCRC)
 			{	// Checksum passed - Valid RTCM3 packet
 				// Update data pointer and info
-				instance->dataPtr = instance->buf.head;
-				instance->dataHdr.id = 0;
-				instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
-				instance->dataHdr.offset = 0;
-				instance->pktPtr = instance->buf.head;
+				instance->pkt.data.ptr  = instance->buf.head;
+				instance->pkt.data.size = instance->pkt.size = (uint32_t)(instance->buf.scan - instance->buf.head);
+				instance->pkt.hdr.id   = 0;
+				instance->pkt.offset    = 0;
 				reset_parser(instance);
 				return _PTYPE_RTCM3;
 			}
@@ -599,11 +600,10 @@ static protocol_type_t processSonyByte(is_comm_instance_t* instance)
 			else
 			{	// Checksum passed - Valid packet
 				// Update data pointer and info
-				instance->dataPtr = instance->buf.head;
-				instance->dataHdr.id = 0;
-				instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
-				instance->dataHdr.offset = 0;
-				instance->pktPtr = instance->buf.head;
+				instance->pkt.data.ptr  = instance->buf.head;
+				instance->pkt.data.size = instance->pkt.size = (uint32_t)(instance->buf.scan - instance->buf.head);
+				instance->pkt.hdr.id   = 0;
+				instance->pkt.offset    = 0;
 				reset_parser(instance);
 				return _PTYPE_SONY;
 			}
@@ -751,11 +751,10 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 
 		if (instance->parseState == 0)
 		{
-			instance->dataPtr = instance->buf.head;
-			instance->dataHdr.id = 0;
-			instance->dataHdr.size = (uint32_t)(instance->buf.scan - instance->buf.head);
-			instance->dataHdr.offset = 0;
-			instance->pktPtr = instance->buf.head;
+			instance->pkt.data.ptr  = instance->buf.head;
+			instance->pkt.data.size = instance->pkt.size = (uint32_t)(instance->buf.scan - instance->buf.head);
+			instance->pkt.hdr.id   = 0;
+			instance->pkt.offset    = 0;
 			reset_parser(instance);
 
 			return _PTYPE_SPARTN;
@@ -897,12 +896,12 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			}
 			break;
 		case PSC_NMEA_START_BYTE:
-			if (byte == PSC_ASCII_END_BYTE)
+			if (byte == PSC_NMEA_END_BYTE)
 			{
 				return processAsciiPkt(instance);
 			}
 			// Check for invalid bytes in NMEA string and exit if found.
-			if (byte == PSC_ISB_PREAMBLE || byte == 0)
+			if (byte == PSC_ISB_PREAMBLE_BYTE1 || byte == 0)
 			{
 				instance->hasStartByte = 0;
 				instance->parseState = -1;
@@ -951,20 +950,22 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 	return _PTYPE_NONE;
 }
 
-int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple)
+int is_comm_get_data(is_comm_instance_t* instance, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
 {
 	p_data_get_t request;
 
-	request.id = dataId;
+	request.id = did;
 	request.offset = offset;
 	request.size = size;
-	request.bc_period_multiple = periodMultiple;
+	request.period = periodMultiple;
 
-	packet_hdr_t hdr;
-	hdr.flags = PKT_TYPE_GET_DATA;
-	(uint8_t)instance->txPktCount++;
+	int pktSize = is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_GET_DATA, did, sizeof(p_data_get_t), 0, &request);
 
-	return is_comm_encode_isb_packet(&request, sizeof(request), &hdr, 0, instance->buf.start, instance->buf.size);
+	// Update buffer pointers
+	instance->buf.head = instance->buf.scan = instance->buf.start;
+	instance->buf.tail = instance->buf.start + pktSize;
+
+	return pktSize;
 }
 
 int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits)
@@ -972,14 +973,14 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits)
 	return is_comm_set_data(instance, DID_RMC, offsetof(rmc_t,bits), sizeof(uint64_t), (void*)&rmcBits);
 }
 
-void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_isb_packet_ptr_hdr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
 	packet_t *pkt = &(instance->pkt);
 
 	// Header
 	pkt->hdr.preamble = PSC_ISB_PREAMBLE;
 	pkt->hdr.flags = flags;
-	pkt->hdr.did = did;
+	pkt->hdr.id = did;
 	pkt->hdr.payloadSize = data_size;
 
 	// Payload
@@ -989,22 +990,30 @@ void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, 
 		pkt->hdr.payloadSize += 2;
 		pkt->offset = offset;
 	}
-	pkt->payload.ptr = data;
-	pkt->payload.size = data_size;
-	pkt->pktSize = pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
+	pkt->data.ptr = data;
+	pkt->data.size = data_size;
+	pkt->size = pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
 
-	// Footer
-	pkt->checksum = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
+	// Header checksum
+	pkt->hdrCksum = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
 	if (offset)
 	{
-		pkt->checksum = is_comm_isb_checksum16(pkt->checksum, &pkt->offset, sizeof(pkt->offset));
+		pkt->hdrCksum = is_comm_isb_checksum16(pkt->hdrCksum, &pkt->offset, sizeof(pkt->offset));
 	}
-	pkt->checksum = is_comm_isb_checksum16(pkt->checksum, data, data_size);
-
-	instance->txPktCount++;
 }
 
-int is_comm_encode_isb_packet_buf(uint8_t* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+{
+	packet_t *pkt = &(instance->pkt);
+
+	// Encode header and header checksum
+	is_comm_encode_isb_packet_ptr_hdr(instance, flags, did, data_size, offset, data);
+
+	// Compute checksum using precomputed header checksum
+	pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, data, data_size);
+}
+
+int is_comm_encode_isb_packet_buf(void* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
 	int pktSize = data_size + sizeof(packet_hdr_t) + (offset ? 4 : 2);		// Pkt header + payload + checksum (+2 if offset)
 	if (pktSize > buf_size)
@@ -1013,11 +1022,12 @@ int is_comm_encode_isb_packet_buf(uint8_t* buf, int buf_size, uint8_t flags, uin
 	}
 
 	packet_buf_t *pkt = (packet_buf_t*)buf;
+	uint8_t *ptr = buf;
 
 	// Header
 	pkt->hdr.preamble = PSC_ISB_PREAMBLE;
 	pkt->hdr.flags = flags;
-	pkt->hdr.did = did;
+	pkt->hdr.id = did;
 	pkt->hdr.payloadSize = data_size;
 
 	// Payload
@@ -1033,15 +1043,15 @@ int is_comm_encode_isb_packet_buf(uint8_t* buf, int buf_size, uint8_t flags, uin
 
 	// Footer
 	int cksum_offset = pktSize-2;
-	uint16_t *cksum = (uint16_t*)(buf + cksum_offset);
-	*cksum = is_comm_isb_checksum16(0, buf, cksum_offset);
+	uint16_t *cksum = (uint16_t*)(ptr + cksum_offset);
+	*cksum = is_comm_isb_checksum16(0, ptr, cksum_offset);
 
 	return pktSize;
 }
 
 int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size)
 {
-	if (instance->pkt.pktSize > buf_size)
+	if (instance->pkt.size > buf_size)
 	{	// Packet size large than buffer size
 		return -1;
 	}
@@ -1060,12 +1070,12 @@ int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, 
 	}
 
 	// Payload
-	MEMCPY_INC(ptr, instance->pkt.payload.ptr, instance->pkt.payload.size);
+	MEMCPY_INC(ptr, instance->pkt.data.ptr, instance->pkt.data.size);
 
 	// Checksum
 	MEMCPY_INC(ptr, &(instance->pkt.checksum), sizeof(instance->pkt.checksum));
 
-	return instance->pkt.pktSize;
+	return instance->pkt.size;
 }
 
 int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data)
@@ -1080,129 +1090,19 @@ int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, ui
 
 int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance)
 {
-    packet_hdr_t hdr;
-    hdr.flags = PKT_TYPE_STOP_BROADCASTS_ALL_PORTS;
-    instance->txPktCount++;
-
-    return is_comm_encode_isb_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
+	return is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
 }
 
 int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance)
 {
-    packet_hdr_t hdr;
-    hdr.flags = PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT;
-    instance->txPktCount++;
-
-    return is_comm_encode_isb_packet(0, 0, &hdr, 0, instance->buf.start, instance->buf.size);
-}
-
-int is_comm_encode_isb_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength)
-{
-	// Ensure data size is small enough, assuming packet size could double after encoding.
-	if (srcBufferLength > MAX_PKT_BODY_SIZE)
-	{
-		return -1;
-	}
-
-	// Update Packet Counter
-	uint8_t* ptrSrc;
-	uint8_t* ptrSrcEnd;
-	uint8_t* ptrDest = (uint8_t*)encodedPacket;
-	uint8_t* ptrDestEnd = ptrDest + encodedPacketLength;
-	uint32_t shifter = 0;
-	uint32_t checkSumValue = CHECKSUM_SEED;
-	uint32_t val;
-
-	if (ptrDest >= ptrDestEnd)
-	{
-		return -1;
-	}
-
-	// // Packet header -------------------------------------------------------------------------------------------
-	// *ptrDest++ = PSC_ISB_PREAMBLE;
-
-	// // PID
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// val = hdr->ptype;
-	// checkSumValue ^= val;
-
-	// // Counter
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// val = hdr->counter;
-	// checkSumValue ^= (val << 8);
-
-	// // Flags
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// val = hdr->flags | additionalPktFlags | CPU_IS_LITTLE_ENDIAN | CM_PKT_FLAGS_CHECKSUM_24_BIT;
-	// checkSumValue ^= (val << 16);
-
-	// // Packet body ----------------------------------------------------------------------------------------------
-	// if (srcBufferLength > 0)
-	// {
-	// 	ptrSrc = (uint8_t*)srcBuffer;
-	// 	ptrSrcEnd = ptrSrc + srcBufferLength;
-
-	// 	// copy body bytes, doing encoding and checksum
-	// 	while (ptrSrc != ptrSrcEnd && ptrDest < ptrDestEnd)
-	// 	{
-	// 		val = *ptrSrc++;
-	// 		checkSumValue ^= (val << shifter);
-
-	// 		// increment shifter
-	// 		shifter += 8;
-
-	// 		// reset if shifter equals 24
-	// 		shifter *= (shifter != 24);
-	// 	}
-	// }
-
-	// // footer ----------------------------------------------------------------------------------------------------
-
-	// // checksum byte 3
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// val = (uint8_t)((checkSumValue >> 16) & 0xFF);
-
-	// // checksum byte 2
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// val = (uint8_t)(checkSumValue >> 8) & 0xFF;
-
-	// // checksum byte 1
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// val = (uint8_t)(checkSumValue & 0xFF);
-
-	// // packet end byte
-	// if (ptrDest >= ptrDestEnd)
-	// {
-	// 	return -1;
-	// }
-	// *ptrDest++ = PSC_END_BYTE;
-    // return (int)(ptrDest - (uint8_t*)encodedPacket);
-	return 0;
+	return is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
 }
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
 {
     if ((data->hdr.size + data->hdr.offset) <= maxsize)
     {
-        memcpy((uint8_t*)(data->buf), (uint8_t*)sptr + data->hdr.offset, data->hdr.size);
+        memcpy((uint8_t*)(data->ptr), (uint8_t*)sptr + data->hdr.offset, data->hdr.size);
         return 0;
     }
     else
@@ -1215,7 +1115,7 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
 {
     if ((data->hdr.size + data->hdr.offset) <= maxsize)
     {
-        memcpy((uint8_t*)sptr + data->hdr.offset, data->buf, data->hdr.size);
+        memcpy((uint8_t*)sptr + data->hdr.offset, data->ptr, data->hdr.size);
         return 0;
     }
     else
@@ -1240,10 +1140,11 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *instance, const unsigned int maxsize)
-{    
-    if ((instance->dataHdr.size + instance->dataHdr.offset) <= maxsize)
+{   
+	const bufPtr_t *data = &(instance->pkt.data);
+    if ((data->size + instance->pkt.offset) <= maxsize)
     {
-        memcpy((uint8_t*)sptr + instance->dataHdr.offset, instance->dataPtr, instance->dataHdr.size);
+        memcpy((uint8_t*)sptr + instance->pkt.offset, data->ptr, data->size);
         return 0;
     }
     else

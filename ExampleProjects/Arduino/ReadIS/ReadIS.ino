@@ -82,12 +82,12 @@ void loop()
         switch (message_type)
         {
         case _PTYPE_IS_V1_DATA:
-            switch (comm.dataHdr.id)
+            switch (comm.pkt.hdr.id)
             {
             case DID_NULL:
                 break;
             case DID_INS_1:
-                handleINSMessage((ins_1_t *)(comm.dataPtr));
+                handleINSMessage((ins_1_t *)(comm.pkt.data.ptr));
                 break;
             default:
                 Serial.print("Got an unexpected message DID: ");

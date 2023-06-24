@@ -267,7 +267,7 @@ void cDeviceLog::OnReadData(p_data_t* data)
 {
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->ptr);
         m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
 }

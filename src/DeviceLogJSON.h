@@ -37,7 +37,8 @@ private:
 	p_data_t* ReadDataFromFile();
 	std::string m_jsonString;
 	cDataJSON m_json;
-	p_data_t m_dataBuffer;
+	uint8_t m_dataBuffer[MAX_DATASET_SIZE];
+	p_data_t m_data = {{},m_dataBuffer};
 };
 
 #endif // DEVICE_LOG_CSV_H

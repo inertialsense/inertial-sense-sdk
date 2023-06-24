@@ -10,8 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef IS_SIMPLE_INTERFACE_H
-#define IS_SIMPLE_INTERFACE_H
+#ifndef IS_COMM_H
+#define IS_COMM_H
 
 #include "data_sets.h"
 #include "stddef.h"
@@ -270,7 +270,7 @@ enum ePktSpecialChars
 	PSC_NMEA_START_BYTE = 0x24,
 
 	/** New line (\n), used by NMEA protocol to signify end of message (10) */
-	PSC_ASCII_END_BYTE = 0x0A,
+	PSC_NMEA_END_BYTE = 0x0A,
 
 	/** Inertial Sense Binary packet preamble (start) byte 1 (239) */
 	PSC_ISB_PREAMBLE_BYTE1 = 0xEF,
@@ -319,39 +319,73 @@ typedef struct
 /** Represents the 4 bytes that begin each binary packet */
 typedef struct
 {
-	/** Packet start byte, always 0xFF */
+	/** Packet start bytes, always 0x49EF */
 	uint16_t            preamble;
 
 	/** Packet identifier (see eISBPacketFlags) */
 	uint8_t             flags;
 
 	/** Data ID */
-	uint8_t             did;
+	uint8_t             id;
 
 	/** Payload size */
 	uint16_t            payloadSize;
 
 } packet_hdr_t;
 
+/** Specifies the data id, size and offset of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
+typedef struct
+{
+	/** Data identifier (see eDataIDs) */
+	uint8_t             id;
+
+	/** Size of data, for partial requests this will be less than the size of the data structure */
+	uint16_t            size;
+
+	/** Offset into data structure */
+	uint16_t            offset;
+} p_data_hdr_t;
+
 #define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2)		// Packet header + checksum, no payload
 
 /** Represents a packet header and body */
 typedef struct
 {
-	/** Packet header */
-	packet_hdr_t        hdr;
+	union 
+	{
+		struct 
+		{
+			/** Packet header */
+			packet_hdr_t    hdr;
 
-	/** Data offset (optional) */
-	uint16_t            offset;
+			/** Data offset (optional) */
+			uint16_t        offset;
+		};
 
-	/** Packet payload */
-	bufPtr_t            payload;
+		struct 
+		{
+			/** Packet start bytes, always 0x49EF */
+			uint16_t        preamble;
+
+			/** Packet identifier (see eISBPacketFlags) */
+			uint8_t         flags;
+
+			/** Data offset (optional) */
+			p_data_hdr_t 	dataHdr;
+		};
+	};
+
+	/** Packet data location and size.  For ISB packets this is the payload.  For non-ISB packets (NMEA, UBX, RTCM, etc.) this points to the entire packet. */
+	bufPtr_t            data;
+
+	/** Packet header checksum, including offset in payload if it exists */
+	uint16_t            hdrCksum;
 
 	/** Packet checksum */
 	uint16_t            checksum;
 
-	/** Packet size */
-	uint16_t            pktSize;
+	/** Packet size including header and checksum */
+	uint16_t            size;
 } packet_t;
 
 /** Represents a packet header and body */
@@ -368,73 +402,46 @@ typedef struct
 	}                   payload;
 } packet_buf_t;
 
-/** Represents a packet header, packet body and a buffer with data to send */
-typedef struct
-{
-	packet_hdr_t        hdr;                    // Packet header
-	uint16_t            offset;                 // data offset
-	bufPtr_t            txData;                 // Pointer and size of data to send
-	uint16_t            hdrCksum;               // Checksum of header only
-	uint16_t            pktSize;                // Size of packet
-} pkt_info_t;
-
-/** Specifies the data id, size and offset of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
-typedef struct
-{
-	/** Data identifier (see eDataIDs) */
-	uint8_t             id;
-
-	/** Size of data, for partial requests this will be less than the size of the data structure */
-	uint16_t            size;
-
-	/** Offset into data structure */
-	uint16_t            offset;
-} p_data_hdr_t;
-
-/** Represents the complete packet body of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
 typedef struct
 {
 	/** Header with id, size and offset */
 	p_data_hdr_t        hdr;
 
-	/** Data */
-	uint8_t             buf[MAX_DATASET_SIZE];
+	/** Data pointer */
+	uint8_t             *ptr;
 } p_data_t, p_data_set_t;
 
 /** Represents the complete body of a PKT_TYPE_DATA_GET packet */
 typedef struct
 {
-	/** ID of data being requested */
-	uint32_t            id;
+	/** Data ID being requested */
+	uint16_t            id;
 
 	/** Byte length of data from offset */
-	uint32_t            size;
+	uint16_t            size;
 
 	/** Byte offset into data */
-	uint32_t            offset;
+	uint16_t            offset;
 
-	/**
-	The broadcast source period multiples, or 0 for a one-time broadcast. Depending on data size and baud/transfer rates,
-	some data may be dropped if this period is too short.
-	*/
-	uint32_t            bc_period_multiple;
+	/**	The broadcast source period multiple.  0 for a one-time broadcast.  */
+	uint16_t            period;
 } p_data_get_t;
 
 /** Represents the body of a disable broadcast for data id packet */
 typedef struct
 {
 	/** The packet identifier to disable broadcasts for */
-	uint32_t            id;
+	uint16_t            id;
 } p_data_disable_t;
 
 /** Represents the body header of an ACK or NACK packet */
 typedef struct
 {
 	/** Packet info of the received packet */
-	uint32_t            pktInfo;
+	uint16_t            pktInfo;
 
 	/** Packet counter of the received packet */
-	uint32_t            pktCounter;
+	uint16_t            pktCounter;
 } p_ack_hdr_t;
 
 /** Represents the entire body of an ACK or NACK packet */
@@ -501,9 +508,6 @@ typedef struct
 	/** Enable/disable protocol parsing */
 	is_comm_config_t config;
 
-	/** Number of packets written */
-	uint32_t txPktCount;
-
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
@@ -513,15 +517,6 @@ typedef struct
 	/** Used to validate ISB, ublox, RTCM, and NMEA packets */
 	int32_t parseState;
 
-	/** Data identifier (DID), size and offset */
-	p_data_hdr_t dataHdr;
-
-	/** Data pointer to start of valid data set */
-	uint8_t* dataPtr;
-
-	/** Packet pointer to start of valid packet */
-	uint8_t* pktPtr;
-	
 	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occurr at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
 	uint8_t* altDecodeBuf;
 
@@ -687,11 +682,10 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
-// common encode / decode for com manager and simple interface
-int is_comm_encode_isb_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
+void is_comm_encode_isb_packet_ptr_hdr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-int is_comm_encode_isb_packet_buf(uint8_t* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size);
+int  is_comm_encode_isb_packet_buf(void* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int  is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size);
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
@@ -717,4 +711,4 @@ int validateBaudRate(unsigned int baudRate);
 }
 #endif
 
-#endif // IS_SIMPLE_INTERFACE_H
+#endif // IS_COMM_H

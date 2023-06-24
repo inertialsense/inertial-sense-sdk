@@ -431,7 +431,7 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 	}
 	if (data != NULL)
 	{
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->ptr);
 		m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
 	}
 	return data;
@@ -638,7 +638,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 			}
 
 			// Save data
-            LogData(dev, &data->hdr, data->buf);
+            LogData(dev, &data->hdr, data->ptr);
 		}
 	}
 	CloseAllFiles();
@@ -681,9 +681,9 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
         }
 
         // append each byte of the packet to the slot
-        ptrEnd = p->buf + p->hdr.size;
+        ptrEnd = p->ptr + p->hdr.size;
 		vector<uint8_t>& stream = (*currentDeviceData)[p->hdr.id];
-        for (ptr = p->buf; ptr != ptrEnd; ptr++)
+        for (ptr = p->ptr; ptr != ptrEnd; ptr++)
         {
 			stream.push_back(*ptr);
         }

@@ -209,22 +209,22 @@ int main(int argc, char* argv[])
 			switch (is_comm_parse_byte(&comm, inByte))
 			{
 			case _PTYPE_IS_V1_DATA:
-				switch (comm.dataHdr.id)
+				switch (comm.pkt.hdr.id)
 				{
 				case DID_INS_1:
-					handleIns1Message((ins_1_t*)comm.dataPtr);
+					handleIns1Message((ins_1_t*)comm.pkt.data.ptr);
 					break;
 
 				case DID_INS_2:
-					handleIns2Message((ins_2_t*)comm.dataPtr);
+					handleIns2Message((ins_2_t*)comm.pkt.data.ptr);
 					break;
 
 				case DID_GPS1_POS:
-					handleGpsMessage((gps_pos_t*)comm.dataPtr);
+					handleGpsMessage((gps_pos_t*)comm.pkt.data.ptr);
 					break;
 
 				case DID_IMU:
-					handleImuMessage((imu_t*)comm.dataPtr);
+					handleImuMessage((imu_t*)comm.pkt.data.ptr);
 					break;
 
 					// TODO: add other cases for other data ids that you care about

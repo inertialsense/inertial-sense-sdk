@@ -47,7 +47,8 @@ public:
 
 	uint32_t m_dataSerNum;
 	uint32_t m_lastSerNum;
-	p_data_t m_data;
+	uint8_t m_dataBuffer[MAX_DATASET_SIZE];
+	p_data_t m_data = {{},m_dataBuffer};
 	cSortedDataChunk m_readChunk;
 
 	std::vector<cISLogFileBase*> m_pFiles;

@@ -69,10 +69,10 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
         {
             if(ptype == _PTYPE_IS_V1_DATA)
             {
-                switch(comm.dataHdr.id)
+                switch(comm.pkt.hdr.id)
                 {
                 case DID_DEV_INFO:
-                    dev_info = (dev_info_t*)comm.dataPtr;
+                    dev_info = (dev_info_t*)comm.pkt.data.ptr;
                     m_sn = dev_info->serialNumber;
                     if(dev_info->hardwareVer[0] == 5)
                     {   /** IMX-5 */
@@ -86,7 +86,7 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
                     }
                     break;    
                 case DID_EVB_DEV_INFO:
-                    evb_dev_info = (dev_info_t*)comm.dataPtr;
+                    evb_dev_info = (dev_info_t*)comm.pkt.data.ptr;
                     if (evb_dev_info->hardwareVer[0] == 2)
                     {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
                         valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
@@ -189,19 +189,19 @@ uint32_t cISBootloaderAPP::get_device_info()
         {
             if(ptype == _PTYPE_IS_V1_DATA)
             {
-                switch(comm.dataHdr.id)
+                switch(comm.pkt.hdr.id)
                 {
                 case DID_DEV_INFO:
-                    dev_info = (dev_info_t*)comm.dataPtr;
+                    dev_info = (dev_info_t*)comm.pkt.data.ptr;
                     memcpy(m_app.uins_version, dev_info->hardwareVer, 4);
                     m_sn = dev_info->serialNumber;
                     break;    
                 case DID_EVB_DEV_INFO:
-                    evb_dev_info = (dev_info_t*)comm.dataPtr;
+                    evb_dev_info = (dev_info_t*)comm.pkt.data.ptr;
                     memcpy(evb_version, evb_dev_info->hardwareVer, 4);
                     break;
                 case DID_EVB_STATUS:
-                    evb_status = (evb_status_t*)comm.dataPtr;
+                    evb_status = (evb_status_t*)comm.pkt.data.ptr;
                     if(evb_status->firmwareVer[0]) memcpy(m_app.evb_version, evb_version, 4);
                     else memset(m_app.evb_version, 0, 4);
                     break;

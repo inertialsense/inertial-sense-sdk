@@ -67,7 +67,7 @@ static struct
 
 void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 {
-	switch (comm->dataHdr.id)
+	switch (comm->pkt.hdr.id)
 	{
 	case DID_GPS1_RTK_POS_REL:
 		is_comm_copy_to_struct(&s_rx.rel, comm, sizeof(s_rx.rel));		
@@ -160,7 +160,7 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 		{
 			if (ptype == _PTYPE_RTCM3)
 			{	// Forward RTCM3 packets to uINS
-				serialPortWrite(serialPort, comm->dataPtr, comm->dataHdr.size);
+				serialPortWrite(serialPort, comm->pkt.data.ptr, comm->pkt.data.size);
 				s_rx.baseCount++;
 			}
 		}

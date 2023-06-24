@@ -229,7 +229,7 @@ TEST(ComManager2, Garbage_data_should_not_crash)
 			// of the time, which is the behavior we want, but causes the test to fail
 			// in the future, create 3 tests, one with this random data without special bytes, and another with special bytes that causes the real packet to
 			// be skipped, and a third with random bytes that does not skip the real packet
-			if (c == UBLOX_START_BYTE1 || c == RTCM3_START_BYTE || c == PSC_NMEA_START_BYTE || c == PSC_ISB_PREAMBLE || c == PSC_ASCII_END_BYTE)
+			if (c == UBLOX_START_BYTE1 || c == RTCM3_START_BYTE || c == PSC_NMEA_START_BYTE || c == PSC_ISB_PREAMBLE || c == PSC_NMEA_END_BYTE)
 			{
 				c = '0';
 			}

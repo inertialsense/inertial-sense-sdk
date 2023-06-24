@@ -58,7 +58,8 @@ private:
 	cDataCSV m_csv;
 	std::map<uint32_t, std::vector<std::string> > m_currentFiles; // all files for each data set
 	std::map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
-	p_data_t m_dataBuffer;
+	uint8_t m_dataBuffer[MAX_DATASET_SIZE];
+	p_data_t m_data = {{},m_dataBuffer};
 	uint64_t m_nextId; // for writing the log, column 0 of csv is an incrementing id. This lets us read the log back in order.
 };
 
