@@ -91,7 +91,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		if (abs(currentTime - lastTime) > 5)
 		{	// Update every 5 seconds
 			lastTime = currentTime;
-			gps_pos_t &gps = *((gps_pos_t*)data->buf);
+			gps_pos_t &gps = *((gps_pos_t*)data->ptr);
 			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
 				*s->clientBytesToSend = nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
@@ -208,7 +208,7 @@ void InertialSense::LoggerThread(void* info)
 	InertialSense* inertialSense = (InertialSense*)info;
 
 	// gather up packets in memory
-	map<int, vector<p_data_t>> packets;
+	map<int, vector<p_data_buf_t>> packets;
 
 	while (running)
 	{
@@ -216,7 +216,7 @@ void InertialSense::LoggerThread(void* info)
 		{
 			// lock so we can read and clear m_logPackets
 			cMutexLocker logMutexLocker(&inertialSense->m_logMutex);
-			for (map<int, vector<p_data_t>>::iterator i = inertialSense->m_logPackets.begin(); i != inertialSense->m_logPackets.end(); i++)
+			for (map<int, vector<p_data_buf_t>>::iterator i = inertialSense->m_logPackets.begin(); i != inertialSense->m_logPackets.end(); i++)
 			{
 				packets[i->first] = i->second;
 			}
@@ -231,7 +231,7 @@ void InertialSense::LoggerThread(void* info)
 		if (running)
 		{
 			// log the packets
-			for (map<int, vector<p_data_t>>::iterator i = packets.begin(); i != packets.end(); i++)
+			for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
 			{
 				for (size_t j = 0; j < i->second.size(); j++)
 				{
@@ -258,8 +258,11 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHand
 	cMutexLocker logMutexLocker(&i->m_logMutex);
 	if (i->m_logger.Enabled())
 	{
-		vector<p_data_t>& vec = i->m_logPackets[pHandle];
-		vec.push_back(*data);
+		p_data_buf_t d;
+		d.hdr = data->hdr;
+		memcpy(d.buf, data->ptr, d.hdr.size);
+		vector<p_data_buf_t>& vec = i->m_logPackets[pHandle];
+		vec.push_back(d);
 	}
 }
 
@@ -771,16 +774,16 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:			device.devInfo = *(dev_info_t*)data->buf;			break;
-	case DID_SYS_CMD:			device.sysCmd = *(system_command_t*)data->buf;		break;
-	case DID_EVB_FLASH_CFG:		device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;	break;	
+	case DID_DEV_INFO:			device.devInfo = *(dev_info_t*)data->ptr;			break;
+	case DID_SYS_CMD:			device.sysCmd = *(system_command_t*)data->ptr;		break;
+	case DID_EVB_FLASH_CFG:		device.evbFlashCfg = *(evb_flash_cfg_t*)data->ptr;	break;	
 	case DID_FLASH_CONFIG:
 		{
 			/* If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, 
 			*  the state is set to SYNCHRONIZED.  If they don't match, the state is set to NOT_SYNCHRONIZED, but the IMX flash config 
 			*  is copied to the local memory anyway so you know what the current flash is on the IMX.
 			*/
-			nvm_flash_cfg_t *flashConfig = (nvm_flash_cfg_t*)data->buf;
+			nvm_flash_cfg_t *flashConfig = (nvm_flash_cfg_t*)data->ptr;
 			UpdateFlashConfigSyncState(flashConfig->checksum, pHandle);
 			
 			if (device.syncState != InertialSense::IMXSyncState::SYNCHRONIZING)
@@ -796,7 +799,7 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			*  then the state is set to SYNCHRONIZED. If they differ, the state is set to NOT_SYNCHRONIZED. The user is left to make the 
 			*  final determination of the next actions.
 			*/
-			sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
+			sys_params_t* sysParamsRx = (sys_params_t*)data->ptr;
 			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
 		}
 	}
@@ -1103,6 +1106,7 @@ void InertialSense::CloseSerialPorts()
 	}
 	m_comManagerState.devices.clear();
 }
+
 void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 {
 	nvm_flash_cfg_t* outData = &m_comManagerState.devices[pHandle].flashCfg;
@@ -1146,7 +1150,6 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
         refLla.push_back(outData->refLla[2]);
     map["refLla"] 					= refLla;
 
-
     YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
         lastLla.push_back(outData->lastLla[0]);
         lastLla.push_back(outData->lastLla[1]);
@@ -1158,7 +1161,6 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
     map["lastLlaUpdateDistance"] 	= outData->lastLlaUpdateDistance;
     map["ioConfig"] 				= outData->ioConfig;
     map["platformConfig"] 			= outData->platformConfig;
-
 
     YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
         gps2AntOffset.push_back(outData->gps2AntOffset[0]);

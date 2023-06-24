@@ -108,7 +108,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
 void LogReader::organizeData(int device_id)
 {
-    p_data_t* data = NULL;
+    p_data_buf_t* data = NULL;
     while ((data = logger_.ReadData(device_id)))
     {
         // if (data->hdr.id == DID_DEV_INFO)

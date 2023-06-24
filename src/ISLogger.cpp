@@ -71,7 +71,7 @@ bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 	return corrupt;
 }
 
-bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
+bool cISLogger::LogDataIsCorrupt(const p_data_buf_t* data)
 {
     return (data != NULL && LogHeaderIsCorrupt(&data->hdr));
 }
@@ -415,14 +415,14 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 }
 
 
-p_data_t* cISLogger::ReadData(unsigned int device)
+p_data_buf_t* cISLogger::ReadData(unsigned int device)
 {
 	if (device >= m_devices.size())
 	{
 		return NULL;
 	}
 
-	p_data_t* data = NULL;
+	p_data_buf_t* data = NULL;
 	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
 	{
 	    m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
@@ -431,18 +431,18 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 	}
 	if (data != NULL)
 	{
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->ptr);
+        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
 		m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
 	}
 	return data;
 }
 
 
-p_data_t* cISLogger::ReadNextData(unsigned int& device)
+p_data_buf_t* cISLogger::ReadNextData(unsigned int& device)
 {
 	while (device < m_devices.size())
 	{
-		p_data_t* data = ReadData(device);
+		p_data_buf_t* data = ReadData(device);
 		if (data == NULL)
 		{
 			++device;
@@ -588,7 +588,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 		return false;
 	}
 	EnableLogging(true);
-	p_data_t* data = NULL;
+	p_data_buf_t* data = NULL;
 	for (unsigned int dev = 0; dev < log.GetDeviceCount(); dev++)
 	{
 		// Copy device info
@@ -626,7 +626,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 					ins_1_t ins1;
 					ins_2_t ins2;
 
-					copyDataPToStructP(&ins2, data, sizeof(ins_2_t));
+					copyDataBufPToStructP(&ins2, data, sizeof(ins_2_t));
 					convertIns2ToIns1(&ins2, &ins1);
 
 					p_data_hdr_t hdr;
@@ -638,7 +638,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 			}
 
 			// Save data
-            LogData(dev, &data->hdr, data->ptr);
+            LogData(dev, &data->hdr, data->buf);
 		}
 	}
 	CloseAllFiles();
@@ -654,7 +654,7 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
     }
     unsigned int deviceId = 0;
     unsigned int lastDeviceId = 0xFFFFFEFE;
-    p_data_t* p;
+    p_data_buf_t* p;
 	vector<vector<uint8_t>>* currentDeviceData = NULL;
     const dev_info_t* info;
     uint8_t* ptr, *ptrEnd;
@@ -681,9 +681,9 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
         }
 
         // append each byte of the packet to the slot
-        ptrEnd = p->ptr + p->hdr.size;
+        ptrEnd = p->buf + p->hdr.size;
 		vector<uint8_t>& stream = (*currentDeviceData)[p->hdr.id];
-        for (ptr = p->ptr; ptr != ptrEnd; ptr++)
+        for (ptr = p->buf; ptr != ptrEnd; ptr++)
         {
 			stream.push_back(*ptr);
         }

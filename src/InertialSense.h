@@ -426,7 +426,7 @@ private:
 	cISLogger m_logger;
 	void* m_logThread;
 	cMutex m_logMutex;
-	std::map<int, std::vector<p_data_t>> m_logPackets;
+	std::map<int, std::vector<p_data_buf_t>> m_logPackets;
 	time_t m_lastLogReInit;
 
 	char m_clientBuffer[512];

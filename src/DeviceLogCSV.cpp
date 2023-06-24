@@ -252,7 +252,7 @@ bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 }
 
 
-p_data_t* cDeviceLogCSV::ReadData()
+p_data_buf_t* cDeviceLogCSV::ReadData()
 {
 
 tryAgain:
@@ -261,7 +261,7 @@ tryAgain:
 		return NULL;
 	}
 
-	p_data_t* data = NULL;
+	p_data_buf_t* data = NULL;
 	cCsvLog* nextLog = NULL;
 	uint64_t nextId = ULLONG_MAX;
 	for (map<uint32_t, cCsvLog>::iterator i = m_logs.begin(); i != m_logs.end(); )
@@ -288,7 +288,7 @@ tryAgain:
 }
 
 
-p_data_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
+p_data_buf_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 {
 	if (log.pFile == NULL)
 	{
@@ -297,11 +297,11 @@ p_data_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 	}
 	m_data.hdr.id = log.dataId;
 	m_data.hdr.size = log.dataSize;
-	if (m_csv.StringCSVToData(log.nextLine, m_data.hdr, m_data.ptr, _ARRAY_BYTE_COUNT(m_data.ptr), log.columnHeaders))
+	if (m_csv.StringCSVToData(log.nextLine, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf), log.columnHeaders))
 	{
 		if (m_data.hdr.id == DID_DEV_INFO)
 		{
-			memcpy(&m_devInfo, m_data.ptr, sizeof(dev_info_t));
+			memcpy(&m_devInfo, m_data.buf, sizeof(dev_info_t));
 		}
 		log.nextLine.clear();
 		while (!GetNextLineForFile(log) && OpenNewFile(log, true)) {}

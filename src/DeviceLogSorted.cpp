@@ -286,9 +286,9 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 // This function needs to scan across all chunk queues and find the next lowest data to pop off.
 
 // Read serialized data
-p_data_t* cDeviceLogSorted::ReadData()
+p_data_buf_t* cDeviceLogSorted::ReadData()
 {
-	p_data_t* data;
+	p_data_buf_t* data;
 
 	while (1)
 	{
@@ -309,7 +309,7 @@ p_data_t* cDeviceLogSorted::ReadData()
 }
 
 
-p_data_t* cDeviceLogSorted::SerializeDataFromChunks()
+p_data_buf_t* cDeviceLogSorted::SerializeDataFromChunks()
 {
 
 tryAgain:
@@ -391,7 +391,7 @@ tryAgain:
 		m_data.hdr = chunk->m_subHdr.dHdr;
 
 		// Copy data buffer, ensure not to overrun chunk memory in case of corrupt data
-		memcpy(m_data.ptr, cnkData->buf, _MIN(chunk->GetDataSize(), (int32_t)(m_data.hdr.size)));
+		memcpy(m_data.buf, cnkData->buf, _MIN(chunk->GetDataSize(), (int32_t)(m_data.hdr.size)));
 
         // Size = serial number plus data size
 		int pSize = chunk->m_subHdr.dHdr.size + sizeof(uint32_t);

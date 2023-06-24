@@ -49,7 +49,8 @@ public:
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
-		p_data_t		pData;
+		uint8_t			pDataBuffer[MAX_DATASET_SIZE];
+		p_data_t		pData = {{},pDataBuffer};
 	} edit_data_t;
 
 	enum eDisplayMode

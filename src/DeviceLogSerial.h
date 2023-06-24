@@ -33,7 +33,7 @@ public:
 	bool CloseAllFiles() OVERRIDE;
 	bool FlushToFile() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
-	p_data_t* ReadData() OVERRIDE;
+	p_data_buf_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".dat"); }
 	void Flush() OVERRIDE;
@@ -41,7 +41,7 @@ public:
 	cDataChunk m_chunk;
 
 private:
-	p_data_t* ReadDataFromChunk();
+	p_data_buf_t* ReadDataFromChunk();
 	bool ReadChunkFromFile();
 	bool WriteChunkToFile();
 };

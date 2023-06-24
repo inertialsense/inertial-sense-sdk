@@ -439,10 +439,11 @@ bool cltool_replayDataLog()
 	}
 
 	cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
-	p_data_t *data;
+	p_data_buf_t *data;
 	while ((data = logger.ReadData()) != NULL)
 	{
-		g_inertialSenseDisplay.ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+		p_data_t d = {data->hdr, data->buf};
+		g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
 
 // 		if (data->hdr.id == DID_GPS1_RAW)
 // 		{

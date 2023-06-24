@@ -45,7 +45,7 @@ public:
 	void InitDeviceForReading() OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
-	p_data_t* ReadData() OVERRIDE;
+	p_data_buf_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".csv"); }
 
@@ -53,13 +53,12 @@ private:
 	bool OpenNewFile(cCsvLog& log, bool readOnly);
 	bool GetNextLineForFile(cCsvLog& log);
 
-	p_data_t* ReadDataFromFile(cCsvLog& log);
+	p_data_buf_t* ReadDataFromFile(cCsvLog& log);
 	std::map<uint32_t, cCsvLog> m_logs;
 	cDataCSV m_csv;
 	std::map<uint32_t, std::vector<std::string> > m_currentFiles; // all files for each data set
 	std::map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
-	uint8_t m_dataBuffer[MAX_DATASET_SIZE];
-	p_data_t m_data = {{},m_dataBuffer};
+	p_data_buf_t m_data;
 	uint64_t m_nextId; // for writing the log, column 0 of csv is an incrementing id. This lets us read the log back in order.
 };
 

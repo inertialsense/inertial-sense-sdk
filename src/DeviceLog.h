@@ -41,7 +41,7 @@ public:
 	virtual bool FlushToFile() { return true; };
 	virtual bool OpenWithSystemApp();
     virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf);
-    virtual p_data_t* ReadData() = 0;
+    virtual p_data_buf_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 	virtual std::string LogFileExtention() = 0;
 	virtual void Flush() {}
@@ -65,7 +65,7 @@ public:
 protected:
 	bool OpenNewSaveFile();
 	bool OpenNextReadFile();
-    void OnReadData(p_data_t* data);
+    void OnReadData(p_data_buf_t* data);
 
 	std::vector<std::string> m_fileNames;
 	cISLogFileBase*         m_pFile;

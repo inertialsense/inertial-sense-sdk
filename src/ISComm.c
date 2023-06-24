@@ -1124,6 +1124,19 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
     }
 }
 
+char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize)
+{
+    if ((data->hdr.size + data->hdr.offset) <= maxsize)
+    {
+        memcpy((uint8_t*)sptr + data->hdr.offset, data->buf, data->hdr.size);
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize)
 {

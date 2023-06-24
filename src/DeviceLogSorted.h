@@ -33,22 +33,21 @@ public:
 	bool CloseAllFiles() OVERRIDE;
 	bool FlushToFile() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
-	p_data_t* ReadData() OVERRIDE;
+	p_data_buf_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".sdat"); }
 
     cSortedDataChunk *m_chunks[DID_COUNT];
 	bool m_chunksAvailable[DID_COUNT];
 
-	p_data_t* SerializeDataFromChunks();
+	p_data_buf_t* SerializeDataFromChunks();
 	bool ReadNextChunkFromFiles(uint32_t id);
 	bool ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id);
 	bool WriteChunkToFile(uint32_t id);
 
 	uint32_t m_dataSerNum;
 	uint32_t m_lastSerNum;
-	uint8_t m_dataBuffer[MAX_DATASET_SIZE];
-	p_data_t m_data = {{},m_dataBuffer};
+	p_data_buf_t m_data;
 	cSortedDataChunk m_readChunk;
 
 	std::vector<cISLogFileBase*> m_pFiles;

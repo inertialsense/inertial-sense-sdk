@@ -1651,7 +1651,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			if (m_editData.pData.hdr.id == m_editData.did &&
 				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData.buf + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
 			}
 		}
 		StopEditing();

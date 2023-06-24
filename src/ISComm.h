@@ -411,6 +411,15 @@ typedef struct
 	uint8_t             *ptr;
 } p_data_t, p_data_set_t;
 
+typedef struct
+{
+	/** Header with id, size and offset */
+	p_data_hdr_t        hdr;
+
+	/** Data buffer */
+	uint8_t             buf[MAX_DATASET_SIZE];
+} p_data_buf_t;
+
 /** Represents the complete body of a PKT_TYPE_DATA_GET packet */
 typedef struct
 {
@@ -697,6 +706,7 @@ char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int max
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
+char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
