@@ -529,7 +529,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 		{
 		case _PTYPE_IS_V1_DATA:
 			// Packetize data 
-			n = is_comm_data(&comm, td.did, 0, td.size, (void*)&(td.data));
+			n = is_comm_data(&comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
 			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
 			break;

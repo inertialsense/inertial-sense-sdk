@@ -235,31 +235,48 @@ static inline void reset_parser(is_comm_instance_t *instance)
 
 static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numBytes)
 {
-	if (numBytes < MIN_PACKET_SIZE)
-	{	// Wait for packet header
-		return _PTYPE_NONE;
-	}
-
 	uint8_t *buf = instance->buf.head;
-	packet_buf_t *pkt_buf = (packet_buf_t*)(instance->buf.head);
 	packet_t *pkt = &(instance->pkt);
 	packet_hdr_t *hdr = &(pkt->hdr);
-	hdr->payloadSize = pkt_buf->hdr.payloadSize;
-	pkt->size = sizeof(packet_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
-	if (numBytes < pkt->size)
-	{	// Wait for entire packet
+	packet_buf_t *pkt_buf = (packet_buf_t*)(instance->buf.head);
+
+	switch (instance->parseState)
+	{
+	case 0:		// Wait for packet header
+		if (numBytes < sizeof(packet_hdr_t))
+		{	
+			return _PTYPE_NONE;
+		}
+
+		// Parse header 
+		hdr->payloadSize = pkt_buf->hdr.payloadSize;
+		pkt->size = sizeof(packet_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
+		instance->parseState++;
 		return _PTYPE_NONE;
+
+	case 1:		// Wait for entire packet 
+		if (numBytes < pkt->size)
+		{
+			return _PTYPE_NONE;
+		}
+		instance->parseState++;
+		break;
 	}
 
+	reset_parser(instance);
+
+	// Validate checksum
 	uint8_t *payload = buf + sizeof(packet_hdr_t);
 	checksum16_u *cksum = (checksum16_u*)(payload + hdr->payloadSize);
-	int bytes_cksum = pkt->size - 2;	
-	if (cksum->ck != is_comm_isb_checksum16(0, buf, bytes_cksum))
+	int bytes_cksum = pkt->size - 2;
+	uint16_t calcCksum = is_comm_isb_checksum16(0, buf, bytes_cksum);
+	if (cksum->ck != calcCksum)
 	{	// Invalid checksum
 		return _PTYPE_PARSE_ERROR;
 	}
 
-	// Found valid packet
+	/////////////////////////////////////////////////////////
+	// Valid packet found
 
 	// Header
 	pkt->hdr.preamble  = pkt_buf->hdr.preamble;
@@ -285,13 +302,12 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numB
 	pkt->checksum = cksum->ck;
 
 	instance->ackNeeded = 0;
-	reset_parser(instance);  
 
 	uint8_t ptype = pkt->hdr.flags & PKT_TYPE_MASK;
 	switch (ptype)
 	{
 	case PKT_TYPE_SET_DATA:
-	case PKT_TYPE_DATA:
+	case PKT_TYPE_DATA: 
 		// ensure offset and size are in bounds - check the size independent of offset because the size could be a
 		//  negative number in case of corrupt data
 		if (pkt->hdr.id > DID_NULL &&
@@ -315,12 +331,15 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numB
 		break;
 			
 	case PKT_TYPE_GET_DATA:
-		if (pkt->hdr.id > DID_NULL &&
-			pkt->data.size <= MAX_DATASET_SIZE )
 		{
-			// Update data pointer
-			// instance->dataPtr = pkt->body.ptr + sizeof(p_data_hdr_t);
-			return _PTYPE_INERTIAL_SENSE_CMD;
+			p_data_get_t *get = (p_data_get_t*)&(pkt_buf->payload.data);
+			if (get->id > DID_NULL &&
+				get->size <= MAX_DATASET_SIZE )
+			{
+				// Update data pointer
+				// instance->dataPtr = pkt->body.ptr + sizeof(p_data_hdr_t);
+				return _PTYPE_INERTIAL_SENSE_CMD;
+			}
 		}
 		break;
 
@@ -952,14 +971,14 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 
 int is_comm_get_data(is_comm_instance_t* instance, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
 {
-	p_data_get_t request;
+	p_data_get_t get;
 
-	request.id = did;
-	request.offset = offset;
-	request.size = size;
-	request.period = periodMultiple;
+	get.id = did;
+	get.offset = offset;
+	get.size = size;
+	get.period = periodMultiple;
 
-	int pktSize = is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_GET_DATA, did, sizeof(p_data_get_t), 0, &request);
+	int pktSize = is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 
 	// Update buffer pointers
 	instance->buf.head = instance->buf.scan = instance->buf.start;
@@ -970,13 +989,11 @@ int is_comm_get_data(is_comm_instance_t* instance, uint32_t did, uint32_t offset
 
 int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits)
 {
-	return is_comm_set_data(instance, DID_RMC, offsetof(rmc_t,bits), sizeof(uint64_t), (void*)&rmcBits);
+	return is_comm_set_data(instance, DID_RMC, sizeof(uint64_t), offsetof(rmc_t,bits), (void*)&rmcBits);
 }
 
-void is_comm_encode_isb_packet_ptr_hdr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_isb_packet_ptr_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
-	packet_t *pkt = &(instance->pkt);
-
 	// Header
 	pkt->hdr.preamble = PSC_ISB_PREAMBLE;
 	pkt->hdr.flags = flags;
@@ -1002,12 +1019,10 @@ void is_comm_encode_isb_packet_ptr_hdr(is_comm_instance_t* instance, uint8_t fla
 	}
 }
 
-void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_isb_packet_ptr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
-	packet_t *pkt = &(instance->pkt);
-
 	// Encode header and header checksum
-	is_comm_encode_isb_packet_ptr_hdr(instance, flags, did, data_size, offset, data);
+	is_comm_encode_isb_packet_ptr_hdr(pkt, flags, did, data_size, offset, data);
 
 	// Compute checksum using precomputed header checksum
 	pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, data, data_size);
@@ -1049,9 +1064,9 @@ int is_comm_encode_isb_packet_buf(void* buf, int buf_size, uint8_t flags, uint16
 	return pktSize;
 }
 
-int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size)
+int is_comm_copy_isb_packet_ptr_to_buf(packet_t *pkt, void* buf, int buf_size)
 {
-	if (instance->pkt.size > buf_size)
+	if (pkt->size > buf_size)
 	{	// Packet size large than buffer size
 		return -1;
 	}
@@ -1061,29 +1076,29 @@ int is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, 
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
 
 	// Header
-	MEMCPY_INC(ptr, &(instance->pkt.hdr), sizeof(instance->pkt.hdr));
+	MEMCPY_INC(ptr, &(pkt->hdr), sizeof(pkt->hdr));
 
 	// Offset (optional)
-	if (instance->pkt.offset)
+	if (pkt->offset)
 	{
-		MEMCPY_INC(ptr, &(instance->pkt.offset), sizeof(instance->pkt.offset));
+		MEMCPY_INC(ptr, &(pkt->offset), sizeof(pkt->offset));
 	}
 
 	// Payload
-	MEMCPY_INC(ptr, instance->pkt.data.ptr, instance->pkt.data.size);
+	MEMCPY_INC(ptr, pkt->data.ptr, pkt->data.size);
 
 	// Checksum
-	MEMCPY_INC(ptr, &(instance->pkt.checksum), sizeof(instance->pkt.checksum));
+	MEMCPY_INC(ptr, &(pkt->checksum), sizeof(pkt->checksum));
 
-	return instance->pkt.size;
+	return pkt->size;
 }
 
-int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data)
+int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
     return is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_SET_DATA, did, size, offset, data);
 }    
 
-int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data)
+int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
     return is_comm_encode_isb_packet_buf(instance->buf.start, instance->buf.size, PKT_TYPE_DATA, did, size, offset, data);    
 }    

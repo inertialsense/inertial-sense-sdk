@@ -455,7 +455,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		{
 		case _PTYPE_IS_V1_DATA:
 			// Packetize data 
-			n = is_comm_set_data(&comm, td.did, 0, td.size, (void*)&(td.data));
+			n = is_comm_set_data(&comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
 			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
 			break;
@@ -605,7 +605,7 @@ TEST(ISComm, BasicTxRxByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data(&g_comm, td.did, 0, td.size, td.data.buf);
+			n = is_comm_data(&g_comm, td.did, td.size, 0, td.data.buf);
 			portWrite(0, g_comm.buf.start, n);
 			break;
 
@@ -646,7 +646,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data(&g_comm, td.did, 0, td.size, td.data.buf);
+			n = is_comm_data(&g_comm, td.did, td.size, 0, td.data.buf);
 			portWrite(0, g_comm.buf.start, n);
 			break;
 
@@ -690,8 +690,8 @@ TEST(ISComm, TxPtrRxTest)
 		{
 		default:	// IS binary
 		{
-			is_comm_encode_isb_packet_ptr(&g_comm, PKT_TYPE_DATA, td.did, td.size, 0, td.data.buf);
-			n = is_comm_copy_isb_packet_ptr_to_buf(&g_comm, g_comm.buf.start, g_comm.buf.size);
+			is_comm_encode_isb_packet_ptr(&g_comm.pkt, PKT_TYPE_DATA, td.did, td.size, 0, td.data.buf);
+			n = is_comm_copy_isb_packet_ptr_to_buf(&g_comm.pkt, g_comm.buf.start, g_comm.buf.size);
 			portWrite(0, g_comm.buf.start, n);
 		}
 			break;
@@ -726,9 +726,9 @@ TEST(ISComm, TxRxWithOffsetTest)
 	txIns1.theta[2] = 2.345f;
 	int n;
 
-	n = is_comm_data(&g_comm, DID_INS_1, offsetof(ins_1_t,timeOfWeek), sizeof(double), &txIns1.timeOfWeek);
+	n = is_comm_data(&g_comm, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
 	portWrite(0, g_comm.buf.start, n);
-	n = is_comm_data(&g_comm, DID_INS_1, offsetof(ins_1_t,theta[2]), sizeof(float), &txIns1.theta[2]);
+	n = is_comm_data(&g_comm, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
 	portWrite(0, g_comm.buf.start, n);
 
 	{

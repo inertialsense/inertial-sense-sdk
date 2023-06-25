@@ -57,7 +57,7 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int n = is_comm_set_data(comm, DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
+	int n = is_comm_set_data(comm, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation);
 	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write set INS rotation\r\n");
@@ -87,7 +87,7 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 	cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
 	cfg.invCommand = ~cfg.command;
 
-	int n = is_comm_set_data(comm, DID_SYS_CMD, 0, sizeof(system_command_t), &cfg);
+	int n = is_comm_set_data(comm, DID_SYS_CMD, 0, 0, &cfg);
 	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to write save persistent message\r\n");

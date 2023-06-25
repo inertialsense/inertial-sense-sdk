@@ -478,10 +478,10 @@ typedef struct
 	/** Size of buffer */
 	uint32_t size;
 
-	/** Start of data in buffer */
+	/** Start of data in buffer. Data is read from here. */
 	uint8_t* head;
 
-	/** End of data in buffer */
+	/** End of data in buffer. New data is written here. */
 	uint8_t* tail;
 
 	/** Search pointer in data (head <= scan <= tail) */
@@ -655,18 +655,18 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 * Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
 * @param instance the comm instance passed to is_comm_init
 * @param did the data id to set on the device (see DID_* at top of this file)
-* @param offset the offset to start setting data at on the data structure on the device
 * @param size the number of bytes to set on the data structure on the device
+* @param offset the offset to start setting data at on the data structure on the device
 * @param data the actual data to change on the data structure on the device - this should have at least size bytes available
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
 */
-int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data);
+int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
 * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
 */
-int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t offset, uint16_t size, void* data);
+int is_comm_data(is_comm_instance_t* instance, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
 * Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
@@ -691,10 +691,10 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
-void is_comm_encode_isb_packet_ptr_hdr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-void is_comm_encode_isb_packet_ptr(is_comm_instance_t* instance, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+void is_comm_encode_isb_packet_ptr_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+void is_comm_encode_isb_packet_ptr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 int  is_comm_encode_isb_packet_buf(void* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-int  is_comm_copy_isb_packet_ptr_to_buf(is_comm_instance_t* instance, void* buf, int buf_size);
+int  is_comm_copy_isb_packet_ptr_to_buf(packet_t *pkt, void* buf, int buf_size);
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);

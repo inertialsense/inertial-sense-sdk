@@ -288,18 +288,18 @@ Make a request to a port handle to broadcast a piece of data at a set interval.
 
 @param pHandle the port handle to request broadcast data from
 @param dataId the data id to broadcast
-@param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
-@param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
+@param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
+@param size number of bytes in the data structure from offset to broadcast - pass size and offset of 0 to receive the entire data set
 @param periodMultiple the data broadcast period in multiples of the base update period
 
 Example that makes a request to receive the device info just once:
 @code
-comManagerGetData(0, DID_DEV_INFO, 0, sizeof(dev_info_t), 0);
+comManagerGetData(0, DID_DEV_INFO, 0, 0, 0);
 @endcode
 
 Example that broadcasts INS data every 50 milliseconds:
 @code
-comManagerGetData(0, DID_INS_1, 0, sizeof(ins_1_t), 50);
+comManagerGetData(0, DID_INS_1, 0, 0, 50);
 @endcode
 */
 void comManagerGetData(int pHandle, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
@@ -365,8 +365,8 @@ data.size = sizeof(request);
 comManagerSend(pHandle, PKT_TYPE_GET_DATA, 0, &data)
 @endcode
 */
-int comManagerSend(int pHandle, uint8_t pFlags, bufPtr_t *data, uint16_t did, uint16_t offset);
-int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktFlags, bufPtr_t *data, uint16_t did, uint16_t offset);
+int comManagerSend(int pHandle, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
 Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
