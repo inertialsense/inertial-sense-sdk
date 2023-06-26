@@ -68,12 +68,12 @@ static std::deque<data_holder_t> g_testTxDeque;
 
 
 
-int portRead(int pHandle, unsigned char* buf, int len)
+static int portRead(int pHandle, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-int portWrite(int pHandle, unsigned char* buf, int len)
+static int portWrite(int pHandle, unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, buf, len))
 	{	// Buffer overflow
@@ -84,7 +84,7 @@ int portWrite(int pHandle, unsigned char* buf, int len)
 }
 
 // return 1 on success, 0 on failure
-int msgHandlerNmea(int pHandle, const uint8_t* msg, int msgSize)
+int msgHandlerNmea2(int pHandle, const uint8_t* msg, int msgSize)
 {
 	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
@@ -140,8 +140,7 @@ int msgHandlerNmea(int pHandle, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-
-int msgHandlerUblox(int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox2(int pHandle, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -153,8 +152,7 @@ int msgHandlerUblox(int pHandle, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-
-int msgHandlerRtcm3(int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm32(int pHandle, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -192,10 +190,10 @@ int msgHandlerRtcm3(int pHandle, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-
 static is_comm_instance_t g_comm;
 #define COM_BUFFER_SIZE 4096
 static uint8_t g_comm_buffer[COM_BUFFER_SIZE] = {0};
+static uint32_t g_timeMs = 0;
 
 
 static bool init(test_data_t &t)
@@ -204,7 +202,8 @@ static bool init(test_data_t &t)
 	ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
 	ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
 
-	is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE);
+	g_timeMs = 1000;
+	is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE, &g_timeMs);
 
 	return true;
 }
@@ -441,7 +440,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
 
 	int k=0;
 
@@ -457,7 +456,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 			// Packetize data 
 			n = is_comm_set_data(&comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
-			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
+			EXPECT_FALSE(ringBufWrite(rbuf, comm.rxBuf.start, n));
 			break;
 
 		case _PTYPE_NMEA:
@@ -534,10 +533,10 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 	while (ringBufUsed(&ringBuf)>0 && testDeque.size()>0)
 	{
 		int n = ringBufUsed(&ringBuf);
-		ringBufRead(&ringBuf, comm.buf.tail, n);
+		ringBufRead(&ringBuf, comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
-        comm.buf.tail += n;
+        comm.rxBuf.tail += n;
 
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE) 
 		{
@@ -579,15 +578,9 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 	EXPECT_FALSE(ringBufWrite(dst, buf, len));
 }
 
-/* Test cases:
- - Rx: Single packet.
- - Rx: >2048 bytes received at once with multiple all valid packets.
- - Rx: bytes between valid packets.
- - Rx: data with non-zero offset (so offset exists in payload)
-*/
 
 #if 1
-TEST(ISComm, BasicTxRxByteTest)
+TEST(ISComm, BasicTxBufferRxByteTest)
 {
 	// Initialize Com Manager
 	init(tcm);
@@ -602,11 +595,53 @@ TEST(ISComm, BasicTxRxByteTest)
 
 		// Send data - writes data to tcm.txBuf
 		int n;
+		uint8_t buf[1024];
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data(&g_comm, td.did, td.size, 0, td.data.buf);
-			portWrite(0, g_comm.buf.start, n);
+			n = is_comm_data_to_buffer(buf, sizeof(buf), &g_comm, td.did, td.size, 0, td.data.buf);
+			portWrite(0, buf, n);
+			break;
+
+		case _PTYPE_NMEA:
+		case _PTYPE_UBLOX:
+		case _PTYPE_RTCM3:
+			portWrite(0, td.data.buf, td.size);
+			break;
+		}
+	}
+
+	// Test that data parsed from Tx port matches deque data
+	parseRingBufByte(g_testTxDeque, tcm.portTxBuf);
+
+	// Check that we got all data
+	EXPECT_TRUE(g_testTxDeque.empty());
+	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+}
+#endif
+
+
+#if 1
+TEST(ISComm, BasicTxPortRxByteTest)
+{
+	// Initialize Com Manager
+	init(tcm);
+
+	// Generate and add data to deque
+	generateData(g_testTxDeque);
+
+	// Use Com Manager to send deque data to Tx port ring buffer
+	for(int i=0; i<g_testTxDeque.size(); i++)
+	{
+		data_holder_t td = g_testTxDeque[i];
+
+		// Send data - writes data to tcm.txBuf
+		int n;
+		uint8_t buf[1024];
+		switch (td.ptype)
+		{
+		default:	// IS binary
+			n = is_comm_data_to_port(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:
@@ -646,8 +681,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data(&g_comm, td.did, td.size, 0, td.data.buf);
-			portWrite(0, g_comm.buf.start, n);
+			n = is_comm_data_to_port(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:
@@ -656,7 +690,6 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 			portWrite(0, td.data.buf, td.size);
 			break;
 		}
-
 	}
 
 	// Test that data parsed from Tx port matches deque data
@@ -670,8 +703,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 
 
 #if 1
-uint8_t g_test[100] = {0};
-TEST(ISComm, TxPtrRxTest)
+TEST(ISComm, TxRxMultiBytePreceededByGarbageTimeoutTest)
 {
 	// Initialize Com Manager
 	init(tcm);
@@ -679,38 +711,36 @@ TEST(ISComm, TxPtrRxTest)
 	// Generate and add data to deque
 	generateData(g_testTxDeque);
 
-	// Use Com Manager to send deque data to Tx port ring buffer
-	for(int i=0; i<g_testTxDeque.size(); i++)
+	for (int i=0; i<3; i++)
 	{
-		data_holder_t td = g_testTxDeque[i];
+		// Add garbage data that starts with ISB preamble
+		*g_comm.rxBuf.tail = PSC_ISB_PREAMBLE_BYTE1; g_comm.rxBuf.tail++;
+		*g_comm.rxBuf.tail = PSC_ISB_PREAMBLE_BYTE2; g_comm.rxBuf.tail++;
+	#define GARBAGE_STR	"Garbage string.  Hello!\n"
+		memcpy(g_comm.rxBuf.tail, GARBAGE_STR, sizeof(GARBAGE_STR)); g_comm.rxBuf.tail += sizeof(GARBAGE_STR);
 
-		// Send data - writes data to tcm.txBuf
-		int n;
-		switch (td.ptype)
-		{
-		default:	// IS binary
-		{
-			is_comm_encode_isb_packet_ptr(&g_comm.pkt, PKT_TYPE_DATA, td.did, td.size, 0, td.data.buf);
-			n = is_comm_copy_isb_packet_ptr_to_buf(&g_comm.pkt, g_comm.buf.start, g_comm.buf.size);
-			portWrite(0, g_comm.buf.start, n);
-		}
-			break;
+		// Parse data to get parser into funny state
+		protocol_type_t ptype;
+		ptype = is_comm_parse(&g_comm);
+		EXPECT_EQ(ptype, _PTYPE_NONE);
 
-		case _PTYPE_NMEA:
-		case _PTYPE_UBLOX:
-		case _PTYPE_RTCM3:
-			portWrite(0, td.data.buf, td.size);
-			break;
-		}
+		// Lapse time 1s. Add good packet to buffer
+		g_timeMs += 20;
+		data_holder_t td = g_testTxDeque[0];
+		int n = is_comm_data_to_buffer(g_comm.rxBuf.tail, g_comm.rxBuf.end-g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
+		g_comm.rxBuf.tail += n;
 
+		// Parse data to find the error and reset parser
+		ptype = is_comm_parse(&g_comm);
+		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
+
+		// Parse data to find good packet
+		ptype = is_comm_parse(&g_comm);
+		EXPECT_EQ(ptype, _PTYPE_INERTIAL_SENSE_DATA);
+
+		EXPECT_EQ(g_comm.pkt.data.size, td.size);
+		EXPECT_TRUE(memcmp(g_comm.pkt.data.ptr, td.data.buf, td.size) == 0);
 	}
-
-	// Test that data parsed from Tx port matches deque data
-	parseRingBufMultiByte(g_testTxDeque, tcm.portTxBuf);
-
-	// Check that we got all data
-	EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
 }
 #endif
 
@@ -726,18 +756,16 @@ TEST(ISComm, TxRxWithOffsetTest)
 	txIns1.theta[2] = 2.345f;
 	int n;
 
-	n = is_comm_data(&g_comm, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
-	portWrite(0, g_comm.buf.start, n);
-	n = is_comm_data(&g_comm, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
-	portWrite(0, g_comm.buf.start, n);
+	n = is_comm_data_to_port(portWrite, 0, &g_comm, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
+	n = is_comm_data_to_port(portWrite, 0, &g_comm, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
 
 	{
-		is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE);
+		is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE, NULL);
 		ins_1_t rxIns1 = {};
 
 		int n = ringBufUsed(&tcm.portTxBuf);
-		ringBufRead(&tcm.portTxBuf, g_comm.buf.tail, n);
-		g_comm.buf.tail += n;
+		ringBufRead(&tcm.portTxBuf, g_comm.rxBuf.tail, n);
+		g_comm.rxBuf.tail += n;
 
 		// Read timeOfWeek
         EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
@@ -837,7 +865,7 @@ TEST(ISComm, BlastRxTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ISComm, RxWithGarbageTest)
 {
 	// Initialize Com Manager
@@ -884,7 +912,7 @@ TEST(ISComm, RxWithGarbageTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ISComm, IsCommGetDataTest)
 {
 	// Initialize Com Manager

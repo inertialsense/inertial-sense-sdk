@@ -422,6 +422,7 @@ protected:
 	void OnClientDisconnected(cISTcpServer* server, socket_t socket) OVERRIDE;
 
 private:
+	uint32_t m_timeMs;
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
 	cISLogger m_logger;
 	void* m_logThread;

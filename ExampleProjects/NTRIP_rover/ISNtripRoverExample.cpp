@@ -31,7 +31,7 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 {
 	// Stop all broadcasts on the device
 	int n = is_comm_stop_broadcasts_all_ports(comm);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (n != serialPortWrite(serialPort, comm->rxBuf.start, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -43,13 +43,13 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	int n = is_comm_get_data(comm, DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (n != serialPortWrite(serialPort, comm->rxBuf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
 	n = is_comm_get_data(comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (n != serialPortWrite(serialPort, comm->rxBuf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -102,10 +102,10 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 			lastTime = currentTime;
 			if ((s_rx.gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{	// GPS position is valid
-				char buf[512];
-				int n = nmea_gga(buf, sizeof(buf), s_rx.gps);
-				clientStream->Write(buf, n);
-				printf("Sending position to Base: \n%s\n", string(buf,n).c_str());
+				char rxBuf[512];
+				int n = nmea_gga(rxBuf, sizeof(rxBuf), s_rx.gps);
+				clientStream->Write(rxBuf, n);
+				printf("Sending position to Base: \n%s\n", string(rxBuf,n).c_str());
 			}
 			else
 			{
@@ -125,10 +125,10 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if ((n = serialPortRead(serialPort, comm->buf.tail, n)))
+	if ((n = serialPortRead(serialPort, comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
-		comm->buf.tail += n;
+		comm->rxBuf.tail += n;
 
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
@@ -150,10 +150,10 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 	int n = is_comm_free(comm);
 
 	// Read data from RTK Base station
-	if ((n = clientStream->Read(comm->buf.tail, n)))
+	if ((n = clientStream->Read(comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
-		comm->buf.tail += n;
+		comm->rxBuf.tail += n;
 
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)

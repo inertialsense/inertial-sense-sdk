@@ -358,6 +358,8 @@ size_t InertialSense::GetDeviceCount()
 
 bool InertialSense::Update()
 {
+	m_timeMs = current_timeMs();
+
 	if (m_tcpServer.IsOpen() && m_comManagerState.devices.size() != 0)
 	{
 		UpdateServer();
@@ -457,7 +459,7 @@ bool InertialSense::UpdateServer()
 
 			if (ptype != _PTYPE_NONE)
 			{	// Record message info
-				messageStatsAppend(str, m_serverMessageStats, ptype, id, current_timeMs());
+				messageStatsAppend(str, m_serverMessageStats, ptype, id, m_timeMs);
 			}
 		}
 	}
@@ -542,7 +544,7 @@ bool InertialSense::UpdateClient()
 
 			if (ptype != _PTYPE_NONE)
 			{	// Record message info
-				messageStatsAppend(str, m_clientMessageStats, ptype, id, current_timeMs());
+				messageStatsAppend(str, m_clientMessageStats, ptype, id, m_timeMs);
 			}
 		}
 	}
@@ -1035,7 +1037,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
 	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
+	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &m_timeMs) == -1)
 	{	// Error
 		return false;
 	}
@@ -1091,7 +1093,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// setup com manager again if serial ports dropped out with new count of serial ports
 		if (removedSerials)
 		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &m_timeMs);
 		}
 	}
 

@@ -137,7 +137,7 @@ TEST(RingBuffer, PacketTest)
 {
 	static is_comm_instance_t   comm;
 	static uint8_t              comm_buffer[2048];
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
 
 	ins_1_t ins1 = { 0 };
 	int n;
@@ -178,10 +178,10 @@ TEST(RingBuffer, PacketTest)
 			break;
 		}
 
-		EXPECT_FALSE(ringBufWrite(&rb, comm.buf.start, n));
+		EXPECT_FALSE(ringBufWrite(&rb, comm.rxBuf.start, n));
 		for (int j = 0; j < n; j++)
 		{
-			myDeque.push_back(comm.buf.start[j]);
+			myDeque.push_back(comm.rxBuf.start[j]);
 		}
 	}
 

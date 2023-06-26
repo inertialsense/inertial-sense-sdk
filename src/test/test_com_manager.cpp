@@ -67,12 +67,12 @@ static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
 
-int portRead(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int portRead(int port, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-int portWrite(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int portWrite(int port, unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, buf, len))
 	{	// Buffer overflow
@@ -82,7 +82,7 @@ int portWrite(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 	return len;
 }
 
-void postRxRead(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead)
+static void postRxRead(int port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -94,21 +94,21 @@ void postRxRead(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead)
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
 }
 
-void disableBroadcasts(CMHANDLE cmHandle, int pHandle)
+static void disableBroadcasts(int port)
 {
 }
 
-int prepDevInfo(CMHANDLE cmHandle, int pHandle, p_data_hdr_t* dataHdr)
+int prepDevInfo(int port, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(CMHANDLE cmHandle, int pHandle, p_data_t* data)
+void writeNvrUserpageFlashCfg(int port, p_data_t* data)
 {
 }
 
 // return 1 on success, 0 on failure
-int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerNmea(int port, const uint8_t* msg, int msgSize)
 {
 	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
@@ -123,11 +123,11 @@ int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSi
 			break;
 
 		case NMEA_MSG_UINT_STPB: // stop all broadcasts on all ports
-			disableBroadcasts(cmHandle, -1);
+			disableBroadcasts(-1);
 			break;
 
 		case NMEA_MSG_UINT_STPC: // stop all broadcasts on current port
-			disableBroadcasts(cmHandle, pHandle);
+			disableBroadcasts(port);
 			break;
 
 		case NMEA_MSG_UINT_BLEN: // bootloader enable
@@ -164,8 +164,7 @@ int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSi
 	return 0;
 }
 
-
-int msgHandlerUblox(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox(int port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -203,8 +202,7 @@ int msgHandlerUblox(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 	return 0;
 }
 
-
-int msgHandlerRtcm3(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -254,7 +252,7 @@ static bool initComManager(test_data_t &t)
 	com_manager_init_t cmInit = {};
 	cmInit.broadcastMsg = t.cmBufBcastMsg;
 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
+	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort, NULL))
 	{	// Fail to init
 		return false;
 	}
@@ -515,7 +513,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
 
 	int k=0;
 
@@ -525,13 +523,14 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 		int n = 0;
 
 		// Add packetized data to ring buffer
+		uint8_t buf[1024];
 		switch (td.ptype)
 		{
 		case _PTYPE_IS_V1_DATA:
 			// Packetize data 
-			n = is_comm_data(&comm, td.did, td.size, 0, (void*)&(td.data));
+			n = is_comm_data_to_buffer(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
-			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
+			EXPECT_FALSE(ringBufWrite(rbuf, comm.rxBuf.start, n));
 			break;
 
 		case _PTYPE_NMEA:
@@ -552,7 +551,7 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
 	unsigned char c;
 	protocol_type_t ptype;
 	uDatasets dataWritten;
@@ -625,7 +624,7 @@ TEST(ComManager, BasicTxTest)
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
-			portWrite(&(tcm.cm), 0, td.data.buf, td.size);
+			portWrite(0, td.data.buf, td.size);
 			break;
 		}
 
@@ -762,7 +761,7 @@ TEST(ComManager, RxWithGarbageTest)
 #if 1
 TEST(ComManager, Evb2AltDecodeBufferTest)
 {
-	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.buf.start buffer).
+	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.rxBuf.start buffer).
 
 	// Init Port Buffers
 	ringBufInit(&(tcm.portTxBuf), tcm.portTxBuffer, sizeof(tcm.portTxBuffer), 1);
@@ -790,10 +789,10 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&tcm.portRxBuf, comm.buf.tail, n)))
+		if ((n = ringBufRead(&tcm.portRxBuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm.buf.tail += n;
+			comm.rxBuf.tail += n;
 
 			protocol_type_t ptype = _PTYPE_NONE;
 			uDatasets dataWritten;
@@ -886,10 +885,10 @@ TEST(ComManager, Evb2DataForwardTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&evbRbuf, comm.buf.tail, n)))
+		if ((n = ringBufRead(&evbRbuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm.buf.tail += n;
+			comm.rxBuf.tail += n;
 
 			protocol_type_t ptype = _PTYPE_NONE;
 
@@ -954,10 +953,10 @@ TEST(ComManager, Evb2DataForwardTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&tcm.portRxBuf, comm.buf.tail, n)))
+		if ((n = ringBufRead(&tcm.portRxBuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm.buf.tail += n;
+			comm.rxBuf.tail += n;
 
 			protocol_type_t ptype = _PTYPE_NONE;
 			uDatasets dataWritten;

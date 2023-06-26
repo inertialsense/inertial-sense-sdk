@@ -34,16 +34,17 @@ static com_manager_t g_cm;
 int initComManagerInstanceInternal
 (
 	com_manager_t* cmInstance,
-	int numHandles,
+	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
+	pfnComManagerRead portReadFnc,
+	pfnComManagerSend portWriteFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
+	com_manager_port_t *cmPorts,
+	uint32_t *timeMs
 );
 // int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 // void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
@@ -64,45 +65,48 @@ CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
 
 int comManagerInit
 (
-	int numHandles,
+	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
+	pfnComManagerRead portReadFnc,
+	pfnComManagerSend portWriteFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
+	com_manager_port_t *cmPorts,
+	uint32_t *timeMs
 )
 {
 	return initComManagerInstanceInternal(
 		&g_cm, 
-		numHandles, 
+		numPorts, 
 		stepPeriodMilliseconds, 
-		readFnc, 
-		sendFnc, 
+		portReadFnc, 
+		portWriteFnc, 
 		txFreeFnc, 
 		pstRxFnc, 
 		pstAckFnc, 
 		disableBcastFnc, 
 		buffers,
-		cmPorts);
+		cmPorts,
+		timeMs);
 }
 
 int comManagerInitInstance
 (
 	CMHANDLE cmHandle,
-	int numHandles,
+	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
+	pfnComManagerRead portReadFnc,
+	pfnComManagerSend portWriteFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
+	com_manager_port_t *cmPorts,
+	uint32_t *timeMs
 )
 {
 	int result = 0;
@@ -113,16 +117,17 @@ int comManagerInitInstance
 		memset(cmInstance, 0, sizeof(com_manager_t));
 		result = initComManagerInstanceInternal(
 			cmInstance, 
-			numHandles, 
+			numPorts, 
 			stepPeriodMilliseconds, 
-			readFnc, 
-			sendFnc, 
+			portReadFnc, 
+			portWriteFnc, 
 			txFreeFnc, 
 			pstRxFnc, 
 			pstAckFnc, 
 			disableBcastFnc,
 			buffers, 
-			cmPorts);
+			cmPorts, 
+			timeMs);
 	}
 	return result;
 }
@@ -130,34 +135,35 @@ int comManagerInitInstance
 int initComManagerInstanceInternal
 (
 	com_manager_t* cmInstance,
-	int numHandles,
+	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
+	pfnComManagerRead portReadFnc,
+	pfnComManagerSend portWriteFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
+	com_manager_port_t *cmPorts, 
+	uint32_t *timeMs
 )
 {
 	int32_t i;
 
-	if (numHandles <= 0)
+	if (numPorts <= 0)
 	{
 		return -1;
 	}
-	numHandles = _CLAMP(numHandles, 1, 1024);
+	numPorts = _CLAMP(numPorts, 1, 1024);
 
 	// assign new variables
-	cmInstance->readCallback = readFnc;
-	cmInstance->sendPacketCallback = sendFnc;
+	cmInstance->readCallback = portReadFnc;
+	cmInstance->sendCallback = portWriteFnc;
 	cmInstance->txFreeCallback = txFreeFnc;
 	cmInstance->pstRxFnc = pstRxFnc;
 	cmInstance->pstAckFnc = pstAckFnc;
 	cmInstance->disableBcastFnc = disableBcastFnc;
-	cmInstance->numHandles = numHandles;
+	cmInstance->numPorts = numPorts;
 	cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
 	cmInstance->cmMsgHandlerAscii = NULL;
 	cmInstance->cmMsgHandlerUblox = NULL;
@@ -178,10 +184,10 @@ int initComManagerInstanceInternal
 		
 	// Port specific info
 	cmInstance->ports = cmPorts;
-	for (i = 0; i < numHandles; i++)
+	for (i = 0; i < numPorts; i++)
 	{	// Initialize IScomm instance, for serial reads / writes
 		com_manager_port_t *port = &(cmInstance->ports[i]);
-		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
+		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer), timeMs);
 		
 		// Port status
 		memset(&(port->status), 0, MEMBERSIZE(com_manager_port_t,status));	
@@ -250,41 +256,35 @@ void comManagerStepInstance(CMHANDLE cmInstance_)
 	comManagerStepTxInstance(cmInstance);
 }
 
-// pfnISCommRead 
-// static int commRead(int pHandle, uint8_t *buffer, int numberOfBytes)
-// {
-// 	
-// } 
-
 void comManagerStepRxInstance(CMHANDLE cmInstance_)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	int32_t pHandle;
+	int32_t port;
 	
 	if (!cmInstance->readCallback)
 	{
 		return;
 	}
 		
-	for (pHandle = 0; pHandle < cmInstance->numHandles; pHandle++)
+	for (port = 0; port < cmInstance->numPorts; port++)
 	{
-		com_manager_port_t *port = &(cmInstance->ports[pHandle]);
-		is_comm_instance_t *comm = &(port->comm);
+		com_manager_port_t *cmPort = &(cmInstance->ports[port]);
+		is_comm_instance_t *comm = &(cmPort->comm);
 		protocol_type_t ptype;
 
 		// Get available size of comm buffer
 		int n = is_comm_free(comm);
 
 		// Read data directly into comm buffer
-		if ((n = cmInstance->readCallback(cmInstance, pHandle, comm->buf.tail, n)))
+		if ((n = cmInstance->readCallback(port, comm->rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm->buf.tail += n;
+			comm->rxBuf.tail += n;
 
 			// Search comm buffer for valid packets
 			while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 			{	
-				int error = comManagerStepRxInstanceHandler(cmInstance, port, comm, pHandle, ptype);		
+				int error = comManagerStepRxInstanceHandler(cmInstance, cmPort, comm, port, ptype);		
 				if(error == CM_ERROR_FORWARD_OVERRUN) 
 				{
 					break;	// Stop parsing and continue in outer loop
@@ -292,14 +292,14 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 			}
 		}
 			
-		// if ((port->status.flags & CM_PKT_FLAGS_RX_VALID_DATA) && port->status.readCounter > 128)
+		// if ((port->status.flags & CM_PKT_FLAGS_RX_VALID_DATA) && cmPort->status.readCounter > 128)
 		// {	// communication problem, clear communication received bit
-		// 	port->status.flags &= (~CM_PKT_FLAGS_RX_VALID_DATA);
+		// 	cmPort->status.flags &= (~CM_PKT_FLAGS_RX_VALID_DATA);
 		// }
 	}
 }
 
-static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype)
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
 {
 	int error = 0;
 	uint8_t *data = comm->pkt.data.ptr + comm->pkt.offset;
@@ -313,33 +313,33 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 
 	case _PTYPE_INERTIAL_SENSE_DATA:
 	case _PTYPE_INERTIAL_SENSE_CMD:
-		error = processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
+		error = processBinaryRxPacket(cmInstance, port, &(comm->pkt));
 		break;
 
 	case _PTYPE_UBLOX:
 		if (cmInstance->cmMsgHandlerUblox)
 		{
-			error = cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, data, size);
+			error = cmInstance->cmMsgHandlerUblox(port, data, size);
 		}
 		break;
 
 	case _PTYPE_RTCM3:
 		if (cmInstance->cmMsgHandlerRtcm3)
 		{
-			error = cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, data, size);
+			error = cmInstance->cmMsgHandlerRtcm3(port, data, size);
 		}
 		break;
 
 	case _PTYPE_NMEA:
 		if (cmInstance->cmMsgHandlerAscii)
 		{
-			error = cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, data, size);
+			error = cmInstance->cmMsgHandlerAscii(port, data, size);
 		}
 		break;
 	case _PTYPE_SPARTN:
 		if (cmInstance->cmMsgHandlerSpartn)
 		{
-			error = cmInstance->cmMsgHandlerSpartn(cmInstance, pHandle, data, size);
+			error = cmInstance->cmMsgHandlerSpartn(port, data, size);
 		}
 		break;
 	default:
@@ -352,9 +352,9 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 	}
 	else if (error)
 	{	
-		port->status.readCounter += 32;
-		port->status.rxError = (uint32_t)-1;
-		port->status.communicationErrorCount++;
+		cmPort->status.readCounter += 32;
+		cmPort->status.rxError = (uint32_t)-1;
+		cmPort->status.communicationErrorCount++;
 		return error;
 	}
 
@@ -380,7 +380,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 	{
 		// If send buffer does not have space, exit out
-		if (cmInstance->txFreeCallback && (bcPtr->pkt.size > (uint32_t)cmInstance->txFreeCallback(cmInstance, bcPtr->pHandle)))
+		if (cmInstance->txFreeCallback && (bcPtr->pkt.size > (uint32_t)cmInstance->txFreeCallback(bcPtr->pHandle)))
 		{
 			break;
 		}
@@ -403,7 +403,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 				int sendData = 1;
 				if (id<DID_COUNT_UINS && cmInstance->regData[id].preTxFnc)
 				{					
-					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle, &bcPtr->pkt.dataHdr);
+					sendData = cmInstance->regData[id].preTxFnc(bcPtr->pHandle, &bcPtr->pkt.dataHdr);
 				}
 				if (sendData)
 				{
@@ -460,7 +460,7 @@ com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHand
 {
 	com_manager_t *cm = (com_manager_t*)cmInstance;
 	
-	if(cm->numHandles <= 0 || pHandle < 0 || pHandle >= cm->numHandles)
+	if(cm->numPorts <= 0 || pHandle < 0 || pHandle >= cm->numPorts)
 	{
 		return NULL;
 	}
@@ -556,12 +556,10 @@ int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t size, uint1
 	return comManagerSendInstance(&g_cm, pHandle, pFlags, data, did, size, offset);
 }
 
-int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
+int comManagerSendInstance(CMHANDLE cmInstance, int port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	is_comm_instance_t *comm = &(((com_manager_t*)cmInstance)->ports[pHandle].comm);
-	is_comm_encode_isb_packet_ptr_hdr(&comm->pkt, pFlags, did, size, offset, data);
-
-	return sendDataPacket(cmInstance, pHandle, &(comm->pkt));
+	com_manager_t *cm = (com_manager_t*)cmInstance;
+	return is_comm_write_to_port(cm->sendCallback, port, &(cm->ports[port].comm), pFlags, did, size, offset, data);
 }
 
 int findAsciiMessage(const void * a, const void * b)
@@ -673,17 +671,17 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 				copyDataPToStructP(regd->dataSet.rxPtr, data, regd->dataSet.size);
 			}
 
-			// Call data specific callback after data has been written to
+			// Call data specific callback after data has been received
 			if (regd->pstRxFnc)
 			{
-				regd->pstRxFnc(cmInstance, pHandle, data);
+				regd->pstRxFnc(pHandle, data);
 			}
 		}
 
 		// Call general/global callback
 		if (cmInstance->pstRxFnc)
 		{
-			cmInstance->pstRxFnc(cmInstance, pHandle, data);
+			cmInstance->pstRxFnc(pHandle, data);
 		}
 
 #if ENABLE_PACKET_CONTINUATION
@@ -714,7 +712,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		// Call disable broadcasts callback if exists
 		if (cmInstance->disableBcastFnc)
 		{
-			cmInstance->disableBcastFnc(cmInstance, -1);
+			cmInstance->disableBcastFnc(-1);
 		}
 		sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
 		break;
@@ -725,7 +723,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		// Call disable broadcasts callback if exists
 		if (cmInstance->disableBcastFnc)
 		{
-			cmInstance->disableBcastFnc(cmInstance, pHandle);
+			cmInstance->disableBcastFnc(pHandle);
 		}
 		sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
 		break;
@@ -739,7 +737,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		// Call general ack callback
 		if (cmInstance->pstAckFnc)
 		{
-			cmInstance->pstAckFnc(cmInstance, pHandle, (p_ack_t*)(pkt->data.ptr), ptype);
+			cmInstance->pstAckFnc(pHandle, (p_ack_t*)(pkt->data.ptr), ptype);
 		}
 		break;
 	}
@@ -764,9 +762,9 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint
 }
 
 // 0 on success. -1 on failure.
-int comManagerGetDataRequest(int pHandle, p_data_get_t* req)
+int comManagerGetDataRequest(int port, p_data_get_t* req)
 {
-	return comManagerGetDataRequestInstance(&g_cm, pHandle, req);
+	return comManagerGetDataRequestInstance(&g_cm, port, req);
 }
 
 int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_get_t* req)
@@ -781,7 +779,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		return -1;
 	}
 	// Call RealtimeMessageController (RMC) handler
-	else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, req) == 0))
+	else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(pHandle, req) == 0))
 	{
 		// Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
 		return 0;
@@ -841,13 +839,13 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	{
 		dataPtr = NULL;
 	}
-	is_comm_encode_isb_packet_ptr_hdr(pkt, PKT_TYPE_DATA, req->id, req->size, req->offset, dataPtr);
+	is_comm_encode_isb_hdr(pkt, PKT_TYPE_DATA, req->id, req->size, req->offset, dataPtr);
 
 	// Prep data if callback exists
 	int sendData = 1;
 	if (cmInstance->regData[req->id].preTxFnc)
 	{
-		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &(pkt->dataHdr));
+		sendData = cmInstance->regData[req->id].preTxFnc(pHandle, &(pkt->dataHdr));
 	}
 
 	if (req->id == DID_REFERENCE_IMU)
@@ -866,7 +864,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	{
 		// ***  Request Broadcast  ***
 		// Send data immediately if possible
-		if (cmInstance->txFreeCallback == 0 || pkt->size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
+		if (cmInstance->txFreeCallback == 0 || pkt->size <= (uint32_t)cmInstance->txFreeCallback(pHandle))
 		{
 			if (sendData)
 			{
@@ -881,7 +879,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	{
 		// ***  Request Single  ***
 		// Send data immediately if possible
-		if (cmInstance->txFreeCallback == 0 || pkt->size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
+		if (cmInstance->txFreeCallback == 0 || pkt->size <= (uint32_t)cmInstance->txFreeCallback(pHandle))
 		{
 			if (sendData)
 			{
@@ -956,36 +954,14 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_
 		req.size = 0;
 		req.offset = 0;
 		req.period = 0;
-		cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, &req);
+		cmInstance->cmMsgHandlerRmc(pHandle, &req);
 	}
 }
 
 // Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.
-int sendDataPacket(com_manager_t* cmInstance, int pHandle, packet_t* pkt)
+int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 {
-	pfnComManagerSend sendCallback = cmInstance->sendPacketCallback;
-	if (sendCallback == 0)
-	{	// sendCallback is required
-		return -1;
-	}
-
-    pkt->checksum = pkt->hdrCksum;
-    if (pkt->offset)
-    {
-        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)&(pkt->offset), 2);
-    }
-    pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
- 	// Use precomputed header checksum, only compute checksum for data.
-	sendCallback(cmInstance, pHandle, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));     // Header
-	if (pkt->offset)
-	{
-		sendCallback(cmInstance, pHandle, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
-    }
-	sendCallback(cmInstance, pHandle, (uint8_t*)pkt->data.ptr, pkt->data.size);         // Payload
-	sendCallback(cmInstance, pHandle, (uint8_t*)&(pkt->checksum), 2);                   // Checksum
-
-	return 0;
+	return is_comm_write_isb_precomp_to_port(cm->sendCallback, port, pkt);
 }
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)

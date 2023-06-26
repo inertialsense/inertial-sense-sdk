@@ -45,13 +45,13 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
 
     messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         //serialPortClose(m_port);
         return IS_IMAGE_SIGN_NONE;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         //serialPortClose(m_port);
         return IS_IMAGE_SIGN_NONE;
@@ -62,9 +62,9 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
     dev_info_t* dev_info = NULL;
     dev_info_t* evb_dev_info = NULL;
     uint32_t valid_signatures = 0;
-    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
-        comm.buf.tail += n;
+        comm.rxBuf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
             if(ptype == _PTYPE_IS_V1_DATA)
@@ -155,19 +155,19 @@ uint32_t cISBootloaderAPP::get_device_info()
     
     messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
@@ -182,9 +182,9 @@ uint32_t cISBootloaderAPP::get_device_info()
     dev_info_t* evb_dev_info = NULL;
     evb_status_t* evb_status = NULL;
     uint8_t evb_version[4];
-    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
-        comm.buf.tail += n;
+        comm.rxBuf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
             if(ptype == _PTYPE_IS_V1_DATA)
