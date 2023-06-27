@@ -41,7 +41,7 @@ struct comManagerTest
 
 static comManagerTest cm1, cm2;
 
-static int readFnc(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int readFnc(int port, unsigned char* buf, int len)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->readFncCallCount++;
@@ -51,7 +51,7 @@ static int readFnc(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 	return c;
 }
 
-static int sendFnc(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int sendFnc(int port, unsigned char* buf, int len)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->sendFncCallCount++;

@@ -28,7 +28,7 @@ extern "C"
 #define DEBUG_PRINTF	
 #endif
 
-#define PORT_BUFFER_SIZE	8192
+#define PORT_BUFFER_SIZE	100
 
 typedef struct
 {
@@ -73,9 +73,9 @@ static int portRead(int pHandle, unsigned char* buf, int len)
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(int pHandle, unsigned char* buf, int len)
+static int portWrite(int pHandle, const unsigned char* buf, int len)
 {
-	if (ringBufWrite(&tcm.portTxBuf, buf, len))
+	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
 		DEBUG_PRINTF("tcm.portTxBuf ring buffer overflow: %d !!!\n", ringBufUsed(&tcm.portTxBuf) + len);
 		EXPECT_TRUE(false);
@@ -454,9 +454,10 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		{
 		case _PTYPE_IS_V1_DATA:
 			// Packetize data 
-			n = is_comm_set_data(&comm, td.did, td.size, 0, (void*)&(td.data));
+			uint8_t buf[1024];
+			n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
-			EXPECT_FALSE(ringBufWrite(rbuf, comm.rxBuf.start, n));
+			EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
 			break;
 
 		case _PTYPE_NMEA:
@@ -493,11 +494,11 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 			{
 			case _PTYPE_IS_V1_DATA:
 				// Found data
-				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.pkt.hdr.id, comm.pkt.data.size);
+				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-				EXPECT_EQ(td.did, comm.pkt.hdr.id);
+				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
 			case _PTYPE_UBLOX:
@@ -505,12 +506,12 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 				break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.pkt.data.ptr);
+				DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
 				break;
 			}
 
-			EXPECT_EQ(td.size, comm.pkt.data.size);
-			EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, td.size) == 0);
+			EXPECT_EQ(td.size, comm.rxPkt.data.size);
+			EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
 		}
 		else
 		{
@@ -547,11 +548,11 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 			{
 			case _PTYPE_IS_V1_DATA:
 				// Found data
-				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.pkt.hdr.id, comm.pkt.data.size);
+				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-				EXPECT_EQ(td.did, comm.pkt.hdr.id);
+				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
 			case _PTYPE_UBLOX:
@@ -559,12 +560,12 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 				break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.pkt.data.ptr);
+				DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
 				break;
 			}
 
-			EXPECT_EQ(td.size, comm.pkt.data.size);
-			EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, td.size) == 0);
+			EXPECT_EQ(td.size, comm.rxPkt.data.size);
+			EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
 		}
 	}
 }
@@ -580,6 +581,7 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 
 
 #if 1
+uint8_t g_buf[1024];
 TEST(ISComm, BasicTxBufferRxByteTest)
 {
 	// Initialize Com Manager
@@ -595,12 +597,11 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 
 		// Send data - writes data to tcm.txBuf
 		int n;
-		uint8_t buf[1024];
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data_to_buffer(buf, sizeof(buf), &g_comm, td.did, td.size, 0, td.data.buf);
-			portWrite(0, buf, n);
+			n = is_comm_data_to_buf(g_buf, sizeof(g_buf), &g_comm, td.did, td.size, 0, td.data.buf);
+			portWrite(0, g_buf, n);
 			break;
 
 		case _PTYPE_NMEA:
@@ -641,7 +642,7 @@ TEST(ISComm, BasicTxPortRxByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data_to_port(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
+			n = is_comm_data(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:
@@ -681,7 +682,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data_to_port(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
+			n = is_comm_data(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:
@@ -725,9 +726,9 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbageTimeoutTest)
 		EXPECT_EQ(ptype, _PTYPE_NONE);
 
 		// Lapse time 1s. Add good packet to buffer
-		g_timeMs += 20;
+		g_timeMs += MAX_PARSER_GAP_TIME_MS;
 		data_holder_t td = g_testTxDeque[0];
-		int n = is_comm_data_to_buffer(g_comm.rxBuf.tail, g_comm.rxBuf.end-g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
+		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, g_comm.rxBuf.end-g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
 		g_comm.rxBuf.tail += n;
 
 		// Parse data to find the error and reset parser
@@ -738,8 +739,8 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbageTimeoutTest)
 		ptype = is_comm_parse(&g_comm);
 		EXPECT_EQ(ptype, _PTYPE_INERTIAL_SENSE_DATA);
 
-		EXPECT_EQ(g_comm.pkt.data.size, td.size);
-		EXPECT_TRUE(memcmp(g_comm.pkt.data.ptr, td.data.buf, td.size) == 0);
+		EXPECT_EQ(g_comm.rxPkt.data.size, td.size);
+		EXPECT_TRUE(memcmp(g_comm.rxPkt.data.ptr, td.data.buf, td.size) == 0);
 	}
 }
 #endif
@@ -756,8 +757,8 @@ TEST(ISComm, TxRxWithOffsetTest)
 	txIns1.theta[2] = 2.345f;
 	int n;
 
-	n = is_comm_data_to_port(portWrite, 0, &g_comm, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
-	n = is_comm_data_to_port(portWrite, 0, &g_comm, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
+	n = is_comm_data(portWrite, 0, &g_comm, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
+	n = is_comm_data(portWrite, 0, &g_comm, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
 
 	{
 		is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE, NULL);
@@ -769,11 +770,11 @@ TEST(ISComm, TxRxWithOffsetTest)
 
 		// Read timeOfWeek
         EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
-		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.pkt.hdr.id, g_comm.pkt.data.size);
+		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.rxPkt.hdr.id, g_comm.rxPkt.data.size);
 		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
 		// Read theta[2]
         EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
-		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.pkt.hdr.id, g_comm.pkt.data.size);
+		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.rxPkt.hdr.id, g_comm.rxPkt.data.size);
 		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
 
 		EXPECT_TRUE( memcmp(&txIns1, &rxIns1, sizeof(rxIns1)) == 0 );

@@ -29,9 +29,10 @@ static cISStream *s_clientStream;
 
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
+	uint8_t buf[1024];
 	// Stop all broadcasts on the device
-	int n = is_comm_stop_broadcasts_all_ports(comm);
-	if (n != serialPortWrite(serialPort, comm->rxBuf.start, n))
+	int n = is_comm_stop_broadcasts_all_ports_to_buf(buf, sizeof(buf), comm);
+	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -42,14 +43,15 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 
 int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-	int n = is_comm_get_data(comm, DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->rxBuf.start, n))
+	uint8_t buf[1024];
+	int n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_POS, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
-	n = is_comm_get_data(comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->rxBuf.start, n))
+	n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -67,7 +69,7 @@ static struct
 
 void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 {
-	switch (comm->pkt.hdr.id)
+	switch (comm->rxPkt.hdr.id)
 	{
 	case DID_GPS1_RTK_POS_REL:
 		is_comm_copy_to_struct(&s_rx.rel, comm, sizeof(s_rx.rel));		
@@ -160,7 +162,7 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 		{
 			if (ptype == _PTYPE_RTCM3)
 			{	// Forward RTCM3 packets to uINS
-				serialPortWrite(serialPort, comm->pkt.data.ptr, comm->pkt.data.size);
+				serialPortWrite(serialPort, comm->rxPkt.data.ptr, comm->rxPkt.data.size);
 				s_rx.baseCount++;
 			}
 		}
@@ -181,9 +183,10 @@ int main(int argc, char* argv[])
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
+	uint32_t timeMs = current_timeMs();
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer));
+	is_comm_init(&comm, buffer, sizeof(buffer), &timeMs);
 
 	// STEP 3: Initialize and open serial port
 	serial_port_t serialPort;
@@ -232,6 +235,8 @@ int main(int argc, char* argv[])
 	// Main loop
 	while (1)
 	{
+		timeMs = current_timeMs();
+		
 		read_uINS_data(&serialPort, &comm, s_clientStream);
 
 		read_RTK_base_data(&serialPort, &comm, s_clientStream);

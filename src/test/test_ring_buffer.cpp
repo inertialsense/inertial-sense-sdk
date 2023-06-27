@@ -168,7 +168,8 @@ TEST(RingBuffer, PacketTest)
 		ins1.ned[1] = i * 2.345f;
 		ins1.ned[2] = i * 3.456f;
 
-		n = is_comm_set_data(&comm, DID_INS_1, sizeof(ins_1_t), 0, (void*)&(ins1));
+		uint8_t buf[1024];
+		n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, DID_INS_1, sizeof(ins_1_t), 0, (void*)&(ins1));
 
 		if (n > ringBufFree(&rb))
 		{	// Buffer is full
@@ -178,10 +179,10 @@ TEST(RingBuffer, PacketTest)
 			break;
 		}
 
-		EXPECT_FALSE(ringBufWrite(&rb, comm.rxBuf.start, n));
+		EXPECT_FALSE(ringBufWrite(&rb, buf, n));
 		for (int j = 0; j < n; j++)
 		{
-			myDeque.push_back(comm.rxBuf.start[j]);
+			myDeque.push_back(buf[j]);
 		}
 	}
 

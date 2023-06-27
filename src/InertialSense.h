@@ -413,6 +413,8 @@ public:
 	};
 
 	int GetSyncState(int pHandle) { return m_comManagerState.devices[pHandle].syncState; }
+	InertialSense::com_manager_cpp_state_t* GetComManagerCppState(){ return &m_comManagerState; }
+
 
 protected:
 	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);

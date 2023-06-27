@@ -98,10 +98,7 @@ typedef void* CMHANDLE;
 
 // com manager callback prototypes
 // readFnc read data from the serial port. Returns number of bytes read.
-typedef int(*pfnComManagerRead)(int port, unsigned char* buffer, int numberOfBytes);
-
-// sendFnc send data to the serial port. Return number of bytes written.
-typedef int(*pfnComManagerSend)(int port, unsigned char* buffer, int numberOfBytes);
+typedef int(*pfnComManagerRead)(int port, unsigned char* buf, int len);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
 typedef int(*pfnComManagerSendBufferAvailableBytes)(int port);
@@ -169,13 +166,13 @@ typedef struct
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
-	pfnComManagerRead readCallback;
+	pfnComManagerRead portRead;
 
 	// write data to the destination (usually a serial port)
-	pfnComManagerSend sendCallback;
+	pfnIsCommPortWrite portWrite;
 
 	// bytes free in Tx buffer (used to check if packet, keeps us from overflowing the Tx buffer)
-	pfnComManagerSendBufferAvailableBytes txFreeCallback;
+	pfnComManagerSendBufferAvailableBytes txFree;
 
 	// Callback function pointer, used to respond to data input
 	pfnComManagerPostRead pstRxFnc;
@@ -250,7 +247,7 @@ int comManagerInit
 	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
+	pfnIsCommPortWrite sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
@@ -268,7 +265,7 @@ int comManagerInitInstance
 	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
+	pfnIsCommPortWrite sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,

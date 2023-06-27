@@ -72,9 +72,9 @@ static int portRead(int port, unsigned char* buf, int len)
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(int port, unsigned char* buf, int len)
+static int portWrite(int port, const unsigned char* buf, int len)
 {
-	if (ringBufWrite(&tcm.portTxBuf, buf, len))
+	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
 		DEBUG_PRINTF("tcm.portTxBuf ring buffer overflow: %d !!!\n", ringBufUsed(&tcm.portTxBuf) + len);
 		EXPECT_TRUE(false);
@@ -528,9 +528,9 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 		{
 		case _PTYPE_IS_V1_DATA:
 			// Packetize data 
-			n = is_comm_data_to_buffer(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
+			n = is_comm_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
-			EXPECT_FALSE(ringBufWrite(rbuf, comm.rxBuf.start, n));
+			EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
 			break;
 
 		case _PTYPE_NMEA:
@@ -569,11 +569,11 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 			{
 			case _PTYPE_IS_V1_DATA:
 				// Found data
-				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.pkt.hdr.id, comm.pkt.data.size);
+				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-				EXPECT_EQ(td.did, comm.pkt.hdr.id);
+				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
 			case _PTYPE_UBLOX:
@@ -581,12 +581,12 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 				break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.pkt.data.ptr);
+				DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
 				break;
 			}
 
-			EXPECT_EQ(td.size, comm.pkt.data.size);
-			EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, td.size) == 0);
+			EXPECT_EQ(td.size, comm.rxPkt.data.size);
+			EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
 		}
 	}
 }
@@ -801,8 +801,8 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
 			{
 				uint8_t error = 0;
-				uint8_t *dataPtr = comm.pkt.data.ptr + comm.pkt.offset;
-				uint32_t dataSize = comm.pkt.data.size;
+				uint8_t *dataPtr = comm.rxPkt.data.ptr + comm.rxPkt.offset;
+				uint32_t dataSize = comm.rxPkt.data.size;
 
 				data_holder_t td = g_testRxDeque.front();
 				g_testRxDeque.pop_front();
@@ -811,22 +811,22 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 				{
 				case _PTYPE_IS_V1_DATA:
 					// Found data
-					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.pkt.hdr.id, comm.pkt.data.size);
+					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 					is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-					EXPECT_EQ(td.did, comm.pkt.hdr.id);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, comm.pkt.data.size)==0);
+					EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size)==0);
 					break;
 
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
-					EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, comm.pkt.data.size) == 0);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				case _PTYPE_NMEA:
-					DEBUG_PRINTF("Found data: %.30s...\n", comm.pkt.data.ptr);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, comm.pkt.data.size) == 0);
+					DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				default:
@@ -896,8 +896,8 @@ TEST(ComManager, Evb2DataForwardTest)
 			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
 			{
 				uint8_t error = 0;
-				uint8_t *dataPtr = comm.pkt.data.ptr + comm.pkt.offset;
-				uint32_t dataSize = comm.pkt.data.size;
+				uint8_t *dataPtr = comm.rxPkt.data.ptr + comm.rxPkt.offset;
+				uint32_t dataSize = comm.rxPkt.data.size;
 
 				data_holder_t td = testRxDequeCopy.front();
 				testRxDequeCopy.pop_front();
@@ -905,15 +905,15 @@ TEST(ComManager, Evb2DataForwardTest)
 				switch (ptype)
 				{
 				case _PTYPE_IS_V1_DATA:
-					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.pkt.hdr), sizeof(packet_hdr_t));
-					if (comm.pkt.offset)
+					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.hdr), sizeof(packet_hdr_t));
+					if (comm.rxPkt.offset)
 					{
-						ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.pkt.offset), sizeof(comm.pkt.offset));
+						ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.offset), sizeof(comm.rxPkt.offset));
 					}
-					ringBufWrite(&tcm.portRxBuf, comm.pkt.data.ptr, comm.pkt.data.size);
-					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.pkt.checksum), sizeof(comm.pkt.checksum));
+					ringBufWrite(&tcm.portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.checksum), sizeof(comm.rxPkt.checksum));
 
-					if (td.pktSize != comm.pkt.size)
+					if (td.pktSize != comm.rxPkt.size)
 					{
 						ASSERT_TRUE(false);
 					}
@@ -922,9 +922,9 @@ TEST(ComManager, Evb2DataForwardTest)
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
 				{
-					ringBufWrite(&tcm.portRxBuf, comm.pkt.data.ptr, comm.pkt.data.size);
+					ringBufWrite(&tcm.portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 
-					if (td.pktSize != comm.pkt.size)
+					if (td.pktSize != comm.rxPkt.size)
 					{
 						ASSERT_TRUE(false);
 					}
@@ -969,8 +969,8 @@ TEST(ComManager, Evb2DataForwardTest)
 					continue;
 				}
 
-				uint8_t *dataPtr = comm.pkt.data.ptr + comm.pkt.offset;
-				uint32_t dataSize = comm.pkt.data.size;
+				uint8_t *dataPtr = comm.rxPkt.data.ptr + comm.rxPkt.offset;
+				uint32_t dataSize = comm.rxPkt.data.size;
 
 				data_holder_t td = g_testRxDeque.front();
 				g_testRxDeque.pop_front();
@@ -979,22 +979,22 @@ TEST(ComManager, Evb2DataForwardTest)
 				{
 				case _PTYPE_IS_V1_DATA:
 					// Found data
-					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.pkt.hdr.id, comm.pkt.data.size);
+					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 					is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-					EXPECT_EQ(td.did, comm.pkt.hdr.id);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, comm.pkt.data.size) == 0);
+					EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
-					EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, comm.pkt.data.size) == 0);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				case _PTYPE_NMEA:
-					DEBUG_PRINTF("Found data: %.30s...\n", comm.pkt.data.ptr);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.pkt.data.ptr, comm.pkt.data.size) == 0);
+					DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				default:
@@ -1003,7 +1003,6 @@ TEST(ComManager, Evb2DataForwardTest)
 				}
 			}
 		}
-
 	}
 
 	// Check that no data was left behind 

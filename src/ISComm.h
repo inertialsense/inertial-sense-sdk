@@ -105,7 +105,7 @@ typedef enum
 #endif
 
 /** The maximum time between received data that will reset in the parser */
-#define MAX_PARSER_GAP_TIME_MS  10
+#define MAX_PARSER_GAP_TIME_MS  100
 
 /** The maximum encoded overhead size in sending a packet (7 bytes for header, 7 bytes for footer). The packet start and end bytes are never encoded. */
 #define MAX_PKT_OVERHEAD_SIZE   (PKT_OVERHEAD_SIZE + PKT_OVERHEAD_SIZE - 2)  // worst case for packet encoding header / footer
@@ -140,7 +140,7 @@ typedef enum
 #define RTCM3_HEADER_SIZE 3
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
-typedef int(*pfnIsCommPortWrite)(int port, uint8_t* buffer, int numberOfBytes);
+typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1
@@ -535,8 +535,8 @@ typedef struct
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
 
-	/** IS binary transmit packet */
-	packet_t pkt;
+	/** IS binary receive packet */
+	packet_t rxPkt;
 
 	/** Retries left before moving to next packet */
 	uint8_t retries;
@@ -649,20 +649,21 @@ int is_comm_free(is_comm_instance_t* instance);
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to request the entire data structure
 */
-int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
 
-/**
-* Encode a binary packet to get predefined list of data sets from the device - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
-* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
-* @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
-* @remarks pass an offset and length of 0 to request the entire data structure
-*/
-int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
+// /**
+// * Encode a binary packet to get predefined list of data sets from the device - puts the data ready to send into the buffer passed into is_comm_init
+// * @param comm the comm instance passed to is_comm_init
+// * @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
+// * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
+// * @remarks pass an offset and length of 0 to request the entire data structure
+// */
+// int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 
 /**
 * Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
-* @param instance the comm instance passed to is_comm_init
+* @param comm the comm instance passed to is_comm_init
 * @param did the data id to set on the device (see DID_* at top of this file)
 * @param size the number of bytes to set on the data structure on the device
 * @param offset the offset to start setting data at on the data structure on the device
@@ -670,27 +671,30 @@ int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
 */
-int is_comm_set_data(is_comm_instance_t* instance, uint16_t did, uint16_t size, uint16_t offset, void* data);
+int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
+int is_comm_set_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
 * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
 */
-int is_comm_data_to_buffer(     uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
-int is_comm_data_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
+int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
+int is_comm_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
-* Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
+* Encode a binary packet to stop all messages being broadcast on the device on all ports
+* @param comm the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_all_ports_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm);
+int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm);
 
 /**
-* Encode a binary packet to stop all messages being broadcast on the device on this port - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
+* Encode a binary packet to stop all messages being broadcast on the device on this port
+* @param comm the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_current_ports_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm);
+int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm);
 
 uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size);
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
@@ -701,14 +705,11 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
-void is_comm_encode_isb_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, packet_t *pkt);
 
-int is_comm_write_to_buffer(     uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-int is_comm_write_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-
-int is_comm_encode_isb_packet_buf(void* buf, int buf_size, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
-int is_comm_copy_isb_packet_ptr_to_buf(packet_t *pkt, void* buf, int buf_size);
+int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
