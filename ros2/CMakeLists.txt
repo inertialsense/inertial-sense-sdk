@@ -55,6 +55,7 @@ include_directories(include
   ../src/yaml-cpp
 )
 
+set(IGNORE_EXAMPLE_PROJECTS ON)
 add_subdirectory(.. build)
 
 add_library(inertial_sense_ros_lib
@@ -85,14 +86,8 @@ ament_export_include_directories(include)
 ament_export_libraries(inertial_sense_ros_lib)
 
 install(TARGETS inertial_sense_node DESTINATION lib/${PROJECT_NAME})
-install(TARGETS
-  inertial_sense_ros_lib
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
-)
+install(TARGETS inertial_sense_ros_lib LIBRARY DESTINATION lib)
+install(TARGETS InertialSense LIBRARY DESTINATION lib)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 
 ament_package()
