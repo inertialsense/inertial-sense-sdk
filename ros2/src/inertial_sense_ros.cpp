@@ -115,7 +115,7 @@ void InertialSenseROS::initializeROS() {
     multi_mag_cal_srv_              = create_service<std_srvs::srv::Trigger>("multi_axis_mag_cal", std::bind(&InertialSenseROS::perform_multi_mag_cal_srv_callback, this, _1, _2));
     //firmware_update_srv_            = create_service<inertial_sense_ros::srv::FirmwareUpdate>("firmware_update", std::bind(&InertialSenseROS::update_firmware_srv_callback, this, _1, _2));
 
-    SET_CALLBACK(DID_STROBE_IN_TIME, strobe_in_time_t, strobe_in_time_callback, 0); // we always want the strobe
+    SET_CALLBACK(DID_STROBE_IN_TIME, strobe_in_time_t, strobe_in_time_callback, 1); // we always want the strobe
 
     //////////////////////////////////////////////////////////
     // Publishers
