@@ -299,12 +299,17 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
     if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
+    {
         RTK_rover_ = new RtkRoverProvider(this->get_logger(), rtkRoverNode);
+        GNSS_Compass_ = RTK_rover_->compassing_enable;
+    }
 
     YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
     if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
+    {
         RTK_base_ = new RtkBaseProvider(this->get_logger(), rtkBaseNode);
-
+        GNSS_Compass_ = GNSS_Compass_ || RTK_rover_->compassing_enable;
+    }
     // Print entire yaml node tree
     // printf("Node Tree:\n");
     // std::cout << node << "\n\n=====================  EXIT  =====================\n\n";
