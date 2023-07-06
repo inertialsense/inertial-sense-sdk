@@ -1363,8 +1363,9 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,           // (uint32 inv: 4294967283)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)
-    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_GPS1_TO_SER0  = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 17,           // (uint32 inv: 4294967278)
 
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE              = 30,           // (uint32 inv: 4294967265)
     SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER     = 31,           // (uint32 inv: 4294967264)
@@ -2435,9 +2436,8 @@ enum eIoConfig
     /** GPS 2 skip initialization (ioConfig[28]) */
     IO_CONFIG_GPS2_NO_INIT 						= (int)0x10000000,
 
-    /** External GPS TIMEPULSE source (ioConfig[15-13]) */
-    IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,	
-    /** 0 = internal, 1 = disabled, 2 = G2_PIN6, 3 = G5_PIN9, 4 = G8_PIN12, 5 = G9_PIN13 */
+    /** GPS TIMEPULSE source (ioConfig[15-13]) */
+    IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,
     IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
     IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
     IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
