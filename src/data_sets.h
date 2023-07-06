@@ -1341,8 +1341,9 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,           // (uint32 inv: 4294967283)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)
-    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_GPS1_TO_SER0  = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 17,           // (uint32 inv: 4294967278)
 
     SYS_CMD_SAVE_FLASH                              = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,           // (uint32 inv: 4294967197)
@@ -1361,6 +1362,7 @@ enum eSerialPortBridge
 	SERIAL_PORT_BRIDGE_USB_TO_SER0      = 3,
 	SERIAL_PORT_BRIDGE_USB_TO_SER1      = 4,
 	SERIAL_PORT_BRIDGE_USB_TO_SER2      = 5,
+	SERIAL_PORT_BRIDGE_GPS1_TO_SER0		= 6,
 };
 
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
