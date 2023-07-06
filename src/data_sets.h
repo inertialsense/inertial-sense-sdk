@@ -1364,7 +1364,7 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_GPS1_TO_SER0  = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1  = 16,           // (uint32 inv: 4294967279)
     SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 17,           // (uint32 inv: 4294967278)
 
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE              = 30,           // (uint32 inv: 4294967265)
