@@ -2365,9 +2365,8 @@ enum eIoConfig
 	IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
 	// IO_CONFIG_                               = (int)0x00001000,
 
-	/** External GPS TIMEPULSE source */
+	/** GPS TIMEPULSE source */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,	
-	/** 0 = internal, 1 = disabled, 2 = G2_PIN6, 3 = G5_PIN9, 4 = G8_PIN12, 5 = G9_PIN13 */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
