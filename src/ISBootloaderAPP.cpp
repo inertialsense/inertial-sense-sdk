@@ -33,7 +33,7 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
+eImageSignature cISBootloaderAPP::check_is_compatible()
 {
     serialPortFlush(m_port);
 
@@ -67,7 +67,7 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_IS_V1_DATA)
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
             {
                 switch(comm.dataHdr.id)
                 {
@@ -76,7 +76,7 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
                     m_sn = dev_info->serialNumber;
                     if(dev_info->hardwareVer[0] == 5)
                     {   /** IMX-5 */
-                        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
+                        valid_signatures |= IS_IMAGE_SIGN_UINS_5;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
                     }
                     else if (dev_info->hardwareVer[0] == 3 || dev_info->hardwareVer[0] == 4)
@@ -89,7 +89,7 @@ uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
                     if (evb_dev_info->hardwareVer[0] == 2)
                     {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
-                        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
+                        valid_signatures |= IS_IMAGE_SIGN_UINS_5;
                         valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
                         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
@@ -113,7 +113,7 @@ is_operation_result cISBootloaderAPP::reboot()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderAPP::reboot_down()
+is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, bool force)
 {
     (void)force;
     (void)minor;
@@ -187,7 +187,7 @@ uint32_t cISBootloaderAPP::get_device_info()
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_IS_V1_DATA)
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
             {
                 switch(comm.dataHdr.id)
                 {
