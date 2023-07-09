@@ -116,7 +116,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         }
         else if(processor == IS_PROCESSOR_STM32L4)
         {
-            valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+            valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
             if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
         }
     }

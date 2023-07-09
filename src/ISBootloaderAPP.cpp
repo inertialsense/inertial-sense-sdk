@@ -76,7 +76,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     m_sn = dev_info->serialNumber;
                     if(dev_info->hardwareVer[0] == 5)
                     {   /** IMX-5 */
-                        valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+                        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
                     }
                     else if (dev_info->hardwareVer[0] == 3 || dev_info->hardwareVer[0] == 4)
@@ -89,7 +89,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
                     if (evb_dev_info->hardwareVer[0] == 2)
                     {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
-                        valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+                        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
                         valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
                         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
