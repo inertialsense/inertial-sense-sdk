@@ -711,7 +711,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 					// Disable uINS bootloader if host enables EVB bootloader
 					g_uInsBootloaderEnableTimeMs = 0;
 					
-					enable_bootloader(PORT_SEL_USB);
+					enable_isb_bootloader(PORT_SEL_USB);
 					break;				
 
 				case NMEA_MSG_UINT_STPB:
@@ -731,7 +731,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 // 									(pHandle == EVB2_PORT_USB) && 
 						strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
 					{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-						enable_bootloader_assistant();
+						enable_rom_bootloader();
 					}
 					break;
 					

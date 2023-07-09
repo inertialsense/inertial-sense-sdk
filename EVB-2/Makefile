@@ -198,7 +198,7 @@ C_SRCS += \
 	$(SRC_DIR)/xbee.cpp                                                                            \
 	$(SRC_DIR)/drivers/d_quadEnc.c                                                                 \
 	$(SRC_DIR)/drivers/d_adc.c                                                                     \
-	$(SRC_DIR)/misc/init.c
+	$(SRC_DIR)/misc/init.c \
 
 #################################
 # Include Directories
@@ -208,19 +208,21 @@ INCLUDES +=	\
 	$(SRC_DIR) \
 	$(SRC_DIR)/config \
 	$(SRC_DIR)/drivers \
-	$(SRC_DIR)/misc
+	$(SRC_DIR)/misc \
 
 INCLUDES += $(SDK_DIR)/src
 
 INCLUDES += \
-	$(HW_LIBS_DIR)                	                                                \
-	$(HW_LIBS_DIR)/boards 			                                                \
-	$(HW_LIBS_DIR)/bootloader 		                                                \
-	$(HW_LIBS_DIR)/communications 	                                                \
-	$(HW_LIBS_DIR)/drivers/SAMx70                                                   \
-	$(HW_LIBS_DIR)/drivers/common                                                   \
-	$(HW_LIBS_DIR)/printf                                                           \
-	$(HW_LIBS_DIR)/misc  
+	$(HW_LIBS_DIR) \
+	$(HW_LIBS_DIR)/boards \
+	$(HW_LIBS_DIR)/bootloader \
+	$(HW_LIBS_DIR)/communications \
+	$(HW_LIBS_DIR)/drivers/SAMx70 \
+	$(HW_LIBS_DIR)/drivers/common \
+	$(HW_LIBS_DIR)/freertos/include \
+	$(HW_LIBS_DIR)/freertos/portable/GCC/ARM_CM7/r0p1 \
+	$(HW_LIBS_DIR)/printf \
+	$(HW_LIBS_DIR)/misc \
 
 INCLUDES += \
 	$(ASF_DIR)/common/boards                                                        \
@@ -274,8 +276,6 @@ INCLUDES += \
 	$(ASF_DIR)/thirdparty/CMSIS/Lib/GCC                                             \
 	$(ASF_DIR)/thirdparty/fatfs/fatfs-port-r0.09/sam                                \
 	$(ASF_DIR)/thirdparty/fatfs/fatfs-r0.09/src                                     \
-	$(HW_LIBS_DIR)/freertos/include \
-	$(HW_LIBS_DIR)/freertos/portable/GCC/ARM_CM7/r0p1 \
 
 LDSCRIPT=$(ROOT)/IS_EVB-2/SAMx70-FLASH.ld
 
@@ -306,15 +306,15 @@ DEFS += \
 	-DSD_MMC_ENABLE \
 	-DARM \
 	-D__INERTIAL_SENSE_EVB_2__ \
-	-DCONF_PERIPH
-	-DEVB_2
+	-DCONF_PERIPH \
+	-DEVB_2 \
 
 # CPU type flags
 CPU_FLAGS = \
 	-mcpu=cortex-m7 \
 	-mthumb \
 	-mfloat-abi=softfp \
-	-mfpu=fpv5-d16
+	-mfpu=fpv5-d16 \
 
 # Dependency flags
 DEP_FLAGS = -MD -MP -MF $(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o)

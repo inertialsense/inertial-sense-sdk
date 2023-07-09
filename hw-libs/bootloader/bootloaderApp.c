@@ -12,14 +12,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #if defined(uINS_3) || defined(EVB_2)
 #include <asf.h>
-#elif #if defined(IMX_5)
+#elif defined(IMX_5)
 #include "stm32l4xx.h"
 #include "d_flash.h"
 #endif
 
 #include <string.h>
-#include "../../src/data_sets.h"
-#include "../../hw-libs/misc/rtos.h"
+#include "data_sets.h"
+#include "rtos.h"
 #include "bootloaderApp.h"
 
 
@@ -105,7 +105,7 @@ void set_reset_pin_enabled(int enabled)
 }
 
 
-void enable_bootloader(int pHandle)
+void enable_isb_bootloader(int pHandle)
 {	
     // update the bootloader header jump signature to indicate we want to go to bootloader
     bootloader_header_t header;
@@ -146,7 +146,7 @@ void enable_bootloader(int pHandle)
 }
 
 
-void enable_bootloader_assistant(void)
+void enable_rom_bootloader(void)
 {
     unlockUserFlash();
 
