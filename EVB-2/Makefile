@@ -307,6 +307,7 @@ DEFS += \
 	-DARM \
 	-D__INERTIAL_SENSE_EVB_2__ \
 	-DCONF_PERIPH
+	-DEVB_2
 
 # CPU type flags
 CPU_FLAGS = \
