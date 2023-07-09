@@ -306,15 +306,15 @@ DEFS += \
 	-DSD_MMC_ENABLE \
 	-DARM \
 	-D__INERTIAL_SENSE_EVB_2__ \
-	-DCONF_PERIPH
-	-DEVB_2
+	-DCONF_PERIPH \
+	-DEVB_2 \
 
 # CPU type flags
 CPU_FLAGS = \
 	-mcpu=cortex-m7 \
 	-mthumb \
 	-mfloat-abi=softfp \
-	-mfpu=fpv5-d16
+	-mfpu=fpv5-d16 \
 
 # Dependency flags
 DEP_FLAGS = -MD -MP -MF $(@:%.o=%.d) -MT$(@:%.o=%.d) -MT$(@:%.o=%.o)
