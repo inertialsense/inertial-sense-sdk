@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderDFU.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense bootloader routines for DFU devices
  * 
  */

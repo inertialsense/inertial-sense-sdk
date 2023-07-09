@@ -67,7 +67,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
+            if(ptype == _PTYPE_IS_V1_DATA)
             {
                 switch(comm.dataHdr.id)
                 {
@@ -187,7 +187,7 @@ uint32_t cISBootloaderAPP::get_device_info()
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
+            if(ptype == _PTYPE_IS_V1_DATA)
             {
                 switch(comm.dataHdr.id)
                 {

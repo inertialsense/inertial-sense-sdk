@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderISB.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating application images 
  *  using ISB (Inertial Sense Bootloader) protocol
  *  
