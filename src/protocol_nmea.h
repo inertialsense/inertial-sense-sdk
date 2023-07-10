@@ -10,7 +10,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_ASCE = 0x41534345,		// "ASCE" - NMEA messages broadcast enable
 	NMEA_MSG_UINT_STPB = 0x53545042,		// "STPB" - Stop broadcasts on all ports
 	NMEA_MSG_UINT_STPC = 0x53545043,		// "STPC" - Stop broadcasts on current port
-	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on uINS
+	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on IMX (app firmware update)
 	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
 	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages

@@ -33,7 +33,7 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
     return IS_OP_ERROR;
 }
 
-uint8_t cISBootloaderAPP::check_is_compatible(uint32_t imgSign)
+eImageSignature cISBootloaderAPP::check_is_compatible()
 {
     serialPortFlush(m_port);
 
@@ -113,7 +113,7 @@ is_operation_result cISBootloaderAPP::reboot()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderAPP::reboot_down()
+is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, bool force)
 {
     (void)force;
     (void)minor;

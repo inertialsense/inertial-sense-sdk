@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderDFU.h
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating ISB (Inertial Sense Bootloader)
  *  images using the DFU protocol.
  * 
@@ -59,14 +59,14 @@ class cISBootloaderDFU : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderDFU(
-        std::string filename,
-        ISBootloader::pfnBootloadProgress upload_cb,
-        ISBootloader::pfnBootloadProgress verify_cb,
-        ISBootloader::pfnBootloadStatus info_cb,
+        pfnBootloadProgress upload_cb,
+        pfnBootloadProgress verify_cb,
+        pfnBootloadStatus info_cb,
         libusb_device_handle* handle
-    ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
+    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_dfu.handle_libusb = handle;
+        m_device_type = IS_DEV_TYPE_DFU;
     }
 
     ~cISBootloaderDFU() 
@@ -76,16 +76,17 @@ public:
     
     is_operation_result reboot();
     is_operation_result reboot_up();
+    is_operation_result reboot_down(uint8_t major = 0, char minor = 0, bool force = false) { (void)major; (void)minor; (void)force; return IS_OP_OK; }
 
     is_operation_result match_test(void* param);
 
     uint32_t get_device_info();
 
-    uint8_t check_is_compatible(uint32_t imgSign);
+    ISBootloader::eImageSignature check_is_compatible();
     
-    is_operation_result download_image(void);
-    is_operation_result upload_image(void) { return IS_OP_OK; }
-    is_operation_result verify_image(void) { return IS_OP_OK; }
+    is_operation_result download_image(std::string image);
+    is_operation_result upload_image(std::string image) { return IS_OP_OK; }
+    is_operation_result verify_image(std::string image) { return IS_OP_OK; }
 
     static int get_num_devices();
     static is_operation_result list_devices(is_dfu_list* list);
