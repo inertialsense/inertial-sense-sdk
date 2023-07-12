@@ -3064,6 +3064,8 @@ PUSH_PACK_1
 #define NSATSBS     (MAXPRNSBS-MINPRNSBS+1) /* number of SBAS satellites */
 #define SBAS_EPHEMERIS_ARRAY_SIZE NSATSBS
 #else
+#define MINPRNSBS   0
+#define MAXPRNSBS   0
 #define NSATSBS     0
 #define SBAS_EPHEMERIS_ARRAY_SIZE 0
 #endif // ENASBS
