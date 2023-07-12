@@ -3525,6 +3525,7 @@ typedef struct
 
     /** SBAS satellite PRN number */
     int32_t prn;
+    
     /** SBAS satellite receiver number */
     int8_t rcv;
 
