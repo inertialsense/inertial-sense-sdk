@@ -159,6 +159,10 @@ void talkerId_to_gnssId(const char a[], uint8_t &gnssId, uint16_t &svId, uint8_t
 
 static int nmea_talker(char* a, int aSize, uint8_t gnssId=s_gnssId)
 {
+	if (aSize < 2)
+	{
+		return 0;
+	}
 	a[0] = '$';
 	return gnssId_to_talkerId(a+1, gnssId) + 1;
 }
@@ -1299,6 +1303,8 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 
 int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
 {
+	(void)noCno;
+
 	if (s_protocol_version < NMEA_PROTOCOL_4P10)
 	{
 		return nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId);
@@ -1729,6 +1735,9 @@ int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const
 
 int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
 {
+	(void)gpsSat;
+	(void)a;
+	(void)aSize;
 	return 0;
 }
 
