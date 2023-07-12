@@ -2975,10 +2975,10 @@ PUSH_PACK_1
 #ifndef __RTKLIB_EMBEDDED_DEFINES_H_
 
 #define ENAGAL
-#define ENAGLO
-#define ENAQZS
-#define ENACMP
-#define ENASBS
+// #define ENAGLO
+// #define ENAQZS
+// #define ENACMP
+// #define ENASBS
 
 #define NFREQ       2      /* number of carrier frequencies */
 //#define NFREQ_USED  2      /* number of used frequencies. E.g. if L1 and L5 are used but not L2, then NFREQ is 3 but actually used frequencies are 2 */                          
