@@ -88,7 +88,9 @@ else()
 endif()
 
 # Ignore bootloader files
-list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloader.*")
+# list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloader.*")
+list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSony.*")
+list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
