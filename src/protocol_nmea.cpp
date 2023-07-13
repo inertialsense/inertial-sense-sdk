@@ -16,7 +16,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
 
-void nema_set_protocol_version(int protocol_version)
+void nmea_set_protocol_version(int protocol_version)
 { 
 	s_protocol_version = protocol_version; 
 }
