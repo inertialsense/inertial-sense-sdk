@@ -31,6 +31,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISUtilities.h"
 #include "ISConstants.h"
 
+#ifdef USE_IS_INTERNAL
+#	include "../../cpp/libs/families/imx/IS_internal.h"
+#endif
 cDataKML::cDataKML()
 {
 // 	def[0].init( "devInfo", "Device information" );

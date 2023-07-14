@@ -845,6 +845,35 @@ double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds
 	return (2444244.500000) + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
 }
 
+static void appendGPSTimeOfLastFix(const gps_pos_t* gps, char** buffer, int* bufferLength)
+{
+    unsigned int millisecondsToday = gps->timeOfWeekMs % 86400000;
+    unsigned int hours = millisecondsToday / 1000 / 60 / 60;
+    unsigned int minutes = (millisecondsToday / (1000 * 60)) % 60;
+    unsigned int seconds = (millisecondsToday / 1000) % 60;
+    int written = SNPRINTF(*buffer, *bufferLength, ",%02u%02u%02u", hours, minutes, seconds);
+    *bufferLength -= written;
+    *buffer += written;
+}
+
+static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLength, double v, const char* degreesFormat, char posC, char negC)
+{
+	(void)gps;
+    int degrees = (int)(v);
+    double minutes = (v - ((double)degrees)) * 60.0;
+
+    int written = SNPRINTF(*buffer, *bufferLength, degreesFormat, abs(degrees));
+    *bufferLength -= written;
+    *buffer += written;
+
+    written = SNPRINTF(*buffer, *bufferLength, "%07.4f,", fabs(minutes));
+    *bufferLength -= written;
+    *buffer += written;
+
+    written = SNPRINTF(*buffer, *bufferLength, "%c", (degrees >= 0 ? posC : negC));
+    *bufferLength -= written;
+    *buffer += written;
+}
 #ifndef GPX_1
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/

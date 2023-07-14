@@ -8,7 +8,7 @@
 #if 0
 extern "C"
 {
-#include "../../../libs/rtklib/src/rtklib.h"
+#include "../../../libs-int/rtklib/src/rtklib.h"
 	extern gtime_t g_gps_latest_time;
 	extern int decode_rtcm3(rtcm_t *rtcm);
 	extern int decode_ubx(raw_t* raw, int doChecksum);
@@ -998,3 +998,4 @@ TEST(ComManager, Evb2DataForwardTest)
 	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
 }
 #endif
+

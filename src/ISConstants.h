@@ -20,13 +20,13 @@ extern "C" {
 #undef _MATH_DEFINES_DEFINED
 #define _MATH_DEFINES_DEFINED
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <assert.h>
 #include <inttypes.h>
 #include <time.h>
 #include <limits.h>
-#include <stdio.h>
 
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
