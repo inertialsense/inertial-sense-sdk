@@ -144,7 +144,11 @@ extern void vPortFree(void* pv);
 #endif 
 
 #if __ZEPHYR__
-#define SNPRINTF snprintfcb
+#include <zephyr/irq.h>
+#define BEGIN_CRITICAL_SECTION irq_lock();
+#define END_CRITICAL_SECTION irq_unlock(0);
+// #define SNPRINTF snprintfcb
+#define SNPRINTF snprintf_
 #elif PLATFORM_IS_EMBEDDED
 #include "printf.h"		// Use embedded-safe SNPRINTF
 #define SNPRINTF snprintf_
