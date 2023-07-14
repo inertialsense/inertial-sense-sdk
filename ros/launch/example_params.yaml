@@ -71,7 +71,7 @@ ins:
   offset: [0, 0 ,0]                             # X,Y,Z offset in meters from Intermediate Output Frame to INS Output Frame.
   # navigation_dt_ms: 16                          # EKF update period.  IMX-5:  16 default, 8 max.  Use `msg/ins.../period` to reduce INS output data rate.
   navigation_dt_ms: 16                           # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate.
-  dynamic_model: 4                              # FIXME: these should be named types/srtring (PORTABLE, STATIONARY, AGV, UAV, etc)
+  dynamic_model: 8                              # FIXME: these should be named types/srtring (PORTABLE, STATIONARY, AGV, UAV, etc)
   enable_covariance: false                      # Include covariance data in odom_ins_... messages
   messages:
     odom_ins_enu:
@@ -304,5 +304,8 @@ rtk_base:
     xbee_radio:
       type: evb                                 # routes the RTCM3 corrections back to the EVB, and onto the comm-bridge -- FIXME: Not sure if this works.. still trying to wrap my head around the limits of the comm-bridge.
       port: "xbee"                              # FIXME: Maybe we don't need a port, since the comm-bridge configuration really handles this... it either goes to the EVB or it doesn't... or does it ALWAYS go to the EVB?
+
+diagnostics:
+  enable: true
 
 

@@ -107,7 +107,7 @@ public:
 	*/
 	void SetCallbacks(
 		pfnComManagerAsapMsg handlerRmc=NULLPTR,
-		pfnComManagerGenMsgHandler handlerAscii=NULLPTR,
+		pfnComManagerGenMsgHandler handlerNmea=NULLPTR,
 		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
 		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR,
 		pfnComManagerGenMsgHandler handlerSpartn=NULLPTR);

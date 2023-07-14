@@ -94,7 +94,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 			gps_pos_t &gps = *((gps_pos_t*)data->buf);
 			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
-				*s->clientBytesToSend = did_gps_to_nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+				*s->clientBytesToSend = nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
 			}
 		}
 	}
@@ -439,7 +439,7 @@ bool InertialSense::UpdateServer()
 				id = comm->dataHdr.id;
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
 					uint8_t *pStart = comm->dataPtr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
@@ -524,7 +524,7 @@ bool InertialSense::UpdateClient()
 				id = comm->dataHdr.id;
 				break;
 
-			case _PTYPE_ASCII_NMEA:
+			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
 					uint8_t *pStart = comm->dataPtr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
@@ -557,13 +557,13 @@ bool InertialSense::UpdateClient()
 
 void InertialSense::SetCallbacks(
 	pfnComManagerAsapMsg handlerRmc,
-	pfnComManagerGenMsgHandler handlerAscii,
+	pfnComManagerGenMsgHandler handlerNmea,
 	pfnComManagerGenMsgHandler handlerUblox, 
 	pfnComManagerGenMsgHandler handlerRtcm3,
 	pfnComManagerGenMsgHandler handlerSpartn)
 {
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, ASCII (NMEA), ublox, and RTCM3.
-	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+	comManagerSetCallbacks(handlerRmc, handlerNmea, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
@@ -657,7 +657,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 	{	// Send to all
 		for (size_t port = 0; port < m_comManagerState.devices.size(); port++)
 		{
-			SetSysCmd(command, port);
+			SetSysCmd(command, (int)port);
 		}
 	}
 	else
@@ -1139,7 +1139,7 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
         gps1AntOffset.push_back(outData->gps1AntOffset[2]);
     map["gps1AntOffset"] 			= gps1AntOffset;
 
-    map["insDynModel"] 				= (uint16_t)outData->insDynModel;
+    map["dynamicModel"] 				= (uint16_t)outData->dynamicModel;
     map["debug"] 					= (uint16_t)outData->debug;
     map["gnssSatSigConst"] 			= outData->gnssSatSigConst;
     map["sysCfgBits"] 				= outData->sysCfgBits;
@@ -1257,7 +1257,7 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
         loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
 
-        loaded_flash.insDynModel              = (uint8_t)inData["insDynModel"].as<uint16_t>();
+        loaded_flash.dynamicModel              = (uint8_t)inData["dynamicModel"].as<uint16_t>();
         loaded_flash.debug                    = (uint8_t)inData["debug"].as<uint16_t>();
         loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
         loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();

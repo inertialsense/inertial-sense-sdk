@@ -25,7 +25,7 @@ using namespace std;
 using namespace ISBootloader;
 
 vector<cISBootloaderBase*> cISBootloaderThread::ctx;
-string cISBootloaderThread::m_firmware;
+firmwares_t cISBootloaderThread::m_firmware;
 pfnBootloadProgress cISBootloaderThread::m_uploadProgress; 
 pfnBootloadProgress cISBootloaderThread::m_verifyProgress;
 pfnBootloadStatus cISBootloaderThread::m_infoProgress;
@@ -339,7 +339,7 @@ bool cISBootloaderThread::true_if_cancelled(void)
 vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_and_check_devices(
     vector<string>&                         comPorts,
     int                                     baudRate,
-    const string&                           firmware,
+    const ISBootloader::firmwares_t&        firmware,
     ISBootloader::pfnBootloadProgress       uploadProgress, 
     ISBootloader::pfnBootloadProgress       verifyProgress,
     ISBootloader::pfnBootloadStatus         infoProgress,
@@ -648,7 +648,7 @@ is_operation_result cISBootloaderThread::update(
     vector<string>&             comPorts,   // ISB and SAM-BA and APP
     bool                        force_isb_update,
     int                         baudRate,
-    const string&               firmware,
+    const firmwares_t&          firmware,
     pfnBootloadProgress         uploadProgress,
     pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,

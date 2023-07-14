@@ -267,6 +267,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		cfg.command = g_commandLineOptions.sysCommand;
 		cfg.invCommand = ~cfg.command;
 		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+		return false;
     }
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
@@ -629,8 +630,6 @@ static int inertialSenseMain()
 				cout << "Unknown exception...";
 			}
 		}
-
-		cout << "Shutting down..." << endl;
 
 		// [C++ COMM INSTRUCTION] STEP 6: Close interface
 		// Close cleanly to ensure serial port and logging are shutdown properly.  (optional)

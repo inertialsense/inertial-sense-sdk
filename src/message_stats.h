@@ -27,7 +27,7 @@ typedef struct
 typedef struct
 {
     std::map<int, msg_stats_t> isb;
-    std::map<int, msg_stats_t> ascii;
+    std::map<int, msg_stats_t> nmea;
     std::map<int, msg_stats_t> ublox;
     std::map<int, msg_stats_t> rtcm3;
     msg_stats_t ack;

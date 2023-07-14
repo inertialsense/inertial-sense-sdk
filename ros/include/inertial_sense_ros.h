@@ -197,8 +197,6 @@ public:
     void RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg);
     void RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg);
 
-    float diagnostic_ar_ratio_, diagnostic_differential_age_, diagnostic_heading_base_to_rover_;
-    uint diagnostic_fix_type_;
 
     ros::NodeHandle nh_;
     ros::NodeHandle nh_private_;
@@ -350,6 +348,26 @@ public:
      */
     void transform_6x6_covariance(float Pout[36], float Pin[36], ixMatrix3 R1, ixMatrix3 R2);
 
+    typedef struct
+    {
+        uint32_t rtkPos_timeStamp = 0;
+        float rtkPos_arRatio = 0;
+        float rtkPos_diffAge = 0;
+        std::string rtkPos_fixType = "";
+        float rtkPos_hdgBaseToRov = 0;
+        float rtkPos_distanceToRover = 0;
+        
+        uint32_t rtkCmp_timeStamp = 0;
+        float rtkCmp_arRatio = 0;
+        float rtkCmp_diffAge = 0;
+        std::string rtkCmp_fixType = "";
+        float rtkCmp_hdgBaseToRov = 0;
+        float rtkCmp_distanceToRover = 0;
+
+    } diagnostics_container;
+
+    diagnostics_container diagnostics_;    
+
     // Data to hold on to in between callbacks
     double lla_[3];
     double ecef_[3];
@@ -373,7 +391,7 @@ public:
     geometry_msgs::Vector3Stamped gps2_velEcef;
     inertial_sense_ros::GPSInfo msg_gps1_info;
     inertial_sense_ros::GPSInfo msg_gps2_info;
-
+    
     float poseCov_[36], twistCov_[36];
 
     // Connection to the uINS
