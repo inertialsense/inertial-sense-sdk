@@ -22,6 +22,7 @@ extern "C" {
 #include "ISMatrix.h"
 #include "ISConstants.h"
 #include "ISPose.h"
+#include "data_sets.h"
 
 #define DEG2RAD_EARTH_RADIUS_F		111120.0f					// = DEG2RAD * earth_radius_in_meters
 #define INV_DEG2RAD_EARTH_RADIUS_F	8.99928005759539236861e-6f	// = 1 / ( DEG2RAD * earth_radius_in_meters )
@@ -215,6 +216,54 @@ void rotMat_ned2ecef(const double *latlon, float *R);
  * @param velEcef                       m/s
  */
 void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVel, const ixVector3d lla, ixVector3 velEcef);
+
+#if !defined(RTK_EMBEDDED)
+/**
+ * @brief Convert week and tow in gps time to gtime_t struct
+ *
+ * @param weel                  week number in gps time
+ * @param sec                   time of week in gps time (s)
+ * @return                      gtime_t struct
+ */
+gtime_t gpst2time(int week, double sec);
+
+/**
+ * @brief Convert gtime_t struct to week and tow in gps time
+ * @param t                     gtime_t struct input
+ * @param week                  number in gps time (NULL: no output)
+ * @return                      time of week in gps time (s)
+ */
+double time2gpst(gtime_t t, int *week);
+
+/**
+ * @brief Add time to gtime_t struct
+ * @param t                     gtime_t struct
+ * @param sec                   time to add (s)
+ * @return                      gtime_t struct (t+sec)
+ */
+gtime_t timeadd(gtime_t t, double sec);
+
+/**
+ * @brief Difference between gtime_t structs
+ * @param t1, t2                gtime_t structs
+ * @return                      time difference (t1-t2) (s)
+ */
+double timediff(gtime_t t1, gtime_t t2);
+
+/** 
+ * @brief Convert calendar day/time to gtime_t struct
+ * @param ep                    Pointer to day/time {year,month,day,hour,min,sec}
+ * @return                      gtime_t struct
+ */
+gtime_t epoch2time(const double *ep);
+
+/**
+ * @brief convert utc to gpstime considering leap seconds
+ * @param args                  time expressed in utc
+ * @return                      time expressed in gpstime
+ */
+gtime_t utc2gpst(gtime_t t);
+#endif
 
 #ifdef __cplusplus
 }
