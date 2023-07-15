@@ -213,7 +213,7 @@ static void swapPacket(packet_t* pkt)
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 {
 	// Clear buffer and initialize buffer pointers
-	// memset(buffer, 0, bufferSize);
+	memset(buffer, 0, bufferSize);
 	instance->buf.size = bufferSize;
 	instance->buf.start = buffer;
 	instance->buf.end = buffer + bufferSize;
