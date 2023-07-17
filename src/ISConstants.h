@@ -143,7 +143,13 @@ extern void vPortFree(void* pv);
 
 #endif 
 
-#if PLATFORM_IS_EMBEDDED
+#if __ZEPHYR__
+#include <zephyr/irq.h>
+#define BEGIN_CRITICAL_SECTION irq_lock();
+#define END_CRITICAL_SECTION irq_unlock(0);
+// #define SNPRINTF snprintfcb
+#define SNPRINTF snprintf_
+#elif PLATFORM_IS_EMBEDDED
 #include "printf.h"		// Use embedded-safe SNPRINTF
 #define SNPRINTF snprintf_
 #define VSNPRINTF vsnprintf_
@@ -352,8 +358,10 @@ extern void vPortFree(void* pv);
 #define OFFSET_OF_MEMBER_INDEX_SUBMEMBER(type, member, i, submember) (offsetof(type, member[0].submember) + (i) * MEMBER_ITEM_SIZE(type, member))
 #endif
 
+#ifndef __ZEPHYR__
 #ifndef STRINGIFY
 #define STRINGIFY(x) #x
+#endif
 #endif
 
 #ifndef M_PI
@@ -414,7 +422,11 @@ extern void vPortFree(void* pv);
 #define PRE_PROC_COMBINE(X, Y) X##Y
 #ifndef STATIC_ASSERT
 // #define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
+#ifdef __cplusplus
 #define STATIC_ASSERT(exp) static_assert(exp, #exp)
+#else
+#define STATIC_ASSERT(exp) _Static_assert(exp, #exp)
+#endif
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE
