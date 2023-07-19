@@ -88,7 +88,7 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
         }
         
     }
-
+    
     // // Backup for old (16K) bootloader image
     // if (strstr(filename.c_str(), is_samx70_bootloader_needle))
     // {
@@ -244,7 +244,7 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     std::mutex* addMutex,
     cISBootloaderBase** new_context
 )
-    {
+{
     cISBootloaderBase* obj;
     *new_context = NULL;
 
@@ -263,9 +263,9 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     (obj)->m_port_name = std::string(handle->port);
     device = (obj)->check_is_compatible(); 
     if(device == IS_IMAGE_SIGN_ERROR)
-        {
+    {
         delete obj;
-        }
+    }
     else if(device)
     {   // Firmware for a device must be specified to update its bootloader
         if (((device & IS_IMAGE_SIGN_APP) & fw_EVB_2) && ((device & IS_IMAGE_SIGN_ISB) & bl_EVB_2))
@@ -427,7 +427,7 @@ is_operation_result cISBootloaderBase::update_device
     std::mutex* addMutex,
     cISBootloaderBase** new_context
 )
-    {
+{
     cISBootloaderBase* obj;
     *new_context = NULL;
 
@@ -437,14 +437,14 @@ is_operation_result cISBootloaderBase::update_device
     obj = new cISBootloaderDFU(updateProgress, verifyProgress, statusfn, handle);
     device = (obj)->check_is_compatible();
     if ((device & IS_IMAGE_SIGN_DFU) & bl_IMX_5)
-        {
+    {
         (obj)->m_filename = filenames.bl_IMX_5.path;
-            
+        
         (obj)->get_device_info();
         (obj)->m_use_progress = true;
-            addMutex->lock();
-            contexts.push_back(obj);
-            addMutex->unlock();
+        addMutex->lock();
+        contexts.push_back(obj);
+        addMutex->unlock();
 
         // Retry update up to 3 times, return if cancel flag gets set.
         for(size_t i = 0; i < 3; i++)
@@ -468,12 +468,12 @@ is_operation_result cISBootloaderBase::update_device
 
         (obj)->m_info_callback((obj), "(DFU) Update failed, too many retries", IS_LOG_LEVEL_ERROR);
         return IS_OP_CLOSED;
-        }
-        else
-        {
-            delete obj;
     }
-    
+    else
+    {
+        delete obj;
+    }
+
     statusfn(NULL, "    | (DFU) Firmware image incompatible with DFU device", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }

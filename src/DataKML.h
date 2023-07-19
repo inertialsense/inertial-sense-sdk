@@ -24,7 +24,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
 
-
 struct sKmlLogData
 {
 	double                  time;

@@ -13,6 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "ISBootloaderAPP.h"
+#include "ISBootloaderISB.h"
+#include "ISBootloaderSAMBA.h"
 #include "ISSerialPort.h"
 
 #include <algorithm>

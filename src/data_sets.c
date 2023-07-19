@@ -874,7 +874,6 @@ static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLengt
     *bufferLength -= written;
     *buffer += written;
 }
-
 #ifndef GPX_1
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/
