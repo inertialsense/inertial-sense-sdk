@@ -82,8 +82,8 @@ typedef enum
 	_PTYPE_NMEA                 = 0xBFFFFFFF,				/** Protocol Type: NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
-	_PTYPE_SPARTN,              = 0x8FFFFFFF,				/** Protocol Type: SPARTN binary */
-	_PTYPE_SONY,				= 0x7FFFFFFF,				/** Protocol Type: Sony binary */
+	_PTYPE_SPARTN               = 0x8FFFFFFF,				/** Protocol Type: SPARTN binary */
+	_PTYPE_SONY 				= 0x7FFFFFFF,				/** Protocol Type: Sony binary */
 } protocol_type_t;
 
 #define _PTYPE_IS_V1_CMD 	_PTYPE_INERTIAL_SENSE_CMD
