@@ -391,7 +391,7 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 	case 5: // length byte 2
 		{
 			uint32_t len = BE_SWAP16(*((uint16_t*)(void*)(instance->buf.scan - 2)));
-	
+
 			// if length is greater than available buffer, we cannot parse this ublox packet - ublox header is 6 bytes
 			if (len > instance->buf.size - 6)
 			{
@@ -399,7 +399,6 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 				reset_parser(instance);
 				return _PTYPE_PARSE_ERROR;
 			}
-			
 			instance->parseState = -((int32_t)len + 2);
 		} 
 		break;
@@ -464,10 +463,9 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 			reset_parser(instance);
 			return _PTYPE_PARSE_ERROR;
 		}
-		
+
 		// parse the message plus 3 crc24 bytes
         instance->parseState = -((int32_t)msgLength + 3);
-
 	} break;
 
 	default:
