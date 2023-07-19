@@ -38,8 +38,8 @@ extern "C" {
 typedef ixVector2     ixVector2;
 typedef ixVector3     ixVector3;
 typedef ixVector4     ixVector4;
-typedef ixVector3   ixEuler;        // phi, theta, psi (roll, pitch, yaw)
-typedef ixVector4   ixQuat;         // w, x, y, z
+typedef ixVector3     ixEuler;        // phi, theta, psi (roll, pitch, yaw)
+typedef ixVector4     ixQuat;         // w, x, y, z
 typedef ixMatrix2     ixMatrix2;
 typedef ixMatrix3     ixMatrix3;
 typedef ixMatrix4     ixMatrix4;
