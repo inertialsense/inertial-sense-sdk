@@ -1,5 +1,4 @@
 #include "data_sets.h"
-// #include "IS_internal.h"
 
 // support types
 PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, elev, azim, cno, status); 
@@ -101,5 +100,3 @@ PYBIND11_NUMPY_DTYPE(ion_model_utc_alm_t, ion_gps, ion_gal, ion_qzs, ion_cmp, io
 // PYBIND11_NUMPY_DTYPE(nvr_manage_t, flash_write_needed, flash_write_count);
 // PYBIND11_NUMPY_DTYPE(inl2_misc_t, gps_time_last_valid);
 // PYBIND11_NUMPY_DTYPE(rtk_debug_2_t, time, satBiasFloat, satBiasFix, qualL, sat, satBiasStd, satLockCnt, num_biases, reserved);
-
-

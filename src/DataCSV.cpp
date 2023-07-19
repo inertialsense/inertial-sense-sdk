@@ -227,4 +227,3 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	csv += "\n";
 	return true;
 }
-
