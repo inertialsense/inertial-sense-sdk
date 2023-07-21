@@ -431,7 +431,7 @@ is_operation_result cISBootloaderDFU::reboot_up()
     int ret_libusb;
     dfu_error ret_dfu;
 
-    m_info_callback(this, "(DFU) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(DFU) Rebooting to IS-bootloader mode...", IS_LOG_LEVEL_INFO);
 
     // Option bytes
     // This hard-coded array sets mostly defaults, but without PH3 enabled and

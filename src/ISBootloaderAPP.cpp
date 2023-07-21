@@ -67,7 +67,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_IS_V1_DATA)
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
             {
                 switch(comm.dataHdr.id)
                 {
@@ -119,7 +119,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
     (void)minor;
     (void)major;
 
-    m_info_callback(this, "(APP) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(APP) Rebooting to IS-bootloader mode...", IS_LOG_LEVEL_INFO);
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
@@ -187,7 +187,7 @@ uint32_t cISBootloaderAPP::get_device_info()
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_IS_V1_DATA)
+            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
             {
                 switch(comm.dataHdr.id)
                 {
