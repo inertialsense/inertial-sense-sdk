@@ -15,18 +15,5 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 int main(int argc, char* argv[])
 {
-#if 0
 	return cltool_main(argc, argv);
-#else
-	int margc = 5;
-	char* margv[10];
-	margv[0] = argv[0];
-	margv[1] = "-c";
-	margv[2] = "com8";
-	//margv[3] = "-did";
-	//margv[4] = "4";
-	margv[3] = "-uf";
-	margv[4] = "C:\\_IS\\imx\\cpp\\hdw-src\\IMX-5\\Release\\IS_IMX-5.hex";
-	return cltool_main(margc, margv);
-#endif
 }
