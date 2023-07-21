@@ -387,7 +387,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_infoProgress(NULL, "Initializing devices for update...", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
-    // Run `mode_thread_serial_app` to put all APP devices into ISB mode
+    // Run `mode_thread_serial_app` to put all APP devices into IS-bootloader mode
     ////////////////////////////////////////////////////////////////////////////
 
     // Put all devices in the correct mode
@@ -923,7 +923,7 @@ is_operation_result cISBootloaderThread::update(
         return IS_OP_CANCELLED; 
     }
     
-    // Reset all serial devices up a level into APP or ISB mode
+    // Reset all serial devices up a level into APP or IS-bootloader mode
     for (size_t i = 0; i < ctx.size(); i++)
     {
         if(!ctx[i]->m_port_name.empty())
