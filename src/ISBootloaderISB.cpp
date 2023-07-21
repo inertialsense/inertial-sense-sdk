@@ -164,7 +164,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 
     SNPRINTF(message+n, sizeof(message)-n, "Update needed...");
     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-    m_info_callback(this, "(ISB) Rebooting to DFU/SAM-BA mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Rebooting to ROM loader mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.
