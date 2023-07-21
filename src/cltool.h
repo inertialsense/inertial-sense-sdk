@@ -50,7 +50,7 @@ typedef struct
 	int			periodMultiple;
 } stream_did_t;
 
-typedef struct
+typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
 	std::string comPort; 					// -c com_port
 	std::string updateAppFirmwareFilename; 	// -uf file_name

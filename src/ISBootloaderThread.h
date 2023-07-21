@@ -53,8 +53,7 @@ public:
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
-        void                                    (*waitAction)(),
-        uint16_t                                hdwTypeFilter = 0
+        void						            (*waitAction)()
     );
 
     static is_operation_result update(
@@ -65,8 +64,7 @@ public:
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
-        void                                    (*waitAction)(),
-        uint16_t                                hdwTypeFilter = 0
+        void						            (*waitAction)()
     );
 
     typedef struct 
@@ -82,8 +80,7 @@ public:
     typedef struct 
     {
         void* thread;
-        libusb_device* usb_device;
-        libusb_device_handle* usb_handle;
+        libusb_device_handle* handle;
         char uid[100];
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
@@ -116,7 +113,6 @@ private:
 
     static uint32_t m_timeStart;
     static bool m_use_dfu;
-    static uint16_t m_hdwType_filter;                           // if != 0, is used to filter only to matching devices
     static uint32_t m_libusb_devicesActive;
     static uint32_t m_serial_devicesActive;
 

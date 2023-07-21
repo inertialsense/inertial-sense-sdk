@@ -121,7 +121,8 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
         }
         else
         {
-            printf("   Error line: %d\n", lineno);
+            // printf("   Error line: %d\n", lineno);
+            return -2; // there was a parse error
         }
 
         lineno++;

@@ -40,7 +40,6 @@ mutex cISBootloaderThread::m_libusb_thread_mutex;
 bool cISBootloaderThread::m_update_in_progress = false;
 mutex cISBootloaderThread::m_update_mutex;
 bool cISBootloaderThread::m_use_dfu;
-uint16_t cISBootloaderThread::m_hdwType_filter;                           // if != 0, is used to filter only to matching devices
 uint32_t cISBootloaderThread::m_libusb_devicesActive;
 uint32_t cISBootloaderThread::m_serial_devicesActive;
 bool cISBootloaderThread::m_continue_update;
@@ -61,15 +60,15 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
     cISBootloaderDFU::m_DFUmutex.lock();
 
     m_libusb_thread_mutex.lock();
-    cISBootloaderDFU::list_devices(dfu_list);
-    for (size_t i = 0; i < dfu_list.size(); i++)
+    cISBootloaderDFU::list_devices(&dfu_list);
+    for (size_t i = 0; i < dfu_list.present; i++)
     {	// Create contexts for devices in DFU mode
         bool found = false;
 
         for (size_t j = 0; j < ctx.size(); j++)
         {
             m_ctx_mutex.lock();
-            if (!(ctx[j]->is_serial_device()) && ctx[j]->match_test((void*)dfu_list[i].dfuSerial.c_str()) == IS_OP_OK)
+            if (!(ctx[j]->is_serial_device()) && ctx[j]->match_test((void*)dfu_list.id[i].uid) == IS_OP_OK)
             {   // We found the device in the context list
                 found = true;
                 break;
@@ -80,12 +79,12 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
         if (!found)
         {   // If we didn't find the device
             thread_libusb_t* new_thread = (thread_libusb_t*)malloc(sizeof(thread_libusb_t));
-            m_libusb_threads.push_back(new_thread);
-            new_thread = m_libusb_threads[m_libusb_threads.size() - 1];
             new_thread->ctx = NULL;
             new_thread->done = false;
-            new_thread->usb_device = dfu_list[i].usbDevice; // this should always be valid, if we have a discovered DFU device
-            new_thread->thread = threadCreateAndStart(update_thread_libusb, new_thread);
+            new_thread->handle = dfu_list.id[i].handle_libusb;
+            m_libusb_threads.push_back(new_thread);
+            m_libusb_threads[m_libusb_threads.size() - 1]->thread = threadCreateAndStart(update_thread_libusb, m_libusb_threads[m_libusb_threads.size() - 1]);
+
             m_libusb_devicesActive++;
         }
     }
@@ -103,7 +102,7 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
             {
                 threadJoinAndFree(m_libusb_threads[l]->thread);
                 m_libusb_threads[l]->thread = NULL;
-                // libusb_close(m_libusb_threads[l]->handle);
+                libusb_close(m_libusb_threads[l]->handle);
             }
 
             if (!m_libusb_threads[l]->done)
@@ -297,10 +296,7 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     thread_libusb_t* thread_info = (thread_libusb_t*)context; 
     cISBootloaderBase* new_context;
 
-    if (thread_info->usb_handle == nullptr)
-        libusb_open(thread_info->usb_device, &thread_info->usb_handle);
-
-    is_operation_result result = cISBootloaderBase::update_device(m_firmware, thread_info->usb_handle, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    is_operation_result result = cISBootloaderBase::update_device(m_firmware, thread_info->handle, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     if (result == IS_OP_OK)
     {   
@@ -349,14 +345,12 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ISBootloader::pfnBootloadProgress       uploadProgress, 
     ISBootloader::pfnBootloadProgress       verifyProgress,
     ISBootloader::pfnBootloadStatus         infoProgress,
-    void                                    (*waitAction)(),
-    uint16_t                                hdwTypeFilter
+    void						            (*waitAction)()
 )
 {
     // Only allow one firmware update sequence to happen at a time
     m_update_mutex.lock();
     m_update_in_progress = true;
-    m_hdwType_filter = hdwTypeFilter;
 
     // Clear old entries
     m_ctx_mutex.lock();
@@ -441,22 +435,21 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                m_serial_threads.push_back(new_thread);
-                new_thread = m_serial_threads[m_serial_threads.size() - 1];
-
                 memset(new_thread->serial_name, 0, 100);
                 strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
+
                 m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Discovered device on port %s", new_thread->serial_name);
-                new_thread->thread = threadCreateAndStart(mode_thread_serial_app, new_thread);
+                m_serial_threads.push_back(new_thread);
+                m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
 
                 m_serial_devicesActive++;
             }
         }
 
         // Break after 5 seconds
-        if (current_timeMs() - m_timeStart > 3000)
+        if (current_timeMs() - m_timeStart > 5000)
         {
             m_continue_update = false;
         }
@@ -577,7 +570,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         }
 
         // Break after 3 seconds
-        if (current_timeMs() - m_timeStart > 2000)
+        if (current_timeMs() - m_timeStart > 3000)
         {
             m_continue_update = false;
         }
@@ -618,7 +611,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         SLEEP_MS(100);
 
         // Timeout after 5 seconds
-        if (current_timeMs() - m_timeStart > 2000)
+        if (current_timeMs() - m_timeStart > 3000)
         {
             m_continue_update = false;
         }
@@ -664,8 +657,7 @@ is_operation_result cISBootloaderThread::update(
     pfnBootloadProgress         uploadProgress,
     pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,
-    void                        (*waitAction)(),
-    uint16_t                    hdwTypeFilter
+    void						(*waitAction)()
 )
 {
     string tmp;
@@ -684,8 +676,6 @@ is_operation_result cISBootloaderThread::update(
     m_infoProgress = infoProgress;
     m_baudRate = baudRate;
     m_waitAction = waitAction;
-
-    m_hdwType_filter = hdwTypeFilter;
 
     vector<string> ports;                       // List of ports connected
     vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
@@ -766,7 +756,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Break after 5 seconds
-        if (current_timeMs() - m_timeStart > 2000)
+        if (current_timeMs() - m_timeStart > 5000)
         {
             m_continue_update = false;
         }
@@ -801,7 +791,7 @@ is_operation_result cISBootloaderThread::update(
         SLEEP_MS(100);
 
         // Timeout after 5 seconds
-        if (current_timeMs() - m_timeStart > 2000)
+        if (current_timeMs() - m_timeStart > 5000)
         {
             m_continue_update = false;
         }
@@ -909,12 +899,12 @@ is_operation_result cISBootloaderThread::update(
 
         m_libusb_thread_mutex.lock();
 
-        // Break after 1 seconds of no threads active
+        // Break after 3 seconds of no threads active
         if (m_libusb_devicesActive != 0 || m_serial_devicesActive != 0) 
         {
             m_timeStart = current_timeMs();
         }
-        else if (current_timeMs() - m_timeStart > 1000)
+        else if (current_timeMs() - m_timeStart > 3000)
         {
             m_continue_update = false;
         }
