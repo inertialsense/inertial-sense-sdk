@@ -40,11 +40,11 @@ extern "C" {
 #define EPSF32 (1.0e-16f)  // Smallest number for safe division
 #define EPSF64 (1.0e-16l)  // Smallest number for safe division
 
-#	define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPSF32))
-#	define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPSF32))
-#	define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPSF32))
-#	define recipNorm_Vec3d(v)	(1.0l/_MAX(mag_Vec3d(v), EPSF64))
-#	define recipNorm_Vec4d(v)	(1.0l/_MAX(mag_Vec4d(v), EPSF64))
+#define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPSF32))
+#define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPSF32))
+#define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPSF32))
+#define recipNorm_Vec3d(v)	(1.0l/_MAX(mag_Vec3d(v), EPSF64))
+#define recipNorm_Vec4d(v)	(1.0l/_MAX(mag_Vec4d(v), EPSF64))
 
 #define unwrap_Vec3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
