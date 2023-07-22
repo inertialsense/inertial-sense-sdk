@@ -569,6 +569,8 @@ static int inertialSenseMain()
 		// [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class  
 		// Create InertialSense object, passing in data callback function pointer.
 		InertialSense inertialSenseInterface(cltool_dataCallback);
+
+		// Disable device response requirement to validate open port
 		inertialSenseInterface.EnableDeviceValidation(false);
 
 		// [C++ COMM INSTRUCTION] STEP 2: Open serial port
