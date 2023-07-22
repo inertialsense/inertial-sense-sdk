@@ -28,6 +28,7 @@ RtkBaseProvider::base_gps_source RtkBaseProvider::gpsSourceParamToEnum(YAML::Nod
 void RtkBaseProvider::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
         ph_.setCurrentNode(node);
+        ph_.nodeParam(node, "enable", enable, true);
         ph_.nodeParam(node, "compassing_enable", compassing_enable_, false);
         ph_.nodeParam(node, "positioning_enable", positioning_enable_, false);
 

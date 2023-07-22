@@ -16,7 +16,7 @@
 
 //_____ L O C A L   P R O T O T Y P E S ____________________________________
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dti);
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dti);
 float deltaThetaDeltaVelRiemannSum( pimu_t *output, imu_t *imu, imu_t *imuLast );
 float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast );
 float deltaThetaDeltaVelBortz( pimu_t *output, imu_t *imu, imu_t *imuLast, int Nsteps );
@@ -327,7 +327,7 @@ int imuToPreintegratedImu(pimu_t *pImu, const imu_t *imu, float dt)
 }
 
 
-#define CON_SCUL_INT_STEPS  4
+#define CON_SCUL_INT_STEPS  2
 
 void integratePimu( pimu_t *output, imu_t *imu, imu_t *imuLast )
 {
@@ -395,10 +395,14 @@ float deltaThetaDeltaVelTrapezoidal( pimu_t *output, imu_t *imu, imu_t *imuLast 
 }
 
 
-void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, float Nsteps, float dt)
+void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, imus_t *imuLast, int Nsteps, float dt)
 {
-    ixVector3 wb, ab, deltaW, deltaA, tmp1, tmp2, tmp3, tmp4;
-    float dti, Kw, mag_theta2, mag_theta4, Kw0;
+    ixVector3 wb, ab, deltaW, deltaA, thxwb, thxthxwb, thxab, thxthxab;
+    float dti, Kw, mag_theta2, mag_theta4, div;
+    static float Kw0 = 0.08333333333333333f;   // 1.0f / 12.0f;
+    static float Kw1 = 0.00138888888888889f;   // 1.0f / 720.0f
+    static float Kw2 = 3.306878306878307e-05f; // 1.0f / 30240.0f
+    // static float Kw3 = 8.267195767195768e-07f; // 1.0f / 1209600.0f
 
     // for jj = 1: Nint
     //     wb = W0 + (jj - 1) / Nint * (W1 - W0);
@@ -410,34 +414,34 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
     //     phi = phi + phi_dot * dt / Nint;
     //     dv = dv + (ab + cross(phi, ab)) * dt / Nint;
     // end
-	
+
+    div = 1.0f / (float)Nsteps;
     sub_Vec3_Vec3(deltaW, imu->pqr, imuLast->pqr);
     sub_Vec3_Vec3(deltaA, imu->acc, imuLast->acc);
-	div_Vec3_X(deltaW, deltaW, Nsteps);
-	div_Vec3_X(deltaA, deltaA, Nsteps);
-	cpy_Vec3_Vec3(wb, imuLast->pqr);
-	cpy_Vec3_Vec3(ab, imuLast->acc);
-	dti = dt / Nsteps;
+    mul_Vec3_X(deltaW, deltaW, div);
+    mul_Vec3_X(deltaA, deltaA, div);
+    cpy_Vec3_Vec3(wb, imuLast->pqr);
+    cpy_Vec3_Vec3(ab, imuLast->acc);
+    dti = dt * div;
 
-	Kw0 = 1.0f / 12.0f;
     for (int jj = 0; jj < Nsteps; jj++) 
-	{
-	    // Coning and sculling integrals
-	    cross_Vec3(tmp1, theta, wb);
-	    cross_Vec3(tmp2, theta, tmp1);
-	    cross_Vec3(tmp3, theta, ab);
-        cross_Vec3(tmp4, theta, tmp3);
+    {
+        // Coning and sculling integrals
+        cross_Vec3(thxwb, theta, wb);
+        cross_Vec3(thxthxwb, theta, thxwb);
+        cross_Vec3(thxab, theta, ab);
+        cross_Vec3(thxthxab, theta, thxab);
         mag_theta2 = dot_Vec3(theta);
         mag_theta4 = mag_theta2 * mag_theta2;
-        Kw = Kw0 + mag_theta2 / 720.0f + mag_theta4 / 30240.0f + mag_theta4 * mag_theta2 / 1209600.0f;
+        Kw = Kw0 + mag_theta2 * Kw1 + mag_theta4 * Kw2; // + mag_theta4 * mag_theta2 * Kw3; <--- the last term is negligibly small
         for (int i = 0; i < 3; i++) {
-		    theta[i] += (wb[i] + 0.5f * tmp1[i] + Kw * tmp2[i]) * dti;
-		    vel[i] += (ab[i] + tmp3[i] + 0.5f * tmp4[i]) * dti;
-		}
-		// Advance wb, ab (minor step)
-		add_Vec3_Vec3(wb, wb, deltaW);
-		add_Vec3_Vec3(ab, ab, deltaA);
-	}
+            theta[i] += (wb[i] + 0.5f * thxwb[i] + Kw * thxthxwb[i]) * dti;
+            vel[i] += (ab[i] + thxab[i] + 0.5f * thxthxab[i]) * dti;
+        }
+        // Advance wb, ab (minor step)
+        add_Vec3_Vec3(wb, wb, deltaW);
+        add_Vec3_Vec3(ab, ab, deltaA);
+    }
 }
 
 
@@ -447,7 +451,7 @@ float deltaThetaDeltaVelBortz(pimu_t *output, imu_t *imu, imu_t *imuLast, int Ns
 	float dt = (float)(imu->time - imuLast->time);
 
 	// IMU
-	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), (float)Nsteps, dt);
+	integrateDeltaThetaVelBortz(output->theta, output->vel, &(imu->I), &(imuLast->I), Nsteps, dt);
 
 	// Update history
 	*imuLast = *imu;

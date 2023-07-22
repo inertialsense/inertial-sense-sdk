@@ -110,6 +110,19 @@ bool read_did_argument(stream_did_t *dataset, string s)
 	return false;
 }
 
+void print_dids()
+{
+#if defined(INCLUDE_LUNA_DATA_SETS)
+	for (eDataIDs id = 0; id < DID_COUNT; id++)
+#else
+	for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+#endif
+	{
+		printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+	}
+	cltool_outputHelp();
+}
+
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
 	// set defaults
@@ -183,15 +196,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-dids"))
 		{
-#if defined(INCLUDE_LUNA_DATA_SETS)
-			for (eDataIDs id = 0; id < DID_COUNT; id++)
-#else
-			for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
-#endif
-			{
-				printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
-			}
-			cltool_outputHelp();
+			print_dids();
 			return false;
 		}
 		else if (startsWith(a, "-did") && (i + 1) < argc)
@@ -217,12 +222,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 				}
 			}			
 		}
-		else if (startsWith(a, "-edit") && (i + 1) < argc)
+		else if (startsWith(a, "-edit"))
 		{
 			stream_did_t dataset = {};
-			if (read_did_argument(&dataset, argv[++i]))	// use next argument
+			if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))	// use next argument
 			{
 				g_commandLineOptions.datasetEdit = dataset;
+			}
+			else
+			{	// Invalid argument
+				print_dids();
+				return false;
 			}
 		}
 		else if (startsWith(a, "-evbFlashCfg="))
@@ -474,8 +484,8 @@ void cltool_outputUsage()
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
     cout << "    -q" << boldOff << "              Quiet mode, no display" << endlbOn;
-    cout << "    -reset         " << boldOff << " Issue software reset.  Use caution." << endlbOn;
-    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB.  Use caution." << endlbOn;
+    cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
+    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB." << endlbOn;
     cout << "    -s" << boldOff << "              Scroll displayed messages to show history" << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
     cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
@@ -483,7 +493,7 @@ void cltool_outputUsage()
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
-	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command." << endlbOn;
+	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
 	cout << "    -chipEraseEvb2 " << boldOff << " CAUTION!!! Erase everything on EVB2 (firmware, config, etc.)" << endlbOn;

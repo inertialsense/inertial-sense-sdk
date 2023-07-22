@@ -31,7 +31,7 @@ void mul_MatMxN( f_t *result, const f_t *A, const f_t *B, i_t m, i_t n, i_t p, c
 
 		for (j = 0; j < p; j++)
 		{
-			f_t s = 0;
+			f_t s = 0.0f;
 			f_t * O_i_j = O_i + j;
 
 			for (k = 0; k < n; k++)
@@ -122,7 +122,7 @@ void eye_MatN( f_t *A, i_t n )
 
 	// Set diagonals to 1
 	for( int i=0; i < n; i++ )
-		A[i*n + i] = 1;
+		A[i*n + i] = 1.0f;
 }
 
 
@@ -415,6 +415,38 @@ void mul_Mat3x3_Mat3x3_Trans_d(ixMatrix3d result, const ixMatrix3d m1, const ixM
     result[8] = m1[6] * m2[6] + m1[7] * m2[7] + m1[8] * m2[8];
 }
 
+void add_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2)
+{
+	// Row 1
+	result[0] = m1[0] + m2[0];
+	result[1] = m1[1] + m2[1];
+	result[2] = m1[2] + m2[2];
+	// Row 2
+	result[3] = m1[3] + m2[3];
+	result[4] = m1[4] + m2[4];
+	result[5] = m1[5] + m2[5];
+	// Row 3
+	result[6] = m1[6] + m2[6];
+	result[7] = m1[7] + m2[7];
+	result[8] = m1[8] + m2[8];
+}
+
+void sub_Mat3x3_Mat3x3(ixMatrix3 result, const ixMatrix3 m1, const ixMatrix3 m2)
+{
+	// Row 1
+	result[0] = m1[0] - m2[0];
+	result[1] = m1[1] - m2[1];
+	result[2] = m1[2] - m2[2];
+	// Row 2
+	result[3] = m1[3] - m2[3];
+	result[4] = m1[4] - m2[4];
+	result[5] = m1[5] - m2[5];
+	// Row 3
+	result[6] = m1[6] - m2[6];
+	result[7] = m1[7] - m2[7];
+	result[8] = m1[8] - m2[8];
+}
+
 void mul_Mat2x2_Vec2x1( ixVector2 result, const ixMatrix2 m, const ixVector2 v )
 {
     result[0] = m[0]*v[0] + m[1]*v[1];
@@ -491,7 +523,7 @@ void mul_Mat3x3_X( ixMatrix3 result, const ixMatrix3 m, const f_t x )
 
 void div_Mat3x3_X( ixMatrix3 result, const ixMatrix3 m, const f_t x )
 {
-	f_t d = (f_t)1.0 / x;
+	f_t d = 1.0f / x;
 	// Row 1
 	result[0] = m[0] * d;
 	result[1] = m[1] * d;
@@ -520,6 +552,12 @@ void mul_Vec3x1_Vec1x3( ixMatrix3 result, const ixVector3 v1, const  ixVector3 v
 	result[6] = v1[2]*v2[0];
 	result[7] = v1[2]*v2[1];
 	result[8] = v1[2]*v2[2];
+}
+
+void mul_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2)
+{
+	result[0] = v1[0] * v2[0];
+	result[1] = v1[1] * v2[1];
 }
 
 void mul_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
@@ -682,7 +720,7 @@ void mul_Vec4d_X( ixVector4d result, const ixVector4d v, const double x )
 
 void div_Vec3_X( ixVector3 result, const ixVector3 v, const f_t x )
 {
-    f_t d = (f_t)1.0/x;
+    f_t d = 1.0f / x;
 	result[0] = v[0]*d;
 	result[1] = v[1]*d;
 	result[2] = v[2]*d;
@@ -698,7 +736,7 @@ void div_Vec3d_X(ixVector3d result, const ixVector3d v, const double x)
 
 void div_Vec4_X( ixVector4 result, const ixVector4 v, const f_t x )
 {
-    f_t d = (f_t)1.0/x;
+    f_t d = 1.0f / x;
 	result[0] = v[0]*d;
 	result[1] = v[1]*d;
 	result[2] = v[2]*d;
@@ -711,6 +749,12 @@ void div_Vec4d_X( ixVector4d result, const ixVector4d v, const double x )
 	result[1] = v[1] * d;
 	result[2] = v[2] * d;
 	result[3] = v[3] * d;
+}
+
+void add_Vec2_Vec2(ixVector2 result, const ixVector2 v1, const ixVector2 v2)
+{
+	result[0] = v1[0] + v2[0];
+	result[1] = v1[1] + v2[1];
 }
 
 void add_Vec3_Vec3( ixVector3 result, const ixVector3 v1, const ixVector3 v2 )
@@ -912,7 +956,7 @@ char inv_Mat3( ixMatrix3 result, const ixMatrix3 m )
 	f_t invDet, det = m[0]*(m[8]*m[4]-m[7]*m[5]) - m[3]*(m[8]*m[1]-m[7]*m[2]) + m[6]*(m[5]*m[1]-m[4]*m[2]);
 
 	if( det!=0 )
-		invDet = 1/det;
+		invDet = 1.0f / det;
 	else
 		return -1;
 		
@@ -1070,7 +1114,7 @@ char inv_Mat4( ixMatrix4 result, const ixMatrix4 m )
     if (det == 0)
         return -1;
 
-    det = (f_t)1.0 / det;
+    det = 1.0f / det;
 
     for (i = 0; i < 16; i++)
         result[i] = inv[i] * det;

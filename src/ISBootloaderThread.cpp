@@ -13,6 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "ISBootloaderAPP.h"
+#include "ISBootloaderISB.h"
+#include "ISBootloaderSAMBA.h"
 #include "ISSerialPort.h"
 
 #include <algorithm>
@@ -25,7 +27,7 @@ using namespace std;
 using namespace ISBootloader;
 
 vector<cISBootloaderBase*> cISBootloaderThread::ctx;
-string cISBootloaderThread::m_firmware;
+firmwares_t cISBootloaderThread::m_firmware;
 pfnBootloadProgress cISBootloaderThread::m_uploadProgress; 
 pfnBootloadProgress cISBootloaderThread::m_verifyProgress;
 pfnBootloadStatus cISBootloaderThread::m_infoProgress;
@@ -339,7 +341,7 @@ bool cISBootloaderThread::true_if_cancelled(void)
 vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_and_check_devices(
     vector<string>&                         comPorts,
     int                                     baudRate,
-    const string&                           firmware,
+    const ISBootloader::firmwares_t&        firmware,
     ISBootloader::pfnBootloadProgress       uploadProgress, 
     ISBootloader::pfnBootloadProgress       verifyProgress,
     ISBootloader::pfnBootloadStatus         infoProgress,
@@ -385,7 +387,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_infoProgress(NULL, "Initializing devices for update...", IS_LOG_LEVEL_INFO);
 
     ////////////////////////////////////////////////////////////////////////////
-    // Run `mode_thread_serial_app` to put all APP devices into ISB mode
+    // Run `mode_thread_serial_app` to put all APP devices into IS-bootloader mode
     ////////////////////////////////////////////////////////////////////////////
 
     // Put all devices in the correct mode
@@ -648,7 +650,7 @@ is_operation_result cISBootloaderThread::update(
     vector<string>&             comPorts,   // ISB and SAM-BA and APP
     bool                        force_isb_update,
     int                         baudRate,
-    const string&               firmware,
+    const firmwares_t&          firmware,
     pfnBootloadProgress         uploadProgress,
     pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,
@@ -694,7 +696,7 @@ is_operation_result cISBootloaderThread::update(
     m_timeStart = current_timeMs();
 
     ////////////////////////////////////////////////////////////////////////////
-    // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAM-BA mode
+    // Run `mode_thread_serial_isb` to put all ISB devices into ROM-bootloader (DFU/SAM-BA) mode
     ////////////////////////////////////////////////////////////////////////////
 
     while(m_continue_update && !true_if_cancelled())
@@ -921,7 +923,7 @@ is_operation_result cISBootloaderThread::update(
         return IS_OP_CANCELLED; 
     }
     
-    // Reset all serial devices up a level into APP or ISB mode
+    // Reset all serial devices up a level into APP or IS-bootloader mode
     for (size_t i = 0; i < ctx.size(); i++)
     {
         if(!ctx[i]->m_port_name.empty())

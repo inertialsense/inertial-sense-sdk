@@ -12,6 +12,7 @@ add_library(SDK_test
 	test_ISDataMappings.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
+	test_protocol_nmea.cpp
 	test_ring_buffer.cpp
 	../com_manager.c
 	../convert_ins.cpp
@@ -50,11 +51,12 @@ add_library(SDK_test
 add_executable(run_tests 
 	test_com_manager.cpp
 	test_com_manager_2.cpp
-	test_math.cpp
-	test_ring_buffer.cpp
 	test_InertialSense.cpp
 	test_ISDataMappings.cpp
 	test_ISPolynomial.cpp
+	test_math.cpp
+	test_ring_buffer.cpp
+	test_protocol_nmea.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c

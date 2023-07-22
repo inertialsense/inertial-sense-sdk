@@ -35,7 +35,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #	include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
 
-
 cDataKML::cDataKML()
 {
 // 	def[0].init( "devInfo", "Device information" );
@@ -107,5 +106,3 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
 
     return 0;
 }
-
-

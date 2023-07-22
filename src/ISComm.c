@@ -222,7 +222,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	// Set parse enable flags
 	instance->config.enabledMask = 
 		ENABLE_PROTOCOL_ISB |
-		ENABLE_PROTOCOL_ASCII |
+		ENABLE_PROTOCOL_NMEA |
 		ENABLE_PROTOCOL_UBLOX |
 		ENABLE_PROTOCOL_RTCM3 |
 		ENABLE_PROTOCOL_SPARTN |
@@ -350,13 +350,13 @@ static protocol_type_t processAsciiPkt(is_comm_instance_t* instance)
 			dataCheckSum ^= (int)*ptr;
 		}
 		if (actualCheckSum == dataCheckSum)
-		{	// valid ASCII Data
+		{	// valid NMEA Data
 			// Update data pointer and info
 			instance->dataPtr = instance->pktPtr = head;
 			instance->dataHdr.id = 0;
 			instance->dataHdr.size = (uint32_t)(instance->buf.scan - head);
 			instance->dataHdr.offset = 0;
-			return _PTYPE_ASCII_NMEA;
+			return _PTYPE_NMEA;
 		}
 	}
 
@@ -848,7 +848,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		if (instance->hasStartByte == 0)
 		{
 			if((byte == PSC_START_BYTE			&& (instance->config.enabledMask & ENABLE_PROTOCOL_ISB)) ||
-				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_ASCII)) ||
+				(byte == PSC_ASCII_START_BYTE	&& (instance->config.enabledMask & ENABLE_PROTOCOL_NMEA)) ||
 				(byte == UBLOX_START_BYTE1		&& (instance->config.enabledMask & ENABLE_PROTOCOL_UBLOX)) ||
 				(byte == RTCM3_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_RTCM3)) ||
 				(byte == SPARTN_START_BYTE		&& (instance->config.enabledMask & ENABLE_PROTOCOL_SPARTN)) ||
@@ -884,7 +884,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			{
 				return processAsciiPkt(instance);
 			}
-			//Check for invalid bytes in ASCII string and exit if found.
+			//Check for invalid bytes in NMEA string and exit if found.
 			if (byte == PSC_START_BYTE || byte == PSC_END_BYTE || byte == 0)
 			{
 				instance->hasStartByte = 0;

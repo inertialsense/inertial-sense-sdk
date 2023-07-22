@@ -75,7 +75,7 @@ struct sCaseInsensitiveCompare
 		// return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(), nocase_compare());
 
 		// we don't need unicode or fancy language handling here, and we do not want branching
-		// so we have hand-coded a highly performant ASCII case insensitive compare here.
+		// so we have hand-coded a highly performant NMEA case insensitive compare here.
 		// this custom code is 3x speed of lexicographical_compare
 		char c1, c2;
 		const char* ptr1 = s1.c_str();
@@ -108,7 +108,7 @@ struct equal_to<std::string> : public unary_function<std::string, bool>
 	bool operator()(const std::string& s1, const std::string& s2) const
 	{
 		// we don't need unicode or fancy language handling here, and we do not want branching
-		// so we have hand-coded a highly performant ASCII case insensitive compare here.
+		// so we have hand-coded a highly performant NMEA case insensitive compare here.
 		// this custom code is 3x speed of lexicographical_compare
 		if (s1.size() != s2.size())
 		{
