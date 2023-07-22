@@ -569,6 +569,7 @@ static int inertialSenseMain()
 		// [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class  
 		// Create InertialSense object, passing in data callback function pointer.
 		InertialSense inertialSenseInterface(cltool_dataCallback);
+		inertialSenseInterface.EnableDeviceValidation(false);
 
 		// [C++ COMM INSTRUCTION] STEP 2: Open serial port
 		if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
