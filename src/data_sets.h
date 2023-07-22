@@ -1288,7 +1288,7 @@ typedef struct PACKED
     float					reserved3;
 
     /** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
-    uint32_t                genFaultCode;
+    uint32_t				genFaultCode;
 } sys_params_t;
 
 /*! General Fault Code descriptor */
