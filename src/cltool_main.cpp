@@ -312,7 +312,7 @@ static int cltool_updateFirmware()
 	// [BOOTLOADER INSTRUCTION] Update firmware
 	if (g_commandLineOptions.updateBootloaderFilename.size() > 0)
 	{
-		cout << "Checking bootloader firmware: " << g_commandLineOptions.updateBootloaderFilename << endl;
+		cout << "Checking bootloader firmware:  " << g_commandLineOptions.updateBootloaderFilename << endl;
 	}
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 	
@@ -569,6 +569,9 @@ static int inertialSenseMain()
 		// [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class  
 		// Create InertialSense object, passing in data callback function pointer.
 		InertialSense inertialSenseInterface(cltool_dataCallback);
+
+		// Disable device response requirement to validate open port
+		inertialSenseInterface.EnableDeviceValidation(false);
 
 		// [C++ COMM INSTRUCTION] STEP 2: Open serial port
 		if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
