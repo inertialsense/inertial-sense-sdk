@@ -387,6 +387,7 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 
 	switch (nmeaId)
 	{
+	case NMEA_MSG_ID_INFO:      did = DID_DEV_INFO; break;
 	case NMEA_MSG_ID_PIMU:      did = DID_IMU; break;
 	case NMEA_MSG_ID_PPIMU:     did = DID_PIMU; break;
 	case NMEA_MSG_ID_PRIMU:     did = DID_IMU_RAW; break;
@@ -399,9 +400,8 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	case NMEA_MSG_ID_RMC:       
 	case NMEA_MSG_ID_ZDA:       
 	case NMEA_MSG_ID_PASHR:     
-	case NMEA_MSG_ID_PSTRB:     
-	case NMEA_MSG_ID_INFO:      
-	case NMEA_MSG_ID_GSV:       did = DID_GPS1_POS; break;	
+	case NMEA_MSG_ID_PSTRB:     did = DID_GPS1_POS; break;	
+	case NMEA_MSG_ID_GSV:       did = DID_GPS1_SAT; break;	
 	default: return;
 	}
 
