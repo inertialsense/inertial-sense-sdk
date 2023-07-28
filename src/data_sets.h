@@ -4441,43 +4441,6 @@ typedef struct PACKED
 } evb_rtos_info_t;
 
 
-/** (DID_FIRMWARE_PAYLOAD) */
-
-/*
- * The firmware_payload DID type is a chunk of bytes that make up a portion of a firmware image that is intended to be written to flash/NVME memory
- *
- * Each packet defines a target.  Targets are hard-coded but follow a pattern, < 0xFF is Inertial-Sense, > 0xFF is 3rd-party.
- * High-nibble of LSB specifies the product, while the Low-nibble specifies a mask for which (1-4) devices to update.  Using a mask for the device
- * allows simulatenous updates of multiple, similar devices (ie, TARGET_SONY_CXD5610__1 | TARGET_SONY_CXD5610__2 can update both receivers from
- * the same payload).
- * 
- */
-
-typedef enum {
-    TARGET_NONE             = 0x00,
-    TARGET_IMX5             = 0x10,
-    TARGET_GPX1             = 0x20,
-    TARGET_VPX              = 0x30, // RESERVED FOR VPX
-    TARGET_UBLOX_F9P__1     = 0x111,
-    TARGET_UBLOX_F9P__2     = 0x112,
-    TARGET_SONY_CXD5610__1  = 0x121,
-    TARGET_SONY_CXD5610__2  = 0x122,
-    TARGET_MAXNUM
-} firmware_target_t;
-
-typedef enum {
-    FLAG_REQUEST_UPDATE     = 1, // a host is requesting that the device enter update mode.
-    FLAG_ACK_UPDATE         = 2, // communicates back to the device is ready to update (in bootloader mode, etc).
-    FLAG_NACK_UPDATE        = 3,
-};
-
-typedef struct PACKED {
-    firmware_target_t target_device;
-    uint16_t flags;         //
-    uint16_t chnk_id;       //! the chunk number identifying this portion of the firmware
-    uint16_t num_chnks;     //! the total number of chunks that make up the firmware
-    uint16_t* data;
-} firmware_payload_t;
 
 enum
 {
