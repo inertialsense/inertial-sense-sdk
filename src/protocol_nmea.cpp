@@ -908,7 +908,6 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
 int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad)
 {
-	// NMEA VTG
 	/*
 		0	Message ID $GPVTG
 		1	Track made good (degrees true)
@@ -1017,6 +1016,57 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
+
+int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel)
+{
+	/*  $INTEL prorietary NMEA message
+		0	Message ID $INTEL
+		1	Message ID KIM
+		2	Fimrware version of KIM
+		3	GPS Time of Week (ms)
+		4	GPS week number
+		5	GPS leap seconds
+		6	1PPS phase 1 (ns)
+		7	1PPS phase 2 (ns)
+		8	Quantization error of time pulse (ns)
+		9	ECEF X velocity (m/s)
+		10	ECEF Y velocity (m/s)
+		11	ECEF Z velocity (m/s)
+		12	North veocity (m/s)
+		13	East velocity (m/s)
+		14	Down velocity (m/s)
+		15	Checksum, begins with *
+
+		Example: $INTEL, *05
+	*/
+	update_nmea_speed(pos, vel);
+
+	int n = ssnprintf(a, aSize, "$INTEL,KIM");										// 0,1
+
+	nmea_sprint(a, aSize, n, ",%d.%d.%d.%d", 
+		info.firmwareVer[0], 
+		info.firmwareVer[1], 
+		info.firmwareVer[2], 
+		info.firmwareVer[3]);														// 2
+	nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);								// 3
+	nmea_sprint(a, aSize, n, ",%d", pos.week);										// 4
+	nmea_sprint(a, aSize, n, ",%d", pos.leapS);										// 5
+
+	nmea_sprint(a, aSize, n, ",%.3f", 0);													// 6
+	nmea_sprint(a, aSize, n, ",%.3f", 0);													// 7
+	nmea_sprint(a, aSize, n, ",15");												// 8
+
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[0]);									// 9
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[1]);									// 10
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);									// 11
+
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[0]);						// 12
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[1]);						// 13
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[2]);						// 14
+
+	return nmea_sprint_footer(a, aSize, n);
+}
+
 
 void print_string_n(char a[], int n)
 {
