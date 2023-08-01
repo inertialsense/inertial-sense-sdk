@@ -46,7 +46,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
 
     // Get DID_DEV_INFO from the uINS.
     is_comm_instance_t comm;
-    uint8_t buffer[2048];
+    uint8_t buffer[65536];
     is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize;
 
@@ -69,7 +69,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     dev_info_t* dev_info = NULL;
     dev_info_t* evb_dev_info = NULL;
     uint32_t valid_signatures = 0;
-    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 1000)))
     {
         comm.buf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
