@@ -408,6 +408,7 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	case NMEA_MSG_ID_RMC:       
 	case NMEA_MSG_ID_ZDA:       
 	case NMEA_MSG_ID_PASHR:     
+	case NMEA_MSG_ID_INTEL:     
 	case NMEA_MSG_ID_PSTRB:     did = DID_GPS1_POS; break;	
 	case NMEA_MSG_ID_GSV:       did = DID_GPS1_SAT; break;	
 	default: return;

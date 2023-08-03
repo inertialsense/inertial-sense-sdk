@@ -1698,6 +1698,7 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_INFO      = 13,
     NMEA_MSG_ID_GSV       = 14,
     NMEA_MSG_ID_VTG       = 15,
+    NMEA_MSG_ID_INTEL     = 16,
 }; 
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
@@ -1716,6 +1717,7 @@ enum eNmeaAsciiMsgId
 #define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
 #define NMEA_RMC_BITS_GSV           (1<<NMEA_MSG_ID_GSV)
 #define NMEA_RMC_BITS_VTG           (1<<NMEA_MSG_ID_VTG)
+#define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
