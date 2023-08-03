@@ -869,7 +869,7 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	nmea_sprint(a, aSize, n,
 	",%05.1f"		// 7
 	",%05.1f",		// 8
-	s_dataSpeed.speed2dKnots,																	// 7 - speed in knots
+	s_dataSpeed.speed2dKnots,														// 7 - speed in knots
 	courseMadeTrue*C_RAD2DEG_F);													// 8 - course made true
 	
 	nmea_GPSDateOfLastFix(a, aSize, n, pos);										// 9 - date of last fix UTC
