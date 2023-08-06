@@ -288,8 +288,8 @@ Make a request to a port handle to broadcast a piece of data at a set interval.
 
 @param pHandle the port handle to request broadcast data from
 @param dataId the data id to broadcast
-@param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
 @param size number of bytes in the data structure from offset to broadcast - pass size and offset of 0 to receive the entire data set
+@param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
 @param periodMultiple the data broadcast period in multiples of the base update period
 
 Example that makes a request to receive the device info just once:

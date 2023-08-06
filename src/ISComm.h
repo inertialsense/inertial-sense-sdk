@@ -422,7 +422,7 @@ typedef struct
 	uint8_t             buf[MAX_DATASET_SIZE];
 } p_data_buf_t;
 
-/** Represents the complete body of a PKT_TYPE_DATA_GET packet */
+/** Represents the complete body of a PKT_TYPE_GET_DATA packet */
 typedef struct
 {
 	/** Data ID being requested */

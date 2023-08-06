@@ -487,6 +487,8 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 
 		if((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE)
 		{
+			EXPECT_NE(ptype, _PTYPE_PARSE_ERROR);
+
 			data_holder_t td = testDeque.front();
 			testDeque.pop_front();
 
@@ -543,6 +545,8 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 		{
 			data_holder_t td = testDeque.front();
 			testDeque.pop_front();
+
+			EXPECT_NE(ptype, _PTYPE_PARSE_ERROR);
 
 			switch (ptype)
 			{

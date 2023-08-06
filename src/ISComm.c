@@ -91,7 +91,8 @@ unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len)
 
 uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size)
 {
-	checksum16_u cksum = { cksum_init };
+	checksum16_u cksum;
+	cksum.ck = cksum_init;
 	for (uint32_t i=0; i<size; i++)
 	{
 		cksum.a += ((uint8_t*)data)[i];
@@ -102,7 +103,8 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
 
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size)
 {	
-	checksum16_u cksum = { cksum_init };
+	checksum16_u cksum;
+	cksum.ck = cksum_init;
 	for (uint32_t i=0; i<size; i++)
 	{
 		cksum.a ^= ((uint8_t*)data)[i];
@@ -961,11 +963,11 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 	pkt->hdr.payloadSize = data_size;
 
 	// Payload
+	pkt->offset = offset;
 	if (offset)
 	{	// Offset in payload
 		pkt->hdr.flags |= ISB_FLAGS_PAYLOAD_W_OFFSET;
 		pkt->hdr.payloadSize += 2;
-		pkt->offset = offset;
 	}
 	pkt->data.ptr = data;
 	pkt->data.size = data_size;
@@ -1013,7 +1015,10 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, pa
 	{
 		n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
     }
-	n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);         // Payload
+    if (pkt->data.size)
+    {
+        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+    }
 	n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 
 	return n;
