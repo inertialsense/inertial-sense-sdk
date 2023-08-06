@@ -74,21 +74,17 @@ extern "C" {
 /** Protocol Type */
 typedef enum
 {
-	_PTYPE_PARSE_ERROR = 0xFFFFFFFF,		/** Invalid data or checksum error */
-	_PTYPE_NONE = 0,						/** No complete valid data available yet */
-	_PTYPE_INERTIAL_SENSE_DATA,				/** Protocol Type: Inertial Sense binary data (PKT_TYPE_SET_DATA, PKT_TYPE_DATA) */
-	_PTYPE_INERTIAL_SENSE_CMD,				/** Protocol Type: Inertial Sense binary command (PKT_TYPE_GET_DATA, PKT_TYPE_STOP_BROADCASTS...) */
-	_PTYPE_INERTIAL_SENSE_ACK,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PKT_TYPE_ACK, PKT_TYPE_NACK)  */
-	_PTYPE_NMEA,							/** Protocol Type: ASCII NMEA (National Marine Electronics Association) */
-	_PTYPE_UBLOX,							/** Protocol Type: uBlox binary */
-	_PTYPE_RTCM3,							/** Protocol Type: RTCM3 binary */
-	_PTYPE_SPARTN,							/** Protocol Type: SPARTN binary */
-	_PTYPE_SONY,							/** Protocol Type: Sony binary */
+	_PTYPE_NONE                 = 0,						/** No complete valid data available yet */
+	_PTYPE_PARSE_ERROR          = 0xFFFFFFFF,				/** Invalid data or checksum error */
+	_PTYPE_INERTIAL_SENSE_DATA  = 0xEFFFFFFF,				/** Protocol Type: Inertial Sense binary data (PID_SET_DATA, PID_DATA) */
+	_PTYPE_INERTIAL_SENSE_CMD   = 0xDFFFFFFF,				/** Protocol Type: Inertial Sense binary command (PID_GET_DATA, PID_STOP_BROADCASTS...) */
+	_PTYPE_INERTIAL_SENSE_ACK   = 0xCFFFFFFF,				/** Protocol Type: Inertial Sense binary acknowledge (ack) or negative acknowledge (PID_ACK, PID_NACK)  */
+	_PTYPE_NMEA                 = 0xBFFFFFFF,				/** Protocol Type: NMEA (National Marine Electronics Association) */
+	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
+	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+	_PTYPE_SPARTN               = 0x8FFFFFFF,				/** Protocol Type: SPARTN binary */
+	_PTYPE_SONY                 = 0x7FFFFFFF,				/** Protocol Type: Sony binary */
 } protocol_type_t;
-
-#define _PTYPE_IS_V1_CMD 	_PTYPE_INERTIAL_SENSE_CMD
-#define _PTYPE_IS_V1_DATA 	_PTYPE_INERTIAL_SENSE_DATA
-#define _PTYPE_IS_V1_ACK 	_PTYPE_INERTIAL_SENSE_ACK
 
 /** uINS default baud rate */
 #define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600

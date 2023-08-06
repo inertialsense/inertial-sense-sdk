@@ -707,6 +707,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 		NMEA_RMC_BITS_GSA |
 		NMEA_RMC_BITS_RMC |
 		NMEA_RMC_BITS_ZDA |
+		NMEA_RMC_BITS_VTG |
 		NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
@@ -874,7 +875,6 @@ static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLengt
     *bufferLength -= written;
     *buffer += written;
 }
-
 #ifndef GPX_1
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/

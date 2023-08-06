@@ -370,7 +370,6 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 				reset_parser(instance);
 				return _PTYPE_PARSE_ERROR;
 			}
-			
 			instance->parseState = -((int32_t)len + 2);
 		} 
 		break;
@@ -429,10 +428,9 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 			reset_parser(instance);
 			return _PTYPE_PARSE_ERROR;
 		}
-		
+
 		// parse the message plus 3 crc24 bytes
         instance->parseState = -((int32_t)msgLength + 3);
-
 	} break;
 
 	default:

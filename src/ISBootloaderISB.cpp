@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderISB.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating application images 
  *  using ISB (Inertial Sense Bootloader) protocol
  *  
@@ -116,7 +116,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         }
         else if(processor == IS_PROCESSOR_STM32L4)
         {
-            valid_signatures |= IS_IMAGE_SIGN_UINS_5;
+            valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
             if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
         }
     }
@@ -164,7 +164,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 
     SNPRINTF(message+n, sizeof(message)-n, "Update needed...");
     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-    m_info_callback(this, "(ISB) Rebooting to DFU/SAM-BA mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Rebooting to ROM-bootloader mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.

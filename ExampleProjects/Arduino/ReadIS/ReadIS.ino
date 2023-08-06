@@ -81,8 +81,8 @@ void loop()
         uint32_t message_type = is_comm_parse_byte(&comm, inByte);
         switch (message_type)
         {
-        case _PTYPE_IS_V1_DATA:
-            switch (comm.pkt.hdr.id)
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            switch (comm.dataHdr.id)
             {
             case DID_NULL:
                 break;

@@ -259,7 +259,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			{	// Binary
 #if TEST_PROTO_IS
 				td.did = DID_INS_1;
-				td.ptype = _PTYPE_IS_V1_DATA;
+				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.ins1 = ins1;
 				td.size = sizeof(ins_1_t);
 #endif
@@ -295,7 +295,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			{	// Binary
 #if TEST_PROTO_IS
 				td.did = DID_GPS1_POS;
-				td.ptype = _PTYPE_IS_V1_DATA;
+				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.gpsPos = gps;
 				td.size = sizeof(gps_pos_t);
 #endif
@@ -452,7 +452,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		// Add packetized data to ring buffer
 		switch (td.ptype)
 		{
-		case _PTYPE_IS_V1_DATA:
+		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
 			uint8_t buf[1024];
 			n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
@@ -492,7 +492,7 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 
 			switch (ptype)
 			{
-			case _PTYPE_IS_V1_DATA:
+			case _PTYPE_INERTIAL_SENSE_DATA:
 				// Found data
 				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
@@ -546,7 +546,7 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 
 			switch (ptype)
 			{
-			case _PTYPE_IS_V1_DATA:
+			case _PTYPE_INERTIAL_SENSE_DATA:
 				// Found data
 				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
@@ -769,11 +769,11 @@ TEST(ISComm, TxRxWithOffsetTest)
 		g_comm.rxBuf.tail += n;
 
 		// Read timeOfWeek
-        EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
+        EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_INERTIAL_SENSE_DATA);
 		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.rxPkt.hdr.id, g_comm.rxPkt.data.size);
 		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
 		// Read theta[2]
-        EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_IS_V1_DATA);
+        EXPECT_EQ( is_comm_parse(&g_comm), _PTYPE_INERTIAL_SENSE_DATA);
 		DEBUG_PRINTF("Found data: did %3d, size %3d\n", g_comm.rxPkt.hdr.id, g_comm.rxPkt.data.size);
 		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
 

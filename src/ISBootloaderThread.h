@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderThread.h
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating embedded systems in parallel
  * 
  */
@@ -49,7 +49,7 @@ public:
     static std::vector<confirm_bootload_t> set_mode_and_check_devices(
         std::vector<std::string>&               comPorts,
         int                                     baudRate,
-        const std::string&                      firmware,
+        const ISBootloader::firmwares_t&        firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
@@ -60,7 +60,7 @@ public:
         std::vector<std::string>&               comPorts,
         bool                                    force_isb_update,
         int                                     baudRate,
-        const std::string&                      firmware,
+        const ISBootloader::firmwares_t&        firmware,
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
@@ -100,7 +100,7 @@ private:
     static void mgmt_thread_libusb(void* context);
     static bool true_if_cancelled(void);
 
-    static std::string m_firmware;
+    static ISBootloader::firmwares_t m_firmware;
     
     static int m_baudRate;
 

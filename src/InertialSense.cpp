@@ -13,12 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "protocol_nmea.h"
 #include <yaml-cpp/yaml.h>
 #include "InertialSense.h"
-
-#define EXCLUDE_BOOTLOADER	// TODO: Remove after bootloader is fixed
-#ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
-#endif
 
 using namespace std;
 
@@ -436,8 +432,8 @@ bool InertialSense::UpdateServer()
 			case _PTYPE_PARSE_ERROR:
 				break;
 
-			case _PTYPE_IS_V1_DATA:
-			case _PTYPE_IS_V1_CMD:
+			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
 				id = comm->rxPkt.hdr.id;
 				break;
 
@@ -521,8 +517,8 @@ bool InertialSense::UpdateClient()
 				error++;
 				break;
 
-			case _PTYPE_IS_V1_DATA:
-			case _PTYPE_IS_V1_CMD:
+			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
 				id = comm->rxPkt.hdr.id;
 				break;
 
@@ -856,7 +852,6 @@ is_operation_result InertialSense::BootloadFile(
 	void (*waitAction)()
 )
 {
-#ifndef EXCLUDE_BOOTLOADER
 	vector<string> comPorts;
 
 	if (comPort == "*")
@@ -914,7 +909,15 @@ is_operation_result InertialSense::BootloadFile(
 
 	printf("\n\r");
 
-	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, fileName, uploadProgress, verifyProgress, infoProgress, waitAction);
+	ISBootloader::firmwares_t files;
+	files.fw_uINS_3.path = fileName;
+	files.bl_uINS_3.path = blFileName;
+	files.fw_IMX_5.path = fileName;
+	files.bl_IMX_5.path = blFileName;
+	files.fw_EVB_2.path = fileName;
+	files.bl_EVB_2.path = blFileName;
+
+	cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
 	cISSerialPort::GetComPorts(all_ports);
 
@@ -926,7 +929,7 @@ is_operation_result InertialSense::BootloadFile(
 		ports_user_ignore.begin(), ports_user_ignore.end(),
 		back_inserter(update_ports));
 
-	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, fileName, uploadProgress, verifyProgress, infoProgress, waitAction);
+	cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 	
 	printf("\n\r");
 
@@ -934,8 +937,6 @@ is_operation_result InertialSense::BootloadFile(
 	fputs("\e[?25h", stdout);	// Turn cursor back on
 	#endif
 
-#endif // EXCLUDE_BOOTLOADER
-	
 	return IS_OP_OK;
 }
 

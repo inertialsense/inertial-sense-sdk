@@ -10,7 +10,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_ASCE = 0x41534345,		// "ASCE" - NMEA messages broadcast enable
 	NMEA_MSG_UINT_STPB = 0x53545042,		// "STPB" - Stop broadcasts on all ports
 	NMEA_MSG_UINT_STPC = 0x53545043,		// "STPC" - Stop broadcasts on current port
-	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on uINS
+	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on IMX (app firmware update)
 	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
 	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
@@ -72,9 +72,11 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos);
 int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &gpsSat);
 int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination);
 int nmea_zda(char a[], const int aSize, gps_pos_t &pos);
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad);
 int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
 int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno=false);
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
+int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel);
 
 
 //////////////////////////////////////////////////////////////////////////

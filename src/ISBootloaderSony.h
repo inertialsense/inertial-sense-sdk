@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderSony.h
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating ISB images using SAM-BA protocol.
  * 
  */

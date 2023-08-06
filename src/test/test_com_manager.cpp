@@ -332,7 +332,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			{	// Binary
 #if TEST_PROTO_IS
 				td.did = DID_INS_1;
-				td.ptype = _PTYPE_IS_V1_DATA;
+				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.ins1 = ins1;
 				td.size = sizeof(ins_1_t);
 #endif
@@ -368,7 +368,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			{	// Binary
 #if TEST_PROTO_IS
 				td.did = DID_GPS1_POS;
-				td.ptype = _PTYPE_IS_V1_DATA;
+				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.gpsPos = gps;
 				td.size = sizeof(gps_pos_t);
 #endif
@@ -526,7 +526,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 		uint8_t buf[1024];
 		switch (td.ptype)
 		{
-		case _PTYPE_IS_V1_DATA:
+		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
 			n = is_comm_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
@@ -567,7 +567,7 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 
 			switch (ptype)
 			{
-			case _PTYPE_IS_V1_DATA:
+			case _PTYPE_INERTIAL_SENSE_DATA:
 				// Found data
 				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
@@ -809,7 +809,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 
 				switch (ptype)
 				{
-				case _PTYPE_IS_V1_DATA:
+				case _PTYPE_INERTIAL_SENSE_DATA:
 					// Found data
 					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
@@ -904,7 +904,7 @@ TEST(ComManager, Evb2DataForwardTest)
 
 				switch (ptype)
 				{
-				case _PTYPE_IS_V1_DATA:
+				case _PTYPE_INERTIAL_SENSE_DATA:
 					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.hdr), sizeof(packet_hdr_t));
 					if (comm.rxPkt.offset)
 					{
@@ -977,7 +977,7 @@ TEST(ComManager, Evb2DataForwardTest)
 
 				switch (ptype)
 				{
-				case _PTYPE_IS_V1_DATA:
+				case _PTYPE_INERTIAL_SENSE_DATA:
 					// Found data
 					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
