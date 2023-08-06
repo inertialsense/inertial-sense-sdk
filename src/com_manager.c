@@ -188,10 +188,7 @@ int initComManagerInstanceInternal
 	{	// Initialize IScomm instance, for serial reads / writes
 		com_manager_port_t *port = &(cmInstance->ports[i]);
 		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer), timeMs);
-		
-		// Port status
-		memset(&(port->status), 0, MEMBERSIZE(com_manager_port_t,status));	
-			
+					
 #if ENABLE_PACKET_CONTINUATION			
 		// Packet data continuation
 		memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
@@ -290,12 +287,7 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 					break;	// Stop parsing and continue in outer loop
 				}
 			}
-		}
-			
-		// if ((port->status.flags & CM_PKT_FLAGS_RX_VALID_DATA) && cmPort->status.readCounter > 128)
-		// {	// communication problem, clear communication received bit
-		// 	cmPort->status.flags &= (~CM_PKT_FLAGS_RX_VALID_DATA);
-		// }
+		}			
 	}
 }
 
@@ -346,19 +338,7 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 		break;
 	}
 
-	if (error == CM_ERROR_FORWARD_OVERRUN)
-	{
-		return error;
-	}
-	else if (error)
-	{	
-		cmPort->status.readCounter += 32;
-		cmPort->status.rxError = (uint32_t)-1;
-		cmPort->status.communicationErrorCount++;
-		return error;
-	}
-
-	return 0;
+	return error;
 }
 
 void comManagerStepTxInstance(CMHANDLE cmInstance_)
@@ -451,12 +431,12 @@ void* comManagerGetUserPointer(CMHANDLE cmInstance)
 	return ((com_manager_t*)cmInstance)->userPointer;
 }
 
-com_manager_status_t* comManagerGetStatus(int pHandle)
+is_comm_instance_t* comManagerGetIsComm(int pHandle)
 {
-	return comManagerGetStatusInstance(&g_cm, pHandle);
+	return comManagerGetIsCommInstance(&g_cm, pHandle);
 }
 
-com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHandle)
+is_comm_instance_t* comManagerGetIsCommInstance(CMHANDLE cmInstance, int pHandle)
 {
 	com_manager_t *cm = (com_manager_t*)cmInstance;
 	
@@ -465,7 +445,7 @@ com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHand
 		return NULL;
 	}
 	
-	return &(cm->ports[pHandle].status);
+	return &(cm->ports[pHandle].comm);
 }
 
 /**
@@ -580,12 +560,6 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 	packet_hdr_t        *hdr = &(pkt->hdr);
 	registered_data_t   *regd = NULL;
 	uint8_t             ptype = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
-
-	com_manager_port_t *port = &(cmInstance->ports[pHandle]);
-	port->status.readCounter = 0;
-
-	// Packet read success
-	port->status.rxPktCount++;
 
 	switch (ptype)
 	{
@@ -961,7 +935,7 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_
 // Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.
 int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 {
-	return is_comm_write_isb_precomp_to_port(cm->portWrite, port, pkt);
+	return is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt);
 }
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)

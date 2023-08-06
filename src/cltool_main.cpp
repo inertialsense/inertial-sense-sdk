@@ -96,10 +96,10 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 		}
 		else
 		{	// Client
-			com_manager_status_t* status = comManagerGetStatus(0);
-			if (status != NULLPTR && status->communicationErrorCount>2)
+			is_comm_instance_t* comm = comManagerGetIsComm(0);
+			if (comm != NULLPTR && comm->rxErrorCount>2)
 			{
-				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
+				outstream << "Com errors: " << comm->rxErrorCount << "     \n";
 			}
 			if (showMessageSummary)
 			{

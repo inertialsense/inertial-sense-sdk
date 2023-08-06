@@ -54,12 +54,6 @@ typedef struct
 /** Contains status for the com manager */
 typedef struct  
 {
-	/** bytes read without a valid message */
-	uint32_t readCounter;
-
-	/** Number of packets read successfully */
-	uint32_t rxPktCount;
-
 	/** 0 if no errors encountered, otherwise non-zero.  Used in conjunction with communicationErrorCount. */
 	uint32_t rxError;
 
@@ -70,7 +64,7 @@ typedef struct
 	flags to send on each request - do not modify
 	valid data : flags & CM_PKT_FLAGS_RX_VALID_DATA
 	*/
-	uint8_t flags;
+	// uint8_t flags;
 } com_manager_status_t;
 
 /** Buffers used in com manager */
@@ -151,9 +145,6 @@ typedef struct
 	// Comm instance data buffer
 	uint8_t comm_buffer[PKT_BUF_SIZE];
 
-	// Current status
-	com_manager_status_t status;
-
 #if ENABLE_PACKET_CONTINUATION
 
 	// Continuation data for packets
@@ -188,11 +179,11 @@ typedef struct
 	
 	// Array of port
 	com_manager_port_t *ports;
-	
-	broadcast_msg_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
 
 	// Number of communication ports
 	int32_t numPorts;
+
+	broadcast_msg_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
 
 	// processing interval
 	int32_t stepPeriodMilliseconds;
@@ -428,12 +419,12 @@ void comManagerDisableBroadcasts(int port);
 void comManagerDisableBroadcastsInstance(CMHANDLE cmInstance, int port);
 
 /**
-Get the most recent status of the com manager
+Get the ISComm structure. 
 
-@return com manager status, this pointer is owned by the com manager
+@return com manager ISComm structure, this pointer is owned by the com manager
 */
-com_manager_status_t* comManagerGetStatus(int port);
-com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int port);
+is_comm_instance_t* comManagerGetIsComm(int port);
+is_comm_instance_t* comManagerGetIsCommInstance(CMHANDLE cmInstance, int port);
 
 /**
 Internal use mostly, get data info for a the specified pre-registered dataId

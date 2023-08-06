@@ -173,6 +173,8 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize,
 		ENABLE_PROTOCOL_SPARTN |
 		ENABLE_PROTOCOL_SONY;
 	
+	instance->txPktCount = 0;
+	instance->rxPktCount = 0;
 	instance->rxErrorCount = 0;
 	instance->hasStartByte = 0;
     instance->ackNeeded = 0;
@@ -231,6 +233,9 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numB
 
 	/////////////////////////////////////////////////////////
 	// Valid packet found
+
+	// Increment valid Rx packet count
+	instance->rxPktCount++;
 
 	// Header
 	pkt->hdr.preamble  = pkt_buf->hdr.preamble;
@@ -331,11 +336,15 @@ static protocol_type_t processAsciiPkt(is_comm_instance_t* instance)
 		}
 		if (actualCheckSum == dataCheckSum)
 		{	// valid NMEA Data
+
 			// Update data pointer and info
 			instance->rxPkt.data.ptr  = head;
 			instance->rxPkt.data.size = instance->rxPkt.size = (uint32_t)(instance->rxBuf.scan - head);
 			instance->rxPkt.hdr.id   = 0;
 			instance->rxPkt.offset    = 0;
+
+			// Increment valid Rx packet count
+			instance->rxPktCount++;
 			return _PTYPE_NMEA;
 		}
 	}
@@ -389,11 +398,15 @@ static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 			cksum.ck = is_comm_fletcher16(0, cksum_start, cksum_size);
 			if (actualChecksum == cksum.ck)
 			{	// Checksum passed - Valid ublox packet
+
 				// Update data pointer and info
 				instance->rxPkt.data.ptr  = instance->rxBuf.head;
 				instance->rxPkt.data.size = instance->rxPkt.size = (uint32_t)(instance->rxBuf.scan - instance->rxBuf.head);
 				instance->rxPkt.hdr.id    = 0;
 				instance->rxPkt.offset    = 0;
+
+				// Increment valid Rx packet count
+				instance->rxPktCount++;
 				reset_parser(instance);
 				return _PTYPE_UBLOX;
 			}
@@ -445,11 +458,15 @@ static protocol_type_t processRtcm3Byte(is_comm_instance_t* instance)
 
 			if (actualCRC == correctCRC)
 			{	// Checksum passed - Valid RTCM3 packet
+
 				// Update data pointer and info
 				instance->rxPkt.data.ptr  = instance->rxBuf.head;
 				instance->rxPkt.data.size = instance->rxPkt.size = (uint32_t)(instance->rxBuf.scan - instance->rxBuf.head);
 				instance->rxPkt.hdr.id    = 0;
 				instance->rxPkt.offset    = 0;
+
+				// Increment valid Rx packet count
+				instance->rxPktCount++;
 				reset_parser(instance);
 				return _PTYPE_RTCM3;
 			}
@@ -570,11 +587,15 @@ static protocol_type_t processSonyByte(is_comm_instance_t* instance)
 			}
 			else
 			{	// Checksum passed - Valid packet
+
 				// Update data pointer and info
 				instance->rxPkt.data.ptr  = instance->rxBuf.head;
 				instance->rxPkt.data.size = instance->rxPkt.size = (uint32_t)(instance->rxBuf.scan - instance->rxBuf.head);
 				instance->rxPkt.hdr.id    = 0;
 				instance->rxPkt.offset    = 0;
+
+				// Increment valid Rx packet count
+				instance->rxPktCount++;
 				reset_parser(instance);
 				return _PTYPE_SONY;
 			}
@@ -721,11 +742,14 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* instance)
 		instance->parseState++;
 
 		if (instance->parseState == 0)
-		{
+		{	// Valid packet
 			instance->rxPkt.data.ptr  = instance->rxBuf.head;
 			instance->rxPkt.data.size = instance->rxPkt.size = (uint32_t)(instance->rxBuf.scan - instance->rxBuf.head);
 			instance->rxPkt.hdr.id    = 0;
 			instance->rxPkt.offset    = 0;
+
+			// Increment valid Rx packet count
+			instance->rxPktCount++;
 			reset_parser(instance);
 
 			return _PTYPE_SPARTN;
@@ -981,7 +1005,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 	}
 }
 
-int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, packet_t *pkt)
+int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
 {
 	if (pkt->size > buf_size)
 	{	// Packet doesn't fit in buffer
@@ -1001,10 +1025,13 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, packet_
 	MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
 	MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                 // Footer (checksum)
 
+	// Increment Tx count
+	comm->txPktCount++;
+
 	return pkt->size;
 }
 
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, packet_t *pkt)
+int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
 	// Compute checksum using precomputed header checksum
     pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
@@ -1021,6 +1048,9 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, pa
     }
 	n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 
+	// Increment Tx count
+	comm->txPktCount++;
+
 	return n;
 }
 
@@ -1032,7 +1062,7 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
 	is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
 
 	// Update checksum and write packet to buffer
-	return is_comm_write_isb_precomp_to_buffer(buf, buf_size, &txPkt);
+	return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
 int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
@@ -1043,7 +1073,7 @@ int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* co
 	is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
 
 	// Update checksum and write packet to port
-	return is_comm_write_isb_precomp_to_port(portWrite, port, &txPkt);
+	return is_comm_write_isb_precomp_to_port(portWrite, port, comm, &txPkt);
 }
 
 int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
