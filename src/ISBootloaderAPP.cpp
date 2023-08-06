@@ -69,10 +69,10 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
         {
             if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
             {
-                switch(comm.pkt.hdr.id)
+                switch(comm.rxPkt.hdr.id)
                 {
                 case DID_DEV_INFO:
-                    dev_info = (dev_info_t*)comm.pkt.data.ptr;
+                    dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     m_sn = dev_info->serialNumber;
                     if(dev_info->hardwareVer[0] == 5)
                     {   /** IMX-5 */
@@ -86,7 +86,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     }
                     break;    
                 case DID_EVB_DEV_INFO:
-                    evb_dev_info = (dev_info_t*)comm.pkt.data.ptr;
+                    evb_dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     if (evb_dev_info->hardwareVer[0] == 2)
                     {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
                         valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
