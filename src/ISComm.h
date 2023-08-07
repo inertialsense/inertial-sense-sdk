@@ -121,12 +121,8 @@ typedef enum
 /** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
 
 // Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR0			(1)
-
-// version 1: initial release
-// version 2: 24 bit checksum support
-// version 3: ioConfig change
-#define PROTOCOL_VERSION_CHAR1			(4)
+#define PROTOCOL_VERSION_CHAR0			(2)
+#define PROTOCOL_VERSION_CHAR1			(0)
 
 // Minor (in data_sets.h)
 // #define PROTOCOL_VERSION_CHAR2		0
