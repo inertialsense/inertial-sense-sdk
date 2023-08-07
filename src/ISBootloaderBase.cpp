@@ -203,6 +203,10 @@ is_operation_result cISBootloaderBase::mode_device_app
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
 
     obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
+    
+    // Tell device to stop broadcasting
+    serialPortWriteAscii(obj->m_port, "STPB", 4);
+
     (obj)->m_port_name = std::string(handle->port);
     device = (obj)->check_is_compatible();
     if(device)
