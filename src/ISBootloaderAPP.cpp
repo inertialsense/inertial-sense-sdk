@@ -52,8 +52,13 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
 
     // clear the Rx serial port
     n = is_comm_free(&comm);
-    for (i = 0; i < 20; i++) 
+    
+    // In testing it was found that @ 330kb/s The buffer would take 10-11
+    // reads to clear after the stop broad casting message was sent. 
+    // 20 time represents double the imperical 
+    for (uint8_t i = 0; i < 20; i++) 
     { 
+        // Once the broad cast has stopped this function will break.
         if (serialPortReadTimeout(m_port, comm.buf.start, n, 200) == 0)
             break;         
     }
