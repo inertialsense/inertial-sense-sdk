@@ -520,6 +520,9 @@ typedef struct PACKED
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
 	uint32_t 		uid[4];
+
+	/** Platform (carrier board) */
+	uint32_t		platform;
 } manufacturing_info_t;
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
