@@ -521,8 +521,8 @@ typedef struct PACKED
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
 	uint32_t 		uid[4];
 
-	/** Platform (carrier board) */
-	uint32_t		platform;
+	/** Platform / carrier board (ePlatformConfigType) */
+	uint32_t		platformType;
 } manufacturing_info_t;
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
@@ -2443,7 +2443,7 @@ enum eIoConfig
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
 
-enum ePlatformConfig
+enum ePlatformConfigType
 {
 	// IMX Carrier Board
 	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
@@ -2468,6 +2468,12 @@ enum ePlatformConfig
 	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,		// Enable UBX input from Lambda
 	PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)19,		// "
 	PLATFORM_CFG_TYPE_COUNT                     = (int)20,
+};
+
+enum ePlatformConfig
+{
+	// IMX Carrier Board (see ePlatformConfigType)
+	// PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
 
 	// Presets
 	PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
