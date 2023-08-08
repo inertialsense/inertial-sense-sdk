@@ -24,10 +24,6 @@ extern "C" {
 
 //_____ M A C R O S ________________________________________________________
 
-#ifndef EPS
-#define EPS (1.0e-16f)  // Smallest number for safe division
-#endif
-
 // Magnitude Squared or Dot Product of vector w/ itself
 #define dot_Vec2(v) ((v)[0]*(v)[0] + (v)[1]*(v)[1])
 #define dot_Vec3(v) ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2])
@@ -41,13 +37,14 @@ extern "C" {
 #define mag_Vec3d(v) (sqrt(dot_Vec3(v)))
 #define mag_Vec4d(v) (sqrt(dot_Vec4(v)))
 
-#if 1
-#	define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPS))
-#	define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPS))
-#	define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPS))
-#endif
-#	define recipNorm_Vec3d(v)	(1.0/_MAX(mag_Vec3d(v), EPS))
-#	define recipNorm_Vec4d(v)	(1.0/_MAX(mag_Vec4d(v), EPS))
+#define EPSF32 (1.0e-16f)  // Smallest number for safe division
+#define EPSF64 (1.0e-16l)  // Smallest number for safe division
+
+#define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPSF32))
+#define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPSF32))
+#define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPSF32))
+#define recipNorm_Vec3d(v)	(1.0l/_MAX(mag_Vec3d(v), EPSF64))
+#define recipNorm_Vec4d(v)	(1.0l/_MAX(mag_Vec4d(v), EPSF64))
 
 #define unwrap_Vec3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
@@ -750,7 +747,7 @@ static __inline int isInf_array( f_t *a, int size )
     int i;
 
     f_t tmp = 1.0f;
-    f_t inf = 1.0f / ( tmp - 1.0f);
+    f_t inf = 1.0f / (tmp - 1.0f);
 
     for( i=0; i<size; i++ )
     {
@@ -769,8 +766,8 @@ static __inline int isInf_array_d(double *a, int size)
 {
 	int i;
 
-	double tmp = 1.0f;
-	double inf = 1.0f / (tmp - 1.0f);
+	double tmp = 1.0l;
+	double inf = 1.0l / (tmp - 1.0l);
 
 	for (i = 0; i<size; i++)
 	{

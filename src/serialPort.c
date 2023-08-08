@@ -36,7 +36,7 @@ void serialPortSetPort(serial_port_t* serialPort, const char* port)
 
 int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
 {
-    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0 || ((serialPort->options & SERIAL_PORT_OPTIONS_MASK) != 0))
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
 	{
 		return 0;
 	}
@@ -45,7 +45,7 @@ int serialPortOpen(serial_port_t* serialPort, const char* port, int baudRate, in
 
 int serialPortOpenRetry(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
 {
-    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0 || ((serialPort->options & SERIAL_PORT_OPTIONS_MASK) != 0))
+    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
     {
         return 0;
     }
@@ -318,7 +318,7 @@ int serialPortWaitForTimeout(serial_port_t* serialPort, const unsigned char* wai
 {
 	if (serialPort == 0 || serialPort->handle == 0 || waitFor == 0 || waitForLength < 1)
 	{
-		return 0;
+		return 1;
 	}
 	else if (waitForLength > 128)
 	{

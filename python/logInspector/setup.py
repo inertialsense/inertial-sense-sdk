@@ -64,7 +64,6 @@ ext_modules = [
          '../../src/tinyxml.cpp',
          '../../src/tinyxmlerror.cpp',
          '../../src/tinyxmlparser.cpp'],
-        define_macros = [('EXCLUDE_BOOTLOADER', 1)],
         include_dirs = [
             # Path to pybind11 headers
             'include',
@@ -142,16 +141,17 @@ setup(
     long_description='',
     ext_modules=ext_modules,
     install_requires=[
+        'allantools',
+        'matplotlib', 
+        'numpy', 
+        'pandas',
         'pybind11>=2.2', 
         'pyqt5', 
-        'numpy', 
-        'matplotlib', 
-        'pyyaml', 
         'pyserial', 
+        'pyyaml', 
         'scipy', 
-        'tqdm',
         'simplekml',
-        'allantools'],
+        'tqdm'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )
