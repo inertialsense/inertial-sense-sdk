@@ -515,14 +515,14 @@ typedef struct PACKED
 	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
-	/** Key */
+	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
+
+	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK) */
+	int32_t			platformType;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
 	uint32_t 		uid[4];
-
-	/** Platform / carrier board (ePlatformConfigType) */
-	uint32_t		platformType;
 } manufacturing_info_t;
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
@@ -1264,6 +1264,7 @@ typedef struct PACKED
 
 	/** Reserved */
 	uint32_t				flashCfgChecksum;
+
 	/** Reserved */
 	float					reserved3;
 
@@ -2369,9 +2370,9 @@ enum eIoConfig
 	// IO_CONFIG_                               = (int)0x00001000,
 
 	/** GPS TIMEPULSE source */
-	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,	
 	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
+	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)(IO_CFG_GPS_TIMEPUSE_SOURCE_MASK<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET),	
 	IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_GPS1_PPS_PIN20	= (int)1,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_GPS2_PPS			= (int)2,
@@ -2379,8 +2380,7 @@ enum eIoConfig
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G5_PIN9	= (int)4,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13	= (int)6,
-#define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }
-	
+#define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }	
 #define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) ((ioConfig>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
 	
 	/** GPS 1 source OFFSET */
@@ -2427,8 +2427,13 @@ enum eIoConfig
 
 #define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
 #define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS1_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
-#define IO_CONFIG_GPS2_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS1_TYPE(ioConfig)   ((ioConfig>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS2_TYPE(ioConfig)   ((ioConfig>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+
+#define SET_IO_CFG_GPS1_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
+#define SET_IO_CFG_GPS2_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
+#define SET_IO_CFG_GPS1_TYPE(result,val)    SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_TYPE_OFFSET, IO_CONFIG_GPS_TYPE_MASK)
+#define SET_IO_CFG_GPS2_TYPE(result,val)    SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_TYPE_OFFSET, IO_CONFIG_GPS_TYPE_MASK)
 
 	/** IMU 1 disable */	
 	IO_CONFIG_IMU_1_DISABLE						= (int)0x10000000,
@@ -2443,10 +2448,11 @@ enum eIoConfig
 
 #define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
 
-enum ePlatformConfigType
+enum ePlatformConfig
 {
 	// IMX Carrier Board
-	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
+	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
+	PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,	// Overwritten from manufacturing OTP memory
 	PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
 	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
 	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
@@ -2468,12 +2474,6 @@ enum ePlatformConfigType
 	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,		// Enable UBX input from Lambda
 	PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)19,		// "
 	PLATFORM_CFG_TYPE_COUNT                     = (int)20,
-};
-
-enum ePlatformConfig
-{
-	// IMX Carrier Board (see ePlatformConfigType)
-	// PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
 
 	// Presets
 	PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
