@@ -20,6 +20,7 @@ using namespace std;
 cmd_options_t g_commandLineOptions = {};
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
+static bool g_internal = false;
 
 int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
 {
@@ -125,7 +126,7 @@ void print_dids()
 
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
-	// set defaults
+	// defaults
 	g_commandLineOptions.baudRate = CL_DEFAULT_BAUD_RATE;
 	g_commandLineOptions.comPort = CL_DEFAULT_COM_PORT;
 	g_commandLineOptions.displayMode = CL_DEFAULT_DISPLAY_MODE;
@@ -147,7 +148,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.maxDurationSec = 15 * 60; // default survey of 15 minutes
     g_commandLineOptions.surveyIn.minAccuracy = 0;
 	g_commandLineOptions.outputOnceDid = 0;
-
+	g_commandLineOptions.platformType = -1;
 
 	if(argc <= 1)
 	{	// Display usage menu if no options are provided 
@@ -263,6 +264,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.flashCfg = ".";
 		}
+		else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
+		{
+			g_internal = true;
+			cltool_outputUsage();
+			return false;
+		}
 		else if (startsWith(a, "-h") || startsWith(a, "--h") || startsWith(a, "-help") || startsWith(a, "--help"))
 		{
 			cltool_outputUsage();
@@ -313,6 +320,26 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.rmcPreset = 0;
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
+		}
+		else if (startsWith(a, "-platform"))
+		{
+			#define PLATFORM_TYPE_TAG_LEN	10
+			if(strlen(a) <= PLATFORM_TYPE_TAG_LEN || !isdigit(a[PLATFORM_TYPE_TAG_LEN]))
+			{
+				cout << "Platform type not specified.\n\n";
+				return false;
+			}
+
+			int platformType = (uint32_t)strtoul(&a[PLATFORM_TYPE_TAG_LEN], NULL, 10);
+			if (platformType < 0 || platformType >= PLATFORM_CFG_TYPE_COUNT)
+			{
+				cout << "Invalid platform type: " << platformType << "\n\n";
+				return false;
+			}
+			else
+			{	// Valid platform
+				g_commandLineOptions.platformType = platformType;
+			}
 		}
 		else if (startsWith(a, "-presetPPD"))
 		{
@@ -495,8 +522,12 @@ void cltool_outputUsage()
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
+	if (g_internal)
+	{
 	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
 	cout << "    -chipEraseEvb2 " << boldOff << " CAUTION!!! Erase everything on EVB2 (firmware, config, etc.)" << endlbOn;
+	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
+	}
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;

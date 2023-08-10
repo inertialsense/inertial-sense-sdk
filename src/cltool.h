@@ -90,6 +90,7 @@ typedef struct
 	uint32_t outputOnceDid;	
 	
 	uint32_t sysCommand;
+	int32_t platformType;
 	bool chipEraseEvb2;
 } cmd_options_t;
 

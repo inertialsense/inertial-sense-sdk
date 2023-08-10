@@ -106,6 +106,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 	memset(sizeMap, 0, sizeof(uint32_t) * DID_COUNT);
 
 	sizeMap[DID_DEV_INFO] = sizeof(dev_info_t);
+	sizeMap[DID_MANUFACTURING_INFO] = sizeof(manufacturing_info_t);
 	sizeMap[DID_BIT] = sizeof(bit_t);
 	sizeMap[DID_SYS_FAULT] = sizeof(system_fault_t);
 	sizeMap[DID_MAGNETOMETER] = sizeof(magnetometer_t);
@@ -249,6 +250,24 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     ADD_MAP(m, totalSize, "buildTime[2]", buildTime[2], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "buildTime[3]", buildTime[3], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "addInfo", addInfo, DEVINFO_ADDINFO_STRLEN, DataTypeString, char[DEVINFO_ADDINFO_STRLEN], 0);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+	typedef manufacturing_info_t MAP_TYPE;
+	map_name_to_info_t& m = mappings[DID_MANUFACTURING_INFO];
+	uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "lotNumber", lotNumber, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "date", date, 16, DataTypeString, char[16], 0);
+    ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "platformType", platformType, 0, DataTypeInt32, int32_t, 0);
+    ADD_MAP(m, totalSize, "uid[0]", uid[0], 0, DataTypeUInt32, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "uid[1]", uid[1], 0, DataTypeUInt32, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "uid[2]", uid[2], 0, DataTypeUInt32, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "uid[3]", uid[3], 0, DataTypeUInt32, uint32_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2494,6 +2513,7 @@ cISDataMappings::cISDataMappings()
 {
 	PopulateSizeMappings(m_lookupSize);
 	PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
+	PopulateManufacturingInfoMappings(m_lookupInfo);
 	PopulateBitMappings(m_lookupInfo);
 	PopulateSysFaultMappings(m_lookupInfo);
 	PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_UNCAL);

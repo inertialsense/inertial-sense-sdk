@@ -518,7 +518,7 @@ typedef struct PACKED
 	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
 
-	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK) */
+	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
 	int32_t			platformType;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
