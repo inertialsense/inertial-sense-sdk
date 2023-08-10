@@ -2450,64 +2450,64 @@ enum eIoConfig
 
 enum ePlatformConfig
 {
-	// IMX Carrier Board
-	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
-	PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,	// Type is overwritten from manufacturing OTP memory
-	PLATFORM_CFG_TYPE_NONE                      = (int)0,			// IMX-5 default
-	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,			// uINS-3 default
-	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
-	PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
-	PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
-	PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    	// PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
-	PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       	// "
-	PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       	// "
-	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       	// PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       	// "
-	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      	// "
-	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-	PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
-	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      	// PCB IG-1.0.  GPS1 timepulse on G8
-	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      	// PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
-	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)16,			// Enable UBX output on Lambda for testbed
-	PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)17,			// "
-	PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,			// Enable UBX input from Lambda
-	PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)19,			// "
-	PLATFORM_CFG_TYPE_COUNT                     = (int)20,
+    // IMX Carrier Board
+    PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
+    PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
+    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,           // uINS-3 default
+    PLATFORM_CFG_TYPE_RUG1                      = (int)2,
+    PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
+    PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
+    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,           // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
+    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,           // "
+    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,           // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
+    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
+    PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)16,          // Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_LAMBDA_G2              	= (int)17,          // "
+    PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)18,          // Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)19,          // "
+    PLATFORM_CFG_TYPE_COUNT                     = (int)20,
 
-	// Presets
-	PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
-	PLATFORM_CFG_PRESET_OFFSET                  = (int)8,
+    // Presets
+    PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
+    PLATFORM_CFG_PRESET_OFFSET                  = (int)8,
 
-	// RUG-3 - Presets
-	PLATFORM_CFG_RUG3_PRESET__0__PRESETS_DISABLED								= 0,	// Don't use presets.  IOEXP_BITS can be set directly.
-	PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1			= 1,	// RUG-3-G0 default
-	PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GPS1			= 2,
-	PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GPS1			= 3,
-	PLATFORM_CFG_RUG3_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GPS1			= 4,
-	PLATFORM_CFG_RUG3_PRESET__5__S1_RS485_7_8_9_10_____________S2_GPS1__S0_GPS2	= 5,
-	PLATFORM_CFG_RUG3_PRESET__6__SPI_7_8_9_10__________________S2_GPS1__S0_GPS2	= 6,
-	PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GPS1__S0_GPS2	= 7,	// RUG-3-G2 default
-	PLATFORM_CFG_RUG3_PRESET__8_________________CAN_11_12______S1_GPS1__S0_GPS2	= 8,
-	PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GPS1__S0_GPS2	= 9,
-	PLATFORM_CFG_RUG3_PRESET__COUNT												= 10,
+    // RUG-3 - Presets
+    PLATFORM_CFG_RUG3_PRESET__0__PRESETS_DISABLED                               = 0,    // Don't use presets.  IOEXP_BITS can be set directly.
+    PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1          = 1,    // RUG-3-G0 default
+    PLATFORM_CFG_RUG3_PRESET__2__S0_TTL_7_9_____CAN_11_12______S1_GPS1          = 2,
+    PLATFORM_CFG_RUG3_PRESET__3__S0_TTL_7_9_____S2_TTL_8_10____S1_GPS1          = 3,
+    PLATFORM_CFG_RUG3_PRESET__4__S0_RS232_7_9___S1_RS232_8_10__S2_GPS1          = 4,
+    PLATFORM_CFG_RUG3_PRESET__5__S1_RS485_7_8_9_10_____________S2_GPS1__S0_GPS2 = 5,
+    PLATFORM_CFG_RUG3_PRESET__6__SPI_7_8_9_10__________________S2_GPS1__S0_GPS2 = 6,
+    PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GPS1__S0_GPS2 = 7,    // RUG-3-G2 default
+    PLATFORM_CFG_RUG3_PRESET__8_________________CAN_11_12______S1_GPS1__S0_GPS2 = 8,
+    PLATFORM_CFG_RUG3_PRESET__9__S2_TTL_8_10___________________S1_GPS1__S0_GPS2 = 9,
+    PLATFORM_CFG_RUG3_PRESET__COUNT                                             = 10,
 
-	PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT		= PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1,
-	PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT		= PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GPS1__S0_GPS2,
+    PLATFORM_CFG_RUG3_PRESET__G0_DEFAULT        = PLATFORM_CFG_RUG3_PRESET__1__S0_RS232_7_9___CAN_11_12______S1_GPS1,
+    PLATFORM_CFG_RUG3_PRESET__G2_DEFAULT        = PLATFORM_CFG_RUG3_PRESET__7__S1_RS232_8_10_________________S2_GPS1__S0_GPS2,
 
-	// RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
-	PLATFORM_CFG_RUG3_IOEXP_BIT_MASK            = (int)0x00FF0000,
-	PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET          = (int)16,
+    // RUG-3 - I/O Expander disabled if platform type is != PLATFORM_CFG_TYPE_RUG3_x.
+    PLATFORM_CFG_RUG3_IOEXP_BIT_MASK            = (int)0x00FF0000,
+    PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET          = (int)16,
 
-	RUG3_IOEXP_BIT_OFFSET_n232_485    			= (int)0,
-	RUG3_IOEXP_BIT_OFFSET_n232_TTL    			= (int)1,
-	RUG3_IOEXP_BIT_OFFSET_nRS_CAN     			= (int)2,
-	RUG3_IOEXP_BIT_OFFSET_nGPS2_RS    			= (int)3,
-	RUG3_IOEXP_BIT_OFFSET_nSPIEN      			= (int)4,
-	RUG3_IOEXP_BIT_OFFSET_nSPI_SER    			= (int)5,
-	RUG3_IOEXP_BIT_OFFSET_nGPSRST     			= (int)6,
+    RUG3_IOEXP_BIT_OFFSET_n232_485              = (int)0,
+    RUG3_IOEXP_BIT_OFFSET_n232_TTL              = (int)1,
+    RUG3_IOEXP_BIT_OFFSET_nRS_CAN               = (int)2,
+    RUG3_IOEXP_BIT_OFFSET_nGPS2_RS              = (int)3,
+    RUG3_IOEXP_BIT_OFFSET_nSPIEN                = (int)4,
+    RUG3_IOEXP_BIT_OFFSET_nSPI_SER              = (int)5,
+    RUG3_IOEXP_BIT_OFFSET_nGPSRST               = (int)6,
 
-	PLATFORM_CFG_UPDATE_IO_CONFIG               = (int)0x01000000,	// Generate ioConfig based on platform config
+    PLATFORM_CFG_UPDATE_IO_CONFIG               = (int)0x01000000,    // Generate ioConfig based on platform config
 };
 
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
