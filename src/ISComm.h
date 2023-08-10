@@ -407,7 +407,7 @@ typedef struct
 
 	/** Data pointer */
 	uint8_t             *ptr;
-} p_data_t, p_data_set_t;
+} p_data_t;
 
 typedef struct
 {
@@ -694,7 +694,24 @@ int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, int port, is
 int is_comm_stop_broadcasts_current_ports_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm);
 int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm);
 
+/**
+ * @brief Compute the fletcher 16 bit checksum for the given data array.
+ * 
+ * @param cksum_init initial value for the checksum.
+ * @param data data array used for checksum.
+ * @param size size of data arary.
+ * @return uint16_t 
+ */
 uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size);
+
+/**
+ * @brief Compute the xor 16 bit checksum for the given data array.
+ * 
+ * @param cksum_init initial value for the checksum.
+ * @param data data array used for checksum.
+ * @param size size of data arary.
+ * @return uint16_t 
+ */
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 #define is_comm_isb_checksum16  is_comm_fletcher16
 // #define is_comm_isb_checksum16  is_comm_xor16
