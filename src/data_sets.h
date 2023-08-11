@@ -2073,7 +2073,7 @@ typedef struct PACKED
     imus_t                  imu[NUM_IMU_DEVICES];
 
     /** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
-    infield_cal_vaxis_t		calData[3];
+    infield_cal_vaxis_t     calData[3];
 
 } infield_cal_t;
 
@@ -2081,80 +2081,80 @@ typedef struct PACKED
 /** System Configuration (used with DID_FLASH_CONFIG.sysCfgBits) */
 enum eSysConfigBits
 {
-	SYS_CFG_BITS_UNUSED1                                = (int)0x00000001,
-	SYS_CFG_BITS_UNUSED2                                = (int)0x00000002,
-	/*! Enable automatic mag recalibration */
-	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
-	/*! Disable mag declination estimation */
-	SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION            = (int)0x00000008,
+    SYS_CFG_BITS_UNUSED1                                = (int)0x00000001,
+    SYS_CFG_BITS_UNUSED2                                = (int)0x00000002,
+    /*! Enable automatic mag recalibration */
+    SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
+    /*! Disable mag declination estimation */
+    SYS_CFG_BITS_DISABLE_MAG_DECL_ESTIMATION            = (int)0x00000008,
 
     /*! Disable LEDs */
     SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
     /** Magnetometer recalibration.  (see eMagCalState) 1 = multi-axis, 2 = single-axis */
-    SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
-    SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
+    SYS_CFG_BITS_MAG_RECAL_MODE_MASK                    = (int)0x00000700,
+    SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET                  = 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
 
     /** Disable magnetometer fusion */
-    SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
+    SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION            = (int)0x00001000,
     /** Disable barometer fusion */
-    SYS_CFG_BITS_DISABLE_BAROMETER_FUSION				= (int)0x00002000,
+    SYS_CFG_BITS_DISABLE_BAROMETER_FUSION               = (int)0x00002000,
     /** Disable GPS 1 fusion */
-    SYS_CFG_BITS_DISABLE_GPS1_FUSION					= (int)0x00004000,
+    SYS_CFG_BITS_DISABLE_GPS1_FUSION                    = (int)0x00004000,
     /** Disable GPS 2 fusion */
-    SYS_CFG_BITS_DISABLE_GPS2_FUSION					= (int)0x00008000,
+    SYS_CFG_BITS_DISABLE_GPS2_FUSION                    = (int)0x00008000,
 
     /** Disable automatic Zero Velocity Updates (ZUPT).  Disabling automatic ZUPT is useful for degraded GPS environments or applications with very slow velocities. */
-    SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES		= (int)0x00010000,
+    SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES     = (int)0x00010000,
     /** Disable automatic Zero Angular Rate Updates (ZARU).  Disabling automatic ZARU is useful for applications with small/slow angular rates. */
-    SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES	= (int)0x00020000,
+    SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES = (int)0x00020000,
     /** Disable INS EKF updates */
-    SYS_CFG_BITS_DISABLE_INS_EKF						= (int)0x00040000,
+    SYS_CFG_BITS_DISABLE_INS_EKF                        = (int)0x00040000,
     /** Prevent built-in test (BIT) from running automatically on startup */
-    SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
+    SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP            = (int)0x00080000,
 
     /** Disable wheel encoder fusion */
-    SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
+    SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
 
     SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
     SYS_CFG_BITS_UNUSED4                                = (int)0x00400000,
     SYS_CFG_BITS_UNUSED5                                = (int)0x00800000,
 
     /** Use reference IMU in EKF instead of onboard IMU */
-    SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+    SYS_CFG_USE_REFERENCE_IMU_IN_EKF                    = (int)0x01000000,
     /** Reference point stationary on strobe input */
-    SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT	= (int)0x02000000,
+    SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT    = (int)0x02000000,
 };
 
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
-	/*! GPS  */
-	GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
-	/*! QZSS  */
-	GNSS_SAT_SIG_CONST_QZS                              = (uint16_t)0x000C,
-	/*! Galileo  */
-	GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
-	/*! BeiDou  */
-	GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
-	/*! GLONASS  */
-	GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
-	/*! SBAS  */
-	GNSS_SAT_SIG_CONST_SBS                              = (uint16_t)0x1000,
-	/*! IRNSS / NavIC  */
-	GNSS_SAT_SIG_CONST_IRN                              = (uint16_t)0x2000,
-	/*! IMES  */
-	GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
+    /*! GPS  */
+    GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
+    /*! QZSS  */
+    GNSS_SAT_SIG_CONST_QZS                              = (uint16_t)0x000C,
+    /*! Galileo  */
+    GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
+    /*! BeiDou  */
+    GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
+    /*! GLONASS  */
+    GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
+    /*! SBAS  */
+    GNSS_SAT_SIG_CONST_SBS                              = (uint16_t)0x1000,
+    /*! IRNSS / NavIC  */
+    GNSS_SAT_SIG_CONST_IRN                              = (uint16_t)0x2000,
+    /*! IMES  */
+    GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
 
-	/*! GNSS default */
-	GNSS_SAT_SIG_CONST_DEFAULT = \
-		GNSS_SAT_SIG_CONST_GPS | \
-		GNSS_SAT_SIG_CONST_SBS | \
-		GNSS_SAT_SIG_CONST_QZS | \
-		GNSS_SAT_SIG_CONST_GAL | \
-		GNSS_SAT_SIG_CONST_GLO | \
-		GNSS_SAT_SIG_CONST_BDS
+    /*! GNSS default */
+    GNSS_SAT_SIG_CONST_DEFAULT = \
+        GNSS_SAT_SIG_CONST_GPS | \
+        GNSS_SAT_SIG_CONST_SBS | \
+        GNSS_SAT_SIG_CONST_QZS | \
+        GNSS_SAT_SIG_CONST_GAL | \
+        GNSS_SAT_SIG_CONST_GLO | \
+    	GNSS_SAT_SIG_CONST_BDS
 };
 
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */

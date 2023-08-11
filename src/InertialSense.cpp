@@ -769,9 +769,9 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:			device.devInfo = *(dev_info_t*)data->ptr;			break;
-	case DID_SYS_CMD:			device.sysCmd = *(system_command_t*)data->ptr;		break;
-	case DID_EVB_FLASH_CFG:		device.evbFlashCfg = *(evb_flash_cfg_t*)data->ptr;	break;	
+	case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;           break;
+	case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;      break;
+	case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->ptr;  break;	
 	case DID_FLASH_CONFIG:
 		{
 			/* If flash config is request, when it is received the checksum is checked. If it matches what is already in local memory, 

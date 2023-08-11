@@ -76,7 +76,8 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     n = is_comm_free(&comm);
     dev_info_t* dev_info = NULL;
     dev_info_t* evb_dev_info = NULL;
-    uint32_t valid_signatures = 0;
+    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;      // Assume IMX-5
+    
     if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
         comm.rxBuf.tail += n;

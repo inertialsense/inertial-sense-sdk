@@ -198,7 +198,7 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numB
 
 	switch (instance->parseState)
 	{
-	case 0:		// Wait for packet header
+	case 1:		// Wait for packet header
 		if (numBytes < sizeof(packet_hdr_t))
 		{	
 			return _PTYPE_NONE;
@@ -210,7 +210,7 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* instance, uint16_t numB
 		instance->parseState++;
 		return _PTYPE_NONE;
 
-	case 1:		// Wait for entire packet 
+	case 2:		// Wait for entire packet 
 		if (numBytes < pkt->size)
 		{
 			return _PTYPE_NONE;
@@ -354,23 +354,31 @@ static protocol_type_t processAsciiPkt(is_comm_instance_t* instance)
 	return _PTYPE_PARSE_ERROR;
 }
 
+enum
+{
+	UBX_PARSE_STATE_PREAMBLE    = 1,
+	UBX_PARSE_STATE_CLASS_ID    = 2,
+	UBX_PARSE_STATE_MSG_ID      = 3,
+	UBX_PARSE_STATE_LENGTH_1    = 4,
+	UBX_PARSE_STATE_LENGTH_2    = 5,
+};
+
 static protocol_type_t processUbloxByte(is_comm_instance_t* instance)
 {
 	switch (instance->parseState)
 	{
-	case 0: // Preamble 1 & 2
-		instance->parseState = 2;
-		break;
-	case 2: // class id
+	case UBX_PARSE_STATE_PREAMBLE:
 		// fall through
-	case 3: // message id
+	case UBX_PARSE_STATE_CLASS_ID:
 		// fall through
-	case 4: // length byte 1
+	case UBX_PARSE_STATE_MSG_ID:
+		// fall through
+	case UBX_PARSE_STATE_LENGTH_1:
 		// fall through
 		instance->parseState++;
 		break;
 
-	case 5: // length byte 2
+	case UBX_PARSE_STATE_LENGTH_2:
 		{
 			uint32_t len = BE_SWAP16(*((uint16_t*)(void*)(instance->rxBuf.scan - 2)));
 	
@@ -817,8 +825,29 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
 	return is_comm_parse(instance);
 }
 
-#define FOUND_START_BYTE(init)		if(init){ instance->hasStartByte = byte; instance->buf.head = instance->buf.scan-1; }
-#define START_BYTE_SEARCH_ERROR()	
+inline void start_byte1_check(is_comm_instance_t* instance, uint32_t mask, uint8_t byte);
+void start_byte1_check(is_comm_instance_t* instance, uint32_t mask, uint8_t byte)
+{
+	if (instance->config.enabledMask & mask) 
+	{
+		instance->hasStartByte = byte;
+		if (instance->timeMs){ instance->startByteTimeMs = *(instance->timeMs); } 
+		instance->rxBuf.head = instance->rxBuf.scan-1;
+		instance->parseState = 0;	// byte index 0
+	}
+}
+
+inline void start_byte2_check(is_comm_instance_t* instance, uint32_t mask, uint8_t byte1);
+void start_byte2_check(is_comm_instance_t* instance, uint32_t mask, uint8_t byte1)
+{
+	if (instance->parseState==byte1 && instance->config.enabledMask & mask) 
+	{
+		instance->hasStartByte = byte1;
+		if (instance->timeMs){ instance->startByteTimeMs = *(instance->timeMs); }
+		instance->rxBuf.head = instance->rxBuf.scan-2;
+		instance->parseState = 1;	// byte index 1
+	}
+}
 
 protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 {
@@ -844,28 +873,14 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 		{
 			switch(byte)
 			{
-#define START_BYTE1_CHECK(mask) \
-	if (instance->config.enabledMask & mask) { \
-		instance->hasStartByte = byte; \
-		if (instance->timeMs){ instance->startByteTimeMs = *(instance->timeMs); } \
-		instance->rxBuf.head = instance->rxBuf.scan-1; \
-		instance->parseState = 0; \
-	}
-#define START_BYTE2_CHECK(mask, byte1) \
-	if (instance->parseState==byte1 && instance->config.enabledMask & mask) { \
-		instance->hasStartByte = byte1; \
-		if (instance->timeMs){ instance->startByteTimeMs = *(instance->timeMs); } \
-		instance->rxBuf.head = instance->rxBuf.scan-2; \
-		instance->parseState = 0; \
-	}
 			case PSC_ISB_PREAMBLE_BYTE1: // Save start byte 
 			case UBLOX_START_BYTE1:      instance->parseState = byte; 	continue; 
-			case PSC_ISB_PREAMBLE_BYTE2: START_BYTE2_CHECK( ENABLE_PROTOCOL_ISB, PSC_ISB_PREAMBLE_BYTE1);	break;
-			case UBLOX_START_BYTE2:      START_BYTE2_CHECK( ENABLE_PROTOCOL_UBLOX, UBLOX_START_BYTE1);      break;
-			case PSC_NMEA_START_BYTE:    START_BYTE1_CHECK( ENABLE_PROTOCOL_NMEA );                         break;
-			case RTCM3_START_BYTE:       START_BYTE1_CHECK( ENABLE_PROTOCOL_RTCM3 );                        break;
-			case SPARTN_START_BYTE:      START_BYTE1_CHECK( ENABLE_PROTOCOL_SPARTN );                       break;
-			case SONY_START_BYTE:        START_BYTE1_CHECK( ENABLE_PROTOCOL_SONY );                         break;
+			case PSC_ISB_PREAMBLE_BYTE2: start_byte2_check( instance, ENABLE_PROTOCOL_ISB,    PSC_ISB_PREAMBLE_BYTE1);	break;
+			case UBLOX_START_BYTE2:      start_byte2_check( instance, ENABLE_PROTOCOL_UBLOX,  UBLOX_START_BYTE1);       break;
+			case PSC_NMEA_START_BYTE:    start_byte1_check( instance, ENABLE_PROTOCOL_NMEA,   byte );                   break;
+			case RTCM3_START_BYTE:       start_byte1_check( instance, ENABLE_PROTOCOL_RTCM3,  byte );                   break;
+			case SPARTN_START_BYTE:      start_byte1_check( instance, ENABLE_PROTOCOL_SPARTN, byte );                   break;
+			case SONY_START_BYTE:        start_byte1_check( instance, ENABLE_PROTOCOL_SONY,   byte );                   break;
 			}
 
 			if (instance->hasStartByte == 0)
