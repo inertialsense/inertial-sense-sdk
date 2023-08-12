@@ -31,7 +31,8 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 {
 	uint8_t buf[1024];
 	// Stop all broadcasts on the device
-	int n = is_comm_stop_broadcasts_all_ports_to_buf(buf, sizeof(buf), comm);
+	int n = is_comm_write_to_buf(buf, sizeof(buf), comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);    
+
 	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");

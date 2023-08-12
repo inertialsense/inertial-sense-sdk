@@ -683,7 +683,6 @@ int is_comm_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* com
 * @param comm the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_all_ports_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm);
 int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm);
 
 /**

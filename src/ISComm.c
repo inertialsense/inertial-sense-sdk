@@ -1111,14 +1111,14 @@ int is_comm_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* com
     return is_comm_write(portWrite, port, comm, PKT_TYPE_DATA, did, size, offset, data);    
 }    
 
-int is_comm_stop_broadcasts_all_ports_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm)
-{
-    return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);    
-}
-
 int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm)
 {
     return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);    
+}
+
+int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm)
+{
+    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);    
 }
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
