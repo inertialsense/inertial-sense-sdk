@@ -2202,6 +2202,11 @@ int nmea_parse_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMod
 */
 char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount)
 {
+	if (gpsSat == NULL || gpsSig == NULL)
+	{	// Don't parse
+		return (char*)a;
+	}
+
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGSV,
 	// $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
@@ -2231,12 +2236,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 		ptr = ASCII_to_u8(&cno, ptr);		// 7 + 4x   cno
 
 		talkerId_to_gnssId(a, gnssId, svId, sigId);
-
-		if (gpsSat == NULL || gpsSig == NULL)
-		{
-			break;
-		}
-		
+				
 		// Add to satellite info list
 		for (uint32_t j=0;; j++)
 		{
