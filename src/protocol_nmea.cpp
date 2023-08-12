@@ -2427,6 +2427,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
         {
             break;
         }
+		
 		// Add to satellite info list
 		for (uint32_t j=0;; j++)
 		{
