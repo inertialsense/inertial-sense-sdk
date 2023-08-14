@@ -56,19 +56,32 @@ static std::mutex g_devices_mutex;
 
 bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 {
-    bool corrupt = (hdr != NULL &&
-    (
-        hdr->size == 0 ||
-        hdr->offset + hdr->size > MAX_DATASET_SIZE ||
-        hdr->id == 0 ||
-//         hdr->id >= DID_COUNT ||
-        hdr->offset % 4 != 0 ||
-        hdr->size % 4 != 0 
-// #if !defined(DONT_CHECK_LOG_DATA_SET_SIZE)
-// 		|| (cISDataMappings::GetSize(hdr->id) > 0 && hdr->offset + hdr->size > cISDataMappings::GetSize(hdr->id))
-// #endif
-    ));
-	return corrupt;
+	bool isCorrupt = true;
+
+	if (hdr != NULL)
+	{
+		if (hdr->id == DID_GPS1_RAW || hdr->id == DID_GPS2_RAW)
+		{
+			// if any case is true this is corrupt
+			isCorrupt = (hdr->size == 0 ||
+				hdr->offset + hdr->size > MAX_DATASET_SIZE ||
+				hdr->id == 0 ||
+				hdr->offset % 4 != 0);
+
+		}
+		else
+		{
+			// if any case is true this is corrupt
+			isCorrupt = (hdr->size == 0 ||
+				hdr->offset + hdr->size > MAX_DATASET_SIZE ||
+				hdr->id == 0 ||
+				hdr->offset % 4 != 0 ||
+				hdr->size % 4 != 0);
+		}
+			
+	}
+
+	return isCorrupt;
 }
 
 bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
