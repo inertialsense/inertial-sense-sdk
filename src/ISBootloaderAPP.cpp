@@ -41,14 +41,29 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
-    int messageSize;
+    int messageSize, n, i, m;
+
+    // clear the Rx serial port
+    n = is_comm_free(&comm);
+    
+    // In testing it was found that @ 330kb/s The buffer would take 10-11
+    // reads to clear after the stop broad casting message was sent. 
+    // 20 time represents double the imperical 
+    for (uint8_t i = 0; i < 20; i++) 
+    { 
+        // Once the broad cast has stopped this function will break.
+        if (serialPortReadTimeout(m_port, comm.buf.start, n, 200) == 0)
+            break;         
+    }
 
     messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
-    for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    for (i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     {
-        //serialPortClose(m_port);
-        return IS_IMAGE_SIGN_NONE;
+        if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+        {
+            //serialPortClose(m_port);
+            return IS_IMAGE_SIGN_NONE;
+        }
     }
     messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
     if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
@@ -58,7 +73,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     }
 
     protocol_type_t ptype;
-    int n = is_comm_free(&comm);
+    n = is_comm_free(&comm);
     dev_info_t* dev_info = NULL;
     dev_info_t* evb_dev_info = NULL;
     uint32_t valid_signatures = 0;
