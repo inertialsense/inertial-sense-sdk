@@ -1848,8 +1848,8 @@ typedef struct PACKED
 enum eSysConfigBits
 {
 	UNUSED1                                             = (int)0x00000001,
-	/*! Disable mag continuous calibration.  Useful if the environment is prohibative for the slow background magnetometer calibration in the EKF.  */
-	SYS_CFG_BITS_DISABLE_MAG_CONTINUOUS_CAL             = (int)0x00000002,
+	/*! Enable mag continuous calibration.  Allow slow background magnetometer calibration in the EKF. */
+	SYS_CFG_BITS_ENABLE_MAG_CONTINUOUS_CAL              = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
 	/*! Disable mag declination estimation */
