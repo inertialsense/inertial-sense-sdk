@@ -2422,43 +2422,43 @@ enum eIoConfig
     IO_CONFIG_G6G7_COM1                         = (int)0x00000040,
     /** G6,G7 - Quadrature wheel encoder input (G6 QDEC0-A).  Overriden when SPI is enabled (G9 held low on bootup/config). */
 //  IO_CONFIG_G6G7_QDEC0_INPUT_G6               = (int)0x00000080,
-	/** G6,G7 - Bit mask */
-	IO_CONFIG_G6G7_MASK                         = (int)0x000000C0,
-	/** G6,G7 - Default */
-	IO_CONFIG_G6G7_DEFAULT                      = IO_CONFIG_G6G7_COM1,	
+    /** G6,G7 - Bit mask */
+    IO_CONFIG_G6G7_MASK                         = (int)0x000000C0,
+    /** G6,G7 - Default */
+    IO_CONFIG_G6G7_DEFAULT                      = IO_CONFIG_G6G7_COM1,	
 
-	// G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config)
-	/** G5,G8 - Strobe input on G5 */
-	IO_CONFIG_G5G8_STROBE_INPUT_G5              = (int)0x00000100,
-	/** G5,G8 - Strobe input on G8 */
-	IO_CONFIG_G5G8_STROBE_INPUT_G8              = (int)0x00000200,
-	/** G5,G8 - Strobe input on both G5 and G8 */
-	IO_CONFIG_G5G8_STROBE_INPUT_G5_G8           = (int)0x00000300,
-	/** G5,G8 - Strobe input on both G5 and G8 */
-	IO_CONFIG_G5G8_G6G7_SPI_ENABLE              = (int)0x00000400,
-	/** G5,G8 - Quadrature wheel encoder input (G5 QDEC1-B, G8 QDEC1-A) */
-	IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000500,
-	/** G5,G8 - Bit mask */
-	IO_CONFIG_G5G8_MASK                         = (int)0x00000700,
-	/** G5,G8 - Default */
-	IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
+    // G5,G8 - STROBE, QDEC1 (future), SPI (enabled when G9 is held low on bootup/config) (ioConfig[10-8])
+    /** G5,G8 - Strobe input on G5 */
+    IO_CONFIG_G5G8_STROBE_INPUT_G5              = (int)0x00000100,
+    /** G5,G8 - Strobe input on G8 */
+    IO_CONFIG_G5G8_STROBE_INPUT_G8              = (int)0x00000200,
+    /** G5,G8 - Strobe input on both G5 and G8 */
+    IO_CONFIG_G5G8_STROBE_INPUT_G5_G8           = (int)0x00000300,
+    /** G5,G8 - Strobe input on both G5 and G8 */
+    IO_CONFIG_G5G8_G6G7_SPI_ENABLE              = (int)0x00000400,
+    /** G5,G8 - Quadrature wheel encoder input (G5 QDEC1-B, G8 QDEC1-A) */
+    IO_CONFIG_G5G8_QDEC_INPUT                   = (int)0x00000500,
+    /** G5,G8 - Bit mask */
+    IO_CONFIG_G5G8_MASK                         = (int)0x00000700,
+    /** G5,G8 - Default */
+    IO_CONFIG_G5G8_DEFAULT                      = (int)0,	
 
-	/** G15 (GPS PPS) - STROBE */
-	IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
+    /** G15 (GPS PPS) - STROBE (ioConfig[11]) */
+    IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
 	// IO_CONFIG_                               = (int)0x00001000,
 
-	/** GPS TIMEPULSE source */
+    /** GPS TIMEPULSE source (ioConfig[15-13]) */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)(IO_CFG_GPS_TIMEPUSE_SOURCE_MASK<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET),	
-	IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_GPS1_PPS_PIN20	= (int)1,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_GPS2_PPS			= (int)2,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G2_PIN6	= (int)3,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G5_PIN9	= (int)4,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,
-	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13	= (int)6,
-#define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }	
+    IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
+    IO_CFG_GPS_TIMEPUSE_SOURCE_GPS1_PPS_PIN20	= (int)1,
+    IO_CFG_GPS_TIMEPUSE_SOURCE_GPS2_PPS			= (int)2,
+    IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G2_PIN6	= (int)3,
+    IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G5_PIN9	= (int)4,
+    IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,
+    IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13	= (int)6,
+#define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }
 #define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) ((ioConfig>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
     
     /** GPS 1 source OFFSET */
@@ -2531,6 +2531,7 @@ enum ePlatformConfig
 {
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
     PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
     PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
