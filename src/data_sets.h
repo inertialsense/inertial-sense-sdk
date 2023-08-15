@@ -2445,6 +2445,7 @@ enum eIoConfig
 
     /** G15 (GPS PPS) - STROBE (ioConfig[11]) */
     IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
+	// IO_CONFIG_                               = (int)0x00001000,
 
     /** GPS TIMEPULSE source (ioConfig[15-13]) */
 	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
@@ -2530,6 +2531,7 @@ enum ePlatformConfig
 {
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
     PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
     PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
