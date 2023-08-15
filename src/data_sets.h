@@ -537,11 +537,14 @@ typedef struct PACKED
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
-    /** Key */
-    uint32_t		key;
+	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
+	uint32_t		key;
 
-    /** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
-    uint32_t 		uid[4];
+	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
+	int32_t			platformType;
+
+	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
+	uint32_t 		uid[4];
 } manufacturing_info_t;
 
 /** (DID_INS_1) INS output: euler rotation w/ respect to NED, NED position from reference LLA */
@@ -2443,15 +2446,10 @@ enum eIoConfig
     /** G15 (GPS PPS) - STROBE (ioConfig[11]) */
     IO_CONFIG_G15_STROBE_INPUT                  = (int)0x00000800,
 
-    /** GPS 1 skip initialization (ioConfig[12]) */
-    IO_CONFIG_GPS1_NO_INIT 						= (int)0x00001000,
-    /** GPS 2 skip initialization (ioConfig[28]) */
-    IO_CONFIG_GPS2_NO_INIT 						= (int)0x10000000,
-
     /** GPS TIMEPULSE source (ioConfig[15-13]) */
-    IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)0x0000E000,
-    IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
-    IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
+	IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET			= (int)13,
+	IO_CFG_GPS_TIMEPUSE_SOURCE_MASK				= (int)0x00000007,
+	IO_CFG_GPS_TIMEPUSE_SOURCE_BITMASK			= (int)(IO_CFG_GPS_TIMEPUSE_SOURCE_MASK<<IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET),	
     IO_CFG_GPS_TIMEPUSE_SOURCE_DISABLED			= (int)0,
     IO_CFG_GPS_TIMEPUSE_SOURCE_GPS1_PPS_PIN20	= (int)1,
     IO_CFG_GPS_TIMEPUSE_SOURCE_GPS2_PPS			= (int)2,
@@ -2460,7 +2458,6 @@ enum eIoConfig
     IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,
     IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13	= (int)6,
 #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }
-    
 #define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) ((ioConfig>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
     
     /** GPS 1 source OFFSET */
@@ -2471,6 +2468,11 @@ enum eIoConfig
     IO_CONFIG_GPS1_TYPE_OFFSET					= (int)22,				// ioConfig[24-22]
     /** GPS 2 type OFFSET */
     IO_CONFIG_GPS2_TYPE_OFFSET					= (int)25,				// ioConfig[27-25]
+
+    /** GPS 1 skip initialization (ioConfig[12]) */
+    IO_CONFIG_GPS1_NO_INIT 						= (int)0x00001000,
+    /** GPS 2 skip initialization (ioConfig[28]) */
+    IO_CONFIG_GPS2_NO_INIT 						= (int)0x10000000,
 
     /** GPS source MASK */
     IO_CONFIG_GPS_SOURCE_MASK					= (int)0x00000007,
@@ -2504,10 +2506,15 @@ enum eIoConfig
     /** GPS type - last type */
     IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_CXD5610,		// Set to last type
 
-#define IO_CONFIG_GPS1_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS2_SOURCE(ioConfig) ((ioConfig>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS1_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
-#define IO_CONFIG_GPS2_TYPE(ioConfig)	((ioConfig>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS1_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS2_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS1_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS2_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+
+#define SET_IO_CFG_GPS1_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
+#define SET_IO_CFG_GPS2_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
+#define SET_IO_CFG_GPS1_TYPE(result,val)    SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_TYPE_OFFSET, IO_CONFIG_GPS_TYPE_MASK)
+#define SET_IO_CFG_GPS2_TYPE(result,val)    SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_TYPE_OFFSET, IO_CONFIG_GPS_TYPE_MASK)
 
     /** IMU 1 disable (ioConfig[29]) */	
     IO_CONFIG_IMU_1_DISABLE						= (int)0x20000000,
@@ -2521,30 +2528,30 @@ enum eIoConfig
 
 enum ePlatformConfig
 {
-	// IMX Carrier Board
-	PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
-	PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
-	PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
-	PLATFORM_CFG_TYPE_RUG1                      = (int)2,
-	PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
-	PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
-	PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
-	PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
-	PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
-	PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-	PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
-	PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
-	PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-	PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
-	PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
-	PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-	PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
+    // IMX Carrier Board
+    PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
+    PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
+    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
+    PLATFORM_CFG_TYPE_RUG1                      = (int)2,
+    PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
+    PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
+    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
+    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
+    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
+    PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
+    PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
     PLATFORM_CFG_TYPE_IG2                       = (int)16,		// IG-2 w/ IMX-5 and GPX-1
-	PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		// Enable UBX output on Lambda for testbed
-	PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,		// "
-	PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,		// Enable UBX input from Lambda
-	PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,		// "
-	PLATFORM_CFG_TYPE_COUNT                     = (int)21,
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		// Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,		// "
+    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,		// Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,		// "
+    PLATFORM_CFG_TYPE_COUNT                     = (int)21,
 
     // Presets
     PLATFORM_CFG_PRESET_MASK                    = (int)0x0000FF00,
@@ -2570,13 +2577,15 @@ enum ePlatformConfig
     PLATFORM_CFG_RUG3_IOEXP_BIT_MASK            = (int)0x00FF0000,
     PLATFORM_CFG_RUG3_IOEXP_BIT_OFFSET          = (int)16,
 
-    RUG3_IOEXP_BIT_OFFSET_n232_485    			= (int)0,
-    RUG3_IOEXP_BIT_OFFSET_n232_TTL    			= (int)1,
-    RUG3_IOEXP_BIT_OFFSET_nRS_CAN     			= (int)2,
-    RUG3_IOEXP_BIT_OFFSET_nGPS2_RS    			= (int)3,
-    RUG3_IOEXP_BIT_OFFSET_nSPIEN      			= (int)4,
-    RUG3_IOEXP_BIT_OFFSET_nSPI_SER    			= (int)5,
-    RUG3_IOEXP_BIT_OFFSET_nGPSRST     			= (int)6,
+    RUG3_IOEXP_BIT_OFFSET_n232_485              = (int)0,
+    RUG3_IOEXP_BIT_OFFSET_n232_TTL              = (int)1,
+    RUG3_IOEXP_BIT_OFFSET_nRS_CAN               = (int)2,
+    RUG3_IOEXP_BIT_OFFSET_nGPS2_RS              = (int)3,
+    RUG3_IOEXP_BIT_OFFSET_nSPIEN                = (int)4,
+    RUG3_IOEXP_BIT_OFFSET_nSPI_SER              = (int)5,
+    RUG3_IOEXP_BIT_OFFSET_nGPSRST               = (int)6,
+
+    PLATFORM_CFG_UPDATE_IO_CONFIG               = (int)0x01000000,    // Generate ioConfig based on platform config
 };
 
 /** (DID_WHEEL_ENCODER) Message to communicate wheel encoder measurements to GPS-INS */
