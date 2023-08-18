@@ -324,7 +324,7 @@ bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
 {
     evb_flash_cfg_t defaults;
     memset(&defaults, 0, sizeof(evb_flash_cfg_t));    
-    reset_config_defaults(&defaults);
+    reset_evb_flash_cfg_defaults(&defaults);
 
     bool valid = true;
     if (cfg->checksum != flashChecksum32(cfg, sizeof(evb_flash_cfg_t)) || cfg->key != defaults.key)
@@ -332,7 +332,7 @@ bool nvr_validate_config_integrity(evb_flash_cfg_t* cfg)
         valid = false;
     }
 
-    if (error_check_config(cfg))
+    if (error_check_evb_flash_cfg(cfg))
     {   // Values are outside valid ranges
         valid = false;        
     }
@@ -490,7 +490,7 @@ void nvr_flash_config_write_enable(void)
 
 
 // Returns 0 on success
-int error_check_config(evb_flash_cfg_t *cfg)
+int error_check_evb_flash_cfg(evb_flash_cfg_t *cfg)
 {
     if(cfg == NULLPTR)
     {
@@ -520,7 +520,7 @@ int error_check_config(evb_flash_cfg_t *cfg)
 }
 
 
-void reset_config_defaults( evb_flash_cfg_t *cfg )
+void reset_evb_flash_cfg_defaults( evb_flash_cfg_t *cfg )
 {
 	if (cfg == NULL)
 		return;

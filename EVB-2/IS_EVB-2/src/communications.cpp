@@ -499,7 +499,7 @@ extern void log_ublox_raw_to_SD(cISLogger& logger, uint8_t *dataPtr, uint32_t da
 
 void update_flash_cfg(evb_flash_cfg_t &newCfg)
 {
-    if(error_check_config(&newCfg))
+    if(error_check_evb_flash_cfg(&newCfg))
     {
         return;
     }

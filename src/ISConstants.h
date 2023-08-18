@@ -786,6 +786,11 @@ extern void vPortFree(void* pv);
 
 #define REF_INS_SERIAL_NUMBER			99999										// 10101 was prior value
 
+#define INS_MAX_VELOCITY				500.0f				// (m/s)	INS operation limit - velocity.  Limited by GPS.
+#define INS_MAX_LATITUDE				C_PIDIV2			// (rad)	INS operation limit - latitude
+#define INS_MAX_LONGITUDE				C_PI				// (rad)	INS operation limit - longitude
+#define INS_MAX_ALTITUDE				50000.0				// (m)		INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
+
 typedef float       f_t;
 typedef int			i_t;
 typedef double      ixVector2d[2];    	// V = | 0 1 |

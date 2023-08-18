@@ -130,7 +130,7 @@ extern ermc_t    			        g_ermc;
 
 void globals_init(void);
 void com_bridge_apply_preset(evb_flash_cfg_t* cfg);
-void reset_config_defaults(evb_flash_cfg_t* cfg);
+void reset_evb_flash_cfg_defaults(evb_flash_cfg_t* cfg);
 int comWrite(int serialNum, const unsigned char *buf, int size, uint32_t ledPin );
 int comRead(int serialNum, unsigned char *buf, int size, uint32_t ledPin);
 void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len);
@@ -143,7 +143,7 @@ bool nvr_slow_maintenance(void);
 void nvr_flash_config_write_needed(void);
 void nvr_flash_config_write_enable(void);
 
-int error_check_config(evb_flash_cfg_t *cfg);
+int error_check_evb_flash_cfg(evb_flash_cfg_t *cfg);
 
 void setBuildDateTimeFromCompileTime(uint8_t buildDate[4], uint8_t buildTime[4]);
 

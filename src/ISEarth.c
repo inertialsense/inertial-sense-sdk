@@ -631,17 +631,12 @@ void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt)
  */
 int llaDegValid( double lla[3] )
 {
-    if( (lla[0]<-90.0)		|| (lla[0]>90.0) ||			// Lat
-        (lla[1]<-180.0)		|| (lla[1]>180.0) ||		// Lon
-        (lla[2]<-10000.0)   || (lla[2]>1000000.0) )		// Alt: -10 to 1,000 kilometers
-    {    // Invalid
-        return 0;
-    }
-    else
-    {    // Valid
-        return 1;
-    }
+    return 
+        (fabs(lla[0]) <= 90.0) &&           // Lat
+        (fabs(lla[1]) <= 180.0) &&          // Lon
+        (fabs(lla[2]) <= INS_MAX_ALTITUDE); // Alt: -10 to 50 km
 }
+
 
 /* IGF-80 gravity model with WGS-84 ellipsoid refinement */
 float gravity_igf80(float lat_rad, float alt)
