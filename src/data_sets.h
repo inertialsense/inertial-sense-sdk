@@ -2085,7 +2085,8 @@ typedef struct PACKED
 enum eSysConfigBits
 {
 	UNUSED1                                             = (int)0x00000001,
-	UNUSED2                                             = (int)0x00000002,
+	/*! Enable mag continuous calibration.  Allow slow background magnetometer calibration in the EKF. */
+	SYS_CFG_BITS_ENABLE_MAG_CONTINUOUS_CAL              = (int)0x00000002,
 	/*! Enable automatic mag recalibration */
 	SYS_CFG_BITS_AUTO_MAG_RECAL                         = (int)0x00000004,
 	/*! Disable mag declination estimation */
@@ -2826,6 +2827,9 @@ typedef struct PACKED
 
     /** Wheel encoder: euler angles describing the rotation from imu to left wheel */
     wheel_config_t          wheelConfig;
+
+	/** Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection. */
+	float                   magInterferenceThreshold;
 
 } nvm_flash_cfg_t;
 
