@@ -3062,13 +3062,6 @@ PUSH_PACK_1
 #define NFREQGLO 0
 #endif
 
-#define NEXOBS      0           /* number of extended obs codes */
-#define MAXOBS      25          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
-#define MAXERRMSG   0           /* max length of error/warning message */
-#define MAXANT      64          /* max length of station name/antenna type */
-
-#define MAXPREOBS  _MAX(40, MAXOBS)  // Note: total rover + base is (2 * MAXPREOBS)
-
 #ifdef ENASBS
 // sbas waas only satellites
 #define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
@@ -3086,8 +3079,14 @@ PUSH_PACK_1
 #define NSATLEO     0
 
 #define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
+#define NEXOBS      0           /* number of extended obs codes */
+#define MAXOBS      25          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
+#define MAXHOLDAMBOBS _MIN(30, MAXSAT*NFREQ)   /* max number of observations in holdamb() */
+#define MAXERRMSG   0           /* max length of error/warning message */
+#define MAXANT      64          /* max length of station name/antenna type */
+#define MAXPREOBS  _MAX(40, MAXOBS)  // Note: total rover + base is (2 * MAXPREOBS)
 
-#endif
+#endif // RTKlib embedded defines
 
 typedef struct {        /* SNR mask type */
     int ena[2];         /* enable flag {rover,base} */
