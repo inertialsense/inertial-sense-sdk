@@ -3080,7 +3080,7 @@ PUSH_PACK_1
 
 #define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
 #define NEXOBS      0           /* number of extended obs codes */
-#define MAXOBS      25          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
+#define MAXOBS      19          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
 #define MAXHOLDAMBOBS _MIN(30, MAXSAT*NFREQ)   /* max number of observations in holdamb(). This is needed only due to memory constraints */
 #define MAXERRMSG   0           /* max length of error/warning message */
 #define MAXANT      64          /* max length of station name/antenna type */
