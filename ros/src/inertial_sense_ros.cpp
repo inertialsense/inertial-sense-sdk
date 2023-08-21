@@ -222,14 +222,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("enable_log", log_enabled_, false);
 
     // advanced Parameters
-    ph.nodeParam("ioConfig", ioConfigBits_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, 0);
     ph.nodeParam("RTKCfgBits", rtkConfigBits_, 0);            // rtk config bits
     ph.nodeParam("wheelCfgBits", wheelConfigBits_, 0);        // wheel-encoder config bits
 
     ph.nodeParam("mag_declination", magDeclination_);
     ph.nodeParamVec("ref_lla", 3, refLla_);
     ph.nodeParam("publishTf", publishTf_);
-    ph.nodeParam("platformConfig", platformConfig_);
+    setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_);
 
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
@@ -513,14 +513,14 @@ bool InertialSenseROS::connect(float timeout)
 
     do {
         std::string cur_port = *ports_iterator;
-        /// Connect to the uINS
+        /// Connect to the IMX
         ROS_INFO("InertialSenseROS: Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
         sdk_connected_ = IS_.Open(cur_port.c_str(), baudrate_);
         if (!sdk_connected_) {
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sleep(1); // is this a good idea?
         } else {
-            ROS_INFO("InertialSenseROS: Connected to uINS %d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }
@@ -539,7 +539,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
     char diff_protocol[4] = { 0, 0, 0, 0 };
     for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.GetDeviceInfo().protocolVer[i];
 
-    char local_firmware[3] = { FIRMWARE_VERSION_CHAR0, FIRMWARE_VERSION_CHAR1, FIRMWARE_VERSION_CHAR2 };
+    char local_firmware[3] = { REPO_VERSION_MAJOR, REPO_VERSION_MINOR, REPO_VERSION_REVIS };
     char diff_firmware[3] = { 0, 0 ,0 };
     for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.GetDeviceInfo().firmwareVer[i];
 
@@ -563,9 +563,9 @@ bool InertialSenseROS::firmware_compatiblity_check()
             PROTOCOL_VERSION_CHAR1,
             PROTOCOL_VERSION_CHAR2,
             PROTOCOL_VERSION_CHAR3,
-            FIRMWARE_VERSION_CHAR0,
-            FIRMWARE_VERSION_CHAR1, 
-            FIRMWARE_VERSION_CHAR2,
+            REPO_VERSION_MAJOR,
+            REPO_VERSION_MINOR, 
+            REPO_VERSION_REVIS,
             IS_.GetDeviceInfo().protocolVer[0],
             IS_.GetDeviceInfo().protocolVer[1],
             IS_.GetDeviceInfo().protocolVer[2],
@@ -610,13 +610,25 @@ void InertialSenseROS::configure_flash_parameters()
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {
-        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
+        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting IMX to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
         reboot = true;
     }
-    if (current_flash_cfg.ioConfig != ioConfigBits_)
+    if (setIoConfigBits_ && ioConfigBits_ != current_flash_cfg.ioConfig)
     {
-        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
+        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting IMX to make change", current_flash_cfg.ioConfig, ioConfigBits_);
         reboot = true;
+    }
+    else
+    {   // Don't change
+        ioConfigBits_ = current_flash_cfg.ioConfig;
+    }
+    if (setPlatformConfig_ && platformConfig_ != current_flash_cfg.platformConfig)
+    {
+        reboot = true;
+    }
+    else
+    {   // Don't change
+        platformConfig_ = current_flash_cfg.platformConfig;
     }
 
     bool setRefLla = false;
@@ -953,7 +965,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 
     if (!refLLA_known)
     {
-        ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from uINS/IMX");
+        ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
         return;
     }
     if (rs_.did_ins4.enabled)
@@ -2198,7 +2210,7 @@ ros::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, cons
     }
     else
     {
-        // Otherwise, estimate the uINS boot time and offset the messages
+        // Otherwise, estimate the IMX boot time and offset the messages
         if (!got_first_message_)
         {
             got_first_message_ = true;
@@ -2229,7 +2241,7 @@ ros::Time InertialSenseROS::ros_time_from_start_time(const double time)
     }
     else
     {
-        // Otherwise, estimate the uINS boot time and offset the messages
+        // Otherwise, estimate the IMX boot time and offset the messages
         if (!got_first_message_)
         {
             got_first_message_ = true;

@@ -28,7 +28,7 @@
 
 
 topic: "inertialsense"
-port: [/dev/ttyACM0, /dev/ttyACM1]
+port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]
 baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)

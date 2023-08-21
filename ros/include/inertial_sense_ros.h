@@ -67,9 +67,9 @@
 #define GPS_UNIX_OFFSET 315964800 // GPS time started on 6/1/1980 while UNIX time started 1/1/1970 this is the difference between those in seconds
 #define LEAP_SECONDS 18           // GPS time does not have leap seconds, UNIX does (as of 1/1/2017 - next one is probably in 2020 sometime unless there is some crazy earthquake or nuclear blast)
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
-#define FIRMWARE_VERSION_CHAR0 1
-#define FIRMWARE_VERSION_CHAR1 9
-#define FIRMWARE_VERSION_CHAR2 0
+#define REPO_VERSION_MAJOR 1
+#define REPO_VERSION_MINOR 10   // The repo/firmware version should originate from git tag (like repositoryInfo.h used in EvalTool).  For now we set these manually.
+#define REPO_VERSION_REVIS 0
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
     IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
@@ -132,6 +132,7 @@ public:
     bool log_enabled_ = false;
     bool covariance_enabled_;
     int platformConfig_ = 0;
+    bool setPlatformConfig_ = false;
 
     std::string frame_id_;
 
@@ -409,13 +410,9 @@ public:
     bool refLLA_known = false;
 
     uint32_t ioConfigBits_ = 0;                 // this is read directly from the config,
-    uint32_t working_ioConfigBits_ = 0;         // this is the calculated/derived value from other parameters
-
+    bool setIoConfigBits_ = false;
     uint32_t rtkConfigBits_ = 0;                // this is read directly from the config
-    uint32_t working_rtkConfigBits_ = 0;        // this is the calculated/derived value from other parameters
-
     uint32_t wheelConfigBits_ = 0;              // this is read directly from the config
-    uint32_t working_wheelConfigBits_ = 0;      // this is the calculated/derived value from other parameters
 
     float gpsTimeUserDelay_ = 0;
 
