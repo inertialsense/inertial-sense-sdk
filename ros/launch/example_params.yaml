@@ -28,22 +28,23 @@
 
 
 topic: "inertialsense"
-port: [/dev/ttyACM0, /dev/ttyACM1]
+port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]
 baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
 frame_id: ""                                    # FIXME: What is this?  is it just the FrameID to use in the ROS messages?
 mag_declination: 0.0
 ref_lla: [0.0, 0.0, 0.0]
+# factory_reset: true                             # Reset flash config to factory defaults on startup.
 
 # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
-platformConfig: 1                                 # PLATFORM_CFG_TYPE_NONE_ONBOARD_M8
+# platformConfig: 1                               # PLATFORM_CFG_TYPE_NONE_ONBOARD_M8
 # platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
 # platformConfig: 11                              # PLATFORM_CFG_TYPE_EVB2_G2
 # platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
 
-# IMX ioConfig (see eIoConfig)
-ioConfig:  0x00112044
+# Overwrite IMX ioConfig (see eIoConfig)
+# ioConfig: 0x00112044
 # ioConfig: 0x26CA060       # EVB2: GPS1 Ser1 F9P, GPS2 Ser2 F9P, PPS G8
 # ioConfig: 0x025CA060      # EVB2: GPS1 Ser1 F9P, GPS2 Ser0 F9P, PPS G8
 # ioConfig: 0x0244a060      # EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8

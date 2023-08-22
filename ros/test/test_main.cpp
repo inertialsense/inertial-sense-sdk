@@ -7,9 +7,8 @@ cTestNode testNode;
 TEST(test_main, basic)
 {
     std::string yaml = "topic: \"inertialsense\"\n"
-                       "port: [/dev/ttyACM0, /dev/ttyACM1]\n"
+                       "port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]\n"
                        "baudrate: 921600\n"
-                       "ioConfig: 0x026B2060\n"
                        "\n"
                        "ins:\n"
                        "  navigation_dt_ms: 16                          # EKF update period.  uINS-3: 4  default, 1 max.  Use `msg/ins.../period` to reduce INS output data rate."

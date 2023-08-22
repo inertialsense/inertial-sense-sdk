@@ -66,10 +66,12 @@ void InertialSenseROS::initialize(bool configFlashParameters)
     ROS_INFO("======  Starting Inertial Sense ROS  ======");
 
     initializeIS(true);
-    if (sdk_connected_) {
+    if (sdk_connected_) 
+    {
         initializeROS();
 
-        if (log_enabled_) {
+        if (log_enabled_) 
+        {
             start_log();    // Start log should happen last
         }
 
@@ -77,7 +79,8 @@ void InertialSenseROS::initialize(bool configFlashParameters)
     }
 }
 
-void InertialSenseROS::terminate() {
+void InertialSenseROS::terminate() 
+{
     IS_.Close();
     IS_.CloseServerConnection();
     sdk_connected_ = false;
@@ -85,8 +88,22 @@ void InertialSenseROS::terminate() {
     // ROS equivelant to shutdown advertisers, etc.
 }
 
-void InertialSenseROS::initializeIS(bool configFlashParameters) {
-    if (connect()) {
+void InertialSenseROS::initializeIS(bool configFlashParameters) 
+{
+    if (factory_reset_)
+    {
+        if (connect()) 
+        {   // Apply factory reset
+            ROS_INFO("InertialSenseROS: Applying factory reset.");
+            IS_.StopBroadcasts(true);
+            IS_.SetSysCmd(SYS_CMD_MANF_UNLOCK);
+            IS_.SetSysCmd(SYS_CMD_MANF_FACTORY_RESET);
+            sleep(3);
+        }
+    }
+
+    if (connect()) 
+    {
         // Check protocol and firmware version
         firmware_compatiblity_check();
 
@@ -102,7 +119,8 @@ void InertialSenseROS::initializeIS(bool configFlashParameters) {
     }
 }
 
-void InertialSenseROS::initializeROS() {
+void InertialSenseROS::initializeROS() 
+{
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = nh_.advertiseService("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA, this);
@@ -216,6 +234,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
         //No ports specified. Use default
         ports_.push_back("/dev/ttyACM0");
     }
+
+    ph.nodeParam("factory_reset", factory_reset_, false);
 
     ph.nodeParam("baudrate", baudrate_, 921600);
     ph.nodeParam("frame_id", frame_id_, "body");
@@ -622,7 +642,8 @@ void InertialSenseROS::configure_flash_parameters()
     {   // Don't change
         ioConfigBits_ = current_flash_cfg.ioConfig;
     }
-    if (setPlatformConfig_ && platformConfig_ != current_flash_cfg.platformConfig)
+    if (setPlatformConfig_ && platformConfig_ != current_flash_cfg.platformConfig &&
+        !(current_flash_cfg.platformConfig & PLATFORM_CFG_TYPE_FROM_MANF_OTP))
     {
         reboot = true;
     }

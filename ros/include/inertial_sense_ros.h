@@ -121,12 +121,14 @@ public:
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
+
     bool flashConfigStreaming_ = false;
+    bool factory_reset_ = false;        // Apply factory reset on startup
 
     // Serial Port Configuration
-    std::vector<std::string> ports_; // a collection of ports which will be attempted, in order until a connection is made
-    std::string port_; // the actual port we connected with
-    int baudrate_;  // the baudrate to connect with
+    std::vector<std::string> ports_;    // a collection of ports which will be attempted, in order until a connection is made
+    std::string port_;                  // the actual port we connected with
+    int baudrate_;                      // the baudrate to connect with
 
     bool sdk_connected_ = false;
     bool log_enabled_ = false;
