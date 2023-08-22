@@ -863,7 +863,6 @@ void InertialSenseROS::configure_rtk()
     }
     else
     {
-
         ROS_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
         ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
@@ -2063,7 +2062,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
     IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_flash_cfg_t, refLla));
 
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
+    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
@@ -2098,7 +2097,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
 {
     IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req.lla), sizeof(req.lla), offsetof(nvm_flash_cfg_t, refLla));
 
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
+    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
 
     int i = 0;
     nvm_flash_cfg_t current_flash;

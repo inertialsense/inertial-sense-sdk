@@ -93,7 +93,6 @@ TEST(test_main, gps_ins_time_sync)
                        "      enable: true\n"
                        "      period: 1";
 
-
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
 
@@ -131,14 +130,15 @@ TEST(test_main, gps_ins_time_sync)
     }
 
     TEST_COUT << "Timestamp Deviation (GPS <> pIMU):  [" << testNode.get_min_deviation(testNode.gps_ts, testNode.pimu_ts) << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.pimu_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.pimu_ts) << "]" << :: std::endl;
-    TEST_COUT << "Timestamp Deviation (GPS <> IMU):  [" << testNode.get_min_deviation(testNode.gps_ts, testNode.imu_ts) << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.imu_ts) << "]" << :: std::endl;
-    TEST_COUT << "Timestamp Deviation (GPS <> INS):  [" << testNode.get_min_deviation(testNode.gps_ts, testNode.ins_ts) << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.ins_ts) << "]" << :: std::endl;
-    TEST_COUT << "Timestamp Deviation (INS <> IMU):  [" << testNode.get_min_deviation(testNode.ins_ts, testNode.imu_ts) << " <= " <<  testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts) << " <= "  << testNode.get_max_deviation(testNode.ins_ts, testNode.imu_ts) << "]" << :: std::endl;
+    TEST_COUT << "Timestamp Deviation (GPS <> IMU):   [" << testNode.get_min_deviation(testNode.gps_ts, testNode.imu_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.imu_ts) << "]" << :: std::endl;
+    TEST_COUT << "Timestamp Deviation (GPS <> INS):   [" << testNode.get_min_deviation(testNode.gps_ts, testNode.ins_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.ins_ts) << "]" << :: std::endl;
+    TEST_COUT << "Timestamp Deviation (INS <> IMU):   [" << testNode.get_min_deviation(testNode.ins_ts, testNode.imu_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts) << " <= "  << testNode.get_max_deviation(testNode.ins_ts, testNode.imu_ts) << "]" << :: std::endl;
 
-    EXPECT_GE( 0.05, testNode.get_avg_deviation(testNode.gps_ts, testNode.pimu_ts));
-    EXPECT_GE( 0.05, testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts));
-    EXPECT_GE( 0.05, testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts));
+    EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.pimu_ts));
+    EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts));
+    EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts));
     EXPECT_GE( 0.005, testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts));
+    printf("DEBUG terminate------\n");
     isROS.terminate();
 }
 
@@ -148,8 +148,8 @@ void cTestNode::init()
     ros::NodeHandle nh;
     sub_wheel_encoder_      = nh.subscribe("msg_wheel_encoder", 1, &cTestNode::cbWheelEncoder, this);
     sub_pimu_               = nh.subscribe("pimu", 1, &cTestNode::cbPIMU, this);
-    sub_imu_               = nh.subscribe("imu", 1, &cTestNode::cbIMU, this);
-    sub_ins_               = nh.subscribe("odom_ins_enu", 1, &cTestNode::cbINS, this);
+    sub_imu_                = nh.subscribe("imu", 1, &cTestNode::cbIMU, this);
+    sub_ins_                = nh.subscribe("odom_ins_enu", 1, &cTestNode::cbINS, this);
     sub_gps1_               = nh.subscribe("gps1/pos_vel", 1, &cTestNode::cbGPS, this);
 }
 
