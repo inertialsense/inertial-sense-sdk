@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
+#include "ISFirmwareUpdater.h"
 
 extern "C"
 {
@@ -67,7 +68,8 @@ public:
 		nvm_flash_cfg_t flashCfg;
 		evb_flash_cfg_t evbFlashCfg;
 		uint8_t syncState;
-	};
+        ISFirmwareUpdater *fwUpdater;
+    };
 
 	struct com_manager_cpp_state_t
 	{
@@ -385,6 +387,30 @@ public:
 		ISBootloader::pfnBootloadStatus infoProgress = NULLPTR,
 		void (*waitAction)() = NULLPTR
 	);
+
+    /**
+     * V2 firmware update mechanism. Calling this function will attempt to inititate a firmware update with the targeted device(s) on the connected port(s), with callbacks to provide information about the status
+     * of the update process.
+     * @param comPort
+     * @param baudRate
+     * @param fileName
+     * @param uploadProgress
+     * @param verifyProgress
+     * @param infoProgress
+     * @param waitAction
+     * @param LoadFlashConfig
+     * @return
+     */
+    is_operation_result updateFirmware(
+            const std::string& comPort,
+            int baudRate,
+            const std::string& fileName,
+            ISBootloader::pfnBootloadProgress uploadProgress,
+            ISBootloader::pfnBootloadProgress verifyProgress,
+            ISBootloader::pfnBootloadStatus infoProgress,
+            void (*waitAction)()
+    );
+
 
 	/**
 	 * @brief LoadFlashConfig

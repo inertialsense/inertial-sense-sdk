@@ -3,6 +3,7 @@
 //
 
 #include <istream>
+#include <stdarg.h>
 #include "FirmwareUpdate.h"
 
 namespace fwUpdate {
@@ -31,6 +32,12 @@ namespace fwUpdate {
                 return sizeof(msg->hdr) + sizeof(msg->data.progress) + (include_aux ? msg->data.progress.msg_len - 1 : -1);
             case MSG_UPDATE_FINISHED:
                 return sizeof(msg->hdr) + sizeof(msg->data.resp_done);
+            case MSG_REQ_VERSION_INFO:
+                return sizeof(msg->hdr) + sizeof(msg->data.req_version);
+            case MSG_VERSION_INFO_RESP:
+                return sizeof(msg->hdr) + sizeof(msg->data.version_resp);
+            default:
+                break;
         }
         return 0;
     }
@@ -347,9 +354,20 @@ namespace fwUpdate {
                 return handleChunk(msg_payload);
             case MSG_REQ_RESET:
                 return handleMcuReset(msg_payload);
+            default:
+                return false;
         }
-        return false;
     }
+
+    /**
+     * This is an internal method used to send an update message to the host system regarding the status of the update process
+     * This message only include the number of chunks sent, and the total expected (sufficient for a percentage) and the
+     * @return true if the message was sent, false if there was an error
+     */
+    bool FirmwareUpdateDevice::sendProgress() {
+        return sendProgressFormatted(99, nullptr);
+    }
+
 
     /**
      * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -358,18 +376,7 @@ namespace fwUpdate {
      * @return true if the message was sent, false if there was an error
      */
     bool FirmwareUpdateDevice::sendProgress(int level, const std::string message) {
-        payload_t did;
-
-        did.hdr.msg_type = MSG_UPDATE_PROGRESS;
-        did.data.progress.session_id = cur_session_id;
-        did.data.progress.totl_chunks = total_chunks;
-        did.data.progress.num_chunks = last_chunk_id;
-        did.data.progress.msg_level = level;
-        did.data.progress.msg_len = message.length();
-
-        // FIXME: How to write the *actual* message into the payload.  I suspect its more like writing everything into a buffer, and then
-        // send the packet out onto the wire.
-        return true;
+        return sendProgressFormatted(level, message.c_str());
     }
 
     /**
@@ -380,9 +387,32 @@ namespace fwUpdate {
      * @
      * @return true if the message was sent, false if there was an error
      */
-    bool FirmwareUpdateDevice::sendProgress(int level, const std::string message, ...) {
-        // format into a single string, and then call sendProgress(level, msg);
-        return true;
+    bool FirmwareUpdateDevice::sendProgressFormatted(int level, const char* message, ...) {
+        static char buffer[256];
+        size_t msg_len = 0;
+
+        if (message) {
+            va_list ap;
+            va_start(ap, message);
+            msg_len = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
+            va_end(ap);
+        }
+
+        if (msg_len >= sizeof(buffer)-1)
+            return false;
+
+        payload_t msg;
+        msg.hdr.target_device = target_id;
+        msg.hdr.msg_type = MSG_UPDATE_PROGRESS;
+        msg.data.progress.session_id = cur_session_id;
+        msg.data.progress.status = session_status;
+        msg.data.progress.totl_chunks = total_chunks;
+        msg.data.progress.num_chunks = last_chunk_id;
+        msg.data.progress.msg_level = level;
+        msg.data.progress.msg_len = msg_len + 1; // don't forget the null-terminator
+
+        msg_len = packPayload(build_buffer, sizeof(build_buffer), msg, buffer);
+        return writeToWire(build_buffer, msg_len);
     }
 
     /**
@@ -569,6 +599,11 @@ namespace fwUpdate {
             case MSG_UPDATE_FINISHED:
                 session_status = msg_payload.data.resp_done.status;
                 return true;
+            case MSG_VERSION_INFO_RESP:
+                // FIXME: we want to do something with this data...
+                return false;
+            default:
+                return false;
         }
         return false;
     }
@@ -593,10 +628,30 @@ namespace fwUpdate {
         request.data.req_update.image_slot = session_image_slot = image_slot;
         request.data.req_update.chunk_size = session_chunk_size = chunk_size;
         request.data.req_update.file_size = session_image_size = image_size;
-        request.data.req_update.md5_hash[0] = image_md5[0];
-        request.data.req_update.md5_hash[1] = image_md5[1];
-        request.data.req_update.md5_hash[2] = image_md5[2];
-        request.data.req_update.md5_hash[3] = image_md5[3];
+        request.data.req_update.md5_hash[0] = md5hash[0] = image_md5[0];
+        request.data.req_update.md5_hash[1] = md5hash[1] = image_md5[1];
+        request.data.req_update.md5_hash[2] = md5hash[2] = image_md5[2];
+        request.data.req_update.md5_hash[3] = md5hash[3] = image_md5[3];
+
+        return sendPayload(request);
+    }
+
+    bool FirmwareUpdateSDK::requestUpdate() {
+
+        if ((session_status != INITIALIZING) || (cur_session_id == 0))
+            return false;
+
+        fwUpdate::payload_t request;
+        request.hdr.target_device = target_id;
+        request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
+        request.data.req_update.session_id = cur_session_id;
+        request.data.req_update.image_slot = session_image_slot;
+        request.data.req_update.chunk_size = session_chunk_size;
+        request.data.req_update.file_size = session_image_size;
+        request.data.req_update.md5_hash[0] = md5hash[0];
+        request.data.req_update.md5_hash[1] = md5hash[1];
+        request.data.req_update.md5_hash[2] = md5hash[2];
+        request.data.req_update.md5_hash[3] = md5hash[3];
 
         return sendPayload(request);
     }

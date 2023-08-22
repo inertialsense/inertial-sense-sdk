@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include "gtest_helpers.h"
 
+#include <stdio.h>
 #include "../protocol/FirmwareUpdate.h"
 
 /**
@@ -61,7 +62,71 @@ private:
     uint8_t *buffer = nullptr;
     int32_t buff_size;
     int32_t data_available = 0;
+
 };
+
+
+/**
+ * This class can probably be removed.  Its not used, but there are foreseeable unit-test cases which may benefit from it.
+ *   ** It has NOT been tested, and probably will need some additional work to get it functional **
+ */
+class Fifo {
+private:
+    int capacity;        // Total capacity of the FIFO
+    int size;            // Current number of items in the FIFO
+    int frontIndex;      // Index of the front item in the FIFO
+    int rearIndex;       // Index of the rear item in the FIFO
+    unsigned char** buffer; // Array of dynamically allocated byte arrays
+
+public:
+    Fifo(int capacity) : capacity(capacity), size(0), frontIndex(0), rearIndex(0) {
+        buffer = new unsigned char*[capacity];
+        for (int i = 0; i < capacity; ++i) {
+            buffer[i] = new unsigned char[256]; // Each array can hold up to 256 bytes
+        }
+    }
+
+    ~Fifo() {
+        for (int i = 0; i < capacity; ++i) {
+            delete[] buffer[i];
+        }
+        delete[] buffer;
+    }
+
+    bool isEmpty() const {
+        return size == 0;
+    }
+
+    bool isFull() const {
+        return size == capacity;
+    }
+
+    void enqueue(const unsigned char* data, int length) {
+        if (isFull()) {
+            std::cerr << "FIFO is full. Cannot enqueue more data." << std::endl;
+            return;
+        }
+
+        memcpy(buffer[rearIndex], data, length);
+        rearIndex = (rearIndex + 1) % capacity;
+        ++size;
+    }
+
+    bool dequeue(unsigned char* data, int& length) {
+        if (isEmpty()) {
+            std::cerr << "FIFO is empty. Cannot dequeue data." << std::endl;
+            return false;
+        }
+
+        length = strlen(reinterpret_cast<const char*>(buffer[frontIndex]));
+        memcpy(data, buffer[frontIndex], length);
+
+        frontIndex = (frontIndex + 1) % capacity;
+        --size;
+        return true;
+    }
+};
+
 
 
 /**
@@ -123,35 +188,41 @@ public:
     }
 
     /**
-     * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
+     * called at each step interval; if you put this behind a Scheduled Task/Thread, call this method at each interval.
      * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
      * If you don't call step() things should still generally work, but it probably won't seem very responsive.
      * @return the number of times step() has been called since the last request to start an update. This isn't immediately useful, but its nice to know that its actually doing something.
      */
-    virtual int step() {
+    virtual fwUpdate::msg_types_e step() {
         static uint8_t buffer[2048];
+        char prog_msg[256];
         static uint32_t step_num = 0;
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
-        bool success = false;
 
         // check if a packet is waiting in the exchange buffer.
         if (exchangeBuffer.dataAvailable() > 0) {
             int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer));
             int msg_len = unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
             if (msg_len > 0) {
-#ifdef DEBUG_INFO
+                memset(prog_msg, 0, sizeof(prog_msg)); // clear any messages...
                 if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_CHUNK)
-                    PRINTF("DEV :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.chunk.chunk_id);
+                    snprintf(prog_msg, sizeof(prog_msg), "DEV :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.chunk.chunk_id);
                 else
-                    PRINTF("DEV :: Received MSG %s...\n", MSG_TYPES[msg->hdr.msg_type]);
+                    snprintf(prog_msg, sizeof(prog_msg), "DEV :: Received MSG %s...\n", MSG_TYPES[msg->hdr.msg_type]);
+#ifdef DEBUG_INFO
+                    PRINTF("%s", prog_msg);
 #endif
-                if (processMessage(*msg))
-                    step_num++;
+                if (processMessage(*msg)) {
+                    sendProgress(3, (const char *)prog_msg);
+                    return msg->hdr.msg_type;
+                }
             }
         }
-        return step_num;
+        return fwUpdate::MSG_UNKNOWN;
     }
+
+    int GetNextExpectedChunk() { return last_chunk_id + 1; }
 };
 
 class ISFirmwareUpdateTestSDK : public fwUpdate::FirmwareUpdateSDK {
@@ -207,9 +278,12 @@ public:
         if (msg.data.update_resp.session_id != cur_session_id)
             return false; // ignore this message, it's not for us
 
-        // these messages are purely for UI purposes, they should be handled accordingly.
-        // otherwise, we just ignore them
+        int num = msg.data.progress.num_chunks;
+        int tot = msg.data.progress.totl_chunks;
+        int percent = (int)(((msg.data.progress.num_chunks+1)/(float)(msg.data.progress.totl_chunks)*100) + 0.5f);
+        const char *message = (const char *)&msg.data.progress.message;
 
+        PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d] %s\n", num, tot, percent, msg.data.progress.msg_level, message);
         return true;
     }
 
@@ -218,14 +292,12 @@ public:
      * This method is primarily used to drive the update process. Unlike the device interface, on the SDK-side, you must call Step,
      * in order to advance the update engine, and transfer image data. Failure to call Step at a regular interval could lead to the
      * device triggering a timeout and aborting the upgrade process.
-     * @return the number of times step() has been called since the last request to start an update. This isn't immediately useful, but its nice to know that its actually doing something.
+     * @return the message type, if any that was most recently processed.
      */
-    virtual int step() {
+    virtual fwUpdate::msg_types_e step() {
         static uint8_t buffer[2048];
-        static uint32_t step_num = 0;
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
-        bool success = false;
 
         // check if a packet is waiting in the exchange buffer.
         if (exchangeBuffer.dataAvailable() > 0) {
@@ -242,12 +314,15 @@ public:
                 else
                     PRINTF("SDK :: Received MSG %s...\n", MSG_TYPES[msg->hdr.msg_type]);
 #endif
-                if (processMessage(*msg))
-                    step_num++;
+                if (processMessage(*msg)) {
+                    if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_PROGRESS)
+                        return step();
+                    return msg->hdr.msg_type;
+                }
             }
 
         }
-        return step_num;
+        return fwUpdate::MSG_UNKNOWN;
     }
 
 
@@ -461,13 +536,14 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     fuMsg.hdr.target_device = fwUpdate::TARGET_GPX1;
     fuMsg.hdr.msg_type = fwUpdate::MSG_UPDATE_PROGRESS;
     fuMsg.data.progress.session_id = session_id;
+    fuMsg.data.progress.status = fwUpdate::NOT_STARTED;
     fuMsg.data.progress.num_chunks = 1234;
     fuMsg.data.progress.totl_chunks = 512;
     fuMsg.data.progress.msg_level = 2;
     fuMsg.data.progress.msg_len = strlen((const char *)progress_msg);
 
     int packed_size = fuSDK.packPayload(buffer, sizeof(buffer), fuMsg, progress_msg);
-    EXPECT_EQ(packed_size, 51);
+    EXPECT_EQ(packed_size, 57);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -476,6 +552,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     EXPECT_EQ(outMsg->hdr.target_device, fwUpdate::TARGET_GPX1);
     EXPECT_EQ(outMsg->hdr.msg_type, fwUpdate::MSG_UPDATE_PROGRESS);
     EXPECT_EQ(outMsg->data.progress.session_id, session_id);
+    EXPECT_EQ(outMsg->data.progress.status, fwUpdate::NOT_STARTED);
     EXPECT_EQ(outMsg->data.progress.num_chunks, 1234);
     EXPECT_EQ(outMsg->data.progress.totl_chunks, 512);
     EXPECT_EQ(outMsg->data.progress.msg_level, 2);
@@ -486,7 +563,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
-    EXPECT_EQ(unpack_len, 51);
+    EXPECT_EQ(unpack_len, 57);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -549,13 +626,12 @@ TEST(ISFirmwareUpdate, exchange__success)
     // from here out, this should be normal.
     int i = 0;
     while(fuSDK.getSessionStatus() < fwUpdate::FINISHED) {
-        i++;
-        if (fuSDK.getSessionStatus() >= fwUpdate::GOOD_TO_GO) {
+        if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA)) {
             fuSDK.sendNextChunk();
         }
         fuDev.step(); // make sure the device-side processes it...
         fuSDK.step();
-        EXPECT_EQ(fuSDK.getNextChunkID(), i);
+        EXPECT_EQ(fuSDK.getNextChunkID(), fuDev.GetNextExpectedChunk());
 
         // check if any errors
         if (fuSDK.getSessionStatus() < fwUpdate::NOT_STARTED)
@@ -587,7 +663,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     // but we'll only provide 4...
     for (int i = 0 ; i < 4; i++) {
         // Force the device-side to pull the message, and respond.
-        if (fuSDK.getSessionStatus() >= fwUpdate::GOOD_TO_GO) {
+        if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA)) {
             fuSDK.sendNextChunk();
         } else {
             EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
@@ -616,28 +692,24 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
         }
     }
     fuDev.step(); // don't forget to step through each (to process the bad message)
-
     fuSDK.step(); // and to processing the req_chunk response to the bad message, which should resend the requested chunk 4
 
-    // at this point, our NextChunkID should be 5 (since we resent 4)
-    int i = 5;
-    EXPECT_EQ(fuSDK.getNextChunkID(), i);
-
+    int i = fuSDK.getNextChunkID();
+    EXPECT_EQ(i, 5); // at this point, our NextChunkID should be 5 (since we resent 4)
     fuDev.step(); // We need one more device-side step to actually pull the resent chunk from the exchange buffer.
 
     // from here out, this should be normal.
     while(fuSDK.getSessionStatus() < fwUpdate::FINISHED) {
-        i++;
-        if (fuSDK.getSessionStatus() >= fwUpdate::GOOD_TO_GO) {
-            fuSDK.sendNextChunk();
-        }
         fuDev.step(); // make sure the device-side processes it...
-        fuSDK.step();
-        EXPECT_EQ(fuSDK.getNextChunkID(), i);
+        fuSDK.step(); // process all incoming messages
+        EXPECT_EQ(fuSDK.getNextChunkID(), fuDev.GetNextExpectedChunk());
 
         // check if any errors
         if (fuSDK.getSessionStatus() < fwUpdate::NOT_STARTED)
             break;
+
+        if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA))
+            fuSDK.sendNextChunk();
     }
 
     // finally, we should have a status FINISHED

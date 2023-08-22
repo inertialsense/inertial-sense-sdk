@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "InertialSense.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
+#include "protocol/FirmwareUpdate.h"
 
 using namespace std;
 
@@ -365,7 +366,20 @@ bool InertialSense::Update()
 		if (m_comManagerState.devices.size() != 0)
 		{
 			comManagerStep();
+
+            // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
+            for (is_device_t device : m_comManagerState.devices) {
+                if (device.fwUpdater != nullptr) {
+                    device.fwUpdater->step();
+                    if (device.fwUpdater->getSessionStatus() == fwUpdate::FINISHED) {
+                        // release the FirmwareUpdater
+                        delete device.fwUpdater;
+                        device.fwUpdater = nullptr;
+                    }
+                }
+            }
 		}
+
 	}
 
 	// if any serial ports have closed, shutdown
@@ -795,6 +809,13 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
 			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
 		}
+        break;
+        case DID_FIRMWARE_UPDATE:
+        {
+            // we don't respond to messages if we aren't already have an active Updater
+            if (m_comManagerState.devices[pHandle].fwUpdater)
+                m_comManagerState.devices[pHandle].fwUpdater->processMessage((const fwUpdate::payload_t&)data->buf);
+        }
 	}
 }
 
@@ -836,6 +857,102 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 		comManagerGetDataRmc((int)i, rmcPreset, rmcOptions);
 	}
 }
+
+is_operation_result InertialSense::updateFirmware(
+        const string& comPort,
+        int baudRate,
+        const string& fileName,
+        ISBootloader::pfnBootloadProgress uploadProgress,
+        ISBootloader::pfnBootloadProgress verifyProgress,
+        ISBootloader::pfnBootloadStatus infoProgress,
+        void (*waitAction)()
+)
+{
+    vector<string> comPorts;
+
+    if (comPort == "*")
+    {
+        cISSerialPort::GetComPorts(comPorts);
+    }
+    else
+    {
+        splitString(comPort, ',', comPorts);
+    }
+    sort(comPorts.begin(), comPorts.end());
+
+    vector<string> all_ports;                   // List of ports connected
+    vector<string> update_ports;
+    vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
+
+    cISSerialPort::GetComPorts(all_ports);
+
+    // On non-Windows systems, try to interpret each user-specified port as a symlink and find what it is pointing to
+    // TODO: This only works for "/dev/" ports
+#if !PLATFORM_IS_WINDOWS
+    for(unsigned int k = 0; k < comPorts.size(); k++)
+    {
+        char buf[PATH_MAX];
+        int newsize = readlink(comPorts[k].c_str(), buf, sizeof(buf)-1);
+        if(newsize < 0)
+        {
+            continue;
+        }
+
+        buf[newsize] = '\0';
+        comPorts[k] = "/dev/" + string(buf);
+    }
+#endif
+
+    // Get the list of ports to ignore during the bootloading process
+    sort(all_ports.begin(), all_ports.end());
+    sort(comPorts.begin(), comPorts.end());
+    set_difference(
+            all_ports.begin(), all_ports.end(),
+            comPorts.begin(), comPorts.end(),
+            back_inserter(ports_user_ignore));
+
+    // file exists?
+    ifstream tmpStream(fileName);
+    if (!tmpStream.good())
+    {
+        printf("File does not exist");
+        return IS_OP_ERROR;
+    }
+
+#if !PLATFORM_IS_WINDOWS
+    fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+#endif
+
+    printf("\n\r");
+
+
+    cISSerialPort::GetComPorts(all_ports);
+
+    // Get the list of ports to ignore during the bootloading process
+    sort(all_ports.begin(), all_ports.end());
+    sort(ports_user_ignore.begin(), ports_user_ignore.end());
+    set_difference(
+            all_ports.begin(), all_ports.end(),
+            ports_user_ignore.begin(), ports_user_ignore.end(),
+            back_inserter(update_ports));
+
+    for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
+        m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i);
+        m_comManagerState.devices[i].fwUpdater->initializeUpdate(fwUpdate::TARGET_IMX5, fileName);
+    }
+
+
+    // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
+
+    printf("\n\r");
+
+#if !PLATFORM_IS_WINDOWS
+    fputs("\e[?25h", stdout);	// Turn cursor back on
+#endif
+
+    return IS_OP_OK;
+}
+
 
 is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 

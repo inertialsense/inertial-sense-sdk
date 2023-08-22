@@ -107,7 +107,7 @@ namespace fwUpdate {
         WAITING_FOR_DATA = 3,       // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
         GOOD_TO_GO = 2,             // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
         INITIALIZING = 1,           // indicates that an update has been requested, but the subsystem is waiting on completion of the bootloader or other back-end mechanism to initialize before data transfer can begin.
-        NOT_STARTED = 0,            // indicates that the update process has not been initiated (it will fall back to this after an error, and short timeout).
+        NOT_STARTED = 0,            // indicates that the update process has not been initiated (it will fall back to this after an error, and a short timeout).
         ERR_INVALID_SESSION = -1,   // indicates that the requested session ID is invalid.
         ERR_INVALID_SLOT = -2,      // indicates that the request slot does not exist. Different targets have different number of slots which can be written to.
         ERR_NOT_ALLOWED = -3,       // indicates that writing to the requested slot is not allowed, usually due to security constrains such as a locked firmware, Read-Only FLASH, etc.
@@ -116,6 +116,7 @@ namespace fwUpdate {
         ERR_MAX_CHUNK_SIZE = -6,    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
         ERR_TIMEOUT = -7,           // indicates that the update process timed-out waiting for data (either a request, response, or chunk data that never arrived)
         ERR_CHECKSUM_MISMATCH = -8, // indicates that the final checksum didn't match the checksum specified at the start of the process
+        ERR_COMMS = -9              // indicates that an error in the underlying comms system
     } update_status_e;
 
     typedef enum {
@@ -126,6 +127,7 @@ namespace fwUpdate {
     } resend_reason_e;
 
     typedef enum {
+        MSG_UNKNOWN = 0,            // an unknown or undefined message type.
         MSG_REQ_RESET = 1,          // a host is requesting that the device perform a reset.
         MSG_RESET_RESP = 2,         // response to the requesting host, that a reset was performed (but not guarantee that it was successful).
         MSG_REQ_UPDATE = 3,         // a host is requesting that the device enter update mode - in essense, initiate the update state-machine that is responsible for getting the target device into a state where it can receive an update.
@@ -141,16 +143,16 @@ namespace fwUpdate {
         MSG_UPDATE_FINISHED = 8,    // this message is sent when the device-side has completed receiving file chunks, regardless of the status of those chunks, or the reception of all available chunks.  In essense, this is a notice
                                     // to the host that no more chunks of data will be accepted, regardless of state. Included in this message is a status indicating whether the image transfer was successful, of not. When this message
                                     // is sent, the associated session_id is invalidated ensuring that no further messages can be processed. If there is an error, a new session will need to be started.
+        MSG_REQ_VERSION_INFO = 9,   // this message is sent by the host to request information about the current target's firmware
+        MSG_VERSION_INFO_RESP = 10, // this message is the response from a device, which details the target devices hardware and firmware version and also firmware build info.
     } msg_types_e;
 
     typedef union PACKED {
-        struct {
+        struct { } req_reset;
 
-        } req_reset;
+        struct { } rpl_reset;
 
-        struct {
-
-        } rpl_reset;
+        struct { } req_version;
 
         struct {
             uint16_t session_id;    //! random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
@@ -182,6 +184,7 @@ namespace fwUpdate {
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
+            update_status_e status; //! the current status of the session, from the device standpoint (only devices send the progress message)
             uint16_t num_chunks;    //! the number of chunks which have so far been received by the device, in sequential, contiguous order.  Ie, this is only the number of received VALID and processed chunks.
             uint16_t totl_chunks;   //! the total number of chunks which the device is expecting from the host
             uint8_t msg_level;      //! a numerical indication of the criticality of this message, 0 being the highest. Best practive is to associate syslog type levels here (CRITICAL, ERROR, WARN, INFO, DEBUG, etc).
@@ -193,6 +196,24 @@ namespace fwUpdate {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
         } resp_done __attribute__((__packed__));
+
+        struct PACKED {
+            uint8_t hardwareVer[4]; //! Hardware version
+            uint8_t firmwareVer[4]; //! Firmware (software) version
+
+            uint8_t buildHash[4];   //! Git hash
+            uint32_t buildNumber;   //! Build number
+
+            uint8_t buildType;      //! Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug)
+            uint8_t buildYear;      //! Build date year - 2000
+            uint8_t buildMonth;     //! Build date month
+            uint8_t buildDay;       //! Build date day
+
+            uint8_t buildHour;      //! Build time hour
+            uint8_t buildMinute;    //! Build time minute
+            uint8_t buildSecond;    //! Build time second
+            uint8_t buildMillis;    //! Build time millisecond
+        } version_resp __attribute__((__packed__));;
     } msg_data_t;
 
     typedef struct PACKED {
@@ -217,6 +238,7 @@ namespace fwUpdate {
     class FirmwareUpdateBase {
     public:
         FirmwareUpdateBase();
+        virtual ~FirmwareUpdateBase() {};
 
         /**
          * Packs a byte buffer that can be sent out onto the wire, using data from a passed msg_payload_t.
@@ -298,7 +320,7 @@ namespace fwUpdate {
          * @param msg
          * @return the number of bytes that this entire message contains, including headers, etc.
          */
-        size_t getMsgSize(const payload_t* msg, bool include_aux=false);
+        static size_t getMsgSize(const payload_t* msg, bool include_aux=false);
 
     };
 
@@ -336,9 +358,9 @@ namespace fwUpdate {
          * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
          * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
          * If you don't call step() things should still generally work, but it probably won't seem very responsive.
-         * @return the number of times step() has been called since the last request to start an update. This isn't immediately useful, but its nice to know that its actually doing something.
+         * @return the message type for the most recently received/processed message
          */
-        virtual int step() = 0;
+        virtual msg_types_e step() = 0;
 
         virtual bool writeToWire(uint8_t* buffer, int buff_len) = 0;
 
@@ -351,6 +373,13 @@ namespace fwUpdate {
 
 
     protected:
+        /**
+         * This is an internal method used to send an update message to the host system regarding the status of the update process
+         * This message only include the number of chunks sent, and the total expected (sufficient for a percentage) and the
+         * @return true if the message was sent, false if there was an error
+         */
+        bool sendProgress();
+
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
          * @param level the criticality/severity of this message (0 = Critical, 1 = Error, 2 = Warning, 3 = Info, 4 = Debug, etc)
@@ -367,7 +396,7 @@ namespace fwUpdate {
          * @
          * @return true if the message was sent, false if there was an error
          */
-        bool sendProgress(int level, const std::string message, ...);
+        bool sendProgressFormatted(int level, const char *message, ...);
 
         /**
          * @return true if we have an active session and are updating.
@@ -435,15 +464,16 @@ namespace fwUpdate {
          * Creates a FirmwareUpdateSDK instance
          */
         FirmwareUpdateSDK();
+        virtual ~FirmwareUpdateSDK() {};
 
         /**
          * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
          * This method is primarily used to drive the update process. Unlike the device interface, on the SDK-side, you must call Step,
          * in order to advance the update engine, and transfer image data. Failure to call Step at a regular interval could lead to the
          * device triggering a timeout and aborting the upgrade process.
-         * @return the number of times step() has been called since the last request to start an update. This isn't immediately useful, but its nice to know that its actually doing something.
+         * @return the message type for the most recently received/processed message
          */
-        virtual int step() = 0;
+        virtual msg_types_e step() = 0;
 
         /**
          * Call this any time a DID_FIRMWARE_UPDATE is received by the comms system, to parse and process the message.
@@ -461,6 +491,12 @@ namespace fwUpdate {
          * @return
          */
         bool requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4]);
+
+        /**
+         * Called by the hsot application to resend a previous "requestUpdate" with a full parameter set.
+         * @return
+         */
+        bool requestUpdate();
 
         /**
          * Sends the next chunk of the firmware image to the remote side.  Internally, this call handles fetching the requested
