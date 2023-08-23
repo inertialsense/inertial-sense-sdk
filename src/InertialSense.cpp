@@ -1078,7 +1078,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG, 0, 0, 0);
 			}
 
-			SLEEP_MS(13);
+			SLEEP_MS(100);
 			comManagerStep();
 		}
 
