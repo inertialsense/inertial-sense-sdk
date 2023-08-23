@@ -163,12 +163,6 @@ bool InertialSense::HasReceivedResponseFromDevice(size_t index)
 		return false;
 	}
 
-	printf("HasReceivedResponseFromDevice() %d %d %d %d\n",
-		(int)index, 
-		m_comManagerState.devices[index].flashCfg.size,
-		m_comManagerState.devices[index].devInfo.serialNumber,
-		m_comManagerState.devices[index].devInfo.manufacturer[0]);
-
 	return (
 		m_comManagerState.devices[index].flashCfg.size != 0 &&
 		m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
