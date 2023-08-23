@@ -163,7 +163,8 @@ bool InertialSense::HasReceivedResponseFromDevice(size_t index)
 		return false;
 	}
 
-	printf("HasReceivedResponseFromDevice() %d %d %d\n", 
+	printf("HasReceivedResponseFromDevice() %d %d %d %d\n",
+		index, 
 		m_comManagerState.devices[index].flashCfg.size,
 		m_comManagerState.devices[index].devInfo.serialNumber,
 		m_comManagerState.devices[index].devInfo.manufacturer[0]);
@@ -1078,7 +1079,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG, 0, 0, 0);
 			}
 
-			SLEEP_MS(1000);
+			SLEEP_MS(100);
 			comManagerStep();
 		}
 
