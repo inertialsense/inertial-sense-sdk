@@ -918,7 +918,7 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
     refLla_[0] = msg->refLla[0];
     refLla_[1] = msg->refLla[1];
     refLla_[2] = msg->refLla[2];
-    refLLA_known = true;
+    refLLA_valid = true;
     ROS_DEBUG("InertialSenseROS: refLla was set");
 }
 
@@ -983,7 +983,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
     rs_.did_ins4.streamingCheck(DID);
 
-    if (!refLLA_known)
+    if (!refLLA_valid)
     {
         ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
         return;
