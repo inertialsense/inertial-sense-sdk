@@ -1064,6 +1064,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// we wait until we get a valid serial number and manufacturer
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
+			printf("DEBUG: init poll for startup data\n");
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
 				comManagerGetData((int)i, DID_SYS_CMD, 0, 0, 0);

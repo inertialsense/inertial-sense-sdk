@@ -2062,6 +2062,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
     IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_flash_cfg_t, refLla));
 
+    printf("DEBUG: set_current_position_as_refLLA()\n");
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
 
     int i = 0;
