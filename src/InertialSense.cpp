@@ -778,10 +778,6 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			*  is copied to the local memory anyway so you know what the current flash is on the IMX.
 			*/
 			nvm_flash_cfg_t *flashConfig = (nvm_flash_cfg_t*)data->buf;
-
-			is_device_t &device = m_comManagerState.devices[pHandle];
-			printf("ProcessRxData() DID_FLASH_CONFIG,   syncState %d,   checksum 0x%08x 0x%08x\n", device.syncState, flashConfig->checksum, device.flashCfg.checksum);
-
 			UpdateFlashConfigSyncState(flashConfig->checksum, pHandle);
 			
 			if (device.syncState != InertialSense::IMXSyncState::SYNCHRONIZING)
@@ -798,10 +794,6 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			*  final determination of the next actions.
 			*/
 			sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
-
-			is_device_t &device = m_comManagerState.devices[pHandle];
-			printf("ProcessRxData() DID_SYS_PARAMS,   syncState %d,   checksum 0x%08x 0x%08x\n", device.syncState, sysParamsRx->flashCfgChecksum, device.flashCfg.checksum);
-
 			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
 		}
 	}
@@ -1064,7 +1056,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// we wait until we get a valid serial number and manufacturer
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
-			printf("DEBUG: init poll for startup data\n");
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
 				comManagerGetData((int)i, DID_SYS_CMD, 0, 0, 0);

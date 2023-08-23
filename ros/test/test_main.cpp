@@ -138,7 +138,6 @@ TEST(test_main, gps_ins_time_sync)
     EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts));
     EXPECT_GE( 0.05,  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts));
     EXPECT_GE( 0.005, testNode.get_avg_deviation(testNode.ins_ts, testNode.imu_ts));
-    printf("DEBUG terminate------\n");
     isROS.terminate();
 }
 
