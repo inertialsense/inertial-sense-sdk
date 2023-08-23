@@ -778,6 +778,10 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			*  is copied to the local memory anyway so you know what the current flash is on the IMX.
 			*/
 			nvm_flash_cfg_t *flashConfig = (nvm_flash_cfg_t*)data->buf;
+
+			is_device_t &device = m_comManagerState.devices[pHandle];
+			printf("ProcessRxData() DID_FLASH_CONFIG,   syncState %d,   checksum 0x%08x 0x%08x\n", device.syncState, flashConfig->checksum, device.flashCfg.checksum);
+
 			UpdateFlashConfigSyncState(flashConfig->checksum, pHandle);
 			
 			if (device.syncState != InertialSense::IMXSyncState::SYNCHRONIZING)
@@ -794,6 +798,10 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 			*  final determination of the next actions.
 			*/
 			sys_params_t* sysParamsRx = (sys_params_t*)data->buf;
+
+			is_device_t &device = m_comManagerState.devices[pHandle];
+			printf("ProcessRxData() DID_SYS_PARAMS,   syncState %d,   checksum 0x%08x 0x%08x\n", device.syncState, sysParamsRx->flashCfgChecksum, device.flashCfg.checksum);
+
 			UpdateFlashConfigSyncState(sysParamsRx->flashCfgChecksum, pHandle);
 		}
 	}
