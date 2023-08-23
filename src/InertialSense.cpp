@@ -158,6 +158,11 @@ void InertialSense::DisableLogging()
 
 bool InertialSense::HasReceivedResponseFromDevice(size_t index)
 {
+	printf("HasReceivedResponseFromDevice() %d %d %d\n", 
+		m_comManagerState.devices[index].flashCfg.size,
+		m_comManagerState.devices[index].devInfo.serialNumber,
+		m_comManagerState.devices[index].devInfo.manufacturer[0]);
+
 	if (index >= m_comManagerState.devices.size())
 	{
 		return false;
