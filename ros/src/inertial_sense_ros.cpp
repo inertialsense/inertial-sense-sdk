@@ -652,19 +652,11 @@ void InertialSenseROS::configure_flash_parameters()
         platformConfig_ = current_flash_cfg.platformConfig;
     }
 
-    bool setRefLla = false;
-    for (int i=0; i<3; i++)
-    {
-        if (refLla_[0] != 0.0)
-        {
-            setRefLla = true;
-        }
-    }
     if (!vecF32Match(current_flash_cfg.insRotation, insRotation_) ||
         !vecF32Match(current_flash_cfg.insOffset, insOffset_) ||
         !vecF32Match(current_flash_cfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
         !vecF32Match(current_flash_cfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
-        (setRefLla && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
+        (refLLA_valid && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
         current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_ ||
         current_flash_cfg.ioConfig != ioConfigBits_ ||
         current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
@@ -679,7 +671,7 @@ void InertialSenseROS::configure_flash_parameters()
             current_flash_cfg.insOffset[i] = insOffset_[i];
             current_flash_cfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
             current_flash_cfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
-            if (setRefLla)
+            if (refLLA_valid)
             {
                 current_flash_cfg.refLla[i] = refLla_[i];
             }
@@ -915,9 +907,14 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
 {
     STREAMING_CHECK(flashConfigStreaming_, DID);
 
-    refLla_[0] = msg->refLla[0];
-    refLla_[1] = msg->refLla[1];
-    refLla_[2] = msg->refLla[2];
+    setRefLla(msg->refLla);
+}
+
+void InertialSenseROS::setRefLla(const double refLla[3])
+{
+    refLla_[0] = refLla[0];
+    refLla_[1] = refLla[1];
+    refLla_[2] = refLla[2];
     if (!refLLA_valid)
     {
         ROS_DEBUG("InertialSenseROS: refLla was set");
@@ -986,11 +983,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
     rs_.did_ins4.streamingCheck(DID);
 
-    if (!refLLA_valid)
-    {
-        ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
-        return;
-    }
     if (rs_.did_ins4.enabled)
     {
         // Standard DID_INS_2 message
@@ -1012,7 +1004,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         if (rs_.did_ins4.pub.getNumSubscribers() > 0)
             rs_.did_ins4.pub.publish(msg_did_ins4);
     }
-
 
     if (rs_.odom_ins_ned.enabled || rs_.odom_ins_enu.enabled || rs_.odom_ins_ecef.enabled)
     {
@@ -1094,177 +1085,185 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             }
         }
 
+
         if (rs_.odom_ins_ned.enabled)
         {
-            ixVector4 qn2b;
-            ixMatrix3 Rb2n, Re2n, buf;
-
-            // NED-to-body quaternion
-            mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
-            // Body-to-NED rotation matrix
-            rotMatB2R(qn2b, Rb2n);
-            // ECEF-to-NED rotation matrix
-            rotMatB2R(qe2n, buf);
-            transpose_Mat3(Re2n, buf);
-
-            // Pose
-            // Transform position from ECEF to NED and attitude from body to NED
-            transform_6x6_covariance(Pout, poseCov_, Re2n, Rb2n);
-            for (int i = 0; i < 36; i++)
+            if (!refLLA_valid)
             {
-                msg_odom_ned.pose.covariance[i] = Pout[i];
+                ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
             }
-            // Twist
-            // Transform velocity from ECEF to NED and angular rate from body to NED
-            transform_6x6_covariance(Pout, twistCov_, Re2n, Rb2n);
-            for (int i = 0; i < 36; i++)
+            else
             {
-                msg_odom_ned.twist.covariance[i] = Pout[i];
-            }
+                ixVector4 qn2b;
+                ixMatrix3 Rb2n, Re2n, buf;
 
-            msg_odom_ned.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
-            msg_odom_ned.header.frame_id = frame_id_;
+                // NED-to-body quaternion
+                mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
+                // Body-to-NED rotation matrix
+                rotMatB2R(qn2b, Rb2n);
+                // ECEF-to-NED rotation matrix
+                rotMatB2R(qe2n, buf);
+                transpose_Mat3(Re2n, buf);
 
-            // Position
-            ixVector3d llaPosRadians;
-                //ecef to lla (rad,rad,m)
-            ecef2lla(msg->ecef, llaPosRadians);
-            ixVector3 ned;
-            ixVector3d refLlaRadians;
-                //convert refLla_ to radians
-            lla_Deg2Rad_d(refLlaRadians, refLla_);
-                //lla to ned
-            lla2ned_d(refLlaRadians, llaPosRadians, ned);
+                // Pose
+                // Transform position from ECEF to NED and attitude from body to NED
+                transform_6x6_covariance(Pout, poseCov_, Re2n, Rb2n);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_ned.pose.covariance[i] = Pout[i];
+                }
+                // Twist
+                // Transform velocity from ECEF to NED and angular rate from body to NED
+                transform_6x6_covariance(Pout, twistCov_, Re2n, Rb2n);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_ned.twist.covariance[i] = Pout[i];
+                }
 
-            msg_odom_ned.pose.pose.position.x = ned[0];
-            msg_odom_ned.pose.pose.position.y = ned[1];
-            msg_odom_ned.pose.pose.position.z = ned[2];
+                msg_odom_ned.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
+                msg_odom_ned.header.frame_id = frame_id_;
 
-            // Attitude
-            msg_odom_ned.pose.pose.orientation.w = qn2b[0]; // w
-            msg_odom_ned.pose.pose.orientation.x = qn2b[1]; // x
-            msg_odom_ned.pose.pose.orientation.y = qn2b[2]; // y
-            msg_odom_ned.pose.pose.orientation.z = qn2b[3]; // z
+                // Position
+                ixVector3d llaPosRadians;
+                ecef2lla(msg->ecef, llaPosRadians);
+                ixVector3 ned;
+                ixVector3d refLlaRadians;            
+                lla_Deg2Rad_d(refLlaRadians, refLla_);
+                lla2ned_d(refLlaRadians, llaPosRadians, ned);
 
-            // Linear Velocity
-            ixVector3 result, theta;
+                msg_odom_ned.pose.pose.position.x = ned[0];
+                msg_odom_ned.pose.pose.position.y = ned[1];
+                msg_odom_ned.pose.pose.position.z = ned[2];
 
-            quatConjRot(result, qe2n, msg->ve);
+                // Attitude
+                msg_odom_ned.pose.pose.orientation.w = qn2b[0]; // w
+                msg_odom_ned.pose.pose.orientation.x = qn2b[1]; // x
+                msg_odom_ned.pose.pose.orientation.y = qn2b[2]; // y
+                msg_odom_ned.pose.pose.orientation.z = qn2b[3]; // z
 
-            msg_odom_ned.twist.twist.linear.x = result[0];
-            msg_odom_ned.twist.twist.linear.y = result[1];
-            msg_odom_ned.twist.twist.linear.z = result[2];
+                // Linear Velocity
+                ixVector3 result, theta;
 
-            // Angular Velocity
-            // Transform from body frame to NED
-            ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
-            quatRot(result, qn2b, angVelImu);
+                quatConjRot(result, qe2n, msg->ve);
 
-            msg_odom_ned.twist.twist.angular.x = result[0];
-            msg_odom_ned.twist.twist.angular.y = result[1];
-            msg_odom_ned.twist.twist.angular.z = result[2];
-            rs_.odom_ins_ned.pub.publish(msg_odom_ned);
+                msg_odom_ned.twist.twist.linear.x = result[0];
+                msg_odom_ned.twist.twist.linear.y = result[1];
+                msg_odom_ned.twist.twist.linear.z = result[2];
 
-            if (publishTf_)
-            {
-                // Calculate the TF from the pose...
-                transform_NED.setOrigin(tf::Vector3(msg_odom_ned.pose.pose.position.x, msg_odom_ned.pose.pose.position.y, msg_odom_ned.pose.pose.position.z));
-                tf::Quaternion q;
-                tf::quaternionMsgToTF(msg_odom_ned.pose.pose.orientation, q);
-                transform_NED.setRotation(q);
+                // Angular Velocity
+                // Transform from body frame to NED
+                ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
+                quatRot(result, qn2b, angVelImu);
 
-                br.sendTransform(tf::StampedTransform(transform_NED, ros::Time::now(), "ins_ned", "ins_base_link_ned"));
+                msg_odom_ned.twist.twist.angular.x = result[0];
+                msg_odom_ned.twist.twist.angular.y = result[1];
+                msg_odom_ned.twist.twist.angular.z = result[2];
+                rs_.odom_ins_ned.pub.publish(msg_odom_ned);
+
+                if (publishTf_)
+                {
+                    // Calculate the TF from the pose...
+                    transform_NED.setOrigin(tf::Vector3(msg_odom_ned.pose.pose.position.x, msg_odom_ned.pose.pose.position.y, msg_odom_ned.pose.pose.position.z));
+                    tf::Quaternion q;
+                    tf::quaternionMsgToTF(msg_odom_ned.pose.pose.orientation, q);
+                    transform_NED.setRotation(q);
+
+                    br.sendTransform(tf::StampedTransform(transform_NED, ros::Time::now(), "ins_ned", "ins_base_link_ned"));
+                }
             }
         }
 
         if (rs_.odom_ins_enu.enabled)
         {
-            ixVector4 qn2b, qn2enu, qe2enu, qenu2b;
-            ixMatrix3 Rb2enu, Re2enu, buf;
-            ixEuler eul = {M_PI, 0, 0.5 * M_PI};
-            // ENU-to-NED quaternion
-            euler2quat(eul, qn2enu);
-            // NED-to-body quaternion
-            mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
-            // ENU-to-body quaternion
-            mul_Quat_ConjQuat(qenu2b, qn2b, qn2enu);
-            // ECEF-to-ENU quaternion
-            mul_Quat_Quat(qe2enu, qn2enu, qe2n);
-            // Body-to-ENU rotation matrix
-            rotMatB2R(qenu2b, Rb2enu);
-            // ECEF-to-ENU rotation matrix
-            rotMatB2R(qe2enu, buf);
-            transpose_Mat3(Re2enu, buf);
-
-            // Pose
-            // Transform position from ECEF to ENU and attitude from body to ENU
-            transform_6x6_covariance(Pout, poseCov_, Re2enu, Rb2enu);
-            for (int i = 0; i < 36; i++)
+            if (!refLLA_valid)
             {
-                msg_odom_enu.pose.covariance[i] = Pout[i];
+                ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
             }
-            // Twist
-            // Transform velocity from ECEF to ENU and angular rate from body to ENU
-            transform_6x6_covariance(Pout, twistCov_, Re2enu, Rb2enu);
-            for (int i = 0; i < 36; i++)
+            else
             {
-                msg_odom_enu.twist.covariance[i] = Pout[i];
-            }
+                ixVector4 qn2b, qn2enu, qe2enu, qenu2b;
+                ixMatrix3 Rb2enu, Re2enu, buf;
+                ixEuler eul = {M_PI, 0, 0.5 * M_PI};
+                // ENU-to-NED quaternion
+                euler2quat(eul, qn2enu);
+                // NED-to-body quaternion
+                mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
+                // ENU-to-body quaternion
+                mul_Quat_ConjQuat(qenu2b, qn2b, qn2enu);
+                // ECEF-to-ENU quaternion
+                mul_Quat_Quat(qe2enu, qn2enu, qe2n);
+                // Body-to-ENU rotation matrix
+                rotMatB2R(qenu2b, Rb2enu);
+                // ECEF-to-ENU rotation matrix
+                rotMatB2R(qe2enu, buf);
+                transpose_Mat3(Re2enu, buf);
 
-            msg_odom_enu.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
-            msg_odom_enu.header.frame_id = frame_id_;
+                // Pose
+                // Transform position from ECEF to ENU and attitude from body to ENU
+                transform_6x6_covariance(Pout, poseCov_, Re2enu, Rb2enu);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_enu.pose.covariance[i] = Pout[i];
+                }
+                // Twist
+                // Transform velocity from ECEF to ENU and angular rate from body to ENU
+                transform_6x6_covariance(Pout, twistCov_, Re2enu, Rb2enu);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_enu.twist.covariance[i] = Pout[i];
+                }
 
-            // Position
-                //Calculate in NED then convert
-            ixVector3d llaPosRadians;
-                //ecef to lla (rad,rad,m)
-            ecef2lla(msg->ecef, llaPosRadians);
-            ixVector3 ned;
-            ixVector3d refLlaRadians;
-                //convert refLla_ to radians
-            lla_Deg2Rad_d(refLlaRadians, refLla_);
-                //lla to ned
-            lla2ned_d(refLlaRadians, llaPosRadians, ned);
+                msg_odom_enu.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
+                msg_odom_enu.header.frame_id = frame_id_;
 
-            // Rearrange from NED to ENU
-            msg_odom_enu.pose.pose.position.x = ned[1];
-            msg_odom_enu.pose.pose.position.y = ned[0];
-            msg_odom_enu.pose.pose.position.z = -ned[2];
+                // Position
+                ixVector3d llaPosRadians;
+                ecef2lla(msg->ecef, llaPosRadians);
+                ixVector3 ned;
+                ixVector3d refLlaRadians;
+                lla_Deg2Rad_d(refLlaRadians, refLla_);
+                lla2ned_d(refLlaRadians, llaPosRadians, ned);
 
-            // Attitude
-            msg_odom_enu.pose.pose.orientation.w = qenu2b[0];
-            msg_odom_enu.pose.pose.orientation.x = qenu2b[1];
-            msg_odom_enu.pose.pose.orientation.y = qenu2b[2];
-            msg_odom_enu.pose.pose.orientation.z = qenu2b[3];
+                // Rearrange from NED to ENU
+                msg_odom_enu.pose.pose.position.x = ned[1];
+                msg_odom_enu.pose.pose.position.y = ned[0];
+                msg_odom_enu.pose.pose.position.z = -ned[2];
 
-            // Linear Velocity
-                //same as NED but rearranged.
-            ixVector3 result, theta;
-            quatConjRot(result, qe2n, msg->ve);
+                // Attitude
+                msg_odom_enu.pose.pose.orientation.w = qenu2b[0];
+                msg_odom_enu.pose.pose.orientation.x = qenu2b[1];
+                msg_odom_enu.pose.pose.orientation.y = qenu2b[2];
+                msg_odom_enu.pose.pose.orientation.z = qenu2b[3];
 
-            msg_odom_enu.twist.twist.linear.x = result[1];
-            msg_odom_enu.twist.twist.linear.y = result[0];
-            msg_odom_enu.twist.twist.linear.z = -result[2];
+                // Linear Velocity
+                    //same as NED but rearranged.
+                ixVector3 result, theta;
+                quatConjRot(result, qe2n, msg->ve);
 
-            // Angular Velocity
-            // Transform from body frame to ENU
-            ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
-            quatRot(result, qenu2b, angVelImu);
+                msg_odom_enu.twist.twist.linear.x = result[1];
+                msg_odom_enu.twist.twist.linear.y = result[0];
+                msg_odom_enu.twist.twist.linear.z = -result[2];
 
-            msg_odom_enu.twist.twist.angular.x = result[0];
-            msg_odom_enu.twist.twist.angular.y = result[1];
-            msg_odom_enu.twist.twist.angular.z = result[2];
-            rs_.odom_ins_enu.pub.publish(msg_odom_enu);
-            
-            if (publishTf_)
-            {
-                // Calculate the TF from the pose...
-                transform_ENU.setOrigin(tf::Vector3(msg_odom_enu.pose.pose.position.x, msg_odom_enu.pose.pose.position.y, msg_odom_enu.pose.pose.position.z));
-                tf::Quaternion q;
-                tf::quaternionMsgToTF(msg_odom_enu.pose.pose.orientation, q);
-                transform_ENU.setRotation(q);
+                // Angular Velocity
+                // Transform from body frame to ENU
+                ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
+                quatRot(result, qenu2b, angVelImu);
 
-                br.sendTransform(tf::StampedTransform(transform_ENU, ros::Time::now(), "ins_enu", "ins_base_link_enu"));
+                msg_odom_enu.twist.twist.angular.x = result[0];
+                msg_odom_enu.twist.twist.angular.y = result[1];
+                msg_odom_enu.twist.twist.angular.z = result[2];
+                rs_.odom_ins_enu.pub.publish(msg_odom_enu);
+                
+                if (publishTf_)
+                {
+                    // Calculate the TF from the pose...
+                    transform_ENU.setOrigin(tf::Vector3(msg_odom_enu.pose.pose.position.x, msg_odom_enu.pose.pose.position.y, msg_odom_enu.pose.pose.position.z));
+                    tf::Quaternion q;
+                    tf::quaternionMsgToTF(msg_odom_enu.pose.pose.orientation, q);
+                    transform_ENU.setRotation(q);
+
+                    br.sendTransform(tf::StampedTransform(transform_ENU, ros::Time::now(), "ins_enu", "ins_base_link_enu"));
+                }
             }
         }
     }

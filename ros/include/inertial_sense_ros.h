@@ -121,6 +121,7 @@ public:
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
+    void setRefLla(const double refLla[3]);
 
     bool flashConfigStreaming_ = false;
     bool factory_reset_ = false;        // Apply factory reset on startup
