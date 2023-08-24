@@ -126,7 +126,6 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
 }
 
 bool ISFirmwareUpdater::writeToWire(uint8_t *buffer, int buff_len) {
-    comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0);
-    return true;
+    return (comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0) == 0);
 }
 
