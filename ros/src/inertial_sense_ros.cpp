@@ -135,13 +135,13 @@ void InertialSenseROS::initializeROS()
     // Publishers
     strobe_pub_ = nh_.advertise<std_msgs::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub = nh_.advertise<inertial_sense_ros::DID_INS1>(rs_.did_ins1.topic, 1); }
-    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub = nh_.advertise<inertial_sense_ros::DID_INS2>(rs_.did_ins2.topic, 1); }
-    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub = nh_.advertise<inertial_sense_ros::DID_INS4>(rs_.did_ins4.topic, 1); }
-    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ned.topic, 1); }
-    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_enu.topic, 1); }
+    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_.advertise<inertial_sense_ros::DID_INS1>(rs_.did_ins1.topic, 1); }
+    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_.advertise<inertial_sense_ros::DID_INS2>(rs_.did_ins2.topic, 1); }
+    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_.advertise<inertial_sense_ros::DID_INS4>(rs_.did_ins4.topic, 1); }
+    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ned.topic, 1); }
+    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_enu.topic, 1); }
     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ecef.topic, 1); }
-    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub = nh_.advertise<inertial_sense_ros::INL2States>(rs_.inl2_states.topic, 1); }
+    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_.advertise<inertial_sense_ros::INL2States>(rs_.inl2_states.topic, 1); }
 
     if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros::PIMU>(rs_.pimu.topic, 1); }
     if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::Imu>(rs_.imu.topic, 1); }
@@ -918,8 +918,11 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
     refLla_[0] = msg->refLla[0];
     refLla_[1] = msg->refLla[1];
     refLla_[2] = msg->refLla[2];
+    if (!refLLA_valid)
+    {
+        ROS_DEBUG("InertialSenseROS: refLla was set");
+    }
     refLLA_valid = true;
-    ROS_DEBUG("InertialSenseROS: refLla was set");
 }
 
 void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
@@ -1077,7 +1080,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             msg_odom_ecef.twist.twist.angular.x = result[0];
             msg_odom_ecef.twist.twist.angular.y = result[1];
             msg_odom_ecef.twist.twist.angular.z = result[2];
-
             rs_.odom_ins_ecef.pub.publish(msg_odom_ecef);
 
             if (publishTf_)
@@ -1252,8 +1254,8 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             msg_odom_enu.twist.twist.angular.x = result[0];
             msg_odom_enu.twist.twist.angular.y = result[1];
             msg_odom_enu.twist.twist.angular.z = result[2];
-
             rs_.odom_ins_enu.pub.publish(msg_odom_enu);
+            
             if (publishTf_)
             {
                 // Calculate the TF from the pose...
@@ -1303,7 +1305,8 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
     // Use custom INL2 states message
     if (rs_.inl2_states.enabled)
     {
-        rs_.inl2_states.pub.publish(msg_inl2_states);
+        if (rs_.inl2_states.pub.getNumSubscribers() > 0)
+            rs_.inl2_states.pub.publish(msg_inl2_states);
     }
 }
 
