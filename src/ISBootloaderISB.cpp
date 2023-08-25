@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <algorithm>
 
+using namespace std;
 using namespace ISBootloader;
 
 std::vector<uint32_t> cISBootloaderISB::serial_list;
@@ -929,9 +930,20 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
         {
             m_update_progress = (float)ftell(file) / (float)fileSize;	// Dummy line to call ftell() once
             m_update_progress = (float)ftell(file) / (float)fileSize;
-            if (m_update_callback(this, m_update_progress) != IS_OP_OK)
+
+            // Try catch added m_update_callback being correupted
+            try
             {
-                status_update("(ISB) Firmware update cancelled", IS_LOG_LEVEL_ERROR);
+                if (m_update_callback(this, m_update_progress) != IS_OP_OK)
+                {
+                    status_update("(ISB) Firmware update cancelled", IS_LOG_LEVEL_ERROR);
+                    return IS_OP_CANCELLED;
+                }
+            }
+            catch(int e)
+            {
+                string tmp = "(ISB) Firmware update cancelled. Error number: " + to_string(e);
+                status_update(tmp.c_str(), IS_LOG_LEVEL_ERROR);
                 return IS_OP_CANCELLED;
             }
         }
