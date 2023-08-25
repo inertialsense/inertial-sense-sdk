@@ -9,6 +9,14 @@
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
+static struct  
+{
+	uint32_t 		timeOfWeekMs;
+	ixVector3 		velNed;
+	float			speed2dMps;
+	float			speed2dKnots;
+} s_dataSpeed;
+
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 
@@ -387,6 +395,7 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 
 	switch (nmeaId)
 	{
+	case NMEA_MSG_ID_INFO:      did = DID_DEV_INFO; break;
 	case NMEA_MSG_ID_PIMU:      did = DID_IMU; break;
 	case NMEA_MSG_ID_PPIMU:     did = DID_PIMU; break;
 	case NMEA_MSG_ID_PRIMU:     did = DID_IMU_RAW; break;
@@ -399,9 +408,9 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	case NMEA_MSG_ID_RMC:       
 	case NMEA_MSG_ID_ZDA:       
 	case NMEA_MSG_ID_PASHR:     
-	case NMEA_MSG_ID_PSTRB:     
-	case NMEA_MSG_ID_INFO:      
-	case NMEA_MSG_ID_GSV:       did = DID_GPS1_POS; break;	
+	case NMEA_MSG_ID_INTEL:     
+	case NMEA_MSG_ID_PSTRB:     did = DID_GPS1_POS; break;	
+	case NMEA_MSG_ID_GSV:       did = DID_GPS1_SAT; break;	
 	default: return;
 	}
 
@@ -824,12 +833,22 @@ int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &sat)
 	return nmea_sprint_footer(a, aSize, n);
 }
 
+void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
+{
+	if (s_dataSpeed.timeOfWeekMs != pos.timeOfWeekMs)
+	{
+		s_dataSpeed.timeOfWeekMs = pos.timeOfWeekMs;
+		ixQuat qe2n;
+		quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
+		quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
+		s_dataSpeed.speed2dMps = mag_Vec2(s_dataSpeed.velNed);
+		s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
+	}
+}
+
 int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
 {
-	ixQuat qe2n;
-	ixVector3 vel_ned_;
-	quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
-	quatConjRot(vel_ned_, qe2n, vel.vel);
+	update_nmea_speed(pos, vel);
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "RMC");
@@ -845,13 +864,12 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	nmea_latToDegMin(a, aSize, n, pos.lla[0]);										// 3,4 - lat (degrees minutes)
 	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);										// 5,6 - lon (degrees minutes)
 	
-	float speedInKnots = C_METERS_KNOTS_F * mag_Vec2(vel_ned_);
 	// 	float courseMadeTrue = atan2f(g_navInGpsA.velNed[1], g_navInGpsA.velNed[0]);
 	float courseMadeTrue = 0.0f;
 	nmea_sprint(a, aSize, n,
 	",%05.1f"		// 7
 	",%05.1f",		// 8
-	speedInKnots,																	// 7 - speed in knots
+	s_dataSpeed.speed2dKnots,														// 7 - speed in knots
 	courseMadeTrue*C_RAD2DEG_F);													// 8 - course made true
 	
 	nmea_GPSDateOfLastFix(a, aSize, n, pos);										// 9 - date of last fix UTC
@@ -886,6 +904,71 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
 	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
 	
+	return nmea_sprint_footer(a, aSize, n);
+}
+
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad)
+{
+	/*
+		0	Message ID $GPVTG
+		1	Track made good (degrees true)
+		2	T: track made good is relative to true north
+		3	Track made good (degrees magnetic)
+		4	M: track made good is relative to magnetic north
+		5	Speed, in knots
+		6	N: speed is measured in knots
+		7	Speed over ground in kilometers/hour (kph)
+		8	K: speed over ground is measured in kph
+		9	Mode indicator:
+			A: Autonomous mode
+			D: Differential mode
+			E: Estimated (dead reckoning) mode
+			M: Manual Input mode
+			S: Simulator mode
+			N: Data not valid
+		10	The checksum data, always begins with *
+
+		Example: $GPVTG,140.88,T,,M,8.04,N,14.89,K,D*05
+	*/
+	update_nmea_speed(pos, vel);
+
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "VTG");
+	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));						// 1
+	nmea_sprint(a, aSize, n, ",T");													// 2
+	if (magHeadingRad == 0.0f)														// 3
+	{
+		nmea_sprint(a, aSize, n, ",");
+	}
+	else
+	{
+		nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(magHeadingRad));
+	}
+	nmea_sprint(a, aSize, n, ",M");													// 4
+	nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);					// 5
+	nmea_sprint(a, aSize, n, ",N");													// 6
+	nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMps*C_MPS2KMPH_F);			// 7
+	nmea_sprint(a, aSize, n, ",K");													// 8
+	switch(pos.status & GPS_STATUS_FIX_MASK)										// 9
+	{
+	case GPS_STATUS_FIX_2D:
+	case GPS_STATUS_FIX_3D:
+		nmea_sprint(a, aSize, n, ",A");
+		break;
+	case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:
+	case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
+		nmea_sprint(a, aSize, n, ",E");
+		break;
+	case GPS_STATUS_FIX_DGPS:
+	case GPS_STATUS_FIX_RTK_SINGLE:
+	case GPS_STATUS_FIX_RTK_FLOAT:
+	case GPS_STATUS_FIX_RTK_FIX:
+		nmea_sprint(a, aSize, n, ",D");
+		break;
+	default:
+		nmea_sprint(a, aSize, n, ",N");
+		break;
+	}
 	return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -934,6 +1017,57 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
+
+int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel)
+{
+	/*  $INTEL prorietary NMEA message
+		0	Message ID $INTEL
+		1	Message ID KIM
+		2	Fimrware version of KIM
+		3	GPS Time of Week (ms)
+		4	GPS week number
+		5	GPS leap seconds
+		6	1PPS phase 1 (ns)
+		7	1PPS phase 2 (ns)
+		8	Quantization error of time pulse (ns)
+		9	ECEF X velocity (m/s)
+		10	ECEF Y velocity (m/s)
+		11	ECEF Z velocity (m/s)
+		12	North veocity (m/s)
+		13	East velocity (m/s)
+		14	Down velocity (m/s)
+		15	Checksum, begins with *
+
+		Example: $INTEL, *05
+	*/
+	update_nmea_speed(pos, vel);
+
+	int n = ssnprintf(a, aSize, "$INTEL,KIM");										// 0,1
+
+	nmea_sprint(a, aSize, n, ",%d.%d.%d.%d", 
+		info.firmwareVer[0], 
+		info.firmwareVer[1], 
+		info.firmwareVer[2], 
+		info.firmwareVer[3]);														// 2
+	nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);								// 3
+	nmea_sprint(a, aSize, n, ",%d", pos.week);										// 4
+	nmea_sprint(a, aSize, n, ",%d", pos.leapS);										// 5
+
+	nmea_sprint(a, aSize, n, ",%.3f", 0);													// 6
+	nmea_sprint(a, aSize, n, ",%.3f", 0);													// 7
+	nmea_sprint(a, aSize, n, ",15");												// 8
+
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[0]);									// 9
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[1]);									// 10
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);									// 11
+
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[0]);						// 12
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[1]);						// 13
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[2]);						// 14
+
+	return nmea_sprint_footer(a, aSize, n);
+}
+
 
 void print_string_n(char a[], int n)
 {
@@ -2259,6 +2393,11 @@ int nmea_parse_gsa(const char msg[], int msgSize, gps_pos_t *gpsPos, int *navMod
 */
 char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount)
 {
+	if (gpsSat == NULL || gpsSig == NULL)
+	{	// Don't parse
+		return (char*)a;
+	}
+
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGSV,
 	// $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
@@ -2288,7 +2427,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 		ptr = ASCII_to_u8(&cno, ptr);		// 7 + 4x   cno
 
 		talkerId_to_gnssId(a, gnssId, svId, sigId);
-
+				
 		// Add to satellite info list
 		for (uint32_t j=0;; j++)
 		{

@@ -267,6 +267,19 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
 		return false;
     }
+	if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
+	{	
+		// Confirm 
+		cout << "CAUTION!!!\n\nSetting the device(s) platform type in OTP memory.  This can only be done a limited number of times.\n\nPlatform: " << g_commandLineOptions.platformType << "\n\n";
+
+		// Set platform type in OTP memory
+		manufacturing_info_t manfInfo = {};
+		manfInfo.key = 72720;
+		manfInfo.platformType = g_commandLineOptions.platformType;
+		// Write key (uint32_t) and platformType (int32_t), 8 bytes
+		inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
+		return false;
+	}
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
 	{
@@ -571,6 +584,9 @@ static int inertialSenseMain()
 		// [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class  
 		// Create InertialSense object, passing in data callback function pointer.
 		InertialSense inertialSenseInterface(cltool_dataCallback);
+
+		// Disable device response requirement to validate open port
+		inertialSenseInterface.EnableDeviceValidation(false);
 
 		// [C++ COMM INSTRUCTION] STEP 2: Open serial port
 		if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))

@@ -133,7 +133,7 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 		{
-			if (ptype == _PTYPE_IS_V1_DATA)
+			if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
 			{
 				handle_uINS_data(comm, clientStream);
 			}

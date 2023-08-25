@@ -573,6 +573,9 @@ extern void vPortFree(void* pv);
 #define C_KMPH2MPS      0.277777777777777777
 #define C_KMPH2MPS_F    0.277777777777777777f
 
+#define C_MPS2KMPH      3.6
+#define C_MPS2KMPH_F    3.6f
+
 #define C_MM2M           0.001
 #define C_MM2M_F         0.001f
 #define C_M2MM        1000.0
@@ -797,6 +800,11 @@ extern void vPortFree(void* pv);
 #define FLOAT2DOUBLE (double) // Used to prevent warning when compiling with -Wdouble-promotion in Linux
 
 #define REF_INS_SERIAL_NUMBER			99999										// 10101 was prior value
+
+#define INS_MAX_VELOCITY				500.0f				// (m/s)	INS operation limit - velocity.  Limited by GPS.
+#define INS_MAX_LATITUDE				C_PIDIV2			// (rad)	INS operation limit - latitude
+#define INS_MAX_LONGITUDE				C_PI				// (rad)	INS operation limit - longitude
+#define INS_MAX_ALTITUDE				50000.0				// (m)		INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
 
 typedef float       f_t;
 typedef int			i_t;
