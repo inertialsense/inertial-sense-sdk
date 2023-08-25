@@ -1048,12 +1048,9 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
 	if (m_enableDeviceValidation)
 	{
-		// negotiate baud rate by querying device info - don't return out until it negotiates or times out
-		// if the baud rate is already correct, the request for the message should succeed very quickly
 		time_t startTime = time(0);
 
-		// try to auto-baud for up to 10 seconds, then abort if we didn't get a valid packet
-		// we wait until we get a valid serial number and manufacturer
+		// Query devices with 10 second timeout
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
