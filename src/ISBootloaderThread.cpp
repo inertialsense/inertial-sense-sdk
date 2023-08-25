@@ -917,7 +917,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Timeout after 180 seconds
-        timeout = (baudRate < 921600) ? 360000 : 180000;
+        timeout = (baudRate < 921600) ? 360000 : 230000;
         timeDeltaMs = current_timeMs() - beginTimeMs;
 
         if (timeDeltaMs > timeout)
