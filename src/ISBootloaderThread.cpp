@@ -924,9 +924,7 @@ is_operation_result cISBootloaderThread::update(
         {
             m_continue_update = false;
 
-            tmp = "Update timeout... Timeout of ";
-            tmp.append(to_string(((double)timeout) / 1000));
-            tmp.append(" Seconds reached.");
+            tmp = "Update timeout... Timeout of " + to_string(((double)timeout) / 1000) + " Seconds reached.";
 
             m_infoProgress(NULL, tmp.c_str(), IS_LOG_LEVEL_ERROR);
         }
@@ -934,9 +932,7 @@ is_operation_result cISBootloaderThread::update(
 
     timeDeltaMs = current_timeMs() - beginTimeMs;
 
-    tmp = "Update run time: ";
-    tmp.append(to_string(((double)timeDeltaMs) / 1000));
-    tmp.append(" Seconds.");
+    tmp = "Update run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
 
     m_infoProgress(NULL, tmp.c_str(), IS_LOG_LEVEL_INFO);
 
