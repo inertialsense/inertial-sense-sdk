@@ -130,6 +130,7 @@ typedef uint32_t eDataIDs;
 #define DID_REFERENCE_IMU               (eDataIDs)95 /** (imu_t) Raw reference or truth IMU used for manufacturing calibration and testing. Input from testbed. */
 #define DID_IMU3_RAW                    (eDataIDs)96 /** (imu3_t) Triple IMU data calibrated from DID_IMU3_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMU3_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
+#define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
@@ -139,7 +140,6 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_LAST                              124 /** Last of GPX DIDs */
 
-#define DID_FIRMWARE_UPDATE             (eDataIDs)148 /** (firmware_payload_t) firmware update payload */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -151,7 +151,7 @@ typedef uint32_t eDataIDs;
 
 /** Count of data ids (including null data id 0) - MUST BE MULTPLE OF 4 and larger than last DID number! */
 #define DID_COUNT		(eDataIDs)132	// Used in SDK
-#define DID_COUNT_UINS	(eDataIDs)100	// Used in uINS
+#define DID_COUNT_UINS	(eDataIDs)100	// Used in IMX
 
 /** Maximum number of data ids */
 #define DID_MAX_COUNT 256
