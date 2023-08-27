@@ -676,7 +676,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
 void InertialSense::SyncFlashConfig(unsigned int timeMs)
 {
-	if (timeMs - m_syncCheckTimeMs > 200)
+	if (timeMs - m_syncCheckTimeMs > SYNC_FLASH_CFG_CHECK_PERIOD_MS)
 	{
 		m_syncCheckTimeMs = timeMs;
 
@@ -686,23 +686,19 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
 
 			if (device.flashCfgUploadTimeMs)
 			{	// Upload in progress
-				if (timeMs - device.flashCfgUploadTimeMs < 500)
+				if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
 				{	// Wait for upload to process.  Pause sync.
 					continue;
 				}
 				else
 				{	// Upload complete.  Allow sync.
 					device.flashCfgUploadTimeMs = 0;
-
-					// Query to upsysParams.flashCfgChecksum
-					comManagerGetData((int)i, DID_SYS_PARAMS, 0, 0, 0);
 				}
 			}
 
 			if (device.flashCfg.checksum != device.sysParams.flashCfgChecksum)
 			{	// Out of sync.  Request flash config.
 				comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
-				comManagerGetData((int)i, DID_SYS_PARAMS, 0, 0, 0);
 			}
 		}
 	}
@@ -716,6 +712,9 @@ bool InertialSense::GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 	}
 
 	is_device_t &device = m_comManagerState.devices[pHandle];
+
+	// Copy flash config
+	flashCfg = device.flashCfg;
 
 	// Indicate whether flash config is sychronized
 	return device.sysParams.flashCfgChecksum == device.flashCfg.checksum;
@@ -733,7 +732,8 @@ int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 	flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
 
 	device.flashCfg = flashCfg;
-	device.flashCfgUploadTimeMs = current_timeMs();		// non-zero indicates upload in progress
+	device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
+	device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
 
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
 	return comManagerSendData(pHandle, DID_FLASH_CONFIG, &device.flashCfg, sizeof(nvm_flash_cfg_t), 0);
@@ -777,8 +777,14 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 	case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->buf;                               break;
 	case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->buf;                          break;
 	case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;                      break;	
-	case DID_FLASH_CONFIG:      copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));    break;
 	case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
+	case DID_FLASH_CONFIG:      
+		copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));    
+		if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
+		{	// Checksum received
+			device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
+		}
+		break;
 	}
 }
 
@@ -1008,7 +1014,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		{
 			is_device_t device = {};
 			device.serialPort = serial;
-			device.sysParams.flashCfgChecksum = 0xFFFFFFFF;
+			device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
 			m_comManagerState.devices.push_back(device);
 		}
 	}
@@ -1041,7 +1047,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			{
 				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
 				comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
-				comManagerGetData((int)i, DID_SYS_PARAMS,       0, 0, 0);
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
 			}

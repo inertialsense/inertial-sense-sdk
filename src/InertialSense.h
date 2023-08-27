@@ -46,6 +46,8 @@ extern "C"
 
 #include <functional>
 
+#define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
+
 class InertialSense;
 
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
@@ -271,7 +273,7 @@ public:
 	* @param pHandle the port pHandle to get flash config for
 	* @return bool whether the flash config is valid, currently synchronized.
 	*/
-	bool FlashConfigSynced(int pHandle = 0) { return m_comManagerState.devices[pHandle].flashCfg.checksum == m_comManagerState.devices[pHandle].sysParams.flashCfgChecksum; }
+	bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfg.checksum == device.sysParams.flashCfgChecksum; }
 
 	/**
 	* Set the flash config and update flash config on the uINS flash memory
@@ -412,6 +414,10 @@ public:
 
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+
+	// Used for testing
+	InertialSense::com_manager_cpp_state_t* GetComManagerState() { return &m_comManagerState; }	
+	InertialSense::is_device_t* GetComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:
 	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
