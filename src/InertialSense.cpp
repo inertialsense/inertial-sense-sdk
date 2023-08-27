@@ -719,10 +719,10 @@ void InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 	// Update checksum 
 	flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
 
-	//Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
+	// Compare checksum of flashCfg vs known checksum in m_comManagerState.devices[pHandle].flashCfg
 	if (m_comManagerState.devices[pHandle].flashCfg.checksum == flashCfg.checksum)
 	{
-		//If checksum matches then we are already in sync
+		// If checksum matches then we are already in sync
 		m_comManagerState.devices[pHandle].syncState = SYNCHRONIZED;
         m_comManagerState.devices[pHandle].flashCfg = flashCfg;
 	}
@@ -1048,12 +1048,9 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
 	if (m_enableDeviceValidation)
 	{
-		// negotiate baud rate by querying device info - don't return out until it negotiates or times out
-		// if the baud rate is already correct, the request for the message should succeed very quickly
 		time_t startTime = time(0);
 
-		// try to auto-baud for up to 10 seconds, then abort if we didn't get a valid packet
-		// we wait until we get a valid serial number and manufacturer
+		// Query devices with 10 second timeout
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
@@ -1064,7 +1061,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG, 0, 0, 0);
 			}
 
-			SLEEP_MS(13);
+			SLEEP_MS(100);
 			comManagerStep();
 		}
 
@@ -1238,6 +1235,8 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
     try
     {
         nvm_flash_cfg_t loaded_flash;
+        GetFlashConfig(loaded_flash);
+
         YAML::Node inData = YAML::LoadFile(path);
         loaded_flash.size                     = inData["size"].as<uint32_t>();
         loaded_flash.checksum                 = inData["checksum"].as<uint32_t>();
@@ -1252,12 +1251,12 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.insRotation[1]           = insRotation[1].as<float>();
         loaded_flash.insRotation[2]           = insRotation[2].as<float>();
 
-        YAML::Node insOffset                    = inData["insOffset"];
+        YAML::Node insOffset                  = inData["insOffset"];
         loaded_flash.insOffset[0]             = insOffset[0].as<float>();
         loaded_flash.insOffset[1]             = insOffset[1].as<float>();
         loaded_flash.insOffset[2]             = insOffset[2].as<float>();
 
-        YAML::Node gps1AntOffset                = inData["gps1AntOffset"];
+        YAML::Node gps1AntOffset              = inData["gps1AntOffset"];
         loaded_flash.gps1AntOffset[0]         = gps1AntOffset[0].as<float>();
         loaded_flash.gps1AntOffset[1]         = gps1AntOffset[1].as<float>();
         loaded_flash.gps1AntOffset[2]         = gps1AntOffset[2].as<float>();
@@ -1267,12 +1266,12 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.gnssSatSigConst          = inData["gnssSatSigConst"].as<uint16_t>();
         loaded_flash.sysCfgBits               = inData["sysCfgBits"].as<uint32_t>();
 
-        YAML::Node refLla                       = inData["refLla"];
+        YAML::Node refLla                     = inData["refLla"];
         loaded_flash.refLla[0]                = refLla[0].as<double>();
         loaded_flash.refLla[1]                = refLla[1].as<double>();
         loaded_flash.refLla[2]                = refLla[2].as<double>();
 
-        YAML::Node lastLla                      = inData["lastLla"];
+        YAML::Node lastLla                    = inData["lastLla"];
         loaded_flash.lastLla[0]               = lastLla[0].as<double>();
         loaded_flash.lastLla[1]               = lastLla[1].as<double>();
         loaded_flash.lastLla[2]               = lastLla[2].as<double>();
@@ -1283,18 +1282,17 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.ioConfig                 = inData["ioConfig"].as<uint32_t>();
         loaded_flash.platformConfig           = inData["platformConfig"].as<uint32_t>();
 
-
-        YAML::Node gps2AntOffset                = inData["gps2AntOffset"];
+        YAML::Node gps2AntOffset              = inData["gps2AntOffset"];
         loaded_flash.gps2AntOffset[0]         = gps2AntOffset[0].as<float>();
         loaded_flash.gps2AntOffset[1]         = gps2AntOffset[1].as<float>();
         loaded_flash.gps2AntOffset[2]         = gps2AntOffset[2].as<float>();
 
-        YAML::Node zeroVelRotation              = inData["zeroVelRotation"];
+        YAML::Node zeroVelRotation            = inData["zeroVelRotation"];
         loaded_flash.zeroVelRotation[0]       = zeroVelRotation[0].as<float>();
         loaded_flash.zeroVelRotation[1]       = zeroVelRotation[1].as<float>();
         loaded_flash.zeroVelRotation[2]       = zeroVelRotation[2].as<float>();
 
-        YAML::Node zeroVelOffset                = inData["zeroVelOffset"];
+        YAML::Node zeroVelOffset              = inData["zeroVelOffset"];
         loaded_flash.zeroVelOffset[0]         = zeroVelOffset[0].as<float>();
         loaded_flash.zeroVelOffset[1]         = zeroVelOffset[1].as<float>();
         loaded_flash.zeroVelOffset[2]         = zeroVelOffset[2].as<float>();
@@ -1312,25 +1310,25 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         loaded_flash.wheelConfig.radius       = inData["wheelConfigRadius"].as<float>();
         loaded_flash.wheelConfig.track_width  = inData["wheelConfigTrackWidth"].as<float>();
 
-		YAML::Node wheelCfgTransE_b2w			= inData["wheelCfgTransE_b2w"];
-        loaded_flash.wheelConfig.transform.e_b2w[0] 	= wheelCfgTransE_b2w[0].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w[1] 	= wheelCfgTransE_b2w[1].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w[2] 	= wheelCfgTransE_b2w[2].as<float>();
+        YAML::Node wheelCfgTransE_b2w                       = inData["wheelCfgTransE_b2w"];
+        loaded_flash.wheelConfig.transform.e_b2w[0]         = wheelCfgTransE_b2w[0].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w[1]         = wheelCfgTransE_b2w[1].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w[2]         = wheelCfgTransE_b2w[2].as<float>();
 
-		YAML::Node wheelCfgTransE_b2wsig			= inData["wheelCfgTransE_b2wsig"];
-        loaded_flash.wheelConfig.transform.e_b2w_sigma[0] 	= wheelCfgTransE_b2wsig[0].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w_sigma[1] 	= wheelCfgTransE_b2wsig[1].as<float>();
-        loaded_flash.wheelConfig.transform.e_b2w_sigma[2] 	= wheelCfgTransE_b2wsig[2].as<float>();
+        YAML::Node wheelCfgTransE_b2wsig                    = inData["wheelCfgTransE_b2wsig"];
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[0]   = wheelCfgTransE_b2wsig[0].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[1]   = wheelCfgTransE_b2wsig[1].as<float>();
+        loaded_flash.wheelConfig.transform.e_b2w_sigma[2]   = wheelCfgTransE_b2wsig[2].as<float>();
 
-		YAML::Node wheelCfgTransT_b2w			= inData["wheelCfgTransT_b2wsig"];
-        loaded_flash.wheelConfig.transform.t_b2w[0] 	= wheelCfgTransT_b2w[0].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w[1] 	= wheelCfgTransT_b2w[1].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w[2] 	= wheelCfgTransT_b2w[2].as<float>();
+        YAML::Node wheelCfgTransT_b2w                       = inData["wheelCfgTransT_b2wsig"];
+        loaded_flash.wheelConfig.transform.t_b2w[0]         = wheelCfgTransT_b2w[0].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w[1]         = wheelCfgTransT_b2w[1].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w[2]         = wheelCfgTransT_b2w[2].as<float>();
 
-		YAML::Node wheelCfgTransT_b2wsig			= inData["wheelCfgTransT_b2wsig"];
-        loaded_flash.wheelConfig.transform.t_b2w_sigma[0] 	= wheelCfgTransT_b2wsig[0].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w_sigma[1] 	= wheelCfgTransT_b2wsig[1].as<float>();
-        loaded_flash.wheelConfig.transform.t_b2w_sigma[2] 	= wheelCfgTransT_b2wsig[2].as<float>();
+        YAML::Node wheelCfgTransT_b2wsig                    = inData["wheelCfgTransT_b2wsig"];
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[0]   = wheelCfgTransT_b2wsig[0].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[1]   = wheelCfgTransT_b2wsig[1].as<float>();
+        loaded_flash.wheelConfig.transform.t_b2w_sigma[2]   = wheelCfgTransT_b2wsig[2].as<float>();
 
         SetFlashConfig(loaded_flash);
     }
@@ -1340,5 +1338,5 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
         return -1;
     }
 
-	return 0;
+    return 0;
 }

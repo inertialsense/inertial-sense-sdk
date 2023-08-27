@@ -253,7 +253,7 @@ public:
 	/**
 	* Set device configuration
 	* @param pHandle the pHandle to set sysCmd for
-	* @param command system command value
+	* @param command system command value (see eSystemCommand)
 	*/
 	void SetSysCmd(const uint32_t command, int pHandle = -1);
 
@@ -406,8 +406,8 @@ public:
 	// Sync state between this class and IMX device
 	enum IMXSyncState
 	{
-		NOT_SYNCHRONIZED    = 0,   // Download needed
-		SYNCHRONIZING       = 1,   // Uploading
+		NOT_SYNCHRONIZED    = 0,   // Download from IMX needed
+		SYNCHRONIZING       = 1,   // Uploading to IMX
 		SYNCHRONIZED        = 2,   // Flash config on IMX and locally match
 	};
 

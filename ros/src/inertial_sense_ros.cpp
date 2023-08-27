@@ -66,10 +66,12 @@ void InertialSenseROS::initialize(bool configFlashParameters)
     ROS_INFO("======  Starting Inertial Sense ROS  ======");
 
     initializeIS(true);
-    if (sdk_connected_) {
+    if (sdk_connected_) 
+    {
         initializeROS();
 
-        if (log_enabled_) {
+        if (log_enabled_) 
+        {
             start_log();    // Start log should happen last
         }
 
@@ -77,7 +79,8 @@ void InertialSenseROS::initialize(bool configFlashParameters)
     }
 }
 
-void InertialSenseROS::terminate() {
+void InertialSenseROS::terminate() 
+{
     IS_.Close();
     IS_.CloseServerConnection();
     sdk_connected_ = false;
@@ -85,8 +88,22 @@ void InertialSenseROS::terminate() {
     // ROS equivelant to shutdown advertisers, etc.
 }
 
-void InertialSenseROS::initializeIS(bool configFlashParameters) {
-    if (connect()) {
+void InertialSenseROS::initializeIS(bool configFlashParameters) 
+{
+    if (factory_reset_)
+    {
+        if (connect()) 
+        {   // Apply factory reset
+            ROS_INFO("InertialSenseROS: Applying factory reset.");
+            IS_.StopBroadcasts(true);
+            IS_.SetSysCmd(SYS_CMD_MANF_UNLOCK);
+            IS_.SetSysCmd(SYS_CMD_MANF_FACTORY_RESET);
+            sleep(3);
+        }
+    }
+
+    if (connect()) 
+    {
         // Check protocol and firmware version
         firmware_compatiblity_check();
 
@@ -102,7 +119,8 @@ void InertialSenseROS::initializeIS(bool configFlashParameters) {
     }
 }
 
-void InertialSenseROS::initializeROS() {
+void InertialSenseROS::initializeROS() 
+{
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = nh_.advertiseService("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA, this);
@@ -117,13 +135,13 @@ void InertialSenseROS::initializeROS() {
     // Publishers
     strobe_pub_ = nh_.advertise<std_msgs::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub = nh_.advertise<inertial_sense_ros::DID_INS1>(rs_.did_ins1.topic, 1); }
-    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub = nh_.advertise<inertial_sense_ros::DID_INS2>(rs_.did_ins2.topic, 1); }
-    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub = nh_.advertise<inertial_sense_ros::DID_INS4>(rs_.did_ins4.topic, 1); }
-    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ned.topic, 1); }
-    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_enu.topic, 1); }
+    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_.advertise<inertial_sense_ros::DID_INS1>(rs_.did_ins1.topic, 1); }
+    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_.advertise<inertial_sense_ros::DID_INS2>(rs_.did_ins2.topic, 1); }
+    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_.advertise<inertial_sense_ros::DID_INS4>(rs_.did_ins4.topic, 1); }
+    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ned.topic, 1); }
+    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_enu.topic, 1); }
     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::Odometry>(rs_.odom_ins_ecef.topic, 1); }
-    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub = nh_.advertise<inertial_sense_ros::INL2States>(rs_.inl2_states.topic, 1); }
+    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_.advertise<inertial_sense_ros::INL2States>(rs_.inl2_states.topic, 1); }
 
     if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros::PIMU>(rs_.pimu.topic, 1); }
     if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::Imu>(rs_.imu.topic, 1); }
@@ -217,19 +235,21 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back("/dev/ttyACM0");
     }
 
+    ph.nodeParam("factory_reset", factory_reset_, false);
+
     ph.nodeParam("baudrate", baudrate_, 921600);
     ph.nodeParam("frame_id", frame_id_, "body");
     ph.nodeParam("enable_log", log_enabled_, false);
 
     // advanced Parameters
-    ph.nodeParam("ioConfig", ioConfigBits_, 0x0244a060);     // EVB2: GPS1 Ser1 F9P, GPS2 disabled F9P, PPS G8
+    setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, 0);
     ph.nodeParam("RTKCfgBits", rtkConfigBits_, 0);            // rtk config bits
     ph.nodeParam("wheelCfgBits", wheelConfigBits_, 0);        // wheel-encoder config bits
 
     ph.nodeParam("mag_declination", magDeclination_);
     ph.nodeParamVec("ref_lla", 3, refLla_);
     ph.nodeParam("publishTf", publishTf_);
-    ph.nodeParam("platformConfig", platformConfig_);
+    setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_);
 
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
@@ -513,14 +533,14 @@ bool InertialSenseROS::connect(float timeout)
 
     do {
         std::string cur_port = *ports_iterator;
-        /// Connect to the uINS
+        /// Connect to the IMX
         ROS_INFO("InertialSenseROS: Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
         sdk_connected_ = IS_.Open(cur_port.c_str(), baudrate_);
         if (!sdk_connected_) {
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sleep(1); // is this a good idea?
         } else {
-            ROS_INFO("InertialSenseROS: Connected to uINS %d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }
@@ -539,7 +559,7 @@ bool InertialSenseROS::firmware_compatiblity_check()
     char diff_protocol[4] = { 0, 0, 0, 0 };
     for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.GetDeviceInfo().protocolVer[i];
 
-    char local_firmware[3] = { FIRMWARE_VERSION_CHAR0, FIRMWARE_VERSION_CHAR1, FIRMWARE_VERSION_CHAR2 };
+    char local_firmware[3] = { REPO_VERSION_MAJOR, REPO_VERSION_MINOR, REPO_VERSION_REVIS };
     char diff_firmware[3] = { 0, 0 ,0 };
     for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.GetDeviceInfo().firmwareVer[i];
 
@@ -563,9 +583,9 @@ bool InertialSenseROS::firmware_compatiblity_check()
             PROTOCOL_VERSION_CHAR1,
             PROTOCOL_VERSION_CHAR2,
             PROTOCOL_VERSION_CHAR3,
-            FIRMWARE_VERSION_CHAR0,
-            FIRMWARE_VERSION_CHAR1, 
-            FIRMWARE_VERSION_CHAR2,
+            REPO_VERSION_MAJOR,
+            REPO_VERSION_MINOR, 
+            REPO_VERSION_REVIS,
             IS_.GetDeviceInfo().protocolVer[0],
             IS_.GetDeviceInfo().protocolVer[1],
             IS_.GetDeviceInfo().protocolVer[2],
@@ -610,28 +630,33 @@ void InertialSenseROS::configure_flash_parameters()
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {
-        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting uINS to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
+        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting IMX to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
         reboot = true;
     }
-    if (current_flash_cfg.ioConfig != ioConfigBits_)
+    if (setIoConfigBits_ && ioConfigBits_ != current_flash_cfg.ioConfig)
     {
-        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting uINS to make change", current_flash_cfg.ioConfig, ioConfigBits_);
+        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting IMX to make change", current_flash_cfg.ioConfig, ioConfigBits_);
         reboot = true;
+    }
+    else
+    {   // Don't change
+        ioConfigBits_ = current_flash_cfg.ioConfig;
+    }
+    if (setPlatformConfig_ && platformConfig_ != current_flash_cfg.platformConfig &&
+        !(current_flash_cfg.platformConfig & PLATFORM_CFG_TYPE_FROM_MANF_OTP))
+    {
+        reboot = true;
+    }
+    else
+    {   // Don't change
+        platformConfig_ = current_flash_cfg.platformConfig;
     }
 
-    bool setRefLla = false;
-    for (int i=0; i<3; i++)
-    {
-        if (refLla_[0] != 0.0)
-        {
-            setRefLla = true;
-        }
-    }
     if (!vecF32Match(current_flash_cfg.insRotation, insRotation_) ||
         !vecF32Match(current_flash_cfg.insOffset, insOffset_) ||
         !vecF32Match(current_flash_cfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
         !vecF32Match(current_flash_cfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
-        (setRefLla && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
+        (refLLA_valid && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
         current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_ ||
         current_flash_cfg.ioConfig != ioConfigBits_ ||
         current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
@@ -646,7 +671,7 @@ void InertialSenseROS::configure_flash_parameters()
             current_flash_cfg.insOffset[i] = insOffset_[i];
             current_flash_cfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
             current_flash_cfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
-            if (setRefLla)
+            if (refLLA_valid)
             {
                 current_flash_cfg.refLla[i] = refLla_[i];
             }
@@ -830,7 +855,6 @@ void InertialSenseROS::configure_rtk()
     }
     else
     {
-
         ROS_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
         ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
@@ -883,11 +907,19 @@ void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t
 {
     STREAMING_CHECK(flashConfigStreaming_, DID);
 
-    refLla_[0] = msg->refLla[0];
-    refLla_[1] = msg->refLla[1];
-    refLla_[2] = msg->refLla[2];
-    refLLA_known = true;
-    ROS_DEBUG("InertialSenseROS: refLla was set");
+    setRefLla(msg->refLla);
+}
+
+void InertialSenseROS::setRefLla(const double refLla[3])
+{
+    refLla_[0] = refLla[0];
+    refLla_[1] = refLla[1];
+    refLla_[2] = refLla[2];
+    if (!refLLA_valid)
+    {
+        ROS_DEBUG("InertialSenseROS: refLla was set");
+    }
+    refLLA_valid = true;
 }
 
 void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
@@ -951,11 +983,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
 {
     rs_.did_ins4.streamingCheck(DID);
 
-    if (!refLLA_known)
-    {
-        ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from uINS/IMX");
-        return;
-    }
     if (rs_.did_ins4.enabled)
     {
         // Standard DID_INS_2 message
@@ -977,7 +1004,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         if (rs_.did_ins4.pub.getNumSubscribers() > 0)
             rs_.did_ins4.pub.publish(msg_did_ins4);
     }
-
 
     if (rs_.odom_ins_ned.enabled || rs_.odom_ins_enu.enabled || rs_.odom_ins_ecef.enabled)
     {
@@ -1045,7 +1071,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             msg_odom_ecef.twist.twist.angular.x = result[0];
             msg_odom_ecef.twist.twist.angular.y = result[1];
             msg_odom_ecef.twist.twist.angular.z = result[2];
-
             rs_.odom_ins_ecef.pub.publish(msg_odom_ecef);
 
             if (publishTf_)
@@ -1060,177 +1085,185 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             }
         }
 
+
         if (rs_.odom_ins_ned.enabled)
         {
-            ixVector4 qn2b;
-            ixMatrix3 Rb2n, Re2n, buf;
-
-            // NED-to-body quaternion
-            mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
-            // Body-to-NED rotation matrix
-            rotMatB2R(qn2b, Rb2n);
-            // ECEF-to-NED rotation matrix
-            rotMatB2R(qe2n, buf);
-            transpose_Mat3(Re2n, buf);
-
-            // Pose
-            // Transform position from ECEF to NED and attitude from body to NED
-            transform_6x6_covariance(Pout, poseCov_, Re2n, Rb2n);
-            for (int i = 0; i < 36; i++)
+            if (!refLLA_valid)
             {
-                msg_odom_ned.pose.covariance[i] = Pout[i];
+                ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
             }
-            // Twist
-            // Transform velocity from ECEF to NED and angular rate from body to NED
-            transform_6x6_covariance(Pout, twistCov_, Re2n, Rb2n);
-            for (int i = 0; i < 36; i++)
+            else
             {
-                msg_odom_ned.twist.covariance[i] = Pout[i];
-            }
+                ixVector4 qn2b;
+                ixMatrix3 Rb2n, Re2n, buf;
 
-            msg_odom_ned.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
-            msg_odom_ned.header.frame_id = frame_id_;
+                // NED-to-body quaternion
+                mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
+                // Body-to-NED rotation matrix
+                rotMatB2R(qn2b, Rb2n);
+                // ECEF-to-NED rotation matrix
+                rotMatB2R(qe2n, buf);
+                transpose_Mat3(Re2n, buf);
 
-            // Position
-            ixVector3d llaPosRadians;
-                //ecef to lla (rad,rad,m)
-            ecef2lla(msg->ecef, llaPosRadians);
-            ixVector3 ned;
-            ixVector3d refLlaRadians;
-                //convert refLla_ to radians
-            lla_Deg2Rad_d(refLlaRadians, refLla_);
-                //lla to ned
-            lla2ned_d(refLlaRadians, llaPosRadians, ned);
+                // Pose
+                // Transform position from ECEF to NED and attitude from body to NED
+                transform_6x6_covariance(Pout, poseCov_, Re2n, Rb2n);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_ned.pose.covariance[i] = Pout[i];
+                }
+                // Twist
+                // Transform velocity from ECEF to NED and angular rate from body to NED
+                transform_6x6_covariance(Pout, twistCov_, Re2n, Rb2n);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_ned.twist.covariance[i] = Pout[i];
+                }
 
-            msg_odom_ned.pose.pose.position.x = ned[0];
-            msg_odom_ned.pose.pose.position.y = ned[1];
-            msg_odom_ned.pose.pose.position.z = ned[2];
+                msg_odom_ned.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
+                msg_odom_ned.header.frame_id = frame_id_;
 
-            // Attitude
-            msg_odom_ned.pose.pose.orientation.w = qn2b[0]; // w
-            msg_odom_ned.pose.pose.orientation.x = qn2b[1]; // x
-            msg_odom_ned.pose.pose.orientation.y = qn2b[2]; // y
-            msg_odom_ned.pose.pose.orientation.z = qn2b[3]; // z
+                // Position
+                ixVector3d llaPosRadians;
+                ecef2lla(msg->ecef, llaPosRadians);
+                ixVector3 ned;
+                ixVector3d refLlaRadians;            
+                lla_Deg2Rad_d(refLlaRadians, refLla_);
+                lla2ned_d(refLlaRadians, llaPosRadians, ned);
 
-            // Linear Velocity
-            ixVector3 result, theta;
+                msg_odom_ned.pose.pose.position.x = ned[0];
+                msg_odom_ned.pose.pose.position.y = ned[1];
+                msg_odom_ned.pose.pose.position.z = ned[2];
 
-            quatConjRot(result, qe2n, msg->ve);
+                // Attitude
+                msg_odom_ned.pose.pose.orientation.w = qn2b[0]; // w
+                msg_odom_ned.pose.pose.orientation.x = qn2b[1]; // x
+                msg_odom_ned.pose.pose.orientation.y = qn2b[2]; // y
+                msg_odom_ned.pose.pose.orientation.z = qn2b[3]; // z
 
-            msg_odom_ned.twist.twist.linear.x = result[0];
-            msg_odom_ned.twist.twist.linear.y = result[1];
-            msg_odom_ned.twist.twist.linear.z = result[2];
+                // Linear Velocity
+                ixVector3 result, theta;
 
-            // Angular Velocity
-            // Transform from body frame to NED
-            ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
-            quatRot(result, qn2b, angVelImu);
+                quatConjRot(result, qe2n, msg->ve);
 
-            msg_odom_ned.twist.twist.angular.x = result[0];
-            msg_odom_ned.twist.twist.angular.y = result[1];
-            msg_odom_ned.twist.twist.angular.z = result[2];
-            rs_.odom_ins_ned.pub.publish(msg_odom_ned);
+                msg_odom_ned.twist.twist.linear.x = result[0];
+                msg_odom_ned.twist.twist.linear.y = result[1];
+                msg_odom_ned.twist.twist.linear.z = result[2];
 
-            if (publishTf_)
-            {
-                // Calculate the TF from the pose...
-                transform_NED.setOrigin(tf::Vector3(msg_odom_ned.pose.pose.position.x, msg_odom_ned.pose.pose.position.y, msg_odom_ned.pose.pose.position.z));
-                tf::Quaternion q;
-                tf::quaternionMsgToTF(msg_odom_ned.pose.pose.orientation, q);
-                transform_NED.setRotation(q);
+                // Angular Velocity
+                // Transform from body frame to NED
+                ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
+                quatRot(result, qn2b, angVelImu);
 
-                br.sendTransform(tf::StampedTransform(transform_NED, ros::Time::now(), "ins_ned", "ins_base_link_ned"));
+                msg_odom_ned.twist.twist.angular.x = result[0];
+                msg_odom_ned.twist.twist.angular.y = result[1];
+                msg_odom_ned.twist.twist.angular.z = result[2];
+                rs_.odom_ins_ned.pub.publish(msg_odom_ned);
+
+                if (publishTf_)
+                {
+                    // Calculate the TF from the pose...
+                    transform_NED.setOrigin(tf::Vector3(msg_odom_ned.pose.pose.position.x, msg_odom_ned.pose.pose.position.y, msg_odom_ned.pose.pose.position.z));
+                    tf::Quaternion q;
+                    tf::quaternionMsgToTF(msg_odom_ned.pose.pose.orientation, q);
+                    transform_NED.setRotation(q);
+
+                    br.sendTransform(tf::StampedTransform(transform_NED, ros::Time::now(), "ins_ned", "ins_base_link_ned"));
+                }
             }
         }
 
         if (rs_.odom_ins_enu.enabled)
         {
-            ixVector4 qn2b, qn2enu, qe2enu, qenu2b;
-            ixMatrix3 Rb2enu, Re2enu, buf;
-            ixEuler eul = {M_PI, 0, 0.5 * M_PI};
-            // ENU-to-NED quaternion
-            euler2quat(eul, qn2enu);
-            // NED-to-body quaternion
-            mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
-            // ENU-to-body quaternion
-            mul_Quat_ConjQuat(qenu2b, qn2b, qn2enu);
-            // ECEF-to-ENU quaternion
-            mul_Quat_Quat(qe2enu, qn2enu, qe2n);
-            // Body-to-ENU rotation matrix
-            rotMatB2R(qenu2b, Rb2enu);
-            // ECEF-to-ENU rotation matrix
-            rotMatB2R(qe2enu, buf);
-            transpose_Mat3(Re2enu, buf);
-
-            // Pose
-            // Transform position from ECEF to ENU and attitude from body to ENU
-            transform_6x6_covariance(Pout, poseCov_, Re2enu, Rb2enu);
-            for (int i = 0; i < 36; i++)
+            if (!refLLA_valid)
             {
-                msg_odom_enu.pose.covariance[i] = Pout[i];
+                ROS_INFO("InertialSenseROS: Waiting for refLLA to be received from IMX");
             }
-            // Twist
-            // Transform velocity from ECEF to ENU and angular rate from body to ENU
-            transform_6x6_covariance(Pout, twistCov_, Re2enu, Rb2enu);
-            for (int i = 0; i < 36; i++)
+            else
             {
-                msg_odom_enu.twist.covariance[i] = Pout[i];
-            }
+                ixVector4 qn2b, qn2enu, qe2enu, qenu2b;
+                ixMatrix3 Rb2enu, Re2enu, buf;
+                ixEuler eul = {M_PI, 0, 0.5 * M_PI};
+                // ENU-to-NED quaternion
+                euler2quat(eul, qn2enu);
+                // NED-to-body quaternion
+                mul_Quat_ConjQuat(qn2b, qe2b, qe2n);
+                // ENU-to-body quaternion
+                mul_Quat_ConjQuat(qenu2b, qn2b, qn2enu);
+                // ECEF-to-ENU quaternion
+                mul_Quat_Quat(qe2enu, qn2enu, qe2n);
+                // Body-to-ENU rotation matrix
+                rotMatB2R(qenu2b, Rb2enu);
+                // ECEF-to-ENU rotation matrix
+                rotMatB2R(qe2enu, buf);
+                transpose_Mat3(Re2enu, buf);
 
-            msg_odom_enu.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
-            msg_odom_enu.header.frame_id = frame_id_;
+                // Pose
+                // Transform position from ECEF to ENU and attitude from body to ENU
+                transform_6x6_covariance(Pout, poseCov_, Re2enu, Rb2enu);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_enu.pose.covariance[i] = Pout[i];
+                }
+                // Twist
+                // Transform velocity from ECEF to ENU and angular rate from body to ENU
+                transform_6x6_covariance(Pout, twistCov_, Re2enu, Rb2enu);
+                for (int i = 0; i < 36; i++)
+                {
+                    msg_odom_enu.twist.covariance[i] = Pout[i];
+                }
 
-            // Position
-                //Calculate in NED then convert
-            ixVector3d llaPosRadians;
-                //ecef to lla (rad,rad,m)
-            ecef2lla(msg->ecef, llaPosRadians);
-            ixVector3 ned;
-            ixVector3d refLlaRadians;
-                //convert refLla_ to radians
-            lla_Deg2Rad_d(refLlaRadians, refLla_);
-                //lla to ned
-            lla2ned_d(refLlaRadians, llaPosRadians, ned);
+                msg_odom_enu.header.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeek);
+                msg_odom_enu.header.frame_id = frame_id_;
 
-            // Rearrange from NED to ENU
-            msg_odom_enu.pose.pose.position.x = ned[1];
-            msg_odom_enu.pose.pose.position.y = ned[0];
-            msg_odom_enu.pose.pose.position.z = -ned[2];
+                // Position
+                ixVector3d llaPosRadians;
+                ecef2lla(msg->ecef, llaPosRadians);
+                ixVector3 ned;
+                ixVector3d refLlaRadians;
+                lla_Deg2Rad_d(refLlaRadians, refLla_);
+                lla2ned_d(refLlaRadians, llaPosRadians, ned);
 
-            // Attitude
-            msg_odom_enu.pose.pose.orientation.w = qenu2b[0];
-            msg_odom_enu.pose.pose.orientation.x = qenu2b[1];
-            msg_odom_enu.pose.pose.orientation.y = qenu2b[2];
-            msg_odom_enu.pose.pose.orientation.z = qenu2b[3];
+                // Rearrange from NED to ENU
+                msg_odom_enu.pose.pose.position.x = ned[1];
+                msg_odom_enu.pose.pose.position.y = ned[0];
+                msg_odom_enu.pose.pose.position.z = -ned[2];
 
-            // Linear Velocity
-                //same as NED but rearranged.
-            ixVector3 result, theta;
-            quatConjRot(result, qe2n, msg->ve);
+                // Attitude
+                msg_odom_enu.pose.pose.orientation.w = qenu2b[0];
+                msg_odom_enu.pose.pose.orientation.x = qenu2b[1];
+                msg_odom_enu.pose.pose.orientation.y = qenu2b[2];
+                msg_odom_enu.pose.pose.orientation.z = qenu2b[3];
 
-            msg_odom_enu.twist.twist.linear.x = result[1];
-            msg_odom_enu.twist.twist.linear.y = result[0];
-            msg_odom_enu.twist.twist.linear.z = -result[2];
+                // Linear Velocity
+                    //same as NED but rearranged.
+                ixVector3 result, theta;
+                quatConjRot(result, qe2n, msg->ve);
 
-            // Angular Velocity
-            // Transform from body frame to ENU
-            ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
-            quatRot(result, qenu2b, angVelImu);
+                msg_odom_enu.twist.twist.linear.x = result[1];
+                msg_odom_enu.twist.twist.linear.y = result[0];
+                msg_odom_enu.twist.twist.linear.z = -result[2];
 
-            msg_odom_enu.twist.twist.angular.x = result[0];
-            msg_odom_enu.twist.twist.angular.y = result[1];
-            msg_odom_enu.twist.twist.angular.z = result[2];
+                // Angular Velocity
+                // Transform from body frame to ENU
+                ixVector3 angVelImu = {(f_t)msg_imu.angular_velocity.x, (f_t)msg_imu.angular_velocity.y, (f_t)msg_imu.angular_velocity.z};
+                quatRot(result, qenu2b, angVelImu);
 
-            rs_.odom_ins_enu.pub.publish(msg_odom_enu);
-            if (publishTf_)
-            {
-                // Calculate the TF from the pose...
-                transform_ENU.setOrigin(tf::Vector3(msg_odom_enu.pose.pose.position.x, msg_odom_enu.pose.pose.position.y, msg_odom_enu.pose.pose.position.z));
-                tf::Quaternion q;
-                tf::quaternionMsgToTF(msg_odom_enu.pose.pose.orientation, q);
-                transform_ENU.setRotation(q);
+                msg_odom_enu.twist.twist.angular.x = result[0];
+                msg_odom_enu.twist.twist.angular.y = result[1];
+                msg_odom_enu.twist.twist.angular.z = result[2];
+                rs_.odom_ins_enu.pub.publish(msg_odom_enu);
+                
+                if (publishTf_)
+                {
+                    // Calculate the TF from the pose...
+                    transform_ENU.setOrigin(tf::Vector3(msg_odom_enu.pose.pose.position.x, msg_odom_enu.pose.pose.position.y, msg_odom_enu.pose.pose.position.z));
+                    tf::Quaternion q;
+                    tf::quaternionMsgToTF(msg_odom_enu.pose.pose.orientation, q);
+                    transform_ENU.setRotation(q);
 
-                br.sendTransform(tf::StampedTransform(transform_ENU, ros::Time::now(), "ins_enu", "ins_base_link_enu"));
+                    br.sendTransform(tf::StampedTransform(transform_ENU, ros::Time::now(), "ins_enu", "ins_base_link_enu"));
+                }
             }
         }
     }
@@ -1271,7 +1304,8 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
     // Use custom INL2 states message
     if (rs_.inl2_states.enabled)
     {
-        rs_.inl2_states.pub.publish(msg_inl2_states);
+        if (rs_.inl2_states.pub.getNumSubscribers() > 0)
+            rs_.inl2_states.pub.publish(msg_inl2_states);
     }
 }
 
@@ -2030,7 +2064,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
     IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_flash_cfg_t, refLla));
 
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
+    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
@@ -2065,7 +2099,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
 {
     IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req.lla), sizeof(req.lla), offsetof(nvm_flash_cfg_t, refLla));
 
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
+    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
@@ -2198,7 +2232,7 @@ ros::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, cons
     }
     else
     {
-        // Otherwise, estimate the uINS boot time and offset the messages
+        // Otherwise, estimate the IMX boot time and offset the messages
         if (!got_first_message_)
         {
             got_first_message_ = true;
@@ -2229,7 +2263,7 @@ ros::Time InertialSenseROS::ros_time_from_start_time(const double time)
     }
     else
     {
-        // Otherwise, estimate the uINS boot time and offset the messages
+        // Otherwise, estimate the IMX boot time and offset the messages
         if (!got_first_message_)
         {
             got_first_message_ = true;
