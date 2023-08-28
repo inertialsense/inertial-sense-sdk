@@ -46,6 +46,8 @@ extern "C"
 
 #include <functional>
 
+#define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
+
 class InertialSense;
 
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
@@ -65,8 +67,9 @@ public:
 		dev_info_t devInfo;
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashCfg;
+		unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten  
 		evb_flash_cfg_t evbFlashCfg;
-		uint8_t syncState;
+		sys_params_t sysParams;
 	};
 
 	struct com_manager_cpp_state_t
@@ -266,11 +269,19 @@ public:
 	bool GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0); 
 
 	/**
+	* Indicates whether the current IMX flash config has been downloaded and available via GetFlashConfig().
+	* @param pHandle the port pHandle to get flash config for
+	* @return bool whether the flash config is valid, currently synchronized.
+	*/
+	bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfg.checksum == device.sysParams.flashCfgChecksum; }
+
+	/**
 	* Set the flash config and update flash config on the uINS flash memory
 	* @param flashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
+	* @return int number bytes sent 
 	*/
-	void SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+	int SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
 
 	/**
 	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
@@ -284,8 +295,9 @@ public:
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory
 	* @param evbFlashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
+	* @return int number bytes sent 
 	*/
-	void SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
+	int SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
 
 	void ProcessRxData(p_data_t* data, int pHandle);
 
@@ -403,15 +415,9 @@ public:
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
-	// Sync state between this class and IMX device
-	enum IMXSyncState
-	{
-		NOT_SYNCHRONIZED    = 0,   // Download from IMX needed
-		SYNCHRONIZING       = 1,   // Uploading to IMX
-		SYNCHRONIZED        = 2,   // Flash config on IMX and locally match
-	};
-
-	int GetSyncState(int pHandle) { return m_comManagerState.devices[pHandle].syncState; }
+	// Used for testing
+	InertialSense::com_manager_cpp_state_t* GetComManagerState() { return &m_comManagerState; }	
+	InertialSense::is_device_t* GetComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:
 	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -447,6 +453,7 @@ private:
 	is_comm_instance_t m_gpComm;
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 	mul_msg_stats_t m_serverMessageStats = {};
+	unsigned int m_syncCheckTimeMs = 0;
 
 	// returns false if logger failed to open
 	bool UpdateServer();
@@ -461,7 +468,7 @@ private:
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
 	static void BootloadStatusUpdate(void* obj, const char* str);
-	void UpdateFlashConfigSyncState(uint32_t rxChecksum, int pHandle);
+	void SyncFlashConfig(unsigned int timeMs);
 };
 
 #endif
