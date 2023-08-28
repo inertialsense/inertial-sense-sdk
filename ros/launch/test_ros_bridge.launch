@@ -1,6 +1,5 @@
 <launch>
     <rosparam file="$(find inertial_sense_ros)/launch/test_config.yaml" />
     <node pkg="rosservice" type="rosservice" name="set_move_base_log_level" args="call --wait /move_base/set_logger_level 'ros.move_base' 'debug'" />
-    <node name="inertial_sense_node" pkg="inertial_sense_ros" type="inertial_sense_node" output="screen" />
     <test test-name="test_ros_bridge" pkg="inertial_sense_ros" type="test_ros_bridge" />
 </launch>

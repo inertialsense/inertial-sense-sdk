@@ -67,9 +67,9 @@
 #define GPS_UNIX_OFFSET 315964800 // GPS time started on 6/1/1980 while UNIX time started 1/1/1970 this is the difference between those in seconds
 #define LEAP_SECONDS 18           // GPS time does not have leap seconds, UNIX does (as of 1/1/2017 - next one is probably in 2020 sometime unless there is some crazy earthquake or nuclear blast)
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
-#define FIRMWARE_VERSION_CHAR0 1
-#define FIRMWARE_VERSION_CHAR1 9
-#define FIRMWARE_VERSION_CHAR2 0
+#define REPO_VERSION_MAJOR 1
+#define REPO_VERSION_MINOR 10   // The repo/firmware version should originate from git tag (like repositoryInfo.h used in EvalTool).  For now we set these manually.
+#define REPO_VERSION_REVIS 0
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
     IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
@@ -121,17 +121,21 @@ public:
     void get_flash_config();
     void reset_device();
     void flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg);
+    void setRefLla(const double refLla[3]);
+
     bool flashConfigStreaming_ = false;
+    bool factory_reset_ = false;        // Apply factory reset on startup
 
     // Serial Port Configuration
-    std::vector<std::string> ports_; // a collection of ports which will be attempted, in order until a connection is made
-    std::string port_; // the actual port we connected with
-    int baudrate_;  // the baudrate to connect with
+    std::vector<std::string> ports_;    // a collection of ports which will be attempted, in order until a connection is made
+    std::string port_;                  // the actual port we connected with
+    int baudrate_;                      // the baudrate to connect with
 
     bool sdk_connected_ = false;
     bool log_enabled_ = false;
     bool covariance_enabled_;
     int platformConfig_ = 0;
+    bool setPlatformConfig_ = false;
 
     std::string frame_id_;
 
@@ -404,18 +408,14 @@ public:
     float insRotation_[3] = {0, 0, 0};
     float insOffset_[3] = {0, 0, 0};
     double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero
+    bool refLLA_valid = false;
     float magDeclination_;
     int insDynModel_;
-    bool refLLA_known = false;
 
     uint32_t ioConfigBits_ = 0;                 // this is read directly from the config,
-    uint32_t working_ioConfigBits_ = 0;         // this is the calculated/derived value from other parameters
-
+    bool setIoConfigBits_ = false;
     uint32_t rtkConfigBits_ = 0;                // this is read directly from the config
-    uint32_t working_rtkConfigBits_ = 0;        // this is the calculated/derived value from other parameters
-
     uint32_t wheelConfigBits_ = 0;              // this is read directly from the config
-    uint32_t working_wheelConfigBits_ = 0;      // this is the calculated/derived value from other parameters
 
     float gpsTimeUserDelay_ = 0;
 

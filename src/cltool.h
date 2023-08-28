@@ -58,7 +58,7 @@ typedef struct
 	bool forceBootloaderUpdate;				// -fb
 	bool bootloaderVerify; 					// -bv
 	bool replayDataLog;
-	bool softwareResetUins;
+	bool softwareResetImx;
 	bool softwareResetEvb;
 	bool magRecal;
 	uint32_t magRecalMode;
