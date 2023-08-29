@@ -1026,9 +1026,16 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 
 	// Prep data if callback exists
 	int sendData = 1;
-	if (cmInstance->regData[req->id].preTxFnc)
+	if (req->id < DID_COUNT_UINS)
 	{
-		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
+		if (cmInstance->regData[req->id].preTxFnc)
+		{
+			sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
+		}
+	}
+	else
+	{
+		// This is a GPS command. Does IMX need to do anything
 	}
 
 	if (req->id == DID_REFERENCE_IMU)
