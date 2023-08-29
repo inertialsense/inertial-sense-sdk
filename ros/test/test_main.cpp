@@ -129,8 +129,6 @@ TEST(test_main, gps_ins_time_sync)
         }
     }
 
-    ASSERT_TRUE(false);
-
     TEST_COUT << "Timestamp Deviation (GPS <> pIMU):  [" << testNode.get_min_deviation(testNode.gps_ts, testNode.pimu_ts) << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.pimu_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.pimu_ts) << "]" << :: std::endl;
     TEST_COUT << "Timestamp Deviation (GPS <> IMU):   [" << testNode.get_min_deviation(testNode.gps_ts, testNode.imu_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.imu_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.imu_ts) << "]" << :: std::endl;
     TEST_COUT << "Timestamp Deviation (GPS <> INS):   [" << testNode.get_min_deviation(testNode.gps_ts, testNode.ins_ts)  << " <= " <<  testNode.get_avg_deviation(testNode.gps_ts, testNode.ins_ts) << " <= "  << testNode.get_max_deviation(testNode.gps_ts, testNode.ins_ts) << "]" << :: std::endl;
