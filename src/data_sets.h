@@ -3300,7 +3300,7 @@ typedef struct
 typedef prcopt_t gps_rtk_opt_t;
 
 /** Raw satellite observation data */
-typedef struct // PACKED
+typedef struct PACKED
 {
     /** Receiver local time approximately aligned to the GPS time system (GPST) */
     gtime_t time;
@@ -3344,8 +3344,8 @@ typedef struct // PACKED
     /* GLONASS frequency channel (0-13) */
     uint8_t freq;
 
-    /** reserved, for alignment */
-    //uint8_t reserved;  ?????
+    /** reserved */
+    uint8_t reserved;
 } obsd_t;
 
 #define GPS_RAW_MESSAGE_BUF_SIZE    1000
