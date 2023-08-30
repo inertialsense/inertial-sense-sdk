@@ -90,10 +90,10 @@ typedef enum
 #define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
 
 /** The maximum allowable dataset size */
-#if PLATFORM_IS_EMBEDDED
-#define MAX_DATASET_SIZE        1024
-#else
+#if !PLATFORM_IS_EMBEDDED && CONVERT_RAW_GPS_V1_TO_V2
 #define MAX_DATASET_SIZE        2048
+#else
+#define MAX_DATASET_SIZE        1024
 #endif
 
 /** The decoded overhead involved in sending a packet - 4 bytes for header, 4 bytes for footer */
