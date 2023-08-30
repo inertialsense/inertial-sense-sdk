@@ -410,7 +410,7 @@ public:
     double refLla_[3] = {0, 0, 0};      // Upload disabled if all zero
     bool refLLA_valid = false;
     float magDeclination_;
-    int insDynModel_;
+    int dynamicModel_;
 
     uint32_t ioConfigBits_ = 0;                 // this is read directly from the config,
     bool setIoConfigBits_ = false;
