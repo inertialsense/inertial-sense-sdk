@@ -90,7 +90,11 @@ typedef enum
 #define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
 
 /** The maximum allowable dataset size */
+#if PLATFORM_IS_EMBEDDED
 #define MAX_DATASET_SIZE        1024
+#else
+#define MAX_DATASET_SIZE        2048
+#endif
 
 /** The decoded overhead involved in sending a packet - 4 bytes for header, 4 bytes for footer */
 #define PKT_OVERHEAD_SIZE       8       // = START_BYTE + INFO_BYTE + COUNTER_BYTE + FLAGS_BYTE + CHECKSUM_BYTE_1 + CHECKSUM_BYTE_2 + CHECKSUM_BYTE_3 + END_BYTE
