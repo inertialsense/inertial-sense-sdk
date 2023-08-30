@@ -3345,7 +3345,7 @@ typedef struct PACKED
     uint8_t freq;
 
     /** reserved */
-    uint8_t reserved;
+    //uint8_t reserved;
 } obsd_t;
 
 #define GPS_RAW_MESSAGE_BUF_SIZE    1000
