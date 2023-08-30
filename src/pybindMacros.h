@@ -81,14 +81,14 @@ PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_e
 PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);
 PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, rover_position_error, reset_bias, start_relpos, end_relpos, start_rtkpos, pnt_pos_error, no_base_obs_data, diff_age_error, moveb_time_sync_error, waiting_for_rover_packet, waiting_for_base_packet, lsq_error, lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, obs_pairs_filtered, obs_pairs_used, raw_ptr_queue_overrun, raw_dat_queue_overrun);
 
-PYBIND11_NUMPY_DTYPE(obsd_t, time, sat, rcv, SNR, LLI, code, qualL, qualP, reserved, L, P, D);
+PYBIND11_NUMPY_DTYPE(obsd_t, time, sat, rcv, SNR, LLI, code, L, P, D, timevalid, eventime, Lstd, Pstd, freq);
 
 PYBIND11_NUMPY_DTYPE(eph_t, sat, iode, iodc, sva, svh, week, code, flag, toe, toc, ttr, A, e, i0, OMG0, omg, M0, deln, OMGd, idot, crc, crs, cuc, cus, cic, cis, toes, fit, f0, f1, f2, tgd, Adot, ndot);
 PYBIND11_NUMPY_DTYPE(geph_t, sat, iode, frq, svh, sva, age, toe, tof, pos, vel, acc, taun, gamn, dtaun);
-PYBIND11_NUMPY_DTYPE(sbsmsg_t, week, tow, prn, msg, reserved);
-PYBIND11_NUMPY_DTYPE(sta_t, deltype, pos, del, hgt, stationId);
+PYBIND11_NUMPY_DTYPE(sbsmsg_t, week, tow, prn, msg);
+PYBIND11_NUMPY_DTYPE(sta_t, deltype, pos, del, hgt, glo_cp_align, glo_cp_bias, stationId);
 PYBIND11_NUMPY_DTYPE(alm_t, sat, svh, svconf, week, toa, A, e, i0, OMG0, omg, M0, OMGd, toas, f0, f1);
-PYBIND11_NUMPY_DTYPE(ion_model_utc_alm_t, ion_gps, ion_gal, ion_qzs, ion_cmp, ion_irn, utc_gps, utc_glo, utc_gal, utc_qzs, utc_cmp, utc_irn, utc_sbs, leaps, alm);
+PYBIND11_NUMPY_DTYPE(ion_model_utc_alm_t, ion_gps, ion_gal, ion_qzs, ion_cmp, ion_irn, utc_gps, utc_glo, utc_gal, utc_qzs, utc_cmp, utc_irn, utc_sbs, glo_fcn, leaps, alm);
 
 
 // Internal Data types
