@@ -30,6 +30,8 @@ extern "C" {
 
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
+#define CONVERT_RAW_GPS_V1_TO_V2     1      // Allow conversion of raw GPS format from v1 to v2 used for RTK
+
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
 #define PLATFORM_IS_WINDOWS 1
