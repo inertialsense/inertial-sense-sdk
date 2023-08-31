@@ -1033,10 +1033,6 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 			sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
 		}
 	}
-	else
-	{
-		// This is a GPS command. Does IMX need to do anything
-	}
 
 	if (req->id == DID_REFERENCE_IMU)
 	{
