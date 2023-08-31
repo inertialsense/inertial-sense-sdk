@@ -28,20 +28,21 @@
 
 
 topic: "inertialsense"
-port: [/dev/ttyACM0, /dev/ttyACM1]
+port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]
 baudrate: 921600
 enable_log: false
 publishTf: true                                 # Publish Transform Frame (TR)
 frame_id: ""                                    # FIXME: What is this?  is it just the FrameID to use in the ROS messages?
 mag_declination: 0.0
 ref_lla: [0.0, 0.0, 0.0]
+# factory_reset: true                             # Reset flash config to factory defaults on startup.
 
 # Hardware platform specifying the IMX carrier board type (i.e. EVB-2) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.
 # platform: 10                                    # PLATFORM_CFG_TYPE_RUG3_G2
-platform: 11                                    # PLATFORM_CFG_TYPE_EVB2_G2
+# platform: 11                                    # PLATFORM_CFG_TYPE_EVB2_G2
 # platform: 15                                    # PLATFORM_CFG_TYPE_IG1_G2
 
-# IMX ioConfig (see eIoConfig)
+# Overwrite IMX ioConfig (see eIoConfig)
 # Set DID_FLASH_CONFIG.ioConfig: 0x025c2060
 # Set DID_FLASH_CONFIG.platformConfig: 0x0000000c
 # Set DID_FLASH_CONFIG.RTKCfgBits: 0x00000400
@@ -137,7 +138,7 @@ gps1:
       period: 5                                 # Publish every 1 second (200ms x 5)
     raw:
       topic: "gps1/raw"                         # Observation "/obs", ephemeris "/eph", and GLONASS ephemeris "/gep" are appended to the end of the topic name.  (i.e. topic="gps1_raw" results is "gps1_raw_obs" published as actual topic)
-      enable: true
+      enable: false
       period: 5                                 # Publish every 1 second (200ms x 5)
     rtk_pos_rel:
       topic: "gps1/pos_vel"
