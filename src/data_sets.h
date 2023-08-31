@@ -3095,10 +3095,10 @@ PUSH_PACK_1
 
 #define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
 #define NEXOBS      0           /* number of extended obs codes */
-#define MAXOBS      19          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
+#define MAXOBS      15          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
 #define MAXERRMSG   0           /* max length of error/warning message */
 #define MAXANT      64          /* max length of station name/antenna type */
-#define MAXPREOBS  _MAX(40, MAXOBS)  // Note: total rover + base is (2 * MAXPREOBS)
+#define MAXPREOBS  _MAX(20, MAXOBS)  // Note: total rover + base is (2 * MAXPREOBS)
 
 #endif // RTKlib embedded defines
 
@@ -3350,7 +3350,7 @@ typedef struct PACKED
     /* GLONASS frequency channel (0-13) */
     uint8_t freq;
     /** reserved */
-    //uint8_t reserved;
+    uint8_t reserved;
 } obsd_t;
 
 #define GPS_RAW_MESSAGE_BUF_SIZE    1000
