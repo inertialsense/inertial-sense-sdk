@@ -1811,14 +1811,21 @@ void InertialSenseROS::GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, i
         obs.time.sec = msg[i].time.sec;
         obs.sat = msg[i].sat;
         obs.rcv = msg[i].rcv;
-        obs.SNR = msg[i].SNR[0];
-        obs.LLI = msg[i].LLI[0];
-        obs.code = msg[i].code[0];
-        obs.qualL = msg[i].qualL[0];
-        obs.qualP = msg[i].qualP[0];
-        obs.L = msg[i].L[0];
-        obs.P = msg[i].P[0];
-        obs.D = msg[i].D[0];
+        for (int f=0; f<NFREQ; f++)
+        {
+            obs.SNR[f]  = msg[i].SNR[f];
+            obs.LLI[f]  = msg[i].LLI[f];
+            obs.code[f] = msg[i].code[f];
+            obs.L[f]    = msg[i].L[f];
+            obs.P[f]    = msg[i].P[f];
+            obs.D[f]    = msg[i].D[f];
+            obs.Lstd[f] = msg[i].Lstd[f];
+            obs.Pstd[f] = msg[i].Pstd[f];
+        }
+        obs.timevalid = msg[i].timevalid;
+        obs.eventime.time = msg[i].eventime.time;
+        obs.eventime.sec = msg[i].eventime.sec;
+        obs.freq = msg[i].freq;
         switch (DID)
         {
         case DID_GPS1_RAW:
