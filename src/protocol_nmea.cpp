@@ -817,6 +817,71 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	return nmea_sprint_footer(a, aSize, n);
 }
 
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad)
+{
+	/*
+		0	Message ID $GPVTG
+		1	Track made good (degrees true)
+		2	T: track made good is relative to true north
+		3	Track made good (degrees magnetic)
+		4	M: track made good is relative to magnetic north
+		5	Speed, in knots
+		6	N: speed is measured in knots
+		7	Speed over ground in kilometers/hour (kph)
+		8	K: speed over ground is measured in kph
+		9	Mode indicator:
+			A: Autonomous mode
+			D: Differential mode
+			E: Estimated (dead reckoning) mode
+			M: Manual Input mode
+			S: Simulator mode
+			N: Data not valid
+		10	The checksum data, always begins with *
+
+		Example: $GPVTG,140.88,T,,M,8.04,N,14.89,K,D*05
+	*/
+	update_nmea_speed(pos, vel);
+
+	int n = nmea_talker(a, aSize);
+	nmea_sprint(a, aSize, n, "VTG");
+	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));						// 1
+	nmea_sprint(a, aSize, n, ",T");													// 2
+	if (magHeadingRad == 0.0f)														// 3
+	{
+		nmea_sprint(a, aSize, n, ",");
+	}
+	else
+	{
+		nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(magHeadingRad));
+	}
+	nmea_sprint(a, aSize, n, ",M");													// 4
+	nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);					// 5
+	nmea_sprint(a, aSize, n, ",N");													// 6
+	nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dMps*C_MPS2KMPH_F);			// 7
+	nmea_sprint(a, aSize, n, ",K");													// 8
+	switch(pos.status & GPS_STATUS_FIX_MASK)										// 9
+	{
+	case GPS_STATUS_FIX_2D:
+	case GPS_STATUS_FIX_3D:
+		nmea_sprint(a, aSize, n, ",A");
+		break;
+	case GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK:
+	case GPS_STATUS_FIX_DEAD_RECKONING_ONLY:
+		nmea_sprint(a, aSize, n, ",E");
+		break;
+	case GPS_STATUS_FIX_DGPS:
+	case GPS_STATUS_FIX_RTK_SINGLE:
+	case GPS_STATUS_FIX_RTK_FLOAT:
+	case GPS_STATUS_FIX_RTK_FIX:
+		nmea_sprint(a, aSize, n, ",D");
+		break;
+	default:
+		nmea_sprint(a, aSize, n, ",N");
+		break;
+	}
+	return nmea_sprint_footer(a, aSize, n);
+}
+
 int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 {
 	// NMEA ZDA line - http://www.gpsinformation.org/dale/nmea.htm#ZDA
@@ -1773,19 +1838,20 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 
 		switch(id)
 		{
-		case NMEA_MSG_ID_PIMU:	tmp.pimu    = period; break;
-		case NMEA_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
-		case NMEA_MSG_ID_PRIMU:	tmp.primu   = period; break;
-		case NMEA_MSG_ID_PINS1:	tmp.pins1   = period; break;
-		case NMEA_MSG_ID_PINS2:	tmp.pins2   = period; break;
-		case NMEA_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
-		case NMEA_MSG_ID_GGA:		tmp.gga     = period; break;
-		case NMEA_MSG_ID_GLL:		tmp.gll     = period; break;
-		case NMEA_MSG_ID_GSA:		tmp.gsa     = period; break;
-		case NMEA_MSG_ID_RMC:		tmp.rmc     = period; break;
-		case NMEA_MSG_ID_ZDA:		tmp.zda     = period; break;
-		case NMEA_MSG_ID_PASHR:	tmp.pashr   = period; break;
-		case NMEA_MSG_ID_GSV:		tmp.gsv     = period; break;
+		case NMEA_MSG_ID_PIMU:  tmp.pimu    = period; break;
+		case NMEA_MSG_ID_PPIMU: tmp.ppimu   = period; break;
+		case NMEA_MSG_ID_PRIMU: tmp.primu   = period; break;
+		case NMEA_MSG_ID_PINS1: tmp.pins1   = period; break;
+		case NMEA_MSG_ID_PINS2: tmp.pins2   = period; break;
+		case NMEA_MSG_ID_PGPSP: tmp.pgpsp   = period; break;
+		case NMEA_MSG_ID_GGA:   tmp.gga     = period; break;
+		case NMEA_MSG_ID_GLL:   tmp.gll     = period; break;
+		case NMEA_MSG_ID_GSA:   tmp.gsa     = period; break;
+		case NMEA_MSG_ID_RMC:   tmp.rmc     = period; break;
+		case NMEA_MSG_ID_ZDA:   tmp.zda     = period; break;
+		case NMEA_MSG_ID_PASHR: tmp.pashr   = period; break;
+		case NMEA_MSG_ID_GSV:   tmp.gsv     = period; break;
+		case NMEA_MSG_ID_VTG:   tmp.vtg     = period; break;
 		default: return 0;
 		}
 	}

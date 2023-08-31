@@ -73,6 +73,7 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos);
 int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &gpsSat);
 int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination);
 int nmea_zda(char a[], const int aSize, gps_pos_t &pos);
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad);
 int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
 int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno=false);
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
