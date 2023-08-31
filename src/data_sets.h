@@ -3010,6 +3010,7 @@ PUSH_PACK_1
 #define NFREQ       2      /* number of carrier frequencies */
 //#define NFREQ_USED  2      /* number of used frequencies. E.g. if L1 and L5 are used but not L2, then NFREQ is 3 but actually used frequencies are 2 */                          
 
+#define L1_L5_RTK                   0
 
 #define MINPRNGPS   1                   /* min satellite PRN number of GPS */
 #define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
