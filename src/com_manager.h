@@ -263,7 +263,6 @@ typedef struct
 
 } com_manager_t;
 
-
 // get the global instance of the com manager - this is only needed if you are working with multiple com managers and need to compare instances
 CMHANDLE comManagerGetGlobal(void);
 

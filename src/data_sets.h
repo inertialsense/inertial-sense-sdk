@@ -4719,193 +4719,193 @@ double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds
 
 #ifndef GPX_1
 
-#ifndef RTKLIB_H
-#define SYS_NONE    0x00                /* navigation system: none */
-#define SYS_GPS     0x01                /* navigation system: GPS */
-#define SYS_SBS     0x02                /* navigation system: SBAS */
-#define SYS_GLO     0x04                /* navigation system: GLONASS */
-#define SYS_GAL     0x08                /* navigation system: Galileo */
-#define SYS_QZS     0x10                /* navigation system: QZSS */
-#define SYS_CMP     0x20                /* navigation system: BeiDou */
-#define SYS_IRN     0x40                /* navigation system: IRNS */
-#define SYS_LEO     0x80                /* navigation system: LEO */
-#define SYS_ALL     0xFF                /* navigation system: all */
-#endif
+    #ifndef RTKLIB_H
+        #define SYS_NONE    0x00                /* navigation system: none */
+        #define SYS_GPS     0x01                /* navigation system: GPS */
+        #define SYS_SBS     0x02                /* navigation system: SBAS */
+        #define SYS_GLO     0x04                /* navigation system: GLONASS */
+        #define SYS_GAL     0x08                /* navigation system: Galileo */
+        #define SYS_QZS     0x10                /* navigation system: QZSS */
+        #define SYS_CMP     0x20                /* navigation system: BeiDou */
+        #define SYS_IRN     0x40                /* navigation system: IRNS */
+        #define SYS_LEO     0x80                /* navigation system: LEO */
+        #define SYS_ALL     0xFF                /* navigation system: all */
+    #endif // RTKLIB_H
 
-/*
-Convert gnssID to ubx gnss indicator (ref [2] 25)
+    /*
+    Convert gnssID to ubx gnss indicator (ref [2] 25)
 
-@param gnssID gnssID of satellite
-@return ubx gnss indicator
-*/
-int ubxSys(int gnssID);
+    @param gnssID gnssID of satellite
+    @return ubx gnss indicator
+    */
+    int ubxSys(int gnssID);
 
-#ifndef __RTKLIB_EMBEDDED_DEFINES_H_
+    #ifndef __RTKLIB_EMBEDDED_DEFINES_H_
 
-#undef ENAGLO
-#define ENAGLO
+        #undef ENAGLO
+        #define ENAGLO
 
-#undef ENAGAL
-#define ENAGAL
+        #undef ENAGAL
+        #define ENAGAL
 
-#undef ENAQZS
-//#define ENAQZS
+        #undef ENAQZS
+        //#define ENAQZS
 
-#undef ENASBS
-#define ENASBS
+        #undef ENASBS
+        #define ENASBS
 
-#undef MAXSUBFRMLEN
-#define MAXSUBFRMLEN 152
+        #undef MAXSUBFRMLEN
+        #define MAXSUBFRMLEN 152
 
-#undef MAXRAWLEN
-#define MAXRAWLEN 2048
+        #undef MAXRAWLEN
+        #define MAXRAWLEN 2048
 
-#undef NFREQ
-#define NFREQ 1
+        #undef NFREQ
+        #define NFREQ 1
 
-#undef NFREQGLO
-#ifdef ENAGLO
-#define NFREQGLO 1
-#else
-#define NFREQGLO 0
-#endif
+        #undef NFREQGLO
+        #ifdef ENAGLO
+            #define NFREQGLO 1
+        #else
+            #define NFREQGLO 0
+        #endif
 
-#undef NFREQGAL
-#ifdef ENAGAL
-#define NFREQGAL 1
-#else
-#define NFREQGAL 0
-#endif
+        #undef NFREQGAL
+        #ifdef ENAGAL
+            #define NFREQGAL 1
+        #else
+            #define NFREQGAL 0
+        #endif
 
-#undef NEXOBS
-#define NEXOBS 0
+        #undef NEXOBS
+        #define NEXOBS 0
 
-#undef MAXOBS
-#define MAXOBS 56               // Also defined inside rtklib_defines.h
-#define HALF_MAXOBS (MAXOBS/2)
+        #undef MAXOBS
+        #define MAXOBS 56               // Also defined inside rtklib_defines.h
+        #define HALF_MAXOBS (MAXOBS/2)
 
-#undef NUMSATSOL
-#define NUMSATSOL 22
+        #undef NUMSATSOL
+        #define NUMSATSOL 22
 
-#undef MAXERRMSG
-#define MAXERRMSG 0
+        #undef MAXERRMSG
+        #define MAXERRMSG 0
 
-#ifdef ENASBS
+        #ifdef ENASBS
+            // sbas waas only satellites
+            #undef MINPRNSBS
+            #define MINPRNSBS 133                 /* min satellite PRN number of SBAS */
 
-// sbas waas only satellites
-#undef MINPRNSBS
-#define MINPRNSBS 133                 /* min satellite PRN number of SBAS */
+            #undef MAXPRNSBS
+            #define MAXPRNSBS 138                 /* max satellite PRN number of SBAS */
 
-#undef MAXPRNSBS
-#define MAXPRNSBS 138                 /* max satellite PRN number of SBAS */
+            #undef NSATSBS
+            #define NSATSBS (MAXPRNSBS - MINPRNSBS + 1) /* number of SBAS satellites */
 
-#undef NSATSBS
-#define NSATSBS (MAXPRNSBS - MINPRNSBS + 1) /* number of SBAS satellites */
+            #define SBAS_EPHEMERIS_ARRAY_SIZE NSATSBS
+        #else
+            #define SBAS_EPHEMERIS_ARRAY_SIZE 0
+        #endif // ENASBS
+    #endif // __RTKLIB_EMBEDDED_DEFINES_H_
 
-#define SBAS_EPHEMERIS_ARRAY_SIZE NSATSBS
+    #ifndef RTKLIB_H
 
-#else
+        #define MINPRNGPS   1                   /* min satellite PRN number of GPS */
+        #define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
+        #define NSATGPS     (MAXPRNGPS-MINPRNGPS+1) /* number of GPS satellites */
+        #define NSYSGPS     1
 
-#define SBAS_EPHEMERIS_ARRAY_SIZE 0
+        #ifdef ENAGLO
+            #define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
+            #define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
+            #define NSATGLO     (MAXPRNGLO-MINPRNGLO+1) /* number of GLONASS satellites */
+            #define NSYSGLO     1
+        #else
+            #define MINPRNGLO   0
+            #define MAXPRNGLO   0
+            #define NSATGLO     0
+            #define NSYSGLO     0
+        #endif
+        #ifdef ENAGAL
+            #define MINPRNGAL   1                   /* min satellite PRN number of Galileo */
+            #define MAXPRNGAL   30                  /* max satellite PRN number of Galileo */
+            #define NSATGAL    (MAXPRNGAL-MINPRNGAL+1) /* number of Galileo satellites */
+            #define NSYSGAL     1
+        #else
+            #define MINPRNGAL   0
+            #define MAXPRNGAL   0
+            #define NSATGAL     0
+            #define NSYSGAL     0
+        #endif
+        #ifdef ENAQZS
+            #define MINPRNQZS   193                 /* min satellite PRN number of QZSS */
+            #define MAXPRNQZS   199                 /* max satellite PRN number of QZSS */
+            #define MINPRNQZS_S 183                 /* min satellite PRN number of QZSS SAIF */
+            #define MAXPRNQZS_S 189                 /* max satellite PRN number of QZSS SAIF */
+            #define NSATQZS     (MAXPRNQZS-MINPRNQZS+1) /* number of QZSS satellites */
+            #define NSYSQZS     1
+        #else
+            #define MINPRNQZS   0
+            #define MAXPRNQZS   0
+            #define MINPRNQZS_S 0
+            #define MAXPRNQZS_S 0
+            #define NSATQZS     0
+            #define NSYSQZS     0
+        #endif // ENAQZS
 
-#endif
+        #ifdef ENACMP
+            #define MINPRNCMP   1                   /* min satellite sat number of BeiDou */
+            #define MAXPRNCMP   35                  /* max satellite sat number of BeiDou */
+            #define NSATCMP     (MAXPRNCMP-MINPRNCMP+1) /* number of BeiDou satellites */
+            #define NSYSCMP     1
+        #else
+            #define MINPRNCMP   0
+            #define MAXPRNCMP   0
+            #define NSATCMP     0
+            #define NSYSCMP     0
+        #endif // ENACMP
 
+        #ifdef ENAIRN
+            #define MINPRNIRN   1                   /* min satellite sat number of IRNSS */
+            #define MAXPRNIRN   7                   /* max satellite sat number of IRNSS */
+            #define NSATIRN     (MAXPRNIRN-MINPRNIRN+1) /* number of IRNSS satellites */
+            #define NSYSIRN     1
+        #else
+            #define MINPRNIRN   0
+            #define MAXPRNIRN   0
+            #define NSATIRN     0
+            #define NSYSIRN     0
+        #endif // ENAIRN
 
-#endif
+        #ifdef ENALEO
+            #define MINPRNLEO   1                   /* min satellite sat number of LEO */
+            #define MAXPRNLEO   10                  /* max satellite sat number of LEO */
+            #define NSATLEO     (MAXPRNLEO-MINPRNLEO+1) /* number of LEO satellites */
+            #define NSYSLEO     1
+        #else
+            #define MINPRNLEO   0
+            #define MAXPRNLEO   0
+            #define NSATLEO     0
+            #define NSYSLEO     0
+        #endif // ENALEO
 
-#ifndef RTKLIB_H
+        #define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
 
-#define MINPRNGPS   1                   /* min satellite PRN number of GPS */
-#define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
-#define NSATGPS     (MAXPRNGPS-MINPRNGPS+1) /* number of GPS satellites */
-#define NSYSGPS     1
+        #ifndef NSATSBS
+            #ifdef ENASBS
+                #define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
+                #define MAXPRNSBS   142                 /* max satellite PRN number of SBAS */
+                #define NSATSBS     (MAXPRNSBS-MINPRNSBS+1) /* number of SBAS satellites */
+            #else
+                #define MINPRNSBS   0
+                #define MAXPRNSBS   0
+                #define NSATSBS     0
+            #endif // ENASBS
+        #endif // NSATSBS
+        #define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
 
-#ifdef ENAGLO
-#define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
-#define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
-#define NSATGLO     (MAXPRNGLO-MINPRNGLO+1) /* number of GLONASS satellites */
-#define NSYSGLO     1
-#else
-#define MINPRNGLO   0
-#define MAXPRNGLO   0
-#define NSATGLO     0
-#define NSYSGLO     0
-#endif
-#ifdef ENAGAL
-#define MINPRNGAL   1                   /* min satellite PRN number of Galileo */
-#define MAXPRNGAL   30                  /* max satellite PRN number of Galileo */
-#define NSATGAL    (MAXPRNGAL-MINPRNGAL+1) /* number of Galileo satellites */
-#define NSYSGAL     1
-#else
-#define MINPRNGAL   0
-#define MAXPRNGAL   0
-#define NSATGAL     0
-#define NSYSGAL     0
-#endif
-#ifdef ENAQZS
-#define MINPRNQZS   193                 /* min satellite PRN number of QZSS */
-#define MAXPRNQZS   199                 /* max satellite PRN number of QZSS */
-#define MINPRNQZS_S 183                 /* min satellite PRN number of QZSS SAIF */
-#define MAXPRNQZS_S 189                 /* max satellite PRN number of QZSS SAIF */
-#define NSATQZS     (MAXPRNQZS-MINPRNQZS+1) /* number of QZSS satellites */
-#define NSYSQZS     1
-#else
-#define MINPRNQZS   0
-#define MAXPRNQZS   0
-#define MINPRNQZS_S 0
-#define MAXPRNQZS_S 0
-#define NSATQZS     0
-#define NSYSQZS     0
-#endif
-#ifdef ENACMP
-#define MINPRNCMP   1                   /* min satellite sat number of BeiDou */
-#define MAXPRNCMP   35                  /* max satellite sat number of BeiDou */
-#define NSATCMP     (MAXPRNCMP-MINPRNCMP+1) /* number of BeiDou satellites */
-#define NSYSCMP     1
-#else
-#define MINPRNCMP   0
-#define MAXPRNCMP   0
-#define NSATCMP     0
-#define NSYSCMP     0
-#endif
-#ifdef ENAIRN
-#define MINPRNIRN   1                   /* min satellite sat number of IRNSS */
-#define MAXPRNIRN   7                   /* max satellite sat number of IRNSS */
-#define NSATIRN     (MAXPRNIRN-MINPRNIRN+1) /* number of IRNSS satellites */
-#define NSYSIRN     1
-#else
-#define MINPRNIRN   0
-#define MAXPRNIRN   0
-#define NSATIRN     0
-#define NSYSIRN     0
-#endif
-#ifdef ENALEO
-#define MINPRNLEO   1                   /* min satellite sat number of LEO */
-#define MAXPRNLEO   10                  /* max satellite sat number of LEO */
-#define NSATLEO     (MAXPRNLEO-MINPRNLEO+1) /* number of LEO satellites */
-#define NSYSLEO     1
-#else
-#define MINPRNLEO   0
-#define MAXPRNLEO   0
-#define NSATLEO     0
-#define NSYSLEO     0
-#endif
-#define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
-#ifndef NSATSBS
-#ifdef ENASBS
-#define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
-#define MAXPRNSBS   142                 /* max satellite PRN number of SBAS */
-#define NSATSBS     (MAXPRNSBS-MINPRNSBS+1) /* number of SBAS satellites */
-#else
-#define MINPRNSBS   0
-#define MAXPRNSBS   0
-#define NSATSBS     0
-#endif
-#endif
+    #endif  // RTKLIB_H
 
-#endif
-
-#endif
+#endif // GPX_1
 
 /*
 Convert satellite constelation and prn/slot number to satellite number

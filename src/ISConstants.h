@@ -197,8 +197,12 @@ extern void vPortFree(void* pv);
 #define _GETCWD(buf, len) f_getcwd(buf, len)
 
 #elif !PLATFORM_IS_EMBEDDED
-#define BEGIN_CRITICAL_SECTION
-#define END_CRITICAL_SECTION
+#if !defined(BEGIN_CRITICAL_SECION)
+    #define BEGIN_CRITICAL_SECTION (1==1)
+#endif
+#if !defined(END_CRITICAL_SECTION)
+    #define END_CRITICAL_SECTION (1==1)
+#endif
 #define DBGPIO_ENABLE(pin)
 #define DBGPIO_TOGGLE(pin)
 
