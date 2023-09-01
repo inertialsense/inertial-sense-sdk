@@ -4923,8 +4923,6 @@ int ubxSys(int gnssID);
 
 #ifndef __RTKLIB_EMBEDDED_DEFINES_H_
 
-// #define NUMSATSOL 50             // Comment out to disable reduced satellite array and satellite indexing arrays.
-
 #ifdef ENASBS
 
 // sbas waas only satellites

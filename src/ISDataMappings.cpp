@@ -2234,41 +2234,6 @@ static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "time.time", time.time, 0, DataTypeInt64, int64_t, 0);
     ADD_MAP(m, totalSize, "time.sec", time.sec, 0, DataTypeDouble, double, 0);
 
-#if 0    // This doesn't work in Linux
-
-    char str[50];
-    for (int i = 0; i < NUMSATSOL; i++)
-    {
-        SNPRINTF(str, sizeof(str), "satBiasFloat[%d]", i, 0);
-        ADD_MAP(m, totalSize, str, satBiasFloat[i], 0, DataTypeFloat, float&, 0);
-    }
-
-    for (int i = 0; i < NUMSATSOL; i++)
-    {
-        SNPRINTF(str, sizeof(str), "satBiasFix[%d]", i, 0);
-        ADD_MAP(m, totalSize, str, satBiasFix[i], 0, DataTypeFloat, float&, 0);
-    }
-
-    for (int i = 0; i < NUMSATSOL; i++)
-    {
-        SNPRINTF(str, sizeof(str), "qualL[%d]", i, 0);
-        ADD_MAP(m, totalSize, str, qualL[i], 0, DataTypeUInt8, uint8_t&, 0);
-    }
-
-    for (int i = 0; i < NUMSATSOL; i++)
-    {
-        SNPRINTF(str, sizeof(str), "sat[%d]", i, 0);
-        ADD_MAP(m, totalSize, str, sat[i], 0, DataTypeUInt8, uint8_t&, 0);
-    }
-
-    for (int i = 0; i < NUMSATSOL; i++)
-    {
-        SNPRINTF(str, sizeof(str), "satBiasCov[%d]", i, 0);
-        ADD_MAP(m, totalSize, str, satBiasStd[i], 0, DataTypeFloat, float&, 0);
-    }
-
-#else
-
     ADD_MAP(m, totalSize, "satBiasFloat[0]", satBiasFloat[0], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "satBiasFloat[1]", satBiasFloat[1], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "satBiasFloat[2]", satBiasFloat[2], 0, DataTypeFloat, float&, 0);
@@ -2406,8 +2371,6 @@ static void PopulateRtkDebug2Mappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "satLockCnt[19]", satLockCnt[19], 0, DataTypeInt8, int8_t&, 0);
     ADD_MAP(m, totalSize, "satLockCnt[20]", satLockCnt[20], 0, DataTypeInt8, int8_t&, 0);
     ADD_MAP(m, totalSize, "satLockCnt[21]", satLockCnt[21], 0, DataTypeInt8, int8_t&, 0);
-
-#endif
 
     ADD_MAP(m, totalSize, "num_biases", num_biases, 0, DataTypeUInt8, uint8_t, 0);
 
