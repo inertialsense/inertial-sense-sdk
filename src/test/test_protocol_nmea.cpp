@@ -301,7 +301,7 @@ TEST(protocol_nmea, GGA)
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
     // printf("%s\n", gga);
-    printf("%s\n", abuf);
+    // printf("%s\n", abuf);
     ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
 
     gps_pos_t result = {};
@@ -365,7 +365,7 @@ TEST(protocol_nmea, ZDA)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_zda(abuf, ASCII_BUF_LEN, pos);
-    printf("%s\n", abuf);
+    // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     nmea_parse_zda_to_did_gps(resultPos, abuf, n, pos.leapS);
 
@@ -374,30 +374,32 @@ TEST(protocol_nmea, ZDA)
 
 TEST(protocol_nmea, VTG)
 {
-    gps_pos_t pos = {};
+    gps_pos_t pos = {};    
     pos.timeOfWeekMs = 423199200;
-    pos.week = 2277;
-    pos.leapS = 18;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
 
+    ixQuat qe2n;
+    float velNed[3] = { 0.0f, 4.0f, 0.0f };
+    quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
     gps_vel_t vel = {};
-    vel.vel[0] = 1.0f;
-    vel.vel[1] = 2.0f;
-    vel.vel[2] = 3.0f;
-
-    ins_1_t ins1 = {};
+    // Velocity in ECEF
+    quatRot(vel.vel, qe2n, velNed);
     
-    float magHeadingRad = 11.1f;
+    float magVarCorrectionRad = 11.1f;
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    int n = nmea_vtg(abuf, ASCII_BUF_LEN, pos, vel, ins1, magHeadingRad);
+    int n = nmea_vtg(abuf, ASCII_BUF_LEN, pos, vel, magVarCorrectionRad);
     printf("%s\n", abuf);
-    gps_pos_t resultPos = {};
-    gps_vel_t resultPos = {};
-    ins_1_t resultPos = {};
+    gps_vel_t resultVel = {};
 
-    nmea_parse_zda_to_did_gps(resultPos, abuf, n, pos.leapS);
+    nmea_parse_vtg_to_did_gps(resultVel, abuf, n, pos.lla);
 
-    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
+    for (int i=0; i<3; i++)
+    {
+        ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+    }
 }
 
 #define ASCII_BUF2  2048

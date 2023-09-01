@@ -853,13 +853,22 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
 	if (s_dataSpeed.timeOfWeekMs != pos.timeOfWeekMs)
 	{
 		s_dataSpeed.timeOfWeekMs = pos.timeOfWeekMs;
-		ixQuat qe2n;
-		quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
-		quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
+
+		if (vel.status & GPS_STATUS_FLAGS_GPS_NMEA_DATA)
+		{	// NED velocity
+			cpy_Vec3_Vec3(s_dataSpeed.velNed, vel.vel);
+		}
+		else
+		{	// ECEF velocity
+			ixQuat qe2n;
+			quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+			quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
+		}
 		s_dataSpeed.speed2dMps = mag_Vec2(s_dataSpeed.velNed);
 		s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
 	}
 }
+
 int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination)
 {
 	update_nmea_speed(pos, vel);
@@ -878,8 +887,7 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	nmea_latToDegMin(a, aSize, n, pos.lla[0]);										// 3,4 - lat (degrees minutes)
 	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);										// 5,6 - lon (degrees minutes)
 	
-	// 	float courseMadeTrue = atan2f(g_navInGpsA.velNed[1], g_navInGpsA.velNed[0]);
-	float courseMadeTrue = 0.0f;
+	float courseMadeTrue = atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
 	nmea_sprint(a, aSize, n,
 	",%05.1f"		// 7
 	",%05.1f",		// 8
@@ -921,14 +929,14 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 	return nmea_sprint_footer(a, aSize, n);
 }
 
-int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad)
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magVarCorrectionRad)
 {
 	/*
 		0	Message ID $GPVTG
 		1	Track made good (degrees true)
 		2	T: track made good is relative to true north
 		3	Track made good (degrees magnetic)
-		4	M: track made good is relative to magnetic north
+		4	M: track made good is relative to magnetic north 
 		5	Speed, in knots
 		6	N: speed is measured in knots
 		7	Speed over ground in kilometers/hour (kph)
@@ -948,15 +956,16 @@ int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t 
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "VTG");
-	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));						// 1
+	float courseMadeTrue = atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
+	nmea_sprint(a, aSize, n, ",%.2f", C_RAD2DEG_F * courseMadeTrue);				// 1
 	nmea_sprint(a, aSize, n, ",T");													// 2
-	if (magHeadingRad == 0.0f)														// 3
+	if (magVarCorrectionRad == 0.0f)												// 3
 	{
 		nmea_sprint(a, aSize, n, ",");
 	}
 	else
 	{
-		nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(magHeadingRad));
+		nmea_sprint(a, aSize, n, ",%.2f", courseMadeTrue + magVarCorrectionRad*C_RAD2DEG_F);
 	}
 	nmea_sprint(a, aSize, n, ",M");													// 4
 	nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);					// 5
@@ -1868,6 +1877,64 @@ int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	return 0;
 }
 
+int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3])
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxVTG,
+
+	// 1 - Track made good (degrees true)
+	float courseMadeTrue;
+	ptr = ASCII_to_f32(&courseMadeTrue, ptr);
+	courseMadeTrue *= C_DEG2RAD_F;
+	// 2 - T: track made good is relative to true north
+	ptr = ASCII_find_next_field(ptr);
+
+	// 3 - Track made good (degrees magnetic)
+	ptr = ASCII_find_next_field(ptr);
+	// 4 - M: track made good is relative to magnetic north 
+	ptr = ASCII_find_next_field(ptr);
+
+	// 5 - Speed, in knots
+	float speed2dKnots;
+	ptr = ASCII_to_f32(&speed2dKnots, ptr);
+	float speed2dMps;
+	speed2dMps = C_KNOTS_METERS_F * speed2dKnots;
+
+	ixVector3 velNed;
+	velNed[0] = speed2dMps * cosf(courseMadeTrue);
+	velNed[1] = speed2dMps * sinf(courseMadeTrue);
+	velNed[2] = 0.0f;
+	if (vel.status & GPS_STATUS_FLAGS_GPS_NMEA_DATA)
+	{	// NED velocity
+		cpy_Vec3_Vec3(vel.vel, velNed);
+	}
+	else
+	{	// ECEF velocity
+		ixQuat qe2n;
+		quat_ecef2ned(C_DEG2RAD_F*(float)refLla[0], C_DEG2RAD_F*(float)refLla[1], qe2n);
+		quatRot(vel.vel, qe2n, velNed);
+	}
+
+	// 6 - N: speed is measured in knots
+	ptr = ASCII_find_next_field(ptr);
+
+	// 7 - Speed over ground in kilometers/hour (kph)
+	ptr = ASCII_find_next_field(ptr);
+
+	// 8 - K: speed over ground is measured in kph
+	ptr = ASCII_find_next_field(ptr);
+
+	// 9 - Mode indicator:
+	// 		A: Autonomous mode
+	// 		D: Differential mode
+	// 		E: Estimated (dead reckoning) mode
+	// 		M: Manual Input mode
+	// 		S: Simulator mode
+	// 		N: Data not valid
+	ptr = ASCII_find_next_field(ptr);
+
+	return 0;
+}
 
 // Returns RMC options
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
