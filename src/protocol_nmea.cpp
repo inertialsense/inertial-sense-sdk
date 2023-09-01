@@ -1846,37 +1846,6 @@ int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int a
 	return 0;
 }
 
-int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS)
-{
-	(void)aSize;
-	char *ptr = (char *)&a[7];	// $GxZDA,
-
-	double datetime[6];		// year,month,day,hour,min,sec
-
-	// 1 - UTC time HHMMSS
-	int hours, minutes; float seconds;
-	ptr = ASCII_to_hours_minutes_seconds(&hours, &minutes, &seconds, ptr);
-	datetime[3] = (double)hours;
-	datetime[4] = (double)minutes;
-	datetime[5] = (double)seconds;
-
-	// 2,3,4 - dd,mm,yyy Day,Month,Year
-	ptr = ASCII_to_f64(&(datetime[2]), ptr);
-	ptr = ASCII_to_f64(&(datetime[1]), ptr);
-	ptr = ASCII_to_f64(&(datetime[0]), ptr);
-
-	gtime_t gtm = epochToTime(datetime);
-	int week;
-	double iTOWd = timeToGpst(gtm, &week);
-	gpsPos.timeOfWeekMs = ((uint32_t)((iTOWd + 0.00001) * 1000.0)) + (leapS*1000);
-	gpsPos.week = week;
-	gpsPos.leapS = leapS;
-
-	// 5,6 - 00,00
-
-	return 0;
-}
-
 int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3])
 {
 	(void)aSize;
@@ -1932,6 +1901,37 @@ int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, c
 	// 		S: Simulator mode
 	// 		N: Data not valid
 	ptr = ASCII_find_next_field(ptr);
+
+	return 0;
+}
+
+int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxZDA,
+
+	double datetime[6];		// year,month,day,hour,min,sec
+
+	// 1 - UTC time HHMMSS
+	int hours, minutes; float seconds;
+	ptr = ASCII_to_hours_minutes_seconds(&hours, &minutes, &seconds, ptr);
+	datetime[3] = (double)hours;
+	datetime[4] = (double)minutes;
+	datetime[5] = (double)seconds;
+
+	// 2,3,4 - dd,mm,yyy Day,Month,Year
+	ptr = ASCII_to_f64(&(datetime[2]), ptr);
+	ptr = ASCII_to_f64(&(datetime[1]), ptr);
+	ptr = ASCII_to_f64(&(datetime[0]), ptr);
+
+	gtime_t gtm = epochToTime(datetime);
+	int week;
+	double iTOWd = timeToGpst(gtm, &week);
+	gpsPos.timeOfWeekMs = ((uint32_t)((iTOWd + 0.00001) * 1000.0)) + (leapS*1000);
+	gpsPos.week = week;
+	gpsPos.leapS = leapS;
+
+	// 5,6 - 00,00
 
 	return 0;
 }

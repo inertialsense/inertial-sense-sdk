@@ -28,6 +28,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_GLL = 0x474c4c2c,			// "GLL,"
 	NMEA_MSG_UINT_GSA = 0x4753412c,			// "GSA,"
 	NMEA_MSG_UINT_RMC = 0x524d432c, 		// "RMC,"
+	NMEA_MSG_UINT_VTG = 0x5654472c, 		// "VTG,"
 	NMEA_MSG_UINT_ZDA = 0x5a44412c, 		// "ZDA,"
 };
 
@@ -94,8 +95,8 @@ int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
 int nmea_parse_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &gpsSat, const char a[], const int aSize);
 int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize);
-int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS);
 int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3]);
+int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS);
 
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
