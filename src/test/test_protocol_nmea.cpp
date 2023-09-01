@@ -301,19 +301,19 @@ TEST(protocol_nmea, GGA)
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
     // printf("%s\n", gga);
-    // printf("%s\n", abuf);
+    printf("%s\n", abuf);
     ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
 
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     pos.hAcc = result.hAcc;
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
-TEST(protocol_nmea, GGL)
+TEST(protocol_nmea, GLL)
 {
     gps_pos_t pos = {};
     // pos.week = 12;
@@ -329,7 +329,7 @@ TEST(protocol_nmea, GGL)
     gps_pos_t result = {};
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    nmea_parse_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
@@ -347,13 +347,57 @@ TEST(protocol_nmea, GSA)
     }
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
+    int n = nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
-    nmea_gsa_to_did_gps(resultPos, resultSat, abuf, ASCII_BUF_LEN);
+    nmea_parse_gsa_to_did_gps(resultPos, resultSat, abuf, n);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
+}
+
+TEST(protocol_nmea, ZDA)
+{
+    gps_pos_t pos = {};
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2277;
+    pos.leapS = 18;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_zda(abuf, ASCII_BUF_LEN, pos);
+    printf("%s\n", abuf);
+    gps_pos_t resultPos = {};
+    nmea_parse_zda_to_did_gps(resultPos, abuf, n, pos.leapS);
+
+    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
+}
+
+TEST(protocol_nmea, VTG)
+{
+    gps_pos_t pos = {};
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2277;
+    pos.leapS = 18;
+
+    gps_vel_t vel = {};
+    vel.vel[0] = 1.0f;
+    vel.vel[1] = 2.0f;
+    vel.vel[2] = 3.0f;
+
+    ins_1_t ins1 = {};
+    
+    float magHeadingRad = 11.1f;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_vtg(abuf, ASCII_BUF_LEN, pos, vel, ins1, magHeadingRad);
+    printf("%s\n", abuf);
+    gps_pos_t resultPos = {};
+    gps_vel_t resultPos = {};
+    ins_1_t resultPos = {};
+
+    nmea_parse_zda_to_did_gps(resultPos, abuf, n, pos.leapS);
+
+    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
 }
 
 #define ASCII_BUF2  2048
