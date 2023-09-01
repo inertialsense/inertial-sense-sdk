@@ -368,13 +368,19 @@ bool InertialSense::Update()
 			comManagerStep();
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
-            for (is_device_t device : m_comManagerState.devices) {
-                if (device.fwUpdater != nullptr) {
-                    device.fwUpdater->step();
-                    if (device.fwUpdater->getSessionStatus() == fwUpdate::FINISHED) {
+            for (int devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
+                if (m_comManagerState.devices[devIdx].fwUpdater != nullptr) {
+                    m_comManagerState.devices[devIdx].fwUpdater->step();
+                    fwUpdate::update_status_e status = m_comManagerState.devices[devIdx].fwUpdater->getSessionStatus();
+                    if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
+                        if (status < fwUpdate::NOT_STARTED) {
+                            // TODO: Report a REAL error
+                            printf("Unable to start firmware update.\n");
+                        }
                         // release the FirmwareUpdater
-                        delete device.fwUpdater;
-                        device.fwUpdater = nullptr;
+
+                        delete m_comManagerState.devices[devIdx].fwUpdater;
+                        m_comManagerState.devices[devIdx].fwUpdater = nullptr;
                     }
                 }
             }
@@ -940,7 +946,6 @@ is_operation_result InertialSense::updateFirmware(
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i);
         m_comManagerState.devices[i].fwUpdater->initializeUpdate(fwUpdate::TARGET_IMX5, fileName);
     }
-
 
     // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
