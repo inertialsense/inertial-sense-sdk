@@ -32,9 +32,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 
 #ifdef USE_IS_INTERNAL
-#ifndef GPX_1
-#include "IS_internal.h"
-#endif
+#	include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
 
 using namespace std;
