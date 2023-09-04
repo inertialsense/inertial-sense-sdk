@@ -445,8 +445,8 @@ enum eGpsStatus
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
-    GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message
-    GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
+	GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
+	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
 
     GPS_STATUS_FLAGS_MASK                           = (int)0xFFFFE000,    
     GPS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
@@ -1464,8 +1464,8 @@ typedef struct PACKED
 	/** Broadcast period multiple - NMEA standard satelliate information. */
 	uint16_t				gsv;
 
-	/** Reserved */
-	uint16_t				reserved;
+	/** Broadcast period multiple - NMEA track made good and speed over ground. */
+	uint16_t				vtg;
 
 } nmea_msgs_t;
 

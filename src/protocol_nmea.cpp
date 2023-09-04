@@ -17,7 +17,6 @@ static struct
 	float			speed2dKnots;
 } s_dataSpeed;
 
-
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 
 //////////////////////////////////////////////////////////////////////////
@@ -289,6 +288,22 @@ char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 	return ptr;
 }
 
+char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, char *ptr)
+{
+	// HHMMSS.sss
+#if 1
+	SSCANF(ptr, "%02d%02d%f", hours, minutes, seconds);
+#else
+	double UTCtime = atof(ptr);
+	*hours = ((int)UTCtime / 10000) % 100;
+	*minutes = ((int)UTCtime / 100) % 100;
+	float subSec = UTCtime - (int)UTCtime;
+	*seconds = (float)((int)UTCtime % 100) + subSec;
+#endif
+	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
 char *ASCII_to_TimeOfDayMs(uint32_t *timeOfWeekMs, char *ptr)
 {
 	// HHMMSS.sss
@@ -297,7 +312,6 @@ char *ASCII_to_TimeOfDayMs(uint32_t *timeOfWeekMs, char *ptr)
 	SSCANF(ptr, "%02d%02d%f", &hours, &minutes, &seconds);
 	timeOfWeekMs[0] = hours*3600000 + minutes*60000 + (uint32_t)(seconds*1000.0f);
 	ptr = ASCII_find_next_field(ptr);
-
 	return ptr;
 }
 
@@ -407,12 +421,38 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	case NMEA_MSG_ID_GSA:       
 	case NMEA_MSG_ID_RMC:       
 	case NMEA_MSG_ID_ZDA:       
-	case NMEA_MSG_ID_PASHR:     
 	case NMEA_MSG_ID_INTEL:     
+	case NMEA_MSG_ID_VTG:     
+	case NMEA_MSG_ID_PASHR:     
 	case NMEA_MSG_ID_PSTRB:     did = DID_GPS1_POS; break;	
 	case NMEA_MSG_ID_GSV:       did = DID_GPS1_SAT; break;	
 	default: return;
 	}
+
+	if (did == DID_GPS1_POS)
+	{	// DID_GPS1_POS shared by multiple NMEA messages
+		if (periodMultiple)
+		{
+			if (rmci.periodMultiple[did]){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], periodMultiple); } 
+			else                         { rmci.periodMultiple[did] = periodMultiple; }
+			rmci.bitsNmea |=  (bitsNmea);
+		} 
+		else 
+		{
+			rmci.bitsNmea &= ~(bitsNmea);
+		}
+	}
+	else
+	{	// Unshared DIDs
+		rmci.periodMultiple[did] = periodMultiple;
+		if (periodMultiple) {
+			rmci.bitsNmea |=  (bitsNmea);
+		} else {
+			rmci.bitsNmea &= ~(bitsNmea);
+		}
+	}
+}
+
 
 	if (did == DID_GPS1_POS)
 	{	// DID_GPS1_POS shared by multiple NMEA messages
@@ -452,7 +492,8 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 	nmea_enable_stream(rmci, NMEA_MSG_ID_RMC,   tmp.rmc);
 	nmea_enable_stream(rmci, NMEA_MSG_ID_ZDA,   tmp.zda);
 	nmea_enable_stream(rmci, NMEA_MSG_ID_PASHR, tmp.pashr);
-	nmea_enable_stream(rmci, NMEA_MSG_ID_GSV,   tmp.gsv);	
+	nmea_enable_stream(rmci, NMEA_MSG_ID_GSV,   tmp.gsv);
+	nmea_enable_stream(rmci, NMEA_MSG_ID_VTG,   tmp.vtg);
 }
 
 
@@ -838,9 +879,17 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
 	if (s_dataSpeed.timeOfWeekMs != pos.timeOfWeekMs)
 	{
 		s_dataSpeed.timeOfWeekMs = pos.timeOfWeekMs;
-		ixQuat qe2n;
-		quat_ecef2ned((float)pos.lla[0], (float)pos.lla[1], qe2n);
-		quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
+
+		if (vel.status & GPS_STATUS_FLAGS_GPS_NMEA_DATA)
+		{	// NED velocity
+			cpy_Vec3_Vec3(s_dataSpeed.velNed, vel.vel);
+		}
+		else
+		{	// ECEF velocity
+			ixQuat qe2n;
+			quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+			quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
+		}
 		s_dataSpeed.speed2dMps = mag_Vec2(s_dataSpeed.velNed);
 		s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
 	}
@@ -864,8 +913,7 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 	nmea_latToDegMin(a, aSize, n, pos.lla[0]);										// 3,4 - lat (degrees minutes)
 	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);										// 5,6 - lon (degrees minutes)
 	
-	// 	float courseMadeTrue = atan2f(g_navInGpsA.velNed[1], g_navInGpsA.velNed[0]);
-	float courseMadeTrue = 0.0f;
+	float courseMadeTrue = atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
 	nmea_sprint(a, aSize, n,
 	",%05.1f"		// 7
 	",%05.1f",		// 8
@@ -891,30 +939,30 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 {
 	// NMEA ZDA line - http://www.gpsinformation.org/dale/nmea.htm#ZDA
 	/*
-		hhmmss    HrMinSec(UTC)
-		dd,mm,yyy Day,Month,Year
-		xx        local zone hours -13..13 - Fixed field: 00
-		yy        local zone minutes 0..59 - Fixed field: 00
-		*CC       checksum
+		HHMMSS.sss    HrMinSec(UTC)
+		dd,mm,yyy     Day,Month,Year
+		xx            local zone hours -13..13 - Fixed field: 00
+		yy            local zone minutes 0..59 - Fixed field: 00
+		*CC           checksum
 	*/
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "ZDA");
-	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);			// 1 
-	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
-	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
+	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
+	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										    // 2,3,4
+	nmea_sprint(a, aSize, n, ",00,00");												    // 5,6
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
 
-int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad)
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magVarCorrectionRad)
 {
 	/*
 		0	Message ID $GPVTG
 		1	Track made good (degrees true)
 		2	T: track made good is relative to true north
 		3	Track made good (degrees magnetic)
-		4	M: track made good is relative to magnetic north
+		4	M: track made good is relative to magnetic north 
 		5	Speed, in knots
 		6	N: speed is measured in knots
 		7	Speed over ground in kilometers/hour (kph)
@@ -934,15 +982,16 @@ int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t 
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "VTG");
-	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));						// 1
+	float courseMadeTrue = atan2f(s_dataSpeed.velNed[1], s_dataSpeed.velNed[0]);
+	nmea_sprint(a, aSize, n, ",%.2f", C_RAD2DEG_F * courseMadeTrue);				// 1
 	nmea_sprint(a, aSize, n, ",T");													// 2
-	if (magHeadingRad == 0.0f)														// 3
+	if (magVarCorrectionRad == 0.0f)												// 3
 	{
 		nmea_sprint(a, aSize, n, ",");
 	}
 	else
 	{
-		nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(magHeadingRad));
+		nmea_sprint(a, aSize, n, ",%.2f", courseMadeTrue + magVarCorrectionRad*C_RAD2DEG_F);
 	}
 	nmea_sprint(a, aSize, n, ",M");													// 4
 	nmea_sprint(a, aSize, n, ",%.2f", s_dataSpeed.speed2dKnots);					// 5
@@ -1438,7 +1487,6 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
 {
 	(void)noCno;
-
 	if (s_protocol_version < NMEA_PROTOCOL_4P10)
 	{
 		return nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId);
@@ -1716,12 +1764,12 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 	return 0;
 }
 
-int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
+int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
 	
-	// 1 - UTC time HHMMSS
+	// 1 - UTC time HHMMSS.sss
 	uint32_t utcTimeOfDayMs;
 	ptr = ASCII_to_TimeOfDayMs(&utcTimeOfDayMs, ptr);
 	gpsPos.timeOfWeekMs = weekday*86400000 + utcTimeOfDayMs + gpsPos.leapS*1000;
@@ -1810,7 +1858,7 @@ int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	return 0;
 }
 
-int nmea_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
+int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
@@ -1830,7 +1878,7 @@ int nmea_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint
 	return 0;
 }
 
-int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const int aSize)
+int nmea_parse_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const int aSize)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
@@ -1867,7 +1915,7 @@ int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &sat, const char a[], const
 	return 0;
 }
 
-int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
+int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
 {
 	(void)gpsSat;
 	(void)a;
@@ -1875,7 +1923,95 @@ int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize)
 	return 0;
 }
 
+int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3])
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxVTG,
 
+	// 1 - Track made good (degrees true)
+	float courseMadeTrue;
+	ptr = ASCII_to_f32(&courseMadeTrue, ptr);
+	courseMadeTrue *= C_DEG2RAD_F;
+	// 2 - T: track made good is relative to true north
+	ptr = ASCII_find_next_field(ptr);
+
+	// 3 - Track made good (degrees magnetic)
+	ptr = ASCII_find_next_field(ptr);
+	// 4 - M: track made good is relative to magnetic north 
+	ptr = ASCII_find_next_field(ptr);
+
+	// 5 - Speed, in knots
+	float speed2dKnots;
+	ptr = ASCII_to_f32(&speed2dKnots, ptr);
+	float speed2dMps;
+	speed2dMps = C_KNOTS_METERS_F * speed2dKnots;
+
+	ixVector3 velNed;
+	velNed[0] = speed2dMps * cosf(courseMadeTrue);
+	velNed[1] = speed2dMps * sinf(courseMadeTrue);
+	velNed[2] = 0.0f;
+	if (vel.status & GPS_STATUS_FLAGS_GPS_NMEA_DATA)
+	{	// NED velocity
+		cpy_Vec3_Vec3(vel.vel, velNed);
+	}
+	else
+	{	// ECEF velocity
+		ixQuat qe2n;
+		quat_ecef2ned(C_DEG2RAD_F*(float)refLla[0], C_DEG2RAD_F*(float)refLla[1], qe2n);
+		quatRot(vel.vel, qe2n, velNed);
+	}
+
+	// 6 - N: speed is measured in knots
+	ptr = ASCII_find_next_field(ptr);
+
+	// 7 - Speed over ground in kilometers/hour (kph)
+	ptr = ASCII_find_next_field(ptr);
+
+	// 8 - K: speed over ground is measured in kph
+	ptr = ASCII_find_next_field(ptr);
+
+	// 9 - Mode indicator:
+	// 		A: Autonomous mode
+	// 		D: Differential mode
+	// 		E: Estimated (dead reckoning) mode
+	// 		M: Manual Input mode
+	// 		S: Simulator mode
+	// 		N: Data not valid
+	ptr = ASCII_find_next_field(ptr);
+
+	return 0;
+}
+
+int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxZDA,
+
+	double datetime[6];		// year,month,day,hour,min,sec
+
+	// 1 - UTC time HHMMSS
+	int hours, minutes; float seconds;
+	ptr = ASCII_to_hours_minutes_seconds(&hours, &minutes, &seconds, ptr);
+	datetime[3] = (double)hours;
+	datetime[4] = (double)minutes;
+	datetime[5] = (double)seconds;
+
+	// 2,3,4 - dd,mm,yyy Day,Month,Year
+	ptr = ASCII_to_f64(&(datetime[2]), ptr);
+	ptr = ASCII_to_f64(&(datetime[1]), ptr);
+	ptr = ASCII_to_f64(&(datetime[0]), ptr);
+
+	gtime_t gtm = epochToTime(datetime);
+	int week;
+	double iTOWd = timeToGpst(gtm, &week);
+	gpsPos.timeOfWeekMs = ((uint32_t)((iTOWd + 0.00001) * 1000.0)) + (leapS*1000);
+	gpsPos.week = week;
+	gpsPos.leapS = leapS;
+
+	// 5,6 - 00,00
+
+	return 0;
+}
 
 // Returns RMC options
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
@@ -1964,19 +2100,20 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 
 		switch(id)
 		{
-		case NMEA_MSG_ID_PIMU:	tmp.pimu    = period; break;
-		case NMEA_MSG_ID_PPIMU:	tmp.ppimu   = period; break;
-		case NMEA_MSG_ID_PRIMU:	tmp.primu   = period; break;
-		case NMEA_MSG_ID_PINS1:	tmp.pins1   = period; break;
-		case NMEA_MSG_ID_PINS2:	tmp.pins2   = period; break;
-		case NMEA_MSG_ID_PGPSP:	tmp.pgpsp   = period; break;
-		case NMEA_MSG_ID_GGA:		tmp.gga     = period; break;
-		case NMEA_MSG_ID_GLL:		tmp.gll     = period; break;
-		case NMEA_MSG_ID_GSA:		tmp.gsa     = period; break;
-		case NMEA_MSG_ID_RMC:		tmp.rmc     = period; break;
-		case NMEA_MSG_ID_ZDA:		tmp.zda     = period; break;
-		case NMEA_MSG_ID_PASHR:	tmp.pashr   = period; break;
-		case NMEA_MSG_ID_GSV:		tmp.gsv     = period; break;
+		case NMEA_MSG_ID_PIMU:  tmp.pimu    = period; break;
+		case NMEA_MSG_ID_PPIMU: tmp.ppimu   = period; break;
+		case NMEA_MSG_ID_PRIMU: tmp.primu   = period; break;
+		case NMEA_MSG_ID_PINS1: tmp.pins1   = period; break;
+		case NMEA_MSG_ID_PINS2: tmp.pins2   = period; break;
+		case NMEA_MSG_ID_PGPSP: tmp.pgpsp   = period; break;
+		case NMEA_MSG_ID_GGA:   tmp.gga     = period; break;
+		case NMEA_MSG_ID_GLL:   tmp.gll     = period; break;
+		case NMEA_MSG_ID_GSA:   tmp.gsa     = period; break;
+		case NMEA_MSG_ID_RMC:   tmp.rmc     = period; break;
+		case NMEA_MSG_ID_ZDA:   tmp.zda     = period; break;
+		case NMEA_MSG_ID_PASHR: tmp.pashr   = period; break;
+		case NMEA_MSG_ID_GSV:   tmp.gsv     = period; break;
+		case NMEA_MSG_ID_VTG:   tmp.vtg     = period; break;
 		default: return 0;
 		}
 	}
