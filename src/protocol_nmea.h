@@ -15,12 +15,13 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
 
+	NMEA_MSG_UINT_INTE = 0x494E5445,		// "INTE"
+	NMEA_MSG_UINT_PASH = 0x50415348,		// "PASH"
 	NMEA_MSG_UINT_PIMU = 0x50494d55,		// "PIMU"
-	NMEA_MSG_UINT_PPIM = 0x5050494d,		// "PPIM"
-	NMEA_MSG_UINT_PRIM = 0x5052494d,		// "PRIM"
 	NMEA_MSG_UINT_PINS = 0x50494e53,		// "PINS"
 	NMEA_MSG_UINT_PGPS = 0x50475053,		// "PGPS"
-	NMEA_MSG_UINT_PASH = 0x50415348,		// "PASH"
+	NMEA_MSG_UINT_PPIM = 0x5050494d,		// "PPIM"
+	NMEA_MSG_UINT_PRIM = 0x5052494d,		// "PRIM"
 	
 	NMEA_MSG_UINT_GGA = 0x4747412c,			// "GGA,"
 	NMEA_MSG_UINT_GLL = 0x474c4c2c,			// "GLL,"
@@ -90,6 +91,7 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
+int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &gpsPos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1], const char a[], const int aSize);
 int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
 int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
 int nmea_parse_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &gpsSat, const char a[], const int aSize);

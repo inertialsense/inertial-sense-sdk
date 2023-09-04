@@ -217,7 +217,7 @@ char *ASCII_to_f64(double *vec, char *ptr)
 	return ptr;
 }
 
-char *ASCII_to_vec4u8(uint8_t vec[], char *ptr)
+char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 {
 	unsigned int v[4];
 	SSCANF(ptr, "%2u.%2u.%2u.%2u", &v[0], &v[1], &v[2], &v[3]);
@@ -1077,9 +1077,9 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
 	nmea_sprint(a, aSize, n, ",%d", pos.week);										// 4
 	nmea_sprint(a, aSize, n, ",%d", pos.leapS);										// 5
 
-	nmea_sprint(a, aSize, n, ",%.3f", 0);													// 6
-	nmea_sprint(a, aSize, n, ",%.3f", 0);													// 7
-	nmea_sprint(a, aSize, n, ",15");												// 8
+	nmea_sprint(a, aSize, n, ",%.3f", 0);											// 6
+	nmea_sprint(a, aSize, n, ",%.3f", 0);											// 7
+	nmea_sprint(a, aSize, n, ",0"); 												// 8
 
 	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[0]);									// 9
 	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[1]);									// 10
@@ -1563,16 +1563,16 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
 	// uint8_t         hardwareVer[4];
-	ptr = ASCII_to_vec4u8(info.hardwareVer, ptr);
+	ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
 	// uint8_t         firmwareVer[4];
-	ptr = ASCII_to_vec4u8(info.firmwareVer, ptr);
+	ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
 	// uint32_t        buildNumber;
 	ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
 	// uint8_t         protocolVer[4];
-	ptr = ASCII_to_vec4u8(info.protocolVer, ptr);
+	ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
 	// uint32_t        repoRevision;
 	ptr = ASCII_to_u32(&info.repoRevision, ptr);
@@ -1735,6 +1735,45 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 	// Time of Week offset, leapS
 	ptr = ASCII_to_f64(&(gpsPos.towOffset), ptr);
 	ptr = ASCII_to_u8(&(gpsPos.leapS), ptr);
+
+	return 0;
+}
+
+int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1], const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $INTEL,
+	
+	// 1 - Message ID KIM
+	ptr = ASCII_find_next_field(ptr);
+
+	// 2 -	Fimrware version of KIM
+	ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
+	
+	// 3 -	GPS Time of Week (ms)
+	ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+	
+	// 4 -	GPS week number
+	ptr = ASCII_to_u32(&(pos.week), ptr);
+	
+	// 5 -	GPS leap seconds
+	ptr = ASCII_to_u8(&(pos.leapS), ptr);
+	
+	// 6 -	1PPS phase 1 (ns)
+	ptr = ASCII_to_f32(&(ppsPhase[0]), ptr);
+	
+	// 7 -	1PPS phase 2 (ns)
+	ptr = ASCII_to_f32(&(ppsPhase[1]), ptr);
+	
+	// 8 -	Quantization error of time pulse (ns)
+	ptr = ASCII_to_u32(&(ppsNoiseNs[0]), ptr);
+	
+	// 9-11 - ECEF X,Y,Z velocity (m/s)
+	ptr = ASCII_to_vec3f(vel.vel, ptr);
+		
+	// 12-14 - NED veocity (m/s)
+	// float velNed[3];
+	// ptr = ASCII_to_vec3f(velNed, ptr);
 
 	return 0;
 }
