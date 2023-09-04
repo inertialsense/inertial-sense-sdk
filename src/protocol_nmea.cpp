@@ -453,31 +453,6 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	}
 }
 
-
-	if (did == DID_GPS1_POS)
-	{	// DID_GPS1_POS shared by multiple NMEA messages
-		if (periodMultiple)
-		{
-			if (rmci.periodMultiple[did]){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], periodMultiple); } 
-			else                         { rmci.periodMultiple[did] = periodMultiple; }
-			rmci.bitsNmea |=  (bitsNmea);
-		} 
-		else 
-		{
-			rmci.bitsNmea &= ~(bitsNmea);
-		}
-	}
-	else
-	{	// Unshared DIDs
-		rmci.periodMultiple[did] = periodMultiple;
-		if (periodMultiple) {
-			rmci.bitsNmea |=  (bitsNmea);
-		} else {
-			rmci.bitsNmea &= ~(bitsNmea);
-		}
-	}
-}
-
 void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 {
 	nmea_enable_stream(rmci, NMEA_MSG_ID_PIMU,  tmp.pimu);
