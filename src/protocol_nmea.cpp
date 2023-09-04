@@ -2056,9 +2056,8 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	{
 		return 0;
 	}
-	char *ptr = (char *)&msg[6];				// $ASCB
+	char *ptr = (char *)&msg[6];				// $ASCE
 	
-	nmea_msgs_t tmp {};
 	uint32_t options = 0;
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
 	ptr = ASCII_to_u32(&options, ptr);
@@ -2073,42 +2072,22 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 		period = ((*ptr==',') ? 0 : (uint16_t)atoi(ptr));	
 		ptr = ASCII_find_next_field(ptr);
 
-		switch(id)
-		{
-		case NMEA_MSG_ID_PIMU:  tmp.pimu    = period; break;
-		case NMEA_MSG_ID_PPIMU: tmp.ppimu   = period; break;
-		case NMEA_MSG_ID_PRIMU: tmp.primu   = period; break;
-		case NMEA_MSG_ID_PINS1: tmp.pins1   = period; break;
-		case NMEA_MSG_ID_PINS2: tmp.pins2   = period; break;
-		case NMEA_MSG_ID_PGPSP: tmp.pgpsp   = period; break;
-		case NMEA_MSG_ID_GGA:   tmp.gga     = period; break;
-		case NMEA_MSG_ID_GLL:   tmp.gll     = period; break;
-		case NMEA_MSG_ID_GSA:   tmp.gsa     = period; break;
-		case NMEA_MSG_ID_RMC:   tmp.rmc     = period; break;
-		case NMEA_MSG_ID_ZDA:   tmp.zda     = period; break;
-		case NMEA_MSG_ID_PASHR: tmp.pashr   = period; break;
-		case NMEA_MSG_ID_GSV:   tmp.gsv     = period; break;
-		case NMEA_MSG_ID_VTG:   tmp.vtg     = period; break;
-		default: return 0;
+		switch (options&RMC_OPTIONS_PORT_MASK)
+		{	
+		case 0xFF:	// All ports
+			for(int i=0; i<NUM_COM_PORTS; i++)
+			{
+				nmea_enable_stream(rmci[i], id,  period);
+			}
+			break;
+			
+		default:	// Current port
+		case RMC_OPTIONS_PORT_CURRENT:  nmea_enable_stream(rmci[pHandle], id, period);  break;
+		case RMC_OPTIONS_PORT_SER0:     nmea_enable_stream(rmci[0], id, period);        break;
+		case RMC_OPTIONS_PORT_SER1:     nmea_enable_stream(rmci[1], id, period);        break;
+		case RMC_OPTIONS_PORT_SER2:     nmea_enable_stream(rmci[2], id, period);        break;
+		case RMC_OPTIONS_PORT_USB:      nmea_enable_stream(rmci[3], id, period);        break;
 		}
-	}
-
-	// Copy tmp to corresponding port(s)
-	switch (options&RMC_OPTIONS_PORT_MASK)
-	{	
-	case 0xFF:	// All ports
-		for(int i=0; i<NUM_COM_PORTS; i++)
-		{
-			nmea_set_rmc_period_multiple(rmci[i], tmp);
-		}
-		break;
-		
-	default:	// Current port
-	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp);	break;
-	case RMC_OPTIONS_PORT_SER0:		nmea_set_rmc_period_multiple(rmci[0], tmp);			break;
-	case RMC_OPTIONS_PORT_SER1:		nmea_set_rmc_period_multiple(rmci[1], tmp);			break;
-	case RMC_OPTIONS_PORT_SER2:		nmea_set_rmc_period_multiple(rmci[2], tmp);			break;
-	case RMC_OPTIONS_PORT_USB:		nmea_set_rmc_period_multiple(rmci[3], tmp);			break;
 	}
 		
 	return options;
