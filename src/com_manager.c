@@ -1026,9 +1026,12 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 
 	// Prep data if callback exists
 	int sendData = 1;
-	if (cmInstance->regData[req->id].preTxFnc)
+	if (req->id < DID_COUNT_UINS)
 	{
-		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
+		if (cmInstance->regData[req->id].preTxFnc)
+		{
+			sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
+		}
 	}
 
 	if (req->id == DID_REFERENCE_IMU)
@@ -1166,7 +1169,7 @@ int sendPacket(com_manager_t* cmInstance, int pHandle, packet_t *dPkt, uint8_t a
 	return 0;
 }
 
-// Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.
+// Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.  Returns 0 on success, -1 on failure.
 int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 {
 	pfnComManagerSend sendCallback = cmInstance->sendPacketCallback;

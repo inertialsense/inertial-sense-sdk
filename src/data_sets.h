@@ -182,8 +182,8 @@ typedef uint32_t eDataIDs;
 #define RECEIVER_INDEX_GPS2 3 // DO NOT CHANGE
 
 // Max number of devices across all hardware types: uINS-3, uINS-4, and IMX-5
-#define NUM_IMU_DEVICES     3		// g_numImuDevices defines the actual number of hardware specific devices
-#define NUM_MAG_DEVICES     2		// g_numMagDevices defines the actual number of hardware specific devices
+#define NUM_IMU_DEVICES     3        // g_numImuDevices defines the actual number of hardware specific devices
+#define NUM_MAG_DEVICES     2        // g_numMagDevices defines the actual number of hardware specific devices
 
 /** INS status flags */
 enum eInsStatusFlags
@@ -217,51 +217,51 @@ enum eInsStatusFlags
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
     /** Reserved for internal purpose */
-    INS_STATUS_RESERVED_1                       = (int)0x00000400,																	
+    INS_STATUS_RESERVED_1                       = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
     /** Nav mode (set) = estimating velocity and position. AHRS mode (cleared) = NOT estimating velocity and position */
-    INS_STATUS_NAV_MODE							= (int)0x00001000,
+    INS_STATUS_NAV_MODE                         = (int)0x00001000,
 
     /** INS in stationary mode.  If initiated by zero velocity command, user should not move (keep system motionless) to assist on-board processing. */
-    INS_STATUS_STATIONARY_MODE					= (int)0x00002000,	
+    INS_STATUS_STATIONARY_MODE                  = (int)0x00002000,    
     /** Velocity aided by GPS velocity */
     INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
     /** Vehicle kinematic calibration is good */
-    INS_STATUS_KINEMATIC_CAL_GOOD	            = (int)0x00008000,
+    INS_STATUS_KINEMATIC_CAL_GOOD               = (int)0x00008000,
 
     /** INS/AHRS Solution Status */
-    INS_STATUS_SOLUTION_MASK					= (int)0x000F0000,
-    INS_STATUS_SOLUTION_OFFSET					= 16,
+    INS_STATUS_SOLUTION_MASK                    = (int)0x000F0000,
+    INS_STATUS_SOLUTION_OFFSET                  = 16,
 #define INS_STATUS_SOLUTION(insStatus)          ((insStatus&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
 
-    INS_STATUS_SOLUTION_OFF                     = 0,	// System is off 
-    INS_STATUS_SOLUTION_ALIGNING                = 1,	// System is in alignment mode
-    INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE      = 2,	// System is aligned but not enough dynamics have been experienced to be with specifications.
-    INS_STATUS_SOLUTION_NAV                     = 3,	// System is in navigation mode and solution is good.
-    INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,	// System is in navigation mode but the attitude uncertainty has exceeded the threshold.
-    INS_STATUS_SOLUTION_AHRS                    = 5,	// System is in AHRS mode and solution is good.
-    INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,	// System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_OFF                     = 0,    // System is off 
+    INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
+    INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE      = 2,    // System is aligned but not enough dynamics have been experienced to be with specifications.
+    INS_STATUS_SOLUTION_NAV                     = 3,    // System is in navigation mode and solution is good.
+    INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,    // System is in navigation mode but the attitude uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_AHRS                    = 5,    // System is in AHRS mode and solution is good.
+    INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,    // System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
 
     /** GPS compassing antenna offsets are not set in flashCfg. */
     INS_STATUS_RTK_COMPASSING_BASELINE_UNSET    = (int)0x00100000,
     /** GPS antenna baseline specified in flashCfg and measured by GPS do not match. */
     INS_STATUS_RTK_COMPASSING_BASELINE_BAD      = (int)0x00200000,
     INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
-    
+
     /** Magnetometer is being recalibrated.  Device requires rotation to complete the calibration process. HDW_STATUS_MAG_RECAL_COMPLETE is set when complete. */
-    INS_STATUS_MAG_RECALIBRATING				= (int)0x00400000,
+    INS_STATUS_MAG_RECALIBRATING                = (int)0x00400000,
     /** Magnetometer is experiencing interference or calibration is bad.  Attention may be required to remove interference (move the device) or recalibrate the magnetometer. */
-    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL		= (int)0x00800000,
+    INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL      = (int)0x00800000,
 
     /** GPS navigation fix type (see eGpsNavFixStatus) */
-    INS_STATUS_GPS_NAV_FIX_MASK					= (int)0x03000000,
-    INS_STATUS_GPS_NAV_FIX_OFFSET				= 24,
+    INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
+    INS_STATUS_GPS_NAV_FIX_OFFSET               = 24,
 #define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
 
     /** RTK compassing heading is accurate.  (RTK fix and hold status) */
-    INS_STATUS_RTK_COMPASSING_VALID				= (int)0x04000000,
+    INS_STATUS_RTK_COMPASSING_VALID             = (int)0x04000000,
 
     /* NOTE: If you add or modify these INS_STATUS_RTK_ values, please update eInsStatusRtkBase in IS-src/python/src/ci_hdw/data_sets.py */
     /** RTK error: Observations invalid or not received  (i.e. RTK differential corrections) */
@@ -275,12 +275,12 @@ enum eInsStatusFlags
     /** RTK error: NO base position received */
     INS_STATUS_RTK_ERR_BASE_MASK                = (int)0x30000000,
     /** GPS base mask */
-    INS_STATUS_RTK_ERROR_MASK					= (INS_STATUS_RTK_RAW_GPS_DATA_ERROR|INS_STATUS_RTK_ERR_BASE_MASK),
+    INS_STATUS_RTK_ERROR_MASK                   = (INS_STATUS_RTK_RAW_GPS_DATA_ERROR|INS_STATUS_RTK_ERR_BASE_MASK),
     
     /** RTOS task ran longer than allotted period */
-    INS_STATUS_RTOS_TASK_PERIOD_OVERRUN			= (int)0x40000000,
-    /** General fault (eGenFaultCodes) */
-    INS_STATUS_GENERAL_FAULT					= (int)0x80000000,
+    INS_STATUS_RTOS_TASK_PERIOD_OVERRUN         = (int)0x40000000,
+    /** General fault (see sys_params_t.genFaultCode) */
+    INS_STATUS_GENERAL_FAULT                    = (int)0x80000000,
 };
 
 /** GPS navigation fix type */
@@ -288,103 +288,103 @@ enum eInsStatusFlags
  *       in IS-src/python/src/ci_hdw/data_sets.py */
 enum eGpsNavFixStatus
 {
-    GPS_NAV_FIX_NONE							= (int)0x00000000,
-    GPS_NAV_FIX_POSITIONING_3D					= (int)0x00000001,
-    GPS_NAV_FIX_POSITIONING_RTK_FLOAT			= (int)0x00000002,
-    GPS_NAV_FIX_POSITIONING_RTK_FIX				= (int)0x00000003,		// Includes fix & hold
+    GPS_NAV_FIX_NONE                            = (int)0x00000000,
+    GPS_NAV_FIX_POSITIONING_3D                  = (int)0x00000001,
+    GPS_NAV_FIX_POSITIONING_RTK_FLOAT           = (int)0x00000002,
+    GPS_NAV_FIX_POSITIONING_RTK_FIX             = (int)0x00000003,        // Includes fix & hold
 };
 
 /** Hardware status flags */
 enum eHdwStatusFlags
 {
     /** Gyro motion detected sigma */
-    HDW_STATUS_MOTION_GYR_SIG					= (int)0x00000001,
+    HDW_STATUS_MOTION_GYR_SIG                   = (int)0x00000001,
     /** Accelerometer motion detected sigma */
-    HDW_STATUS_MOTION_ACC_SIG					= (int)0x00000002,
+    HDW_STATUS_MOTION_ACC_SIG                   = (int)0x00000002,
     /** Unit is moving and NOT stationary */
-    HDW_STATUS_MOTION_SIG_MASK					= (int)0x00000003,
+    HDW_STATUS_MOTION_SIG_MASK                  = (int)0x00000003,
     /** Gyro motion detected deviation */
-    HDW_STATUS_MOTION_GYR_DEV					= (int)0x00000004,
+    HDW_STATUS_MOTION_GYR_DEV                   = (int)0x00000004,
     /** Accelerometer motion detected deviation */
-    HDW_STATUS_MOTION_ACC_DEV					= (int)0x00000008,
+    HDW_STATUS_MOTION_ACC_DEV                   = (int)0x00000008,
     /** Motion mask */
-    HDW_STATUS_MOTION_MASK						= (int)0x0000000F,
+    HDW_STATUS_MOTION_MASK                      = (int)0x0000000F,
 
     /** GPS satellite signals are being received (antenna and cable are good) */
-    HDW_STATUS_GPS_SATELLITE_RX					= (int)0x00000010,
+    HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
     /** Event occurred on strobe input pin */
-    HDW_STATUS_STROBE_IN_EVENT					= (int)0x00000020,
+    HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
     /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
-    HDW_STATUS_GPS_TIME_OF_WEEK_VALID			= (int)0x00000040,
+    HDW_STATUS_GPS_TIME_OF_WEEK_VALID           = (int)0x00000040,
     /** Reference IMU data being received */
-    HDW_STATUS_REFERENCE_IMU_RX	                = (int)0x00000080,
+    HDW_STATUS_REFERENCE_IMU_RX                 = (int)0x00000080,
 
     /** Sensor saturation on gyro */
-    HDW_STATUS_SATURATION_GYR					= (int)0x00000100,
+    HDW_STATUS_SATURATION_GYR                   = (int)0x00000100,
     /** Sensor saturation on accelerometer */
-    HDW_STATUS_SATURATION_ACC					= (int)0x00000200,
+    HDW_STATUS_SATURATION_ACC                   = (int)0x00000200,
     /** Sensor saturation on magnetometer */
-    HDW_STATUS_SATURATION_MAG					= (int)0x00000400,
+    HDW_STATUS_SATURATION_MAG                   = (int)0x00000400,
     /** Sensor saturation on barometric pressure */
-    HDW_STATUS_SATURATION_BARO					= (int)0x00000800,
+    HDW_STATUS_SATURATION_BARO                  = (int)0x00000800,
 
     /** Sensor saturation mask */
-    HDW_STATUS_SATURATION_MASK					= (int)0x00000F00,
+    HDW_STATUS_SATURATION_MASK                  = (int)0x00000F00,
     /** Sensor saturation offset */
-    HDW_STATUS_SATURATION_OFFSET				= 8,
+    HDW_STATUS_SATURATION_OFFSET                = 8,
 
     /** System Reset is Required for proper function */
-    HDW_STATUS_SYSTEM_RESET_REQUIRED			= (int)0x00001000,
+    HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
     /** Reference IMU used in EKF */
-    HDW_STATUS_EKF_USING_REFERENCE_IMU		    = (int)0x00002000,
+    HDW_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
-    HDW_STATUS_MAG_RECAL_COMPLETE	            = (int)0x00004000,
+    HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
     HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
 
     /** Communications Tx buffer limited */
-    HDW_STATUS_ERR_COM_TX_LIMITED				= (int)0x00010000,
+    HDW_STATUS_ERR_COM_TX_LIMITED               = (int)0x00010000,
     /** Communications Rx buffer overrun */
-    HDW_STATUS_ERR_COM_RX_OVERRUN				= (int)0x00020000,
+    HDW_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00020000,
 
     /** GPS PPS timepulse signal has not been received or is in error */
-    HDW_STATUS_ERR_NO_GPS_PPS					= (int)0x00040000,
+    HDW_STATUS_ERR_NO_GPS_PPS                   = (int)0x00040000,
     /** Time synchronized by GPS PPS */
-    HDW_STATUS_GPS_PPS_TIMESYNC					= (int)0x00080000,
+    HDW_STATUS_GPS_PPS_TIMESYNC                 = (int)0x00080000,
 
     /** Communications parse error count */
-    HDW_STATUS_COM_PARSE_ERR_COUNT_MASK			= (int)0x00F00000,
-    HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET		= 20,
+    HDW_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x00F00000,
+    HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 20,
 #define HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** (BIT) Built-in self-test running */
-    HDW_STATUS_BIT_RUNNING						= (int)0x01000000,
+    HDW_STATUS_BIT_RUNNING                      = (int)0x01000000,
     /** (BIT) Built-in self-test passed */
-    HDW_STATUS_BIT_PASSED						= (int)0x02000000,
+    HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
     /** (BIT) Built-in self-test failure */
-    HDW_STATUS_BIT_FAULT						= (int)0x03000000,
+    HDW_STATUS_BIT_FAULT                        = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
-    HDW_STATUS_BIT_MASK							= (int)0x03000000,
+    HDW_STATUS_BIT_MASK                         = (int)0x03000000,
 
     /** Temperature outside spec'd operating range */
-    HDW_STATUS_ERR_TEMPERATURE					= (int)0x04000000,
+    HDW_STATUS_ERR_TEMPERATURE                  = (int)0x04000000,
     
     /** IMX pins G5-G8 are configure for SPI use */
-    HDW_STATUS_SPI_INTERFACE_ENABLED			= (int)0x08000000,
+    HDW_STATUS_SPI_INTERFACE_ENABLED            = (int)0x08000000,
 
     /** Fault reset cause */
-    HDW_STATUS_FAULT_RESET_MASK					= (int)0x70000000,	
+    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
-    HDW_STATUS_FAULT_RESET_BACKUP_MODE			= (int)0x10000000,
+    HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
     /** Reset from Watchdog */
-    HDW_STATUS_FAULT_RESET_WATCHDOG				= (int)0x20000000,
+    HDW_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
     /** Reset from Software */
-    HDW_STATUS_FAULT_RESET_SOFT					= (int)0x30000000,
+    HDW_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
     /** Reset from Hardware (NRST pin low) */
-    HDW_STATUS_FAULT_RESET_HDW					= (int)0x40000000,
+    HDW_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
 
     /** Critical System Fault - CPU error */
-    HDW_STATUS_FAULT_SYS_CRITICAL				= (int)0x80000000,
+    HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
 /** System status flags */
@@ -447,8 +447,8 @@ enum eGpsStatus
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
                                                        GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
-    GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message
-    GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
+	GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,      // 1 = Data from NMEA message. GPS velocity is NED (not ECEF).
+	GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,      // Time is synchronized by GPS PPS. 
 
     GPS_STATUS_FLAGS_MASK                           = (int)0xFFFFE000,    
     GPS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
@@ -1466,8 +1466,8 @@ typedef struct PACKED
 	/** Broadcast period multiple - NMEA standard satelliate information. */
 	uint16_t				gsv;
 
-	/** Reserved */
-	uint16_t				reserved;
+	/** Broadcast period multiple - NMEA track made good and speed over ground. */
+	uint16_t				vtg;
 
 } nmea_msgs_t;
 

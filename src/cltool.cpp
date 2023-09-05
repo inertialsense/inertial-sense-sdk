@@ -374,7 +374,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-reset"))
         {
-            g_commandLineOptions.softwareResetUins = true;
+            g_commandLineOptions.softwareResetImx = true;
         }
 		else if (startsWith(a, "-rover="))
 		{

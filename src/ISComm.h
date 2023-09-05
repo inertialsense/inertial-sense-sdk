@@ -705,6 +705,12 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
+// Indicates whether there is overlap in the data received and the backing data structure
+inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
+{
+	return _MAX(dstOffset, src->hdr.offset) < _MIN(dstOffset + dstSize, src->hdr.offset + src->hdr.size);
+}
+
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
 char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const unsigned int maxsize);
 

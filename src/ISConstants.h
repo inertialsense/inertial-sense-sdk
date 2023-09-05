@@ -572,6 +572,8 @@ extern void vPortFree(void* pv);
 
 #define C_KMPH2MPS      0.277777777777777777
 #define C_KMPH2MPS_F    0.277777777777777777f
+#define C_MPS2KMPH      3.6
+#define C_MPS2KMPH_F    3.6f
 
 #define C_MPS2KMPH      3.6
 #define C_MPS2KMPH_F    3.6f
