@@ -312,12 +312,12 @@ TEST(protocol_nmea, GGA)
     result.week = pos.week;
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     pos.hAcc = result.hAcc;
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
-TEST(protocol_nmea, GGL)
+TEST(protocol_nmea, GLL)
 {
     gps_pos_t pos = {};
     // pos.week = 12;
@@ -333,7 +333,7 @@ TEST(protocol_nmea, GGL)
     gps_pos_t result = {};
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    nmea_parse_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
@@ -351,13 +351,101 @@ TEST(protocol_nmea, GSA)
     }
 
     char abuf[ASCII_BUF_LEN] = { 0 };
-    nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
+    int n = nmea_gsa(abuf, ASCII_BUF_LEN, pos, sat);
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
-    nmea_gsa_to_did_gps(resultPos, resultSat, abuf, ASCII_BUF_LEN);
+    nmea_parse_gsa_to_did_gps(resultPos, resultSat, abuf, n);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
+}
+
+TEST(protocol_nmea, ZDA)
+{
+    gps_pos_t pos = {};
+    pos.timeOfWeekMs = 423199200;
+    pos.week = 2277;
+    pos.leapS = 18;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_zda(abuf, ASCII_BUF_LEN, pos);
+    // printf("%s\n", abuf);
+    gps_pos_t resultPos = {};
+    nmea_parse_zda_to_did_gps(resultPos, abuf, n, pos.leapS);
+
+    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
+}
+
+TEST(protocol_nmea, VTG)
+{
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+
+    ixQuat qe2n;
+    float velNed[3] = { 0.0f, 4.0f, 0.0f };
+    quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+    gps_vel_t vel = {};
+    // Velocity in ECEF
+    quatRot(vel.vel, qe2n, velNed);
+    
+    float magVarCorrectionRad = 11.1f;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_vtg(abuf, ASCII_BUF_LEN, pos, vel, magVarCorrectionRad);
+    // printf("%s\n", abuf);
+    gps_vel_t resultVel = {};
+
+    nmea_parse_vtg_to_did_gps(resultVel, abuf, n, pos.lla);
+
+    for (int i=0; i<3; i++)
+    {
+        ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+    }
+}
+
+TEST(protocol_nmea, INTEL)
+{
+    dev_info_t info = {};
+    info.firmwareVer[0] = 1;
+    info.firmwareVer[1] = 2;
+    info.firmwareVer[2] = 3;
+    info.firmwareVer[3] = 4;
+
+    gps_pos_t pos = {};    
+    pos.timeOfWeekMs = 423199200;
+    pos.lla[0] = 40.19759002;
+    pos.lla[1] = -111.62147172;
+    pos.lla[2] = 1408.565264;
+
+    ixQuat qe2n;
+    float velNed[3] = { 0.0f, 4.0f, 0.0f };
+    quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
+    gps_vel_t vel = {};
+    // Velocity in ECEF
+    quatRot(vel.vel, qe2n, velNed);
+    
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_intel(abuf, ASCII_BUF_LEN, info, pos, vel);
+    // printf("%s\n", abuf);
+    dev_info_t resultInfo = {};
+    gps_pos_t resultPos = {};
+    gps_vel_t resultVel = {};
+    float resultPpsPhase[2];
+    uint32_t resultPpsNoiseNs[1];
+
+    nmea_parse_intel_to_did_gps(resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs, abuf, n);
+
+    for (int i=0; i<3; i++)
+    {
+        ASSERT_NEAR(vel.vel[i], resultVel.vel[i], 0.02f);
+    }
+    for (int i=0; i<4; i++)
+    {
+        ASSERT_EQ(info.firmwareVer[i], resultInfo.firmwareVer[i]);
+    }
 }
 
 #define ASCII_BUF2  2048
