@@ -2999,6 +2999,17 @@ POP_PACK
 
 PUSH_PACK_1
 
+#define ENAGAL
+// #define ENAGLO
+// #define ENAQZS
+// #define ENACMP
+// #define ENASBS
+
+#define NFREQ       2      /* number of carrier frequencies */
+//#define NFREQ_USED  2      /* number of used frequencies. E.g. if L1 and L5 are used but not L2, then NFREQ is 3 but actually used frequencies are 2 */                          
+
+#define NEXOBS      0           /* number of extended obs codes */
+
 /** (DID_GPS_RTK_OPT) RTK processing options */
 typedef struct
 {
@@ -3162,31 +3173,31 @@ typedef struct PACKED
     uint8_t rcv;
 
     /** Cno, carrier-to-noise density ratio (signal strength) (0.25 dB-Hz) */
-    uint8_t SNR[1];
+    uint8_t SNR[NFREQ+NEXOBS];
 
     /** Loss of Lock Indicator. Set to non-zero values only when carrier-phase is valid (L > 0).  bit1 = loss-of-lock, bit2 = half-cycle-invalid */
-    uint8_t LLI[1];
+    uint8_t LLI[NFREQ+NEXOBS];
 
     /** Code indicator: CODE_L1C (1) = L1C/A,G1C/A,E1C (GPS,GLO,GAL,QZS,SBS), CODE_L1X (12) = E1B+C,L1C(D+P) (GAL,QZS), CODE_L1I (47) = B1I (BeiDou) */
-    uint8_t code[1];
+    uint8_t code[NFREQ+NEXOBS];
 
     /** Estimated carrier phase measurement standard deviation (0.004 cycles), zero means invalid */
-    uint8_t qualL[1];
+    uint8_t qualL[NFREQ+NEXOBS];
 
     /** Estimated pseudorange measurement standard deviation (0.01 m), zero means invalid */
-    uint8_t qualP[1];
+    uint8_t qualP[NFREQ+NEXOBS];
 
     /** reserved, for alignment */
     uint8_t reserved;
 
     /** Observation data carrier-phase (cycle). The carrier phase initial ambiguity is initialized using an approximate value to make the magnitude of the phase close to the pseudorange measurement. Clock resets are applied to both phase and code measurements in accordance with the RINEX specification. */
-    double L[1];
+    double L[NFREQ+NEXOBS];
 
     /** Observation data pseudorange (m). GLONASS inter frequency channel delays are compensated with an internal calibration table */
-    double P[1]; 
+    double P[NFREQ+NEXOBS]; 
 
     /** Observation data Doppler measurement (positive sign for approaching satellites) (Hz) */
-    float D[1];
+    float D[NFREQ+NEXOBS];
 } obsd_t;
 
 #define GPS_RAW_MESSAGE_BUF_SIZE    1000
@@ -4760,8 +4771,6 @@ int ubxSys(int gnssID);
 #undef MAXRAWLEN
 #define MAXRAWLEN 2048
 
-#undef NFREQ
-#define NFREQ 1
 
 #undef NFREQGLO
 #ifdef ENAGLO
@@ -4772,7 +4781,7 @@ int ubxSys(int gnssID);
 
 #undef NFREQGAL
 #ifdef ENAGAL
-#define NFREQGAL 1
+#define NFREQGAL 2
 #else
 #define NFREQGAL 0
 #endif
