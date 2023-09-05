@@ -5,10 +5,6 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-//ISFirmwareUpdater::ISFirmwareUpdater(InertialSense *pIS, fwUpdate::target_t target, const std::string filename) {
-//    initializeUpdate(target, filename);
-//}
-
 bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize) {
     srcFile = new std::ifstream(filename);
 
@@ -44,9 +40,6 @@ int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffe
 }
 
 bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
-    if (msg.data.update_resp.session_id != cur_session_id)
-        return false; // ignore this message, its not for us
-
     session_status = msg.data.update_resp.status;
     session_total_chunks = msg.data.update_resp.totl_chunks;
     if (session_status == fwUpdate::GOOD_TO_GO) {
@@ -57,9 +50,6 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
 }
 
 bool ISFirmwareUpdater::handleResendChunk(const fwUpdate::payload_t &msg) {
-    if (msg.data.update_resp.session_id != cur_session_id)
-        return false; // ignore this message, it's not for us
-
     next_chunk_id = msg.data.req_resend.chunk_id;
     // the reason doesn't really matter, but we might want to write it to a log or something?
     // TODO: LOG msg.data.req_resend.reason
@@ -69,9 +59,6 @@ bool ISFirmwareUpdater::handleResendChunk(const fwUpdate::payload_t &msg) {
 }
 
 bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
-    if (msg.data.update_resp.session_id != cur_session_id)
-        return false; // ignore this message, it's not for us
-
     int num = msg.data.progress.num_chunks;
     int tot = msg.data.progress.totl_chunks;
     int percent = (int)(((msg.data.progress.num_chunks+1)/(float)(msg.data.progress.totl_chunks)*100) + 0.5f);
@@ -90,10 +77,13 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
         case fwUpdate::INITIALIZING:
             if (startAttempts < maxAttempts) {
                 if (nextStartAttempt < current_timeMs()) {// time has elapsed, so re-issue request to update
-                    if (requestUpdate())
+                    nextStartAttempt = current_timeMs() + attemptInterval;
+                    if (requestUpdate()) {
                         startAttempts++;
-                    else
+                        printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
+                    } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
+                    }
                 }
             } else {
                 session_status = fwUpdate::ERR_TIMEOUT;
@@ -118,14 +108,14 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
             }
             break;
         default:
-            // these should be all of our uncaught error states
+            // printf("Firmware Update Error: %s\n", getSessionStatusName());
             break;
     }
 
     return fwUpdate::MSG_UNKNOWN;
 }
 
-bool ISFirmwareUpdater::writeToWire(uint8_t *buffer, int buff_len) {
+bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     return (comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0) == 0);
 }
 

@@ -8,6 +8,9 @@
 
 namespace fwUpdate {
 
+    static const char* status_names[] = { "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
+    "NOT_STARTED", "INITIALIZING", "GOOD_TO_GO", "WAITING_FOR_DATA", "FINISHED"};
+
     /*==================================================================================*
      * Firmware Base Implementation goes here                                           *
      *==================================================================================*/
@@ -140,7 +143,7 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateBase::sendPayload(fwUpdate::payload_t& payload, void *aux_data) {
         int payload_len = packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
-        return writeToWire(build_buffer, payload_len);
+        return writeToWire((fwUpdate::target_t)payload.hdr.target_device, build_buffer, payload_len);
     }
 
     //
@@ -230,14 +233,6 @@ namespace fwUpdate {
             // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
             uint32_t *w = (uint32_t *) (msg + offset);
 
-#ifdef DEBUG
-            printf("offset: %d %x\n", offset, offset);
-
-            int j;
-            for(j =0; j < 64; j++) printf("%x ", ((uint8_t *) w)[j]);
-            puts("");
-#endif
-
             // Initialize hash value for this chunk:
             uint32_t a = md5hash[0];
             uint32_t b = md5hash[1];
@@ -247,24 +242,6 @@ namespace fwUpdate {
             // Main loop:
             uint32_t i;
             for(i = 0; i<64; i++) {
-
-#ifdef ROUNDS
-                uint8_t *p;
-                printf("%i: ", i);
-                p=(uint8_t *)&a;
-                printf("%2.2x%2.2x%2.2x%2.2x ", p[0], p[1], p[2], p[3], a);
-
-                p=(uint8_t *)&b;
-                printf("%2.2x%2.2x%2.2x%2.2x ", p[0], p[1], p[2], p[3], b);
-
-                p=(uint8_t *)&c;
-                printf("%2.2x%2.2x%2.2x%2.2x ", p[0], p[1], p[2], p[3], c);
-
-                p=(uint8_t *)&d;
-                printf("%2.2x%2.2x%2.2x%2.2x", p[0], p[1], p[2], p[3], d);
-                puts("");
-#endif
-
                 uint32_t f, g;
 
                 if (i < 16) {
@@ -281,13 +258,9 @@ namespace fwUpdate {
                     g = (7*i) % 16;
                 }
 
-#ifdef ROUNDS
-                printf("f=%x g=%d w[g]=%x\n", f, g, w[g]);
-#endif
                 uint32_t temp = d;
                 d = c;
                 c = b;
-                // printf("rotateLeft(%x + %x + %x + %x, %d)\n", a, f, k[i], w[g], r[i]);
                 b = b + MD5_LEFTROTATE((a + f + k[i] + w[g]), r[i]);
                 a = temp;
             }
@@ -344,19 +317,41 @@ namespace fwUpdate {
      * @param msg_payload the contents of the DID_FIRMWARE_UPDATE payload
      * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
      *
-     * Note: Internally, this method calls step(), so even if you don't call step(), but it can still operate with just inbound messages, but interval updates/etc won't run.
+     * Note: Internally, this method calls step(), so even if you don't call step(), it can still operate with just inbound messages, but interval updates/etc won't run.
      */
-    int FirmwareUpdateDevice::processMessage(const payload_t& msg_payload) {
+    bool FirmwareUpdateDevice::processMessage(const payload_t& msg_payload) {
+        bool result = false;
+
+        if (msg_payload.hdr.target_device != target_id)
+            return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
+
         switch (msg_payload.hdr.msg_type) {
             case MSG_REQ_UPDATE:
-                return handleInitialize(msg_payload);
+                result = handleInitialize(msg_payload);
+                break;
             case MSG_UPDATE_CHUNK:
-                return handleChunk(msg_payload);
+                result = handleChunk(msg_payload);
+                break;
             case MSG_REQ_RESET:
-                return handleMcuReset(msg_payload);
+                result = handleMcuReset(msg_payload);
+                break;
             default:
-                return false;
+                result = false;
         }
+        
+        step(); // TODO: we should probably do something with the step() result, but not sure what just yet
+
+        return result;
+    }
+    bool FirmwareUpdateDevice::processMessage(const uint8_t* buffer, int buf_len) {
+        fwUpdate::payload_t *msg = nullptr;
+        void *aux_data = nullptr;
+
+        int msg_len = unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
+        if (msg_len <= 0)
+            return false;
+
+        return processMessage(*msg);
     }
 
     /**
@@ -412,7 +407,7 @@ namespace fwUpdate {
         msg.data.progress.msg_len = msg_len + 1; // don't forget the null-terminator
 
         msg_len = packPayload(build_buffer, sizeof(build_buffer), msg, buffer);
-        return writeToWire(build_buffer, msg_len);
+        return writeToWire((fwUpdate::target_t)msg.hdr.target_device, build_buffer, msg_len);
     }
 
     /**
@@ -458,13 +453,13 @@ namespace fwUpdate {
             session_status = ERR_INVALID_SESSION;
 
         session_status = startFirmwareUpdate(payload);
+        cur_session_id = payload.data.req_update.session_id;
+        image_size = payload.data.req_update.file_size;
+        chunk_size = payload.data.req_update.chunk_size;
 
         if (session_status > NOT_STARTED) {
             resetEngine();
-            cur_session_id = payload.data.req_update.session_id;
             image_slot = payload.data.req_update.image_slot;
-            image_size = payload.data.req_update.file_size;
-            chunk_size = payload.data.req_update.chunk_size;
             total_chunks = (uint16_t) ceil((float)image_size / (float)chunk_size);
             session_md5[0] = payload.data.req_update.md5_hash[0];
             session_md5[1] = payload.data.req_update.md5_hash[1];
@@ -518,7 +513,7 @@ namespace fwUpdate {
         hashMd5(payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
 
         uint32_t chnk_offset = payload.data.chunk.chunk_id * chunk_size;
-        writeImageChunk(payload.hdr.target_device, image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
+        writeImageChunk((fwUpdate::target_t)payload.hdr.target_device, image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
 
         // note that we successfully wrote this chunk, so we can start to handle the next.
         last_chunk_id = payload.data.chunk.chunk_id;
@@ -589,6 +584,9 @@ namespace fwUpdate {
      * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
      */
     bool FirmwareUpdateSDK::processMessage(const payload_t& msg_payload) {
+        if ((msg_payload.hdr.msg_type != MSG_REQ_UPDATE) && (msg_payload.data.update_resp.session_id != cur_session_id))
+            return false; // ignore this message, its not for us
+
         switch (msg_payload.hdr.msg_type) {
             case MSG_UPDATE_RESP:
                 return handleUpdateResponse(msg_payload);
@@ -606,6 +604,16 @@ namespace fwUpdate {
                 return false;
         }
         return false;
+    }
+    bool FirmwareUpdateSDK::processMessage(const uint8_t* buffer, int buf_len) {
+        fwUpdate::payload_t *msg = nullptr;
+        void *aux_data = nullptr;
+
+        int msg_len = unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
+        if (msg_len <= 0)
+            return false;
+
+        return processMessage(*msg);
     }
 
     /**
@@ -675,7 +683,7 @@ namespace fwUpdate {
         uint32_t offset = msg->data.chunk.chunk_id * session_chunk_size;
         int chunk_len = getImageChunk(offset, msg->data.chunk.data_len, &chunk_data);
         if (chunk_len == msg->data.chunk.data_len)
-            if (writeToWire(build_buffer, msg_len))
+            if (writeToWire((fwUpdate::target_t)msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful
 
         return (session_total_chunks - next_chunk_id);
@@ -696,6 +704,16 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateSDK::resetEngine() {
         return false;
+    }
+
+    /**
+     * @return a human-readable status name for the current session status
+     */
+    const char *FirmwareUpdateSDK::getSessionStatusName() {
+        if (session_status >= 0)
+            return fwUpdate::status_names[session_status + abs(fwUpdate::ERR_NOT_SUPPORTED)];
+        else
+            return fwUpdate::status_names[session_status - fwUpdate::ERR_NOT_SUPPORTED];
     }
 
 

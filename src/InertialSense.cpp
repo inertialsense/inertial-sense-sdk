@@ -368,17 +368,17 @@ bool InertialSense::Update()
 			comManagerStep();
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
-            for (int devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
+            for (size_t devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
                 if (m_comManagerState.devices[devIdx].fwUpdater != nullptr) {
                     m_comManagerState.devices[devIdx].fwUpdater->step();
                     fwUpdate::update_status_e status = m_comManagerState.devices[devIdx].fwUpdater->getSessionStatus();
                     if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
-                            printf("Unable to start firmware update.\n");
+                            printf("Unable to start firmware update: %s\n", m_comManagerState.devices[devIdx].fwUpdater->getSessionStatusName());
                         }
-                        // release the FirmwareUpdater
 
+                        // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
                     }
@@ -818,9 +818,9 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
         break;
         case DID_FIRMWARE_UPDATE:
         {
-            // we don't respond to messages if we aren't already have an active Updater
+            // we don't respond to messages if we don't already have an active Updater
             if (m_comManagerState.devices[pHandle].fwUpdater)
-                m_comManagerState.devices[pHandle].fwUpdater->processMessage((const fwUpdate::payload_t&)data->buf);
+                m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->buf, data->hdr.size);
         }
 	}
 }
@@ -867,6 +867,8 @@ void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rm
 is_operation_result InertialSense::updateFirmware(
         const string& comPort,
         int baudRate,
+        fwUpdate::target_t targetDevice,
+        int slotNum,
         const string& fileName,
         ISBootloader::pfnBootloadProgress uploadProgress,
         ISBootloader::pfnBootloadProgress verifyProgress,
@@ -944,7 +946,7 @@ is_operation_result InertialSense::updateFirmware(
 
     for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i);
-        m_comManagerState.devices[i].fwUpdater->initializeUpdate(fwUpdate::TARGET_IMX5, fileName);
+        m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum);
     }
 
     // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);

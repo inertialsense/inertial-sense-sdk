@@ -404,6 +404,8 @@ public:
     is_operation_result updateFirmware(
             const std::string& comPort,
             int baudRate,
+            fwUpdate::target_t targetDevice,
+            int slotNum,
             const std::string& fileName,
             ISBootloader::pfnBootloadProgress uploadProgress,
             ISBootloader::pfnBootloadProgress verifyProgress,

@@ -85,10 +85,10 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_PAYLOAD_SIZE   4192
-#define FWUPDATE__MAX_CHUNK_SIZE   4096
+#define FWUPDATE__MAX_PAYLOAD_SIZE   1192
+#define FWUPDATE__MAX_CHUNK_SIZE   1024
 
-    typedef enum {
+    enum target_t : uint32_t {
         TARGET_NONE = 0x00,
         TARGET_IMX5 = 0x10,
         TARGET_GPX1 = 0x20,
@@ -99,10 +99,31 @@ namespace fwUpdate {
         TARGET_SONY_CXD5610__1 = 0x121,
         TARGET_SONY_CXD5610__2 = 0x122,
         TARGET_SONY_CXD5610__ALL = 0x12F,
-        TARGET_MAXNUM
-    } target_t;
+        TARGET_MAXNUM,
+    };
 
-    typedef enum {
+    enum msg_types_e : int16_t {
+        MSG_UNKNOWN = 0,            // an unknown or undefined message type.
+        MSG_REQ_RESET = 1,          // a host is requesting that the device perform a reset.
+        MSG_RESET_RESP = 2,         // response to the requesting host, that a reset was performed (but not guarantee that it was successful).
+        MSG_REQ_UPDATE = 3,         // a host is requesting that the device enter update mode - in essense, initiate the update state-machine that is responsible for getting the target device into a state where it can receive an update.
+        // The payload is a total of 12 bytes, the first 8 bytes, representing in little-endian, the overall size of the payload. The last 4 are the size of each payload chunk.
+        // The payload max_chnks should be the total number of chunks, of overall payload size / the size of the payload chunk (rounded up).
+        MSG_UPDATE_RESP = 4,        // communicates back to the host that the device is ready to update (in bootloader mode, etc) (the state machine has finished setup and is ready for data).
+        MSG_UPDATE_CHUNK = 5,       // this message contains data which is a portion of the new firmware.  The chnk_id, and num_chunks represent the location of the payload within the overall firmware image
+        MSG_UPDATE_PROGRESS = 6,    // this is a message sent back to the host at regular intervals to communicate to the user the status of the update process.  This message can be sent at any time
+        MSG_REQ_RESEND_CHUNK = 7,   // this is a message send by the device back to the host, requesting that a particular chunk be resent.  The device should send this when there is an issue with the last received "UPDATE_PAYLOAD",
+        // either in a checksum error, invalid/missing chunk id, etc.  When this message is received by the host, the host MUST resend the requested chunk, and all subsequent chunks that follow it, regardless
+        // if they were previously sent.  Likewise, on the device, as soon as a received chunk is deemed invalid, forcing this message to be sent back to the host, all subsequent payload chunks received which
+        // are NOT this requested chunk MUST BE ignored.
+        MSG_UPDATE_FINISHED = 8,    // this message is sent when the device-side has completed receiving file chunks, regardless of the status of those chunks, or the reception of all available chunks.  In essense, this is a notice
+        // to the host that no more chunks of data will be accepted, regardless of state. Included in this message is a status indicating whether the image transfer was successful, of not. When this message
+        // is sent, the associated session_id is invalidated ensuring that no further messages can be processed. If there is an error, a new session will need to be started.
+        MSG_REQ_VERSION_INFO = 9,   // this message is sent by the host to request information about the current target's firmware
+        MSG_VERSION_INFO_RESP = 10, // this message is the response from a device, which details the target devices hardware and firmware version and also firmware build info.
+    };
+
+    enum update_status_e : int16_t {
         FINISHED = 4,               // indicates that all chunks have been received, and the checksum is valid.
         WAITING_FOR_DATA = 3,       // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
         GOOD_TO_GO = 2,             // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
@@ -116,36 +137,16 @@ namespace fwUpdate {
         ERR_MAX_CHUNK_SIZE = -6,    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
         ERR_TIMEOUT = -7,           // indicates that the update process timed-out waiting for data (either a request, response, or chunk data that never arrived)
         ERR_CHECKSUM_MISMATCH = -8, // indicates that the final checksum didn't match the checksum specified at the start of the process
-        ERR_COMMS = -9              // indicates that an error in the underlying comms system
-    } update_status_e;
+        ERR_COMMS = -9,             // indicates that an error in the underlying comms system
+        ERR_NOT_SUPPORTED = -10,    // indicates that the target device doesn't support this protocol
+    };
 
-    typedef enum {
+    enum resend_reason_e : int16_t {
         REASON_NONE = 0,
         REASON_INVALID_SEQID = 1,
         REASON_WRITE_ERROR = 2,     // there was an error writing the data to FLASH (perhaps it took too long?)
         REASON_INVALID_SIZE = 3,    // unless the chunk id is the last chunk, the size of the chunk should always be the negotiated session_chunk_size;
-    } resend_reason_e;
-
-    typedef enum {
-        MSG_UNKNOWN = 0,            // an unknown or undefined message type.
-        MSG_REQ_RESET = 1,          // a host is requesting that the device perform a reset.
-        MSG_RESET_RESP = 2,         // response to the requesting host, that a reset was performed (but not guarantee that it was successful).
-        MSG_REQ_UPDATE = 3,         // a host is requesting that the device enter update mode - in essense, initiate the update state-machine that is responsible for getting the target device into a state where it can receive an update.
-                                    // The payload is a total of 12 bytes, the first 8 bytes, representing in little-endian, the overall size of the payload. The last 4 are the size of each payload chunk.
-                                    // The payload max_chnks should be the total number of chunks, of overall payload size / the size of the payload chunk (rounded up).
-        MSG_UPDATE_RESP = 4,        // communicates back to the host that the device is ready to update (in bootloader mode, etc) (the state machine has finished setup and is ready for data).
-        MSG_UPDATE_CHUNK = 5,       // this message contains data which is a portion of the new firmware.  The chnk_id, and num_chunks represent the location of the payload within the overall firmware image
-        MSG_UPDATE_PROGRESS = 6,    // this is a message sent back to the host at regular intervals to communicate to the user the status of the update process.  This message can be sent at any time
-        MSG_REQ_RESEND_CHUNK = 7,   // this is a message send by the device back to the host, requesting that a particular chunk be resent.  The device should send this when there is an issue with the last received "UPDATE_PAYLOAD",
-                                    // either in a checksum error, invalid/missing chunk id, etc.  When this message is received by the host, the host MUST resend the requested chunk, and all subsequent chunks that follow it, regardless
-                                    // if they were previously sent.  Likewise, on the device, as soon as a received chunk is deemed invalid, forcing this message to be sent back to the host, all subsequent payload chunks received which
-                                    // are NOT this requested chunk MUST BE ignored.
-        MSG_UPDATE_FINISHED = 8,    // this message is sent when the device-side has completed receiving file chunks, regardless of the status of those chunks, or the reception of all available chunks.  In essense, this is a notice
-                                    // to the host that no more chunks of data will be accepted, regardless of state. Included in this message is a status indicating whether the image transfer was successful, of not. When this message
-                                    // is sent, the associated session_id is invalidated ensuring that no further messages can be processed. If there is an error, a new session will need to be started.
-        MSG_REQ_VERSION_INFO = 9,   // this message is sent by the host to request information about the current target's firmware
-        MSG_VERSION_INFO_RESP = 10, // this message is the response from a device, which details the target devices hardware and firmware version and also firmware build info.
-    } msg_types_e;
+    };
 
     typedef union PACKED {
         struct { } req_reset;
@@ -213,7 +214,7 @@ namespace fwUpdate {
             uint8_t buildMinute;    //! Build time minute
             uint8_t buildSecond;    //! Build time second
             uint8_t buildMillis;    //! Build time millisecond
-        } version_resp __attribute__((__packed__));;
+        } version_resp __attribute__((__packed__));
     } msg_data_t;
 
     typedef struct PACKED {
@@ -307,11 +308,12 @@ namespace fwUpdate {
 
         /**
          * Virtual function that must be implemented in the concrete implementations, responsible for writing buffer out to the wire (serial, or otherwise).
+         * @param target a reference to the target for which this data is intended
          * @param buffer
          * @param buff_len
          * @return
          */
-        virtual bool writeToWire(uint8_t* buffer, int buff_len) = 0;
+        virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
 
     private:
@@ -342,6 +344,7 @@ namespace fwUpdate {
          * @param progress_millis the rate at which progress updates will be sent out, in milli-seconds (default is every 100ms, 0 = no updates are sent).
          */
         FirmwareUpdateDevice(target_t target_id, uint16_t progress_millis = 100);
+        virtual ~FirmwareUpdateDevice() { };
 
         /**
          * Called by the communications system anytime a DID_FIRMWARE_UPDATE is received.
@@ -350,7 +353,17 @@ namespace fwUpdate {
          *
          * Note: Internally, this method calls step(), so even if you don't call step(), but it can still operate with just inbound messages, but interval updates/etc won't run.
          */
-        int processMessage(const payload_t& msg_payload);
+        bool processMessage(const payload_t& msg_payload);
+        bool processMessage(const uint8_t* buffer, int buf_len);
+
+        update_status_e getSessionStatus() { return session_status; }
+        uint16_t getSessionID() { return cur_session_id; }
+        uint16_t getLastChunkID() { return last_chunk_id; }
+        uint16_t getChunkSize() { return chunk_size; }
+        uint16_t getTotalChunks() { return total_chunks; }
+        uint16_t getImageSize() { return image_size; }
+        uint16_t getImageSlot() { return image_slot; }
+
 
         //===========  Functions which MUST be implemented ===========//
 
@@ -362,12 +375,12 @@ namespace fwUpdate {
          */
         virtual msg_types_e step() = 0;
 
-        virtual bool writeToWire(uint8_t* buffer, int buff_len) = 0;
+        virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         virtual int performSoftReset(target_t target_id) = 0; // this is a software managed reset, by such as my informing the OS/MCU to restart the system
         virtual int performHardReset(target_t target_id) = 0; // this is a hardware, force reset usually by pulling interfacing pins into the mcu either HIGH or LOW to force a reset state on the hardware
 
-        virtual update_status_e startFirmwareUpdate(payload_t msg) = 0; // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
+        virtual update_status_e startFirmwareUpdate(const payload_t& msg) = 0; // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
         virtual int writeImageChunk(target_t target_id, int slot_id, int offset, int len, uint8_t *data) = 0; // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
         virtual int finishFirmwareUpgrade(target_t target_id, int slot_id) = 0; // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
 
@@ -481,6 +494,7 @@ namespace fwUpdate {
          * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
          */
         bool processMessage(const payload_t& msg_payload);
+        bool processMessage(const uint8_t* buffer, int buf_len);
 
         /**
          * Called by the host application to initiate a request by the SDK to update a target device.
@@ -510,6 +524,11 @@ namespace fwUpdate {
          */
         bool isUpdating();
 
+        /**
+         * @return a human-readable status name for the current session status
+         */
+        const char *getSessionStatusName();
+
         update_status_e getSessionStatus() { return session_status; }
         uint16_t getSessionID() { return cur_session_id; }
         uint16_t getNextChunkID() { return next_chunk_id; }
@@ -519,7 +538,7 @@ namespace fwUpdate {
 
     protected:
         //===========  Functions which MUST be implemented ===========//
-        virtual bool writeToWire(uint8_t* buffer, int buff_len) = 0;
+        virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         /**
          * To be implemented by concrete class, this method loads the next image chunk from disk (or whereever) and

@@ -29,7 +29,7 @@ private:
     int8_t startAttempts = 0;           // the number of attempts that have been made to request that an update be started
 
     int8_t maxAttempts = 5;             // the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 250;     // the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+    uint16_t attemptInterval = 750;     // the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
 public:
     ISFirmwareUpdater(int portHandle) : FirmwareUpdateSDK(), pHandle(portHandle) { };
@@ -65,7 +65,7 @@ public:
      */
     virtual fwUpdate::msg_types_e step() override;
 
-    bool writeToWire(uint8_t* buffer, int buff_len) override;
+    bool writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
 };
 

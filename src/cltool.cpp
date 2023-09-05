@@ -149,6 +149,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.minAccuracy = 0;
 	g_commandLineOptions.outputOnceDid = 0;
 	g_commandLineOptions.platformType = -1;
+    g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE;
 
 	if(argc <= 1)
 	{	// Display usage menu if no options are provided 
@@ -412,16 +413,24 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-ub") && (i + 1) < argc)
 		{
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE; // use legacy firmware update mechanism
 			g_commandLineOptions.updateBootloaderFilename = argv[++i];	// use next argument
 		}
         else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE; // use legacy firmware update mechanism
             g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
         }
 		else if (startsWith(a, "-uv"))
 		{
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE; // use legacy firmware update mechanism
 			g_commandLineOptions.bootloaderVerify = true;
 		}
+        else if (startsWith(a, "-gpx-uf") && (i + 1) < argc)
+        {
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
+            g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
+        }
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
@@ -520,6 +529,8 @@ void cltool_outputUsage()
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -gpx-uf " << boldOff << "FILEPATH    Update GPX application firmware using file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
+
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	if (g_internal)

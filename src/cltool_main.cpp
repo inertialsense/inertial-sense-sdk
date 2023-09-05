@@ -540,15 +540,12 @@ static int inertialSenseMain()
 		return !cltool_replayDataLog();
 	}
 	// if app firmware was specified on the command line, do that now and return
-#define V2_FIRMWARE_UPDATE
-
-#ifndef V2_FIRMWARE_UPDATE
-	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
+	else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_NONE) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
 	{
+        // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)
 		signal(SIGINT, sigint_cb);
 		return cltool_updateFirmware();
 	}
-#endif
 	else if (g_commandLineOptions.updateBootloaderFilename.length() != 0)
 	{
 		cout << "option -uf [FILENAME] must be used with option -ub [FILENAME] " << endl;
@@ -608,12 +605,12 @@ static int inertialSenseMain()
 			}
 			try
 			{
-
-#ifdef V2_FIRMWARE_UPDATE
-                if (!g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
                     if(inertialSenseInterface.updateFirmware(
                             g_commandLineOptions.comPort,
                             g_commandLineOptions.baudRate,
+                            g_commandLineOptions.updateFirmwareTarget,
+                            0,
                             g_commandLineOptions.updateAppFirmwareFilename,
                             bootloadUpdateCallback,
                             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
@@ -625,7 +622,6 @@ static int inertialSenseMain()
                         return -1;
                     };
                 }
-#endif
 
 				// Main loop. Could be in separate thread if desired.
 				while (!g_inertialSenseDisplay.ExitProgram())

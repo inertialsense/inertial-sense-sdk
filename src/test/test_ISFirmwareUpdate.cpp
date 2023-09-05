@@ -183,7 +183,7 @@ public:
     }
 
     // called internally to process a packed payload, ready to be put on the wire.
-    bool writeToWire(uint8_t* buffer, int buff_len) {
+    bool writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) {
         return exchangeBuffer.writeData(buffer, buff_len);
     }
 
@@ -211,7 +211,7 @@ public:
                 else
                     snprintf(prog_msg, sizeof(prog_msg), "DEV :: Received MSG %s...\n", MSG_TYPES[msg->hdr.msg_type]);
 #ifdef DEBUG_INFO
-                    PRINTF("%s", prog_msg);
+                PRINTF("%s", prog_msg);
 #endif
                 if (processMessage(*msg)) {
                     sendProgress(3, (const char *)prog_msg);
@@ -232,7 +232,7 @@ public:
     explicit ISFirmwareUpdateTestSDK(ExchangeBuffer& eb) : FirmwareUpdateSDK(), exchangeBuffer(eb) {
     }
 
-    bool writeToWire(uint8_t* buffer, int buff_len) override {
+    bool writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override {
         return exchangeBuffer.writeData(buffer, buff_len);
     }
 
