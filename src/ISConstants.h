@@ -31,6 +31,7 @@ extern "C" {
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
 #define CONVERT_RAW_GPS_V2_TO_V1    1      // Allow conversion of raw GPS format from v1 to v2 used for RTK
+#define SONY_RUN_GPX                1
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
