@@ -18,7 +18,6 @@
 #define DEBUG_INFO
 
 static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_FINISHED" };
-static const char* STATUS_TYPES[] = { "CHECKSUM_MISMATCH", "TIMEOUT", "MAX_CHUNK_SIZE", "OLDER_FIRMWARE", "NOT_ENOUGH_MEMORY", "NOT_ALLOWED", "INVALID_SLOT", "INVALID_SESSION", "NOT_STARTED", "INITIALIZING", "GOOD_TO_GO", "WAITING_FOR_DATA", "FINISHED" };
 
 static uint32_t fake_md5[4] = { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F };
 static uint32_t real_md5[4] = { 0xff3a9932, 0xb52b501d, 0x802f05e4, 0x5ed33d04 };
@@ -145,11 +144,13 @@ public:
     ISFirmwareUpdateTestDev(ExchangeBuffer& eb) : FirmwareUpdateDevice(fwUpdate::TARGET_IMX5, 100), exchangeBuffer(eb) {
     }
 
+    bool sendProgressUpdates = true;
+
     int performSoftReset(fwUpdate::target_t target_id) { return 0; };
     int performHardReset(fwUpdate::target_t target_id) { return 0; };
 
     // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
-    fwUpdate::update_status_e startFirmwareUpdate(fwUpdate::payload_t msg) {
+    fwUpdate::update_status_e startFirmwareUpdate(const fwUpdate::payload_t& msg) {
 
         // query information from the system about the requested firmware slot
         if (msg.data.req_update.image_slot != 0)
@@ -200,6 +201,7 @@ public:
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
 
+/*
         // check if a packet is waiting in the exchange buffer.
         if (exchangeBuffer.dataAvailable() > 0) {
             int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer));
@@ -214,15 +216,27 @@ public:
                 PRINTF("%s", prog_msg);
 #endif
                 if (processMessage(*msg)) {
-                    sendProgress(3, (const char *)prog_msg);
+                    if (sendProgressUpdates)
+                        sendProgress(3, (const char *)prog_msg);
                     return msg->hdr.msg_type;
                 }
             }
         }
+*/
         return fwUpdate::MSG_UNKNOWN;
     }
 
-    int GetNextExpectedChunk() { return last_chunk_id + 1; }
+    void pullAndProcessNextMessage() {
+        uint8_t buffer[2048];
+        EXPECT_GT(exchangeBuffer.dataAvailable(), 0);
+        if (exchangeBuffer.dataAvailable() > 0) {
+            // Data is waiting in the exchange buffer; pull and unpack it for analysis.
+            int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer));
+            processMessage(buffer, buf_len);
+        }
+    }
+
+    uint16_t GetNextExpectedChunk() { return (uint16_t)(last_chunk_id + 1); }
 };
 
 class ISFirmwareUpdateTestSDK : public fwUpdate::FirmwareUpdateSDK {
@@ -298,31 +312,28 @@ public:
         static uint8_t buffer[2048];
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
+        fwUpdate::msg_types_e out = fwUpdate::MSG_UNKNOWN;
 
         // check if a packet is waiting in the exchange buffer.
         if (exchangeBuffer.dataAvailable() > 0) {
             int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer));
             int msg_len = unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
             if (msg_len > 0) {
-#ifdef DEBUG_INFO
-                if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK)
-                    PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
-                else if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP)
-                    PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], STATUS_TYPES[msg->data.update_resp.status - fwUpdate::ERR_CHECKSUM_MISMATCH]);
-                else if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_FINISHED)
-                    PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], STATUS_TYPES[msg->data.update_resp.status - fwUpdate::ERR_CHECKSUM_MISMATCH]);
-                else
-                    PRINTF("SDK :: Received MSG %s...\n", MSG_TYPES[msg->hdr.msg_type]);
-#endif
                 if (processMessage(*msg)) {
                     if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_PROGRESS)
                         return step();
-                    return msg->hdr.msg_type;
+                    out = msg->hdr.msg_type;
                 }
             }
+#ifdef DEBUG_INFO
+            if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK)
+                PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
+            else
+                PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], getSessionStatusName());
+#endif
 
         }
-        return fwUpdate::MSG_UNKNOWN;
+        return out;
     }
 
 
@@ -415,7 +426,7 @@ TEST(ISFirmwareUpdate, pack_unpack__update_resp)
     fuMsg.data.update_resp.status = fwUpdate::WAITING_FOR_DATA;
 
     int packed_size = fuSDK.packPayload(buffer, sizeof(buffer), fuMsg);
-    EXPECT_EQ(packed_size, 16);
+    EXPECT_EQ(packed_size, 14);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -428,7 +439,7 @@ TEST(ISFirmwareUpdate, pack_unpack__update_resp)
     EXPECT_EQ(outMsg->data.update_resp.status, fwUpdate::WAITING_FOR_DATA);
 
     int unpack_len = fuSDK.unpackPayload(buffer, packed_size, fuMsg);
-    EXPECT_EQ(unpack_len, 16);
+    EXPECT_EQ(unpack_len, 14);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -500,7 +511,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_resend)
     fuMsg.data.req_resend.reason = fwUpdate::REASON_WRITE_ERROR;
 
     int packed_size = fuSDK.packPayload(buffer, sizeof(buffer), fuMsg);
-    EXPECT_EQ(packed_size, 16);
+    EXPECT_EQ(packed_size, 14);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -514,7 +525,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_resend)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.unpackPayload(buffer, packed_size, fuMsg);
-    EXPECT_EQ(unpack_len, 16);
+    EXPECT_EQ(unpack_len, 14);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -543,7 +554,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     fuMsg.data.progress.msg_len = strlen((const char *)progress_msg);
 
     int packed_size = fuSDK.packPayload(buffer, sizeof(buffer), fuMsg, progress_msg);
-    EXPECT_EQ(packed_size, 57);
+    EXPECT_EQ(packed_size, 53);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -563,7 +574,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
-    EXPECT_EQ(unpack_len, 57);
+    EXPECT_EQ(unpack_len, 53);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -583,29 +594,37 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl) {
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
+    // don't send progress updates for this test.
+    fuDev.sendProgressUpdates = false;
+
     // Make the request to the device
     fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,1234567, fake_md5);
 
-    // Force the device-side to pull the message, and respond.
-    fuDev.step();
+    fuDev.pullAndProcessNextMessage();
 
     // for this test, we need to manually pull the data from the exchange buffer, and unpack the response.
     // NOTE: Don't use the following as an example of how to use the API
+    EXPECT_GT(eb.dataAvailable(), 0);
     if (eb.dataAvailable() > 0) {
         // Data is waiting in the exchange buffer; pull and unpack it for analysis.
         int buf_len = eb.readData(buffer, sizeof(buffer));
         int msg_len = fuSDK.unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
         if (msg_len > 0) {
-            // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
-            EXPECT_EQ(msg->hdr.target_device, fwUpdate::TARGET_NONE);
-            EXPECT_EQ(msg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
-            EXPECT_EQ(msg->data.update_resp.session_id, 17767);
-            EXPECT_EQ(msg->data.update_resp.totl_chunks, 1206);
-            EXPECT_EQ(msg->data.update_resp.status, fwUpdate::GOOD_TO_GO); // any negative value is an error
+            if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP) {
+                // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
+                EXPECT_EQ(msg->hdr.target_device, fwUpdate::TARGET_NONE);
+                EXPECT_EQ(msg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
+                EXPECT_EQ(msg->data.update_resp.session_id, 17767);
+                EXPECT_EQ(msg->data.update_resp.totl_chunks, 1206);
+                EXPECT_EQ(msg->data.update_resp.status, fwUpdate::GOOD_TO_GO); // any negative value is an error
+            }
         }
     }
 }
 
+/**
+ * This tests checks to make sure we have a complete, successful firmware update exchange from beginning to end.
+ */
 TEST(ISFirmwareUpdate, exchange__success)
 {
     static uint8_t buffer[2048];
@@ -615,23 +634,28 @@ TEST(ISFirmwareUpdate, exchange__success)
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
+    // don't send progress updates for this test.
+    fuDev.sendProgressUpdates = false;
+
     // Make the request to the device; the device should expect 8 chunks total
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,8192, real_md5);
 
-    fuDev.step(); // advance Device, to process the request and send the response
+    fuDev.pullAndProcessNextMessage();
     fuSDK.step(); // advance Host, to process the Device response
+
     EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
 
     // from here out, this should be normal.
-    int i = 0;
-    while(fuSDK.getSessionStatus() < fwUpdate::FINISHED) {
+    while((fuSDK.getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != 65536)) {
         if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA)) {
             fuSDK.sendNextChunk();
         }
-        fuDev.step(); // make sure the device-side processes it...
-        fuSDK.step();
+
+        fuDev.pullAndProcessNextMessage();
         EXPECT_EQ(fuSDK.getNextChunkID(), fuDev.GetNextExpectedChunk());
+
+        fuSDK.step();
 
         // check if any errors
         if (fuSDK.getSessionStatus() < fwUpdate::NOT_STARTED)
@@ -651,14 +675,18 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
+    // don't send progress updates for this test.
+    fuDev.sendProgressUpdates = false;
+
     // Make the request to the device; the device should expect 8 chunks total
 #ifdef DEBUG_INFO
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
 #endif
     fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,8192, real_md5);
 
-    fuDev.step(); // advance Device, to process the request and send the response
+    fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
     fuSDK.step(); // advance Host, to process the Device response
+
     EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
     // but we'll only provide 4...
     for (int i = 0 ; i < 4; i++) {
@@ -668,7 +696,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
         } else {
             EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
         }
-        fuDev.step();
+        fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
         fuSDK.step();
     }
 
@@ -691,16 +719,15 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
             eb.writeData(buffer, buf_len); // and then put it back into the exchange buffer
         }
     }
-    fuDev.step(); // don't forget to step through each (to process the bad message)
-    fuSDK.step(); // and to processing the req_chunk response to the bad message, which should resend the requested chunk 4
+    fuDev.pullAndProcessNextMessage(); // will cause the Device to pull the bad chunk, which should respond with a RESEND_CHUNK
+    EXPECT_EQ(fuSDK.step(), fwUpdate::MSG_REQ_RESEND_CHUNK); // and step() to process the RESEND_CHUNK response to the bad message, which should resend the requested chunk 4
 
     int i = fuSDK.getNextChunkID();
     EXPECT_EQ(i, 5); // at this point, our NextChunkID should be 5 (since we resent 4)
-    fuDev.step(); // We need one more device-side step to actually pull the resent chunk from the exchange buffer.
 
     // from here out, this should be normal.
     while(fuSDK.getSessionStatus() < fwUpdate::FINISHED) {
-        fuDev.step(); // make sure the device-side processes it...
+        fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
         fuSDK.step(); // process all incoming messages
         EXPECT_EQ(fuSDK.getNextChunkID(), fuDev.GetNextExpectedChunk());
 
@@ -729,7 +756,7 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,8192, fake_md5);
 
-    fuDev.step(); // advance Device, to process the request and send the response
+    fuDev.pullAndProcessNextMessage(); // advance Device, to process the request and send the response
     fuSDK.step(); // advance Host, to process the Device response
     EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
 
@@ -740,7 +767,7 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
         if (fuSDK.getSessionStatus() >= fwUpdate::GOOD_TO_GO) {
             fuSDK.sendNextChunk();
         }
-        fuDev.step(); // make sure the device-side processes it...
+        fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
         fuSDK.step();
         EXPECT_EQ(fuSDK.getNextChunkID(), i);
 

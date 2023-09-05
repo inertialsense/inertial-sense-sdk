@@ -425,7 +425,8 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateDevice::resetEngine() {
         cur_session_id = 0;       //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
-        last_chunk_id = 0xFFFF;    //! the last received chunk id from a CHUNK message.  0xFFFF == no chunk yet received; the next received chunk must be 0.
+        last_chunk_id = 0xFFFF;   //! the last received chunk id from a CHUNK message.  0xFFFF == no chunk yet received; the next received chunk must be 0.
+        session_status = NOT_STARTED;
         resetMd5();
         return true;
     }
@@ -444,21 +445,17 @@ namespace fwUpdate {
         if (payload.hdr.msg_type != MSG_REQ_UPDATE)
             return false;
 
-        // clear any previous error state from the last request
-        if (session_status < NOT_STARTED)
-            session_status = NOT_STARTED;
-
-        // make sure out session_id is good (TODO: Maybe we should retain a history of recent session ids to make sure we aren't reusing an old one?)
-        if ((session_status == NOT_STARTED) && (payload.data.req_update.session_id == 0))
+        // make sure our session_id is good (TODO: Maybe we should retain a history of recent session ids to make sure we aren't reusing an old one?)
+        if (payload.data.req_update.session_id == 0)
             session_status = ERR_INVALID_SESSION;
 
+        resetEngine();
         session_status = startFirmwareUpdate(payload);
         cur_session_id = payload.data.req_update.session_id;
         image_size = payload.data.req_update.file_size;
         chunk_size = payload.data.req_update.chunk_size;
 
         if (session_status > NOT_STARTED) {
-            resetEngine();
             image_slot = payload.data.req_update.image_slot;
             total_chunks = (uint16_t) ceil((float)image_size / (float)chunk_size);
             session_md5[0] = payload.data.req_update.md5_hash[0];
@@ -624,13 +621,13 @@ namespace fwUpdate {
      * @param chunk_size
      * @return
      */
-    bool FirmwareUpdateSDK::requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4]) {
+    bool FirmwareUpdateSDK::requestUpdate(target_t target, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4]) {
 
         // FIXME:  Should probably check to see if an update is already in progress, and attempt to finish it first?
         fwUpdate::payload_t request;
         cur_session_id = (uint16_t)random();
 
-        request.hdr.target_device = target_id;
+        request.hdr.target_device = target_id = target;
         request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
         request.data.req_update.session_id = cur_session_id;
         request.data.req_update.image_slot = session_image_slot = image_slot;
