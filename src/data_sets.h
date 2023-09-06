@@ -3002,7 +3002,7 @@ PUSH_PACK_1
 #ifndef __RTKLIB_EMBEDDED_DEFINES_H_
 
 #define ENAGAL
-// #define ENAGLO
+#define ENAGLO
 // #define ENAQZS
 // #define ENACMP
 // #define ENASBS
