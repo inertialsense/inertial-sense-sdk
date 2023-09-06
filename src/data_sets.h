@@ -3008,6 +3008,8 @@ PUSH_PACK_1
 #define NFREQ       2      /* number of carrier frequencies */
 //#define NFREQ_USED  2      /* number of used frequencies. E.g. if L1 and L5 are used but not L2, then NFREQ is 3 but actually used frequencies are 2 */                          
 
+#define L1_L5_RTK                   0		/* Use second slot for L5 */
+
 #define NEXOBS      0           /* number of extended obs codes */
 
 /** (DID_GPS_RTK_OPT) RTK processing options */
