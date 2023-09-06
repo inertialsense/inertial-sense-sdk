@@ -3002,14 +3002,12 @@ PUSH_PACK_1
 #ifndef __RTKLIB_EMBEDDED_DEFINES_H_
 
 #define ENAGAL
-#define ENAGLO
+//#define ENAGLO
 // #define ENAQZS
 // #define ENACMP
 // #define ENASBS
 
 #define NFREQ       2      /* number of carrier frequencies */
-//#define NFREQ_USED  2      /* number of used frequencies. E.g. if L1 and L5 are used but not L2, then NFREQ is 3 but actually used frequencies are 2 */                          
-
 #define L1_L5_RTK                   0
 #define DYNAMIC_MEMORY              1
 
@@ -3017,18 +3015,6 @@ PUSH_PACK_1
 #define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
 #define NSATGPS     (MAXPRNGPS-MINPRNGPS+1) /* number of GPS satellites */
 #define NSYSGPS     1
-
-#ifdef ENAGLO
-#define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
-#define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
-#define NSATGLO     (MAXPRNGLO-MINPRNGLO+1) /* number of GLONASS satellites */
-#define NSYSGLO     1
-#else
-#define MINPRNGLO   0
-#define MAXPRNGLO   0
-#define NSATGLO     0
-#define NSYSGLO     0
-#endif
 
 #ifdef ENAGAL
 #define MINPRNGAL   1                   /* min satellite PRN number of Galileo */
@@ -3040,6 +3026,18 @@ PUSH_PACK_1
 #define MAXPRNGAL   0
 #define NSATGAL     0
 #define NSYSGAL     0
+#endif
+
+#ifdef ENAGLO
+#define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
+#define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
+#define NSATGLO     (MAXPRNGLO-MINPRNGLO+1) /* number of GLONASS satellites */
+#define NSYSGLO     1
+#else
+#define MINPRNGLO   0
+#define MAXPRNGLO   0
+#define NSATGLO     0
+#define NSYSGLO     0
 #endif
 
 #ifdef ENAQZS
