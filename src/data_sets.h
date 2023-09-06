@@ -3095,7 +3095,7 @@ PUSH_PACK_1
 #define NSATIRN     0
 #define NSATLEO     0
 
-#define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
+#define MAXSAT      (NSATGPS+NSATGAL+NSATGLO+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
 #define NEXOBS      0           /* number of extended obs codes */
 #define MAXOBS      15          /* max number of obs (satellites) in an epoch */ // Note: total number of observed satellites for rover + base is (2 * MAXOBS)
 #define MAXERRMSG   0           /* max length of error/warning message */
@@ -4971,7 +4971,7 @@ int ubxSys(int gnssID);
 #define NSATLEO     0
 #define NSYSLEO     0
 #endif
-#define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
+#define NSYS        (NSYSGPS+NSYSGAL+NSYSGLO+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
 #ifndef NSATSBS
 #ifdef ENASBS
 #define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
@@ -4984,7 +4984,7 @@ int ubxSys(int gnssID);
 #endif
 #endif
 
-#define MAXSAT      (NSATGPS+NSATGLO+NSATGAL+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
+#define MAXSAT      (NSATGPS+NSATGAL+NSATGLO+NSATQZS+NSATCMP+NSATIRN+NSATSBS+NSATLEO)
 
 #endif
 
