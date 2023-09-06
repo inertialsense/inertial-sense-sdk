@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
+#include "ISFirmwareUpdater.h"
 
 extern "C"
 {
@@ -67,9 +68,10 @@ public:
 		dev_info_t devInfo;
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashCfg;
-		unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten  
+		unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
 		evb_flash_cfg_t evbFlashCfg;
 		sys_params_t sysParams;
+        ISFirmwareUpdater *fwUpdater;
 	};
 
 	struct com_manager_cpp_state_t
@@ -280,7 +282,7 @@ public:
 	* Set the flash config and update flash config on the uINS flash memory
 	* @param flashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
-	* @return int number bytes sent 
+	* @return int number bytes sent
 	*/
 	int SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
 
@@ -296,7 +298,7 @@ public:
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory
 	* @param evbFlashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
-	* @return int number bytes sent 
+	* @return int number bytes sent
 	*/
 	int SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
 
@@ -398,6 +400,32 @@ public:
 		void (*waitAction)() = NULLPTR
 	);
 
+    /**
+     * V2 firmware update mechanism. Calling this function will attempt to inititate a firmware update with the targeted device(s) on the connected port(s), with callbacks to provide information about the status
+     * of the update process.
+     * @param comPort
+     * @param baudRate
+     * @param fileName
+     * @param uploadProgress
+     * @param verifyProgress
+     * @param infoProgress
+     * @param waitAction
+     * @param LoadFlashConfig
+     * @return
+     */
+    is_operation_result updateFirmware(
+            const std::string& comPort,
+            int baudRate,
+            fwUpdate::target_t targetDevice,
+            int slotNum,
+            const std::string& fileName,
+            ISBootloader::pfnBootloadProgress uploadProgress,
+            ISBootloader::pfnBootloadProgress verifyProgress,
+            ISBootloader::pfnBootloadStatus infoProgress,
+            void (*waitAction)()
+    );
+
+
 	/**
 	 * @brief LoadFlashConfig
 	 * @param path - Path to YAML flash config file
@@ -417,7 +445,7 @@ public:
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
 	// Used for testing
-	InertialSense::com_manager_cpp_state_t* GetComManagerState() { return &m_comManagerState; }	
+	InertialSense::com_manager_cpp_state_t* GetComManagerState() { return &m_comManagerState; }
 	InertialSense::is_device_t* GetComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:

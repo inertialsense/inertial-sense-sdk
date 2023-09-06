@@ -349,20 +349,18 @@ static int cltool_updateFirmware()
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 	
 	firmwareProgressContexts.clear();
-
 	if(InertialSense::BootloadFile(
 		g_commandLineOptions.comPort,
 		0,
         g_commandLineOptions.updateAppFirmwareFilename,
 		g_commandLineOptions.updateBootloaderFilename,
 		g_commandLineOptions.forceBootloaderUpdate,
-        g_commandLineOptions.baudRate, 
+        g_commandLineOptions.baudRate,
 		bootloadUpdateCallback,
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
 		cltool_bootloadUpdateInfo,
 		cltool_firmwareUpdateWaiter
 	) == IS_OP_OK) return 0;
-	
 	return -1;
 }
 
@@ -397,13 +395,13 @@ void printProgress()
 
 	cISBootloaderThread::m_ctx_mutex.unlock();
 
-	if (divisor) 
+	if (divisor)
 	{
 		total /= divisor;
 		int display = (int)(total * 100);
 #if 0
-		// Print progress in one spot using \r.  In some terminals it causes scolling of new lines.   
-		printf("Progress: %d%%\r", display);	
+		// Print progress in one spot using \r.  In some terminals it causes scolling of new lines.
+		printf("Progress: %d%%\r", display);
 		fflush(stdout);
 #else
 		// Print progress in condensed format.
@@ -479,7 +477,7 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLev
 	{
 		printf("    | SN?:\r");
 	}
-	
+
 	printf("\t\t\t\t%s\r\n", str);
 	print_mutex.unlock();
 }
@@ -561,8 +559,9 @@ static int inertialSenseMain()
 		return !cltool_replayDataLog();
 	}
 	// if app firmware was specified on the command line, do that now and return
-	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
+	else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_NONE) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
 	{
+        // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)
 		signal(SIGINT, sigint_cb);
 		return cltool_updateFirmware();
 	}
@@ -625,6 +624,24 @@ static int inertialSenseMain()
 			}
 			try
 			{
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                    if(inertialSenseInterface.updateFirmware(
+                            g_commandLineOptions.comPort,
+                            g_commandLineOptions.baudRate,
+                            g_commandLineOptions.updateFirmwareTarget,
+                            0,
+                            g_commandLineOptions.updateAppFirmwareFilename,
+                            bootloadUpdateCallback,
+                            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+                            cltool_bootloadUpdateInfo,
+                            cltool_firmwareUpdateWaiter
+                    ) != IS_OP_OK) {
+                        inertialSenseInterface.Close();
+                        inertialSenseInterface.CloseServerConnection();
+                        return -1;
+                    };
+                }
+
 				// Main loop. Could be in separate thread if desired.
 				while (!g_inertialSenseDisplay.ExitProgram())
 				{

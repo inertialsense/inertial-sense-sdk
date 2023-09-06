@@ -77,6 +77,8 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
 #else
 
+    // FIXME: This is actually a non-ideal approach, as it doesn't account for custom udev rules, etc -- better to look in /sys/class/tty and find devices that are actually enumerated as serial devices
+    // there are a couple a approaches that we could/consider, many are outlined here: https://stackoverflow.com/questions/2530096/how-to-find-all-serial-devices-ttys-ttyusb-on-linux-without-opening-them
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyACM", ports);
 
