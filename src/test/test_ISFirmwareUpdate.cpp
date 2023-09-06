@@ -168,19 +168,19 @@ public:
     }
 
     // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
-    int writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
-        return 0;
+    fwUpdate::update_status_e writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
+        return fwUpdate::WAITING_FOR_DATA;
     }
 
     // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
-    int finishFirmwareUpgrade(fwUpdate::target_t target_id, int slot_id) {
+    fwUpdate::update_status_e  finishFirmwareUpgrade(fwUpdate::target_t target_id, int slot_id) {
         uint32_t hash[4];
         // check that our md5 matches.  Return >0 is we're error free.
         getCurrentMd5(hash);
         if ( (hash[0] == session_md5[0]) && (hash[1] == session_md5[1]) && (hash[2] == session_md5[2]) && (hash[3] == session_md5[3]) )
-            return 1;
+            return fwUpdate::FINISHED;
 
-        return 0;
+        return fwUpdate::ERR_CHECKSUM_MISMATCH;
     }
 
     // called internally to process a packed payload, ready to be put on the wire.
