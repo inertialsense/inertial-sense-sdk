@@ -23,13 +23,13 @@ extern "C"
 
 class ISFirmwareUpdater final : public fwUpdate::FirmwareUpdateSDK {
 private:
-    int pHandle = 0;                    // a handle to the comm port which we use to talk to the device
-    std::ifstream* srcFile;   // the file that we are currently sending to a remote device, or nullptr if none
-    uint32_t nextStartAttempt = 0;      // the number of millis (uptime?) that we will next attempt to start an upgrade
-    int8_t startAttempts = 0;           // the number of attempts that have been made to request that an update be started
+    int pHandle = 0;                    //! a handle to the comm port which we use to talk to the device
+    std::ifstream* srcFile;             //! the file that we are currently sending to a remote device, or nullptr if none
+    uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
+    int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
 
-    int8_t maxAttempts = 5;             // the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 750;     // the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+    int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
+    uint16_t attemptInterval = 1750;    //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
 public:
     ISFirmwareUpdater(int portHandle) : FirmwareUpdateSDK(), pHandle(portHandle) { };

@@ -10,6 +10,7 @@
 #include <time.h>
 #include <string.h>
 #include "ISConstants.h"
+#include "ISUtilities.h"
 
 #ifdef __cplusplus
 #include <string>
@@ -315,6 +316,25 @@ namespace fwUpdate {
          */
         virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
+        /**
+         * Sets the duration (in milliseconds) which will trigger a Timeout status if a session has been started, but no further communications has been received for this target (host or device).
+         * @param timeout
+         */
+        void setTimeoutDuration(uint32_t timeout) { timeoutDuration = timeout; }
+
+        /**
+         * Returns the elapsed time since the last message was received by this target, meant for this target.  Use this value > timeoutDuration to detect a timeout condition.
+         * @return
+         */
+        uint32_t getLastMessageAge() { return current_timeMs() - lastMessage; }
+
+        /**
+         * Forces a reset of the last message time; this is useful when first starting a new session.
+         */
+        void resetTimeout() { lastMessage = current_timeMs(); }
+
+        uint32_t lastMessage = 0;          //! the time (millis) since we last received a payload targeted for us.
+        uint32_t timeoutDuration = 15000;   //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
 
     private:
         /**
@@ -323,7 +343,6 @@ namespace fwUpdate {
          * @return the number of bytes that this entire message contains, including headers, etc.
          */
         static size_t getMsgSize(const payload_t* msg, bool include_aux=false);
-
     };
 
     /**
