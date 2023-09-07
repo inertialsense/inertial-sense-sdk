@@ -628,7 +628,11 @@ namespace fwUpdate {
         // FIXME:  Should probably check to see if an update is already in progress, and attempt to finish it first?
         resetTimeout();
         fwUpdate::payload_t request;
+#ifdef __ZEPHYR__
+        cur_session_id = (uint16_t)sys_rand32_get();
+#else
         cur_session_id = (uint16_t)random();
+#endif
         session_status = fwUpdate::INITIALIZING;
 
         request.hdr.target_device = target_id = target;
