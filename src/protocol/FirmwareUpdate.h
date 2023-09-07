@@ -90,8 +90,8 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_PAYLOAD_SIZE   1192
-#define FWUPDATE__MAX_CHUNK_SIZE   1024
+#define FWUPDATE__MAX_PAYLOAD_SIZE   768
+#define FWUPDATE__MAX_CHUNK_SIZE   512
 
     enum target_t : uint32_t {
         TARGET_NONE = 0x00,
@@ -144,6 +144,9 @@ namespace fwUpdate {
         ERR_CHECKSUM_MISMATCH = -8, // indicates that the final checksum didn't match the checksum specified at the start of the process
         ERR_COMMS = -9,             // indicates that an error in the underlying comms system
         ERR_NOT_SUPPORTED = -10,    // indicates that the target device doesn't support this protocol
+        ERR_FLASH_WRITE_FAILURE = -11,    // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
+        ERR_FLASH_OPEN_FAILURE = -12,   // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
+        ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
     };
 
     enum resend_reason_e : int16_t {

@@ -510,10 +510,10 @@ namespace fwUpdate {
         hashMd5(payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
 
         uint32_t chnk_offset = payload.data.chunk.chunk_id * chunk_size;
-        writeImageChunk((fwUpdate::target_t)payload.hdr.target_device, image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
-
-        // note that we successfully wrote this chunk, so we can start to handle the next.
-        last_chunk_id = payload.data.chunk.chunk_id;
+        if (writeImageChunk((fwUpdate::target_t)payload.hdr.target_device, image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data) > GOOD_TO_GO) {
+            // note that we successfully wrote this chunk, so we can start to handle the next.
+            last_chunk_id = payload.data.chunk.chunk_id;
+        }
 
         // if we've received the last message, confirm the checksum and then send a final status to notify the host that we've received everything error-free.
         if (last_chunk_id >= (total_chunks - 1)) {
