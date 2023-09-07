@@ -325,6 +325,7 @@ namespace fwUpdate {
         if (msg_payload.hdr.target_device != target_id)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
+        resetTimeout();
         switch (msg_payload.hdr.msg_type) {
             case MSG_REQ_UPDATE:
                 result = handleInitialize(msg_payload);
@@ -584,6 +585,7 @@ namespace fwUpdate {
         if ((msg_payload.hdr.msg_type != MSG_REQ_UPDATE) && (msg_payload.data.update_resp.session_id != cur_session_id))
             return false; // ignore this message, its not for us
 
+        resetTimeout();
         switch (msg_payload.hdr.msg_type) {
             case MSG_UPDATE_RESP:
                 return handleUpdateResponse(msg_payload);
@@ -624,12 +626,14 @@ namespace fwUpdate {
     bool FirmwareUpdateSDK::requestUpdate(target_t target, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4]) {
 
         // FIXME:  Should probably check to see if an update is already in progress, and attempt to finish it first?
+        resetTimeout();
         fwUpdate::payload_t request;
 #ifdef __ZEPHYR__
         cur_session_id = (uint16_t)sys_rand32_get();
 #else
         cur_session_id = (uint16_t)random();
 #endif
+        session_status = fwUpdate::INITIALIZING;
 
         request.hdr.target_device = target_id = target;
         request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
@@ -667,6 +671,9 @@ namespace fwUpdate {
 
     int FirmwareUpdateSDK::sendNextChunk() {
         payload_t* msg = (payload_t*)&build_buffer;
+
+        if (next_chunk_id > session_total_chunks)
+            return 0; // don't keep sending chunks... but also, don't "finish" the update (that's the remote's job).
 
         // I'm exploiting the pack/unpack + build_buffer to allow building a payload in place, including room for the chunk data.
         msg->hdr.target_device = target_id;
