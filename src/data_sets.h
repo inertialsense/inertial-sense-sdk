@@ -4800,7 +4800,7 @@ int ubxSys(int gnssID);
 #define HALF_MAXOBS (MAXOBS/2)
 
 #undef NUMSATSOL
-#define NUMSATSOL 18
+#define NUMSATSOL 20
 
 #undef MAXERRMSG
 #define MAXERRMSG 0
