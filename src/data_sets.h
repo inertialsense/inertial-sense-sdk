@@ -4796,11 +4796,11 @@ int ubxSys(int gnssID);
 #define NEXOBS 0
 
 #undef MAXOBS
-#define MAXOBS 56               // Also defined inside rtklib_defines.h
+#define MAXOBS 46               // Also defined inside rtklib_defines.h
 #define HALF_MAXOBS (MAXOBS/2)
 
 #undef NUMSATSOL
-#define NUMSATSOL 22
+#define NUMSATSOL 18
 
 #undef MAXERRMSG
 #define MAXERRMSG 0
