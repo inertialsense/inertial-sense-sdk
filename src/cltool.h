@@ -92,6 +92,7 @@ typedef struct
 	uint32_t sysCommand;
 	int32_t platformType;
 	bool chipEraseEvb2;
+    fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_NONE;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

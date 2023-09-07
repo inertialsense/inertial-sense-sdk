@@ -13,8 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #if defined(uINS_3) || defined(EVB_2)
 #include <asf.h>
 #elif defined(IMX_5)
-#include "stm32l4xx.h"
-#include "d_flash.h"
+#include "CMSIS/stm32l4xx.h"
+#include "drivers/d_flash.h"
 #endif
 
 #include <string.h>
