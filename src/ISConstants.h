@@ -32,7 +32,6 @@ extern "C" {
 
 #define ENABLE_RTK_PROCESSING       1
 #define CONVERT_RAW_GPS_V2_TO_V1    0      // Allow conversion of raw GPS format from v1 to v2 used for RTK
-#define FORCE_GPX_DEFAULT_FLASH     0       // forces gpx flash not to be overwriten by IMX's data
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 
