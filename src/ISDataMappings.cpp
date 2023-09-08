@@ -160,6 +160,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
     sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
+    sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
     sizeMap[DID_GPX_RTOS_INFO] = sizeof(rtos_info_t);
     sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);

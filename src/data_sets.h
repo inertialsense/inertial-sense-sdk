@@ -1632,6 +1632,7 @@ typedef struct PACKED
 #define RMC_BITS_GPS2_SIG               0x0000080000000000      // "
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000      // 1ms
 #define RMC_BITS_GPX_DEBUG              0x0000200000000000      // 1ms
+#define RMC_BITS_GPX_STATUS             0x0000400000000000      // 1ms
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -3869,6 +3870,29 @@ typedef struct
 
 } gpx_flash_cfg_t;
 
+/** GPX status flags */
+enum eGpxStatus
+{
+    /** Communications parse error count */
+    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
+#define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+
+    /** Fault reset cause */
+    GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    /** Reset from Backup mode (low-power state w/ CPU off) */
+    GPX_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
+    /** Reset from Watchdog */
+    GPX_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
+    /** Reset from Software */
+    GPX_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
+    /** Reset from Hardware (NRST pin low) */
+    GPX_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+
+    /** Critical System Fault - CPU error */
+    GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+};
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -3878,7 +3902,7 @@ typedef struct
 	uint32_t               	timeOfWeekMs;
 	
 	/** Status (eGpxStatus) */
-	uint32_t                gpxStatus;
+	uint32_t                status;
 
 } gpx_status_t;
 
