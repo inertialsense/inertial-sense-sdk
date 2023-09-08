@@ -10,6 +10,12 @@
 #include <time.h>
 #include <string.h>
 #include "ISConstants.h"
+#include "ISUtilities.h"
+
+#ifdef __ZEPHYR__
+    #include <zephyr/random/rand32.h>
+#endif
+
 
 #ifdef __cplusplus
 #include <string>
@@ -85,8 +91,8 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_PAYLOAD_SIZE   1192
-#define FWUPDATE__MAX_CHUNK_SIZE   1024
+#define FWUPDATE__MAX_PAYLOAD_SIZE   768
+#define FWUPDATE__MAX_CHUNK_SIZE   512
 
     enum target_t : uint32_t {
         TARGET_NONE = 0x00,
@@ -139,6 +145,9 @@ namespace fwUpdate {
         ERR_CHECKSUM_MISMATCH = -8, // indicates that the final checksum didn't match the checksum specified at the start of the process
         ERR_COMMS = -9,             // indicates that an error in the underlying comms system
         ERR_NOT_SUPPORTED = -10,    // indicates that the target device doesn't support this protocol
+        ERR_FLASH_WRITE_FAILURE = -11,    // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
+        ERR_FLASH_OPEN_FAILURE = -12,   // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
+        ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
     };
 
     enum resend_reason_e : int16_t {
@@ -315,6 +324,25 @@ namespace fwUpdate {
          */
         virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
+        /**
+         * Sets the duration (in milliseconds) which will trigger a Timeout status if a session has been started, but no further communications has been received for this target (host or device).
+         * @param timeout
+         */
+        void setTimeoutDuration(uint32_t timeout) { timeoutDuration = timeout; }
+
+        /**
+         * Returns the elapsed time since the last message was received by this target, meant for this target.  Use this value > timeoutDuration to detect a timeout condition.
+         * @return
+         */
+        uint32_t getLastMessageAge() { return current_timeMs() - lastMessage; }
+
+        /**
+         * Forces a reset of the last message time; this is useful when first starting a new session.
+         */
+        void resetTimeout() { lastMessage = current_timeMs(); }
+
+        uint32_t lastMessage = 0;          //! the time (millis) since we last received a payload targeted for us.
+        uint32_t timeoutDuration = 15000;   //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
 
     private:
         /**
@@ -323,7 +351,6 @@ namespace fwUpdate {
          * @return the number of bytes that this entire message contains, including headers, etc.
          */
         static size_t getMsgSize(const payload_t* msg, bool include_aux=false);
-
     };
 
     /**
@@ -375,14 +402,61 @@ namespace fwUpdate {
          */
         virtual msg_types_e step() = 0;
 
+        /**
+         * Writes the requested data (usually a packed payload_t) out to the specified device
+         * Note that the implementation between a target and an actual interface is device-specific. In most cases,
+         * for a Device-implementation, this will typically specify TARGET_NONE, which should direct back to the
+         * controlling host.
+         * @param target
+         * @param buffer
+         * @param buff_len
+         * @return true if the data was successfully sent to the underlying communication system, otherwise false
+         */
         virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
-        virtual int performSoftReset(target_t target_id) = 0; // this is a software managed reset, by such as my informing the OS/MCU to restart the system
-        virtual int performHardReset(target_t target_id) = 0; // this is a hardware, force reset usually by pulling interfacing pins into the mcu either HIGH or LOW to force a reset state on the hardware
+        /**
+         * Performs a software managed reset (ie, by informing the OS/MCU to restart the system)
+         * Note that some systems may not always be able to respond with a success before the system is reset.
+         * If a system is NOT able to perform a reset, this MUST return false.
+         * @param target_id the device to reset
+         * @return true if successful, otherwise false
+         */
+        virtual int performSoftReset(target_t target_id) = 0;
 
-        virtual update_status_e startFirmwareUpdate(const payload_t& msg) = 0; // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
-        virtual int writeImageChunk(target_t target_id, int slot_id, int offset, int len, uint8_t *data) = 0; // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
-        virtual int finishFirmwareUpgrade(target_t target_id, int slot_id) = 0; // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
+        /**
+         * Performs a hardware managed reset, usually by pulling interfacing pins into the MCU either HIGH or LOW to force a reset state on the hardware
+         * @param target_id the device to reset
+         * @return true if successful, otherwise false
+         */
+        virtual int performHardReset(target_t target_id) = 0;
+
+        /**
+         * Initializes the system to begin receiving firmware image chunks for the target device, image slot and image size.
+         * @param msg the message which contains the request data, such as slot, file size, chunk size, md5 checksum, etc.
+         * @return an update_status_e indicating the continued state of the update process, or an error. For startFirmwareUpdate
+         * this should return "GOOD_TO_GO" on success.
+         */
+        virtual update_status_e startFirmwareUpdate(const payload_t& msg) = 0;
+
+        /**
+         * Writes data (of len bytes) as a chunk of a larger firmware image to the target and device-specific image slot, and with the specified offset
+         * @param target_id the target id
+         * @param slot_id the image slot, if applicable (otherwise 0).
+         * @param offset the offset into the slot to write this chunk
+         * @param len the number of bytes in this chunk
+         * @param data the chunk data
+         * @return an update_status_e indicating the continued state of the update process, or an error. For writeImageChunk
+         * this should return "WAITING_FOR_DATA" if more chunks are expected, or an error.
+         */
+        virtual update_status_e writeImageChunk(target_t target_id, int slot_id, int offset, int len, uint8_t *data) = 0;
+
+        /**
+         * Validated and finishes writing of the firmware image; that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization.
+         * @param target_id the target_id
+         * @param slot_id the image slot, if applicable (otherwise 0)
+         * @return
+         */
+        virtual update_status_e finishFirmwareUpgrade(target_t target_id, int slot_id) = 0;
 
 
     protected:

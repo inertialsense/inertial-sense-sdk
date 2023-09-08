@@ -102,63 +102,54 @@ extern "C" {
 #define CPU_IS_BIG_ENDIAN 0
 
 #elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 1
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 1
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #else
-
-#error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
-#define PLATFORM_IS_EMBEDDED 0
-#define PLATFORM_IS_ARM 0
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
+    #define PLATFORM_IS_EMBEDDED 0
+    #define PLATFORM_IS_ARM 0
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #endif // platform defines
 
 #if !defined(CPU_IS_LITTLE_ENDIAN) || !defined(CPU_IS_BIG_ENDIAN) || CPU_IS_LITTLE_ENDIAN == CPU_IS_BIG_ENDIAN
-
-#error Unsupported / unknown CPU architecture
-
+    #error Unsupported / unknown CPU architecture
 #endif // Invalid CPU endianess
 
 
 // "PLATFORM_IS_EMBEDDED" must be defined
 #if !defined(PLATFORM_IS_EMBEDDED) 
-#error "Missing PLATFORM_IS_EMBEDDED macro!!!"
+    #error "Missing PLATFORM_IS_EMBEDDED macro!!!"
 #endif
 
 
 #if PLATFORM_IS_EMBEDDED
-
-extern void* pvPortMalloc(size_t xWantedSize);
-extern void vPortFree(void* pv);
-#define MALLOC(m) pvPortMalloc(m)
-#define REALLOC(m, size) 0 // not supported
-#define FREE(m) vPortFree(m)
-
+    extern void* pvPortMalloc(size_t xWantedSize);
+    extern void vPortFree(void* pv);
+    #define MALLOC(m) pvPortMalloc(m)
+    #define REALLOC(m, size) 0 // not supported
+    #define FREE(m) vPortFree(m)
 #else
-
-#define MALLOC(m) malloc(m)
-#define REALLOC(m, size) realloc(m, size)
-#define FREE(m) free(m)
-
+    #define MALLOC(m) malloc(m)
+    #define REALLOC(m, size) realloc(m, size)
+    #define FREE(m) free(m)
 #endif 
 
-#if __ZEPHYR__
-#include <zephyr/irq.h>
-#define BEGIN_CRITICAL_SECTION irq_lock();
-#define END_CRITICAL_SECTION irq_unlock(0);
-// #define SNPRINTF snprintfcb
-#define SNPRINTF snprintf_
-#elif PLATFORM_IS_EMBEDDED
-#include "printf.h"		// Use embedded-safe SNPRINTF
-#define SNPRINTF snprintf_
-#define VSNPRINTF vsnprintf_
+#if defined(__ZEPHYR__)
+    #include <zephyr/irq.h>
+    #define BEGIN_CRITICAL_SECTION irq_lock();
+    #define END_CRITICAL_SECTION irq_unlock(0);
+    // #define SNPRINTF snprintfcb
+    #define SNPRINTF snprintf_
+#elif defined(PLATFORM_IS_EMBEDDED)
+    #include "printf.h"		// Use embedded-safe SNPRINTF
+    #define SNPRINTF snprintf_
+    #define VSNPRINTF vsnprintf_
 #else
-#define SNPRINTF snprintf
-#define VSNPRINTF vsnprintf
+    #define SNPRINTF snprintf
+    #define VSNPRINTF vsnprintf
 #endif
 
 

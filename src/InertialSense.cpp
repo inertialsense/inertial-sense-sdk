@@ -908,7 +908,8 @@ is_operation_result InertialSense::updateFirmware(
     ifstream tmpStream(fileName);
     if (!tmpStream.good())
     {
-        printf("File does not exist");
+        char buff[128];
+        printf("File does not exist: [%s] %s", getcwd(buff, sizeof(buff)-1), fileName.c_str());
         return IS_OP_ERROR;
     }
 
