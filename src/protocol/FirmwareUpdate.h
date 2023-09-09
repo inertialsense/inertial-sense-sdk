@@ -87,8 +87,8 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_PAYLOAD_SIZE   768
 #define FWUPDATE__MAX_CHUNK_SIZE   512
+#define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
     enum target_t : uint32_t {
         TARGET_NONE = 0x00,
@@ -243,6 +243,10 @@ namespace fwUpdate {
      */
     class FirmwareUpdateBase {
     public:
+
+        static const size_t MaxChunkSize = FWUPDATE__MAX_CHUNK_SIZE;
+        static const size_t MaxPayloadSize = FWUPDATE__MAX_PAYLOAD_SIZE;
+
         FirmwareUpdateBase();
         virtual ~FirmwareUpdateBase() {};
 

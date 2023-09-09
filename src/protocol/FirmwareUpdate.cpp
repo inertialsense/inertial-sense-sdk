@@ -526,11 +526,12 @@ namespace fwUpdate {
             response.hdr.target_device = TARGET_NONE;
             response.hdr.msg_type = MSG_UPDATE_FINISHED;
             response.data.resp_done.session_id = cur_session_id;
-            if (finishFirmwareUpgrade(target_id, image_slot)) {
-                response.data.resp_done.status = FINISHED;
-            } else {
+
+            // check our md5 hash
+            if (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0)
                 response.data.resp_done.status = ERR_CHECKSUM_MISMATCH;
-            }
+            else
+                response.data.resp_done.status = finishFirmwareUpgrade(target_id, image_slot);
             sendPayload(response);
         }
 
