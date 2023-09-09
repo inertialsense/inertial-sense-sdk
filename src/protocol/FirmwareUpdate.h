@@ -12,10 +12,6 @@
 #include "ISConstants.h"
 #include "ISUtilities.h"
 
-#ifdef __ZEPHYR__
-    #include <zephyr/random/rand32.h>
-#endif
-
 
 #ifdef __cplusplus
 #include <string>

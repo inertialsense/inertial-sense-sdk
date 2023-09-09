@@ -569,9 +569,6 @@ extern "C" {
 #define C_MPS2KMPH      3.6
 #define C_MPS2KMPH_F    3.6f
 
-#define C_MPS2KMPH      3.6
-#define C_MPS2KMPH_F    3.6f
-
 #define C_MM2M           0.001
 #define C_MM2M_F         0.001f
 #define C_M2MM        1000.0

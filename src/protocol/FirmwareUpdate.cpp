@@ -6,6 +6,10 @@
 #include <stdarg.h>
 #include "FirmwareUpdate.h"
 
+#ifdef __ZEPHYR__
+#include <zephyr/random/rand32.h>
+#endif
+
 namespace fwUpdate {
 
     static const char* status_names[] = { "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
