@@ -137,13 +137,13 @@ extern "C" {
     #define FREE(m) free(m)
 #endif 
 
-#if defined(__ZEPHYR__)
+#if __ZEPHYR__
     #include <zephyr/irq.h>
     #define BEGIN_CRITICAL_SECTION irq_lock();
     #define END_CRITICAL_SECTION irq_unlock(0);
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf_
-#elif defined(PLATFORM_IS_EMBEDDED)
+#elif PLATFORM_IS_EMBEDDED
     #include "printf.h"		// Use embedded-safe SNPRINTF
     #define SNPRINTF snprintf_
     #define VSNPRINTF vsnprintf_
