@@ -34,73 +34,64 @@ extern "C" {
 #define FORCE_GPX_DEFAULT_FLASH     0       // forces gpx flash not to be overwriten by IMX's data
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
+    #define PLATFORM_IS_WINDOWS 1
+    #define PLATFORM_IS_EMBEDDED 0
+    #ifndef _CRT_SECURE_NO_DEPRECATE
+    #define _CRT_SECURE_NO_DEPRECATE
+    #endif
 
-#define PLATFORM_IS_WINDOWS 1
-#define PLATFORM_IS_EMBEDDED 0
-#ifndef _CRT_SECURE_NO_DEPRECATE
-#define _CRT_SECURE_NO_DEPRECATE
-#endif
+    // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
+    #define _WINSOCKAPI_
+    #include <winsock2.h>
+    #include <WS2tcpip.h>
+    #include <windows.h>
+    #define socket_t SOCKET
 
-// If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
-#define _WINSOCKAPI_
-#include <winsock2.h> 
-#include <WS2tcpip.h>
-#include <windows.h>
-#define socket_t SOCKET
-
-#define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
-#define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
-#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
-
+    #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
+    #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #elif defined(__APPLE__)
+    #define socket_t int
 
-#define socket_t int
+    #define PLATFORM_IS_APPLE 1
+    #define PLATFORM_IS_EMBEDDED 0
 
-#define PLATFORM_IS_APPLE 1
-#define PLATFORM_IS_EMBEDDED 0
-
-#if defined(__LITTLE_ENDIAN__)
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-#elif defined(__BIG_ENDIAN__)
-#define CPU_IS_LITTLE_ENDIAN 0
-#define CPU_IS_BIG_ENDIAN 1
-#endif
-
+    #if defined(__LITTLE_ENDIAN__)
+        #define CPU_IS_LITTLE_ENDIAN 1
+        #define CPU_IS_BIG_ENDIAN 0
+    #elif defined(__BIG_ENDIAN__)
+        #define CPU_IS_LITTLE_ENDIAN 0
+        #define CPU_IS_BIG_ENDIAN 1
+    #endif
 #elif defined(__linux__) || defined(__unix__) || defined(__CYGWIN__)
+    #include <endian.h>
 
-#include <endian.h>
+    #ifndef __BYTE_ORDER
+        #error __BYTE_ORDER not defined, must be __LITTLE_ENDIAN or __BIG_ENDIAN
+    #endif
 
-#ifndef __BYTE_ORDER
-#error __BYTE_ORDER not defined, must be __LITTLE_ENDIAN or __BIG_ENDIAN
-#endif
-
-#define PLATFORM_IS_LINUX 1
-#define PLATFORM_IS_EMBEDDED 0
-#define socket_t int
-#define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
-#define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
-
+    #define PLATFORM_IS_LINUX 1
+    #define PLATFORM_IS_EMBEDDED 0
+    #define socket_t int
+    #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
+    #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
 #elif defined(__INERTIAL_SENSE_EVB_2__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 1
-#define PLATFORM_IS_EVB_2 1
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 1
+    #define PLATFORM_IS_EVB_2 1
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #elif defined(ARM) || defined(__SAM3X8E__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 1
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 1
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega168__) ||defined(__AVR_ATmega168P__) ||defined(__AVR_ATmega328P__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 0
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 0
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define PLATFORM_IS_EMBEDDED 1
     #define PLATFORM_IS_ARM 1
@@ -154,8 +145,7 @@ extern "C" {
 
 
 #if defined(_MSC_VER)
-
-#ifndef INLINE
+    #ifndef INLINE
 #define INLINE __inline 
 #endif
 
@@ -168,75 +158,66 @@ extern "C" {
 #endif
 
 #define strncasecmp _strnicmp 
-
 #else
+    #ifndef INLINE
+        #define INLINE inline
+    #endif
 
-#ifndef INLINE
-#define INLINE inline
-#endif
+    #ifndef SSCANF
+        #define SSCANF sscanf
+    #endif
 
-#ifndef SSCANF
-#define SSCANF sscanf
-#endif
-
-#ifndef STRNCPY
-#define STRNCPY(dst, src, maxlen) strncpy((char*)dst, (char*)src, maxlen)
-#endif
-
+    #ifndef STRNCPY
+        #define STRNCPY(dst, src, maxlen) strncpy((char*)dst, (char*)src, maxlen)
+    #endif
 #endif // defined(_MSC_VER)
 
 #if defined(PLATFORM_IS_EVB_2)
-#define _MKDIR(dir) f_mkdir(dir)
-#define _RMDIR(dir) f_unlink(dir)
-#define _GETCWD(buf, len) f_getcwd(buf, len)
-
+    #define _MKDIR(dir) f_mkdir(dir)
+    #define _RMDIR(dir) f_unlink(dir)
+    #define _GETCWD(buf, len) f_getcwd(buf, len)
 #elif !PLATFORM_IS_EMBEDDED
-#define BEGIN_CRITICAL_SECTION
-#define END_CRITICAL_SECTION
-#define DBGPIO_ENABLE(pin)
-#define DBGPIO_TOGGLE(pin)
+    #define BEGIN_CRITICAL_SECTION
+    #define END_CRITICAL_SECTION
+    #define DBGPIO_ENABLE(pin)
+    #define DBGPIO_TOGGLE(pin)
 
-#if PLATFORM_IS_WINDOWS
-
-#include <direct.h>
-#include <sys/utime.h>
-#define _MKDIR(dir) _mkdir(dir)
-#define _RMDIR(dir) _rmdir(dir)
-#define _GETCWD(buf, len) _getcwd(buf, len)
-#define _UTIME _utime
-#define _UTIMEBUF struct _utimbuf
-
-#else // POSIX
-
-#include <unistd.h>
-#include <dirent.h>
-#include <errno.h>
-#include <utime.h>
-#include <sys/stat.h>
-//#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only 
-#define _MKDIR(dir) mkdir(dir, ACCESSPERMS) // 0777 access for all
-#define _RMDIR(dir) rmdir(dir)
-#define _GETCWD(buf, len) getcwd(buf, len)
-#define _UTIME utime
-#define _UTIMEBUF struct utimbuf
-
-#endif
-
+    #if PLATFORM_IS_WINDOWS
+        #include <direct.h>
+        #include <sys/utime.h>
+        #define _MKDIR(dir) _mkdir(dir)
+        #define _RMDIR(dir) _rmdir(dir)
+        #define _GETCWD(buf, len) _getcwd(buf, len)
+        #define _UTIME _utime
+        #define _UTIMEBUF struct _utimbuf
+    #else // POSIX
+        #include <unistd.h>
+        #include <dirent.h>
+        #include <errno.h>
+        #include <utime.h>
+        #include <sys/stat.h>
+        //#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only
+        #define _MKDIR(dir) mkdir(dir, ACCESSPERMS) // 0777 access for all
+        #define _RMDIR(dir) rmdir(dir)
+        #define _GETCWD(buf, len) getcwd(buf, len)
+        #define _UTIME utime
+        #define _UTIMEBUF struct utimbuf
+    #endif
 #endif
 
 // with this you can tell the compiler not to insert padding
 #if defined(_MSC_VER)
-#define PUSH_PACK_1 __pragma(pack(push, 1))
-#define PUSH_PACK_4 __pragma(pack(push, 4))
-#define PUSH_PACK_8 __pragma(pack(push, 8))
-#define POP_PACK __pragma(pack(pop))
-#define PACKED
+    #define PUSH_PACK_1 __pragma(pack(push, 1))
+    #define PUSH_PACK_4 __pragma(pack(push, 4))
+    #define PUSH_PACK_8 __pragma(pack(push, 8))
+    #define POP_PACK __pragma(pack(pop))
+    #define PACKED
 #else
-#define PUSH_PACK_1 _Pragma("pack(push, 1)")
-#define PUSH_PACK_4 _Pragma("pack(push, 4)")
-#define PUSH_PACK_8 _Pragma("pack(push, 8)")
-#define POP_PACK _Pragma("pack(pop)")
-#define PACKED
+    #define PUSH_PACK_1 _Pragma("pack(push, 1)")
+    #define PUSH_PACK_4 _Pragma("pack(push, 4)")
+    #define PUSH_PACK_8 _Pragma("pack(push, 8)")
+    #define POP_PACK _Pragma("pack(pop)")
+    #define PACKED
 #endif
 
 // #define PACKED_STRUCT typedef struct PACKED
