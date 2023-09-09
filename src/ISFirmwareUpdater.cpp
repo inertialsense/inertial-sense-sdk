@@ -58,7 +58,8 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
             return false;
 
         case fwUpdate::GOOD_TO_GO:
-            next_chunk_id =0;
+            next_chunk_id = 0;
+            // fall through
         default:
             return true;
     }
