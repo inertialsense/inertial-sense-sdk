@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <time.h>
 #include <string.h>
 #include "ISConstants.h"
+#include "rtk_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -3001,8 +3002,6 @@ typedef struct PACKED
 POP_PACK
 
 PUSH_PACK_1
-
-#include "rtk_defines.h"
 
 /** (DID_GPS_RTK_OPT) RTK processing options */
 typedef struct
