@@ -141,7 +141,7 @@ class ISFirmwareUpdateTestDev : public fwUpdate::FirmwareUpdateDevice {
 public:
     ExchangeBuffer& exchangeBuffer;
 
-    ISFirmwareUpdateTestDev(ExchangeBuffer& eb) : FirmwareUpdateDevice(fwUpdate::TARGET_IMX5, 100), exchangeBuffer(eb) {
+    ISFirmwareUpdateTestDev(ExchangeBuffer& eb) : FirmwareUpdateDevice(fwUpdate::TARGET_IMX5), exchangeBuffer(eb) {
     }
 
     bool sendProgressUpdates = true;
