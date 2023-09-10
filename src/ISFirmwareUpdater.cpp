@@ -55,6 +55,9 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
         case fwUpdate::ERR_CHECKSUM_MISMATCH: // indicates that the final checksum didn't match the checksum specified at the start of the process
         case fwUpdate::ERR_COMMS:             // indicates that an error in the underlying comms system
         case fwUpdate::ERR_NOT_SUPPORTED:    // indicates that the target device doesn't support this protocol
+        case fwUpdate::ERR_FLASH_WRITE_FAILURE: // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
+        case fwUpdate::ERR_FLASH_OPEN_FAILURE:  // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
+        case fwUpdate::ERR_FLASH_INVALID:       // indicates that the image, after writing to flash failed to validate (invalid signature, couldn't decrypt, etc).
             return false;
 
         case fwUpdate::GOOD_TO_GO:

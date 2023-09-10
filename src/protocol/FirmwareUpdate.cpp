@@ -12,7 +12,7 @@
 
 namespace fwUpdate {
 
-    static const char* status_names[] = { "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
+    static const char* status_names[] = { "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
     "NOT_STARTED", "INITIALIZING", "GOOD_TO_GO", "WAITING_FOR_DATA", "FINISHED"};
 
     /*==================================================================================*
@@ -724,12 +724,9 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateSDK::getSessionStatusName() {
         if (session_status >= 0)
-            return fwUpdate::status_names[session_status + abs(fwUpdate::ERR_NOT_SUPPORTED)];
+            return fwUpdate::status_names[session_status + abs(fwUpdate::ERR_FLASH_INVALID)];
         else
-            return fwUpdate::status_names[session_status - fwUpdate::ERR_NOT_SUPPORTED];
+            return fwUpdate::status_names[session_status - fwUpdate::ERR_FLASH_INVALID];
     }
-
-
-
 
 } // fwUpdate
