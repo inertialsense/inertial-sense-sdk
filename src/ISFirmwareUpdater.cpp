@@ -5,7 +5,7 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize) {
+bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) {
     srcFile = new std::ifstream(filename);
 
     // get the file size, and checksum for the file
@@ -26,8 +26,8 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-    setTimeoutDuration(30000);
-    return requestUpdate(_target, slot, chunkSize, fileSize, md5hash);
+    setTimeoutDuration(15000);
+    return requestUpdate(_target, slot, chunkSize, fileSize, md5hash, progressRate);
 }
 
 int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
@@ -84,7 +84,7 @@ bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     const char *message = (const char *)&msg.data.progress.message;
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("SDK :: Progress %d/%d (%d%%) :: [%d] %s\n", num, tot, percent, msg.data.progress.msg_level, message);
+    printf("[%s:%d] :: Progress %d/%d (%d%%) :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, msg.data.progress.msg_level, message);
     return true;
 }
 
@@ -99,7 +99,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
                     nextStartAttempt = current_timeMs() + attemptInterval;
                     if (requestUpdate()) {
                         startAttempts++;
-                        printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
+                        // printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
                     } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
                     }
@@ -113,10 +113,10 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
         case fwUpdate::GOOD_TO_GO:
         case fwUpdate::WAITING_FOR_DATA:
             sendNextChunk();
-            printf("Uploading Firmware: Chunk %d (%0.1f%%)\n", next_chunk_id, (((float)next_chunk_id / (float)session_total_chunks) * 100.0f));
+            // printf("Uploading Firmware: Chunk %d (%0.1f%%)\n", next_chunk_id, (((float)next_chunk_id / (float)session_total_chunks) * 100.0f));
             break;
         case fwUpdate::FINISHED:
-            printf("Firmware upload completed without error.\n");
+            // printf("Firmware upload completed without error.\n");
             break;
         case fwUpdate::ERR_MAX_CHUNK_SIZE:
             if (cur_session_id != 0) {
