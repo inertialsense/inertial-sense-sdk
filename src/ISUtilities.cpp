@@ -20,27 +20,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISPose.h"
 #include "ISEarth.h"
 
+#if CPP11_IS_ENABLED
+    #include <thread>
+    #include <mutex>
+#endif
+
 #if PLATFORM_IS_EMBEDDED
-
-#include "d_time.h"
- 
-#elif CPP11_IS_ENABLED
-
-#include <thread>
-#include <mutex>
-
+    #include "drivers/d_time.h"
 #elif PLATFORM_IS_WINDOWS
-
-#include <windows.h>
-#include <process.h>
-
+    #include <windows.h>
+    #include <process.h>
 #elif PLATFORM_IS_LINUX
-
-
+    // Nothing to do
 #else
-
-#error "Unsupported platform"
-
+    #error "Unsupported platform"
 #endif
 
 using namespace std;
@@ -207,53 +200,39 @@ extern "C" {
 
 #endif
 
-unsigned int current_timeSec()
-{
-
+unsigned int current_timeSec() {
 #if PLATFORM_IS_WINDOWS
-
 	SYSTEMTIME st;
 	GetLocalTime(&st);
 	return st.wSecond;
-
 #else
-
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec;
-
 #endif
-
 }
 
 /** System time in milliseconds */
-unsigned int current_timeMs()
-{
-
+unsigned int current_timeMs() {
 #if PLATFORM_IS_WINDOWS
 
 	// Time since week start (Sunday morning) in milliseconds, GMT
 	SYSTEMTIME st;
 	GetSystemTime(&st);
 	return	st.wMilliseconds + 1000 * (st.wSecond + 60 * (st.wMinute + 60 * (st.wHour + 24 * st.wDayOfWeek)));
-
+#elif PLATFORM_IS_EMBEDDED
+    return time_msec();
 #else
-
 	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec / 1000 + 1000 * tv.tv_sec;
-
 #endif
-
 }
 
 /** System time in milliseconds */
-uint64_t current_timeUs()
-{
-
+uint64_t current_timeUs() {
 #if PLATFORM_IS_WINDOWS
-
 	// Time since week start (Sunday morning) in milliseconds, GMT
 	LARGE_INTEGER StartingTime;
 	LARGE_INTEGER Frequency;
@@ -265,36 +244,25 @@ uint64_t current_timeUs()
 	StartingTime.QuadPart /= Frequency.QuadPart;
 
 	return StartingTime.QuadPart;
-
 #else
-
 	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec + 1000000 * tv.tv_sec;
-
 #endif
-
 }
 
-uint64_t timerUsStart()
-{
-
+uint64_t timerUsStart() {
 #if PLATFORM_IS_WINDOWS
-
 	LARGE_INTEGER StartingTime;
 	QueryPerformanceCounter(&StartingTime);
 	return StartingTime.QuadPart;
-
 #else
-
 	// Time since epoch, January 1, 1970 (midnight UTC/GMT)
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec + 1000000 * tv.tv_sec;
-
 #endif
-
 }
 
 uint64_t timerUsEnd(uint64_t start)
@@ -370,22 +338,18 @@ uint64_t getTickCount(void)
 {
 
 #if PLATFORM_IS_WINDOWS
-
 	return GetTickCount64();
-
 #elif PLATFORM_IS_EVB_2
-
     return time_ticks_u64();
-
+#elif PLATFORM_IS_EMBEDDED
+    return time_ticks_u64();
 #else
-
 	struct timespec now;
 	if (clock_gettime(CLOCK_MONOTONIC, &now))
 	{
 		return 0;
 	}
 	return (uint64_t)(now.tv_sec * 1000.0 + now.tv_nsec / 1000000.0);
-
 #endif
 
 }

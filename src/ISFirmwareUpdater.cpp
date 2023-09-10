@@ -5,7 +5,7 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize) {
+bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) {
     srcFile = new std::ifstream(filename);
 
     // get the file size, and checksum for the file
@@ -26,8 +26,8 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-    setTimeoutDuration(30000);
-    return requestUpdate(_target, slot, chunkSize, fileSize, md5hash);
+    setTimeoutDuration(15000);
+    return requestUpdate(_target, slot, chunkSize, fileSize, md5hash, progressRate);
 }
 
 int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
@@ -55,10 +55,14 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
         case fwUpdate::ERR_CHECKSUM_MISMATCH: // indicates that the final checksum didn't match the checksum specified at the start of the process
         case fwUpdate::ERR_COMMS:             // indicates that an error in the underlying comms system
         case fwUpdate::ERR_NOT_SUPPORTED:    // indicates that the target device doesn't support this protocol
+        case fwUpdate::ERR_FLASH_WRITE_FAILURE: // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
+        case fwUpdate::ERR_FLASH_OPEN_FAILURE:  // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
+        case fwUpdate::ERR_FLASH_INVALID:       // indicates that the image, after writing to flash failed to validate (invalid signature, couldn't decrypt, etc).
             return false;
 
         case fwUpdate::GOOD_TO_GO:
-            next_chunk_id =0;
+            next_chunk_id = 0;
+            // fall through
         default:
             return true;
     }
@@ -80,7 +84,7 @@ bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     const char *message = (const char *)&msg.data.progress.message;
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("SDK :: Progress %d/%d (%d%%) :: [%d] %s\n", num, tot, percent, msg.data.progress.msg_level, message);
+    printf("[%s:%d] :: Progress %d/%d (%d%%) :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, msg.data.progress.msg_level, message);
     return true;
 }
 
@@ -95,7 +99,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
                     nextStartAttempt = current_timeMs() + attemptInterval;
                     if (requestUpdate()) {
                         startAttempts++;
-                        printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
+                        // printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
                     } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
                     }
@@ -109,10 +113,10 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
         case fwUpdate::GOOD_TO_GO:
         case fwUpdate::WAITING_FOR_DATA:
             sendNextChunk();
-            printf("Uploading Firmware: Chunk %d (%0.1f%%)\n", next_chunk_id, (((float)next_chunk_id / (float)session_total_chunks) * 100.0f));
+            // printf("Uploading Firmware: Chunk %d (%0.1f%%)\n", next_chunk_id, (((float)next_chunk_id / (float)session_total_chunks) * 100.0f));
             break;
         case fwUpdate::FINISHED:
-            printf("Firmware upload completed without error.\n");
+            // printf("Firmware upload completed without error.\n");
             break;
         case fwUpdate::ERR_MAX_CHUNK_SIZE:
             if (cur_session_id != 0) {

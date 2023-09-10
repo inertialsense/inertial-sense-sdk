@@ -12,10 +12,6 @@
 #include "ISConstants.h"
 #include "ISUtilities.h"
 
-#ifdef __ZEPHYR__
-    #include <zephyr/random/rand32.h>
-#endif
-
 
 #ifdef __cplusplus
 #include <string>
@@ -91,8 +87,8 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_PAYLOAD_SIZE   768
 #define FWUPDATE__MAX_CHUNK_SIZE   512
+#define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
     enum target_t : uint32_t {
         TARGET_NONE = 0x00,
@@ -148,6 +144,7 @@ namespace fwUpdate {
         ERR_FLASH_WRITE_FAILURE = -11,    // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
         ERR_FLASH_OPEN_FAILURE = -12,   // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
         ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
+        // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
     };
 
     enum resend_reason_e : int16_t {
@@ -169,7 +166,7 @@ namespace fwUpdate {
             uint16_t image_slot;    //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
             uint32_t file_size;     //! the total size of the entire firmware file
             uint16_t chunk_size;    //! the maximum size of each chunk
-            uint16_t reserved;      //! required due to aligned struct, despite being packed.
+            uint16_t progress_rate; //! the rate (millis) at which the device should publish progress reports back to the host.
             uint32_t md5_hash[4];   //! the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
         } req_update __attribute__((__packed__));
 
@@ -247,6 +244,10 @@ namespace fwUpdate {
      */
     class FirmwareUpdateBase {
     public:
+
+        static const size_t MaxChunkSize = FWUPDATE__MAX_CHUNK_SIZE;
+        static const size_t MaxPayloadSize = FWUPDATE__MAX_PAYLOAD_SIZE;
+
         FirmwareUpdateBase();
         virtual ~FirmwareUpdateBase() {};
 
@@ -364,13 +365,9 @@ namespace fwUpdate {
     public:
         /**
          * Creates a FirmwareUpdateDevice instance
-         * @param target_id the target_id which this message will respond to.
-         * @param startUpdate
-         * @param writeChunk
-         * @param resetMcu
-         * @param progress_millis the rate at which progress updates will be sent out, in milli-seconds (default is every 100ms, 0 = no updates are sent).
+         * @param target_id informs this instance which messages it should respond to.
          */
-        FirmwareUpdateDevice(target_t target_id, uint16_t progress_millis = 100);
+        FirmwareUpdateDevice(target_t target_id);
         virtual ~FirmwareUpdateDevice() { };
 
         /**
@@ -493,7 +490,9 @@ namespace fwUpdate {
         target_t getCurrentTarget() { return target_id; }
 
         target_t target_id = TARGET_NONE;
-        uint16_t progress_interval = 100;
+        uint32_t progress_interval = 500;               // we'll send progress updates at 2hz.
+        uint32_t nextProgressReport = 0;                // the next system
+
 
         uint16_t cur_session_id = 0;                    //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         update_status_e session_status = NOT_STARTED;   //! last known state of this session
@@ -572,13 +571,15 @@ namespace fwUpdate {
 
         /**
          * Called by the host application to initiate a request by the SDK to update a target device.
-         * @param target_id
-         * @param image_id
-         * @param image
-         * @param chunk_size
+         * @param target_id the target device to update
+         * @param image_slot the "slot" on the target device which this image should be written to (device specific, if supported, otherwise 0)
+         * @param chunk_size the size of each chunk used to transmit the image (smaller sizes take longer, larger sizes consume more memory and risk buffer overflows)
+         * @param image_size the total number of bytes of the firmware image
+         * @param image_md5 the md5 checksum of the firmware image
+         * @param progress_rate the rate (in millis) which the device should send out progress updates
          * @return
          */
-        bool requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4]);
+        bool requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate = 500);
 
         /**
          * Called by the hsot application to resend a previous "requestUpdate" with a full parameter set.
@@ -634,7 +635,6 @@ namespace fwUpdate {
         virtual bool handleUpdateProgress(const payload_t& msg) = 0;
 
         target_t target_id = TARGET_NONE;
-        uint16_t progress_interval = 100;
 
         uint16_t cur_session_id = 0;                    //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.

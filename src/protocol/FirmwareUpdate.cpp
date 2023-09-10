@@ -6,9 +6,13 @@
 #include <stdarg.h>
 #include "FirmwareUpdate.h"
 
+#ifdef __ZEPHYR__
+#include <zephyr/random/rand32.h>
+#endif
+
 namespace fwUpdate {
 
-    static const char* status_names[] = { "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
+    static const char* status_names[] = { "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
     "NOT_STARTED", "INITIALIZING", "GOOD_TO_GO", "WAITING_FOR_DATA", "FINISHED"};
 
     /*==================================================================================*
@@ -304,10 +308,8 @@ namespace fwUpdate {
      * @param progress_millis the rate at which progress updates will be sent out, in milli-seconds (default is every 100ms, 0 = no updates are sent).
      */
     // FirmwareUpdateDevice::FirmwareUpdateDevice(uint16_t tid, start_update_fn startUpdate, write_chunk_fn writeChunk, reset_mcu_fn resetMcu, uint16_t progress_millis) {
-    FirmwareUpdateDevice::FirmwareUpdateDevice(target_t tid, uint16_t progress_millis) {
+    FirmwareUpdateDevice::FirmwareUpdateDevice(target_t tid) {
         target_id = tid;
-        progress_interval = progress_millis;
-
         resetEngine();
     }
 
@@ -338,6 +340,11 @@ namespace fwUpdate {
                 break;
             default:
                 result = false;
+        }
+
+        if ((progress_interval > 0) && (nextProgressReport < current_timeMs())) {
+            nextProgressReport = current_timeMs() + progress_interval;
+            sendProgress();
         }
         
         step(); // TODO: we should probably do something with the step() result, but not sure what just yet
@@ -398,7 +405,7 @@ namespace fwUpdate {
             return false;
 
         payload_t msg;
-        msg.hdr.target_device = target_id;
+        msg.hdr.target_device = TARGET_NONE; // progress messages always go back to the host.
         msg.hdr.msg_type = MSG_UPDATE_PROGRESS;
         msg.data.progress.session_id = cur_session_id;
         msg.data.progress.status = session_status;
@@ -455,6 +462,7 @@ namespace fwUpdate {
         cur_session_id = payload.data.req_update.session_id;
         image_size = payload.data.req_update.file_size;
         chunk_size = payload.data.req_update.chunk_size;
+        progress_interval = payload.data.req_update.progress_rate;
 
         if (session_status > NOT_STARTED) {
             image_slot = payload.data.req_update.image_slot;
@@ -522,11 +530,12 @@ namespace fwUpdate {
             response.hdr.target_device = TARGET_NONE;
             response.hdr.msg_type = MSG_UPDATE_FINISHED;
             response.data.resp_done.session_id = cur_session_id;
-            if (finishFirmwareUpgrade(target_id, image_slot)) {
-                response.data.resp_done.status = FINISHED;
-            } else {
+
+            // check our md5 hash
+            if (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0)
                 response.data.resp_done.status = ERR_CHECKSUM_MISMATCH;
-            }
+            else
+                response.data.resp_done.status = finishFirmwareUpgrade(target_id, image_slot);
             sendPayload(response);
         }
 
@@ -623,7 +632,7 @@ namespace fwUpdate {
      * @param chunk_size
      * @return
      */
-    bool FirmwareUpdateSDK::requestUpdate(target_t target, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4]) {
+    bool FirmwareUpdateSDK::requestUpdate(target_t target, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate) {
 
         // FIXME:  Should probably check to see if an update is already in progress, and attempt to finish it first?
         resetTimeout();
@@ -641,6 +650,7 @@ namespace fwUpdate {
         request.data.req_update.image_slot = session_image_slot = image_slot;
         request.data.req_update.chunk_size = session_chunk_size = chunk_size;
         request.data.req_update.file_size = session_image_size = image_size;
+        request.data.req_update.progress_rate = progress_rate;
         request.data.req_update.md5_hash[0] = md5hash[0] = image_md5[0];
         request.data.req_update.md5_hash[1] = md5hash[1] = image_md5[1];
         request.data.req_update.md5_hash[2] = md5hash[2] = image_md5[2];
@@ -719,12 +729,9 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateSDK::getSessionStatusName() {
         if (session_status >= 0)
-            return fwUpdate::status_names[session_status + abs(fwUpdate::ERR_NOT_SUPPORTED)];
+            return fwUpdate::status_names[session_status + abs(fwUpdate::ERR_FLASH_INVALID)];
         else
-            return fwUpdate::status_names[session_status - fwUpdate::ERR_NOT_SUPPORTED];
+            return fwUpdate::status_names[session_status - fwUpdate::ERR_FLASH_INVALID];
     }
-
-
-
 
 } // fwUpdate
