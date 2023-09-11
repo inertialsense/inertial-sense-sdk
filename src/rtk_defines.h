@@ -188,7 +188,6 @@ struct dirent { char* d_name; };
 #define pthread_mutex_init(f, f2)
 #define pthread_mutex_lock(f)
 #define pthread_mutex_unlock(f)
-#define gettimeofday(f, f2) 0
 
 #endif // ARM
 
