@@ -908,7 +908,8 @@ is_operation_result InertialSense::updateFirmware(
     ifstream tmpStream(fileName);
     if (!tmpStream.good())
     {
-        printf("File does not exist");
+        char buff[128];
+        printf("File does not exist: [%s] %s", getcwd(buff, sizeof(buff)-1), fileName.c_str());
         return IS_OP_ERROR;
     }
 
@@ -930,8 +931,8 @@ is_operation_result InertialSense::updateFirmware(
             back_inserter(update_ports));
 
     for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
-        m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i);
-        m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum);
+        m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
+        m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
     }
 
     // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);

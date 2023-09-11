@@ -141,7 +141,7 @@ class ISFirmwareUpdateTestDev : public fwUpdate::FirmwareUpdateDevice {
 public:
     ExchangeBuffer& exchangeBuffer;
 
-    ISFirmwareUpdateTestDev(ExchangeBuffer& eb) : FirmwareUpdateDevice(fwUpdate::TARGET_IMX5, 100), exchangeBuffer(eb) {
+    ISFirmwareUpdateTestDev(ExchangeBuffer& eb) : FirmwareUpdateDevice(fwUpdate::TARGET_IMX5), exchangeBuffer(eb) {
     }
 
     bool sendProgressUpdates = true;
@@ -168,19 +168,19 @@ public:
     }
 
     // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
-    int writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
-        return 0;
+    fwUpdate::update_status_e writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
+        return fwUpdate::WAITING_FOR_DATA;
     }
 
     // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
-    int finishFirmwareUpgrade(fwUpdate::target_t target_id, int slot_id) {
+    fwUpdate::update_status_e  finishFirmwareUpgrade(fwUpdate::target_t target_id, int slot_id) {
         uint32_t hash[4];
         // check that our md5 matches.  Return >0 is we're error free.
         getCurrentMd5(hash);
         if ( (hash[0] == session_md5[0]) && (hash[1] == session_md5[1]) && (hash[2] == session_md5[2]) && (hash[3] == session_md5[3]) )
-            return 1;
+            return fwUpdate::FINISHED;
 
-        return 0;
+        return fwUpdate::ERR_CHECKSUM_MISMATCH;
     }
 
     // called internally to process a packed payload, ready to be put on the wire.
@@ -261,6 +261,26 @@ public:
         for (int i = 0; i < len; i++)
             ((uint8_t*)*buffer)[i] = (i + offset) % 0x10;
         return len;
+    }
+
+    /**
+     * Just used for unit-tests, calculates the actual checksum for the number and size of chunks specified.
+     * @param chunk_size
+     * @param num_chunks
+     * @param hashOut
+     * @return
+     */
+    void calcChecksumForTest(int chunk_size, int num_chunks, uint32_t (&hashOut)[4]) {
+        resetMd5();
+        void* buf = malloc(chunk_size);
+        if (buf) {
+            for (int i = 0; i < num_chunks; i++) {
+                getImageChunk(i * chunk_size, chunk_size, &buf);
+                hashMd5(chunk_size, (uint8_t *)buf);
+            }
+            getCurrentMd5(hashOut);
+        }
+        resetMd5();
     }
 
     bool handleUpdateResponse(const fwUpdate::payload_t& msg) {
@@ -634,12 +654,14 @@ TEST(ISFirmwareUpdate, exchange__success)
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
+    fuSDK.calcChecksumForTest(fuSDK.MaxChunkSize, 8, real_md5);
+
     // don't send progress updates for this test.
     fuDev.sendProgressUpdates = false;
 
     // Make the request to the device; the device should expect 8 chunks total
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
-    fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,8192, real_md5);
+    fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, fuSDK.MaxChunkSize,fuSDK.MaxChunkSize * 8, real_md5);
 
     fuDev.pullAndProcessNextMessage();
     fuSDK.step(); // advance Host, to process the Device response
@@ -675,6 +697,8 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
+    fuSDK.calcChecksumForTest(fuSDK.MaxChunkSize, 8, real_md5);
+
     // don't send progress updates for this test.
     fuDev.sendProgressUpdates = false;
 
@@ -682,7 +706,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
 #ifdef DEBUG_INFO
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
 #endif
-    fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,8192, real_md5);
+    fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, fuSDK.MaxChunkSize,fuSDK.MaxChunkSize * 8, real_md5);
 
     fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
     fuSDK.step(); // advance Host, to process the Device response
@@ -752,9 +776,11 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
+    fuSDK.calcChecksumForTest(fuSDK.MaxChunkSize, 8, real_md5);
+
     // Make the request to the device; the device should expect 8 chunks total
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
-    fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, 1024,8192, fake_md5);
+    fuSDK.requestUpdate(fwUpdate::TARGET_IMX5, 0, fuSDK.MaxChunkSize,fuSDK.MaxChunkSize * 8, fake_md5);
 
     fuDev.pullAndProcessNextMessage(); // advance Device, to process the request and send the response
     fuSDK.step(); // advance Host, to process the Device response
@@ -767,7 +793,18 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
         if (fuSDK.getSessionStatus() >= fwUpdate::GOOD_TO_GO) {
             fuSDK.sendNextChunk();
         }
-        fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
+
+        if (i == 4) {
+            // SETUP THE TEST :::
+            // On the 4rth chunk, let's modify the exchange buffer content..
+            ASSERT_NE(eb.dataAvailable(), 0); // fail the test if the buffer is empty
+            int buf_len = eb.readData(buffer, sizeof(buffer));
+            buffer[20] = 129; // just some random data at some random offset - only one byte should do!
+            eb.writeData(buffer, buf_len); // and then put it back into the exchange buffer
+            fuDev.pullAndProcessNextMessage(); // will cause the Device to pull the bad chunk, which should respond with a RESEND_CHUNK
+        } else {
+            fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
+        }
         fuSDK.step();
         EXPECT_EQ(fuSDK.getNextChunkID(), i);
 

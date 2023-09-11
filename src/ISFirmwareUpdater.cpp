@@ -5,7 +5,7 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize) {
+bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) {
     srcFile = new std::ifstream(filename);
 
     // get the file size, and checksum for the file
@@ -26,8 +26,8 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-    session_status = fwUpdate::INITIALIZING;
-    return requestUpdate(_target, slot, chunkSize, fileSize, md5hash);
+    setTimeoutDuration(15000);
+    return requestUpdate(_target, slot, chunkSize, fileSize, md5hash, progressRate);
 }
 
 int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
@@ -42,11 +42,30 @@ int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffe
 bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
     session_status = msg.data.update_resp.status;
     session_total_chunks = msg.data.update_resp.totl_chunks;
-    if (session_status == fwUpdate::GOOD_TO_GO) {
-        next_chunk_id = 0;
-    }
 
-    return true;
+    switch (session_status) {
+        case fwUpdate::ERR_MAX_CHUNK_SIZE:    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
+            return requestUpdate(target_id, session_image_slot, session_chunk_size / 2, session_image_size, md5hash);
+        case fwUpdate::ERR_INVALID_SESSION:   // indicates that the requested session ID is invalid.
+        case fwUpdate::ERR_INVALID_SLOT:      // indicates that the request slot does not exist. Different targets have different number of slots which can be written to.
+        case fwUpdate::ERR_NOT_ALLOWED:       // indicates that writing to the requested slot is not allowed, usually due to security constrains such as a locked firmware, Read-Only FLASH, etc.
+        case fwUpdate::ERR_NOT_ENOUGH_MEMORY: // indicates that the requested firmware file size would exceed the available slot size.
+        case fwUpdate::ERR_OLDER_FIRMWARE:    // indicates that the new firmware is an older (or earlier) version, and performing this would result in a downgrade.
+        case fwUpdate::ERR_TIMEOUT:           // indicates that the update process timed-out waiting for data (either a request, response, or chunk data that never arrived)
+        case fwUpdate::ERR_CHECKSUM_MISMATCH: // indicates that the final checksum didn't match the checksum specified at the start of the process
+        case fwUpdate::ERR_COMMS:             // indicates that an error in the underlying comms system
+        case fwUpdate::ERR_NOT_SUPPORTED:    // indicates that the target device doesn't support this protocol
+        case fwUpdate::ERR_FLASH_WRITE_FAILURE: // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
+        case fwUpdate::ERR_FLASH_OPEN_FAILURE:  // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
+        case fwUpdate::ERR_FLASH_INVALID:       // indicates that the image, after writing to flash failed to validate (invalid signature, couldn't decrypt, etc).
+            return false;
+
+        case fwUpdate::GOOD_TO_GO:
+            next_chunk_id = 0;
+            // fall through
+        default:
+            return true;
+    }
 }
 
 bool ISFirmwareUpdater::handleResendChunk(const fwUpdate::payload_t &msg) {
@@ -65,7 +84,7 @@ bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     const char *message = (const char *)&msg.data.progress.message;
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("SDK :: Progress %d/%d (%d%%) :: [%d] %s\n", num, tot, percent, msg.data.progress.msg_level, message);
+    printf("[%s:%d] :: Progress %d/%d (%d%%) :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, msg.data.progress.msg_level, message);
     return true;
 }
 
@@ -80,21 +99,24 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
                     nextStartAttempt = current_timeMs() + attemptInterval;
                     if (requestUpdate()) {
                         startAttempts++;
-                        printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
+                        // printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
                     } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
                     }
                 }
             } else {
-                session_status = fwUpdate::ERR_TIMEOUT;
+                // backoff (wait attemptInternal * 3), and then try again.  Eventually, we will timeout below if there is a larger issue.
+                startAttempts = 0;
+                nextStartAttempt = current_timeMs() + (attemptInterval * 3);
             }
             break;
         case fwUpdate::GOOD_TO_GO:
         case fwUpdate::WAITING_FOR_DATA:
             sendNextChunk();
+            // printf("Uploading Firmware: Chunk %d (%0.1f%%)\n", next_chunk_id, (((float)next_chunk_id / (float)session_total_chunks) * 100.0f));
             break;
         case fwUpdate::FINISHED:
-            // all done, let's reset and shutdown
+            // printf("Firmware upload completed without error.\n");
             break;
         case fwUpdate::ERR_MAX_CHUNK_SIZE:
             if (cur_session_id != 0) {
@@ -112,10 +134,15 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
             break;
     }
 
+    if ((session_status > fwUpdate::NOT_STARTED) && (session_status < fwUpdate::FINISHED) && (getLastMessageAge() > timeoutDuration))
+        session_status = fwUpdate::ERR_TIMEOUT;
+
     return fwUpdate::MSG_UNKNOWN;
 }
 
 bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    return (comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0) == 0);
+    int result = comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0);
+    usleep(15000); // let's give just a millisecond so we don't saturate the downstream devices.
+    return ( result == 0);
 }
 

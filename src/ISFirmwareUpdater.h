@@ -23,20 +23,28 @@ extern "C"
 
 class ISFirmwareUpdater final : public fwUpdate::FirmwareUpdateSDK {
 private:
-    int pHandle = 0;                    // a handle to the comm port which we use to talk to the device
-    std::ifstream* srcFile;   // the file that we are currently sending to a remote device, or nullptr if none
-    uint32_t nextStartAttempt = 0;      // the number of millis (uptime?) that we will next attempt to start an upgrade
-    int8_t startAttempts = 0;           // the number of attempts that have been made to request that an update be started
+    int pHandle = 0;                    //! a handle to the comm port which we use to talk to the device
+    const char *portName = nullptr;     //! the name of the port referenced by pHandle
+    const dev_info_t *devInfo;          //! a reference to the root device connected on this port
+    std::ifstream* srcFile;             //! the file that we are currently sending to a remote device, or nullptr if none
+    uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
+    int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
 
-    int8_t maxAttempts = 5;             // the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 750;     // the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+    int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
+    uint16_t attemptInterval = 350;    //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
 
 public:
-    ISFirmwareUpdater(int portHandle) : FirmwareUpdateSDK(), pHandle(portHandle) { };
+
+    /**
+     * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
+     * @param portHandle handle to the port (typically serial) to which the device is connected
+     * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
+     */
+    ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateSDK(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
 
     ~ISFirmwareUpdater() override {};
 
-    bool initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, bool forceUpdate = false, int chunkSize = 2048);
+    bool initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
 
     /**
      * @param offset the offset into the image file to pull data from
