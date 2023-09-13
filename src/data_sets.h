@@ -1636,6 +1636,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000      // 1ms
 #define RMC_BITS_GPX_DEBUG              0x0000200000000000      // 1ms
 #define RMC_BITS_GPX_STATUS             0x0000400000000000      // 1ms
+#define RMC_BITS_GPX_DEV_INFO           0x0000800000000000      // 1ms
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
