@@ -20,7 +20,7 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
     uint8_t buff[512];
     size_t curPos = 0;
     while ( (curPos = srcFile->tellg()) < fileSize) {
-        int len = min(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
+        int len = _MIN(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
         srcFile->read((char *)buff, len);
         hashMd5(len, buff);
     }
@@ -37,7 +37,7 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
     if (srcFile && srcFile->is_open()) {
         srcFile->seekg((std::streampos)offset, srcFile->beg);
-        len = min(len, session_image_size - (uint32_t)srcFile->tellg());
+        len = _MIN(len, session_image_size - (uint32_t)srcFile->tellg());
         srcFile->read((char *)*buffer, len);
     }
     return len;
