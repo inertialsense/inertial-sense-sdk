@@ -370,19 +370,31 @@ bool InertialSense::Update()
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (size_t devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
-                if (m_comManagerState.devices[devIdx].fwUpdater != nullptr) {
-                    m_comManagerState.devices[devIdx].fwUpdater->step();
-                    fwUpdate::update_status_e status = m_comManagerState.devices[devIdx].fwUpdater->getSessionStatus();
+                if (serialPortIsOpen(&(m_comManagerState.devices[devIdx].serialPort)) && m_comManagerState.devices[devIdx].fwUpdater != nullptr) {
+                    ISFirmwareUpdater* fwUpdater = m_comManagerState.devices[devIdx].fwUpdater;
+                    fwUpdater->step();
+
+                    static fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
+                    static uint16_t lastChunk = 0;
+                    fwUpdate::update_status_e status = fwUpdater->getSessionStatus();
                     if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
-                            printf("Unable to start firmware update: %s\n", m_comManagerState.devices[devIdx].fwUpdater->getSessionStatusName());
+                            printf("Unable to start firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
 
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
+                    } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
+                        int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
+                        float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)(fwUpdater->getNextChunkID()-1) / (float)fwUpdater->getTotalChunks() * 100.f);
+                        float errRt = fwUpdater->getResendRate() * 100.f;
+                        const char *status = fwUpdater->getSessionStatusName();
+                        printf("[%0.2f] SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", current_timeMs()/1000.f, serialNo, status, fwUpdater->getNextChunkID()-1, fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
                     }
+                    lastStatus = status;
+                    lastChunk = fwUpdater->getNextChunkID();
                 }
             }
 		}
