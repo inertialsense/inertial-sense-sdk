@@ -3088,7 +3088,7 @@ typedef struct
     int32_t refpos;
 
     /** code/phase error ratio */
-    double eratio[1];
+    double eratio[NFREQ];
 
     /** measurement error factor */
     double err[5];
