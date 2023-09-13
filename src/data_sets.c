@@ -680,8 +680,10 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
 	[DID_GROUND_VEHICLE]      = RMC_BITS_GROUND_VEHICLE,
 	[DID_IMU_MAG]             = RMC_BITS_IMU_MAG,
 	[DID_PIMU_MAG]            = RMC_BITS_PIMU_MAG,
+	[DID_GPX_STATUS]          = RMC_BITS_GPX_STATUS,
 	[DID_GPX_RTOS_INFO]       = RMC_BITS_GPX_RTOS_INFO,
 	[DID_GPX_DEBUG_ARRAY]     = RMC_BITS_GPX_DEBUG,
+	[DID_GPX_DEV_INFO]        = RMC_BITS_GPX_DEV_INFO,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)

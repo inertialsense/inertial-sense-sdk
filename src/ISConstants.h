@@ -30,8 +30,9 @@ extern "C" {
 
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
-#define CONVERT_RAW_GPS_V2_TO_V1    0      // Allow conversion of raw GPS format from v1 to v2 used for RTK
-#define FORCE_GPX_DEFAULT_FLASH     0       // forces gpx flash not to be overwriten by IMX's data
+#define ENABLE_RTK_PROCESSING       1
+#define RTK_ENGINE_NFREQ            NFREQ   // Set to 1 to disable L5 in RTK without changing NFREQ and data size
+#define CONVERT_RAW_GPS_V2_TO_V1    0       // Allow conversion of raw GPS format from v1 to v2 used for RTK
 
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
     #define PLATFORM_IS_WINDOWS 1

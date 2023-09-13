@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <time.h>
 #include <string.h>
 #include "ISConstants.h"
+#include "rtk_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1382,6 +1383,8 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                  = 30,           // (uint32 inv: 4294967265)
     SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER         = 31,           // (uint32 inv: 4294967264)
     SYS_CMD_GPX_ENABLE_GNSS2_CHIPSET_BOOTLOADER         = 32,           // (uint32 inv: 4294967263)
+    SYS_CMD_GPX_ENABLE_GNSS1_PASS_THROUGH               = 33,           // (uint32 inv: 4294967262)
+    SYS_CMD_GPX_ENABLE_GNSS2_PASS_THROUGH               = 34,           // (uint32 inv: 4294967261)
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
 
@@ -1632,6 +1635,8 @@ typedef struct PACKED
 #define RMC_BITS_GPS2_SIG               0x0000080000000000      // "
 #define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000      // 1ms
 #define RMC_BITS_GPX_DEBUG              0x0000200000000000      // 1ms
+#define RMC_BITS_GPX_STATUS             0x0000400000000000      // 1ms
+#define RMC_BITS_GPX_DEV_INFO           0x0000800000000000      // 1ms
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -3083,7 +3088,7 @@ typedef struct
     int32_t refpos;
 
     /** code/phase error ratio */
-    double eratio[1];
+    double eratio[NFREQ];
 
     /** measurement error factor */
     double err[5];
@@ -3164,31 +3169,31 @@ typedef struct PACKED
     uint8_t rcv;
 
     /** Cno, carrier-to-noise density ratio (signal strength) (0.25 dB-Hz) */
-    uint8_t SNR[1];
+    uint8_t SNR[NFREQ+NEXOBS];
 
     /** Loss of Lock Indicator. Set to non-zero values only when carrier-phase is valid (L > 0).  bit1 = loss-of-lock, bit2 = half-cycle-invalid */
-    uint8_t LLI[1];
+    uint8_t LLI[NFREQ+NEXOBS];
 
     /** Code indicator: CODE_L1C (1) = L1C/A,G1C/A,E1C (GPS,GLO,GAL,QZS,SBS), CODE_L1X (12) = E1B+C,L1C(D+P) (GAL,QZS), CODE_L1I (47) = B1I (BeiDou) */
-    uint8_t code[1];
+    uint8_t code[NFREQ+NEXOBS];
 
     /** Estimated carrier phase measurement standard deviation (0.004 cycles), zero means invalid */
-    uint8_t qualL[1];
+    uint8_t qualL[NFREQ+NEXOBS];
 
     /** Estimated pseudorange measurement standard deviation (0.01 m), zero means invalid */
-    uint8_t qualP[1];
+    uint8_t qualP[NFREQ+NEXOBS];
 
     /** reserved, for alignment */
     uint8_t reserved;
 
     /** Observation data carrier-phase (cycle). The carrier phase initial ambiguity is initialized using an approximate value to make the magnitude of the phase close to the pseudorange measurement. Clock resets are applied to both phase and code measurements in accordance with the RINEX specification. */
-    double L[1];
+    double L[NFREQ+NEXOBS];
 
     /** Observation data pseudorange (m). GLONASS inter frequency channel delays are compensated with an internal calibration table */
-    double P[1]; 
+    double P[NFREQ+NEXOBS]; 
 
     /** Observation data Doppler measurement (positive sign for approaching satellites) (Hz) */
-    float D[1];
+    float D[NFREQ+NEXOBS];
 } obsd_t;
 
 #define GPS_RAW_MESSAGE_BUF_SIZE    1000
@@ -3856,6 +3861,29 @@ typedef struct
 
 } gpx_flash_cfg_t;
 
+/** GPX status flags */
+enum eGpxStatus
+{
+    /** Communications parse error count */
+    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
+#define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+
+    /** Fault reset cause */
+    GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    /** Reset from Backup mode (low-power state w/ CPU off) */
+    GPX_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
+    /** Reset from Watchdog */
+    GPX_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
+    /** Reset from Software */
+    GPX_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
+    /** Reset from Hardware (NRST pin low) */
+    GPX_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+
+    /** Critical System Fault - CPU error */
+    GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+};
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -3865,7 +3893,7 @@ typedef struct
 	uint32_t               	timeOfWeekMs;
 	
 	/** Status (eGpxStatus) */
-	uint32_t                gpxStatus;
+	uint32_t                status;
 
 } gpx_status_t;
 
@@ -4720,21 +4748,7 @@ void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, in
 /** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
 double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
 
-
 #ifndef GPX_1
-
-#ifndef RTKLIB_H
-#define SYS_NONE    0x00                /* navigation system: none */
-#define SYS_GPS     0x01                /* navigation system: GPS */
-#define SYS_SBS     0x02                /* navigation system: SBAS */
-#define SYS_GLO     0x04                /* navigation system: GLONASS */
-#define SYS_GAL     0x08                /* navigation system: Galileo */
-#define SYS_QZS     0x10                /* navigation system: QZSS */
-#define SYS_CMP     0x20                /* navigation system: BeiDou */
-#define SYS_IRN     0x40                /* navigation system: IRNS */
-#define SYS_LEO     0x80                /* navigation system: LEO */
-#define SYS_ALL     0xFF                /* navigation system: all */
-#endif
 
 /*
 Convert gnssID to ubx gnss indicator (ref [2] 25)
@@ -4743,171 +4757,6 @@ Convert gnssID to ubx gnss indicator (ref [2] 25)
 @return ubx gnss indicator
 */
 int ubxSys(int gnssID);
-
-#ifndef __RTKLIB_EMBEDDED_DEFINES_H_
-
-#undef ENAGLO
-#define ENAGLO
-
-#undef ENAGAL
-#define ENAGAL
-
-#undef ENAQZS
-//#define ENAQZS
-
-#undef ENASBS
-#define ENASBS
-
-#undef MAXSUBFRMLEN
-#define MAXSUBFRMLEN 152
-
-#undef MAXRAWLEN
-#define MAXRAWLEN 2048
-
-#undef NFREQ
-#define NFREQ 1
-
-#undef NFREQGLO
-#ifdef ENAGLO
-#define NFREQGLO 1
-#else
-#define NFREQGLO 0
-#endif
-
-#undef NFREQGAL
-#ifdef ENAGAL
-#define NFREQGAL 1
-#else
-#define NFREQGAL 0
-#endif
-
-#undef NEXOBS
-#define NEXOBS 0
-
-#undef MAXOBS
-#define MAXOBS 56               // Also defined inside rtklib_defines.h
-#define HALF_MAXOBS (MAXOBS/2)
-
-#undef NUMSATSOL
-#define NUMSATSOL 22
-
-#undef MAXERRMSG
-#define MAXERRMSG 0
-
-#ifdef ENASBS
-
-// sbas waas only satellites
-#undef MINPRNSBS
-#define MINPRNSBS 133                 /* min satellite PRN number of SBAS */
-
-#undef MAXPRNSBS
-#define MAXPRNSBS 138                 /* max satellite PRN number of SBAS */
-
-#undef NSATSBS
-#define NSATSBS (MAXPRNSBS - MINPRNSBS + 1) /* number of SBAS satellites */
-
-#define SBAS_EPHEMERIS_ARRAY_SIZE NSATSBS
-
-#else
-
-#define SBAS_EPHEMERIS_ARRAY_SIZE 0
-
-#endif
-
-
-#endif
-
-#ifndef RTKLIB_H
-
-#define MINPRNGPS   1                   /* min satellite PRN number of GPS */
-#define MAXPRNGPS   32                  /* max satellite PRN number of GPS */
-#define NSATGPS     (MAXPRNGPS-MINPRNGPS+1) /* number of GPS satellites */
-#define NSYSGPS     1
-
-#ifdef ENAGLO
-#define MINPRNGLO   1                   /* min satellite slot number of GLONASS */
-#define MAXPRNGLO   27                  /* max satellite slot number of GLONASS */
-#define NSATGLO     (MAXPRNGLO-MINPRNGLO+1) /* number of GLONASS satellites */
-#define NSYSGLO     1
-#else
-#define MINPRNGLO   0
-#define MAXPRNGLO   0
-#define NSATGLO     0
-#define NSYSGLO     0
-#endif
-#ifdef ENAGAL
-#define MINPRNGAL   1                   /* min satellite PRN number of Galileo */
-#define MAXPRNGAL   30                  /* max satellite PRN number of Galileo */
-#define NSATGAL    (MAXPRNGAL-MINPRNGAL+1) /* number of Galileo satellites */
-#define NSYSGAL     1
-#else
-#define MINPRNGAL   0
-#define MAXPRNGAL   0
-#define NSATGAL     0
-#define NSYSGAL     0
-#endif
-#ifdef ENAQZS
-#define MINPRNQZS   193                 /* min satellite PRN number of QZSS */
-#define MAXPRNQZS   199                 /* max satellite PRN number of QZSS */
-#define MINPRNQZS_S 183                 /* min satellite PRN number of QZSS SAIF */
-#define MAXPRNQZS_S 189                 /* max satellite PRN number of QZSS SAIF */
-#define NSATQZS     (MAXPRNQZS-MINPRNQZS+1) /* number of QZSS satellites */
-#define NSYSQZS     1
-#else
-#define MINPRNQZS   0
-#define MAXPRNQZS   0
-#define MINPRNQZS_S 0
-#define MAXPRNQZS_S 0
-#define NSATQZS     0
-#define NSYSQZS     0
-#endif
-#ifdef ENACMP
-#define MINPRNCMP   1                   /* min satellite sat number of BeiDou */
-#define MAXPRNCMP   35                  /* max satellite sat number of BeiDou */
-#define NSATCMP     (MAXPRNCMP-MINPRNCMP+1) /* number of BeiDou satellites */
-#define NSYSCMP     1
-#else
-#define MINPRNCMP   0
-#define MAXPRNCMP   0
-#define NSATCMP     0
-#define NSYSCMP     0
-#endif
-#ifdef ENAIRN
-#define MINPRNIRN   1                   /* min satellite sat number of IRNSS */
-#define MAXPRNIRN   7                   /* max satellite sat number of IRNSS */
-#define NSATIRN     (MAXPRNIRN-MINPRNIRN+1) /* number of IRNSS satellites */
-#define NSYSIRN     1
-#else
-#define MINPRNIRN   0
-#define MAXPRNIRN   0
-#define NSATIRN     0
-#define NSYSIRN     0
-#endif
-#ifdef ENALEO
-#define MINPRNLEO   1                   /* min satellite sat number of LEO */
-#define MAXPRNLEO   10                  /* max satellite sat number of LEO */
-#define NSATLEO     (MAXPRNLEO-MINPRNLEO+1) /* number of LEO satellites */
-#define NSYSLEO     1
-#else
-#define MINPRNLEO   0
-#define MAXPRNLEO   0
-#define NSATLEO     0
-#define NSYSLEO     0
-#endif
-#define NSYS        (NSYSGPS+NSYSGLO+NSYSGAL+NSYSQZS+NSYSCMP+NSYSIRN+NSYSLEO) /* number of systems */
-#ifndef NSATSBS
-#ifdef ENASBS
-#define MINPRNSBS   120                 /* min satellite PRN number of SBAS */
-#define MAXPRNSBS   142                 /* max satellite PRN number of SBAS */
-#define NSATSBS     (MAXPRNSBS-MINPRNSBS+1) /* number of SBAS satellites */
-#else
-#define MINPRNSBS   0
-#define MAXPRNSBS   0
-#define NSATSBS     0
-#endif
-#endif
-
-#endif
 
 #endif
 
