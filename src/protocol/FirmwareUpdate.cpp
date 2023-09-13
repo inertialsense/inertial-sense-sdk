@@ -69,7 +69,7 @@ namespace fwUpdate {
 
 #ifdef __ZEPHYR__
         printk("fwTX: %s\n", payloadToString((payload_t *)&payload));
-#else
+#elif !(PLATFORM_IS_EMBEDDED)
         printf("fwTX: %s\n", payloadToString((payload_t *)&payload));
 #endif
 
@@ -146,7 +146,7 @@ namespace fwUpdate {
 
 #ifdef __ZEPHYR__
         printk("fwRX: %s\n", payloadToString((payload_t*)buffer));
-#else
+#elif !(PLATFORM_IS_EMBEDDED)
         // printf("fwRX: %s\n", payloadToString((payload_t*)buffer));
 #endif
 
