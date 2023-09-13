@@ -12,7 +12,6 @@
 #include "ISConstants.h"
 #include "ISUtilities.h"
 
-
 #ifdef __cplusplus
 #include <string>
 extern "C" {
@@ -161,33 +160,33 @@ namespace fwUpdate {
 
         struct { } req_version;
 
-        struct {
+        struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
             uint16_t image_slot;    //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
             uint32_t file_size;     //! the total size of the entire firmware file
             uint16_t chunk_size;    //! the maximum size of each chunk
             uint16_t progress_rate; //! the rate (millis) at which the device should publish progress reports back to the host.
             uint32_t md5_hash[4];   //! the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
-        } req_update __attribute__((__packed__));
+        } req_update;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             uint16_t totl_chunks;   //! the total number of chunks that are necessary to transmit the entire firmware file
             update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
-        } update_resp __attribute__((__packed__));
+        } update_resp;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             uint16_t chunk_id;      //! the chunk number identifying this portion of the firmware
             uint16_t data_len;      //! the number of bytes of accompanying data
             uint8_t data;           //! the first byte of data (cast to a uint8_t * to access the rest...)
-        } chunk __attribute__((__packed__));
+        } chunk;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             uint16_t chunk_id;      //! the chunk number identifying this portion of the firmware which should be resent
             resend_reason_e reason; //! an indicator of why this chunk was requested. This is optional, but is useful for debugging purposes. Regardless of the reason, the requested chunk, and all subsequent chunks must be resent.
-        } req_resend __attribute__((__packed__));
+        } req_resend;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
@@ -197,12 +196,12 @@ namespace fwUpdate {
             uint8_t msg_level;      //! a numerical indication of the criticality of this message, 0 being the highest. Best practive is to associate syslog type levels here (CRITICAL, ERROR, WARN, INFO, DEBUG, etc).
             uint8_t msg_len;        //! the length of the following string (in bytes)
             uint8_t message;        //! an arbitrary human-readable string, that is intended to be consumed by the user to give status about the update process
-        } progress __attribute__((__packed__));
+        } progress;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
-        } resp_done __attribute__((__packed__));
+        } resp_done;
 
         struct PACKED {
             uint8_t hardwareVer[4]; //! Hardware version
@@ -220,7 +219,7 @@ namespace fwUpdate {
             uint8_t buildMinute;    //! Build time minute
             uint8_t buildSecond;    //! Build time second
             uint8_t buildMillis;    //! Build time millisecond
-        } version_resp __attribute__((__packed__));
+        } version_resp;
     } msg_data_t;
 
     typedef struct PACKED {

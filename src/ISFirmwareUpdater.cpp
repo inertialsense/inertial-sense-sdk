@@ -20,7 +20,7 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
     uint8_t buff[512];
     size_t curPos = 0;
     while ( (curPos = srcFile->tellg()) < fileSize) {
-        int len = std::min(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
+        int len = min(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
         srcFile->read((char *)buff, len);
         hashMd5(len, buff);
     }
@@ -37,7 +37,7 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
     if (srcFile && srcFile->is_open()) {
         srcFile->seekg((std::streampos)offset, srcFile->beg);
-        len = std::min(len, session_image_size - (uint32_t)srcFile->tellg());
+        len = min(len, session_image_size - (uint32_t)srcFile->tellg());
         srcFile->read((char *)*buffer, len);
     }
     return len;
@@ -132,7 +132,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
                 double lv = log2(session_chunk_size);
                 int bits = (lv == floor(lv)) ? (int)(lv-1) : (int)(lv); // round down to the nearest multiple of 2
                 session_chunk_size = 1 << bits;
-                session_id = (uint16_t) random(); // since we ended on an error, we need a new session id.
+                session_id = (uint16_t) rand(); // since we ended on an error, we need a new session id.
                 requestUpdate();
             }
             break;

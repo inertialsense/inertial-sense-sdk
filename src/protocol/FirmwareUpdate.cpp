@@ -699,7 +699,7 @@ namespace fwUpdate {
 #ifdef __ZEPHYR__
         session_id = (uint16_t)sys_rand32_get();
 #else
-        session_id = (uint16_t)random();
+        session_id = (uint16_t)rand();
 #endif
         session_status = fwUpdate::INITIALIZING;
 
