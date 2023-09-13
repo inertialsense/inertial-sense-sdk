@@ -969,6 +969,48 @@ class logPlot:
             a.grid(True)
         self.saveFig(fig, 'rtk'+name+'BaseToRoverVector')
 
+    def rtkObs(self, fig=None):
+        basDid = DID_GPS1_RAW
+        rovDid = DID_GPS2_RAW
+        Nf = 2
+        n_plots = 4
+        if fig is None:
+            fig = plt.figure()
+
+        ax = fig.subplots(n_plots, 1, sharex=True)
+        fig.suptitle('RTK Rover-Base Single Differences')
+        self.configureSubplot(ax[0], 'L1 Pseudorange difference', 'm')
+        self.configureSubplot(ax[1], 'L1 Carier phase difference', 'cycles')
+        self.configureSubplot(ax[2], 'L5 Pseudorange difference', 'm')
+        self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
+
+        for i, d in enumerate(self.active_devs):
+            N1 = len(self.log.data[d, DID_GPS1_RAW][0])
+            N2 = len(self.log.data[d, DID_GPS2_RAW][0])
+            NB = len(self.log.data[d, DID_GPS_BASE_RAW][0])
+
+            tgps1 = np.zeros(N1)
+            Pgps1 = np.zeros(Nf, N1)
+            Lgps1 = np.zeros(Nf, N1)
+            nsat1 = np.zeros(N1)
+            tgps2 = np.zeros(N2)
+            Pgps2 = np.zeros(Nf, N2)
+            Lgps2 = np.zeros(Nf, N2)
+            nsat2 = np.zeros(N2)
+
+            # Find satellite PRN and plot for each satellite
+            
+            ax[0].plot(tgps1, Pgps1[0,:] - Pgps2[0,:])
+            ax[1].plot(tgps1, Lgps1[0,:] - Lgps2[0,:])
+            ax[2].plot(tgps1, Pgps1[1,:] - Pgps2[1,:])
+            ax[3].plot(tgps1, Lgps1[1,:] - Lgps2[1,:])
+
+            ax[0].legend(ncol=2)
+
+        for a in ax:
+            a.grid(True)
+
+
     def rtkPosMisc(self, fig=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig)
 
