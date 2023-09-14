@@ -964,9 +964,13 @@ is_operation_result InertialSense::updateFirmware(
 	*/
 InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
 {
+	fwUpdate::update_status_e status;
 	try
 	{
-		fwUpdate::update_status_e status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+			status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+		else
+			return InertialSense::UPDATE_STATUS_DONE; //TODO: This need to be smarter!
 		
 		switch (status)
 		{
