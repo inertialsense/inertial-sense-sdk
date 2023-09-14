@@ -98,14 +98,14 @@ static void statusText(void* obj, const char* info, eLogLevel level)
 }
 
 // [C++ COMM INSTRUCTION] Handle received data 
-static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
 
 	(void)i;
 	(void)pHandle;
 
 	// Print data to terminal
-	printf("HDR_ID: %d", data->hdr.id);
+	printf("HDR_ID: %d\r\n", data->hdr.id);
 
 }
 
@@ -113,7 +113,8 @@ int main(int argc, char* argv[])
 {
 	string COMNum = "COM6";
 	//string COMNum = "";
-	string fileName = "../../Firmware/IS_GPX-1_zephyr.signed.encrypted.bin";
+	string fileName = "..\\..\\..\\Firmware\\IS_GPX-1_zephyr.signed.encrypted.bin";
+	//string fileName = "IS_GPX-1_zephyr.signed.encrypted.bin";
 	uint32_t baudRate = IS_BAUDRATE_921600;
 
 	int deviceIndex = -1;
@@ -133,11 +134,11 @@ int main(int argc, char* argv[])
 	}
 
 	// print COM port to console
-	printf("COM port: %s", COMNum.c_str());
+	printf("COM port: %s\r\n", COMNum.c_str());
 
 	// [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class  
 	// Create InertialSense object, passing in data callback function pointer.
-	InertialSense inertialSenseInterface(cltool_dataCallback);
+	InertialSense inertialSenseInterface(NULL);
 
 	// Disable device response requirement to validate open port
 	inertialSenseInterface.EnableDeviceValidation(false);
@@ -148,25 +149,30 @@ int main(int argc, char* argv[])
 		cout << "Failed to open serial port at " << COMNum.c_str() << endl;
 		return -1;	// Failed to open serial port
 	}
+	else
+		cout << "COM port open!\r\n";
 
 	// [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
 	if (setupCommunicationsDIDs(inertialSenseInterface))
 	{
 		// [LOGGER INSTRUCTION] Setup and start data logger
-		if (!inertialSenseInterface.SetLoggerEnabled(true, 
-													"", 
-													cISLogger::LOGTYPE_CSV, 
-													0, 
-													0, 
-													MAX_FILE_SIZE_DISK_PERCENT_50, 
-													MAX_FILE_SIZE_100k,
-													""))
+		if (!inertialSenseInterface.SetLoggerEnabled(
+			true,
+			"",
+			cISLogger::LOGTYPE_CSV,
+			0,
+			0,
+			MAX_FILE_SIZE_DISK_PERCENT_50,
+			MAX_FILE_SIZE_100k,
+			""))
 		{
 			cout << "Failed to setup logger!" << endl;
 			inertialSenseInterface.Close();
 			inertialSenseInterface.CloseServerConnection();
 			return -1;
 		}
+		else
+			cout << "Logger set!\r\n";
 
 		try
 		{
@@ -186,7 +192,10 @@ int main(int argc, char* argv[])
 					inertialSenseInterface.Close();
 					inertialSenseInterface.CloseServerConnection();
 					return -1;
-				};
+				}
+				else
+					cout << "Logger set!\r\n";
+
 
 				// get device index assignment for our com number
 				deviceIndex = inertialSenseInterface.getUpdateDeviceIndex(COMNum.c_str());
@@ -201,17 +210,24 @@ int main(int argc, char* argv[])
 						// [C++ COMM INSTRUCTION] STEP 4: Read data
 						if (!inertialSenseInterface.Update())
 						{	// device disconnected, exit
+							cout << "Device disconnected!\r\n";
 							break;
 						}
 					}
 				}
+				else
+					cout << "Bad device index!\r\n";
 			}
+			else
+				cout << "No file provided!!";
 		}
 		catch (...)
 		{
-			cout << "Unknown exception...";
+			cout << "Exception occured!!";
 		}
 	}
+	else
+		cout << "Failed to set broadcast DIDs!\r\n";
 
 	// [C++ COMM INSTRUCTION] STEP 5: Close interface
 	// Close cleanly to ensure serial port and logging are shutdown properly.  (optional)

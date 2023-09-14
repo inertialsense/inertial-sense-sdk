@@ -151,7 +151,7 @@ bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, 
     // printf("fwTX: %s\n", payloadToString((fwUpdate::payload_t*)buffer));
 
     int delay = (session_total_chunks == 0 ? 0 : ((float)resend_count / (float)session_total_chunks) * 100000);
-    usleep(delay + 500000); // let's give just a millisecond so we don't saturate the downstream devices.
+    usleep(delay + 10000); // let's give just a millisecond so we don't saturate the downstream devices.
 
     int result = comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0);
     return (result == 0);

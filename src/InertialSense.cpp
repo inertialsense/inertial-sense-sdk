@@ -1017,7 +1017,7 @@ int InertialSense::getUpdateDeviceIndex(const char* com)
 { 
 	for (int i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		if (strcmp(m_comManagerState.devices[i].serialPort.port, com))
+		if (!strcmp(m_comManagerState.devices[i].serialPort.port, com))
 			return i;
 	}
 	return -1; 
