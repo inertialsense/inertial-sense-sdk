@@ -958,6 +958,71 @@ is_operation_result InertialSense::updateFirmware(
     return IS_OP_OK;
 }
 
+/**
+	* Gets current update status for selected device index
+	* @param deviceIndex
+	*/
+InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
+{
+	try
+	{
+		fwUpdate::update_status_e status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+		
+		switch (status)
+		{
+			case fwUpdate::FINISHED:
+				return InertialSense::UPDATE_STATUS_DONE;
+
+			case fwUpdate::IN_PROGRESS:
+				return InertialSense::UPDATE_STATUS_UPDATING;
+
+			case fwUpdate::READY:
+			case fwUpdate::INITIALIZING:
+				return InertialSense::UPDATE_STATUS_WAITING;
+
+			case fwUpdate::NOT_STARTED:
+			case fwUpdate::ERR_INVALID_SESSION:
+			case fwUpdate::ERR_INVALID_SLOT:
+			case fwUpdate::ERR_NOT_ALLOWED:
+			case fwUpdate::ERR_NOT_ENOUGH_MEMORY:
+			case fwUpdate::ERR_OLDER_FIRMWARE:
+			case fwUpdate::ERR_MAX_CHUNK_SIZE:
+			case fwUpdate::ERR_TIMEOUT:
+			case fwUpdate::ERR_CHECKSUM_MISMATCH:
+			case fwUpdate::ERR_COMMS:
+			case fwUpdate::ERR_NOT_SUPPORTED:
+			case fwUpdate::ERR_FLASH_WRITE_FAILURE:
+			case fwUpdate::ERR_FLASH_OPEN_FAILURE:
+			case fwUpdate::ERR_FLASH_INVALID:
+				return InertialSense::UPDATE_STATUS_ERROR;
+			default:
+				return InertialSense::UPDATE_STATUS_UNKOWN;
+		}
+
+	}
+	catch(...)
+	{
+		return InertialSense::UPDATE_STATUS_INVALID_INDEX;
+	}
+
+
+	return InertialSense::UPDATE_STATUS_UNKOWN;
+}
+
+/**
+* Gets current update status for selected device index
+* @param deviceIndex
+*/
+int InertialSense::getUpdateDeviceIndex(const char* com)
+{ 
+	for (int i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		if (strcmp(m_comManagerState.devices[i].serialPort.port, com))
+			return i;
+	}
+	return -1; 
+}
+
 
 is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 
