@@ -1145,6 +1145,9 @@ class logPlot:
                 # Do not plot satellites that appeared only for a short time
                 if (len(t) / len(tgps1[:,k])) < 0.1 and len(t) < 100:
                     continue
+                if np.size(ind1) != np.size(ind2):
+                    # Why is this happening? Need to debug here.
+                    continue
                 delta_P_L1 = np.squeeze(Pgps1[0,ind1,k] - Pgps2[0,ind2,k])
                 delta_P_L5 = np.squeeze(Pgps1[1,ind1,k] - Pgps2[1,ind2,k])
                 delta_L_L1 = np.squeeze(Lgps1[0,ind1,k] - Lgps2[0,ind2,k])
