@@ -2041,31 +2041,31 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	char *ptr = (char *)&msg[6];				// $ASCB
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }		
 	ptr = ASCII_find_next_field(ptr);			// PIMU
-	if(*ptr!=','){ tmp.pimu = (uint16_t)atoi(ptr); }	
+	if(*ptr!=','){ tmp.pimu = (uint8_t)atoi(ptr); }	
 	ptr = ASCII_find_next_field(ptr);			// PPIMU
-	if(*ptr!=','){ tmp.ppimu = (uint16_t)atoi(ptr); }
+	if(*ptr!=','){ tmp.ppimu = (uint8_t)atoi(ptr); }
 	ptr = ASCII_find_next_field(ptr);			// PINS1
-	if(*ptr!=','){ tmp.pins1 = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.pins1 = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PINS2
-	if(*ptr!=','){ tmp.pins2 = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.pins2 = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PGPSP
-	if(*ptr!=','){ tmp.pgpsp = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.pgpsp = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// PRIMU
-	if(*ptr!=','){ tmp.primu = (uint16_t)atoi(ptr); }
+	if(*ptr!=','){ tmp.primu = (uint8_t)atoi(ptr); }
 	ptr = ASCII_find_next_field(ptr);			// gga
-	if(*ptr!=','){ tmp.gga = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gga = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gll
-	if(*ptr!=','){ tmp.gll = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gll = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gsa
-	if(*ptr!=','){ tmp.gsa = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gsa = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// rmc
-	if(*ptr!=','){ tmp.rmc = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.rmc = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// zda
-	if(*ptr!=','){ tmp.zda = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.zda = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// pashr
-	if(*ptr!=','){ tmp.pashr = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.pashr = (uint8_t)atoi(ptr);	}
 	ptr = ASCII_find_next_field(ptr);			// gsv
-	if(*ptr!=','){ tmp.gsv = (uint16_t)atoi(ptr);	}
+	if(*ptr!=','){ tmp.gsv = (uint8_t)atoi(ptr);	}
 		
 	// Copy tmp to corresponding port(s)
 	switch (options&RMC_OPTIONS_PORT_MASK)
@@ -2101,14 +2101,14 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
 	ptr = ASCII_to_u32(&options, ptr);
 	uint32_t id;
-	uint16_t period;
+	uint8_t period;
 	for (int i=0; i<20; i++)
 	{
 		if(*ptr=='*'){ break; }
 		id = ((*ptr==',') ? 0 : atoi(ptr));
 		ptr = ASCII_find_next_field(ptr);
 		if(*ptr=='*'){ break; }
-		period = ((*ptr==',') ? 0 : (uint16_t)atoi(ptr));	
+		period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
 		ptr = ASCII_find_next_field(ptr);
 
 		switch (options&RMC_OPTIONS_PORT_MASK)

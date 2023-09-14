@@ -178,11 +178,11 @@ sudo udevadm control --reload-rules
 
 ## Compile & Run (Windows MS Visual Studio)
 1. [Install and Configure Visual Studio](../getting-started/#installing-and-configuring-visual-studio)
-2. Open Visual Studio solution file (inertial-sense-sdk/cltool/VS_project/cltool.sln)
-3. Build (F7)
+2. Open the project folder in Visual Studio: Open a local folder -> inertial-sense-sdk/cltool/
+3. Build All
 4. Run executable
    ``` bash
-   C:\inertial-sense-sdk\cltool\VS_project\Release\cltool.exe
+   C:\inertial-sense-sdk\cltool\out\...\cltool.exe
    ```
 
 

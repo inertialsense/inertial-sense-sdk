@@ -12,7 +12,6 @@
 #include "ISConstants.h"
 #include "ISUtilities.h"
 
-
 #ifdef __cplusplus
 #include <string>
 extern "C" {
@@ -127,8 +126,8 @@ namespace fwUpdate {
 
     enum update_status_e : int16_t {
         FINISHED = 4,               // indicates that all chunks have been received, and the checksum is valid.
-        WAITING_FOR_DATA = 3,       // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
-        GOOD_TO_GO = 2,             // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
+        IN_PROGRESS = 3,            // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
+        READY = 2,                  // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
         INITIALIZING = 1,           // indicates that an update has been requested, but the subsystem is waiting on completion of the bootloader or other back-end mechanism to initialize before data transfer can begin.
         NOT_STARTED = 0,            // indicates that the update process has not been initiated (it will fall back to this after an error, and a short timeout).
         ERR_INVALID_SESSION = -1,   // indicates that the requested session ID is invalid.
@@ -161,33 +160,33 @@ namespace fwUpdate {
 
         struct { } req_version;
 
-        struct {
+        struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
             uint16_t image_slot;    //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
             uint32_t file_size;     //! the total size of the entire firmware file
             uint16_t chunk_size;    //! the maximum size of each chunk
             uint16_t progress_rate; //! the rate (millis) at which the device should publish progress reports back to the host.
             uint32_t md5_hash[4];   //! the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
-        } req_update __attribute__((__packed__));
+        } req_update;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             uint16_t totl_chunks;   //! the total number of chunks that are necessary to transmit the entire firmware file
             update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
-        } update_resp __attribute__((__packed__));
+        } update_resp;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             uint16_t chunk_id;      //! the chunk number identifying this portion of the firmware
             uint16_t data_len;      //! the number of bytes of accompanying data
             uint8_t data;           //! the first byte of data (cast to a uint8_t * to access the rest...)
-        } chunk __attribute__((__packed__));
+        } chunk;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             uint16_t chunk_id;      //! the chunk number identifying this portion of the firmware which should be resent
             resend_reason_e reason; //! an indicator of why this chunk was requested. This is optional, but is useful for debugging purposes. Regardless of the reason, the requested chunk, and all subsequent chunks must be resent.
-        } req_resend __attribute__((__packed__));
+        } req_resend;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
@@ -197,12 +196,12 @@ namespace fwUpdate {
             uint8_t msg_level;      //! a numerical indication of the criticality of this message, 0 being the highest. Best practive is to associate syslog type levels here (CRITICAL, ERROR, WARN, INFO, DEBUG, etc).
             uint8_t msg_len;        //! the length of the following string (in bytes)
             uint8_t message;        //! an arbitrary human-readable string, that is intended to be consumed by the user to give status about the update process
-        } progress __attribute__((__packed__));
+        } progress;
 
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate/associate the data stream.
             update_status_e status; //! a status code (OK, ERROR, etc). Any error reported invalidates the session_id, and a new request with a new session_id must be made
-        } resp_done __attribute__((__packed__));
+        } resp_done;
 
         struct PACKED {
             uint8_t hardwareVer[4]; //! Hardware version
@@ -220,7 +219,7 @@ namespace fwUpdate {
             uint8_t buildMinute;    //! Build time minute
             uint8_t buildSecond;    //! Build time second
             uint8_t buildMillis;    //! Build time millisecond
-        } version_resp __attribute__((__packed__));
+        } version_resp;
     } msg_data_t;
 
     typedef struct PACKED {
@@ -261,7 +260,7 @@ namespace fwUpdate {
          * @param max_len
          * @return
          */
-        int packPayload(uint8_t* buffer, int max_len, const payload_t& msg_payload, const void *aux_data=nullptr);
+        int packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data=nullptr);
 
         /**
          * Unpacks a DID payload byte buffer (from the comms system) into a firmware_update msg_payload_t struct
@@ -272,7 +271,7 @@ namespace fwUpdate {
          * @param msg_payload the payload_t struct that the data will be unpacked into.
          * @return true on success, otherwise false
          */
-        int unpackPayload(const uint8_t* buffer, int buf_len, payload_t& msg_payload, void *aux_data=nullptr, uint16_t max_aux=0);
+        int unpackPayload(const uint8_t* buffer, int buf_len, payload_t& payload, void *aux_data=nullptr, uint16_t max_aux=0);
 
         /**
          * Unpacks a DID payload byte buffer (from the comms system) into a fwUpdate::payload_t struct, but avoids making copies of the data.
@@ -282,7 +281,7 @@ namespace fwUpdate {
          * @param aux_data a double-pointer which on return will point to any auxilary data in the payload, or nullptr if there is none
          * @return returns the total number of bytes in the packet, including aux data if any
          */
-        int unpackPayloadNoCopy(const uint8_t *buffer, int buf_len, payload_t** msg_payload, void** aux_data);
+        int unpackPayloadNoCopy(const uint8_t *buffer, int buf_len, payload_t** payload, void** aux_data);
 
             /**
              * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
@@ -304,8 +303,21 @@ namespace fwUpdate {
         void getCurrentMd5(uint32_t(&md5sum)[4]);
 
     protected:
-        uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];     //! workspace for packing/unpacking payload messages
-        uint32_t md5hash[4];                                 //! storage for running md5 hash
+        uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
+        uint32_t md5hash[4];                                    //! storage for running md5 hash
+        uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
+        uint32_t timeout_duration = 15000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
+        uint32_t resend_count = 0;                              //! the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
+
+        target_t target_id = TARGET_NONE;
+        update_status_e session_status = NOT_STARTED;           //! last known state of this session
+        uint16_t session_id = 0;                                //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
+        uint16_t session_chunk_size = 0;                        //! the negotiated maximum size for each chunk.
+        uint16_t session_total_chunks = 0;                      //! the total number of chunks for the given image size
+        uint32_t session_image_size = 0;                        //! the total size of the image to be sent
+        uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
+        uint32_t session_md5[4] = {0, 0, 0, 0};   //! the md5 of the firmware image
+
 
         /**
          * packages and sends the specified payload, including any auxillary data.
@@ -329,21 +341,21 @@ namespace fwUpdate {
          * Sets the duration (in milliseconds) which will trigger a Timeout status if a session has been started, but no further communications has been received for this target (host or device).
          * @param timeout
          */
-        void setTimeoutDuration(uint32_t timeout) { timeoutDuration = timeout; }
+        void setTimeoutDuration(uint32_t timeout) { timeout_duration = timeout; }
 
         /**
          * Returns the elapsed time since the last message was received by this target, meant for this target.  Use this value > timeoutDuration to detect a timeout condition.
          * @return
          */
-        uint32_t getLastMessageAge() { return current_timeMs() - lastMessage; }
+        uint32_t getLastMessageAge() { return current_timeMs() - last_message; }
 
         /**
          * Forces a reset of the last message time; this is useful when first starting a new session.
          */
-        void resetTimeout() { lastMessage = current_timeMs(); }
+        void resetTimeout() { last_message = current_timeMs(); }
 
-        uint32_t lastMessage = 0;          //! the time (millis) since we last received a payload targeted for us.
-        uint32_t timeoutDuration = 15000;   //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
+        char* payloadToString(fwUpdate::payload_t* payload);
+        const char *getSessionStatusName(update_status_e status);
 
     private:
         /**
@@ -351,7 +363,7 @@ namespace fwUpdate {
          * @param msg
          * @return the number of bytes that this entire message contains, including headers, etc.
          */
-        static size_t getMsgSize(const payload_t* msg, bool include_aux=false);
+        static size_t getPayloadSize(const payload_t* payload, bool include_aux=false);
     };
 
     /**
@@ -381,12 +393,13 @@ namespace fwUpdate {
         bool processMessage(const uint8_t* buffer, int buf_len);
 
         update_status_e getSessionStatus() { return session_status; }
-        uint16_t getSessionID() { return cur_session_id; }
+        uint16_t getSessionID() { return session_id; }
+        float getResendRate() { return ((float)resend_count / (float)last_chunk_id); }
         uint16_t getLastChunkID() { return last_chunk_id; }
-        uint16_t getChunkSize() { return chunk_size; }
-        uint16_t getTotalChunks() { return total_chunks; }
-        uint16_t getImageSize() { return image_size; }
-        uint16_t getImageSlot() { return image_slot; }
+        uint16_t getChunkSize() { return session_chunk_size; }
+        uint16_t getTotalChunks() { return session_total_chunks; }
+        uint16_t getImageSize() { return session_image_size; }
+        uint16_t getImageSlot() { return session_image_slot; }
 
 
         //===========  Functions which MUST be implemented ===========//
@@ -489,19 +502,15 @@ namespace fwUpdate {
 
         target_t getCurrentTarget() { return target_id; }
 
-        target_t target_id = TARGET_NONE;
         uint32_t progress_interval = 500;               // we'll send progress updates at 2hz.
         uint32_t nextProgressReport = 0;                // the next system
 
 
-        uint16_t cur_session_id = 0;                    //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
-        update_status_e session_status = NOT_STARTED;   //! last known state of this session
         uint16_t last_chunk_id = 0xFFFF;                //! the last received chunk id from a CHUNK message.  0xFFFF == no chunk yet received; the next received chunk must be 0.
-        uint16_t chunk_size = 0;                        //! the negotiated maximum size for each chunk.
-        uint16_t total_chunks = 0;                      //! the total number of chunks for the given image size
-        uint32_t image_size = 0;                        //! the total size of the image to be sent
-        uint8_t image_slot = 0;                         //! the "slot" to which this image will be written in the flash
-        uint32_t session_md5[4] = {0, 0, 0, 0};
+        //uint16_t chunk_size = 0;                        //! the negotiated maximum size for each chunk.
+        //uint16_t total_chunks = 0;                      //! the total number of chunks for the given image size
+        //uint32_t image_size = 0;                        //! the total size of the image to be sent
+        //uint8_t image_slot = 0;                         //! the "slot" to which this image will be written in the flash
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.
@@ -605,11 +614,14 @@ namespace fwUpdate {
         const char *getSessionStatusName();
 
         update_status_e getSessionStatus() { return session_status; }
-        uint16_t getSessionID() { return cur_session_id; }
+        uint16_t getSessionID() { return session_id; }
         uint16_t getNextChunkID() { return next_chunk_id; }
         uint16_t getChunkSize() { return session_chunk_size; }
         uint16_t getTotalChunks() { return session_total_chunks; }
         uint16_t getFinalImageSize() { return session_image_size; }
+        uint16_t getResendCount() { return resend_count; }
+        float getResendRate() { return ((float)resend_count / (float)chunks_sent); }
+
 
     protected:
         //===========  Functions which MUST be implemented ===========//
@@ -634,16 +646,19 @@ namespace fwUpdate {
 
         virtual bool handleUpdateProgress(const payload_t& msg) = 0;
 
+        uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
+        uint16_t chunks_sent = 0;                       //! the total number of chunks that have been sent, including resends
+/*
         target_t target_id = TARGET_NONE;
 
         uint16_t cur_session_id = 0;                    //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
-        uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
 
         update_status_e session_status = NOT_STARTED;   //! last known state of this session
         uint16_t session_chunk_size = 0;                //! the negotiated maximum size for each chunk.
         uint16_t session_total_chunks = 0;              //! the total number of chunks for the given image size
         uint32_t session_image_size = 0;                //! the total size of the image to be sent
         uint8_t session_image_slot = 0;                 //! the "slot" to which this image will be written in the flash
+*/
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.

@@ -164,12 +164,12 @@ public:
         if (msg.data.req_update.chunk_size > 2048)
             return fwUpdate::ERR_MAX_CHUNK_SIZE;
 
-        return fwUpdate::GOOD_TO_GO;
+        return fwUpdate::READY;
     }
 
     // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
     fwUpdate::update_status_e writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
-        return fwUpdate::WAITING_FOR_DATA;
+        return fwUpdate::IN_PROGRESS;
     }
 
     // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
@@ -284,12 +284,12 @@ public:
     }
 
     bool handleUpdateResponse(const fwUpdate::payload_t& msg) {
-        if (msg.data.update_resp.session_id != cur_session_id)
+        if (msg.data.update_resp.session_id != session_id)
             return false; // ignore this message, its not for us
 
         session_status = msg.data.update_resp.status;
         session_total_chunks = msg.data.update_resp.totl_chunks;
-        if (session_status == fwUpdate::GOOD_TO_GO) {
+        if (session_status == fwUpdate::READY) {
             next_chunk_id = 0;
         }
 
@@ -297,7 +297,7 @@ public:
     }
 
     bool handleResendChunk(const fwUpdate::payload_t& msg) {
-        if (msg.data.update_resp.session_id != cur_session_id)
+        if (msg.data.update_resp.session_id != session_id)
             return false; // ignore this message, it's not for us
 
         next_chunk_id = msg.data.req_resend.chunk_id;
@@ -309,7 +309,7 @@ public:
     }
 
     bool handleUpdateProgress(const fwUpdate::payload_t& msg) {
-        if (msg.data.update_resp.session_id != cur_session_id)
+        if (msg.data.update_resp.session_id != session_id)
             return false; // ignore this message, it's not for us
 
         int num = msg.data.progress.num_chunks;
@@ -443,7 +443,7 @@ TEST(ISFirmwareUpdate, pack_unpack__update_resp)
     fuMsg.hdr.msg_type = fwUpdate::MSG_UPDATE_RESP;
     fuMsg.data.update_resp.session_id = session_id;
     fuMsg.data.update_resp.totl_chunks = 1234;
-    fuMsg.data.update_resp.status = fwUpdate::WAITING_FOR_DATA;
+    fuMsg.data.update_resp.status = fwUpdate::IN_PROGRESS;
 
     int packed_size = fuSDK.packPayload(buffer, sizeof(buffer), fuMsg);
     EXPECT_EQ(packed_size, 14);
@@ -456,7 +456,7 @@ TEST(ISFirmwareUpdate, pack_unpack__update_resp)
     EXPECT_EQ(outMsg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
     EXPECT_EQ(outMsg->data.update_resp.session_id, session_id);
     EXPECT_EQ(outMsg->data.update_resp.totl_chunks, 1234);
-    EXPECT_EQ(outMsg->data.update_resp.status, fwUpdate::WAITING_FOR_DATA);
+    EXPECT_EQ(outMsg->data.update_resp.status, fwUpdate::IN_PROGRESS);
 
     int unpack_len = fuSDK.unpackPayload(buffer, packed_size, fuMsg);
     EXPECT_EQ(unpack_len, 14);
@@ -636,7 +636,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl) {
                 EXPECT_EQ(msg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
                 EXPECT_EQ(msg->data.update_resp.session_id, 17767);
                 EXPECT_EQ(msg->data.update_resp.totl_chunks, 1206);
-                EXPECT_EQ(msg->data.update_resp.status, fwUpdate::GOOD_TO_GO); // any negative value is an error
+                EXPECT_EQ(msg->data.update_resp.status, fwUpdate::READY); // any negative value is an error
             }
         }
     }
@@ -666,11 +666,11 @@ TEST(ISFirmwareUpdate, exchange__success)
     fuDev.pullAndProcessNextMessage();
     fuSDK.step(); // advance Host, to process the Device response
 
-    EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
+    EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::READY);
 
     // from here out, this should be normal.
     while((fuSDK.getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != 65536)) {
-        if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA)) {
+        if ((fuSDK.getSessionStatus() == fwUpdate::READY) || (fuSDK.getSessionStatus() == fwUpdate::IN_PROGRESS)) {
             fuSDK.sendNextChunk();
         }
 
@@ -711,14 +711,14 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
     fuSDK.step(); // advance Host, to process the Device response
 
-    EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
+    EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::READY);
     // but we'll only provide 4...
     for (int i = 0 ; i < 4; i++) {
         // Force the device-side to pull the message, and respond.
-        if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA)) {
+        if ((fuSDK.getSessionStatus() == fwUpdate::READY) || (fuSDK.getSessionStatus() == fwUpdate::IN_PROGRESS)) {
             fuSDK.sendNextChunk();
         } else {
-            EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
+            EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::READY);
         }
         fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
         fuSDK.step();
@@ -759,7 +759,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
         if (fuSDK.getSessionStatus() < fwUpdate::NOT_STARTED)
             break;
 
-        if ((fuSDK.getSessionStatus() == fwUpdate::GOOD_TO_GO) || (fuSDK.getSessionStatus() == fwUpdate::WAITING_FOR_DATA))
+        if ((fuSDK.getSessionStatus() == fwUpdate::READY) || (fuSDK.getSessionStatus() == fwUpdate::IN_PROGRESS))
             fuSDK.sendNextChunk();
     }
 
@@ -784,13 +784,13 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
 
     fuDev.pullAndProcessNextMessage(); // advance Device, to process the request and send the response
     fuSDK.step(); // advance Host, to process the Device response
-    EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::GOOD_TO_GO);
+    EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::READY);
 
     // from here out, this should be normal.
     int i = 0;
     while(fuSDK.getSessionStatus() < fwUpdate::FINISHED) {
         i++;
-        if (fuSDK.getSessionStatus() >= fwUpdate::GOOD_TO_GO) {
+        if (fuSDK.getSessionStatus() >= fwUpdate::READY) {
             fuSDK.sendNextChunk();
         }
 
