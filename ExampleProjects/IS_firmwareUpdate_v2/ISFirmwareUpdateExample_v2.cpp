@@ -111,9 +111,11 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 
 int main(int argc, char* argv[])
 {
+
+	InertialSense::is_update_status_t status;
 	string COMNum = "COM6";
 	//string COMNum = "";
-	string fileName = "..\\..\\..\\Firmware\\IS_GPX-1_zephyr.signed.encrypted.bin";
+	string fileName = "../../../Firmware/IS_GPX-1_zephyr.signed.encrypted.bin";
 	//string fileName = "IS_GPX-1_zephyr.signed.encrypted.bin";
 	uint32_t baudRate = IS_BAUDRATE_921600;
 
@@ -204,8 +206,7 @@ int main(int argc, char* argv[])
 				if (deviceIndex >= 0)
 				{
 					// Main loop. Could be in separate thread if desired.
-					while (inertialSenseInterface.getUpdateStatus(deviceIndex) != InertialSense::UPDATE_STATUS_ERROR &&
-						inertialSenseInterface.getUpdateStatus(deviceIndex) != InertialSense::UPDATE_STATUS_DONE)
+					do
 					{
 						// [C++ COMM INSTRUCTION] STEP 4: Read data
 						if (!inertialSenseInterface.Update())
@@ -213,7 +214,13 @@ int main(int argc, char* argv[])
 							cout << "Device disconnected!\r\n";
 							break;
 						}
-					}
+
+						status = inertialSenseInterface.getUpdateStatus(deviceIndex);
+
+					} while (status != InertialSense::UPDATE_STATUS_ERROR && 
+							 status != InertialSense::UPDATE_STATUS_DONE);
+
+					cout << "Finished!\r\n";
 				}
 				else
 					cout << "Bad device index!\r\n";
