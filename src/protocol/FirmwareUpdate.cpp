@@ -67,10 +67,12 @@ namespace fwUpdate {
         if (payload_size > max_len) return -1; // Not enough buffer space
         if (payload_size == 0) return -2; // Unknown/invalid message
 
+#ifdef DEBUG_CONSOLE_LOGGING
 #ifdef __ZEPHYR__
         printk("fwTX: %s\n", payloadToString((payload_t *)&payload));
 #elif !(PLATFORM_IS_EMBEDDED)
         printf("fwTX: %s\n", payloadToString((payload_t *)&payload));
+#endif
 #endif
 
         memcpy(buffer, (void *) &payload, payload_size);
@@ -144,10 +146,12 @@ namespace fwUpdate {
 
         *payload = (payload_t*)buffer;
 
+#ifdef DEBUG_CONSOLE_LOGGING
 #ifdef __ZEPHYR__
         printk("fwRX: %s\n", payloadToString((payload_t*)buffer));
 #elif !(PLATFORM_IS_EMBEDDED)
         // printf("fwRX: %s\n", payloadToString((payload_t*)buffer));
+#endif
 #endif
 
         return payload_size + aux_len;
@@ -173,7 +177,7 @@ namespace fwUpdate {
         switch (payload->hdr.msg_type) {
             case MSG_REQ_UPDATE:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ", payload->data.req_update.session_id, payload->data.req_update.file_size, payload->data.req_update.chunk_size);
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%8x%8x%8x%8x]", payload->data.req_update.md5_hash[0], payload->data.req_update.md5_hash[1], payload->data.req_update.md5_hash[2], payload->data.req_update.md5_hash[3]);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]", payload->data.req_update.md5_hash[0], payload->data.req_update.md5_hash[1], payload->data.req_update.md5_hash[2], payload->data.req_update.md5_hash[3]);
                 break;
             case MSG_UPDATE_RESP:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]", payload->data.update_resp.session_id, getSessionStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
@@ -455,7 +459,8 @@ namespace fwUpdate {
             va_start(ap, message);
             msg_len = vsnprintf(buffer, sizeof(buffer) - 1, message, ap);
             va_end(ap);
-        }
+        } else
+            memset(buffer, 0, sizeof(buffer));
 
         if (msg_len >= sizeof(buffer)-1)
             return false;
@@ -466,9 +471,10 @@ namespace fwUpdate {
         msg.data.progress.session_id = session_id;
         msg.data.progress.status = session_status;
         msg.data.progress.totl_chunks = session_total_chunks;
-        msg.data.progress.num_chunks = last_chunk_id+1;
+        msg.data.progress.num_chunks = _MAX(0, _MIN(session_total_chunks, last_chunk_id+1));
         msg.data.progress.msg_level = level;
-        msg.data.progress.msg_len = msg_len + 1; // don't forget the null-terminator
+        msg.data.progress.msg_len = msg_len;
+        msg.data.progress.message = 0;
 
         msg_len = packPayload(build_buffer, sizeof(build_buffer), msg, buffer);
         return writeToWire((fwUpdate::target_t)msg.hdr.target_device, build_buffer, msg_len);
@@ -489,8 +495,8 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateDevice::resetEngine() {
         resend_count = 0;
-        session_id = 0;       //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
-        last_chunk_id = 0xFFFF;   //! the last received chunk id from a CHUNK message.  0xFFFF == no chunk yet received; the next received chunk must be 0.
+        session_id = 0;       // the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
+        last_chunk_id = -1;   // the last received chunk id from a CHUNK message.  -1 == no chunk yet received; the next received chunk must be 0.
         session_status = NOT_STARTED;
         resetMd5();
         return true;
@@ -558,38 +564,36 @@ namespace fwUpdate {
         }
 
         // ensure data_len is the same as session_chunk_size, unless its the very last chunk
-        if (payload.data.chunk.data_len != session_chunk_size) {
-            // if this is the very last chunk, and it doesn't equal the remaining number of bytes in the file, its invalid.
-            if (!((payload.data.chunk.chunk_id == session_total_chunks) && (payload.data.chunk.data_len == (session_image_size % session_chunk_size)))) {
-                sendRetry(REASON_INVALID_SIZE);
-            }
+        uint16_t mod_size = (session_image_size % session_chunk_size);
+        uint16_t expected_size = ((payload.data.chunk.chunk_id == session_total_chunks-1) && (mod_size != 0)) ? mod_size : session_chunk_size;
+        if (payload.data.chunk.data_len != expected_size) {
+            sendRetry(REASON_INVALID_SIZE);
             return false;
         }
 
-        // if we're here, all our validations have passed...
-        session_status = IN_PROGRESS;
+        uint32_t chnk_offset = payload.data.chunk.chunk_id * session_chunk_size;
+        if (writeImageChunk((fwUpdate::target_t)payload.hdr.target_device, session_image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data) < NOT_STARTED) {
+            sendRetry(REASON_WRITE_ERROR);
+            return false;
+        }
 
+        // if we're here, all our validations have passed, and we've successfully written our data to flash...
+        session_status = IN_PROGRESS;
+        last_chunk_id = payload.data.chunk.chunk_id;
         // run the chunk data through the md5 hasher
         hashMd5(payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
 
-        uint32_t chnk_offset = payload.data.chunk.chunk_id * session_chunk_size;
-        if (writeImageChunk((fwUpdate::target_t)payload.hdr.target_device, session_image_slot, chnk_offset, payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data) > READY) {
-            // note that we successfully wrote this chunk, so we can start to handle the next.
-            last_chunk_id = payload.data.chunk.chunk_id;
-        }
-
         // if we've received the last message, confirm the checksum and then send a final status to notify the host that we've received everything error-free.
-        if (last_chunk_id >= (session_total_chunks - 1)) {
+        if (last_chunk_id >= (session_total_chunks-1)) { // remember, chunk_ids are 0-based
+            sendProgress(); // force sending of a final progress message (which should report 100% complete)
+
             payload_t response;
             response.hdr.target_device = TARGET_NONE;
             response.hdr.msg_type = MSG_UPDATE_FINISHED;
             response.data.resp_done.session_id = session_id;
 
             // check our md5 hash
-            if (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0)
-                response.data.resp_done.status = ERR_CHECKSUM_MISMATCH;
-            else
-                response.data.resp_done.status = finishFirmwareUpgrade(target_id, session_image_slot);
+            response.data.resp_done.status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : finishFirmwareUpgrade(target_id, session_image_slot);
             sendPayload(response);
         }
 
@@ -625,7 +629,7 @@ namespace fwUpdate {
         response.data.req_resend.session_id = session_id;
         response.data.req_resend.chunk_id = last_chunk_id + 1;
         response.data.req_resend.reason = reason;
-        resend_count++;
+        //resend_count++;
         return sendPayload(response);
     }
 
@@ -643,25 +647,25 @@ namespace fwUpdate {
      * @param msg_payload the contents of the DID_FIRMWARE_UPDATE payload
      * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
      */
-    bool FirmwareUpdateSDK::processMessage(const payload_t& msg_payload) {
-        if (msg_payload.hdr.target_device != TARGET_NONE)
+    bool FirmwareUpdateSDK::processMessage(const payload_t& payload) {
+        if (payload.hdr.target_device != TARGET_NONE)
             return false;
 
-        if ((msg_payload.hdr.msg_type != MSG_REQ_UPDATE) && (msg_payload.data.update_resp.session_id != session_id))
+        if ((payload.hdr.msg_type != MSG_REQ_UPDATE) && (payload.data.update_resp.session_id != session_id))
             return false; // ignore this message, its not for us
 
         resetTimeout();
-        // printf("Received message: %d : %d\n", msg_payload.hdr.target_device, msg_payload.hdr.msg_type);
-        switch (msg_payload.hdr.msg_type) {
+        switch (payload.hdr.msg_type) {
             case MSG_UPDATE_RESP:
-                return handleUpdateResponse(msg_payload);
+                return handleUpdateResponse(payload);
             case MSG_UPDATE_PROGRESS:
-                return handleUpdateProgress(msg_payload);
+                return handleUpdateProgress(payload);
             case MSG_REQ_RESEND_CHUNK:
-                resend_count += next_chunk_id - msg_payload.data.req_resend.chunk_id ;
-                return handleResendChunk(msg_payload);
+                resend_count += next_chunk_id - payload.data.req_resend.chunk_id ;
+                next_chunk_id = payload.data.req_resend.chunk_id;
+                return handleResendChunk(payload);
             case MSG_UPDATE_FINISHED:
-                session_status = msg_payload.data.resp_done.status;
+                session_status = payload.data.resp_done.status;
                 return true;
             case MSG_VERSION_INFO_RESP:
                 // FIXME: we want to do something with this data...
@@ -730,10 +734,10 @@ namespace fwUpdate {
         request.data.req_update.image_slot = session_image_slot;
         request.data.req_update.chunk_size = session_chunk_size;
         request.data.req_update.file_size = session_image_size;
-        request.data.req_update.md5_hash[0] = md5hash[0];
-        request.data.req_update.md5_hash[1] = md5hash[1];
-        request.data.req_update.md5_hash[2] = md5hash[2];
-        request.data.req_update.md5_hash[3] = md5hash[3];
+        request.data.req_update.md5_hash[0] = session_md5[0];
+        request.data.req_update.md5_hash[1] = session_md5[1];
+        request.data.req_update.md5_hash[2] = session_md5[2];
+        request.data.req_update.md5_hash[3] = session_md5[3];
 
         return sendPayload(request);
     }
@@ -741,7 +745,7 @@ namespace fwUpdate {
     int FirmwareUpdateSDK::sendNextChunk() {
         payload_t* msg = (payload_t*)&build_buffer;
 
-        if (next_chunk_id > session_total_chunks)
+        if (next_chunk_id >= session_total_chunks)
             return 0; // don't keep sending chunks... but also, don't "finish" the update (that's the remote's job).
 
         // I'm exploiting the pack/unpack + build_buffer to allow building a payload in place, including room for the chunk data.
@@ -749,7 +753,7 @@ namespace fwUpdate {
         msg->hdr.msg_type = fwUpdate::MSG_UPDATE_CHUNK;
         msg->data.chunk.session_id = session_id;
         msg->data.chunk.chunk_id = next_chunk_id;
-        msg->data.chunk.data_len = (msg->data.chunk.chunk_id < session_total_chunks ? session_chunk_size : session_image_size % session_chunk_size);
+        msg->data.chunk.data_len = ((msg->data.chunk.chunk_id == session_total_chunks-1) && (session_image_size % session_chunk_size)) ? (session_image_size % session_chunk_size) : session_chunk_size;
 
         // by calling unpackPayloadNoCopy(...) we basically just re-map the msg point back onto itself, but
         // we also get the *aux_data pointer, which we can then pass onto getNextChunk(), which it will write
@@ -761,10 +765,8 @@ namespace fwUpdate {
         int chunk_len = getImageChunk(offset, msg->data.chunk.data_len, &chunk_data);
         if (chunk_len == msg->data.chunk.data_len) {
             chunks_sent++; // we track the total number of chunks that we've tried to send, regardless of whether we sent it successfully or not
-            // printf("Uploading Firmware Chunk %d (%0.1f%%)\n", msg->data.chunk.chunk_id, (((float)msg->data.chunk.chunk_id / (float)session_total_chunks) * 100.0f));
             if (writeToWire((fwUpdate::target_t) msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful
-
         }
 
         return (session_total_chunks - next_chunk_id);

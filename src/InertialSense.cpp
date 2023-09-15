@@ -380,18 +380,20 @@ bool InertialSense::Update()
                     if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
-                            printf("Unable to start firmware update: %s\n", fwUpdater->getSessionStatusName());
+                            // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
 
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
+#ifdef DEBUG_CONSOLELOGGING
                     } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
-                        float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)(fwUpdater->getNextChunkID()-1) / (float)fwUpdater->getTotalChunks() * 100.f);
+                        float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)fwUpdater->getNextChunkID() / (float)fwUpdater->getTotalChunks() * 100.f);
                         float errRt = fwUpdater->getResendRate() * 100.f;
                         const char *status = fwUpdater->getSessionStatusName();
-                        printf("[%0.2f] SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", current_timeMs()/1000.f, serialNo, status, fwUpdater->getNextChunkID()-1, fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
+                        printf("SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", serialNo, status, fwUpdater->getNextChunkID(), fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
+#endif
                     }
                     lastStatus = status;
                     lastChunk = fwUpdater->getNextChunkID();
