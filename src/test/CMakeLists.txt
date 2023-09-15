@@ -3,7 +3,7 @@ project(SDK_test)
 
 # Locate GTest
 find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS} ../libusb/libusb)
+include_directories(${GTEST_INCLUDE_DIRS} ../libusb/libusb ../protocol ..)
 
 add_library(SDK_test
 	test_com_manager.cpp
@@ -11,6 +11,7 @@ add_library(SDK_test
 	test_InertialSense.cpp
 	test_ISComm.cpp
 	test_ISDataMappings.cpp
+	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
 	test_protocol_nmea.cpp
@@ -40,6 +41,7 @@ add_library(SDK_test
 	../ISPolynomial.c
 	../ISPose.c
 	../ISUtilities.cpp
+	../protocol/FirmwareUpdate.cpp
 	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c
@@ -55,6 +57,7 @@ add_executable(run_tests
 	test_InertialSense.cpp
 	test_ISComm.cpp
 	test_ISDataMappings.cpp
+	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
 	test_ring_buffer.cpp
@@ -69,6 +72,7 @@ add_executable(run_tests
 	../ISPolynomial.c
 	../ISPose.c
 	../ISUtilities.cpp
+	../protocol/FirmwareUpdate.cpp
 	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c

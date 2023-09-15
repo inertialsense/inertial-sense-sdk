@@ -15,17 +15,19 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
 
+	NMEA_MSG_UINT_INTE = 0x494E5445,		// "INTE"
+	NMEA_MSG_UINT_PASH = 0x50415348,		// "PASH"
 	NMEA_MSG_UINT_PIMU = 0x50494d55,		// "PIMU"
-	NMEA_MSG_UINT_PPIM = 0x5050494d,		// "PPIM"
-	NMEA_MSG_UINT_PRIM = 0x5052494d,		// "PRIM"
 	NMEA_MSG_UINT_PINS = 0x50494e53,		// "PINS"
 	NMEA_MSG_UINT_PGPS = 0x50475053,		// "PGPS"
-	NMEA_MSG_UINT_PASH = 0x50415348,		// "PASH"
+	NMEA_MSG_UINT_PPIM = 0x5050494d,		// "PPIM"
+	NMEA_MSG_UINT_PRIM = 0x5052494d,		// "PRIM"
 	
 	NMEA_MSG_UINT_GGA = 0x4747412c,			// "GGA,"
 	NMEA_MSG_UINT_GLL = 0x474c4c2c,			// "GLL,"
 	NMEA_MSG_UINT_GSA = 0x4753412c,			// "GSA,"
 	NMEA_MSG_UINT_RMC = 0x524d432c, 		// "RMC,"
+	NMEA_MSG_UINT_VTG = 0x5654472c, 		// "VTG,"
 	NMEA_MSG_UINT_ZDA = 0x5a44412c, 		// "ZDA,"
 };
 
@@ -72,7 +74,7 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos);
 int nmea_gsa(char a[], const int aSize, gps_pos_t &pos, gps_sat_t &gpsSat);
 int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magDeclination);
 int nmea_zda(char a[], const int aSize, gps_pos_t &pos);
-int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, ins_1_t &ins1, float magHeadingRad);
+int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magVarCorrectionRad=0.0f);
 int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
 int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno=false);
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
@@ -89,10 +91,13 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-int nmea_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
-int nmea_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
-int nmea_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &gpsSat, const char a[], const int aSize);
-int nmea_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize);
+int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &gpsPos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1], const char a[], const int aSize);
+int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
+int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
+int nmea_parse_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &gpsSat, const char a[], const int aSize);
+int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize);
+int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3]);
+int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS);
 
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);

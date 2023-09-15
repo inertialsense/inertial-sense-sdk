@@ -227,13 +227,15 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 	}
     if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
+		cout << "Sending save persistent messages." << endl;
         system_command_t cfg;
         cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
     }
-    if (g_commandLineOptions.softwareResetUins)
+    if (g_commandLineOptions.softwareResetImx)
     {   // Issue software reset
+		cout << "Sending software reset." << endl;
         system_command_t cfg;
         cfg.command = SYS_CMD_SOFTWARE_RESET;
         cfg.invCommand = ~cfg.command;
@@ -241,13 +243,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.softwareResetEvb)
     {   // Issue software reset to EVB
+		cout << "Sending EVB software reset." << endl;
         uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
     }
     if (g_commandLineOptions.chipEraseEvb2)
     {   // Chip erase EVB
-        uint32_t sysCommand;
-		
+		cout << "Sending EVB chip erase." << endl;
+        uint32_t sysCommand;		
 		sysCommand = SYS_CMD_MANF_UNLOCK;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
         sysCommand = SYS_CMD_MANF_CHIP_ERASE;
@@ -255,7 +258,23 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
-		cout << "Sending system command: " << g_commandLineOptions.sysCommand << endl;
+		cout << "Sending system command: " << g_commandLineOptions.sysCommand;
+		switch(g_commandLineOptions.sysCommand)
+		{
+		case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1:
+		case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2:
+		case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0:
+		case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1:
+		case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2:
+		case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1:
+			cout << " Enable serial bridge"; break;
+		case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
+			cout << "Disable serial bridge"; break;
+		case SYS_CMD_MANF_FACTORY_RESET:            cout << " Factory Reset";           break;
+		case SYS_CMD_MANF_CHIP_ERASE:               cout << " Chip Erase";              break;
+		case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    cout << " Downgrade Calibration";   break;
+		}
+		cout << endl;
 		system_command_t cfg;
 
 		cfg.command = SYS_CMD_MANF_UNLOCK;
@@ -267,6 +286,19 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
 		return false;
     }
+	if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
+	{	
+		// Confirm 
+		cout << "CAUTION!!!\n\nSetting the device(s) platform type in OTP memory.  This can only be done a limited number of times.\n\nPlatform: " << g_commandLineOptions.platformType << "\n\n";
+
+		// Set platform type in OTP memory
+		manufacturing_info_t manfInfo = {};
+		manfInfo.key = 72720;
+		manfInfo.platformType = g_commandLineOptions.platformType;
+		// Write key (uint32_t) and platformType (int32_t), 8 bytes
+		inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
+		return false;
+	}
 
 	if (g_commandLineOptions.roverConnection.length() != 0)
 	{
@@ -317,20 +349,18 @@ static int cltool_updateFirmware()
 	cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 	
 	firmwareProgressContexts.clear();
-
 	if(InertialSense::BootloadFile(
 		g_commandLineOptions.comPort,
 		0,
         g_commandLineOptions.updateAppFirmwareFilename,
 		g_commandLineOptions.updateBootloaderFilename,
 		g_commandLineOptions.forceBootloaderUpdate,
-        g_commandLineOptions.baudRate, 
+        g_commandLineOptions.baudRate,
 		bootloadUpdateCallback,
 		(g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
 		cltool_bootloadUpdateInfo,
 		cltool_firmwareUpdateWaiter
 	) == IS_OP_OK) return 0;
-	
 	return -1;
 }
 
@@ -365,13 +395,13 @@ void printProgress()
 
 	cISBootloaderThread::m_ctx_mutex.unlock();
 
-	if (divisor) 
+	if (divisor)
 	{
 		total /= divisor;
 		int display = (int)(total * 100);
 #if 0
-		// Print progress in one spot using \r.  In some terminals it causes scolling of new lines.   
-		printf("Progress: %d%%\r", display);	
+		// Print progress in one spot using \r.  In some terminals it causes scolling of new lines.
+		printf("Progress: %d%%\r", display);
 		fflush(stdout);
 #else
 		// Print progress in condensed format.
@@ -447,7 +477,7 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLev
 	{
 		printf("    | SN?:\r");
 	}
-	
+
 	printf("\t\t\t\t%s\r\n", str);
 	print_mutex.unlock();
 }
@@ -529,8 +559,9 @@ static int inertialSenseMain()
 		return !cltool_replayDataLog();
 	}
 	// if app firmware was specified on the command line, do that now and return
-	else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0)
+	else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_NONE) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
 	{
+        // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)
 		signal(SIGINT, sigint_cb);
 		return cltool_updateFirmware();
 	}
@@ -593,6 +624,24 @@ static int inertialSenseMain()
 			}
 			try
 			{
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                    if(inertialSenseInterface.updateFirmware(
+                            g_commandLineOptions.comPort,
+                            g_commandLineOptions.baudRate,
+                            g_commandLineOptions.updateFirmwareTarget,
+                            0,
+                            g_commandLineOptions.updateAppFirmwareFilename,
+                            bootloadUpdateCallback,
+                            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+                            cltool_bootloadUpdateInfo,
+                            cltool_firmwareUpdateWaiter
+                    ) != IS_OP_OK) {
+                        inertialSenseInterface.Close();
+                        inertialSenseInterface.CloseServerConnection();
+                        return -1;
+                    };
+                }
+
 				// Main loop. Could be in separate thread if desired.
 				while (!g_inertialSenseDisplay.ExitProgram())
 				{

@@ -817,9 +817,12 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 
 	// Prep data if callback exists
 	int sendData = 1;
-	if (cmInstance->regData[req->id].preTxFnc)
+	if (req->id < DID_COUNT_UINS)
 	{
-		sendData = cmInstance->regData[req->id].preTxFnc(pHandle, &(pkt->dataHdr));
+		if (cmInstance->regData[req->id].preTxFnc)
+		{
+			sendData = cmInstance->regData[req->id].preTxFnc(pHandle, &(pkt->dataHdr));
+		}
 	}
 
 	if (req->id == DID_REFERENCE_IMU)
@@ -932,7 +935,7 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_
 	}
 }
 
-// Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.
+// Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.  Returns 0 on success, -1 on failure.
 int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 {
 	return is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt);

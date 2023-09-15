@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
+#include "ISFirmwareUpdater.h"
 
 extern "C"
 {
@@ -45,6 +46,8 @@ extern "C"
 }
 
 #include <functional>
+
+#define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
 
 class InertialSense;
 
@@ -65,8 +68,10 @@ public:
 		dev_info_t devInfo;
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashCfg;
+		unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
 		evb_flash_cfg_t evbFlashCfg;
-		uint8_t syncState;
+		sys_params_t sysParams;
+        ISFirmwareUpdater *fwUpdater;
 	};
 
 	struct com_manager_cpp_state_t
@@ -254,7 +259,7 @@ public:
 	/**
 	* Set device configuration
 	* @param pHandle the pHandle to set sysCmd for
-	* @param command system command value
+	* @param command system command value (see eSystemCommand)
 	*/
 	void SetSysCmd(const uint32_t command, int pHandle = -1);
 
@@ -267,11 +272,19 @@ public:
 	bool GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0); 
 
 	/**
+	* Indicates whether the current IMX flash config has been downloaded and available via GetFlashConfig().
+	* @param pHandle the port pHandle to get flash config for
+	* @return bool whether the flash config is valid, currently synchronized.
+	*/
+	bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfg.checksum == device.sysParams.flashCfgChecksum; }
+
+	/**
 	* Set the flash config and update flash config on the uINS flash memory
 	* @param flashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
+	* @return int number bytes sent
 	*/
-	void SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+	int SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
 
 	/**
 	* Get the EVB flash config, returns the latest flash config read from the uINS flash memory
@@ -285,8 +298,9 @@ public:
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory
 	* @param evbFlashCfg the flash config
 	* @param pHandle the pHandle to set flash config for
+	* @return int number bytes sent
 	*/
-	void SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
+	int SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
 
 	void ProcessRxData(p_data_t* data, int pHandle);
 
@@ -386,6 +400,32 @@ public:
 		void (*waitAction)() = NULLPTR
 	);
 
+    /**
+     * V2 firmware update mechanism. Calling this function will attempt to inititate a firmware update with the targeted device(s) on the connected port(s), with callbacks to provide information about the status
+     * of the update process.
+     * @param comPort
+     * @param baudRate
+     * @param fileName
+     * @param uploadProgress
+     * @param verifyProgress
+     * @param infoProgress
+     * @param waitAction
+     * @param LoadFlashConfig
+     * @return
+     */
+    is_operation_result updateFirmware(
+            const std::string& comPort,
+            int baudRate,
+            fwUpdate::target_t targetDevice,
+            int slotNum,
+            const std::string& fileName,
+            ISBootloader::pfnBootloadProgress uploadProgress,
+            ISBootloader::pfnBootloadProgress verifyProgress,
+            ISBootloader::pfnBootloadStatus infoProgress,
+            void (*waitAction)()
+    );
+
+
 	/**
 	 * @brief LoadFlashConfig
 	 * @param path - Path to YAML flash config file
@@ -404,17 +444,9 @@ public:
 	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
 	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
-	// Sync state between this class and IMX device
-	enum IMXSyncState
-	{
-		NOT_SYNCHRONIZED    = 0,   // Download needed
-		SYNCHRONIZING       = 1,   // Uploading
-		SYNCHRONIZED        = 2,   // Flash config on IMX and locally match
-	};
-
-	int GetSyncState(int pHandle) { return m_comManagerState.devices[pHandle].syncState; }
-	InertialSense::com_manager_cpp_state_t* GetComManagerCppState(){ return &m_comManagerState; }
-
+	// Used for testing
+	InertialSense::com_manager_cpp_state_t* GetComManagerState() { return &m_comManagerState; }
+	InertialSense::is_device_t* GetComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:
 	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -451,6 +483,7 @@ private:
 	is_comm_instance_t m_gpComm;
 	uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 	mul_msg_stats_t m_serverMessageStats = {};
+	unsigned int m_syncCheckTimeMs = 0;
 
 	// returns false if logger failed to open
 	bool UpdateServer();
@@ -465,7 +498,7 @@ private:
 	static void LoggerThread(void* info);
 	static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
 	static void BootloadStatusUpdate(void* obj, const char* str);
-	void UpdateFlashConfigSyncState(uint32_t rxChecksum, int pHandle);
+	void SyncFlashConfig(unsigned int timeMs);
 };
 
 #endif

@@ -117,44 +117,39 @@ extern "C" {
 #endif
 
 #if PLATFORM_IS_WINDOWS
+    void usleep(__int64 usec);
+    #define DEFAULT_COM_PORT "COM4"
 
-void usleep(__int64 usec);
+    #ifndef SLEEP_MS
+        #define SLEEP_MS(milliseconds) Sleep(milliseconds);
+    #endif
 
-#define DEFAULT_COM_PORT "COM4"
-
-#ifndef SLEEP_MS
-#define SLEEP_MS(milliseconds) Sleep(milliseconds);
-#endif
-
-#ifndef SLEEP_US
-#define SLEEP_US(timeUs) usleep(timeUs);
-#endif
-
+    #ifndef SLEEP_US
+        #define SLEEP_US(timeUs) usleep(timeUs);
+    #endif
 #else // LINUX
+    #include <unistd.h>
+    #include <sys/time.h>
+    #include <stdarg.h>
 
-#include <unistd.h>
-#include <sys/time.h>
-#include <stdarg.h>
+    #define DEFAULT_COM_PORT "/dev/ttyUSB0"
 
-#define DEFAULT_COM_PORT "/dev/ttyUSB0"
+    #ifndef SLEEP_MS
+        #define SLEEP_MS(timeMs) usleep(timeMs * 1000);
+    #endif
 
-#ifndef SLEEP_MS
-#define SLEEP_MS(timeMs) usleep(timeMs * 1000);
-#endif
+    #ifndef SLEEP_US
+        #define SLEEP_US(timeUs) usleep(timeUs);
+    #endif
 
-#ifndef SLEEP_US
-#define SLEEP_US(timeUs) usleep(timeUs);
-#endif
-
-// 0 for no output, 1 for verbose, 2 for spinning cursor
-#if PLATFORM_IS_EMBEDDED
-#define LOG_DEBUG_GEN			0
-#elif !defined(LOG_DEBUG_GEN)
-#define LOG_DEBUG_GEN			2
-#else
-
-#endif
-
+    // 0 for no output, 1 for verbose, 2 for spinning cursor
+    #if PLATFORM_IS_EMBEDDED
+        #define LOG_DEBUG_GEN			0
+    #elif !defined(LOG_DEBUG_GEN)
+        #define LOG_DEBUG_GEN			2
+    #else
+        // Nothing to do here...
+    #endif
 #endif
 
 unsigned int current_timeSec();

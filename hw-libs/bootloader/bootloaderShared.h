@@ -7,7 +7,7 @@ extern "C" {
 #include <stdint.h>
 
 #ifdef IMX_5
-#include "d_flash.h"	// Contains overrides for macros below
+#include "drivers/d_flash.h"	// Contains overrides for macros below
 #endif
 
 // uINS-3 flash layout - uINS Flash Memory Map

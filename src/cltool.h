@@ -58,7 +58,7 @@ typedef struct
 	bool forceBootloaderUpdate;				// -fb
 	bool bootloaderVerify; 					// -bv
 	bool replayDataLog;
-	bool softwareResetUins;
+	bool softwareResetImx;
 	bool softwareResetEvb;
 	bool magRecal;
 	uint32_t magRecalMode;
@@ -90,7 +90,9 @@ typedef struct
 	uint32_t outputOnceDid;	
 	
 	uint32_t sysCommand;
+	int32_t platformType;
 	bool chipEraseEvb2;
+    fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_NONE;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

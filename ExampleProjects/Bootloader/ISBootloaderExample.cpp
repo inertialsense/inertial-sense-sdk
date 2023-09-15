@@ -15,14 +15,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <algorithm>
 
-#if 0	// TODO: Add this example back once fixed
 // STEP 1: Add Includes
 // Change these include paths to the correct paths for your project
 #include "../../src/ISComm.h"
-// #include "../../src/serialPortPlatform.h"
-// #include "../../src/ISBootloaderThread.h"
-// #include "../../src/ISBootloaderBase.h"
-// #include "../../src/ISSerialPort.h"
+#include "../../src/serialPortPlatform.h"
+#include "../../src/ISBootloaderThread.h"
+#include "../../src/ISBootloaderBase.h"
+#include "../../src/ISSerialPort.h"
 
 using namespace ISBootloader;
 using namespace std;
@@ -78,11 +77,9 @@ static void bootloaderStatusText(void* obj, const char* info, eLogLevel level)
 
 	printf("\t\t\t%s\r\n", info);
 }
-#endif
 
 int main(int argc, char* argv[])
 {
-#if 0	// TODO: Add this example back once fixed
 	if (argc < 4 || argc > 5)
 	{
 		printf("Please pass the com port, baudrate, firmware file name to bootload, and optionally bootloader file name as the only arguments\r\n");
@@ -92,10 +89,19 @@ int main(int argc, char* argv[])
 	}
 
 	// For now, we will use all present devices.
-	vector<string> portStrings;
+	std::vector<std::string> portStrings;
 	cISSerialPort::GetComPorts(portStrings);
 
-	string filename = string(argv[2]);
+	// Set all files the same, the bootloader logic will identify the file and only put it onto the appropriate devices.
+	firmwares_t files;
+	files.fw_uINS_3.path = std::string(argv[2]);
+	files.bl_uINS_3.path = std::string(argv[2]);
+	files.fw_IMX_5.path = std::string(argv[2]);
+	files.bl_IMX_5.path = std::string(argv[2]);
+	files.fw_EVB_2.path = std::string(argv[2]);
+	files.bl_EVB_2.path = std::string(argv[2]);
+
+	
 
 	vector<string> all_ports;                   // List of ports connected
 
@@ -107,7 +113,7 @@ int main(int argc, char* argv[])
         cISBootloaderThread::set_mode_and_check_devices(
                 all_ports,
                 atoi(argv[1]),
-                filename,
+                files,
                	bootloaderUploadProgress,
 				bootloaderVerifyProgress,
 				bootloaderStatusText,
@@ -121,12 +127,12 @@ int main(int argc, char* argv[])
 		portStrings,
 		true,
 		atoi(argv[1]),
-		filename,
+		files,
 		bootloaderUploadProgress,
 		bootloaderVerifyProgress,
 		bootloaderStatusText,
 		NULL);
-#endif
+
 
 	return 0;
 }
