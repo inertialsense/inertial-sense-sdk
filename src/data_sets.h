@@ -132,6 +132,7 @@ typedef uint32_t eDataIDs;
 #define DID_IMU3_RAW                    (eDataIDs)96 /** (imu3_t) Triple IMU data calibrated from DID_IMU3_UNCAL.  We recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_IMU_RAW                     (eDataIDs)97 /** (imu_t) IMU data averaged from DID_IMU3_RAW.  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of DID_IMU or DID_PIMU as they are oversampled and contain less noise. */
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
+#define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
@@ -2552,7 +2553,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-    PLATFORM_CFG_TYPE_RESERVED1                 = (int)12,
+    PLATFORM_CFG_TYPE_TBED3_GPX                 = (int)12,      // Testbed-3 w/ GPX
     PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
     PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
@@ -4488,6 +4489,21 @@ typedef struct PACKED
 
 } evb_rtos_info_t;
 
+
+typedef struct 
+{
+    uint32_t runTimeUs;
+    uint32_t maxRunTimeUs;
+    uint32_t lastStartTimeUs;
+    uint32_t startPeriodUs;
+} runtime_profile_t;
+
+/** (DID_RUNTIME_PROFILER) */
+#define RUNTIME_PROFILE_COUNT    4
+typedef struct 
+{
+    runtime_profile_t p[RUNTIME_PROFILE_COUNT];
+} runtime_profiler_t;
 
 
 enum
