@@ -1557,7 +1557,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint16_t        hardware;
 	ptr = ASCII_to_u16(&info.hardware, ptr);
 
-	// uint16_t        reserved bits;
+	// uint16_t        reserved;
 	ptr = ASCII_to_u16(&info.reserved, ptr);
 
 	return 0;
