@@ -260,7 +260,7 @@ namespace fwUpdate {
          * @param max_len
          * @return
          */
-        int packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data=nullptr);
+        static int packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data=nullptr);
 
         /**
          * Unpacks a DID payload byte buffer (from the comms system) into a firmware_update msg_payload_t struct
@@ -271,17 +271,16 @@ namespace fwUpdate {
          * @param msg_payload the payload_t struct that the data will be unpacked into.
          * @return true on success, otherwise false
          */
-        int unpackPayload(const uint8_t* buffer, int buf_len, payload_t& payload, void *aux_data=nullptr, uint16_t max_aux=0);
+        static int unpackPayload(const uint8_t* buffer, int buf_len, payload_t& payload, void *aux_data=nullptr, uint16_t max_aux=0);
 
         /**
-         * Unpacks a DID payload byte buffer (from the comms system) into a fwUpdate::payload_t struct, but avoids making copies of the data.
+         * maps a DID payload byte buffer (from the comms system) into a fwUpdate::payload_t struct, and extracts aux_data if any.
          * @param buffer a pointer to the raw byte buffer
-         * @param buf_len the number of bytes in the raw byte buffer
          * @param msg_payload a double-pointer which on return will point to the start of the buffer (this is a simple cast)
          * @param aux_data a double-pointer which on return will point to any auxilary data in the payload, or nullptr if there is none
          * @return returns the total number of bytes in the packet, including aux data if any
          */
-        int unpackPayloadNoCopy(const uint8_t *buffer, int buf_len, payload_t** payload, void** aux_data);
+        static int mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data);
 
             /**
              * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash

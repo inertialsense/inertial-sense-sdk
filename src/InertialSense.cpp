@@ -374,8 +374,6 @@ bool InertialSense::Update()
                     ISFirmwareUpdater* fwUpdater = m_comManagerState.devices[devIdx].fwUpdater;
                     fwUpdater->step();
 
-                    static fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
-                    static uint16_t lastChunk = 0;
                     fwUpdate::update_status_e status = fwUpdater->getSessionStatus();
                     if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
                         if (status < fwUpdate::NOT_STARTED) {
@@ -395,8 +393,6 @@ bool InertialSense::Update()
                         printf("SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", serialNo, status, fwUpdater->getNextChunkID(), fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
 #endif
                     }
-                    lastStatus = status;
-                    lastChunk = fwUpdater->getNextChunkID();
                 }
             }
 		}
@@ -1021,10 +1017,10 @@ InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t device
 */
 int InertialSense::getUpdateDeviceIndex(const char* com)
 { 
-	for (int i = 0; i < m_comManagerState.devices.size(); i++)
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		if (!strcmp(m_comManagerState.devices[i].serialPort.port, com))
-			return i;
+			return (int)i;
 	}
 	return -1; 
 }
