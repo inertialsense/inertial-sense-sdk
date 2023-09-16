@@ -31,7 +31,11 @@ private:
     int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
 
     int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 350;    //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+    uint16_t attemptInterval = 350;     //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+
+    uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
+    uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
+    uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
 
 public:
 

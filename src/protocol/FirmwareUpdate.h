@@ -500,17 +500,10 @@ namespace fwUpdate {
          */
         bool isUpdating();
 
+        /**
+         * @return the target type for this instance.
+         */
         target_t getCurrentTarget() { return target_id; }
-
-        uint32_t progress_interval = 500;               // we'll send progress updates at 2hz.
-        uint32_t nextProgressReport = 0;                // the next system
-
-
-        uint16_t last_chunk_id = 0xFFFF;                //! the last received chunk id from a CHUNK message.  0xFFFF == no chunk yet received; the next received chunk must be 0.
-        //uint16_t chunk_size = 0;                        //! the negotiated maximum size for each chunk.
-        //uint16_t total_chunks = 0;                      //! the total number of chunks for the given image size
-        //uint32_t image_size = 0;                        //! the total size of the image to be sent
-        //uint8_t image_slot = 0;                         //! the "slot" to which this image will be written in the flash
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.
@@ -550,7 +543,9 @@ namespace fwUpdate {
          */
         bool sendRetry(resend_reason_e reason);
 
-
+        uint32_t progress_interval = 500;               // we'll send progress updates at 2hz.
+        uint32_t nextProgressReport = 0;                // the next system
+        int32_t last_chunk_id = -1;                     // the last received chunk id from a CHUNK message. -1 = no chunk yet received; the next received chunk must be 0.
     };
 
     class FirmwareUpdateSDK : public FirmwareUpdateBase {
@@ -613,22 +608,62 @@ namespace fwUpdate {
          */
         const char *getSessionStatusName();
 
+        /**
+         * @return the current session status
+         */
         update_status_e getSessionStatus() { return session_status; }
+
+        /**
+         * @return the current session id, or 0 if no session has been started
+         */
         uint16_t getSessionID() { return session_id; }
+
+        /**
+         * @return the ID of the next chunk to be sent
+         */
         uint16_t getNextChunkID() { return next_chunk_id; }
+
+        /**
+         * @return the negotiated chunk size for this session
+         */
         uint16_t getChunkSize() { return session_chunk_size; }
+
+        /**
+         * @return the total number of chunks negotiated for this session, determined by the image size
+         */
         uint16_t getTotalChunks() { return session_total_chunks; }
-        uint16_t getFinalImageSize() { return session_image_size; }
+
+        /**
+         * @return the size of the firmware image for this session
+         */
+        uint16_t getImageSize() { return session_image_size; }
+
+        /**
+         * @return the number of chunks that the remote device has specifically requested be resent
+         */
         uint16_t getResendCount() { return resend_count; }
-        float getResendRate() { return ((float)resend_count / (float)chunks_sent); }
+
+        /**
+         * @return a percentage of the number of resent chunks vs total chunks sent (indicates an error rate)
+         */
+        float getResendRate() { return (chunks_sent > 0) ? ((float)resend_count / (float)chunks_sent) : 0.f; }
 
 
     protected:
         //===========  Functions which MUST be implemented ===========//
+
+        /**
+         * To be implemented by the concrete class, this function is called by the underlying API into the concrete implementation,
+         * to transmit data onto "the wire".
+         * @param target the device which this data is targeting; useful if the implementation has specific ports for specific targets
+         * @param buffer the data to be send
+         * @param buff_len the length of the data to be sent
+         * @return returns true if the data was successfully sent, otherwise false
+         */
         virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         /**
-         * To be implemented by concrete class, this method loads the next image chunk from disk (or whereever) and
+         * To be implemented by the concrete class, this method loads the next image chunk from disk (or whereever) and
          * places it into a buffer, so the API can package it into a payload, and send it over the wire.
          * This method is not concerned with anything than "get bytes n-n+x, and load them into *buffer".
          * @param offset the offset in the file from which next chunk of bytes should begin (use this to fseek, etc)
@@ -640,25 +675,31 @@ namespace fwUpdate {
          */
         virtual int getImageChunk(uint32_t offset, uint32_t len, void **buffer) = 0;
 
+        /**
+         * To be implemented by the concrete class, this method is called when the API receives a response to an update request.
+         * This message primarily contains error information, or session details if the request is valid.
+         * @param msg the payload message for the update response
+         * @return true if this message was properly handled (regardless of error, etc), otherwise false
+         */
         virtual bool handleUpdateResponse(const payload_t& msg) = 0;
 
+        /**
+         * To be implemented by the concrete class, this method is called when the API receives a request from the remote
+         * to resend a specific chunk. Normally, this message is handled internally, but can be used to report errors on
+         * the remote side, which could drive specific behaviors (such as a flash write error, vs a dropped chunk on the wire)
+         * @param msg the payload message for the resend request
+         * @return true if this message was properly handled (regardless of error, etc), otherwise false
+         */
         virtual bool handleResendChunk(const payload_t& msg) = 0;
 
+        /**
+         * To be implemented by the concrete class, this method is called when the API receives a progress message from
+         * the remote device. These messages are informational only, and can generally be ignored, but maybe useful for
+         * communicating status messages and progress back to the user.
+         * @param msg the progress payload message
+         * @return true if this message was properly handled (regardless of error, etc), otherwise false
+         */
         virtual bool handleUpdateProgress(const payload_t& msg) = 0;
-
-        uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
-        uint16_t chunks_sent = 0;                       //! the total number of chunks that have been sent, including resends
-/*
-        target_t target_id = TARGET_NONE;
-
-        uint16_t cur_session_id = 0;                    //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
-
-        update_status_e session_status = NOT_STARTED;   //! last known state of this session
-        uint16_t session_chunk_size = 0;                //! the negotiated maximum size for each chunk.
-        uint16_t session_total_chunks = 0;              //! the total number of chunks for the given image size
-        uint32_t session_image_size = 0;                //! the total size of the image to be sent
-        uint8_t session_image_slot = 0;                 //! the "slot" to which this image will be written in the flash
-*/
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.
@@ -668,6 +709,8 @@ namespace fwUpdate {
          */
         bool resetEngine();
 
+        uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
+        uint16_t chunks_sent = 0;                       //! the total number of chunks that have been sent, including resends
     };
 
 } // fwUpdate

@@ -380,18 +380,20 @@ bool InertialSense::Update()
                     if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
-                            printf("Unable to start firmware update: %s\n", fwUpdater->getSessionStatusName());
+                            // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
 
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
+#ifdef DEBUG_CONSOLELOGGING
                     } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
-                        float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)(fwUpdater->getNextChunkID()-1) / (float)fwUpdater->getTotalChunks() * 100.f);
+                        float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)fwUpdater->getNextChunkID() / (float)fwUpdater->getTotalChunks() * 100.f);
                         float errRt = fwUpdater->getResendRate() * 100.f;
                         const char *status = fwUpdater->getSessionStatusName();
-                        printf("[%0.2f] SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", current_timeMs()/1000.f, serialNo, status, fwUpdater->getNextChunkID()-1, fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
+                        printf("SN%d :: %s : [%d of %d] %0.1f%% complete (%u, %0.1f%% resend)\n", serialNo, status, fwUpdater->getNextChunkID(), fwUpdater->getTotalChunks(), pcnt, fwUpdater->getResendCount(), errRt);
+#endif
                     }
                     lastStatus = status;
                     lastChunk = fwUpdater->getNextChunkID();
@@ -956,6 +958,75 @@ is_operation_result InertialSense::updateFirmware(
 #endif
 
     return IS_OP_OK;
+}
+
+/**
+	* Gets current update status for selected device index
+	* @param deviceIndex
+	*/
+InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
+{
+	fwUpdate::update_status_e status;
+	try
+	{
+		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+			status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+		else
+			return InertialSense::UPDATE_STATUS_DONE; //TODO: This need to be smarter!
+		
+		switch (status)
+		{
+			case fwUpdate::FINISHED:
+				return InertialSense::UPDATE_STATUS_DONE;
+
+			case fwUpdate::IN_PROGRESS:
+				return InertialSense::UPDATE_STATUS_UPDATING;
+
+			case fwUpdate::READY:
+			case fwUpdate::INITIALIZING:
+				return InertialSense::UPDATE_STATUS_WAITING;
+
+			case fwUpdate::NOT_STARTED:
+			case fwUpdate::ERR_INVALID_SESSION:
+			case fwUpdate::ERR_INVALID_SLOT:
+			case fwUpdate::ERR_NOT_ALLOWED:
+			case fwUpdate::ERR_NOT_ENOUGH_MEMORY:
+			case fwUpdate::ERR_OLDER_FIRMWARE:
+			case fwUpdate::ERR_MAX_CHUNK_SIZE:
+			case fwUpdate::ERR_TIMEOUT:
+			case fwUpdate::ERR_CHECKSUM_MISMATCH:
+			case fwUpdate::ERR_COMMS:
+			case fwUpdate::ERR_NOT_SUPPORTED:
+			case fwUpdate::ERR_FLASH_WRITE_FAILURE:
+			case fwUpdate::ERR_FLASH_OPEN_FAILURE:
+			case fwUpdate::ERR_FLASH_INVALID:
+				return InertialSense::UPDATE_STATUS_ERROR;
+			default:
+				return InertialSense::UPDATE_STATUS_UNKOWN;
+		}
+
+	}
+	catch(...)
+	{
+		return InertialSense::UPDATE_STATUS_INVALID_INDEX;
+	}
+
+
+	return InertialSense::UPDATE_STATUS_UNKOWN;
+}
+
+/**
+* Gets current update status for selected device index
+* @param deviceIndex
+*/
+int InertialSense::getUpdateDeviceIndex(const char* com)
+{ 
+	for (int i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		if (!strcmp(m_comManagerState.devices[i].serialPort.port, com))
+			return i;
+	}
+	return -1; 
 }
 
 
