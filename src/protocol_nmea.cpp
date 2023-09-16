@@ -1531,6 +1531,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
+	info.buildDate[0] = 0;
 	info.buildDate[1] = (uint8_t)(year - 2000);
 	info.buildDate[2] = (uint8_t)(month);
 	info.buildDate[3] = (uint8_t)(day);

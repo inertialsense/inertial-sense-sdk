@@ -14,7 +14,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_EBLE = 0x45424c45,		// "EBLE" - Enable bootloader on EVB
 	NMEA_MSG_UINT_NELB = 0x4e454c42,		// "NELB" - Enable SAM-BA mode
 	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
-	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
+	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - IMX device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
 
 	NMEA_MSG_UINT_PIMU = 0x50494d55,		// "PIMU"
