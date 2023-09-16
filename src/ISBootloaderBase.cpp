@@ -63,7 +63,7 @@ eImageSignature cISBootloaderBase::get_hex_image_signature(std::string filename,
             case IS_IMAGE_SIGN_UINS_3_24K: target_signature = bootloaderRequiredSignature_uINS_3_24K; break;
             case IS_IMAGE_SIGN_EVB_2_16K: target_signature = bootloaderRequiredSignature_EVB_2_16K; break;
             case IS_IMAGE_SIGN_EVB_2_24K: target_signature = bootloaderRequiredSignature_EVB_2_24K; break;
-            case IS_IMAGE_SIGN_UINS_5: target_signature = bootloaderRequiredSignature_uINS_5; break;
+            case IS_IMAGE_SIGN_IMX_5: target_signature = bootloaderRequiredSignature_uINS_5; break;
             case IS_IMAGE_SIGN_ISB_STM32L4: target_signature = bootloaderRequiredSignature_STM32L4_bootloader; break;
             case IS_IMAGE_SIGN_ISB_SAMx70_24K: target_signature = bootloaderRequiredSignature_SAMx70_bootloader_24K; break;
             default: continue;
@@ -199,7 +199,7 @@ is_operation_result cISBootloaderBase::mode_device_app
 
     uint32_t device = IS_IMAGE_SIGN_NONE;
     uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
-    uint32_t fw_IMX_5  = get_image_signature(filenames.fw_IMX_5.path)  & IS_IMAGE_SIGN_UINS_5;
+    uint32_t fw_IMX_5  = get_image_signature(filenames.fw_IMX_5.path)  & IS_IMAGE_SIGN_IMX_5;
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
 
     obj = new cISBootloaderAPP(updateProgress, verifyProgress, statusfn, handle);
@@ -265,7 +265,7 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     uint32_t device = IS_IMAGE_SIGN_NONE;
     uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
     uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
+    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5;
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path, &major, &minor) & IS_IMAGE_SIGN_ISB_STM32L4;
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
@@ -345,7 +345,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     uint32_t device = IS_IMAGE_SIGN_NONE;
     //uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
     uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path, &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    //uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
+    //uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5;
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path, &major, &minor) & IS_IMAGE_SIGN_ISB_STM32L4;
     //uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
@@ -508,7 +508,7 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t device = IS_IMAGE_SIGN_NONE;
     uint32_t fw_uINS_3 = get_image_signature(filenames.fw_uINS_3.path) & (IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K);
     uint32_t bl_uINS_3 = get_image_signature(filenames.bl_uINS_3.path) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
-    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_UINS_5;
+    uint32_t fw_IMX_5 = get_image_signature(filenames.fw_IMX_5.path) & IS_IMAGE_SIGN_IMX_5;
     uint32_t fw_EVB_2  = get_image_signature(filenames.fw_EVB_2.path)  & (IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K);
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 

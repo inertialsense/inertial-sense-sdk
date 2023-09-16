@@ -217,10 +217,10 @@ char *ASCII_to_f64(double *vec, char *ptr)
 	return ptr;
 }
 
-char *ASCII_to_vec4u8(uint8_t vec[], char *ptr)
+char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 {
 	unsigned int v[4];
-	SSCANF(ptr, "%2u.%2u.%2u.%2u", &v[0], &v[1], &v[2], &v[3]);
+	SSCANF(ptr, "%u.%u.%u.%u", &v[0], &v[1], &v[2], &v[3]);
 	vec[0] = (uint8_t)v[0];
 	vec[1] = (uint8_t)v[1];
 	vec[2] = (uint8_t)v[2];
@@ -1516,16 +1516,16 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
 	// uint8_t         hardwareVer[4];
-	ptr = ASCII_to_vec4u8(info.hardwareVer, ptr);
+	ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
 	// uint8_t         firmwareVer[4];
-	ptr = ASCII_to_vec4u8(info.firmwareVer, ptr);
+	ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
 	// uint32_t        buildNumber;
 	ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
 	// uint8_t         protocolVer[4];
-	ptr = ASCII_to_vec4u8(info.protocolVer, ptr);
+	ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
 	// uint32_t        repoRevision;
 	ptr = ASCII_to_u32(&info.repoRevision, ptr);
