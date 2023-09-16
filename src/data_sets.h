@@ -465,12 +465,22 @@ typedef struct PACKED
 
 }pos_measurement_t;
 
+enum eDevInfoHardware
+{
+	DEV_INFO_HARDWARE_UINS      = 1,
+	DEV_INFO_HARDWARE_EVB       = 2,
+	DEV_INFO_HARDWARE_IMX       = 3,
+	DEV_INFO_HARDWARE_GPX       = 4,
+};
 
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
 {
 	/** Reserved bits */
-	uint32_t        reserved;
+	uint16_t        reserved;
+
+	/** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
+	uint16_t        hardware;
 
 	/** Serial number */
 	uint32_t        serialNumber;

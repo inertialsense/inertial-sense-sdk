@@ -224,7 +224,8 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     typedef dev_info_t MAP_TYPE;
     map_name_to_info_t& m = mappings[id];
     uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "hardware", hardware, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "hardwareVer[0]", hardwareVer[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "hardwareVer[1]", hardwareVer[1], 0, DataTypeUInt8, uint8_t&, 0);
