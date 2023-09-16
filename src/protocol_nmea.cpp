@@ -220,7 +220,7 @@ char *ASCII_to_f64(double *vec, char *ptr)
 char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 {
 	unsigned int v[4];
-	SSCANF(ptr, "%2u.%2u.%2u.%2u", &v[0], &v[1], &v[2], &v[3]);
+	SSCANF(ptr, "%u.%u.%u.%u", &v[0], &v[1], &v[2], &v[3]);
 	vec[0] = (uint8_t)v[0];
 	vec[1] = (uint8_t)v[1];
 	vec[2] = (uint8_t)v[2];
