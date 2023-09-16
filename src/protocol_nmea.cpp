@@ -282,10 +282,11 @@ char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 
 char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 {
+	char *ptr2 = ASCII_find_next_field(ptr);
+	max_len = _MIN(max_len, ptr2-ptr);
 	STRNCPY(dst, ptr, max_len-1);
 	dst[max_len-1] = 0;			// Must be null terminated
-	ptr = ASCII_find_next_field(ptr);
-	return ptr;
+	return ptr2;
 }
 
 char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, char *ptr)
