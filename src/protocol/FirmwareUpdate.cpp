@@ -124,14 +124,13 @@ namespace fwUpdate {
     }
 
     /**
-     * Unpacks a DID payload byte buffer (from the comms system) into a fwUpdate::payload_t struct, but avoids making copies of the data.
+     * Maps a DID payload byte buffer (from the comms system) into a fwUpdate::payload_t struct, and extracts aux_data if any.
      * @param buffer a pointer to the raw byte buffer
-     * @param buf_len the number of bytes in the raw byte buffer
      * @param msg_payload a double-pointer which on return will point to the start of the buffer (this is a simple cast)
      * @param aux_data a double-pointer which on return will point to any auxilary data in the payload, or nullptr if there is none
      * @return returns the total number of bytes in the packet, including aux data if any
      */
-    int FirmwareUpdateBase::unpackPayloadNoCopy(const uint8_t *buffer, int buf_len, payload_t** payload, void** aux_data) {
+    int FirmwareUpdateBase::mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data) {
         int payload_size = getPayloadSize((payload_t *)buffer);
         int aux_len = 0;
 
@@ -415,7 +414,7 @@ namespace fwUpdate {
         fwUpdate::payload_t *payload = nullptr;
         void *aux_data = nullptr;
 
-        int payload_len = unpackPayloadNoCopy(buffer, buf_len, &payload, &aux_data);
+        int payload_len = mapBufferToPayload(buffer, &payload, &aux_data);
         if (payload_len <= 0)
             return false;
 
@@ -679,7 +678,7 @@ namespace fwUpdate {
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
 
-        int msg_len = unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
+        int msg_len = mapBufferToPayload(buffer, &msg, &aux_data);
         if (msg_len <= 0)
             return false;
 
@@ -759,7 +758,7 @@ namespace fwUpdate {
         // we also get the *aux_data pointer, which we can then pass onto getNextChunk(), which it will write
         // directly into our build buffer.
         void *chunk_data = nullptr;
-        int msg_len = unpackPayloadNoCopy(build_buffer, sizeof(build_buffer), &msg, &chunk_data);
+        int msg_len = mapBufferToPayload(build_buffer, &msg, &chunk_data);
 
         uint32_t offset = msg->data.chunk.chunk_id * session_chunk_size;
         int chunk_len = getImageChunk(offset, msg->data.chunk.data_len, &chunk_data);

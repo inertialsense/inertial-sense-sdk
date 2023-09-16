@@ -27,20 +27,52 @@ public:
     ExchangeBuffer(int size) {
         buff_size = size;
         buffer = new uint8_t[size];
+        flush();
     }
 
     ~ExchangeBuffer() { delete[] buffer; }
 
     int dataAvailable() { return data_available; }
 
-    int readData(uint8_t *data, int max_data) {
-        int data_len = (max_data > data_available ? data_available : max_data);
+    int removeData(int start, int len) {
+        int trailing =  data_available - (start + len); // (start + len > data_available ? data_available : data_available - (start + len));
+        if (trailing > 0) {
+            memmove(buffer + start, buffer + start + len, trailing);
+            start += trailing;
+        }
+        memset(buffer + start, 0, len); // zero out the void that we just left (keep our buffer clean)
+        data_available -= len;
+        return data_available;
+    }
 
-        memcpy(data, buffer, data_len);
-        data_available -= data_len;
+    int readData(uint8_t *data, int max_data, int offset = 0) {
+        fwUpdate::payload_t *payload;
+        uint8_t *aux_data, *payload_start = buffer + offset;
+        int payload_len = fwUpdate::FirmwareUpdateBase::mapBufferToPayload(payload_start, &payload, (void **)&aux_data);
 
-        memmove(buffer, buffer + data_len, (buff_size - data_len));
-        return data_len;
+        memcpy(data, payload_start, payload_len);
+        removeData(buffer - payload_start, payload_len);
+        return payload_len;
+    }
+
+    bool isNextDataForTarget(fwUpdate::target_t target) {
+        fwUpdate::payload_t *payload = (fwUpdate::payload_t *)buffer;
+        return (payload->hdr.target_device == target);
+    }
+
+    int getNextDataOffsetForTarget(fwUpdate::target_t target) {
+        fwUpdate::payload_t *payload;
+        uint8_t *aux_data, *payload_start = buffer;
+        int offset = 0, payload_len = 0;
+        while (offset < data_available) {
+            payload_len = fwUpdate::FirmwareUpdateBase::mapBufferToPayload(payload_start, &payload, (void **)&aux_data);
+            if (payload->hdr.msg_type == fwUpdate::MSG_UNKNOWN)
+                return -1; // FIXME: You should investigate why this is happening... yes, YOU!!
+            if (payload->hdr.target_device == target)
+                return offset;
+            offset += payload_len;
+        }
+        return -1;
     }
 
     bool writeData(uint8_t* data, int data_len) {
@@ -200,15 +232,22 @@ public:
 
     void pullAndProcessNextMessage() {
         uint8_t buffer[2048];
+        int offset = 0;
+
         EXPECT_GT(exchangeBuffer.dataAvailable(), 0);
         if (exchangeBuffer.dataAvailable() > 0) {
-            // Data is waiting in the exchange buffer; pull and unpack it for analysis.
-            int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer));
-            processMessage(buffer, buf_len);
+            do {
+                offset = exchangeBuffer.getNextDataOffsetForTarget(getCurrentTarget());
+                if (offset >= 0) {
+                    // Data is waiting in the exchange buffer for us; let's pull and unpack it for analysis.
+                    int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer), offset);
+                    processMessage(buffer, buf_len);
+                }
+            } while ((offset >= 0) && (exchangeBuffer.dataAvailable() > 0)); // keep pulling all data that is meant for us
         }
     }
 
-    uint16_t GetNextExpectedChunk() { return (uint16_t)(last_chunk_id + 1); }
+    int GetNextExpectedChunk() { return last_chunk_id + 1; }
 };
 
 class ISFirmwareUpdateTestSDK : public fwUpdate::FirmwareUpdateSDK {
@@ -313,15 +352,20 @@ public:
 
         // check if a packet is waiting in the exchange buffer.
         if (exchangeBuffer.dataAvailable() > 0) {
-            int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer));
-            int msg_len = unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
-            if (msg_len > 0) {
-                if (processMessage(*msg)) {
-                    if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_PROGRESS)
-                        return step();
-                    out = msg->hdr.msg_type;
+            int offset = 0;
+            do {
+                offset = exchangeBuffer.getNextDataOffsetForTarget(fwUpdate::TARGET_NONE);
+                if (offset >= 0) {
+                    // Data is waiting in the exchange buffer for us; let's pull and unpack it for analysis.
+                    int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer), offset);
+                    int msg_len = mapBufferToPayload(buffer, &msg, &aux_data);
+                    if (msg_len > 0) {
+                        if (processMessage(buffer, buf_len))
+                            out = msg->hdr.msg_type;
+                    }
                 }
-            }
+            } while ((offset >= 0) && (exchangeBuffer.dataAvailable() > 0)); // keep pulling all data that is meant for us
+
 #ifdef DEBUG_INFO
             if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK)
                 PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
@@ -601,6 +645,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl) {
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;
 
+    eb.flush();
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
@@ -618,7 +663,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl) {
     if (eb.dataAvailable() > 0) {
         // Data is waiting in the exchange buffer; pull and unpack it for analysis.
         int buf_len = eb.readData(buffer, sizeof(buffer));
-        int msg_len = fuSDK.unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
+        int msg_len = fuSDK.mapBufferToPayload(buffer, &msg, &aux_data);
         if (msg_len > 0) {
             if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP) {
                 // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
@@ -638,6 +683,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;
 
+    eb.flush();
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
@@ -677,7 +723,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     if (eb.dataAvailable() > 0) {
         // Data is waiting in the exchange buffer; pull and unpack it for analysis.
         int buf_len = eb.readData(buffer, sizeof(buffer));
-        int msg_len = fuSDK.unpackPayloadNoCopy(buffer, buf_len, &msg, &aux_data);
+        int msg_len = fuSDK.mapBufferToPayload(buffer, &msg, &aux_data);
         if (msg_len > 0) {
 #ifdef DEBUG_INFO
             PRINTF("Modifying chunk 4 to report as chunk 6 (skipping 4 and 5).\n");
@@ -687,14 +733,15 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
             eb.writeData(buffer, buf_len); // and then put it back into the exchange buffer
         }
     }
+
+    // BE CAREFUL:  This following steps are time-critical!!  If you are debugging, you may get a failure here because fuDev.pullAndProcessNextMessage() may send a PROGRESS message if
+    // you hold too long in a breakpoint.  If it does, and it shows up after the RESEND message, this line will fail.  Under normal circumstances, it should work fine, but YOU HAVE NOW
+    // BEEN WARNED to avoid this rabbit hole!  If it becomes an issue, one option would be to implement a fuSDK.step(1) which would force step() to only process n-number of messages.
+    // Alternatively, we could update the FirmwareUpdate API to allow disabling of sending PROGRESS messages entirely (set progressInterval to -1, in the request, for example).
+
     fuDev.pullAndProcessNextMessage(); // will cause the Device to pull the bad chunk, which should respond with a RESEND_CHUNK
     EXPECT_EQ(fuSDK.step(), fwUpdate::MSG_REQ_RESEND_CHUNK); // and step() to process the RESEND_CHUNK response to the bad message, which should resend the requested chunk 4
     EXPECT_EQ(fuSDK.getNextChunkID(), 5); // at this point, our NextChunkID should be 5 (since we resent 4)
-
-    // do one more cycle to pull the resent chunk (which should now be the correct one)
-    fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
-    fuSDK.step(); // process all incoming messages
-    EXPECT_EQ(fuSDK.getNextChunkID(), fuDev.GetNextExpectedChunk());
 
     // and now we resume with the remaining chunks
     while(fuSDK.getSessionStatus() < fwUpdate::FINISHED) {
@@ -720,6 +767,7 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;
 
+    eb.flush();
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
@@ -773,6 +821,7 @@ TEST(ISFirmwareUpdate, exchange__success)
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;
 
+    eb.flush();
     ISFirmwareUpdateTestSDK fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
@@ -791,7 +840,7 @@ TEST(ISFirmwareUpdate, exchange__success)
     EXPECT_EQ(fuSDK.getSessionStatus(), fwUpdate::READY);
 
     // from here out, this should be normal.
-    while((fuSDK.getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != 65536)) {
+    while((fuSDK.getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != -1)) {
         if ((fuSDK.getSessionStatus() == fwUpdate::READY) || (fuSDK.getSessionStatus() == fwUpdate::IN_PROGRESS)) {
             fuSDK.sendNextChunk();
         }
