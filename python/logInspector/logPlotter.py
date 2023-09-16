@@ -985,8 +985,7 @@ class logPlot:
         self.configureSubplot(ax[2], 'L5 Pseudorange difference', 'm')
         self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
 
-#        for i, d in enumerate(self.active_devs):
-        for d in range(1): # just the first device
+        for i, d in enumerate(self.active_devs):
             gps1_data = self.log.data[d, DID_GPS1_RAW][0]
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
             N1 = len(gps1_data)
