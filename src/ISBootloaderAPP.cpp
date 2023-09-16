@@ -56,6 +56,7 @@ eImageSignature devInfoToValidSignatures(dev_info_t *devInfo)
         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
 
+    return (eImageSignature)valid_signatures;
 }
 
 eImageSignature cISBootloaderAPP::check_is_compatible()
@@ -99,8 +100,6 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
 
     protocol_type_t ptype;
     n = is_comm_free(&comm);
-    dev_info_t* dev_info = NULL;
-    dev_info_t* evb_dev_info = NULL;
     uint32_t valid_signatures = 0;
     if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
     {
@@ -109,15 +108,20 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
         {
             switch (ptype)
             {
+            default: 
+                break;
+
             case _PTYPE_INERTIAL_SENSE_DATA:
                 switch(comm.dataHdr.id)
                 {
                 case DID_DEV_INFO:
+                    dev_info_t* dev_info;
                     dev_info = (dev_info_t*)comm.dataPtr;
                     m_sn = dev_info->serialNumber;
                     valid_signatures = devInfoToValidSignatures(dev_info);
                     break;    
                 case DID_EVB_DEV_INFO:
+                    dev_info_t* evb_dev_info;
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
                     if (evb_dev_info->hardwareVer[0] == 2)
                     {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
@@ -236,6 +240,9 @@ uint32_t cISBootloaderAPP::get_device_info()
         {
             switch(ptype)
             {
+            default: 
+                break;
+                
             case _PTYPE_INERTIAL_SENSE_DATA:
                 switch(comm.dataHdr.id)
                 {
