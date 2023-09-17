@@ -75,7 +75,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
             break;         
     }
 
-	unsigned char txbuf[11] = "$INFO*0E\r\n";
+	unsigned char txbuf[11] = NMEA_STR_QUERY_DEVICE_INFO;
     for (i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     {
         if (sizeof(txbuf) != serialPortWrite(m_port, txbuf, sizeof(txbuf)))
@@ -200,7 +200,7 @@ uint32_t cISBootloaderAPP::get_device_info()
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);
     int messageSize;
    
-	unsigned char txbuf[11] = "$INFO*0E\r\n";
+	unsigned char txbuf[11] = NMEA_STR_QUERY_DEVICE_INFO;
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     if (sizeof(txbuf) != serialPortWrite(m_port, txbuf, sizeof(txbuf)))
     {

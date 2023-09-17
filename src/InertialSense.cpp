@@ -650,13 +650,13 @@ vector<string> InertialSense::GetPorts()
 
 void InertialSense::StopBroadcasts(bool allPorts)
 {
-    uint8_t ptype = (allPorts ? PKT_TYPE_STOP_BROADCASTS_ALL_PORTS : PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT);
+	uint8_t stopCmd[11] = NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS;
 
 	// Stop all broadcasts
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the uINS.
-		comManagerSend((int)i, ptype, 0, 0, 0, 0);
+		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the IMX.
+		comManagerSendRaw((int)i, (uint8_t*)&stopCmd, sizeof(stopCmd));
 	}
 }
 
@@ -1267,7 +1267,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		time_t startTime = time(0);
 
 		// Query devices with 10 second timeout
-		uint8_t getNmeaInfoBuf[11] = "$INFO*0E\r\n";
+		uint8_t getNmeaInfoBuf[11] = NMEA_STR_QUERY_DEVICE_INFO;
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
