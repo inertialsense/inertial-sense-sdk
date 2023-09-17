@@ -31,6 +31,8 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
     setTimeoutDuration(15000);
+    updateStartTime = current_timeMs();
+    nextStartAttempt = current_timeMs() + attemptInterval;
     return requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate);
 }
 
@@ -76,22 +78,20 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
 }
 
 bool ISFirmwareUpdater::handleResendChunk(const fwUpdate::payload_t &msg) {
-    next_chunk_id = msg.data.req_resend.chunk_id;
-    // the reason doesn't really matter, but we might want to write it to a log or something?
     // TODO: LOG msg.data.req_resend.reason
-    //printf("Device sent a Resend request for chunk %d (Reason %d).\n", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
-    return sendNextChunk();
+    nextChunkSend = current_timeMs() + nextChunkDelay;
+    return sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
 
 bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     session_status = msg.data.progress.status;
     int num = msg.data.progress.num_chunks;
     int tot = msg.data.progress.totl_chunks;
-    int percent = (int)(((msg.data.progress.num_chunks+1)/(float)(msg.data.progress.totl_chunks)*100) + 0.5f);
+    float percent = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char *message = (const char *)&msg.data.progress.message;
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("[%s:%d] :: Progress %d/%d (%d%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, getSessionStatusName(), msg.data.progress.msg_level, message);
+    printf("[%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, getSessionStatusName(), msg.data.progress.msg_level, message);
     return true;
 }
 
@@ -119,11 +119,11 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
             break;
         case fwUpdate::READY:
         case fwUpdate::IN_PROGRESS:
-            sendNextChunk();
-            usleep(10000);
+            if (nextChunkSend < current_timeMs()) // don't send chunks too fast
+                sendNextChunk();
             break;
         case fwUpdate::FINISHED:
-            printf("Firmware upload completed without error.\n");
+            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, getSessionStatusName());
             break;
         case fwUpdate::ERR_MAX_CHUNK_SIZE:
             if (session_id != 0) {
@@ -137,7 +137,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
             }
             break;
         default:
-            printf("Firmware Update Error: %s\n", getSessionStatusName());
+            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, getSessionStatusName());
             break;
     }
 
@@ -148,11 +148,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
 }
 
 bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    // printf("fwTX: %s\n", payloadToString((fwUpdate::payload_t*)buffer));
-
-    int delay = (session_total_chunks == 0 ? 0 : ((float)resend_count / (float)session_total_chunks) * 100000);
-    usleep(delay + 500000); // let's give just a millisecond so we don't saturate the downstream devices.
-
+    nextChunkSend = current_timeMs() + 5; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
     int result = comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0);
     return (result == 0);
 }

@@ -192,19 +192,22 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
-	else while (g_commandLineOptions.datasets.size())
-	{	// Datasets to stream
-		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
-		switch (g_commandLineOptions.datasets.back().did)
-		{
-		case DID_RTOS_INFO:
-			system_command_t cfg;
-			cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
-			cfg.invCommand = ~cfg.command;
-			inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-			break;
+	else 
+	{
+		while (g_commandLineOptions.datasets.size())
+		{	// Datasets to stream
+			inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
+			switch (g_commandLineOptions.datasets.back().did)
+			{
+			case DID_RTOS_INFO:
+				system_command_t cfg;
+				cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+				cfg.invCommand = ~cfg.command;
+				inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+				break;
+			}
+			g_commandLineOptions.datasets.pop_back();
 		}
-		g_commandLineOptions.datasets.pop_back();
 	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{

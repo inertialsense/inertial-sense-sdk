@@ -54,7 +54,6 @@ class InertialSense;
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
 
-
 /**
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
@@ -95,6 +94,16 @@ public:
 		std::string port;
 		std::string error;
 	} bootload_result_t;
+
+	enum is_update_status_t
+	{
+		UPDATE_STATUS_WAITING,
+		UPDATE_STATUS_UPDATING,
+		UPDATE_STATUS_DONE,
+		UPDATE_STATUS_ERROR,
+		UPDATE_STATUS_UNKOWN,
+		UPDATE_STATUS_INVALID_INDEX,
+	};
 
 	/**
 	* Constructor
@@ -424,6 +433,18 @@ public:
             ISBootloader::pfnBootloadStatus infoProgress,
             void (*waitAction)()
     );
+
+	/**
+	* Gets current update status for selected device index
+	* @param deviceIndex
+	*/
+	is_update_status_t getUpdateStatus(uint32_t deviceIndex);
+
+	/**
+	* Gets current update status for selected device index
+	* @param deviceIndex
+	*/
+	int getUpdateDeviceIndex(const char* com);
 
 
 	/**

@@ -19,3 +19,6 @@ IS_logs/
 *.user
 .vs
 .vscode
+
+cmake-build-debug
+.idea

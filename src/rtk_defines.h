@@ -177,6 +177,7 @@
 
 
 #if PLATFORM_IS_ARM
+#ifndef __ZEPHYR__
 
 // typedef out linux types not used, this saves having to #if the RTKLib code everywhere
 typedef uint32_t pthread_t;
@@ -189,6 +190,7 @@ struct dirent { char* d_name; };
 #define pthread_mutex_lock(f)
 #define pthread_mutex_unlock(f)
 
+#endif
 #endif // ARM
 
 #endif // __RTK_EMBEDDED_DEFINES_H_
