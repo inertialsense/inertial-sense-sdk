@@ -22,11 +22,8 @@ using namespace std;
 static InertialSense *g_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
-static int staticSendPacket(int port, const unsigned char* buf, int len)
+static int staticSendData(int port, const unsigned char* buf, int len)
 {
-	// Suppress compiler warnings
-	(void)port; 
-
 	if ((size_t)port >= s_cm_state->devices.size())
 	{
 		return 0;
@@ -34,11 +31,8 @@ static int staticSendPacket(int port, const unsigned char* buf, int len)
 	return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadPacket(int port, unsigned char* buf, int len)
+static int staticReadData(int port, unsigned char* buf, int len)
 {
-	// Suppress compiler warnings
-	(void)port;
-
 	if ((size_t)port >= s_cm_state->devices.size())
 	{
 		return 0;
@@ -73,7 +67,7 @@ static void staticProcessRxData(int port, p_data_t* data)
 		handlerGlobal(s_cm_state->inertialSenseInterface, data, port);
 	}
 
-	s_cm_state->inertialSenseInterface->ProcessRxData(data, port);
+	s_cm_state->inertialSenseInterface->ProcessRxData(port, data);
 
 	switch (data->hdr.id)
 	{
@@ -91,6 +85,19 @@ static void staticProcessRxData(int port, p_data_t* data)
 		}
 	}
 }
+
+static int staticProcessRxNmea(int port, const unsigned char* msg, int msgSize)
+{
+	if ((size_t)port > s_cm_state->devices.size())
+	{
+		return 0;
+	}
+
+	s_cm_state->inertialSenseInterface->ProcessRxNmea(port, msg, msgSize);
+	
+	return 0;
+}
+
 
 InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 {
@@ -366,7 +373,7 @@ bool InertialSense::Update()
 		if (m_comManagerState.devices.size() > 0)
 		{
 			comManagerStep();
-            SyncFlashConfig(timeMs);
+            SyncFlashConfig(m_timeMs);
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (size_t devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
@@ -588,8 +595,10 @@ void InertialSense::SetCallbacks(
 	pfnComManagerGenMsgHandler handlerRtcm3,
 	pfnComManagerGenMsgHandler handlerSpartn)
 {
+	m_handlerAscii = handlerNmea;
+
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(handlerRmc, handlerNmea, handlerUblox, handlerRtcm3, handlerSpartn);
+	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
@@ -763,7 +772,7 @@ int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 	device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
 
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-	return comManagerSendData(pHandle, DID_FLASH_CONFIG, &device.flashCfg, sizeof(nvm_flash_cfg_t), 0);
+	return comManagerSendData(pHandle, &device.flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
 }
 
 bool InertialSense::GetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
@@ -792,18 +801,18 @@ int InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 	device.evbFlashCfg = evbFlashCfg;
 
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	return comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &device.evbFlashCfg, sizeof(evb_flash_cfg_t), 0);
+	return comManagerSendData(pHandle, &device.evbFlashCfg, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), 0);
 }
 
-void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
+void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 {
 	is_device_t &device = m_comManagerState.devices[pHandle];
 
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->buf;                               break;
-	case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->buf;                          break;
-	case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;                      break;
+	case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;                               break;
+	case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
+	case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->ptr;                      break;
 	case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
 	case DID_FLASH_CONFIG:
 		copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));
@@ -815,8 +824,30 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
     case DID_FIRMWARE_UPDATE:
         // we don't respond to messages if we don't already have an active Updater
         if (m_comManagerState.devices[pHandle].fwUpdater)
-            m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->buf, data->hdr.size);
+            m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->ptr, data->hdr.size);
         break;
+	}
+}
+
+// return 0 on success, -1 on failure
+void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
+{
+	if (m_handlerAscii)
+	{
+		m_handlerAscii(pHandle, msg, msgSize);	
+	}
+
+	is_device_t &device = m_comManagerState.devices[pHandle];
+
+	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg+1);
+	switch (messageIdUInt)
+	{
+	case NMEA_MSG_UINT_INFO:
+		if( memcmp(msg, "$INFO,", 6) == 0)
+		{	// IMX device Info
+			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
+		}
+		break;
 	}
 }
 
@@ -1223,22 +1254,27 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
 	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &m_timeMs) == -1)
+	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &m_timeMs) == -1)
 	{	// Error
 		return false;
 	}
+
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+	comManagerSetCallbacks(NULL, staticProcessRxNmea, NULL, NULL, NULL);
 
 	if (m_enableDeviceValidation)
 	{
 		time_t startTime = time(0);
 
 		// Query devices with 10 second timeout
+		uint8_t getNmeaInfoBuf[11] = "$INFO*0E\r\n";
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
 				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
-				comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, sizeof(getNmeaInfoBuf));
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
 			}
@@ -1276,7 +1312,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// setup com manager again if serial ports dropped out with new count of serial ports
 		if (removedSerials)
 		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &m_timeMs);
+			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &m_timeMs);
 		}
 	}
 

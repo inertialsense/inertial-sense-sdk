@@ -521,6 +521,18 @@ int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, void* data, 
 	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PKT_TYPE_SET_DATA, data, did, size, offset);
 }
 
+int comManagerSendRaw(int pHandle, void *dataPtr, int dataSize)
+{
+	return comManagerSendRawInstance(&g_cm, pHandle, dataPtr, dataSize);
+}
+
+int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize)
+{
+	pfnIsCommPortWrite writeCallback = ((com_manager_t*)cmInstance)->portWrite;
+	if (writeCallback == 0){ return 0; }
+	return writeCallback(pHandle, dataPtr, dataSize);
+}
+
 int comManagerDisableData(int pHandle, uint16_t did)
 {
 	return comManagerDisableDataInstance(&g_cm, pHandle, did);

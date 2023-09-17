@@ -149,7 +149,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
 
 bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     nextChunkSend = current_timeMs() + 5; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
-    int result = comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0);
+    int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
 
