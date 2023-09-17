@@ -60,7 +60,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);
-    int messageSize, n, i, m;
+    int messageSize, n, i;
 
     // clear the Rx serial buffer
     n = is_comm_free(&comm);
