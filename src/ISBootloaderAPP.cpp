@@ -119,7 +119,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     dev_info = (dev_info_t*)comm.dataPtr;
                     m_sn = dev_info->serialNumber;
                     valid_signatures = devInfoToValidSignatures(dev_info);
-                    break;    
+                    return (eImageSignature)valid_signatures;
                 case DID_EVB_DEV_INFO:
                     dev_info_t* evb_dev_info;
                     evb_dev_info = (dev_info_t*)comm.dataPtr;
@@ -130,7 +130,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
                     }
-                    break;
+                    return (eImageSignature)valid_signatures;
                 }
                 break;
 
@@ -146,6 +146,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                         memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
                         m_sn = devInfo.serialNumber;
                         valid_signatures = devInfoToValidSignatures(&devInfo);
+                        return (eImageSignature)valid_signatures;
                     }
                     break;
                 }
