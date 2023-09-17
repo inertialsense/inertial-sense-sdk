@@ -657,6 +657,14 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	}
 }
 
+void InertialSense::SendRaw(uint8_t* data, uint32_t length)
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, data, length);
+	}
+}
+
 void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 {
 	if (pHandle == -1)
