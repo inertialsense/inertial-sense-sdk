@@ -3,6 +3,11 @@
 
 #include "data_sets.h"
 
+#define NMEA_STR_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
+#define NMEA_STR_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
+#define NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
+#define NMEA_STR_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
+#define NMEA_STR_SAVE_PERSISTENT_MESSAGE_TO_FLASH       "$PERS*13\r\n"
 
 enum eNmeaMsgIdUint
 {

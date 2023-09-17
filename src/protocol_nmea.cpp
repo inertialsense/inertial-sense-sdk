@@ -2016,7 +2016,7 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	{
 		return 0;
 	}
-	char *ptr = (char *)&msg[6];				// $ASCB
+	char *ptr = (char *)&msg[6];				// $ASCE
 	
 	nmea_msgs_t tmp {};
 	uint32_t options = 0;
