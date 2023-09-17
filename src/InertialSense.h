@@ -238,6 +238,13 @@ public:
 	void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
 
 	/**
+	* Send raw (bare) data directly to serial port
+	* @param data the data to send
+	* @param length length of data to send
+	*/
+	void SendRaw(uint8_t* data, uint32_t length);
+
+	/**
 	* Get the device info
 	* @param pHandle the pHandle to get device info for
 	* @return the device info
