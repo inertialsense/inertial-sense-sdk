@@ -566,7 +566,7 @@ void InertialSense::SetCallbacks(
 	pfnComManagerGenMsgHandler handlerUblox, 
 	pfnComManagerGenMsgHandler handlerRtcm3)
 {
-	m_handlerAscii = m_handlerAscii;
+	m_handlerAscii = handlerAscii;
 
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
 	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3);
