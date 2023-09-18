@@ -977,7 +977,7 @@ class logPlot:
 
     def rtkObs(self, name, relDid, fig=None):
         Nf = 2
-        n_plots = 4
+        n_plots = 6
         if fig is None:
             fig = plt.figure()
 
@@ -987,6 +987,8 @@ class logPlot:
         self.configureSubplot(ax[1], 'L1 Carier Phase', 'cycles')
         self.configureSubplot(ax[2], 'L5 Pseudorange', 'm')
         self.configureSubplot(ax[3], 'L5 Carier Phase', 'cycles')
+        self.configureSubplot(ax[4], 'L1 LLI')
+        self.configureSubplot(ax[5], 'L5 LLI')
 
         for i, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
@@ -1008,8 +1010,10 @@ class logPlot:
             tgps = np.zeros([N, Nsat])
             Pgps = np.empty([Nf, N, Nsat])
             Lgps = np.empty([Nf, N, Nsat])
+            LLI  = np.empty([Nf, N, Nsat])
             Pgps[:] = np.nan
             Lgps[:] = np.nan
+            LLI[:]  = np.nan
 
             # Fill observation arrays
             for j in range(N):
@@ -1032,6 +1036,7 @@ class logPlot:
                     if np.size(indP) > 0 and np.size(indL) > 0:
                         Pgps[indP,j,inds] = obs['P'][indo][indP]
                         Lgps[indL,j,inds] = obs['L'][indo][indL]
+                        LLI[:,j,inds] = obs['LLI'][indo]
 
             for k in range(len(sat)):
                 ind = np.where(tgps[:,k] != 0.0)
@@ -1046,6 +1051,8 @@ class logPlot:
                 ax[1].plot(t, np.squeeze(Pgps[1,ind,k]))
                 ax[2].plot(t, np.squeeze(Lgps[0,ind,k]))
                 ax[3].plot(t, np.squeeze(Lgps[1,ind,k]))
+                ax[4].plot(t, np.squeeze(LLI[0,ind,k]))
+                ax[5].plot(t, np.squeeze(LLI[1,ind,k]))
                 ax[0].legend(ncol=2)
 
         for a in ax:
