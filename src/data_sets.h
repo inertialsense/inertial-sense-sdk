@@ -392,8 +392,8 @@ enum eHdwStatusFlags
 /** System status flags */
 enum eSysStatusFlags
 {
-    /**  */
-    SYS_STATUS_RESERVED							= (int)0x00000001,
+    /** Allow IMX to drive Testbed-3 status LEDs */
+    SYS_STATUS_TBED3_LEDS_ENABLED				= (int)0x00000001,
 };
 
 // Used to validate GPS position (and velocity)
@@ -2553,7 +2553,7 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
     PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-    PLATFORM_CFG_TYPE_TBED3_GPX                 = (int)12,      // Testbed-3 w/ GPX
+    PLATFORM_CFG_TYPE_TBED3_IMX_GPX                 = (int)12,      // Testbed-3 w/ GPX
     PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
     PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
