@@ -49,6 +49,7 @@ ermc_t                      g_ermc = {0};
 void globals_init(void)
 {
 	// Init Device Info struct
+	g_evbDevInfo.hardware = DEV_INFO_HARDWARE_EVB;
 	g_evbDevInfo.hardwareVer[0] = 2;
 	switch(g_hdw_detect)
 	{

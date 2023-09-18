@@ -622,6 +622,22 @@ int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dat
 	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, CM_PKT_FLAGS_RAW_DATA_NO_SWAP);
 }
 
+int comManagerSendRaw(int pHandle, void *dataPtr, int dataSize)
+{
+	return comManagerSendRawInstance(&g_cm, pHandle, dataPtr, dataSize);
+}
+
+int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize)
+{
+	pfnComManagerSend sendCallback = ((com_manager_t*)cmInstance)->sendPacketCallback;
+	if (sendCallback == 0)
+	{
+		return -1;
+	}
+
+	return sendCallback(cmInstance, pHandle, dataPtr, dataSize);
+}
+
 int comManagerDisableData(int pHandle, uint32_t dataId)
 {
 	return comManagerDisableDataInstance(&g_cm, pHandle, dataId);

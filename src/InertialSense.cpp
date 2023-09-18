@@ -20,12 +20,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int staticSendData(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
-	// Suppress compiler warnings
-	(void)pHandle; 
-	(void)cmHandle;
-
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
 	if ((size_t)pHandle >= s->devices.size())
 	{
@@ -34,12 +30,8 @@ static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, 
 	return serialPortWrite(&s->devices[pHandle].serialPort, buf, len);
 }
 
-static int staticReadPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int staticReadData(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 {
-	// Suppress compiler warnings
-	(void)pHandle;
-	(void)cmHandle;
-
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
 	if ((size_t)pHandle >= s->devices.size())
 	{
@@ -50,8 +42,6 @@ static int staticReadPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, 
 
 static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 {
-	(void)cmHandle;
-
 	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
 
 	if (data->hdr.id >= (sizeof(s->binaryCallback)/sizeof(pfnHandleBinaryData)))
@@ -79,7 +69,7 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		handlerGlobal(s->inertialSenseInterface, data, pHandle);
 	}
 
-	s->inertialSenseInterface->ProcessRxData(data, pHandle);
+	s->inertialSenseInterface->ProcessRxData(pHandle, data);
 
 	switch (data->hdr.id)
 	{
@@ -97,6 +87,21 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		}
 	}
 }
+
+static int staticProcessRxNmea(CMHANDLE cmHandle, int pHandle, const unsigned char* msg, int msgSize)
+{
+	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
+
+	if ((size_t)pHandle > s->devices.size())
+	{
+		return 0;
+	}
+
+	s->inertialSenseInterface->ProcessRxNmea(pHandle, msg, msgSize);
+	
+	return 0;
+}
+
 
 InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 {
@@ -561,8 +566,10 @@ void InertialSense::SetCallbacks(
 	pfnComManagerGenMsgHandler handlerUblox, 
 	pfnComManagerGenMsgHandler handlerRtcm3)
 {
+	m_handlerAscii = handlerAscii;
+
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
+	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3);
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
@@ -614,13 +621,13 @@ vector<string> InertialSense::GetPorts()
 
 void InertialSense::StopBroadcasts(bool allPorts)
 {
-    uint8_t pid = (allPorts ? PID_STOP_BROADCASTS_ALL_PORTS : PID_STOP_BROADCASTS_CURRENT_PORT);
+	uint8_t stopCmd[11] = NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS;
 
 	// Stop all broadcasts
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the uINS.
-		comManagerSend((int)i, pid, 0, 0, 0);
+		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the IMX.
+		comManagerSendRaw((int)i, (uint8_t*)&stopCmd, sizeof(stopCmd));
 	}
 }
 
@@ -647,6 +654,14 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		comManagerSendRawData((int)i, dataId, data, length, offset);
+	}
+}
+
+void InertialSense::SendRaw(uint8_t* data, uint32_t length)
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, data, length);
 	}
 }
 
@@ -768,7 +783,7 @@ int InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 	return comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &device.evbFlashCfg, sizeof(evb_flash_cfg_t), 0);
 }
 
-void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
+void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 {
 	is_device_t &device = m_comManagerState.devices[pHandle];
 
@@ -783,6 +798,28 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
 		if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
 		{	// Checksum received
 			device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
+		}
+		break;
+	}
+}
+
+// return 0 on success, -1 on failure
+void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
+{
+	if (m_handlerAscii)
+	{
+		m_handlerAscii(comManagerGetGlobal(), pHandle, msg, msgSize);	
+	}
+
+	is_device_t &device = m_comManagerState.devices[pHandle];
+
+	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg+1);
+	switch (messageIdUInt)
+	{
+	case NMEA_MSG_UINT_INFO:
+		if( memcmp(msg, "$INFO,", 6) == 0)
+		{	// IMX device Info
+			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
 		}
 		break;
 	}
@@ -1031,22 +1068,27 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_cmInit.ensuredPackets) { delete [] m_cmInit.ensuredPackets; }
 	m_cmInit.ensuredPacketsSize = COM_MANAGER_BUF_SIZE_ENSURED_PKTS(NUM_ENSURED_PKTS);
 	m_cmInit.ensuredPackets = new ensured_pkt_t[NUM_ENSURED_PKTS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), NUM_ENSURED_PKTS, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
+	if (comManagerInit((int)m_comManagerState.devices.size(), NUM_ENSURED_PKTS, 10, 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
 	{	// Error
 		return false;
 	}
+
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+	comManagerSetCallbacks(NULL, staticProcessRxNmea, NULL, NULL);
 
 	if (m_enableDeviceValidation)
 	{
 		time_t startTime = time(0);
 
 		// Query devices with 10 second timeout
+		uint8_t getNmeaInfoBuf[11] = NMEA_STR_QUERY_DEVICE_INFO;
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
 				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
-				comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, sizeof(getNmeaInfoBuf));
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
 			}
@@ -1084,7 +1126,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// setup com manager again if serial ports dropped out with new count of serial ports
 		if (removedSerials)
 		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
 		}
 	}
 
