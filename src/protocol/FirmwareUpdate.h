@@ -623,6 +623,11 @@ namespace fwUpdate {
         uint16_t getNextChunkID() { return next_chunk_id; }
 
         /**
+         * @returns total number of complete chunks
+        */
+       uint16_t getChunksSent() {return chunks_sent; }
+
+        /**
          * @return the negotiated chunk size for this session
          */
         uint16_t getChunkSize() { return session_chunk_size; }

@@ -111,12 +111,9 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 
 int main(int argc, char* argv[])
 {
-
 	InertialSense::is_update_status_t status;
 	string COMNum = "COM6";
-	//string COMNum = "";
 	string fileName = "../../../Firmware/IS_GPX-1_zephyr.signed.encrypted.bin";
-	//string fileName = "IS_GPX-1_zephyr.signed.encrypted.bin";
 	uint32_t baudRate = IS_BAUDRATE_921600;
 
 	int deviceIndex = -1;

@@ -441,6 +441,12 @@ public:
 	is_update_status_t getUpdateStatus(uint32_t deviceIndex);
 
 	/**
+	* Gets current update percent for selected device index
+	* @param deviceIndex
+	*/
+	float getUploadPercent(uint32_t deviceIndex);
+
+	/**
 	* Gets current update status for selected device index
 	* @param deviceIndex
 	*/

@@ -90,6 +90,16 @@ bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     float percent = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char *message = (const char *)&msg.data.progress.message;
 
+    if(pfnUploadProgress_cb != nullptr)
+        pfnUploadProgress_cb(this, percent);
+
+    if(pfnVerifyProgress_cb != nullptr)
+        pfnVerifyProgress_cb(this, percent);
+    
+    if(pfnInfoProgress_cb != nullptr)
+        pfnInfoProgress_cb(this, message, ISBootloader::IS_LOG_LEVEL_INFO);
+    
+
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
     printf("[%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, getSessionStatusName(), msg.data.progress.msg_level, message);
     return true;

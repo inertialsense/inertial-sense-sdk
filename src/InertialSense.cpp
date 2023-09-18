@@ -942,10 +942,14 @@ is_operation_result InertialSense::updateFirmware(
 
     for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
-        m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
+        
+		// TODO: Impliment maybe
+		// m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
+		// m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
+		// m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
+		
+		m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
     }
-
-    // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
     printf("\n\r");
 
@@ -957,9 +961,9 @@ is_operation_result InertialSense::updateFirmware(
 }
 
 /**
-	* Gets current update status for selected device index
-	* @param deviceIndex
-	*/
+* Gets current update status for selected device index
+* @param deviceIndex
+*/
 InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
 {
 	fwUpdate::update_status_e status;
@@ -1009,6 +1013,20 @@ InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t device
 
 
 	return InertialSense::UPDATE_STATUS_UNKOWN;
+}
+
+/**
+* Gets current update percent for selected device index
+* @param deviceIndex
+*/
+float InertialSense::getUploadPercent(uint32_t deviceIndex)
+{
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL && 
+		m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks() != 0)
+		return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / 
+				m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks());
+	else
+		return 100.0; //TODO: This need to be smarter!
 }
 
 /**
