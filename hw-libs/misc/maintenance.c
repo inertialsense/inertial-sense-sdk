@@ -6,14 +6,58 @@
 #include "globals.h"
 
 
-
 void led_maintenance(void)
 {
-	if( g_nvmFlashCfg->sysCfgBits & SYS_CFG_BITS_DISABLE_LEDS )
+#if !defined(ENABLE_LED_SUPPORT) || ENABLE_LED_SUPPORT==0
+	return;
+#endif
+
+    if (!(g_sysParams.sysStatus & SYS_STATUS_TBED3_LEDS_ENABLED))
+    {
+        g_enableLeds = false;
+        return;
+    }
+
+	// Init LED I/O
+	static uint8_t needsInit = true;
+	if (needsInit)
 	{
-		LEDS_ALL_OFF();
-		return;
+		needsInit = false;
+		// if (we shouldn't drive LED I/O due to setting conflict)	
+		// {	// LED I/O error checking.
+		// 	g_sysParams.sysStatus &= ~SYS_STATUS_TBED3_LEDS_ENABLED;
+		// 	return;
+		// }
+#ifdef IMX_5
+		gpio_init(TBED3_LED_GRN_GPIO, GPIO_OUTPUT_PP, GPIO_AFNONE, GPIO_PULL_NONE, GPIO_SPD_LOW, PIN_LEVEL_LOW);
+		gpio_init(TBED3_LED_RED_GPIO, GPIO_OUTPUT_PP, GPIO_AFNONE, GPIO_PULL_NONE, GPIO_SPD_LOW, PIN_LEVEL_LOW);
+#endif
 	}
+
+	// Allow USB closed to turn disable LEDs only after the USB has been opened once.  Otherwise always allow LEDs to be enabled. 
+	static uint8_t usbWasOpen = false;
+	static uint8_t disableLeds = false;
+	if (USBD_Connected())
+	{	// USB opened
+		usbWasOpen = true;
+		disableLeds = false;
+	}
+	else
+	{	// USB closed
+		if (usbWasOpen)
+		{
+			disableLeds = true;
+		}
+	}
+
+    if (g_nvmFlashCfg->sysCfgBits & SYS_CFG_BITS_DISABLE_LEDS || disableLeds)
+    {
+		LEDS_ALL_OFF();
+        g_enableLeds = false;
+        return;
+    }
+
+    g_enableLeds = true;
 	
 	int solStatus = INS_STATUS_SOLUTION(g_insStatus);
 	
