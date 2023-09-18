@@ -217,10 +217,10 @@ char *ASCII_to_f64(double *vec, char *ptr)
 	return ptr;
 }
 
-char *ASCII_to_vec4u8(uint8_t vec[], char *ptr)
+char *ASCII_to_ver4u8(uint8_t vec[], char *ptr)
 {
 	unsigned int v[4];
-	SSCANF(ptr, "%2u.%2u.%2u.%2u", &v[0], &v[1], &v[2], &v[3]);
+	SSCANF(ptr, "%u.%u.%u.%u", &v[0], &v[1], &v[2], &v[3]);
 	vec[0] = (uint8_t)v[0];
 	vec[1] = (uint8_t)v[1];
 	vec[2] = (uint8_t)v[2];
@@ -282,10 +282,11 @@ char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 
 char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 {
+	char *ptr2 = ASCII_find_next_field(ptr);
+	max_len = _MIN(max_len, ptr2-ptr);
 	STRNCPY(dst, ptr, max_len-1);
 	dst[max_len-1] = 0;			// Must be null terminated
-	ptr = ASCII_find_next_field(ptr);
-	return ptr;
+	return ptr2;
 }
 
 char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, char *ptr)
@@ -487,7 +488,9 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		",%s"			// 7
 		",%04d-%02d-%02d"		// 8
 		",%02d:%02d:%02d.%02d"	// 9
-		",%s",			// 10
+		",%s"			// 10
+		",%d"			// 11
+		",%d",			// 12
 		(int)info.serialNumber,	// 1
 		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
 		info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3], // 3
@@ -497,7 +500,9 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.manufacturer,		// 7
 		info.buildDate[1]+2000, info.buildDate[2], info.buildDate[3], // 8
 		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
-		info.addInfo);			// 10
+		info.addInfo,			// 10
+		info.hardware,			// 11
+		info.reserved);			// 12
 		
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -1511,16 +1516,16 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
 	// uint8_t         hardwareVer[4];
-	ptr = ASCII_to_vec4u8(info.hardwareVer, ptr);
+	ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
 	// uint8_t         firmwareVer[4];
-	ptr = ASCII_to_vec4u8(info.firmwareVer, ptr);
+	ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
 	// uint32_t        buildNumber;
 	ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
 	// uint8_t         protocolVer[4];
-	ptr = ASCII_to_vec4u8(info.protocolVer, ptr);
+	ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
 	// uint32_t        repoRevision;
 	ptr = ASCII_to_u32(&info.repoRevision, ptr);
@@ -1531,6 +1536,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
+	info.buildDate[0] = 0;
 	info.buildDate[1] = (uint8_t)(year - 2000);
 	info.buildDate[2] = (uint8_t)(month);
 	info.buildDate[3] = (uint8_t)(day);
@@ -1547,6 +1553,12 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	
 	// char            addInfo[DEVINFO_ADDINFO_STRLEN];
 	ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
+
+	// uint16_t        hardware;
+	ptr = ASCII_to_u16(&info.hardware, ptr);
+
+	// uint16_t        reserved;
+	ptr = ASCII_to_u16(&info.reserved, ptr);
 
 	return 0;
 }
@@ -2004,7 +2016,7 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	{
 		return 0;
 	}
-	char *ptr = (char *)&msg[6];				// $ASCB
+	char *ptr = (char *)&msg[6];				// $ASCE
 	
 	nmea_msgs_t tmp {};
 	uint32_t options = 0;
