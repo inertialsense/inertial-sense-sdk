@@ -384,6 +384,7 @@ bool InertialSense::Update()
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
+						m_comManagerState.devices[devIdx].closeStatus = status;
 #ifdef DEBUG_CONSOLELOGGING
                     } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
@@ -964,55 +965,40 @@ is_operation_result InertialSense::updateFirmware(
 * Gets current update status for selected device index
 * @param deviceIndex
 */
-InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
+fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
 {
-	fwUpdate::update_status_e status;
 	try
 	{
 		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
-			status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+			return m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
 		else
-			return InertialSense::UPDATE_STATUS_DONE; //TODO: This need to be smarter!
-		
-		switch (status)
-		{
-			case fwUpdate::FINISHED:
-				return InertialSense::UPDATE_STATUS_DONE;
-
-			case fwUpdate::IN_PROGRESS:
-				return InertialSense::UPDATE_STATUS_UPDATING;
-
-			case fwUpdate::READY:
-			case fwUpdate::INITIALIZING:
-				return InertialSense::UPDATE_STATUS_WAITING;
-
-			case fwUpdate::NOT_STARTED:
-			case fwUpdate::ERR_INVALID_SESSION:
-			case fwUpdate::ERR_INVALID_SLOT:
-			case fwUpdate::ERR_NOT_ALLOWED:
-			case fwUpdate::ERR_NOT_ENOUGH_MEMORY:
-			case fwUpdate::ERR_OLDER_FIRMWARE:
-			case fwUpdate::ERR_MAX_CHUNK_SIZE:
-			case fwUpdate::ERR_TIMEOUT:
-			case fwUpdate::ERR_CHECKSUM_MISMATCH:
-			case fwUpdate::ERR_COMMS:
-			case fwUpdate::ERR_NOT_SUPPORTED:
-			case fwUpdate::ERR_FLASH_WRITE_FAILURE:
-			case fwUpdate::ERR_FLASH_OPEN_FAILURE:
-			case fwUpdate::ERR_FLASH_INVALID:
-				return InertialSense::UPDATE_STATUS_ERROR;
-			default:
-				return InertialSense::UPDATE_STATUS_UNKOWN;
-		}
+			return fwUpdate::ERR_UPDATER_CLOSED;
 
 	}
 	catch(...)
 	{
-		return InertialSense::UPDATE_STATUS_INVALID_INDEX;
+		return fwUpdate::ERR_INVALID_SLOT;
 	}
 
+	return fwUpdate::ERR_UNKOWN;
+}
 
-	return InertialSense::UPDATE_STATUS_UNKOWN;
+/**
+* Gets reason device was closed for selected device index
+* @param deviceIndex
+*/
+fwUpdate::update_status_e InertialSense::getCloseStatus(uint32_t deviceIndex)
+{
+	try
+	{
+		return m_comManagerState.devices[deviceIndex].closeStatus;
+	}
+	catch (...)
+	{
+		return fwUpdate::ERR_INVALID_SLOT;
+	}
+
+	return fwUpdate::ERR_UNKOWN;
 }
 
 /**
@@ -1056,7 +1042,7 @@ int InertialSense::getUpdateDeviceIndex(const char* com)
 */
 bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex)
 {
-	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL || 1)
 	{
 		memcpy(devI, &m_comManagerState.devices[deviceIndex].devInfo, sizeof(dev_info_t));
 		return true;
