@@ -669,15 +669,12 @@ int comManagerSendRaw(int pHandle, void *dataPtr, int dataSize)
 	return comManagerSendRawInstance(&g_cm, pHandle, dataPtr, dataSize);
 }
 
+// Returns 0 on success, -1 on failure.
 int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize)
 {
 	pfnComManagerSend sendCallback = ((com_manager_t*)cmInstance)->sendPacketCallback;
-	if (sendCallback == 0)
-	{
-		return -1;
-	}
-
-	return sendCallback(cmInstance, pHandle, dataPtr, dataSize);
+	if (sendCallback == 0){ return -1; }
+	return (sendCallback(cmInstance, pHandle, dataPtr, dataSize) ? 0 : -1);
 }
 
 int comManagerDisableData(int pHandle, uint32_t dataId)
@@ -1286,6 +1283,7 @@ int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
 		} break;
 	}
 
+	// Success
 	return 0;
 }
 
