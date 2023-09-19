@@ -458,7 +458,7 @@ public:
 	* @param dev_info_t devI
 	* @param uint32_t deviceIndex
 	*/
-	bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
+	bool getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
 
 	///**
 	//* Gets current COM port from deviceIndex
