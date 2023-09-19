@@ -555,7 +555,7 @@ typedef struct PACKED
 	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
 
-	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
+	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
 	int32_t			platformType;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
@@ -2553,27 +2553,27 @@ enum ePlatformConfig
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
-    PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
-    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
+    PLATFORM_CFG_TYPE_NONE                      = (int)0,		    // IMX-5 default
+    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		    // uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
     PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
     PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
-    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
-    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
-    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
+    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	        // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
+    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,           // "
+    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,           // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-    PLATFORM_CFG_TYPE_TBED3                     = (int)12,      // Testbed-3
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
     PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,		// IG-2 w/ IMX-5 and GPX-1
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		// Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,		// "
-    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,		// Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,		// "
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,		    // IG-2 w/ IMX-5 and GPX-1
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		    // Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,		    // "
+    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,		    // Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,		    // "
     PLATFORM_CFG_TYPE_COUNT                     = (int)21,
 
     // Presets
