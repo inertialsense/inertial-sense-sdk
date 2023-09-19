@@ -132,8 +132,10 @@ InertialSense::InertialSense(
 	is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer));
 
 	// Rx data callback functions
-	m_handlerNmea = handlerNmea;
-	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3);
+	m_handlerRmc   = handlerRmc;
+	m_handlerNmea  = handlerNmea;
+	m_handlerUblox = handlerUblox;
+	m_handlerRtcm3 = handlerRtcm3;
 }
 
 InertialSense::~InertialSense()
@@ -1087,9 +1089,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	{	// Error
 		return false;
 	}
-
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(NULL, staticProcessRxNmea, NULL, NULL);
+	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3);
 
 	if (m_enableDeviceValidation)
 	{
@@ -1142,6 +1142,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		if (removedSerials)
 		{
 			comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3);
 		}
 	}
 
