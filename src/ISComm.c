@@ -1046,6 +1046,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 	return pkt->size;
 }
 
+// Returns number of bytes written
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
 	// Compute checksum using precomputed header checksum

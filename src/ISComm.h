@@ -719,8 +719,10 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+// Returns number of bytes written
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt);
 
+// Returns number of bytes written
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
