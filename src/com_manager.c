@@ -593,11 +593,17 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 
 		regData = &(cmInstance->regData[hdr->id]);
 
+		p_data_t data;
+		data.hdr.id = pkt->dataHdr.id;
+		data.hdr.offset = pkt->offset;
+		data.hdr.size = pkt->data.size;
+		data.ptr = pkt->data.ptr;
+
 		// Validate and constrain Rx data size to fit within local data struct
-		if (regData->dataSet.size && (pkt->offset + hdr->payloadSize) > regData->dataSet.size)
+		if (regData->dataSet.size && (data.hdr.offset + data.hdr.size) > regData->dataSet.size)
 		{
 			// trim the size down so it fits
-			uint16_t size = (int)(regData->dataSet.size - pkt->offset);
+			uint16_t size = (int)(regData->dataSet.size - data.hdr.offset);
 			if (size < 4)
 			{
 				// we are completely out of bounds, we cannot process this message at all
@@ -606,10 +612,8 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 			}
 
 			// Update Rx data size
-			hdr->payloadSize = _MIN(hdr->payloadSize, (uint8_t)size);
+			data.hdr.size = _MIN(data.hdr.size, (uint8_t)size);
 		}
-
-		p_data_t *data = (p_data_t*)&(pkt->dataHdr);
 
 #if ENABLE_PACKET_CONTINUATION
 
@@ -660,20 +664,20 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 			// Write to data structure if it was registered
 			if (regData->dataSet.rxPtr)
 			{
-				copyDataPToStructP(regData->dataSet.rxPtr, data, regData->dataSet.size);
+                copyDataPToStructP(regData->dataSet.rxPtr, &data, regData->dataSet.size);
 			}
 
 			// Call data specific callback after data has been received
 			if (regData->pstRxFnc)
 			{
-				regData->pstRxFnc(pHandle, data);
+                regData->pstRxFnc(pHandle, &data);
 			}
 		}
 
 		// Call general/global callback
 		if (cmInstance->pstRxFnc)
 		{
-			cmInstance->pstRxFnc(pHandle, data);
+            cmInstance->pstRxFnc(pHandle, &data);
 		}
 
 #if ENABLE_PACKET_CONTINUATION
