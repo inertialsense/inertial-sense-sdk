@@ -814,6 +814,11 @@ int InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 {
+	if (data->hdr.size==0 || data->ptr==NULL)
+	{
+		return;
+	}
+
 	is_device_t &device = m_comManagerState.devices[pHandle];
 
 	switch (data->hdr.id)

@@ -434,13 +434,6 @@ typedef struct
 	uint16_t            period;
 } p_data_get_t;
 
-/** Represents the body of a disable broadcast for data id packet */
-typedef struct
-{
-	/** The packet identifier to disable broadcasts for */
-	uint16_t            id;
-} p_data_disable_t;
-
 /** Represents the body header of an ACK or NACK packet */
 typedef struct
 {

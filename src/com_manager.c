@@ -51,7 +51,7 @@ int initComManagerInstanceInternal
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt);
 void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int periodMultiple);
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg);
-void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t *disable);
+void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did);
 int sendDataPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt);
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags);
 int findAsciiMessage(const void * a, const void * b);
@@ -328,12 +328,14 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 			error = cmInstance->cmMsgHandlerAscii(port, data, size);
 		}
 		break;
+
 	case _PTYPE_SPARTN:
 		if (cmInstance->cmMsgHandlerSpartn)
 		{
 			error = cmInstance->cmMsgHandlerSpartn(port, data, size);
 		}
 		break;
+
 	default:
 		break;
 	}
@@ -541,7 +543,7 @@ int comManagerDisableData(int pHandle, uint16_t did)
 
 int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did)
 {
-	return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_STOP_DID_BROADCAST, &did, 0, 0, 0);
+    return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_STOP_DID_BROADCAST, NULL, did, 0, 0);
 }
 
 int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t size, uint16_t did, uint16_t offset)
@@ -572,7 +574,7 @@ int findAsciiMessage(const void * a, const void * b)
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 {
 	packet_hdr_t        *hdr = &(pkt->hdr);
-	registered_data_t   *regd = NULL;
+	registered_data_t   *regData = NULL;
 	uint8_t             ptype = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
 
 	switch (ptype)
@@ -584,25 +586,27 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 	case PKT_TYPE_DATA:
 	{		
 		// Validate Data
-		if (hdr->id < DID_COUNT_UINS)
+		if (hdr->id >= DID_COUNT_UINS || hdr->payloadSize == 0)
 		{
-			regd = &(cmInstance->regData[hdr->id]);
+			return -1;
+		}
 
-			// Validate and constrain Rx data size to fit within local data struct
-			if (regd->dataSet.size && (pkt->offset + hdr->payloadSize) > regd->dataSet.size)
+		regData = &(cmInstance->regData[hdr->id]);
+
+		// Validate and constrain Rx data size to fit within local data struct
+		if (regData->dataSet.size && (pkt->offset + hdr->payloadSize) > regData->dataSet.size)
+		{
+			// trim the size down so it fits
+			uint16_t size = (int)(regData->dataSet.size - pkt->offset);
+			if (size < 4)
 			{
-				// trim the size down so it fits
-				uint16_t size = (int)(regd->dataSet.size - pkt->offset);
-				if (size < 4)
-				{
-					// we are completely out of bounds, we cannot process this message at all
-					// the minimum data struct size is 4 bytes
-					return -1;
-				}
-
-				// Update Rx data size
-				hdr->payloadSize = _MIN(hdr->payloadSize, (uint8_t)size);
+				// we are completely out of bounds, we cannot process this message at all
+				// the minimum data struct size is 4 bytes
+				return -1;
 			}
+
+			// Update Rx data size
+			hdr->payloadSize = _MIN(hdr->payloadSize, (uint8_t)size);
 		}
 
 		p_data_t *data = (p_data_t*)&(pkt->dataHdr);
@@ -651,18 +655,18 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 
 #endif
 
-		if (regd)
+		if (regData)
 		{
 			// Write to data structure if it was registered
-			if (regd->dataSet.rxPtr)
+			if (regData->dataSet.rxPtr)
 			{
-				copyDataPToStructP(regd->dataSet.rxPtr, data, regd->dataSet.size);
+				copyDataPToStructP(regData->dataSet.rxPtr, data, regData->dataSet.size);
 			}
 
 			// Call data specific callback after data has been received
-			if (regd->pstRxFnc)
+			if (regData->pstRxFnc)
 			{
-				regd->pstRxFnc(pHandle, data);
+				regData->pstRxFnc(pHandle, data);
 			}
 		}
 
@@ -717,7 +721,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		break;
 
 	case PKT_TYPE_STOP_DID_BROADCAST:
-		disableDidBroadcast(cmInstance, pHandle, (p_data_disable_t*)(pkt->data.ptr));
+		disableDidBroadcast(cmInstance, pHandle, pkt->hdr.id);
 		break;
 
 	case PKT_TYPE_NACK:
@@ -730,6 +734,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		break;
 	}
 
+	// Success
 	return 0;
 }
 
@@ -927,11 +932,11 @@ void comManagerDisableBroadcastsInstance(CMHANDLE cmInstance_, int pHandle)
 	}
 }
 
-void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t* disable)
+void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did)
 {
 	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
 	{
-		if ((pHandle < 0 || pHandle == bcPtr->pHandle) && bcPtr->pkt.hdr.id == disable->id)
+		if ((pHandle < 0 || pHandle == bcPtr->pHandle) && bcPtr->pkt.hdr.id == did)
 		{
 			bcPtr->period = MSG_PERIOD_DISABLED;
 		}
@@ -941,7 +946,7 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_
 	if (cmInstance->cmMsgHandlerRmc)
 	{
 		p_data_get_t req;
-		req.id = disable->id;
+		req.id = did;
 		req.size = 0;
 		req.offset = 0;
 		req.period = 0;
