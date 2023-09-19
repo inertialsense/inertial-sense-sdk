@@ -598,7 +598,7 @@ void cltool_outputHelp()
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
 	nvm_flash_cfg_t flashCfg;
-	inertialSenseInterface.GetFlashConfig(flashCfg);
+	inertialSenseInterface.FlashConfig(flashCfg);
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashCfgString.length() < 2)
@@ -649,7 +649,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
 	evb_flash_cfg_t evbFlashCfg;
-	inertialSenseInterface.GetEvbFlashConfig(evbFlashCfg);
+	inertialSenseInterface.EvbFlashConfig(evbFlashCfg);
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_EVB_FLASH_CFG);
 
 	if (flashCfgString.length() < 2)

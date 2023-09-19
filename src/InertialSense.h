@@ -107,24 +107,25 @@ public:
 
 	/**
 	* Constructor
-	* @param callback binary data callback, optional. If specified, ALL BroadcastBinaryData requests will callback to this function.
+	* @param callbackIsb InertialSense binary received data callback (optional). If specified, ALL BroadcastBinaryData requests will callback to this function.
+	* @param callbackRmc Real-time message controller received data callback (optional).
+	* @param callbackNmea NMEA received received data callback (optional).
+	* @param callbackUblox Ublox binary received data callback (optional).
+	* @param callbackRtcm3 RTCM3 received data callback (optional).
+	* @param callbackSpartn Spartn received data callback (optional).
 	*/
-	InertialSense(pfnHandleBinaryData callback = NULL);
+	InertialSense(
+		pfnHandleBinaryData        callbackIsb = NULL,
+		pfnComManagerAsapMsg       callbackRmc = NULL,
+		pfnComManagerGenMsgHandler callbackNmea = NULL,
+		pfnComManagerGenMsgHandler callbackUblox = NULL, 
+		pfnComManagerGenMsgHandler callbackRtcm3 = NULL,
+		pfnComManagerGenMsgHandler callbackSpartn = NULL );
 
 	/**
 	* Destructor
 	*/
 	virtual ~InertialSense();
-
-	/**
-	* Set functions pointers called when various message types are received.
-	*/
-	void SetCallbacks(
-		pfnComManagerAsapMsg handlerRmc=NULLPTR,
-		pfnComManagerGenMsgHandler handlerNmea=NULLPTR,
-		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
-		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR,
-		pfnComManagerGenMsgHandler handlerSpartn=NULLPTR);
 
 	/**
 	* Closes any open connection and then opens the device
@@ -154,7 +155,7 @@ public:
 	* Get the number of open devices
 	* @return the number of open devices
 	*/
-	size_t GetDeviceCount();
+	size_t DeviceCount();
 
 	/**
 	* Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -210,6 +211,11 @@ public:
 	void CloseServerConnection();
 
 	/**
+	* Request device(s) version information (dev_info_t).
+	*/
+	void QueryDeviceInfo();
+
+	/**
 	* Turn off all messages.  Current port only if allPorts = false.
 	*/
 	void StopBroadcasts(bool allPorts=true);
@@ -218,6 +224,11 @@ public:
      * Current data streaming will continue streaming at boot. 
      */
     void SavePersistent();
+
+    /**
+     * Software reset device(s) with open serial port.
+     */
+	void SoftwareReset();
 
 	/**
 	* Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
@@ -249,7 +260,7 @@ public:
 	* @param pHandle the pHandle to get device info for
 	* @return the device info
 	*/
-	const dev_info_t GetDeviceInfo(int pHandle = 0)
+	const dev_info_t DeviceInfo(int pHandle = 0)
 	{
 		if ((size_t)pHandle >= m_comManagerState.devices.size())
 		{
@@ -285,10 +296,10 @@ public:
 	* @param pHandle the port pHandle to get flash config for
 	* @return bool whether the flash config is valid, currently synchronized
 	*/
-	bool GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0); 
+	bool FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0); 
 
 	/**
-	* Indicates whether the current IMX flash config has been downloaded and available via GetFlashConfig().
+	* Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
 	* @param pHandle the port pHandle to get flash config for
 	* @return bool whether the flash config is valid, currently synchronized.
 	*/
@@ -308,7 +319,7 @@ public:
 	* @param pHandle the port pHandle to get flash config for
 	* @return bool whether the EVB flash config is valid, currently synchronized
 	*/
-	bool GetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0); 
+	bool EvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0); 
 
 	/**
 	* Set the EVB flash config and update flash config on the EVB-2 flash memory
@@ -340,38 +351,38 @@ public:
 	* Get the number of bytes read or written to/from client or server connections
 	* @return byte count
 	*/
-	uint64_t GetClientServerByteCount() { return m_clientServerByteCount; }
+	uint64_t ClientServerByteCount() { return m_clientServerByteCount; }
 
 	/**
 	* Get the current number of client connections
 	* @return int number of current client connected
 	*/
-	int GetClientConnectionCurrent() { return m_clientConnectionsCurrent; }
+	int ClientConnectionCurrent() { return m_clientConnectionsCurrent; }
 
 	/**
 	* Get the total number of client connections
 	* @return int number of total client that have connected
 	*/
-	int GetClientConnectionTotal() { return m_clientConnectionsTotal; }
+	int ClientConnectionTotal() { return m_clientConnectionsTotal; }
 
 	/**
 	* Get TCP server IP address and port (i.e. "127.0.0.1:7777")
 	* @return string IP address and port
 	*/
-	std::string GetTcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
+	std::string TcpServerIpAddressPort() { return (m_tcpServer.IpAddress().empty() ? "127.0.0.1" : m_tcpServer.IpAddress()) + ":" + std::to_string(m_tcpServer.Port()); }
 
 	/**
 	* Get Client connection info string (i.e. "127.0.0.1:7777")
 	* @return string IP address and port
 	*/
-	std::string GetClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
+	std::string ClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
 
 	/**
 	* Get access to the underlying serial port
 	* @param pHandle the pHandle to get the serial port for
 	* @return the serial port
 	*/
-	serial_port_t* GetSerialPort(int pHandle = 0) 
+	serial_port_t* SerialPort(int pHandle = 0) 
 	{
 		if ((size_t)pHandle >= m_comManagerState.devices.size())
 		{
@@ -384,7 +395,7 @@ public:
 	* Get the timeout flush logger parameter in seconds
 	* @return the timeout flush logger parameter in seconds
 	*/
-	time_t GetTimeoutFlushLoggerSeconds() { return m_logger.GetTimeoutFlushSeconds(); }
+	time_t TimeoutFlushLoggerSeconds() { return m_logger.TimeoutFlushSeconds(); }
 
 	/**
 	* Set the timeout flush logger parameter in seconds
@@ -470,12 +481,12 @@ public:
 	 */
 	void SaveFlashConfigFile(std::string path, int pHandle = 0);
 
-	std::string getServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
-	std::string getClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
+	std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
+	std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
 	// Used for testing
-	InertialSense::com_manager_cpp_state_t* GetComManagerState() { return &m_comManagerState; }
-	InertialSense::is_device_t* GetComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+	InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
+	InertialSense::is_device_t* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:
 	bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);

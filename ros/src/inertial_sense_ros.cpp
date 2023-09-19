@@ -428,7 +428,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
     nvm_flash_cfg_t flashCfg;
-    IS_.GetFlashConfig(flashCfg);
+    IS_.FlashConfig(flashCfg);
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
@@ -540,7 +540,7 @@ bool InertialSenseROS::connect(float timeout)
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sleep(1); // is this a good idea?
         } else {
-            ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.GetDeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
+            ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }
@@ -557,11 +557,11 @@ bool InertialSenseROS::firmware_compatiblity_check()
 {
     char local_protocol[4] = { PROTOCOL_VERSION_CHAR0, PROTOCOL_VERSION_CHAR1, PROTOCOL_VERSION_CHAR2, PROTOCOL_VERSION_CHAR3 };
     char diff_protocol[4] = { 0, 0, 0, 0 };
-    for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.GetDeviceInfo().protocolVer[i];
+    for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.DeviceInfo().protocolVer[i];
 
     char local_firmware[3] = { REPO_VERSION_MAJOR, REPO_VERSION_MINOR, REPO_VERSION_REVIS };
     char diff_firmware[3] = { 0, 0 ,0 };
-    for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.GetDeviceInfo().firmwareVer[i];
+    for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.DeviceInfo().firmwareVer[i];
 
     ros::console::levels::Level protocol_fault = ros::console::levels::Debug; // none
     if (diff_protocol[0] != 0) protocol_fault = ros::console::levels::Fatal; // major protocol changes -- BREAKING
@@ -586,13 +586,13 @@ bool InertialSenseROS::firmware_compatiblity_check()
             REPO_VERSION_MAJOR,
             REPO_VERSION_MINOR, 
             REPO_VERSION_REVIS,
-            IS_.GetDeviceInfo().protocolVer[0],
-            IS_.GetDeviceInfo().protocolVer[1],
-            IS_.GetDeviceInfo().protocolVer[2],
-            IS_.GetDeviceInfo().protocolVer[3],
-            IS_.GetDeviceInfo().firmwareVer[0],
-            IS_.GetDeviceInfo().firmwareVer[1],
-            IS_.GetDeviceInfo().firmwareVer[2]      
+            IS_.DeviceInfo().protocolVer[0],
+            IS_.DeviceInfo().protocolVer[1],
+            IS_.DeviceInfo().protocolVer[2],
+            IS_.DeviceInfo().protocolVer[3],
+            IS_.DeviceInfo().firmwareVer[0],
+            IS_.DeviceInfo().firmwareVer[1],
+            IS_.DeviceInfo().firmwareVer[2]      
     );
     return final_fault == ros::console::levels::Debug; // true if they match, false if they don't.
 }
@@ -625,7 +625,7 @@ void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
-    IS_.GetFlashConfig(current_flash_cfg);
+    IS_.FlashConfig(current_flash_cfg);
     //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
@@ -736,7 +736,7 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback(const ros::Timer
         return;
     }
 
-    int latest_byte_count = IS_.GetClientServerByteCount();
+    int latest_byte_count = IS_.ClientServerByteCount();
     if (config.traffic_total_byte_count_ == latest_byte_count)
     {
         ++config.data_transmission_interruption_count_;
@@ -2068,7 +2068,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.GetFlashConfig(current_flash);
+    IS_.FlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
@@ -2103,7 +2103,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.GetFlashConfig(current_flash);
+    IS_.FlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
@@ -2139,7 +2139,7 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.GetSerialPort();
+    serial_port_t *serialPort = IS_.SerialPort();
     uint8_t inByte;
     int n;
 
@@ -2170,7 +2170,7 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.GetSerialPort();
+    serial_port_t *serialPort = IS_.SerialPort();
     uint8_t inByte;
     int n;
 

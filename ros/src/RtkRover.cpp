@@ -130,7 +130,7 @@ void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback(cons
     if (connecting_ && (is_ != nullptr))
         return;
 
-    int latest_byte_count = is_->GetClientServerByteCount();
+    int latest_byte_count = is_->ClientServerByteCount();
     if (traffic_total_byte_count_ == latest_byte_count)
     {
         ++data_transmission_interruption_count_;

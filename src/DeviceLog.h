@@ -47,7 +47,7 @@ public:
 	virtual void Flush() {}
     bool SetupReadInfo(const std::string& directory, const std::string& deviceName, const std::string& timeStamp);
     void SetDeviceInfo(const dev_info_t *info);
-    const dev_info_t* GetDeviceInfo() { return &m_devInfo; }
+    const dev_info_t* DeviceInfo() { return &m_devInfo; }
 	uint64_t FileSize() { return m_fileSize; }
 	uint64_t LogSize() { return m_logSize; }
 	uint32_t FileCount() { return m_fileCount; }
