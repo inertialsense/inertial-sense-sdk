@@ -2485,8 +2485,8 @@ enum ePlatformConfig
     PLATFORM_CFG_TYPE_IG2                       = (int)16,		    // IG-2 w/ IMX-5 and GPX-1
     PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
     PLATFORM_CFG_TYPE_LAMBDA_G2              	= (int)18,          // "
-    PLATFORM_CFG_TYPE_TESTBED_G1_W_LAMBDA       = (int)19,          // Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_TESTBED_G2_W_LAMBDA       = (int)20,          // "
+    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
     PLATFORM_CFG_TYPE_COUNT                     = (int)21,
 
     // Presets
