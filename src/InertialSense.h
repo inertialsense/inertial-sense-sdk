@@ -498,7 +498,12 @@ protected:
 private:
 	uint32_t m_timeMs;
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
+	pfnComManagerAsapMsg       m_handlerRmc = NULLPTR;
 	pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
+	
 	cISLogger m_logger;
 	void* m_logThread;
 	cMutex m_logMutex;
