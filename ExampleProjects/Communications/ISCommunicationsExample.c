@@ -144,15 +144,14 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
-	uint32_t timeMs = current_timeMs();
+	// uint32_t timeMs = current_timeMs();
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer), &timeMs);
-
+	// is_comm_init(&comm, buffer, sizeof(buffer), &timeMs);
+	is_comm_init(&comm, buffer, sizeof(buffer), NULL);
 
 	// STEP 3: Initialize and open serial port
 
@@ -210,7 +209,7 @@ int main(int argc, char* argv[])
 		// Read one byte with a 20 millisecond timeout
 		while ((count = serialPortReadCharTimeout(&s_serialPort, &inByte, 20)) > 0)
 		{
-			timeMs = current_timeMs();
+			// timeMs = current_timeMs();
 			switch (is_comm_parse_byte(&comm, inByte))
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
