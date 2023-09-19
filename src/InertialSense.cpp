@@ -1021,10 +1021,16 @@ InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t device
 */
 float InertialSense::getUploadPercent(uint32_t deviceIndex)
 {
-	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL && 
-		m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks() != 0)
-		return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / 
-				m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks());
+	float totalChunks;
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+	{
+		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks();
+
+		if (totalChunks > 0)
+			return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / totalChunks)*100;
+		else
+				return 100.0;
+	}
 	else
 		return 100.0; //TODO: This need to be smarter!
 }
