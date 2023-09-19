@@ -969,10 +969,98 @@ class logPlot:
             a.grid(True)
         self.saveFig(fig, 'rtk'+name+'BaseToRoverVector')
 
-    def rtkObs(self, fig=None):
+    def rtkObsGPS1(self, fig=None):
+        self.rtkObs("Compassing", DID_GPS1_RAW, fig=fig)
+
+    def rtkObsGPS2(self, fig=None):
+        self.rtkObs("Compassing", DID_GPS2_RAW, fig=fig)
+
+    def rtkObs(self, name, relDid, fig=None):
+        Nf = 2
+        n_plots = 6
+        if fig is None:
+            fig = plt.figure()
+
+        ax = fig.subplots(n_plots, 1, sharex=True)
+        fig.suptitle('GNSS Receiver Observations')
+        self.configureSubplot(ax[0], 'L1 Pseudorange', 'm')
+        self.configureSubplot(ax[1], 'L1 Carier Phase', 'cycles')
+        self.configureSubplot(ax[2], 'L5 Pseudorange', 'm')
+        self.configureSubplot(ax[3], 'L5 Carier Phase', 'cycles')
+        self.configureSubplot(ax[4], 'L1 LLI')
+        self.configureSubplot(ax[5], 'L5 LLI')
+
+        for i, d in enumerate(self.active_devs):
+            gps_data = self.log.data[d, relDid][0]
+            N = len(gps_data)
+
+            # Build satellite array
+            sat = np.empty(0, dtype=int)
+            for j in range(N):
+                obs = gps_data[j]
+                M = len(obs)
+                for k in range(M):
+                    sat_k = obs['sat'][k]
+                    # add satellite if not in the list and if L1 observations are valid
+                    if ( sat_k != 0 and (sat_k not in sat) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                        sat = np.append(sat, sat_k)
+
+            Nsat = len(sat)
+            tgps = np.zeros([N, Nsat])
+            Pgps = np.empty([Nf, N, Nsat])
+            Lgps = np.empty([Nf, N, Nsat])
+            LLI  = np.empty([Nf, N, Nsat])
+            Pgps[:] = np.nan
+            Lgps[:] = np.nan
+            LLI[:]  = np.nan
+
+            # Fill observation arrays
+            for j in range(N):
+                obs = gps_data[j]
+                M = len(obs)
+                for k in range(M):
+                    sat_k = obs['sat'][k]
+                    if sat_k == 0:
+                        continue
+                    indo = np.where(obs['sat'] == sat_k)
+                    inds = np.where(sat == sat_k)
+                    if np.size(indo) == 0 or np.size(inds) == 0:
+                        continue
+                    indo = indo[0][0]
+                    inds = inds[0][0]
+                    tgps[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
+                    # Use only non-zero pseudorange and phase
+                    indP = np.where(obs['P'][indo] != 0)
+                    indL = np.where(obs['L'][indo] != 0)
+                    if np.size(indP) > 0 and np.size(indL) > 0:
+                        Pgps[indP,j,inds] = obs['P'][indo][indP]
+                        Lgps[indL,j,inds] = obs['L'][indo][indL]
+                        LLI[:,j,inds] = obs['LLI'][indo]
+
+            for k in range(len(sat)):
+                ind = np.where(tgps[:,k] != 0.0)
+                # Do not plot satellites with invalid L1 pseudorange
+                if np.isnan(Pgps[0,ind,k]).all():
+                    continue
+                # Do not plot satellites with invalid L1 phase
+                if np.isnan(Lgps[0,ind,k]).all():
+                    continue
+                t = np.squeeze(tgps[ind, k])
+                ax[0].plot(t, np.squeeze(Pgps[0,ind,k]), label=('Sat %s' % sat[k]))
+                ax[1].plot(t, np.squeeze(Pgps[1,ind,k]))
+                ax[2].plot(t, np.squeeze(Lgps[0,ind,k]))
+                ax[3].plot(t, np.squeeze(Lgps[1,ind,k]))
+                ax[4].plot(t, np.squeeze(LLI[0,ind,k]))
+                ax[5].plot(t, np.squeeze(LLI[1,ind,k]))
+                ax[0].legend(ncol=2)
+
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'rtk'+name+'obs_sd')
+
+    def rtkObsSingleDiff(self, fig=None):
         name = "Compassing"
-        basDid = DID_GPS1_RAW
-        rovDid = DID_GPS2_RAW
         Nf = 2
         n_plots = 4
         if fig is None:
@@ -1160,7 +1248,7 @@ class logPlot:
 
         for a in ax:
             a.grid(True)
-        self.saveFig(fig, 'rtk'+name+'obs')
+        self.saveFig(fig, 'rtk'+name+'obs_sd')
 
     def rtkPosMisc(self, fig=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig)

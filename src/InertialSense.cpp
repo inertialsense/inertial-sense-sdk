@@ -595,7 +595,7 @@ void InertialSense::SetCallbacks(
 	pfnComManagerGenMsgHandler handlerRtcm3,
 	pfnComManagerGenMsgHandler handlerSpartn)
 {
-	m_handlerAscii = handlerNmea;
+	m_handlerNmea = handlerNmea;
 
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
 	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3, handlerSpartn);
@@ -683,6 +683,14 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		comManagerSendRawData((int)i, data, dataId, length, offset);
+	}
+}
+
+void InertialSense::SendRaw(uint8_t* data, uint32_t length)
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, data, length);
 	}
 }
 
@@ -840,9 +848,9 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 // return 0 on success, -1 on failure
 void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 {
-	if (m_handlerAscii)
+	if (m_handlerNmea)
 	{
-		m_handlerAscii(pHandle, msg, msgSize);	
+		m_handlerNmea(pHandle, msg, msgSize);	
 	}
 
 	is_device_t &device = m_comManagerState.devices[pHandle];

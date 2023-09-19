@@ -428,6 +428,22 @@ int comManagerSendRaw(int pHandle, void* dataPtr, int dataSize);
 int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize);
 
 /**
+Write bare data directly to the serial port.
+
+@param pHandle the port handle to send data to
+@param dataPtr pointer to the data structure to send
+@param dataSize number of bytes to send
+@return 0 if success, anything else if failure
+
+Example:
+@code
+comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
+@endcode
+*/
+int comManagerSendRaw(int pHandle, void* dataPtr, int dataSize);
+int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize);
+
+/**
 Disables broadcasts of all messages on specified port, or all ports if phandle == -1.
 @param pHandle the pHandle to disable broadcasts on, -1 for all
 */
