@@ -165,7 +165,7 @@ int initComManagerInstanceInternal
 	cmInstance->disableBcastFnc = disableBcastFnc;
 	cmInstance->numPorts = numPorts;
 	cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
-	cmInstance->cmMsgHandlerAscii = NULL;
+	cmInstance->cmMsgHandlerNmea = NULL;
 	cmInstance->cmMsgHandlerUblox = NULL;
 	cmInstance->cmMsgHandlerRtcm3 = NULL;
 
@@ -323,9 +323,9 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 		break;
 
 	case _PTYPE_NMEA:
-		if (cmInstance->cmMsgHandlerAscii)
+		if (cmInstance->cmMsgHandlerNmea)
 		{
-			error = cmInstance->cmMsgHandlerAscii(port, data, size);
+			error = cmInstance->cmMsgHandlerNmea(port, data, size);
 		}
 		break;
 
@@ -416,7 +416,7 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
 	if (cmInstance != 0)
 	{
 		((com_manager_t*)cmInstance)->cmMsgHandlerRmc = handlerRmc;
-		((com_manager_t*)cmInstance)->cmMsgHandlerAscii = handlerAscii;
+		((com_manager_t*)cmInstance)->cmMsgHandlerNmea = handlerAscii;
 		((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
 		((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
 		((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
@@ -783,6 +783,11 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 		req->size = cmInstance->regData[req->id].dataSet.size;
 	}
 	
+	if (req->size == 0)
+	{	// Don't respond if data size is zero. Return zero to prevent sending NACK.
+		return 0;
+	}
+
 	// Copy reference to source data
 	bufTxRxPtr_t* dataSetPtr = &cmInstance->regData[req->id].dataSet;
 

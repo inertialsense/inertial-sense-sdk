@@ -195,7 +195,7 @@ typedef struct
 	pfnComManagerAsapMsg cmMsgHandlerRmc;
 
 	// Message handler - NMEA
-	pfnComManagerGenMsgHandler cmMsgHandlerAscii;
+	pfnComManagerGenMsgHandler cmMsgHandlerNmea;
 
 	// Message handler - Ublox
 	pfnComManagerGenMsgHandler cmMsgHandlerUblox;
