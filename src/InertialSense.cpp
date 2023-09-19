@@ -103,7 +103,12 @@ static int staticProcessRxNmea(CMHANDLE cmHandle, int pHandle, const unsigned ch
 }
 
 
-InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
+InertialSense::InertialSense(
+	pfnHandleBinaryData        handlerIsb,
+	pfnComManagerAsapMsg       handlerRmc,
+	pfnComManagerGenMsgHandler handlerNmea,
+	pfnComManagerGenMsgHandler handlerUblox, 
+	pfnComManagerGenMsgHandler handlerRtcm3 ) : m_tcpServer(this)
 {
 	m_logThread = NULLPTR;
 	m_lastLogReInit = time(0);
@@ -115,7 +120,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	{
 		m_comManagerState.binaryCallback[i] = {};
 	}
-	m_comManagerState.binaryCallbackGlobal = callback;
+	m_comManagerState.binaryCallbackGlobal = handlerIsb;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;
 	m_comManagerState.clientBuffer = m_clientBuffer;
@@ -125,6 +130,10 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	memset(&m_cmInit, 0, sizeof(m_cmInit));
 	m_cmPorts = NULLPTR;
 	is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer));
+
+	// Rx data callback functions
+	m_handlerNmea = handlerNmea;
+	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3);
 }
 
 InertialSense::~InertialSense()
@@ -560,18 +569,6 @@ bool InertialSense::UpdateClient()
 	return true;
 }
 
-void InertialSense::SetCallbacks(
-	pfnComManagerAsapMsg handlerRmc,
-	pfnComManagerGenMsgHandler handlerAscii,
-	pfnComManagerGenMsgHandler handlerUblox, 
-	pfnComManagerGenMsgHandler handlerRtcm3)
-{
-	m_handlerAscii = handlerAscii;
-
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(handlerRmc, staticProcessRxNmea, handlerUblox, handlerRtcm3);
-}
-
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
 {
 	// null com port, just use other features of the interface like ntrip
@@ -619,25 +616,43 @@ vector<string> InertialSense::GetPorts()
 	return ports;
 }
 
-void InertialSense::StopBroadcasts(bool allPorts)
+void InertialSense::QueryDeviceInfo()
 {
-	uint8_t stopCmd[11] = NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS;
-
-	// Stop all broadcasts
+	uint8_t cmd[11] = NMEA_STR_QUERY_DEVICE_INFO;
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the IMX.
-		comManagerSendRaw((int)i, (uint8_t*)&stopCmd, sizeof(stopCmd));
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+	}
+}
+
+void InertialSense::StopBroadcasts(bool allPorts)
+{
+	uint8_t cmdAll[11] = NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS; 
+	uint8_t cmdCur[11] = NMEA_STR_STOP_ALL_BROADCASTS_CUR_PORT;
+	uint8_t *cmd = (allPorts ? cmdAll : cmdCur);
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
 	}
 }
 
 void InertialSense::SavePersistent()
 {
     // Save persistent messages to flash
-        system_command_t cfg;
-        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-        cfg.invCommand = ~cfg.command;
-        SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+	uint8_t cmd[11] = NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH;
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+	}
+}
+
+void InertialSense::SoftwareReset()
+{
+	uint8_t cmd[11] = NMEA_STR_SOFTWARE_RESET;
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+	}
 }
 
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
@@ -806,9 +821,9 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 // return 0 on success, -1 on failure
 void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 {
-	if (m_handlerAscii)
+	if (m_handlerNmea)
 	{
-		m_handlerAscii(comManagerGetGlobal(), pHandle, msg, msgSize);	
+		m_handlerNmea(comManagerGetGlobal(), pHandle, msg, msgSize);	
 	}
 
 	is_device_t &device = m_comManagerState.devices[pHandle];
