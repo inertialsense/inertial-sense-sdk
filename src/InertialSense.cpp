@@ -1030,8 +1030,8 @@ float InertialSense::getUploadPercent(uint32_t deviceIndex)
 }
 
 /**
-* Gets current update status for selected device index
-* @param deviceIndex
+* Gets device index from COM port
+* @param COM port
 */
 int InertialSense::getUpdateDeviceIndex(const char* com)
 { 
@@ -1042,6 +1042,41 @@ int InertialSense::getUpdateDeviceIndex(const char* com)
 	}
 	return -1; 
 }
+
+/**
+* Gets current devInfo using device index
+* @param dev_info_t devI
+* @param uint32_t deviceIndex
+*/
+bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex)
+{
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+	{
+		memcpy(devI, &m_comManagerState.devices[deviceIndex].devInfo, sizeof(dev_info_t));
+		return true;
+	}
+	else
+	{
+		return false; //TODO: This need to be smarter!
+	}
+}
+
+///**
+//* Gets current COM port from deviceIndex
+//* @param uint32_t deviceIndex
+//*/
+//string InertialSense::getUpdateCOMName(uint32_t deviceIndex)
+//{
+//	if (m_comManagerState.devices[deviceIndex].serialPort.port != NULL)
+//	{
+//		
+//		return m_comManagerState.devices[deviceIndex].serialPort.port;
+//	}
+//	else
+//	{
+//		return ""; //TODO: This need to be smarter!
+//	}
+//}
 
 
 is_operation_result InertialSense::BootloadFile(

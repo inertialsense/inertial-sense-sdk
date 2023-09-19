@@ -35,6 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
+#include "string.h"
 
 extern "C"
 {
@@ -447,11 +448,23 @@ public:
 	float getUploadPercent(uint32_t deviceIndex);
 
 	/**
-	* Gets current update status for selected device index
-	* @param deviceIndex
+	* Gets device index from COM port
+	* @param COM port
 	*/
 	int getUpdateDeviceIndex(const char* com);
 
+	/**
+	* Gets current devInfo using device index
+	* @param dev_info_t devI
+	* @param uint32_t deviceIndex
+	*/
+	bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
+
+	///**
+	//* Gets current COM port from deviceIndex
+	//* @param uint32_t deviceIndex
+	//*/
+	//string getUpdateCOMName(uint32_t deviceIndex);
 
 	/**
 	 * @brief LoadFlashConfig
