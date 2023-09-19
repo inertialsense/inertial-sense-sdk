@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 {
 	InertialSense::is_update_status_t status;
 	string COMNum = "COM6";
-	string fileName = "../../../Firmware/IS_GPX-1_zephyr.signed.encrypted.bin";
+	string fileName = "../../../Firmware/IS_GPX-1_zephyr_v2.0.0.6_b197_2023-09-18_120501.encrypted.bin";
 	uint32_t baudRate = IS_BAUDRATE_921600;
 
 	int deviceIndex = -1;
