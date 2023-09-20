@@ -1053,24 +1053,6 @@ bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex)
 	}
 }
 
-///**
-//* Gets current COM port from deviceIndex
-//* @param uint32_t deviceIndex
-//*/
-//string InertialSense::getUpdateCOMName(uint32_t deviceIndex)
-//{
-//	if (m_comManagerState.devices[deviceIndex].serialPort.port != NULL)
-//	{
-//		
-//		return m_comManagerState.devices[deviceIndex].serialPort.port;
-//	}
-//	else
-//	{
-//		return ""; //TODO: This need to be smarter!
-//	}
-//}
-
-
 is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 
 	const uint32_t serialNum,

@@ -457,12 +457,6 @@ public:
 	*/
 	bool getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
 
-	///**
-	//* Gets current COM port from deviceIndex
-	//* @param uint32_t deviceIndex
-	//*/
-	//string getUpdateCOMName(uint32_t deviceIndex);
-
 	/**
 	 * @brief LoadFlashConfig
 	 * @param path - Path to YAML flash config file
