@@ -97,6 +97,7 @@ namespace fwUpdate {
         TARGET_UBLOX_F9P__1 = 0x111,
         TARGET_UBLOX_F9P__2 = 0x112,
         TARGET_UBLOX_F9P__ALL = 0x11F,
+        TARGET_SONY_CXD5610 = 0x120,
         TARGET_SONY_CXD5610__1 = 0x121,
         TARGET_SONY_CXD5610__2 = 0x122,
         TARGET_SONY_CXD5610__ALL = 0x12F,
