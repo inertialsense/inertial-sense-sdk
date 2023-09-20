@@ -430,13 +430,13 @@ public:
 	* Gets current update status for selected device index
 	* @param deviceIndex
 	*/
-	fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex);
+	fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
 
 	/**
 	* Gets reason device was closed for selected device index
 	* @param deviceIndex
 	*/
-	fwUpdate::update_status_e InertialSense::getCloseStatus(uint32_t deviceIndex);
+	fwUpdate::update_status_e getCloseStatus(uint32_t deviceIndex);
 
 	/**
 	* Gets current update percent for selected device index
