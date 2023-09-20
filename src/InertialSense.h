@@ -221,13 +221,20 @@ public:
 	void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
 	/**
-	* Send raw data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+	* Send raw data to the uINS - (byte swapping disabled)
 	* @param dataId the data id of the data to send
 	* @param data the data to send
 	* @param length length of data to send
 	* @param offset offset into data to send at
 	*/
 	void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
+
+	/**
+	* Send raw (bare) data directly to serial port
+	* @param data the data to send
+	* @param length length of data to send
+	*/
+	void SendRaw(uint8_t* data, uint32_t length);
 
 	/**
 	* Get the device info
@@ -303,7 +310,8 @@ public:
 	*/
 	int SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
 
-	void ProcessRxData(p_data_t* data, int pHandle);
+	void ProcessRxData(int pHandle, p_data_t* data);
+	void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
 
 	/**
 	* Broadcast binary data
@@ -488,6 +496,7 @@ protected:
 
 private:
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
+	pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
 	cISLogger m_logger;
 	void* m_logThread;
 	cMutex m_logMutex;

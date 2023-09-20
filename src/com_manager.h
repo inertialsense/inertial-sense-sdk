@@ -286,7 +286,7 @@ The instance functions can be ignored, unless you have a reason to have two com 
 
 Example:
 @code
-comManagerInit(20, 20, 10, 25, staticReadPacket, staticSendPacket, NULL, staticProcessRxData, staticProcessAck, 0);
+comManagerInit(20, 20, 10, 25, staticReadData, staticSendData, NULL, staticProcessRxData, staticProcessAck, 0);
 @endcode
 */
 int comManagerInit
@@ -480,6 +480,22 @@ comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 */
 int comManagerSendRawData(int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset);
 int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset);
+
+/**
+Write bare data directly to the serial port.
+
+@param pHandle the port handle to send data to
+@param dataPtr pointer to the data structure to send
+@param dataSize number of bytes to send
+@return 0 if success, anything else if failure
+
+Example:
+@code
+comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
+@endcode
+*/
+int comManagerSendRaw(int pHandle, void* dataPtr, int dataSize);
+int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize);
 
 /**
 Disables broadcasts of all messages on specified port, or all ports if phandle == -1.

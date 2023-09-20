@@ -3,6 +3,12 @@
 
 #include "data_sets.h"
 
+#define NMEA_STR_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
+#define NMEA_STR_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
+#define NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
+#define NMEA_STR_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
+#define NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
+#define NMEA_STR_SOFTWARE_RESET                         "$SRST*06\r\n"
 
 enum eNmeaMsgIdUint
 {
@@ -12,7 +18,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_STPC = 0x53545043,		// "STPC" - Stop broadcasts on current port
 	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on IMX (app firmware update)
 	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
-	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
+	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - IMX device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
 
 	NMEA_MSG_UINT_INTE = 0x494E5445,		// "INTE"
