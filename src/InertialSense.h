@@ -35,6 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
+#include "string.h"
 
 extern "C"
 {
@@ -71,6 +72,7 @@ public:
 		evb_flash_cfg_t evbFlashCfg;
 		sys_params_t sysParams;
         ISFirmwareUpdater *fwUpdater;
+		fwUpdate::update_status_e closeStatus;
 	};
 
 	struct com_manager_cpp_state_t
@@ -94,16 +96,6 @@ public:
 		std::string port;
 		std::string error;
 	} bootload_result_t;
-
-	enum is_update_status_t
-	{
-		UPDATE_STATUS_WAITING,
-		UPDATE_STATUS_UPDATING,
-		UPDATE_STATUS_DONE,
-		UPDATE_STATUS_ERROR,
-		UPDATE_STATUS_UNKOWN,
-		UPDATE_STATUS_INVALID_INDEX,
-	};
 
 	/**
 	* Constructor
@@ -457,14 +449,32 @@ public:
 	* Gets current update status for selected device index
 	* @param deviceIndex
 	*/
-	is_update_status_t getUpdateStatus(uint32_t deviceIndex);
+	fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
 
 	/**
-	* Gets current update status for selected device index
+	* Gets reason device was closed for selected device index
 	* @param deviceIndex
+	*/
+	fwUpdate::update_status_e getCloseStatus(uint32_t deviceIndex);
+
+	/**
+	* Gets current update percent for selected device index
+	* @param deviceIndex
+	*/
+	float getUploadPercent(uint32_t deviceIndex);
+
+	/**
+	* Gets device index from COM port
+	* @param COM port
 	*/
 	int getUpdateDeviceIndex(const char* com);
 
+	/**
+	* Gets current devInfo using device index
+	* @param dev_info_t devI
+	* @param uint32_t deviceIndex
+	*/
+	bool getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
 
 	/**
 	 * @brief LoadFlashConfig

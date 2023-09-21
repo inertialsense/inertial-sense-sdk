@@ -404,6 +404,7 @@ bool InertialSense::Update()
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
+						m_comManagerState.devices[devIdx].closeStatus = status;
 #ifdef DEBUG_CONSOLELOGGING
                     } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
@@ -1004,10 +1005,14 @@ is_operation_result InertialSense::updateFirmware(
 
     for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
-        m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
+        
+		// TODO: Impliment maybe
+		// m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
+		// m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
+		// m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
+		
+		m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
     }
-
-    // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
     printf("\n\r");
 
@@ -1019,63 +1024,68 @@ is_operation_result InertialSense::updateFirmware(
 }
 
 /**
-	* Gets current update status for selected device index
-	* @param deviceIndex
-	*/
-InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
+* Gets current update status for selected device index
+* @param deviceIndex
+*/
+fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
 {
-	fwUpdate::update_status_e status;
 	try
 	{
 		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
-			status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+			return m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
 		else
-			return InertialSense::UPDATE_STATUS_DONE; //TODO: This need to be smarter!
-		
-		switch (status)
-		{
-			case fwUpdate::FINISHED:
-				return InertialSense::UPDATE_STATUS_DONE;
-
-			case fwUpdate::IN_PROGRESS:
-				return InertialSense::UPDATE_STATUS_UPDATING;
-
-			case fwUpdate::READY:
-			case fwUpdate::INITIALIZING:
-				return InertialSense::UPDATE_STATUS_WAITING;
-
-			case fwUpdate::NOT_STARTED:
-			case fwUpdate::ERR_INVALID_SESSION:
-			case fwUpdate::ERR_INVALID_SLOT:
-			case fwUpdate::ERR_NOT_ALLOWED:
-			case fwUpdate::ERR_NOT_ENOUGH_MEMORY:
-			case fwUpdate::ERR_OLDER_FIRMWARE:
-			case fwUpdate::ERR_MAX_CHUNK_SIZE:
-			case fwUpdate::ERR_TIMEOUT:
-			case fwUpdate::ERR_CHECKSUM_MISMATCH:
-			case fwUpdate::ERR_COMMS:
-			case fwUpdate::ERR_NOT_SUPPORTED:
-			case fwUpdate::ERR_FLASH_WRITE_FAILURE:
-			case fwUpdate::ERR_FLASH_OPEN_FAILURE:
-			case fwUpdate::ERR_FLASH_INVALID:
-				return InertialSense::UPDATE_STATUS_ERROR;
-			default:
-				return InertialSense::UPDATE_STATUS_UNKOWN;
-		}
+			return fwUpdate::ERR_UPDATER_CLOSED;
 
 	}
 	catch(...)
 	{
-		return InertialSense::UPDATE_STATUS_INVALID_INDEX;
+		return fwUpdate::ERR_INVALID_SLOT;
 	}
 
-
-	return InertialSense::UPDATE_STATUS_UNKOWN;
+	return fwUpdate::ERR_UNKOWN;
 }
 
 /**
-* Gets current update status for selected device index
+* Gets reason device was closed for selected device index
 * @param deviceIndex
+*/
+fwUpdate::update_status_e InertialSense::getCloseStatus(uint32_t deviceIndex)
+{
+	try
+	{
+		return m_comManagerState.devices[deviceIndex].closeStatus;
+	}
+	catch (...)
+	{
+		return fwUpdate::ERR_INVALID_SLOT;
+	}
+
+	return fwUpdate::ERR_UNKOWN;
+}
+
+/**
+* Gets current update percent for selected device index
+* @param deviceIndex
+*/
+float InertialSense::getUploadPercent(uint32_t deviceIndex)
+{
+	float totalChunks;
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+	{
+		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks();
+
+		if (totalChunks > 0)
+			return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / totalChunks)*100;
+		else
+				return 100.0;
+	}
+	else
+		return 100.0; //TODO: This need to be smarter!
+}
+
+/**
+* Gets device index from COM port
+* @param COM port
 */
 int InertialSense::getUpdateDeviceIndex(const char* com)
 { 
@@ -1087,6 +1097,23 @@ int InertialSense::getUpdateDeviceIndex(const char* com)
 	return -1; 
 }
 
+/**
+* Gets current devInfo using device index
+* @param dev_info_t devI
+* @param uint32_t deviceIndex
+*/
+bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex)
+{
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL || 1)
+	{
+		memcpy(devI, &m_comManagerState.devices[deviceIndex].devInfo, sizeof(dev_info_t));
+		return true;
+	}
+	else
+	{
+		return false; //TODO: This need to be smarter!
+	}
+}
 
 is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 

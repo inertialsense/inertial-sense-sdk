@@ -143,6 +143,8 @@ namespace fwUpdate {
         ERR_FLASH_WRITE_FAILURE = -11,    // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
         ERR_FLASH_OPEN_FAILURE = -12,   // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
         ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
+        ERR_UPDATER_CLOSED = -14,
+        ERR_UNKOWN = -15,
         // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
     };
 
@@ -621,6 +623,11 @@ namespace fwUpdate {
          * @return the ID of the next chunk to be sent
          */
         uint16_t getNextChunkID() { return next_chunk_id; }
+
+        /**
+         * @returns total number of complete chunks
+        */
+       uint16_t getChunksSent() {return chunks_sent; }
 
         /**
          * @return the negotiated chunk size for this session
