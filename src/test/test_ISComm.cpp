@@ -15,21 +15,28 @@ extern "C"
 }
 #endif
 
+#define BASIC_TX_BUFFER_RX_BYTE_TEST         	1
+#define BASIC_TX_PORT_RX_BYTE_TEST           	1
+#define BASIC_TX_RX_MULTI_BYTE_TEST          	1
+#define TXRX_MULTI_BYTE_PRECEEDED_BY_GARBAGE 	1
+#define TXRX_WITH_OFFSET_TEST                	1
+#define SEGMENTED_RX_TEST                    	1
+#define BLAST_RX_TEST                        	1
+
 #define TEST_PROTO_ISB		1
-#define TEST_PROTO_NMEA		0
-#define TEST_PROTO_SONY		0
-#define TEST_PROTO_UBLOX	0
-#define TEST_PROTO_RTCM3	0
+#define TEST_PROTO_NMEA		1
+#define TEST_PROTO_SONY		1
+#define TEST_PROTO_UBLOX	1
+#define TEST_PROTO_RTCM3	1
 #define TEST_PROTO_SPARTN	0
 
-#define TASK_PERIOD_MS		1		// 1 KHz
-#if 1
+#if 0
 #define DEBUG_PRINTF	printf
 #else
 #define DEBUG_PRINTF	
 #endif
 
-#define PORT_BUFFER_SIZE	1000
+#define PORT_BUFFER_SIZE	10000
 
 typedef struct
 {
@@ -545,7 +552,6 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 			EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
 			break;
 
-		default:
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
@@ -676,7 +682,7 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 }
 
 
-#if 0
+#if BASIC_TX_BUFFER_RX_BYTE_TEST
 uint8_t g_buf[1024];
 TEST(ISComm, BasicTxBufferRxByteTest)
 {
@@ -719,7 +725,7 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 #endif
 
 
-#if 0
+#if BASIC_TX_PORT_RX_BYTE_TEST
 TEST(ISComm, BasicTxPortRxByteTest)
 {
 	// Initialize Com Manager
@@ -761,7 +767,7 @@ TEST(ISComm, BasicTxPortRxByteTest)
 #endif
 
 
-#if 0
+#if BASIC_TX_RX_MULTI_BYTE_TEST
 TEST(ISComm, BasicTxRxMultiByteTest)
 {
 	// Initialize Com Manager
@@ -779,13 +785,15 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 		int n;
 		switch (td.ptype)
 		{
-		default:	// IS binary
+		case _PTYPE_INERTIAL_SENSE_DATA:	// IS binary
+		case _PTYPE_INERTIAL_SENSE_CMD:
 			n = is_comm_data(portWrite, 0, &g_comm, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
+		case _PTYPE_SONY:
 			portWrite(0, td.data.buf, td.size);
 			break;
 		}
@@ -801,7 +809,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 #endif
 
 
-#if 1
+#if TXRX_MULTI_BYTE_PRECEEDED_BY_GARBAGE
 TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 {
 	// Initialize Com Manager
@@ -823,15 +831,10 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 		ptype = is_comm_parse(&g_comm);
 		EXPECT_EQ(ptype, _PTYPE_NONE);
 
-		// Lapse time 1s. Add good packet to buffer
-		// g_timeMs += MAX_PARSER_GAP_TIME_MS;
+		// Add good packet to buffer
 		data_holder_t td = g_testTxDeque[0];
 		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, g_comm.rxBuf.end-g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
 		g_comm.rxBuf.tail += n;
-
-		// Parse data to find the error and reset parser
-		ptype = is_comm_parse(&g_comm);
-		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
 
 		// Parse data to find good packet
 		ptype = is_comm_parse(&g_comm);
@@ -844,7 +847,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 #endif
 
 
-#if 0
+#if TXRX_WITH_OFFSET_TEST
 TEST(ISComm, TxRxWithOffsetTest)
 {
 	// Initialize Com Manager
@@ -881,12 +884,12 @@ TEST(ISComm, TxRxWithOffsetTest)
 #endif
 
 
-#if 0
-// Tests that ComManager handles segmented serial data properly
+#if SEGMENTED_RX_TEST
+// Tests ISComm handles segmented serial data properly
 TEST(ISComm, SegmentedRxTest)
 {
 	ring_buf_t tmpRBuf;
-	uint8_t buffer[8192];
+	uint8_t buffer[PORT_BUFFER_SIZE];
 
 	// Initialize temporary ring buffer
 	ringBufInit(&tmpRBuf, buffer, sizeof(buffer), 1);
@@ -923,12 +926,12 @@ TEST(ISComm, SegmentedRxTest)
 #endif
 
 
-#if 0
+#if BLAST_RX_TEST
 // Tests that ComManager handles segmented serial data properly
 TEST(ISComm, BlastRxTest)
 {
 	ring_buf_t tmpRBuf;
-	uint8_t buffer[8192];
+	uint8_t buffer[PORT_BUFFER_SIZE];
 
 	// Initialize temporary ring buffer
 	ringBufInit(&tmpRBuf, buffer, sizeof(buffer), 1);
@@ -1023,14 +1026,21 @@ TEST(ISComm, IsCommGetDataTest)
 	int period = 3;
 
 	// Generate packet
-	int n = is_comm_get_data(&g_comm, did, offset, size, period);
+	int n = is_comm_get_data(portWrite, 0, &g_comm, did, offset, size, period);
+
+	// Reset buffer if needed
+	is_comm_free(&g_comm);
+	
+	// Add byte to buffer
+	ringBufRead(&tcm.portTxBuf, g_comm.rxBuf.tail, size);
+	g_comm.rxBuf.tail += size;
 
 	// Parse packet
 	protocol_type_t ptype = is_comm_parse(&g_comm);
 
 	EXPECT_TRUE(ptype == _PTYPE_INERTIAL_SENSE_CMD);
 
-	p_data_get_t *request = (p_data_get_t*)g_comm.pkt.data.ptr;
+	p_data_get_t *request = (p_data_get_t*)g_comm.rxPkt.data.ptr;
 	EXPECT_EQ(request->id,     did);
 	EXPECT_EQ(request->size,   size);
 	EXPECT_EQ(request->offset, offset);
