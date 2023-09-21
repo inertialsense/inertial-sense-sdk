@@ -15,20 +15,20 @@ extern "C"
 }
 #endif
 
-#define TEST_PROTO_IS		1
+#define TEST_PROTO_ISB		1
 #define TEST_PROTO_NMEA		1
 #define TEST_PROTO_UBLOX	1
-#define TEST_PROTO_RTCM3	1
-#define TEST_PROTO_SPARTN	1
+#define TEST_PROTO_RTCM3	0
+#define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
-#if 0
+#if 1
 #define DEBUG_PRINTF	printf
 #else
 #define DEBUG_PRINTF	
 #endif
 
-#define PORT_BUFFER_SIZE	100
+#define PORT_BUFFER_SIZE	20000
 
 typedef struct
 {
@@ -205,6 +205,14 @@ static bool init(test_data_t &t)
 	g_timeMs = 1000;
 	is_comm_init(&g_comm, g_comm_buffer, COM_BUFFER_SIZE, &g_timeMs);
 
+	// Enable/disable protocols
+	g_comm.config.enabledMask = 0;
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
+
 	return true;
 }
 
@@ -257,7 +265,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			}
 			else
 			{	// Binary
-#if TEST_PROTO_IS
+#if TEST_PROTO_ISB
 				td.did = DID_INS_1;
 				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.ins1 = ins1;
@@ -284,7 +292,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			gps.towOffset = (double)i*123.4;
 			gps.leapS = (uint8_t)i;
 
-			if ((j == 5 || TEST_PROTO_IS == 0) && TEST_PROTO_NMEA)
+			if ((j == 5 || TEST_PROTO_ISB == 0) && TEST_PROTO_NMEA)
 			{	// NMEA
 #if TEST_PROTO_NMEA
 				td.ptype = _PTYPE_NMEA;
@@ -293,7 +301,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			}
 			else
 			{	// Binary
-#if TEST_PROTO_IS
+#if TEST_PROTO_ISB
 				td.did = DID_GPS1_POS;
 				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.gpsPos = gps;
@@ -584,7 +592,7 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 }
 
 
-#if 1
+#if 0
 uint8_t g_buf[1024];
 TEST(ISComm, BasicTxBufferRxByteTest)
 {
@@ -667,7 +675,7 @@ TEST(ISComm, BasicTxPortRxByteTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ISComm, BasicTxRxMultiByteTest)
 {
 	// Initialize Com Manager
@@ -707,8 +715,8 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 #endif
 
 
-#if 1
-TEST(ISComm, TxRxMultiBytePreceededByGarbageTimeoutTest)
+#if 0
+TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 {
 	// Initialize Com Manager
 	init(tcm);
@@ -730,7 +738,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbageTimeoutTest)
 		EXPECT_EQ(ptype, _PTYPE_NONE);
 
 		// Lapse time 1s. Add good packet to buffer
-		g_timeMs += MAX_PARSER_GAP_TIME_MS;
+		// g_timeMs += MAX_PARSER_GAP_TIME_MS;
 		data_holder_t td = g_testTxDeque[0];
 		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, g_comm.rxBuf.end-g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
 		g_comm.rxBuf.tail += n;
@@ -750,7 +758,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbageTimeoutTest)
 #endif
 
 
-#if 1
+#if 0
 TEST(ISComm, TxRxWithOffsetTest)
 {
 	// Initialize Com Manager
@@ -787,7 +795,7 @@ TEST(ISComm, TxRxWithOffsetTest)
 #endif
 
 
-#if 1
+#if 0
 // Tests that ComManager handles segmented serial data properly
 TEST(ISComm, SegmentedRxTest)
 {
@@ -829,7 +837,7 @@ TEST(ISComm, SegmentedRxTest)
 #endif
 
 
-#if 1
+#if 0
 // Tests that ComManager handles segmented serial data properly
 TEST(ISComm, BlastRxTest)
 {

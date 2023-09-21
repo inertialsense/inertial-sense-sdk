@@ -267,6 +267,9 @@ enum ePktSpecialChars
 	/** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
 	PSC_NMEA_START_BYTE = 0x24,
 
+	/** Carriage return (\r), used by NMEA protocol to signify one byte before end of message (10) */
+	PSC_NMEA_PRE_END_BYTE = 0x0D,
+
 	/** New line (\n), used by NMEA protocol to signify end of message (10) */
 	PSC_NMEA_END_BYTE = 0x0A,
 
@@ -458,6 +461,23 @@ typedef struct
 	}					body;
 } p_ack_t, p_nack_t;
 
+/** Represents the 4 bytes that begin each binary packet */
+typedef struct
+{
+	/** Packet start bytes, always 0x62b5 */
+	uint16_t            preamble;
+
+	/** Message class */
+	uint8_t             classId;
+
+	/** Message ID */
+	uint8_t             id;
+
+	/** Payload size */
+	uint16_t            payloadSize;
+
+} ubx_pkt_hdr_t;
+
 typedef struct
 {
 	/** Start of available buffer */
@@ -470,7 +490,7 @@ typedef struct
 	uint32_t size;
 
 	/** Start of data in buffer. Data is read from here. */
-	uint8_t* head;
+	uint8_t* head;	// TODO remove this once we have all of the separate parser points in place. WHJ
 
 	/** End of data in buffer. New data is written here. */
 	uint8_t* tail;
@@ -496,6 +516,12 @@ typedef struct
 	uint32_t enabledMask;
 } is_comm_config_t;
 
+typedef struct  
+{
+	uint8_t* head;
+	int32_t state;
+} is_comm_parser_t;
+
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
 {
@@ -517,8 +543,13 @@ typedef struct
 	/** Start byte */
 	uint8_t hasStartByte;
 
-	/** Used to validate ISB, ublox, RTCM, and NMEA packets */
-	int32_t parseState;
+	/** Protocol parser states */
+	is_comm_parser_t isb;
+	is_comm_parser_t ubx;
+	is_comm_parser_t nmea;
+	is_comm_parser_t rtcm;
+	is_comm_parser_t sony;
+	is_comm_parser_t sprt;
 
 	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occurr at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
 	uint8_t* altDecodeBuf;
