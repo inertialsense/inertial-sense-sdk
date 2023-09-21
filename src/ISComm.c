@@ -1021,19 +1021,16 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
 		}
 
-		if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)
-		{
-			ptype = processSpartnByte(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
-		}
+		// if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)
+		// {
+		// 	ptype = processSpartnByte(c);
+		// 	if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+		// }
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)
 		{
 			ptype = processSonyByte(c);
-			if (ptype != _PTYPE_NONE) {	
-				resetParserState(c, ptype); 
-				return ptype; 
-			}			
+			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }
 		}
 	}
 
