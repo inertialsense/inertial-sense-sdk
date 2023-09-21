@@ -130,11 +130,11 @@ int msgHandlerNmea2(int pHandle, const uint8_t* msg, int msgSize)
 	}
 	else
 	{	// General NMEA messages
-		switch (messageIdUInt)
-		{
-		default:
-			break;
-		}
+		//switch (messageIdUInt)
+		//{
+		//default:
+		//	break;
+		//}
 	}
 
 	data_holder_t td = g_testRxDeque.front();
@@ -625,7 +625,6 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 {
 	is_comm_instance_t &comm = g_comm;
-	unsigned char c;
 	protocol_type_t ptype;
 	uDatasets dataWritten;
 	int found=0;
@@ -742,7 +741,6 @@ TEST(ISComm, BasicTxPortRxByteTest)
 
 		// Send data - writes data to tcm.txBuf
 		int n;
-		uint8_t buf[1024];
 		switch (td.ptype)
 		{
 		default:	// IS binary
@@ -834,7 +832,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 
 		// Add good packet to buffer
 		data_holder_t td = g_testTxDeque[0];
-		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, g_comm.rxBuf.end-g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
+		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, g_comm.rxBuf.end - g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
 		g_comm.rxBuf.tail += n;
 
 		// Parse data to find good packet
