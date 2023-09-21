@@ -284,9 +284,9 @@ char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 {
 	char *ptr2 = ASCII_find_next_field(ptr);
 	max_len = _MIN(max_len, ptr2-ptr);
-	//STRNCPY(dst, ptr, max_len-1);
-	memcpy(dst, ptr, max_len - 1);
-	dst[max_len-1] = 0;			// Must be null terminated
+	int len = _MAX(0, max_len - 1);
+	memcpy(dst, ptr, len);
+	dst[len] = 0;			// Must be null terminated
 	return ptr2;
 }
 
