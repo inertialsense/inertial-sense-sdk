@@ -3,8 +3,7 @@ project(SDK_test)
 
 # Locate GTest
 
-##find_package(GTest REQUIRED)
-set(Timy 9)# c:\Users\tmcd2\OneDrive\Desktop\temp\googletest-1.14.0\googletest\include)
+find_package(GTest REQUIRED)
 include_directories({GTEST_INCLUDE_DIRS} ../libusb/libusb ../protocol ..)
 
 
