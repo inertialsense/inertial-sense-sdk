@@ -240,7 +240,7 @@ static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-void printNmeaMessage(const char *name, const uint8_t* str, int size)
+static void printNmeaMessage(const char *name, const uint8_t* str, int size)
 {
 	DEBUG_PRINTF("%s: ", name);
 	for (int i=0; i<size && str[i]!='\r' && str[i]!='\n'; i++)
@@ -263,7 +263,7 @@ static bool initComManager(test_data_t &t)
 	com_manager_init_t cmInit = {};
 	cmInit.broadcastMsg = t.cmBufBcastMsg;
 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort, NULL))
+	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
 	{	// Fail to init
 		return false;
 	}
@@ -524,7 +524,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
 
 	int k=0;
 
@@ -562,7 +562,7 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
 	unsigned char c;
 	protocol_type_t ptype;
 	uDatasets dataWritten;

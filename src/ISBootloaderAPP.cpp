@@ -59,7 +59,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize, n, i;
 
     // clear the Rx serial buffer
@@ -198,7 +198,7 @@ uint32_t cISBootloaderAPP::get_device_info()
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+    is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize;
 
     unsigned char txbuf[11] = NMEA_STR_QUERY_DEVICE_INFO;

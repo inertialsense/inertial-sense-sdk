@@ -184,10 +184,9 @@ int main(int argc, char* argv[])
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
-	uint32_t timeMs = current_timeMs();
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer), &timeMs);
+	is_comm_init(&comm, buffer, sizeof(buffer));
 
 	// STEP 3: Initialize and open serial port
 	serial_port_t serialPort;
@@ -236,8 +235,6 @@ int main(int argc, char* argv[])
 	// Main loop
 	while (1)
 	{
-		timeMs = current_timeMs();
-		
 		read_uINS_data(&serialPort, &comm, s_clientStream);
 
 		read_RTK_base_data(&serialPort, &comm, s_clientStream);

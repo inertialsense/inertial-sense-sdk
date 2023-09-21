@@ -150,8 +150,7 @@ int main(int argc, char* argv[])
 	// uint32_t timeMs = current_timeMs();
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	// is_comm_init(&comm, buffer, sizeof(buffer), &timeMs);
-	is_comm_init(&comm, buffer, sizeof(buffer), NULL);
+	is_comm_init(&comm, buffer, sizeof(buffer));
 
 	// STEP 3: Initialize and open serial port
 

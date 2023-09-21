@@ -230,12 +230,11 @@ The instance functions can be ignored, unless you have a reason to have two com 
 
 Example:
 @code
-comManagerInit(20, 20, 10, 25, staticReadData, staticSendData, NULL, staticProcessRxData, staticProcessAck, 0, NULL);
+comManagerInit(20, 20, 10, 25, staticReadData, staticSendData, NULL, staticProcessRxData, staticProcessAck, 0);
 @endcode
 */
 int comManagerInit
-(
-	int numPorts,
+(	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead readFnc,
 	pfnIsCommPortWrite sendFnc,
@@ -244,15 +243,12 @@ int comManagerInit
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts,
-	uint32_t *timeMs
-);
+	com_manager_port_t *cmPorts);
 
 // Initialize an instance to a com manager that can be passed to instance functions and can later be freed with freeComManagerInstance
 // this function may be called multiple times.  Return 0 on success, -1 on failure.
 int comManagerInitInstance
-(
-	CMHANDLE cmHandle,
+(	CMHANDLE cmHandle,
 	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead readFnc,
@@ -262,9 +258,7 @@ int comManagerInitInstance
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts,
-	uint32_t *timeMs
-);
+	com_manager_port_t *cmPorts);
 
 /**
 Performs one round of sending and receiving message. This should be called as often as you want to send and receive data.

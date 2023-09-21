@@ -137,7 +137,7 @@ TEST(RingBuffer, PacketTest)
 {
 	static is_comm_instance_t   comm;
 	static uint8_t              comm_buffer[2048];
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
 
 	ins_1_t ins1 = { 0 };
 	int n;

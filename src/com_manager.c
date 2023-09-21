@@ -43,8 +43,7 @@ int initComManagerInstanceInternal
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts,
-	uint32_t *timeMs
+	com_manager_port_t *cmPorts
 );
 // int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 // void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
@@ -64,8 +63,7 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
 CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
 
 int comManagerInit
-(
-	int numPorts,
+(	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead portReadFnc,
 	pfnIsCommPortWrite portWriteFnc,
@@ -74,9 +72,7 @@ int comManagerInit
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts,
-	uint32_t *timeMs
-)
+	com_manager_port_t *cmPorts)
 {
 	return initComManagerInstanceInternal(
 		&g_cm, 
@@ -89,13 +85,11 @@ int comManagerInit
 		pstAckFnc, 
 		disableBcastFnc, 
 		buffers,
-		cmPorts,
-		timeMs);
+		cmPorts);
 }
 
 int comManagerInitInstance
-(
-	CMHANDLE cmHandle,
+(	CMHANDLE cmHandle,
 	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead portReadFnc,
@@ -105,9 +99,7 @@ int comManagerInitInstance
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts,
-	uint32_t *timeMs
-)
+	com_manager_port_t *cmPorts)
 {
 	int result = 0;
 
@@ -126,15 +118,13 @@ int comManagerInitInstance
 			pstAckFnc, 
 			disableBcastFnc,
 			buffers, 
-			cmPorts, 
-			timeMs);
+			cmPorts);
 	}
 	return result;
 }
 
 int initComManagerInstanceInternal
-(
-	com_manager_t* cmInstance,
+(	com_manager_t* cmInstance,
 	int numPorts,
 	int stepPeriodMilliseconds,
 	pfnComManagerRead portReadFnc,
@@ -144,9 +134,7 @@ int initComManagerInstanceInternal
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts, 
-	uint32_t *timeMs
-)
+	com_manager_port_t *cmPorts)
 {
 	int32_t i;
 
@@ -187,7 +175,7 @@ int initComManagerInstanceInternal
 	for (i = 0; i < numPorts; i++)
 	{	// Initialize IScomm instance, for serial reads / writes
 		com_manager_port_t *port = &(cmInstance->ports[i]);
-		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer), timeMs);
+		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
 					
 #if ENABLE_PACKET_CONTINUATION			
 		// Packet data continuation

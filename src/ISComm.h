@@ -461,7 +461,7 @@ typedef struct
 	}					body;
 } p_ack_t, p_nack_t;
 
-/** Represents the 4 bytes that begin each binary packet */
+/** Ublox binary packet header */
 typedef struct
 {
 	/** Packet start bytes, always 0x62b5 */
@@ -477,6 +477,23 @@ typedef struct
 	uint16_t            payloadSize;
 
 } ubx_pkt_hdr_t;
+
+/** Sony binary packet header */
+typedef struct
+{
+	/** Packet start bytes, always 0x7F */
+	uint8_t             preamble;
+
+	/** Data size */
+	uint16_t            dataSize;
+
+	/** Opcode */
+	uint8_t             opc;
+
+	/** Header checksum */
+	uint8_t             fcsh;
+
+} sony_pkt_hdr_t;
 
 typedef struct
 {
@@ -541,9 +558,6 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Start byte */
-	uint8_t hasStartByte;
-
 	/** Protocol parser states */
 	is_comm_parser_t isb;
 	is_comm_parser_t ubx;
@@ -564,12 +578,6 @@ typedef struct
 	/** Retries left before moving to next packet */
 	uint8_t retries;
 
-	/** Current time (ms) */
-	uint32_t* timeMs;
-
-	/** Time start byte was received (ms) */
-	uint32_t startByteTimeMs;
-
 } is_comm_instance_t;
 
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
@@ -579,7 +587,7 @@ POP_PACK
 * Init simple communications interface - call this before doing anything else
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize
 */
-void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, uint32_t *timeMsPtr);
+void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
