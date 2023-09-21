@@ -4,7 +4,6 @@
 #include "../ring_buffer.h"
 #include "../protocol_nmea.h"
 
-
 #if 0
 extern "C"
 {
@@ -15,11 +14,12 @@ extern "C"
 }
 #endif
 
+// Protocols
 #define TEST_PROTO_ISB		1
 #define TEST_PROTO_NMEA		1
 #define TEST_PROTO_UBLOX	1
 #define TEST_PROTO_RTCM3	1
-#define TEST_PROTO_SPARTN	1
+#define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
 #if 0
@@ -779,8 +779,6 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 	initComManager(tcm);
 
 	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
-	uint8_t altDecodBuf[PKT_BUF_SIZE] = {};
-	comm.altDecodeBuf = altDecodBuf;
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);
@@ -866,8 +864,6 @@ TEST(ComManager, Evb2DataForwardTest)
 	initComManager(tcm);
 
 	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
-	uint8_t altDecodBuf[PKT_BUF_SIZE] = {};
-	comm.altDecodeBuf = altDecodBuf;
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);

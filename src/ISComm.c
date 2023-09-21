@@ -164,6 +164,8 @@ static int dataIdShouldSwap(uint32_t dataId)
 
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
+	memset(c, 0, sizeof(is_comm_instance_t));
+
 	// Clear buffer and initialize buffer pointers
 	memset(buffer, 0, bufferSize);
 	c->rxBuf.size = bufferSize;
@@ -177,16 +179,10 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 		ENABLE_PROTOCOL_NMEA |
 		ENABLE_PROTOCOL_UBLOX |
 		ENABLE_PROTOCOL_RTCM3;
-		// ENABLE_PROTOCOL_SPARTN |
 		// ENABLE_PROTOCOL_SONY;
+		// ENABLE_PROTOCOL_SPARTN;
 	
-	c->txPktCount = 0;
-	c->rxPktCount = 0;
-	c->rxErrorCount = 0;
-    c->ackNeeded = 0;
-	memset(&c->rxPkt, 0, sizeof(packet_t));
 	c->rxPkt.data.ptr = c->rxBuf.start;
-	c->altDecodeBuf = NULL;
 }
 
 static inline void resetParserState(is_comm_instance_t *c, protocol_type_t ptype)
@@ -323,6 +319,7 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 
 	// Footer
 	pkt->checksum = cksum->ck;
+	pkt->size = p->size;
 
 	c->ackNeeded = 0;
 
@@ -551,7 +548,7 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 
 	// Update data pointer and info
 	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = p->size;
+	c->rxPkt.data.size = c->rxPkt.size = p->size;
 	c->rxPkt.hdr.id    = 0;
 	c->rxPkt.offset    = 0;
 
@@ -633,7 +630,7 @@ static protocol_type_t processRtcm3Pkt(is_comm_instance_t* c)
 
 	// Update data pointer and info
 	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = p->size;
+	c->rxPkt.data.size = c->rxPkt.size = p->size;
 	c->rxPkt.hdr.id    = 0;
 	c->rxPkt.offset    = 0;
 
@@ -771,7 +768,7 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 
 	// Update data pointer and info
 	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = p->size;
+	c->rxPkt.data.size = c->rxPkt.size = p->size;
 	c->rxPkt.hdr.id    = hdr->opc;
 	c->rxPkt.offset    = 0;
 
@@ -787,6 +784,12 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 	switch (p->state)
 	{
 	case 0:
+		if (*(c->rxBuf.scan) == SPARTN_START_BYTE)
+		{
+			p->state++;
+		}
+		return _PTYPE_NONE;
+
 	case 1:
 	case 2:
 	// case 3 is below this to catch bad CRCs before any more is parsed. Can be adapted to filter messages later.
@@ -801,11 +804,9 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 		const uint8_t dbuf[3] = { p->head[1], p->head[2], p->head[3] & 0xF0 };
         uint8_t calc = computeCrc4Ccitt(dbuf, 3);
         if((p->head[3] & 0x0F) != calc)
-        {
-        	// corrupt data
-			c->rxErrorCount++;
+        {  	// Invalid header - Reset parser
 			p->state = 0;
-			return _PTYPE_PARSE_ERROR;
+			return _PTYPE_NONE;
         }
 
         p->state++;
@@ -828,47 +829,37 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 		uint8_t *encryptPtr = NULL;
 
 		if(extendedTs)
-		{
-			// Timestamp is 32 bit
-
+		{	// Timestamp is 32 bit
 			if(!encrypt && p->state == 9)
-			{
-				// Encryption is disabled, we are ready to go to payload bytes
+			{	// Encryption is disabled, we are ready to go to payload bytes
 				p->state = -((int32_t)payloadLen);
 				break;
 			}
 			else if(encrypt && p->state == 11)
-			{
-				// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
+			{	// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
 				encryptPtr = &p->head[10];
 				// Don't break yet; continue to calculate encryption
 			}
 			else
-			{
-				// Not ready yet
+			{	// Not ready yet
 				p->state++;
 				break;
 			}
 		}
 		else
-		{
-			// Timestamp is 16 bit
-
+		{	// Timestamp is 16 bit
 			if(!encrypt && p->state == 7)
-			{
-				// Encryption is disabled, we are ready to go to payload bytes
+			{	// Encryption is disabled, we are ready to go to payload bytes
 				p->state = -((int32_t)payloadLen);
 				break;
 			}
 			else if(encrypt && p->state == 9)
-			{
-				// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
+			{	// Encryption is ENABLED, and we have all the bytes we need to compute the length of payload
 				encryptPtr = &p->head[8];
 				// Don't break yet; continue to calculate encryption
 			}
 			else
-			{
-				// Not ready yet
+			{	// Not ready yet
 				p->state++;
 				break;
 			}
@@ -876,8 +867,7 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 
 		// Add encryption authentication bytes
 		if(encryptPtr)
-		{
-			// If the message contains an embedded authentication sequence, add the length
+		{	// If the message contains an embedded authentication sequence, add the length
 			if(((encryptPtr[1] >> 3) & 0x07) > 1)
 			{
 				switch(encryptPtr[1] & 0x07)
@@ -903,11 +893,9 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 			}
 		}
 		else
-		{
-			// corrupt data
-			c->rxErrorCount++;
+		{	// Invalid data - Reset parser
 			p->state = 0;
-			return _PTYPE_PARSE_ERROR;
+			return _PTYPE_NONE;
 		}
 
 		p->state = -((int32_t)payloadLen);
@@ -921,7 +909,7 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 		if (p->state == 0)
 		{	// Valid packet
 			c->rxPkt.data.ptr  = p->head;
-			c->rxPkt.data.size = c->rxPkt.size = (uint32_t)(c->rxBuf.scan - p->head);
+			c->rxPkt.data.size = c->rxPkt.size = (uint32_t)(c->rxBuf.scan - p->head) + 1;
 			c->rxPkt.hdr.id    = 0;
 			c->rxPkt.offset    = 0;
 
@@ -1047,41 +1035,6 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 				return ptype; 
 			}			
 		}
-
-#if 0
-		// If we have a start byte, process the data type
-		switch (c->hasStartByte)
-		{
-		case RTCM3_START_BYTE:
-			ptype = processRtcm3Pkt(c);
-			if (ptype != _PTYPE_NONE)
-			{
-				return ptype;
-			}
-			break;
-		case SPARTN_START_BYTE:
-			ptype = processSpartnByte(c);
-			if(ptype == _PTYPE_PARSE_ERROR)
-			{
-				//time_delay_usec(500);	// Temporary test code
-			}
-			else if (ptype != _PTYPE_NONE)
-			{
-				return ptype;
-			}
-			break;
-		case SONY_START_BYTE:
-			ptype = processSonyByte(c);
-			if (ptype != _PTYPE_NONE)
-			{
-				return ptype;
-			}
-			break;
-		default:
-			break;
-		}
-#endif
-
 	}
 
 	// No valid data yet...

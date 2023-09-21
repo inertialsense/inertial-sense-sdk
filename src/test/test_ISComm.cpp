@@ -4,7 +4,6 @@
 #include "../ring_buffer.h"
 #include "../protocol_nmea.h"
 
-
 #if 0
 extern "C"
 {
@@ -15,6 +14,7 @@ extern "C"
 }
 #endif
 
+// Tests
 #define BASIC_TX_BUFFER_RX_BYTE_TEST         	1
 #define BASIC_TX_PORT_RX_BYTE_TEST           	1
 #define BASIC_TX_RX_MULTI_BYTE_TEST          	1
@@ -23,6 +23,7 @@ extern "C"
 #define SEGMENTED_RX_TEST                    	1
 #define BLAST_RX_TEST                        	1
 
+// Protocols
 #define TEST_PROTO_ISB		1
 #define TEST_PROTO_NMEA		1
 #define TEST_PROTO_SONY		1

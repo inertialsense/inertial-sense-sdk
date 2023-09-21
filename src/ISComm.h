@@ -566,9 +566,6 @@ typedef struct
 	is_comm_parser_t sony;
 	is_comm_parser_t sprt;
 
-	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occurr at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
-	uint8_t* altDecodeBuf;
-
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
 
