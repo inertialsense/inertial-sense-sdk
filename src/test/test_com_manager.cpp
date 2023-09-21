@@ -240,6 +240,17 @@ static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
+void printNmeaMessage(const char *name, const uint8_t* str, int size)
+{
+	DEBUG_PRINTF("%s: ", name);
+	for (int i=0; i<size && str[i]!='\r' && str[i]!='\n'; i++)
+	{
+		DEBUG_PRINTF("%c", str[i]);
+		if (i==30) { DEBUG_PRINTF("..."); break; }
+	}
+	DEBUG_PRINTF("\n");
+}
+
 
 #define NUM_HANDLES			1
 static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
@@ -483,7 +494,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("NMEA: %.30s...\n", td.data.buf);
+				printNmeaMessage("NMEA", td.data.buf, td.size);
 				break;
 			case _PTYPE_UBLOX:
 				DEBUG_PRINTF("UBLOX: size %d, (0x%02x 0x%02x)\n", td.size, td.data.buf[2], td.data.buf[3]);
@@ -576,12 +587,11 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
-			case _PTYPE_UBLOX:
-			case _PTYPE_RTCM3:
-				break;
+			case _PTYPE_UBLOX:	DEBUG_PRINTF("Found data: UBLOX\n");	break;
+			case _PTYPE_RTCM3:	DEBUG_PRINTF("Found data: RTCM3\n");	break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 				break;
 			}
 

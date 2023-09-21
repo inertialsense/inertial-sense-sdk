@@ -519,7 +519,8 @@ typedef struct
 typedef struct  
 {
 	uint8_t* head;
-	int32_t state;
+	int16_t state;
+	uint16_t size;
 } is_comm_parser_t;
 
 /** An instance of an is_comm interface.  Do not modify these values. */

@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISComm.h"
 
-#define MASK_CONCURRENT_PARSE_ERRORS		0		// Do not report parse errors that while other parers where running.
+#define MASK_CONCURRENT_PARSE_ERRORS		1		// Do not report parse errors that while other parers where running.
 #define MAX_MSG_LENGTH_ISB					PKT_BUF_SIZE
 #define MAX_MSG_LENGTH_NMEA					200
 #define MAX_MSG_LENGTH_RTCM					1024
@@ -257,14 +257,14 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 		// Parse header 
 		packet_buf_t *isbPkt = (packet_buf_t*)(p->head);
 		packet_hdr_t *hdr = &(c->rxPkt.hdr);
-		hdr->payloadSize = isbPkt->hdr.payloadSize;
-		c->rxPkt.size = sizeof(packet_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
+		// hdr->payloadSize = isbPkt->hdr.payloadSize;
+		p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;		// Header + payload + footer (checksum)
 		p->state++;
 		return _PTYPE_NONE;
 
 	case 3:		// Wait for entire packet 
 		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
-		if (numBytes < c->rxPkt.size)
+		if (numBytes < p->size)
 		{
 			return _PTYPE_NONE;
 		}
@@ -276,11 +276,11 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 	p->state = 0;
 
 	// Validate checksum
+	packet_buf_t *isbPkt = (packet_buf_t*)(p->head);
+	uint16_t payloadSize = isbPkt->hdr.payloadSize;
 	uint8_t *payload = p->head + sizeof(packet_hdr_t);
-	packet_t *pkt = &(c->rxPkt);
-	packet_hdr_t *hdr = &(pkt->hdr);
-	checksum16_u *cksum = (checksum16_u*)(payload + hdr->payloadSize);
-	int bytes_cksum = pkt->size - 2;
+	checksum16_u *cksum = (checksum16_u*)(payload + payloadSize);
+	int bytes_cksum = p->size - 2;
 	uint16_t calcCksum = is_comm_isb_checksum16(0, p->head, bytes_cksum);
 	if (cksum->ck != calcCksum)
 	{	// Invalid checksum
@@ -296,29 +296,31 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 	}
 
 	/////////////////////////////////////////////////////////
-	// Valid packet found
+	// Valid packet found - Checksum passed - Populate rxPkt
 
 	// Increment valid Rx packet count
 	c->rxPktCount++;
 
+	packet_t *pkt = &(c->rxPkt);
+
 	// Header
-	packet_buf_t *isbPkt = (packet_buf_t*)(p->head);
-	pkt->hdr.preamble  = isbPkt->hdr.preamble;
-	pkt->hdr.flags     = isbPkt->hdr.flags;
-	pkt->hdr.id        = isbPkt->hdr.id;
+	pkt->hdr.preamble      = isbPkt->hdr.preamble;
+	pkt->hdr.flags         = isbPkt->hdr.flags;
+	pkt->hdr.id            = isbPkt->hdr.id;
+	pkt->hdr.payloadSize   = payloadSize;
 
 	// Payload
 	if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
 	{	// Offset is first two bytes in payload  
-		pkt->data.size = _MAX(hdr->payloadSize-2, 0);
+		pkt->data.size = _MAX(payloadSize-2, 0);
 		pkt->data.ptr  = (pkt->data.size ? payload+2 : NULL);
 		pkt->offset    = *((uint16_t*)payload);
 		// Data starts after offset if data size is non-zero
 	}
 	else
 	{	// No offset
-		pkt->data.size = hdr->payloadSize;
-		pkt->data.ptr  = (hdr->payloadSize ? payload : NULL);
+		pkt->data.size = payloadSize;
+		pkt->data.ptr  = (payloadSize ? payload : NULL);
 		pkt->offset    = 0;
 	}
 
@@ -452,7 +454,7 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 	}
 
 	/////////////////////////////////////////////////////////
-	// Valid packet found
+	// Valid packet found - Checksum passed - Populate rxPkt
 
 	// Update data pointer and info
 	c->rxPkt.data.ptr  = p->head;
@@ -509,13 +511,13 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 
 		// Parse header 
 		ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(p->head);
-		c->rxPkt.size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
+		p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
 		p->state++;
 		return _PTYPE_NONE;
 
 	case 3:		// Wait for entire packet 
 		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
-		if (numBytes < c->rxPkt.size)
+		if (numBytes < p->size)
 		{
 			return _PTYPE_NONE;
 		}
@@ -547,11 +549,11 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 	}
 
 	/////////////////////////////////////////////////////////
-	// Valid packet found
+	// Valid packet found - Checksum passed - Populate rxPkt
 
 	// Update data pointer and info
 	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = c->rxPkt.size = numBytes;
+	c->rxPkt.data.size = p->size = numBytes;
 	c->rxPkt.hdr.id    = 0;
 	c->rxPkt.offset    = 0;
 
@@ -567,60 +569,74 @@ static protocol_type_t processRtcm3Pkt(is_comm_instance_t* c)
 
 	switch (p->state)
 	{
-	case 0:
-	case 1:
+	case 0:		// Find start
+		if (*(c->rxBuf.scan) == RTCM3_START_BYTE)
+		{	// Found
+			p->head = c->rxBuf.scan;
+			p->state++;
+		}
+		return _PTYPE_NONE;
+
+	case 1:		// Wait for packet header
 		p->state++;
-		break;
+		return _PTYPE_NONE;
 
 	case 2:
-	{
-        uint32_t msgLength = getBitsAsUInt32(p->head, 14, 10);
+		p->size = (int)getBitsAsUInt32(p->head, 14, 10) + 6;		// Header + payload + footer (checksum)
 
-		// if message is too small or too big for rtcm3 or too big for buffer, fail
-		if (msgLength > 1023 || msgLength > c->rxBuf.size - 6)
-		{
-			// corrupt data
-			c->rxErrorCount++;
-			reset_parser(c);
-			return _PTYPE_PARSE_ERROR;
+		// Validate packet length
+		if (p->size > MAX_MSG_LENGTH_RTCM || p->size > c->rxBuf.size - 6)
+		{	// Corrupt data - Reset parser
+			p->state = 0;
+			return _PTYPE_NONE;
 		}
 
-		// parse the message plus 3 crc24 bytes
-        p->state = -((int32_t)msgLength + 3);
-	} break;
+		p->state++;
+		return _PTYPE_NONE;
 
-	default:
-		if (++p->state == 0)
+	case 3:		// Wait for entire packet 
+		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
+		if (numBytes < p->size)
 		{
-			// get len without 3 crc bytes
-            int lenWithoutCrc = (int)((c->rxBuf.scan - p->head) - 3);
-			uint32_t actualCRC = calculate24BitCRCQ(p->head, lenWithoutCrc);
-			uint32_t correctCRC = getBitsAsUInt32(p->head + lenWithoutCrc, 0, 24);
-
-			if (actualCRC == correctCRC)
-			{	// Checksum passed - Valid RTCM3 packet
-
-				// Update data pointer and info
-				c->rxPkt.data.ptr  = p->head;
-				c->rxPkt.data.size = c->rxPkt.size = (uint32_t)(c->rxBuf.scan - p->head);
-				c->rxPkt.hdr.id    = 0;
-				c->rxPkt.offset    = 0;
-
-				// Increment valid Rx packet count
-				c->rxPktCount++;
-				reset_parser(c);
-				return _PTYPE_RTCM3;
-			}
-			else
-			{	// Checksum failure
-				c->rxErrorCount++;
-				reset_parser(c);
-				return _PTYPE_PARSE_ERROR;
-			}
+			return _PTYPE_NONE;
 		}
+		// Found packet end
+		break;
 	}
 
-	return _PTYPE_NONE;
+	// Reset state
+	p->state = 0;
+
+	// Validate checksum - len without 3 crc bytes
+	int lenWithoutCrc = (int)(p->size - 3);
+	uint32_t actualCRC = calculate24BitCRCQ(p->head, lenWithoutCrc);
+	uint32_t correctCRC = getBitsAsUInt32(p->head + lenWithoutCrc, 0, 24);
+
+	if (actualCRC != correctCRC)
+	{	// Invalid checksum
+
+#if MASK_CONCURRENT_PARSE_ERRORS
+		if (parserRunning(c))
+		{	// Concurrent parsing happening
+			return _PTYPE_NONE;
+		}
+#endif
+		c->rxErrorCount++;
+		return _PTYPE_PARSE_ERROR;
+	}
+
+	/////////////////////////////////////////////////////////
+	// Valid packet found - Checksum passed - Populate rxPkt
+
+	// Update data pointer and info
+	c->rxPkt.data.ptr  = p->head;
+	c->rxPkt.data.size = p->size = numBytes;
+	c->rxPkt.hdr.id    = 0;
+	c->rxPkt.offset    = 0;
+
+	// Increment valid Rx packet count
+	c->rxPktCount++;
+	return _PTYPE_RTCM3;
 }
 
 static const uint8_t u8CRC_4_TABLE[] = {
@@ -734,7 +750,7 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 
 				// Update data pointer and info
 				c->rxPkt.data.ptr  = p->head;
-				c->rxPkt.data.size = c->rxPkt.size = (uint32_t)(c->rxBuf.scan - p->head);
+				c->rxPkt.data.size = p->size = (uint32_t)(c->rxBuf.scan - p->head);
 				c->rxPkt.hdr.id    = 0;
 				c->rxPkt.offset    = 0;
 
@@ -994,13 +1010,19 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 		if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)
 		{
 			ptype = processUbloxPkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+			if (ptype != _PTYPE_NONE) 
+			{	
+				resetParserState(c, ptype); return ptype; 
+			}
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)
 		{
 			ptype = processRtcm3Pkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+			if (ptype != _PTYPE_NONE) 
+			{	
+				resetParserState(c, ptype); return ptype; 
+			}
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)

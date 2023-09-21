@@ -17,8 +17,9 @@ extern "C"
 
 #define TEST_PROTO_ISB		1
 #define TEST_PROTO_NMEA		1
+#define TEST_PROTO_SONY		0
 #define TEST_PROTO_UBLOX	1
-#define TEST_PROTO_RTCM3	0
+#define TEST_PROTO_RTCM3	1
 #define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
@@ -190,6 +191,17 @@ static int msgHandlerRtcm32(int pHandle, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
+void printNmeaMessage(const char *name, const uint8_t* str, int size)
+{
+	DEBUG_PRINTF("%s: ", name);
+	for (int i=0; i<size && str[i]!='\r' && str[i]!='\n'; i++)
+	{
+		DEBUG_PRINTF("%c", str[i]);
+		if (i==30) { DEBUG_PRINTF("..."); break; }
+	}
+	DEBUG_PRINTF("\n");
+}
+
 static is_comm_instance_t g_comm;
 #define COM_BUFFER_SIZE 4096
 static uint8_t g_comm_buffer[COM_BUFFER_SIZE] = {0};
@@ -207,11 +219,12 @@ static bool init(test_data_t &t)
 
 	// Enable/disable protocols
 	g_comm.config.enabledMask = 0;
-	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
-	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
-	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
-	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB    * TEST_PROTO_ISB);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA   * TEST_PROTO_NMEA);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3  * TEST_PROTO_RTCM3);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SONY   * TEST_PROTO_SONY);
 	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
+	g_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX  * TEST_PROTO_UBLOX);
 
 	return true;
 }
@@ -414,11 +427,12 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			DEBUG_PRINTF("[%2d] ", (int)testDeque.size());
 			switch (td.ptype)
 			{
-			case PSC_ISB_PREAMBLE:
+			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("NMEA: %.30s...\n", td.data.buf);
+				printNmeaMessage("NMEA", td.data.buf, td.size);
 				break;
 			case _PTYPE_UBLOX:
 				DEBUG_PRINTF("UBLOX: size %d, (0x%02x 0x%02x)\n", td.size, td.data.buf[2], td.data.buf[3]);
@@ -503,7 +517,6 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 			switch (ptype)
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
-				// Found data
 				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
@@ -511,12 +524,11 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
-			case _PTYPE_UBLOX:
-			case _PTYPE_RTCM3:
-				break;
+			case _PTYPE_UBLOX:	DEBUG_PRINTF("Found data: UBLOX\n");	break;
+			case _PTYPE_RTCM3:	DEBUG_PRINTF("Found data: RTCM3\n");	break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 				break;
 			}
 
@@ -572,7 +584,7 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 				break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 				break;
 			}
 
