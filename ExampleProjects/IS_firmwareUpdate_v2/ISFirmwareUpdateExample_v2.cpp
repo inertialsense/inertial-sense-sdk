@@ -119,17 +119,9 @@ int main(int argc, char* argv[])
 	int deviceIndex = -1;
 
 	// check if we are using a static COM port
-	if(COMNum.empty())
+	if (argc == 2)
 	{
-		if (argc != 2)
-		{
-			printf("Please pass the com port\r\n");
-			printf("usage: %s {COMx}\r\n", argv[0]);
-			
-			return -1;
-		}
-		else
-			COMNum = argv[1];
+		COMNum = argv[1];
 	}
 
 	// print COM port to console
