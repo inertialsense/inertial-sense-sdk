@@ -5,10 +5,11 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) {
+bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) 
+{
     srand(time(NULL)); // get *some kind* of seed.
 
-    srcFile = new std::ifstream(filename);
+    srcFile = new std::ifstream(filename, std::ios::binary);
 
     // get the file size, and checksum for the file
     srcFile->seekg(0, srcFile->end); // move to the end
@@ -17,13 +18,20 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 
     // calculate the md5 checksum
     resetMd5();
+    
     uint8_t buff[512];
-    size_t curPos = 0;
-    while ( (curPos = srcFile->tellg()) < fileSize) {
+    size_t curPos = srcFile->tellg();
+
+    while ( curPos < fileSize) 
+    {
         int len = _MIN(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
+        srcFile->seekg(curPos);
         srcFile->read((char *)buff, len);
+
         hashMd5(len, buff);
+        curPos = srcFile->tellg();
     }
+
     getCurrentMd5(session_md5);
     printf("Image '%s', md5: %8x%8x%8x%8x\n", filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
 
