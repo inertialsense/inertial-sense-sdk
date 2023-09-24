@@ -935,7 +935,7 @@ int is_comm_free(is_comm_instance_t* c)
 		int shift = (int)(head - buf->start);
 
 		if (shift < (int)(buf->size / 3))	
-		{	// ReIf the buffer is mostly full and can only be shifted less than 1/3 of the buffer
+		{	// If the buffer is mostly full and can only be shifted less than 1/3 of the buffer
 			// we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
 			// will need to resend the data
 			buf->head = 
