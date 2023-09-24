@@ -901,21 +901,6 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 	return _PTYPE_NONE;
 }
 
-// uint8_t* bufHead(is_comm_instance_t* c)
-// {
-// 	is_comm_buffer_t *buf = &(c->rxBuf);
-// 	uint8_t* head = buf->tail;
-
-// 	if (c->config.enabledMask & ENABLE_PROTOCOL_ISB    && c->isb.head  < head ) { head = c->isb.head;  }
-// 	if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA   && c->nmea.head < head ) { head = c->nmea.head; }
-// 	if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3  && c->rtcm.head < head ) { head = c->rtcm.head; }
-// 	if (c->config.enabledMask & ENABLE_PROTOCOL_SONY   && c->sony.head < head ) { head = c->sony.head; }
-// 	if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN && c->sprt.head < head ) { head = c->sprt.head; }
-// 	if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX  && c->ubx.head  < head ) { head = c->ubx.head;  }
-
-// 	return head;
-// }
-
 int is_comm_free(is_comm_instance_t* c)
 {
 // 	if (c == 0 || c->buf.start == 0)
@@ -930,7 +915,6 @@ int is_comm_free(is_comm_instance_t* c)
 	// if we are out of free space, we need to either move bytes over or start over
 	if (bytesFree == 0)
 	{
-		// uint8_t* head = bufHead(c);
 		uint8_t* head = buf->head;
 		int shift = (int)(head - buf->start);
 
