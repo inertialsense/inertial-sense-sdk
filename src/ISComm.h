@@ -276,7 +276,7 @@ enum ePktSpecialChars
 	/** Inertial Sense Binary packet preamble (start) byte 1 (239) */
 	PSC_ISB_PREAMBLE_BYTE1 = 0xEF,
 
-	/** Inertial Sense Binary packet preamble (start) byte 2 (74) */
+	/** Inertial Sense Binary packet preamble (start) byte 2 (73) */
 	PSC_ISB_PREAMBLE_BYTE2 = 0x49,
 
 	/** Inertial Sense Binary packet start preamble (239, 74) */
@@ -424,16 +424,16 @@ typedef struct
 /** Represents the complete body of a PKT_TYPE_GET_DATA packet */
 typedef struct
 {
-	/** Data ID being requested */
-	uint16_t            id;
+    /** Data ID being requested */
+    uint16_t            id;
 
-	/** Byte length of data from offset */
-	uint16_t            size;
+    /** Byte length of data from offset */
+    uint16_t            size;
 
-	/** Byte offset into data */
-	uint16_t            offset;
+    /** Byte offset into data */
+    uint16_t            offset;
 
-	/**	The broadcast source period multiple.  0 for a one-time broadcast.  */
+    /**	The broadcast source period multiple.  0 for a one-time broadcast.  */
 	uint16_t            period;
 } p_data_get_t;
 
@@ -538,6 +538,7 @@ typedef struct
 	uint8_t* head;
 	int16_t state;
 	uint16_t size;
+	uint8_t concurrentParse;	// Other parser was running when this parser started.  Don't report parse error in this case.
 } is_comm_parser_t;
 
 /** An instance of an is_comm interface.  Do not modify these values. */

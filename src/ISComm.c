@@ -12,7 +12,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISComm.h"
 
-#define MASK_CONCURRENT_PARSE_ERRORS		1		// Do not report parse errors that while other parers where running.
 #define DISABLE_RTCM_DURING_SONY_PARSE		1		// Disable RTCM3 parsing while Sony parsing is happening to prevent parsing of embedded RTCM.
 #define MAX_MSG_LENGTH_ISB					PKT_BUF_SIZE
 #define MAX_MSG_LENGTH_NMEA					200
@@ -185,30 +184,47 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 	c->rxPkt.data.ptr = c->rxBuf.start;
 }
 
+static inline void resetAllParsers(is_comm_instance_t *c)
+{
+	c->isb.state = 0;
+	c->nmea.state = 0;
+	c->rtcm.state = 0;
+	c->sony.state = 0;
+	c->sprt.state = 0;
+	c->ubx.state = 0;
+}
+
 static inline void resetParserState(is_comm_instance_t *c, protocol_type_t ptype)
 {
 	if (ptype != _PTYPE_PARSE_ERROR)
 	{
-		c->rxBuf.scan++;		// increment scan pointer now because it won't happen in for loop 
-		c->rxBuf.head = c->rxBuf.scan;
-		c->isb.state = 0;
-		c->nmea.state = 0;
-		c->rtcm.state = 0;
-		c->sony.state = 0;
-		c->sprt.state = 0;
-		c->ubx.state = 0;
+		resetAllParsers(c);
 	}
 }
 
-static inline int32_t parserRunning(is_comm_instance_t *c)
+static protocol_type_t parseErrorResetState(is_comm_instance_t* c, is_comm_parser_t* p)
 {
-	return 
-		c->isb.state || 
-		c->nmea.state || 
-		c->rtcm.state ||
-		c->sony.state ||
-		c->sprt.state ||
-		c->ubx.state;
+	p->state = 0;
+
+	if (!(p->concurrentParse))
+	{	// Parse errors are only detectable when no concurrent parse was happening
+		c->rxErrorCount++;
+		return _PTYPE_PARSE_ERROR;
+	}
+	return _PTYPE_NONE;
+}
+
+static inline void validPacketFound(is_comm_instance_t* c, is_comm_parser_t* p, int pktSize, int dataSize)
+{
+	c->rxBuf.head = p->head + pktSize;
+	c->rxPktCount++;
+
+	// Update data pointer and info
+	c->rxPkt.size      = pktSize;
+	c->rxPkt.data.ptr  = p->head;
+	c->rxPkt.data.size = dataSize;
+	c->rxPkt.hdr.id    = 0;
+	c->rxPkt.offset    = 0;
 }
 
 static protocol_type_t processIsbPkt(is_comm_instance_t* c)
@@ -227,13 +243,21 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 
 	case 1:
 		if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE2)
-		{	// Found complete preamble 
+		{	// Found complete preamble
 			p->head = c->rxBuf.scan-1;
 			p->state++;
+
+			// Other parser(s) running?  Used for parse error reporting
+			p->concurrentParse = 
+			 	c->nmea.state || 
+				c->rtcm.state ||
+				c->sony.state ||
+				c->sprt.state ||
+				c->ubx.state;
 		}
 		else
-		{	// Invalid preamble - Reset state
-			p->state = 0;
+		{	// Invalid preamble
+			return parseErrorResetState(c, p);
 		}
 		return _PTYPE_NONE;
 
@@ -249,12 +273,12 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 		packet_buf_t *isbPkt = (packet_buf_t*)(p->head);
 		p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;		// Header + payload + footer (checksum)
 		if (p->size > MAX_MSG_LENGTH_ISB)
-		{	// Invalid size - Reset parser
-			p->state = 0;
+		{	// Invalid size
+			return parseErrorResetState(c, p);
 		}
 		return _PTYPE_NONE;
 
-	case 3:		// Wait for entire packet 
+	default:	// Wait for entire packet 
 		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
 		if (numBytes < (int)(p->size))
 		{
@@ -276,22 +300,12 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 	uint16_t calcCksum = is_comm_isb_checksum16(0, p->head, bytes_cksum);
 	if (cksum->ck != calcCksum)
 	{	// Invalid checksum
-		p->state = 0;
-
-#if MASK_CONCURRENT_PARSE_ERRORS
-		if (parserRunning(c))
-		{	// Concurrent parsing happening
-			return _PTYPE_NONE;
-		}
-#endif
-		c->rxErrorCount++;
-		return _PTYPE_PARSE_ERROR;
+		return parseErrorResetState(c, p);
 	}
 
 	/////////////////////////////////////////////////////////
 	// Valid packet found - Checksum passed - Populate rxPkt
-
-	// Increment valid Rx packet count
+	c->rxBuf.head = p->head + numBytes;
 	c->rxPktCount++;
 
 	packet_t *pkt = &(c->rxPkt);
@@ -328,14 +342,8 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 	{
 	case PKT_TYPE_SET_DATA:
 	case PKT_TYPE_DATA: 
-		// ensure offset and size are in bounds - check the size independent of offset because the size could be a
-		//  negative number in case of corrupt data
-		if (pkt->hdr.id > DID_NULL &&
-// 				pkt->hdr.id < DID_COUNT &&		// Commented out to allow support for Luna EVB data sets
-			pkt->data.size <= MAX_DATASET_SIZE //&&
-// 					pkt->offset <= MAX_DATASET_SIZE &&
-// 					pkt->offset + pkt->payload.size <= MAX_DATASET_SIZE
-			)
+		// Validate data size
+		if (pkt->data.size <= MAX_DATASET_SIZE)
 		{
 			if (ptype==PKT_TYPE_SET_DATA)
 			{	// acknowledge valid data received
@@ -353,10 +361,9 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 	case PKT_TYPE_GET_DATA:
 		{
 			p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
-			if (get->id > DID_NULL &&
-				get->size <= MAX_DATASET_SIZE )
-			{
-				// Update data pointer
+			// Validate data size
+			if (get->size <= MAX_DATASET_SIZE)
+			{	// Update data pointer
 				return _PTYPE_INERTIAL_SENSE_CMD;
 			}
 		}
@@ -371,9 +378,8 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 		return _PTYPE_INERTIAL_SENSE_ACK;
 	}                    
 
-	// Invalid data or checksum failure.
-	c->rxErrorCount++;
-	return _PTYPE_PARSE_ERROR;
+	// Invalid data type
+	return parseErrorResetState(c, p);
 }
 
 static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
@@ -388,6 +394,14 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 		{	// Found
 			p->head = c->rxBuf.scan;
 			p->state++;
+
+			// Other parser(s) running?  Used for parse error reporting
+			p->concurrentParse = 
+			 	c->isb.state  || 
+				c->rtcm.state ||
+				c->sony.state ||
+				c->sprt.state ||
+				c->ubx.state;
 		}
 		return _PTYPE_NONE;
 
@@ -399,16 +413,15 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 		  
 		numBytes = c->rxBuf.scan - p->head;
 		if (numBytes > MAX_MSG_LENGTH_NMEA)
-		{	// Exceeds max length - Reset state
-			p->state = 0;
+		{	// Exceeds max length
+			return parseErrorResetState(c, p);
 		}
 		return _PTYPE_NONE;
 
 	case 3:		// Wait for end of packet
 		if (*(c->rxBuf.scan) != PSC_NMEA_END_BYTE)
-		{	// Invalid end - Reset state
-			p->state = 0;
-			return _PTYPE_NONE;
+		{	// Invalid end
+			return parseErrorResetState(c, p);
 		}
 		// Found packet end
 		break;
@@ -421,7 +434,7 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 	numBytes = c->rxBuf.scan - p->head + 1;
 	if (numBytes < 8)
 	{	// Packet length too short
-		return _PTYPE_NONE;
+		return parseErrorResetState(c, p);
 	}
 
 	// Validate checksum
@@ -436,29 +449,13 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 	}
 	if (msgChecksum != calChecksum)
 	{	// Invalid checksum
-		p->state = 0;
-
-#if MASK_CONCURRENT_PARSE_ERRORS
-		if (parserRunning(c))
-		{	// Concurrent parsing happening
-			return _PTYPE_NONE;
-		}
-#endif
-		c->rxErrorCount++;
-		return _PTYPE_PARSE_ERROR;
+		return parseErrorResetState(c, p);
 	}
 
 	/////////////////////////////////////////////////////////
 	// Valid packet found - Checksum passed - Populate rxPkt
+	validPacketFound(c, p, numBytes, numBytes);
 
-	// Update data pointer and info
-	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = c->rxPkt.size = (uint32_t)numBytes;
-	c->rxPkt.hdr.id    = 0;
-	c->rxPkt.offset    = 0;
-
-	// Increment valid Rx packet count
-	c->rxPktCount++;
 	return _PTYPE_NMEA;
 }
 
@@ -490,10 +487,18 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 		{	// Found complete preamble 
 			p->head = c->rxBuf.scan-1;
 			p->state++;
+
+			// Other parser(s) running?  Used for parse error reporting
+			p->concurrentParse =
+				c->isb.state  || 
+			 	c->nmea.state || 
+				c->rtcm.state ||
+				c->sony.state ||
+				c->sprt.state;
 		}
 		else
-		{	// Invalid preamble - Reset state
-			p->state = 0;
+		{	// Invalid preamble
+			return parseErrorResetState(c, p);
 		}
 		return _PTYPE_NONE;
 
@@ -509,7 +514,7 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 		p->state++;
 		return _PTYPE_NONE;
 
-	case 3:	// Wait for end of packet
+	default:	// Wait for end of packet
 		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
 		if (numBytes < p->size)
 		{
@@ -531,29 +536,13 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 	cksum.ck = is_comm_fletcher16(0, cksum_start, cksum_size);
 	if (pktChecksum != cksum.ck)
 	{	// Invalid checksum
-		p->state = 0;
-
-#if MASK_CONCURRENT_PARSE_ERRORS
-		if (parserRunning(c))
-		{	// Concurrent parsing happening
-			return _PTYPE_NONE;
-		}
-#endif
-		c->rxErrorCount++;
-		return _PTYPE_PARSE_ERROR;
+		return parseErrorResetState(c, p);
 	}
 
 	/////////////////////////////////////////////////////////
 	// Valid packet found - Checksum passed - Populate rxPkt
+	validPacketFound(c, p, numBytes, p->size);
 
-	// Update data pointer and info
-	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = c->rxPkt.size = p->size;
-	c->rxPkt.hdr.id    = 0;
-	c->rxPkt.offset    = 0;
-
-	// Increment valid Rx packet count
-	c->rxPktCount++;
 	return _PTYPE_UBLOX;
 }
 
@@ -570,9 +559,17 @@ static protocol_type_t processRtcm3Pkt(is_comm_instance_t* c)
 			&& c->sony.state == 0
 #endif
 		)
-		{	// Found
+		{	// Found start
 			p->head = c->rxBuf.scan;
 			p->state++;
+
+			// Other parser(s) running?  Used for parse error reporting
+			p->concurrentParse = 
+				c->isb.state  ||
+			 	c->nmea.state || 
+				c->sony.state ||
+				c->sprt.state ||
+				c->ubx.state;
 		}
 		return _PTYPE_NONE;
 
@@ -586,12 +583,12 @@ static protocol_type_t processRtcm3Pkt(is_comm_instance_t* c)
 
 		// Validate packet length
 		if (p->size > MAX_MSG_LENGTH_RTCM || p->size > c->rxBuf.size - 6)
-		{	// Corrupt data - Reset parser
-			p->state = 0;
+		{	// Corrupt data
+			return parseErrorResetState(c, p);
 		}
 		return _PTYPE_NONE;
 
-	case 3:	// Wait for end of packet
+	default:	// Wait for end of packet
 		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
 		if (numBytes < p->size)
 		{
@@ -612,30 +609,13 @@ static protocol_type_t processRtcm3Pkt(is_comm_instance_t* c)
 
 	if (actualCRC != correctCRC)
 	{	// Invalid checksum
-		p->state = 0;
-
-#if MASK_CONCURRENT_PARSE_ERRORS
-		if (parserRunning(c))
-		{	// Concurrent parsing happening
-			p->state = 0;
-			return _PTYPE_NONE;
-		}
-#endif
-		c->rxErrorCount++;
-		return _PTYPE_PARSE_ERROR;
+		return parseErrorResetState(c, p);
 	}
 
 	/////////////////////////////////////////////////////////
 	// Valid packet found - Checksum passed - Populate rxPkt
+	validPacketFound(c, p, numBytes, p->size);
 
-	// Update data pointer and info
-	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = c->rxPkt.size = p->size;
-	c->rxPkt.hdr.id    = 0;
-	c->rxPkt.offset    = 0;
-
-	// Increment valid Rx packet count
-	c->rxPktCount++;
 	return _PTYPE_RTCM3;
 }
 
@@ -701,9 +681,17 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 	{
 	case 0:		// Find start
 		if (*(c->rxBuf.scan) == SONY_START_BYTE)
-		{	// Found
+		{	// Found start
 			p->head = c->rxBuf.scan;
 			p->state++;
+
+			// Other parser(s) running?  Used for parse error reporting
+			p->concurrentParse = 
+				c->isb.state  ||
+			 	c->nmea.state || 
+			 	c->rtcm.state || 
+				c->sprt.state ||
+				c->ubx.state;
 		}
 		return _PTYPE_NONE;
 
@@ -721,9 +709,8 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 			checksum += p->head[i];
 		}
 		if (checksum != hdr->fcsh || hdr->dataSize > MAX_MSG_LENGTH_SONY || hdr->dataSize > c->rxBuf.size)
-		{	// Invalid header - Reset parser
-			p->state = 0;
-			return _PTYPE_NONE;
+		{	// Invalid header
+			return parseErrorResetState(c, p);
 		}
 
 		// Valid header
@@ -731,7 +718,7 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 		p->state++;
 		return _PTYPE_NONE;
 
-	case 2:		// Wait for end of packet
+	default:	// Wait for end of packet
 		numBytes = (int)(c->rxBuf.scan - p->head) + 1;
 		if (numBytes < (int)(p->size))
 		{
@@ -753,27 +740,14 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 		checksum += ptr[i];
 	}
 	if (checksum != c->rxBuf.scan[0])
-	{	// Invalid data checksum - Reset parser
-		p->state = 0;
-
-#if MASK_CONCURRENT_PARSE_ERRORS
-		if (parserRunning(c))
-		{	// Concurrent parsing happening
-			return _PTYPE_NONE;
-		}
-#endif
-		c->rxErrorCount++;
-		return _PTYPE_PARSE_ERROR;
+	{	// Invalid data checksum
+		return parseErrorResetState(c, p);
 	}
 
-	// Update data pointer and info
-	c->rxPkt.data.ptr  = p->head;
-	c->rxPkt.data.size = c->rxPkt.size = p->size;
-	c->rxPkt.hdr.id    = hdr->opc;
-	c->rxPkt.offset    = 0;
+	/////////////////////////////////////////////////////////
+	// Valid packet found - Checksum passed - Populate rxPkt
+	validPacketFound(c, p, numBytes, p->size);
 
-	// Increment valid Rx packet count
-	c->rxPktCount++;
 	return _PTYPE_SONY;
 }
 
@@ -804,9 +778,8 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 		const uint8_t dbuf[3] = { p->head[1], p->head[2], p->head[3] & 0xF0 };
         uint8_t calc = computeCrc4Ccitt(dbuf, 3);
         if((p->head[3] & 0x0F) != calc)
-        {  	// Invalid header - Reset parser
-			p->state = 0;
-			return _PTYPE_NONE;
+        {  	// Invalid header
+			return parseErrorResetState(c, p);
         }
 
         p->state++;
@@ -893,9 +866,8 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 			}
 		}
 		else
-		{	// Invalid data - Reset parser
-			p->state = 0;
-			return _PTYPE_NONE;
+		{	// Invalid data
+			return parseErrorResetState(c, p);
 		}
 
 		p->state = -((int32_t)payloadLen);
@@ -908,23 +880,19 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 
 		if (p->state == 0)
 		{	// Valid packet
-			c->rxPkt.data.ptr  = p->head;
-			c->rxPkt.data.size = c->rxPkt.size = (uint32_t)(c->rxBuf.scan - p->head) + 1;
-			c->rxPkt.hdr.id    = 0;
-			c->rxPkt.offset    = 0;
 
-			// Increment valid Rx packet count
-			c->rxPktCount++;
 			p->state = 0;
+
+			/////////////////////////////////////////////////////////
+			// Valid packet found - Checksum passed - Populate rxPkt
+			int numBytes = (uint32_t)(c->rxBuf.scan - p->head) + 1;
+			validPacketFound(c, p, numBytes, numBytes);
 
 			return _PTYPE_SPARTN;
 		}
 		else if(p->state > 0)
-		{
-			// corrupt data or bad state
-			c->rxErrorCount++;
-			p->state = 0;
-			return _PTYPE_PARSE_ERROR;
+		{	// corrupt data or bad state
+			return parseErrorResetState(c, p);
 		}
 
 		break;
@@ -932,6 +900,21 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 
 	return _PTYPE_NONE;
 }
+
+// uint8_t* bufHead(is_comm_instance_t* c)
+// {
+// 	is_comm_buffer_t *buf = &(c->rxBuf);
+// 	uint8_t* head = buf->tail;
+
+// 	if (c->config.enabledMask & ENABLE_PROTOCOL_ISB    && c->isb.head  < head ) { head = c->isb.head;  }
+// 	if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA   && c->nmea.head < head ) { head = c->nmea.head; }
+// 	if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3  && c->rtcm.head < head ) { head = c->rtcm.head; }
+// 	if (c->config.enabledMask & ENABLE_PROTOCOL_SONY   && c->sony.head < head ) { head = c->sony.head; }
+// 	if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN && c->sprt.head < head ) { head = c->sprt.head; }
+// 	if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX  && c->ubx.head  < head ) { head = c->ubx.head;  }
+
+// 	return head;
+// }
 
 int is_comm_free(is_comm_instance_t* c)
 {
@@ -947,19 +930,30 @@ int is_comm_free(is_comm_instance_t* c)
 	// if we are out of free space, we need to either move bytes over or start over
 	if (bytesFree == 0)
 	{
-		if ((int)(buf->head - buf->start) < (int)(buf->size / 3))	// if ring buffer start index is less than this and no space is left, clear the entire ring buffer
-		{	// we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
-			//  will need to resend the data
-			buf->head = buf->start;
-			buf->tail = buf->start;
-			buf->scan = buf->start;
-			resetParserState(c, _PTYPE_NONE);
+		// uint8_t* head = bufHead(c);
+		uint8_t* head = buf->head;
+		int shift = (int)(head - buf->start);
+
+		if (shift < (int)(buf->size / 3))	
+		{	// ReIf the buffer is mostly full and can only be shifted less than 1/3 of the buffer
+			// we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
+			// will need to resend the data
+			buf->head = 
+			buf->tail = 
+			buf->scan = 
+			c->isb.head  = 
+			c->ubx.head  = 
+			c->nmea.head = 
+			c->rtcm.head = 
+			c->sprt.head = 
+			c->sony.head = buf->start;
+			resetAllParsers(c);
+			c->rxErrorCount++;
 		}
 		else
-		{	// shift over the remaining data in the hopes that we will get a valid packet by appending the next read call
-			memmove(buf->start, buf->head, buf->tail - buf->head);
-			int shift = (int)(buf->head - buf->start);
-			buf->head -= shift;
+		{	// Shift current data to start of buffer
+			memmove(buf->start, head, buf->tail - head);
+			buf->head = buf->start;
 			buf->tail -= shift;
 			buf->scan -= shift;
 			c->isb.head -= shift;
@@ -1000,37 +994,37 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 		if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)
 		{
 			ptype = processIsbPkt(c);
-			if (ptype != _PTYPE_NONE) { resetParserState(c, ptype);	return ptype; }
+			if (ptype != _PTYPE_NONE) { resetParserState(c, ptype);	buf->scan++; return ptype; }
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA)
 		{
 			ptype = processNmeaPkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)
 		{
 			ptype = processUbloxPkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)
 		{
 			ptype = processRtcm3Pkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
 		}
 
 		// if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)
 		// {
 		// 	ptype = processSpartnByte(c);
-		// 	if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }			
+		// 	if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
 		// }
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)
 		{
 			ptype = processSonyByte(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); return ptype; }
+			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }
 		}
 	}
 
