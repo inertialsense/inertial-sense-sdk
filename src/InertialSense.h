@@ -99,24 +99,25 @@ public:
 
 	/**
 	* Constructor
-	* @param callback binary data callback, optional. If specified, ALL BroadcastBinaryData requests will callback to this function.
+	* @param callbackIsb InertialSense binary received data callback (optional). If specified, ALL BroadcastBinaryData requests will callback to this function.
+	* @param callbackRmc Real-time message controller received data callback (optional).
+	* @param callbackNmea NMEA received received data callback (optional).
+	* @param callbackUblox Ublox binary received data callback (optional).
+	* @param callbackRtcm3 RTCM3 received data callback (optional).
+	* @param callbackSpartn Spartn received data callback (optional).
 	*/
-	InertialSense(pfnHandleBinaryData callback = NULL);
+	InertialSense(
+		pfnHandleBinaryData        callbackIsb = NULL,
+		pfnComManagerAsapMsg       callbackRmc = NULL,
+		pfnComManagerGenMsgHandler callbackNmea = NULL,
+		pfnComManagerGenMsgHandler callbackUblox = NULL, 
+		pfnComManagerGenMsgHandler callbackRtcm3 = NULL,
+		pfnComManagerGenMsgHandler callbackSpartn = NULL );
 
 	/**
 	* Destructor
 	*/
 	virtual ~InertialSense();
-
-	/**
-	* Set functions pointers called when various message types are received.
-	*/
-	void SetCallbacks(
-		pfnComManagerAsapMsg handlerRmc=NULLPTR,
-		pfnComManagerGenMsgHandler handlerNmea=NULLPTR,
-		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
-		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR,
-		pfnComManagerGenMsgHandler handlerSpartn=NULLPTR);
 
 	/**
 	* Closes any open connection and then opens the device
@@ -202,6 +203,11 @@ public:
 	void CloseServerConnection();
 
 	/**
+	* Request device(s) version information (dev_info_t).
+	*/
+	void QueryDeviceInfo();
+
+	/**
 	* Turn off all messages.  Current port only if allPorts = false.
 	*/
 	void StopBroadcasts(bool allPorts=true);
@@ -210,6 +216,11 @@ public:
      * Current data streaming will continue streaming at boot. 
      */
     void SavePersistent();
+
+    /**
+     * Software reset device(s) with open serial port.
+     */
+	void SoftwareReset();
 
 	/**
 	* Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
@@ -496,7 +507,11 @@ protected:
 
 private:
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
+	pfnComManagerAsapMsg       m_handlerRmc = NULLPTR;
 	pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
 	cISLogger m_logger;
 	void* m_logThread;
 	cMutex m_logMutex;
