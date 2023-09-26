@@ -410,11 +410,13 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 		{ 	// Found
 			p->state++;
 		}
-		  
-		numBytes = c->rxBuf.scan - p->head;
-		if (numBytes > MAX_MSG_LENGTH_NMEA)
-		{	// Exceeds max length
-			return parseErrorResetState(c, p);
+		else
+		{
+			numBytes = c->rxBuf.scan - p->head;
+			if (numBytes > MAX_MSG_LENGTH_NMEA)
+			{	// Exceeds max length
+				return parseErrorResetState(c, p);
+			}
 		}
 		return _PTYPE_NONE;
 
@@ -970,50 +972,57 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* c, uint8_t byte)
 protocol_type_t is_comm_parse(is_comm_instance_t* c)
 {
 	is_comm_buffer_t *buf = &(c->rxBuf);
-	protocol_type_t ptype;
+	protocol_type_t ptype = _PTYPE_NONE;
 
 	// Search for packet
-	for (; buf->scan < buf->tail; buf->scan++)
+	while (buf->scan < buf->tail)
 	{
 		if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)
 		{
 			ptype = processIsbPkt(c);
-			if (ptype != _PTYPE_NONE) { resetParserState(c, ptype);	buf->scan++; return ptype; }
+			if (ptype != _PTYPE_NONE) break;
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA)
 		{
 			ptype = processNmeaPkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
+			if (ptype != _PTYPE_NONE) break;
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)
 		{
 			ptype = processUbloxPkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
+			if (ptype != _PTYPE_NONE) break;
 		}
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)
 		{
 			ptype = processRtcm3Pkt(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
+			if (ptype != _PTYPE_NONE) break;
 		}
 
 		// if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN)
 		// {
 		// 	ptype = processSpartnByte(c);
-		// 	if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }			
+		// 	if (ptype != _PTYPE_NONE) break;
 		// }
 
 		if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)
 		{
 			ptype = processSonyByte(c);
-			if (ptype != _PTYPE_NONE) {	resetParserState(c, ptype); buf->scan++; return ptype; }
+			if (ptype != _PTYPE_NONE) break;
 		}
+
+		buf->scan++;
 	}
 
-	// No valid data yet...
-	return _PTYPE_NONE;
+	if (ptype != _PTYPE_NONE) 
+	{	
+		buf->scan++; 
+		resetParserState(c, ptype); 
+	}
+
+	return ptype; 
 }
 
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)

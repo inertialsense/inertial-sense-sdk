@@ -23,7 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISBootloaderBase.h"
 #include "../../src/ISSerialPort.h"
 
-// ADDED by Tony
 #include "../../src/InertialSense.h"
 #include "../../src/protocol/FirmwareUpdate.h"
 #include "../../src/ISLogger.h"
