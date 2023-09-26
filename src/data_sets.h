@@ -139,8 +139,9 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
+#define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_LAST                              124 /** Last of GPX DIDs */
+#define DID_GPX_LAST                              125 /** Last of GPX DIDs */
 
 
 // Adding a new data id?
@@ -1995,6 +1996,23 @@ typedef struct PACKED
 
 } bit_t;
 
+
+/** (DID_BIT) Built-in self-test parameters */
+typedef struct PACKED
+{
+    /** Built-in self-test state (see eBitState) */
+    uint32_t                state;
+
+    /** Hardware BIT status (see eHdwBitStatusFlags) */
+    uint32_t                hdwBitStatus;
+
+    /** Calibration BIT status (see eCalBitStatusFlags) */
+    uint32_t                calBitStatus;
+
+    /** Self-test mode (see eBitTestMode) */
+    uint32_t                testMode;
+
+} GPX_bit_t;
 
 enum eInfieldCalState
 {
