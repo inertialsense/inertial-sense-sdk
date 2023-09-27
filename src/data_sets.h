@@ -4511,7 +4511,7 @@ typedef struct
 {
     uint32_t runTimeUs;
     uint32_t maxRunTimeUs;
-    uint32_t lastStartTimeUs;
+    uint32_t StartTimeUs;
     uint32_t startPeriodUs;
 } runtime_profile_t;
 
@@ -4810,6 +4810,9 @@ convert satellite gnssID + svID to satellite number
 @return satellite number (0:error)
 */
 int satNumCalc(int gnssID, int svID);
+
+void profiler_start(runtime_profile_t *p, uint32_t timeUs);
+void profiler_stop(runtime_profile_t *p, uint32_t timeUs);
 
 
 #ifdef __cplusplus

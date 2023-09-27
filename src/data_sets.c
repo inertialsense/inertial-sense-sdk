@@ -950,15 +950,13 @@ int satNumCalc(int gnssID, int svID) {
 #endif	// #ifndef GPX_1
 
 
-void profiler_start(runtime_profile_t *p)
+void profiler_start(runtime_profile_t *p, uint32_t timeUs)
 {
-	uint32_t timeUs = time_usec();
 	p->startPeriodUs = timeUs - p->StartTimeUs;
 	p->StartTimeUs = timeUs;
 }
 
-void profiler_stop(runtime_profile_t *p)
+void profiler_stop(runtime_profile_t *p, uint32_t timeUs)
 {
-	uint32_t timeUs = time_usec();
 	p->runTimeUs = timeUs - p->StartTimeUs;
 }
