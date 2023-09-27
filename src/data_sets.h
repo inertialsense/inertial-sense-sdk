@@ -1996,24 +1996,6 @@ typedef struct PACKED
 
 } bit_t;
 
-
-/** (DID_BIT) Built-in self-test parameters */
-typedef struct PACKED
-{
-    /** Built-in self-test state (see eBitState) */
-    uint32_t                state;
-
-    /** Hardware BIT status (see eHdwBitStatusFlags) */
-    uint32_t                hdwBitStatus;
-
-    /** Calibration BIT status (see eCalBitStatusFlags) */
-    uint32_t                calBitStatus;
-
-    /** Self-test mode (see eBitTestMode) */
-    uint32_t                testMode;
-
-} GPX_bit_t;
-
 enum eInfieldCalState
 {
     /** User Commands: */
