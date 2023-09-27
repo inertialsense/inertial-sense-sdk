@@ -878,6 +878,7 @@ static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLengt
     *bufferLength -= written;
     *buffer += written;
 }
+
 #ifndef GPX_1
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/
@@ -946,4 +947,11 @@ int satNumCalc(int gnssID, int svID) {
 	return satNo(sys, prn);
 }
 
-#endif
+#endif	// #ifndef GPX_1
+
+
+void step_profiler_start(runtime_profile_t *p)
+{
+	uint32_t timeUs = time_usec();
+	p->lastStartTimeUs = timeUs;
+}
