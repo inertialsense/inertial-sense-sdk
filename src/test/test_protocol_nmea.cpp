@@ -12,6 +12,12 @@ using namespace std;
 #define POS_ALT_M       1406.39
 #define LEAP_SEC        18
 
+#if 0
+#define DEBUG_PRINTF	printf
+#else
+#define DEBUG_PRINTF	
+#endif
+
 TEST(protocol_nmea, nmea_parse_ascb)
 {
 	PRINT_TEST_DESCRIPTION("Tests the $ASCB parser function nmea_parse_ascb().");
@@ -1394,5 +1400,46 @@ TEST(protocol_nmea, generate_example_nmea_for_customer)
     nmea_sprint_footer(a, ASCII_BUF_LEN, n);
     a[n] = 0;
     printf("%s", a);
+}
+#endif
+
+
+#if 1
+void testChecksum(const char* str)
+{
+    char a[200] = {};
+    char b[200] = {};
+    int m = snprintf(a, sizeof(a), "%s", str);
+    int n = m-5;
+    memcpy(b, a, n);
+    nmea_sprint_footer(b, sizeof(b), n);
+    DEBUG_PRINTF("%s", a);
+    DEBUG_PRINTF("%s", b);
+    ASSERT_EQ(m, n);     // Check that 5 characters (*xx\r\n) were added
+    ASSERT_TRUE(memcmp(a, b, m) == 0);
+}
+
+TEST(protocol_nmea, checksum)
+{
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,521,047,46,04,21,047,40,261,49,224,47,05,49,224,42*54\r\n");
+    testChecksum("$GAGSV,3,2,12,267715.76121,W,1,11,1.10,0.00,M,169.55,M,,*2D\r\n");  // NEMA Wrong Checksum 2d lenREc=59
+    testChecksum("$GNVTG,0.00,T,,M,0.0.000*57\r\n");  // NEMA Wrong Checksum 57 lenREc=27
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,52,11,32,140,37*61\r\n");   // NEMA Wrong Checksum 61 lenREc=74
+    testChecksum("$GAGSV,3,3,12,290,39,316,47,34,39,316,42,292,84,16305,10,13,15,18,23,24,29,04,05,09,11,1.1,1.0,1.0*5E\r\n");    // NEMA Wrong Checksum 5e lenREc=101
+    testChecksum("$GNRMC,160350,A,3911.2480.26,+2.50,+0.00,0.009,0.009,2.676,1,0*38\r\n");    // NEMA Wrong Checksum 38 lenREc=65
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,5,12,260,21,047,46,04,21,047,40,261,49,224,47,05,49,224,42*4F\r\n");    // NEMA Wrong Checksum 4f lenREc=117
+    testChecksum("$GAGSV,34843,N,07715.76121,W,1,11,1.10,0.00,M,169.55,M,,*41\r\n");  // NEMA Wrong Checksum 41 lenREc=59
+    testChecksum("$GNGSA,A,03,05,00.0,E*6C\r\n"); // NEMA Wrong Checksum 6c lenREc=24
+    testChecksum("$GNVTG,0.00,0.000,0.000*7E\r\n");   // NEMA Wrong Checksum 7e lenREc=26
+    testChecksum("$GAGSV,3,1,12,260,21,047,46,04,21,047,40,261,49,224,43,48,36,84,163,44*49\r\n");    // NEMA Wrong Checksum 49 lenREc=73
+    testChecksum("$GNGGA,160351.000,3911.24843,N,07715.76121,W,1,11,1.3911.24843,N,07715.76121,W,000.0,000.0,180923,000.0,E*12\r\n"); // NEMA Wrong Checksum 12 lenREc=108
+    testChecksum("$GNZDA,160351.00000,2280,0,0.000,0.000,0,0.000,0.000,0.000,0.000,0.000,0.000*40\r\n");  // NEMA Wrong Checksum 40 lenREc=79
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,5,12,260,21,047,46,04,21,047,40,261,49,224,47,05,49,224,42*4F\r\n");    // NEMA Wrong Checksum 4f lenREc=117
+    testChecksum("$GAGSV,34843,N,07715.76121,W,1,11,1.10,0.00,M,169.55,M,,*41\r\n");  // NEMA Wrong Checksum 41 lenREc=59
+    testChecksum("$GNGSA,A,03,05,00.0,E*6C\r\n"); // NEMA Wrong Checksum 6c lenREc=24
+    testChecksum("$GNVTG,0.00,0.000,0.000*7E\r\n");   // NEMA Wrong Checksum 7e lenREc=26
+    testChecksum("$GAGSV,3,1,12,260,21,047,46,04,21,047,40,261,49,224,43,48,36,84,163,44*49\r\n");    // NEMA Wrong Checksum 49 lenREc=73
+    testChecksum("$GNGGA,160352.000,3911.24843,N,07715.76121,W,1,11,1.911.24843,N,07715.76121,W,000.0,000.0,180923,000.0,E*22\r\n");  // NEMA Wrong Checksum 22 lenREc=107
+    testChecksum("$GNZDA,160352.000,00,2280,0,0.000,0.000,0,0.000,0.000,0.000,0.000,0.000,0.000*6F\r\n"); // NEMA Wrong Checksum 6f lenREc=80
 }
 #endif

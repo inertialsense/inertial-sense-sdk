@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 import threading
 
+sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
 sys.path.insert(1, '..')
 
@@ -109,12 +110,13 @@ class SuperNPP():
 
 		if os.name == 'posix':
 			cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir for s in serials]
-			npp_build_folder = "../../../cpp/NavPostProcess/build"
+			file_path = os.path.dirname(os.path.realpath(__file__))
+			npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
 		else:
 			# cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
 			# npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
 			cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
-			npp_build_folder = "../../../cpp/NavPostProcess/VS_project/x64/Release"
+			npp_build_folder = "../../cpp/NavPostProcess/VS_project/Release"
 
 		if self.startMode == 1:
 			for i in range(len(cmds)):

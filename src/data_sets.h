@@ -392,8 +392,8 @@ enum eHdwStatusFlags
 /** System status flags */
 enum eSysStatusFlags
 {
-    /**  */
-    SYS_STATUS_RESERVED							= (int)0x00000001,
+    /** Allow IMX to drive Testbed-3 status LEDs */
+    SYS_STATUS_TBED3_LEDS_ENABLED				= (int)0x00000001,
 };
 
 // Used to validate GPS position (and velocity)
@@ -479,11 +479,22 @@ typedef struct PACKED
 
 }pos_measurement_t;
 
+enum eDevInfoHardware
+{
+	DEV_INFO_HARDWARE_UINS      = 1,
+	DEV_INFO_HARDWARE_EVB       = 2,
+	DEV_INFO_HARDWARE_IMX       = 3,
+	DEV_INFO_HARDWARE_GPX       = 4,
+};
+
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
 {
-    /** Reserved bits */
-    uint32_t        reserved;
+	/** Reserved bits */
+	uint16_t        reserved;
+
+	/** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
+	uint16_t        hardware;
 
     /** Serial number */
     uint32_t        serialNumber;
@@ -544,7 +555,7 @@ typedef struct PACKED
 	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
 
-	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
+	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
 	int32_t			platformType;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
@@ -1380,6 +1391,12 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)	
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)	
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)	
+
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)	
 
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                  = 30,           // (uint32 inv: 4294967265)
     SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER         = 31,           // (uint32 inv: 4294967264)
@@ -2541,27 +2558,27 @@ enum ePlatformConfig
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
-    PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
-    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
+    PLATFORM_CFG_TYPE_NONE                      = (int)0,		    // IMX-5 default
+    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		    // uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
     PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
     PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
-    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
-    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
-    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
+    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	        // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
+    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,           // "
+    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,           // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-    PLATFORM_CFG_TYPE_TBED3_GPX                 = (int)12,      // Testbed-3 w/ GPX
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,		// IG-2 w/ IMX-5 and GPX-1
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		// Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,		// "
-    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,		// Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,		// "
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 w/ IMX-5 and GPX-1
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_LAMBDA_G2              	= (int)18,          // "
+    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
     PLATFORM_CFG_TYPE_COUNT                     = (int)21,
 
     // Presets
@@ -2729,7 +2746,7 @@ typedef enum
     DYNAMIC_MODEL_AIRBORNE_4G       = 8,
     DYNAMIC_MODEL_WRIST             = 9,
     DYNAMIC_MODEL_INDOOR            = 10
-} eInsDynModel;
+} eDynamicModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
@@ -2767,7 +2784,7 @@ typedef struct PACKED
     /** X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna. */
     float					gps1AntOffset[3];
  
-    /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** INS dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					dynamicModel;
 
     /** Debug */
@@ -3842,7 +3859,7 @@ typedef struct
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t                gnssSatSigConst;
 
-    /** Dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** Dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t                 dynamicModel;
 
     /** Debug */

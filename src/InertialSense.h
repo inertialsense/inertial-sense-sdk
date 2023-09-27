@@ -35,6 +35,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
+#include "string.h"
 
 extern "C"
 {
@@ -54,7 +55,6 @@ class InertialSense;
 typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
 
-
 /**
 * Inertial Sense C++ interface
 * Note only one instance of this class per process is supported
@@ -72,6 +72,7 @@ public:
 		evb_flash_cfg_t evbFlashCfg;
 		sys_params_t sysParams;
         ISFirmwareUpdater *fwUpdater;
+		fwUpdate::update_status_e closeStatus;
 	};
 
 	struct com_manager_cpp_state_t
@@ -98,24 +99,25 @@ public:
 
 	/**
 	* Constructor
-	* @param callback binary data callback, optional. If specified, ALL BroadcastBinaryData requests will callback to this function.
+	* @param callbackIsb InertialSense binary received data callback (optional). If specified, ALL BroadcastBinaryData requests will callback to this function.
+	* @param callbackRmc Real-time message controller received data callback (optional).
+	* @param callbackNmea NMEA received received data callback (optional).
+	* @param callbackUblox Ublox binary received data callback (optional).
+	* @param callbackRtcm3 RTCM3 received data callback (optional).
+	* @param callbackSpartn Spartn received data callback (optional).
 	*/
-	InertialSense(pfnHandleBinaryData callback = NULL);
+	InertialSense(
+		pfnHandleBinaryData        callbackIsb = NULL,
+		pfnComManagerAsapMsg       callbackRmc = NULL,
+		pfnComManagerGenMsgHandler callbackNmea = NULL,
+		pfnComManagerGenMsgHandler callbackUblox = NULL, 
+		pfnComManagerGenMsgHandler callbackRtcm3 = NULL,
+		pfnComManagerGenMsgHandler callbackSpartn = NULL );
 
 	/**
 	* Destructor
 	*/
 	virtual ~InertialSense();
-
-	/**
-	* Set functions pointers called when various message types are received.
-	*/
-	void SetCallbacks(
-		pfnComManagerAsapMsg handlerRmc=NULLPTR,
-		pfnComManagerGenMsgHandler handlerNmea=NULLPTR,
-		pfnComManagerGenMsgHandler handlerUblox=NULLPTR, 
-		pfnComManagerGenMsgHandler handlerRtcm3=NULLPTR,
-		pfnComManagerGenMsgHandler handlerSpartn=NULLPTR);
 
 	/**
 	* Closes any open connection and then opens the device
@@ -201,6 +203,11 @@ public:
 	void CloseServerConnection();
 
 	/**
+	* Request device(s) version information (dev_info_t).
+	*/
+	void QueryDeviceInfo();
+
+	/**
 	* Turn off all messages.  Current port only if allPorts = false.
 	*/
 	void StopBroadcasts(bool allPorts=true);
@@ -209,6 +216,11 @@ public:
      * Current data streaming will continue streaming at boot. 
      */
     void SavePersistent();
+
+    /**
+     * Software reset device(s) with open serial port.
+     */
+	void SoftwareReset();
 
 	/**
 	* Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
@@ -220,13 +232,20 @@ public:
 	void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
 	/**
-	* Send raw data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+	* Send raw data to the uINS - (byte swapping disabled)
 	* @param dataId the data id of the data to send
 	* @param data the data to send
 	* @param length length of data to send
 	* @param offset offset into data to send at
 	*/
 	void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
+
+	/**
+	* Send raw (bare) data directly to serial port
+	* @param data the data to send
+	* @param length length of data to send
+	*/
+	void SendRaw(uint8_t* data, uint32_t length);
 
 	/**
 	* Get the device info
@@ -302,7 +321,8 @@ public:
 	*/
 	int SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
 
-	void ProcessRxData(p_data_t* data, int pHandle);
+	void ProcessRxData(int pHandle, p_data_t* data);
+	void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
 
 	/**
 	* Broadcast binary data
@@ -425,6 +445,36 @@ public:
             void (*waitAction)()
     );
 
+	/**
+	* Gets current update status for selected device index
+	* @param deviceIndex
+	*/
+	fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
+
+	/**
+	* Gets reason device was closed for selected device index
+	* @param deviceIndex
+	*/
+	fwUpdate::update_status_e getCloseStatus(uint32_t deviceIndex);
+
+	/**
+	* Gets current update percent for selected device index
+	* @param deviceIndex
+	*/
+	float getUploadPercent(uint32_t deviceIndex);
+
+	/**
+	* Gets device index from COM port
+	* @param COM port
+	*/
+	int getUpdateDeviceIndex(const char* com);
+
+	/**
+	* Gets current devInfo using device index
+	* @param dev_info_t devI
+	* @param uint32_t deviceIndex
+	*/
+	bool getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex);
 
 	/**
 	 * @brief LoadFlashConfig
@@ -457,6 +507,11 @@ protected:
 
 private:
 	InertialSense::com_manager_cpp_state_t m_comManagerState;
+	pfnComManagerAsapMsg       m_handlerRmc = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
+	pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
 	cISLogger m_logger;
 	void* m_logThread;
 	cMutex m_logMutex;

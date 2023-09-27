@@ -11,6 +11,8 @@
 #include "ISFirmwareUpdater.h"
 #include <protocol/FirmwareUpdate.h>
 
+#include "ISBootloaderBase.h"
+
 extern "C"
 {
 // [C COMM INSTRUCTION]  Include data_sets.h and com_manager.h
@@ -31,7 +33,15 @@ private:
     int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
 
     int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 350;    //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+    uint16_t attemptInterval = 350;     //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+
+    uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
+    uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
+    uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
+
+    ISBootloader::pfnBootloadProgress pfnUploadProgress_cb = nullptr;
+    ISBootloader::pfnBootloadProgress pfnVerifyProgress_cb = nullptr;
+    ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
 public:
 
@@ -63,6 +73,10 @@ public:
     bool handleResendChunk(const fwUpdate::payload_t& msg);
 
     bool handleUpdateProgress(const fwUpdate::payload_t& msg);
+
+    void setUploadProgressCb(ISBootloader::pfnBootloadProgress pfnUploadProgress){pfnUploadProgress_cb = pfnUploadProgress;}
+    void setVerifyProgressCb(ISBootloader::pfnBootloadProgress pfnVerifyProgress){pfnVerifyProgress_cb = pfnVerifyProgress;}
+    void setInfoProgressCb(ISBootloader::pfnBootloadStatus pfnInfoProgress) {pfnInfoProgress_cb = pfnInfoProgress;}
 
     /**
      * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.

@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+#include "protocol_nmea.h"
 
 #include <signal.h>
 
@@ -192,19 +193,22 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasetEdit.did);
 		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasetEdit.did, g_commandLineOptions.datasetEdit.periodMultiple);
 	}
-	else while (g_commandLineOptions.datasets.size())
-	{	// Datasets to stream
-		inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
-		switch (g_commandLineOptions.datasets.back().did)
-		{
-		case DID_RTOS_INFO:
-			system_command_t cfg;
-			cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
-			cfg.invCommand = ~cfg.command;
-			inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-			break;
+	else 
+	{
+		while (g_commandLineOptions.datasets.size())
+		{	// Datasets to stream
+			inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
+			switch (g_commandLineOptions.datasets.back().did)
+			{
+			case DID_RTOS_INFO:
+				system_command_t cfg;
+				cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+				cfg.invCommand = ~cfg.command;
+				inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+				break;
+			}
+			g_commandLineOptions.datasets.pop_back();
 		}
-		g_commandLineOptions.datasets.pop_back();
 	}
 	if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
 	{
@@ -228,18 +232,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
 		cout << "Sending save persistent messages." << endl;
-        system_command_t cfg;
-        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-        cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        inertialSenseInterface.SendRaw((uint8_t*)NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH, sizeof(NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH));
     }
     if (g_commandLineOptions.softwareResetImx)
     {   // Issue software reset
 		cout << "Sending software reset." << endl;
-        system_command_t cfg;
-        cfg.command = SYS_CMD_SOFTWARE_RESET;
-        cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        inertialSenseInterface.SendRaw((uint8_t*)NMEA_STR_SOFTWARE_RESET, sizeof(NMEA_STR_SOFTWARE_RESET));
     }
     if (g_commandLineOptions.softwareResetEvb)
     {   // Issue software reset to EVB
