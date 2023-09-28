@@ -1996,6 +1996,61 @@ typedef struct PACKED
 
 } bit_t;
 
+// GPXBit results bit
+#define GPXbit_resultsBit_PPS1      (0x01 << GPXbit_resultsPos_PPS1)
+#define GPXbit_resultsBit_PPS2      (0x01 << GPXbit_resultsPos_PPS2)
+#define GPXbit_resultsBit_UART      (0x01 << GPXbit_resultsPos_UART)
+#define GPXbit_resultsBit_IO        (0x01 << GPXbit_resultsPos_IO)
+#define GPXbit_resultsBit_GPS       (0x01 << GPXbit_resultsPos_GPS)
+#define GPXbit_resultsBit_FINISHED  (0x01 << GPXbit_resultsPos_FINISHED)
+#define GPXbit_resultsBit_CANCELED   (0x01 << GPXbit_resultsPos_CANCELED)
+#define GPXbit_resultsBit_ERROR     (0x01 << GPXbit_resultsPos_ERROR)
+
+// GPXBit commands
+enum GPXBit_CMDs{
+    GPXBit_CMDs_NONE = 0,
+    GPXBit_CMDs_START_MANUF_TEST,
+    GPXBit_CMDs_ALERT_UART_TEST_STR,
+    GPXBit_CMDs_ALERT_PPS1_RX,
+    GPXBit_CMDs_ALERT_PPS2_RX,
+    GPXBit_CMDs_REPORT,
+    GPXBit_CMDs_STOP,
+
+};
+
+// GPXBit results bit posisition
+enum GPXbit_resultsPos{
+    GPXbit_resultsPos_PPS1 = 0,
+    GPXbit_resultsPos_PPS2,
+    GPXbit_resultsPos_UART,
+    GPXbit_resultsPos_IO,
+    GPXbit_resultsPos_GPS,
+    GPXbit_resultsPos_FINISHED,
+
+    GPXbit_resultsPos_CANCELED,
+    GPXbit_resultsPos_ERROR,
+};
+
+/** (DID_BIT) Built-in self-test parameters */
+typedef struct PACKED
+{
+    /** Calibration BIT status (see eCalBitStatusFlags) */
+    uint32_t                results;
+    
+    /** Command  **/
+    uint8_t                command;
+
+    /* what port we are running on*/
+    uint8_t                port;
+
+    /** Self-test mode*/
+    uint8_t                testMode;
+
+    /** Built-in self-test state */
+    uint8_t                state;
+
+} GPX_bit_t;
+
 enum eInfieldCalState
 {
     /** User Commands: */
