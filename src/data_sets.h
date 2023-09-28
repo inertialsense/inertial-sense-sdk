@@ -1997,14 +1997,14 @@ typedef struct PACKED
 } bit_t;
 
 // GPXBit results bit
-#define GPXbit_resultsBit_PPS1      (0x01 << GPXbit_resultsPos_PPS1)
-#define GPXbit_resultsBit_PPS2      (0x01 << GPXbit_resultsPos_PPS2)
-#define GPXbit_resultsBit_UART      (0x01 << GPXbit_resultsPos_UART)
-#define GPXbit_resultsBit_IO        (0x01 << GPXbit_resultsPos_IO)
-#define GPXbit_resultsBit_GPS       (0x01 << GPXbit_resultsPos_GPS)
-#define GPXbit_resultsBit_FINISHED  (0x01 << GPXbit_resultsPos_FINISHED)
-#define GPXbit_resultsBit_CANCELED   (0x01 << GPXbit_resultsPos_CANCELED)
-#define GPXbit_resultsBit_ERROR     (0x01 << GPXbit_resultsPos_ERROR)
+#define GPXBit_resultsBit_PPS1      (0x01 << GPXBit_resultsPos_PPS1)
+#define GPXBit_resultsBit_PPS2      (0x01 << GPXBit_resultsPos_PPS2)
+#define GPXBit_resultsBit_UART      (0x01 << GPXBit_resultsPos_UART)
+#define GPXBit_resultsBit_IO        (0x01 << GPXBit_resultsPos_IO)
+#define GPXBit_resultsBit_GPS       (0x01 << GPXBit_resultsPos_GPS)
+#define GPXBit_resultsBit_FINISHED  (0x01 << GPXBit_resultsPos_FINISHED)
+#define GPXBit_resultsBit_CANCELED   (0x01 << GPXBit_resultsPos_CANCELED)
+#define GPXBit_resultsBit_ERROR     (0x01 << GPXBit_resultsPos_ERROR)
 
 // GPXBit commands
 enum GPXBit_CMDs{
@@ -2019,16 +2019,16 @@ enum GPXBit_CMDs{
 };
 
 // GPXBit results bit posisition
-enum GPXbit_resultsPos{
-    GPXbit_resultsPos_PPS1 = 0,
-    GPXbit_resultsPos_PPS2,
-    GPXbit_resultsPos_UART,
-    GPXbit_resultsPos_IO,
-    GPXbit_resultsPos_GPS,
-    GPXbit_resultsPos_FINISHED,
+enum GPXBit_resultsPos{
+    GPXBit_resultsPos_PPS1 = 0,
+    GPXBit_resultsPos_PPS2,
+    GPXBit_resultsPos_UART,
+    GPXBit_resultsPos_IO,
+    GPXBit_resultsPos_GPS,
+    GPXBit_resultsPos_FINISHED,
 
-    GPXbit_resultsPos_CANCELED,
-    GPXbit_resultsPos_ERROR,
+    GPXBit_resultsPos_CANCELED,
+    GPXBit_resultsPos_ERROR,
 };
 
 /** (DID_BIT) Built-in self-test parameters */
