@@ -949,14 +949,38 @@ int satNumCalc(int gnssID, int svID) {
 
 #endif	// #ifndef GPX_1
 
+#define ENABLE_PROFILER		1
 
 void profiler_start(runtime_profile_t *p, uint32_t timeUs)
 {
+#if ENABLE_PROFILER
 	p->startPeriodUs = timeUs - p->StartTimeUs;
 	p->StartTimeUs = timeUs;
+#endif
 }
 
 void profiler_stop(runtime_profile_t *p, uint32_t timeUs)
 {
+#if ENABLE_PROFILER
 	p->runTimeUs = timeUs - p->StartTimeUs;
+	p->maxRunTimeUs = _MAX(p->maxRunTimeUs, p->runTimeUs);
+#endif
+}
+
+void profiler_maintenance_1s(runtime_profiler_t *p)
+{
+#if ENABLE_PROFILER
+	static uint8_t count = 0;
+	if (++count < 5)
+	{
+		return;
+	}
+	count = 0;
+
+	// Reset max runtime
+	for (int i=0; i<RUNTIME_PROFILE_COUNT; i++)
+	{
+		p->p[i].maxRunTimeUs = p->p[i].runTimeUs;
+	}
+#endif
 }

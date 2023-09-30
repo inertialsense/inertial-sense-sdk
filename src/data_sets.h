@@ -4813,6 +4813,7 @@ int satNumCalc(int gnssID, int svID);
 
 void profiler_start(runtime_profile_t *p, uint32_t timeUs);
 void profiler_stop(runtime_profile_t *p, uint32_t timeUs);
+void profiler_maintenance_1s(runtime_profiler_t *p);
 
 
 #ifdef __cplusplus
