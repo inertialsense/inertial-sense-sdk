@@ -65,7 +65,7 @@ namespace fwUpdate {
      * @return the number of bytes of the resulting buffer, after packing, or -1 if buffer is not large enough
      */
     int FirmwareUpdateBase::packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data) {
-        int payload_size = getPayloadSize(&payload, false);
+        int payload_size = (int)getPayloadSize(&payload, false);
         if (payload_size > max_len) return -1; // Not enough buffer space
         if (payload_size == 0) return -2; // Unknown/invalid message
 

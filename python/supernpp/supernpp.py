@@ -110,7 +110,8 @@ class SuperNPP():
 
 		if os.name == 'posix':
 			cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir for s in serials]
-			npp_build_folder = "../../../cpp/NavPostProcess/build"
+			file_path = os.path.dirname(os.path.realpath(__file__))
+			npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
 		else:
 			# cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
 			# npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
