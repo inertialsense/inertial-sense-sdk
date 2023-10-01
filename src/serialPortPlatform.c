@@ -658,7 +658,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     do
     {
         count = write(handle->fd, buffer, writeCount);
-    }   // Retry if errno 11 (resource temporarily unavailable)
+    }   // Retry if resource temporarily unavailable (errno 11)
     while (count < 0 && errno == EAGAIN);
 
     if (count < 0)
