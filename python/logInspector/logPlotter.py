@@ -977,18 +977,20 @@ class logPlot:
 
     def rtkObs(self, name, relDid, fig=None):
         Nf = 2
-        n_plots = 6
+        n_plots = 8
         if fig is None:
             fig = plt.figure()
 
         ax = fig.subplots(n_plots, 1, sharex=True)
         fig.suptitle('GNSS Receiver Observations')
         self.configureSubplot(ax[0], 'L1 Pseudorange', 'm')
-        self.configureSubplot(ax[1], 'L1 Carier Phase', 'cycles')
-        self.configureSubplot(ax[2], 'L5 Pseudorange', 'm')
+        self.configureSubplot(ax[1], 'L5 Pseudorange', 'm')
+        self.configureSubplot(ax[2], 'L1 Carier Phase', 'cycles')
         self.configureSubplot(ax[3], 'L5 Carier Phase', 'cycles')
-        self.configureSubplot(ax[4], 'L1 LLI')
-        self.configureSubplot(ax[5], 'L5 LLI')
+        self.configureSubplot(ax[4], 'L1 Doppler')
+        self.configureSubplot(ax[5], 'L5 Doppler')
+        self.configureSubplot(ax[6], 'L1 LLI')
+        self.configureSubplot(ax[7], 'L5 LLI')
 
         for i, d in enumerate(self.active_devs):
             gps_data = self.log.data[d, relDid][0]
@@ -1008,11 +1010,13 @@ class logPlot:
 
             Nsat = len(sat)
             tgps = np.zeros([N, Nsat])
-            Pgps = np.empty([Nf, N, Nsat])
-            Lgps = np.empty([Nf, N, Nsat])
+            P = np.empty([Nf, N, Nsat])
+            L = np.empty([Nf, N, Nsat])
+            D = np.empty([Nf, N, Nsat])
             LLI  = np.empty([Nf, N, Nsat])
-            Pgps[:] = np.nan
-            Lgps[:] = np.nan
+            P[:] = np.nan
+            L[:] = np.nan
+            D[:] = np.nan
             LLI[:]  = np.nan
 
             # Fill observation arrays
@@ -1033,26 +1037,30 @@ class logPlot:
                     # Use only non-zero pseudorange and phase
                     indP = np.where(obs['P'][indo] != 0)
                     indL = np.where(obs['L'][indo] != 0)
+                    indD = np.where(obs['D'][indo] != 0)
                     if np.size(indP) > 0 and np.size(indL) > 0:
-                        Pgps[indP,j,inds] = obs['P'][indo][indP]
-                        Lgps[indL,j,inds] = obs['L'][indo][indL]
-                        LLI[:,j,inds] = obs['LLI'][indo]
+                        P[indP,j,inds] = obs['P'][indo][indP]
+                        L[indL,j,inds] = obs['L'][indo][indL]
+                        D[indD,j,inds] = obs['D'][indo][indD]
+                        LLI[:,j,inds]  = obs['LLI'][indo]
 
             for k in range(len(sat)):
                 ind = np.where(tgps[:,k] != 0.0)
                 # Do not plot satellites with invalid L1 pseudorange
-                if np.isnan(Pgps[0,ind,k]).all():
+                if np.isnan(P[0,ind,k]).all():
                     continue
                 # Do not plot satellites with invalid L1 phase
-                if np.isnan(Lgps[0,ind,k]).all():
+                if np.isnan(L[0,ind,k]).all():
                     continue
                 t = np.squeeze(tgps[ind, k])
-                ax[0].plot(t, np.squeeze(Pgps[0,ind,k]), label=('Sat %s' % sat[k]))
-                ax[1].plot(t, np.squeeze(Pgps[1,ind,k]))
-                ax[2].plot(t, np.squeeze(Lgps[0,ind,k]))
-                ax[3].plot(t, np.squeeze(Lgps[1,ind,k]))
-                ax[4].plot(t, np.squeeze(LLI[0,ind,k]))
-                ax[5].plot(t, np.squeeze(LLI[1,ind,k]))
+                ax[0].plot(t, np.squeeze(P[0,ind,k]), label=('Sat %s' % sat[k]))
+                ax[1].plot(t, np.squeeze(P[1,ind,k]))
+                ax[2].plot(t, np.squeeze(L[0,ind,k]))
+                ax[3].plot(t, np.squeeze(L[1,ind,k]))
+                ax[4].plot(t, np.squeeze(D[0,ind,k]))
+                ax[5].plot(t, np.squeeze(D[1,ind,k]))
+                ax[6].plot(t, np.squeeze(LLI[0,ind,k]))
+                ax[7].plot(t, np.squeeze(LLI[1,ind,k]))
                 ax[0].legend(ncol=2)
 
         for a in ax:
@@ -1061,7 +1069,7 @@ class logPlot:
 
     def rtkObsSingleDiff(self, fig=None):
         name = "Compassing"
-        Nf = 2
+        Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
         n_plots = 4
         if fig is None:
             fig = plt.figure()
@@ -1069,16 +1077,55 @@ class logPlot:
         ax = fig.subplots(n_plots, 1, sharex=True)
         fig.suptitle('RTK Rover-Base Single Differences')
         self.configureSubplot(ax[0], 'L1 Pseudorange difference', 'm')
-        self.configureSubplot(ax[1], 'L1 Carier phase difference', 'cycles')
-        self.configureSubplot(ax[2], 'L5 Pseudorange difference', 'm')
+        self.configureSubplot(ax[1], 'L5 Pseudorange difference', 'm')
+        self.configureSubplot(ax[2], 'L1 Carier phase difference', 'cycles')
         self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
 
-        for i, d in enumerate(self.active_devs):
+        for id_, d in enumerate(self.active_devs):
+
             gps1_data = self.log.data[d, DID_GPS1_RAW][0]
             gps2_data = self.log.data[d, DID_GPS2_RAW][0]
+
+            # Reassemble multiple chunks of data by timestamp
+            t1 = np.empty(0)
+            del_ind = np.empty(0)
+            for j in range(len(gps1_data)):
+                ind = np.where(gps1_data[j]['time']['time'] != 0)[0][0]
+                if np.size(ind) == 0:
+                    del_ind = np.append(del_ind, j)
+                    continue
+                t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
+                if j > 0 and t_ == t1[-1]:
+                    # add chunk to the previous data and mark for deletion
+                    gps1_data[j-1] = np.append(gps1_data[j-1], gps1_data[j])
+                    del_ind = np.append(del_ind, j)
+                    continue
+                else:
+                    # new data
+                    t1 = np.append(t1, t_)
+            gps1_data = np.delete(gps1_data, del_ind)
+
+            t2 = np.empty(0)
+            del_ind = np.empty(0)
+            for j in range(len(gps2_data)):
+                ind = np.where(gps2_data[j]['time']['time'] != 0)[0][0]
+                if np.size(ind) == 0:
+                    del_ind = np.append(del_ind, j)
+                    continue
+                t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
+                if j > 0 and t_ == t2[-1]:
+                    # add chunk to the previous data and mark for deletion
+                    gps2_data[j-1] = np.append(gps2_data[j-1], gps2_data[j])
+                    del_ind = np.append(del_ind, j)
+                    continue
+                else:
+                    # new data
+                    t2 = np.append(t2, t_)
+            gps2_data = np.delete(gps2_data, del_ind)
+
             N1 = len(gps1_data)
             N2 = len(gps2_data)
-            N = max(N1, N2)
+            if (N1 != N2): continue
 
             # Build common satellite array for gps1 and gps2
             sat = np.empty(0, dtype=int)
@@ -1102,147 +1149,49 @@ class logPlot:
                          obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
                         sat2 = np.append(sat2, sat_k)
             del_ind = np.empty(0)
-            for i, j in enumerate(sat):
+            for is_, j in enumerate(sat):
                 if j not in sat2:
-                    del_ind = np.append(del_ind, i)
+                    del_ind = np.append(del_ind, is_)
             sat = np.delete(sat, del_ind)
 
             Nsat = len(sat)
-            tgps1 = np.zeros([N, Nsat])
-            Pgps1 = np.empty([Nf, N, Nsat])
-            Lgps1 = np.empty([Nf, N, Nsat])
-            tgps2 = np.empty([N, Nsat])
-            Pgps2 = np.empty([Nf, N, Nsat])
-            Lgps2 = np.empty([Nf, N, Nsat])
-            Pgps1[:] = np.nan
-            Pgps2[:] = np.nan
-            Lgps1[:] = np.nan
-            Lgps2[:] = np.nan
-            # initial time in gps1 data
-            ind = np.where(gps1_data[0]['time']['time'] != 0)[0][0]
-            t01 = gps1_data[0]['time']['time'][ind] + gps1_data[0]['time']['sec'][ind]
-            # initial time in gps2 data
-            ind = np.where(gps2_data[0]['time']['time'] != 0)[0][0]
-            t02 = gps2_data[0]['time']['time'][ind] + gps2_data[0]['time']['sec'][ind]
+            delta_P = np.empty([Nf, N1, Nsat])
+            delta_L = np.empty([Nf, N1, Nsat])
+            delta_P[:] = np.nan
+            delta_L[:] = np.nan
 
-            # Fill gps1 observation arrays
+            # Compute single differences
             for j in range(N1):
-                obs = gps1_data[j]
-                M = len(obs)
-                # skip data not present in gps2 log
-                ind = np.where(obs['time']['time'] != 0)[0][0]
-                if obs['time']['time'][ind] + obs['time']['sec'][ind] < t02:
+                obs1 = gps1_data[j]
+                obs2 = gps2_data[j]
+                if (t2[j] != t1[j]): 
                     continue
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    if sat_k == 0:
-                        continue
-                    indo = np.where(obs['sat'] == sat_k)
-                    inds = np.where(sat == sat_k)
+                for k in range(Nsat):
+                    sat_k = sat[k]
                     # is this satellite present in both gps1 and gps2 data?
-                    if np.size(indo) == 0 or np.size(inds) == 0:
+                    ind1 = np.where(obs1['sat'] == sat_k)
+                    ind2 = np.where(obs2['sat'] == sat_k)
+                    if np.size(ind1) == 0 or np.size(ind2) == 0:
                         continue
-                    indo = indo[0][0]
-                    inds = inds[0][0]
-                    tgps1[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
+                    ind1 = ind1[0][0]
+                    ind2 = ind2[0][0]
+
                     # Use only non-zero pseudorange and phase
-                    indP = np.where(obs['P'][indo] != 0)
-                    indL = np.where(obs['L'][indo] != 0)
-                    if np.size(indP) > 0 and np.size(indL) > 0:
-                        Pgps1[indP,j,inds] = obs['P'][indo][indP]
-                        Lgps1[indL,j,inds] = obs['L'][indo][indL]
+                    indval1 = np.where(obs1['P'][ind1] != 0)
+                    indval2 = np.where(obs2['P'][ind2] != 0)
+                    if np.size(indval1) > 0 and np.size(indval2) > 0:
+                        delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
+                        delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
 
-            # Fill gps2 observation arrays
-            sat2 = sat
-            for j in range(N2):
-                obs = gps2_data[j]
-                M = len(obs)
-                # skip data not present in gps1 log
-                ind = np.where(obs['time']['time'] != 0)[0][0]
-                if obs['time']['time'][ind] + obs['time']['sec'][ind] < t01:
-                    continue
-                for k in range(M):
-                    sat_k = obs['sat'][k]
-                    if sat_k == 0:
-                        continue
-                    indo = np.where(obs['sat'] == sat_k)
-                    inds = np.where(sat == sat_k)
-                    # is this satellite present in both gps1 and gps2 data?
-                    if np.size(indo) == 0 or np.size(inds) == 0:
-                        continue
-                    indo = indo[0][0]
-                    inds = inds[0][0]
-                    tgps2[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
-                    # Use only non-zero pseudorange and phase
-                    indP = np.where(obs['P'][indo] != 0)
-                    indL = np.where(obs['L'][indo] != 0)
-                    if np.size(indP) > 0 and np.size(indL) > 0:
-                        Pgps2[indP,j,inds] = obs['P'][indo][indP]
-                        Lgps2[indL,j,inds] = obs['L'][indo][indL]
-
-            for k in range(len(sat)):
-                # Find missing observations in one of the receivers and remove them from the other
-                i1 = 0
-                i2 = 0
-                while i1 < N1 and i2 < N2:
-                    if tgps1[i1,k] > tgps2[i2,k] and tgps2[i2,k] > 0:
-                        tgps2[i2,k] = 0
-                        i2 = i2 + 1
-                        continue
-                    elif tgps1[i1,k] < tgps2[i2,k] and tgps1[i1,k] > 0:
-                        tgps1[i1,k] = 0
-                        i1 = i1 + 1
-                        continue
-                    elif tgps1[i1,k] > 0 and tgps2[i2,k] == 0:
-                        ind = np.where(tgps2[i2:,k] == tgps1[i1,k])
-                        if np.size(ind) > 0:
-                            i2 = i2 + 1
-                            continue
-                        else:
-                            # this timestamp is not in gps2 log
-                            tgps1[i1,k] = 0
-                            i1 = i1 + 1
-                            continue
-                    elif tgps1[i1,k] == 0 and tgps2[i2,k] > 0:
-                        ind = np.where(tgps1[i1:,k] == tgps2[i2,k])
-                        if np.size(ind) > 0:
-                            i1 = i1 + 1
-                            continue
-                        else:
-                            # this timestamp is not in gps1 log
-                            tgps2[i2,k] = 0
-                            i2 = i2 + 1
-                            continue
-                    # advance to the next timestamp
-                    i1 = i1 + 1
-                    i2 = i2 + 1
-
-                ind1 = np.where(tgps1[:,k] != 0.0)
-                ind2 = np.where(tgps2[:,k] != 0.0)
-                # Is this satellite not present in one of the receivers?
-                if np.size(ind1) == 0 or np.size(ind2) == 0:
-                    continue
-                # Do not plot satellites with invalid L1 pseudorange
-                if np.isnan(Pgps1[0,ind1,k]).all():
-                    continue
-                # Do not plot satellites with invalid L1 phase
-                if np.isnan(Lgps1[0,ind1,k]).all():
-                    continue
-                t = np.squeeze(tgps1[ind1, k])
+            for k in range(Nsat):
                 # Do not plot satellites that appeared only for a short time
-                if (len(t) / len(tgps1[:,k])) < 0.1 and len(t) < 100:
+                ind = np.where(delta_P[0,:,k] > 0)
+                if (np.size(ind) / N1) < 0.1 and len(ind) < 100:
                     continue
-                if np.size(ind1) != np.size(ind2):
-                    # Why is this happening? Need to debug here.
-                    continue
-                delta_P_L1 = np.squeeze(Pgps1[0,ind1,k] - Pgps2[0,ind2,k])
-                delta_P_L5 = np.squeeze(Pgps1[1,ind1,k] - Pgps2[1,ind2,k])
-                delta_L_L1 = np.squeeze(Lgps1[0,ind1,k] - Lgps2[0,ind2,k])
-                delta_L_L5 = np.squeeze(Lgps1[1,ind1,k] - Lgps2[1,ind2,k])
-                ax[0].plot(t, delta_P_L1, label=('Sat %s' % sat[k]))
-                ax[1].plot(t, delta_L_L1)
-                ax[2].plot(t, delta_P_L5)
-                ax[3].plot(t, delta_L_L5)
+                ax[0].plot(t1, delta_P[0,:,k], label=('Sat %s' % sat[k]))
+                ax[1].plot(t1, delta_P[1,:,k])
+                ax[2].plot(t1, delta_L[0,:,k])
+                ax[3].plot(t1, delta_L[1,:,k])
 
                 ax[0].legend(ncol=2)
 
