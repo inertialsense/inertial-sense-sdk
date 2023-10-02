@@ -653,7 +653,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     {   // Serial port not open
         return 0;
     }
-
+    
     int count;
     do
     {

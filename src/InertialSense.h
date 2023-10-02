@@ -370,6 +370,21 @@ public:
 	std::string ClientConnectionInfo() { return m_clientStream->ConnectionInfo(); }
 
 	/**
+	* Flush all data from receive port
+	*/
+	void FlushRx()
+	{
+		uint8_t buf[10];
+		for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+		{
+			if (!serialPortIsOpen(&m_comManagerState.devices[i].serialPort))
+			{
+			    while (serialPortReadTimeout(&(m_comManagerState.devices[i].serialPort), buf, sizeof(buf), 0));
+			}
+		}
+	}
+
+	/**
 	* Get access to the underlying serial port
 	* @param pHandle the pHandle to get the serial port for
 	* @return the serial port
