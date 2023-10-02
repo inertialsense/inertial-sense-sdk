@@ -256,8 +256,9 @@ static protocol_type_t processIsbPkt(is_comm_instance_t* c)
 				c->ubx.state;
 		}
 		else
-		{	// Invalid preamble
-			return parseErrorResetState(c, p);
+		{	// Invalid preamble - Reset state
+			p->state = 0;
+			return _PTYPE_NONE;
 		}
 		return _PTYPE_NONE;
 
@@ -499,8 +500,9 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 				c->sprt.state;
 		}
 		else
-		{	// Invalid preamble
-			return parseErrorResetState(c, p);
+        {	// Invalid preamble - Reset state
+            p->state = 0;
+            return _PTYPE_NONE;
 		}
 		return _PTYPE_NONE;
 
@@ -711,8 +713,9 @@ static protocol_type_t processSonyByte(is_comm_instance_t* c)
 			checksum += p->head[i];
 		}
 		if (checksum != hdr->fcsh || hdr->dataSize > MAX_MSG_LENGTH_SONY || hdr->dataSize > c->rxBuf.size)
-		{	// Invalid header
-			return parseErrorResetState(c, p);
+		{	// Invalid header - Reset state
+			p->state = 0;
+			return _PTYPE_NONE;
 		}
 
 		// Valid header
@@ -780,8 +783,9 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 		const uint8_t dbuf[3] = { p->head[1], p->head[2], p->head[3] & 0xF0 };
         uint8_t calc = computeCrc4Ccitt(dbuf, 3);
         if((p->head[3] & 0x0F) != calc)
-        {  	// Invalid header
-			return parseErrorResetState(c, p);
+        {  	// Invalid header - Reset state
+			p->state = 0;
+			return _PTYPE_NONE;
         }
 
         p->state++;
