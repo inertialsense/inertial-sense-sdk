@@ -1341,42 +1341,70 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
-    SYS_CMD_NONE                                    = 0,            // (uint32 inv: 4294967295)
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,            // (uint32 inv: 4294967294)
-    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,            // (uint32 inv: 4294967293)
-    SYS_CMD_ENABLE_SENSOR_STATS                     = 3,            // (uint32 inv: 4294967292)
-    SYS_CMD_ENABLE_RTOS_STATS                       = 4,            // (uint32 inv: 4294967291)
-    SYS_CMD_ZERO_MOTION                             = 5,            // (uint32 inv: 4294967290)
-    SYS_CMD_REF_POINT_STATIONARY                    = 6,            // (uint32 inv: 4294967289)
-    SYS_CMD_REF_POINT_MOVING                        = 7,            // (uint32 inv: 4294967288)
+    SYS_CMD_NONE                                        = 0,            // (uint32 inv: 4294967295)
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES                    = 1,            // (uint32 inv: 4294967294)
+    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET                 = 2,            // (uint32 inv: 4294967293)
+    SYS_CMD_ENABLE_SENSOR_STATS                         = 3,            // (uint32 inv: 4294967292)
+    SYS_CMD_ENABLE_RTOS_STATS                           = 4,            // (uint32 inv: 4294967291)
+    SYS_CMD_ZERO_MOTION                                 = 5,            // (uint32 inv: 4294967290)
+    SYS_CMD_REF_POINT_STATIONARY                        = 6,            // (uint32 inv: 4294967289)
+    SYS_CMD_REF_POINT_MOVING                            = 7,            // (uint32 inv: 4294967288)
 
-    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,           // (uint32 inv: 4294967285)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,           // (uint32 inv: 4294967284)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,           // (uint32 inv: 4294967283)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1  = 16,           // (uint32 inv: 4294967279)
-    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 17,           // (uint32 inv: 4294967278)
+    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG                 = 10,           // (uint32 inv: 4294967285)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1       = 11,           // (uint32 inv: 4294967284)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2       = 12,           // (uint32 inv: 4294967283)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0       = 13,           // (uint32 inv: 4294967282)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 14,           // (uint32 inv: 4294967281)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2       = 15,           // (uint32 inv: 4294967280)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1      = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE                  = 17,           // (uint32 inv: 4294967278)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1  = 18,           // (uint32 inv: 4294967277)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2  = 19,           // (uint32 inv: 4294967276)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)	
 
-    SYS_CMD_SAVE_FLASH                              = 97,           // (uint32 inv: 4294967198)
-    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,           // (uint32 inv: 4294967197)
-    SYS_CMD_SOFTWARE_RESET                          = 99,           // (uint32 inv: 4294967196)
-    SYS_CMD_MANF_UNLOCK                             = 1122334455,   // (uint32 inv: 3172632840) 
-    SYS_CMD_MANF_FACTORY_RESET                      = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                         = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION              = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)	
+
+    SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
+    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
+    SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
+    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840) 
+    SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
 enum eSerialPortBridge
 {
 	SERIAL_PORT_BRIDGE_DISABLED         = 0,
-	SERIAL_PORT_BRIDGE_USB_TO_GPS1      = 1,
-	SERIAL_PORT_BRIDGE_USB_TO_GPS2      = 2,
-	SERIAL_PORT_BRIDGE_USB_TO_SER0      = 3,
-	SERIAL_PORT_BRIDGE_USB_TO_SER1      = 4,
-	SERIAL_PORT_BRIDGE_USB_TO_SER2      = 5,
-	SERIAL_PORT_BRIDGE_SER0_TO_GPS1		= 6,
+
+    SERIAL_PORT_BRIDGE_GPS1_TO_USB      = 1,
+    SERIAL_PORT_BRIDGE_GPS1_TO_SER0     = 2,
+    SERIAL_PORT_BRIDGE_GPS1_TO_SER1     = 3,
+    SERIAL_PORT_BRIDGE_GPS1_TO_SER2     = 4,
+
+    SERIAL_PORT_BRIDGE_GPS2_TO_USB      = 5,
+    SERIAL_PORT_BRIDGE_GPS2_TO_SER0     = 6,
+    SERIAL_PORT_BRIDGE_GPS2_TO_SER1     = 7,
+    SERIAL_PORT_BRIDGE_GPS2_TO_SER2     = 8,
+
+    SERIAL_PORT_BRIDGE_USB_TO_SER0      = 9,
+    SERIAL_PORT_BRIDGE_USB_TO_SER1      = 10,
+    SERIAL_PORT_BRIDGE_USB_TO_SER2      = 11,
+    SERIAL_PORT_BRIDGE_SER0_TO_SER1     = 12,
+    SERIAL_PORT_BRIDGE_SER0_TO_SER2     = 13,
+    SERIAL_PORT_BRIDGE_SER1_TO_SER2     = 14,
+
+    SERIAL_PORT_BRIDGE_USB_TO_USB       = 15,   // loopback
+    SERIAL_PORT_BRIDGE_SER0_TO_SER0     = 16,   // loopback
+    SERIAL_PORT_BRIDGE_SER1_TO_SER1     = 17,   // loopback
+    SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,   // loopback
 };
 
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
