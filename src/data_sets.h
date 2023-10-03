@@ -2003,7 +2003,7 @@ typedef struct PACKED
 #define GPXBit_resultsBit_IO        (0x01 << GPXBit_resultsPos_IO)
 #define GPXBit_resultsBit_GPS       (0x01 << GPXBit_resultsPos_GPS)
 #define GPXBit_resultsBit_FINISHED  (0x01 << GPXBit_resultsPos_FINISHED)
-#define GPXBit_resultsBit_CANCELED   (0x01 << GPXBit_resultsPos_CANCELED)
+#define GPXBit_resultsBit_CANCELED  (0x01 << GPXBit_resultsPos_CANCELED)
 #define GPXBit_resultsBit_ERROR     (0x01 << GPXBit_resultsPos_ERROR)
 
 // GPXBit commands
@@ -2030,6 +2030,9 @@ enum GPXBit_resultsPos{
     GPXBit_resultsPos_CANCELED,
     GPXBit_resultsPos_ERROR,
 };
+
+// GPXBit commands
+#define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
 
 /** (DID_BIT) Built-in self-test parameters */
 typedef struct PACKED
