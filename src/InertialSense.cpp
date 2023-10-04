@@ -1327,8 +1327,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			{
 				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, sizeof(getNmeaInfoBuf));
 				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, sizeof(getNmeaInfoBuf));	// Twice for ensure Rx (necessary for SDK version 1.x)
-				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
 				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
 			}
