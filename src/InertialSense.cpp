@@ -1102,8 +1102,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
 				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, NMEA_CMD_SIZE);
-				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
 				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
 			}
