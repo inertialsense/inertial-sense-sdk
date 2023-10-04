@@ -651,40 +651,40 @@ vector<string> InertialSense::GetPorts()
 
 void InertialSense::QueryDeviceInfo()
 {
-	uint8_t cmd[11] = NMEA_STR_QUERY_DEVICE_INFO;
+	uint8_t cmd[11] = NMEA_CMD_QUERY_DEVICE_INFO;
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, NMEA_CMD_SIZE);
 	}
 }
 
 void InertialSense::StopBroadcasts(bool allPorts)
 {
-	uint8_t cmdAll[11] = NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS; 
-	uint8_t cmdCur[11] = NMEA_STR_STOP_ALL_BROADCASTS_CUR_PORT;
+	uint8_t cmdAll[11] = NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS; 
+	uint8_t cmdCur[11] = NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT;
 	uint8_t *cmd = (allPorts ? cmdAll : cmdCur);
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+		comManagerSendRaw((int)i, (uint8_t*)cmd, NMEA_CMD_SIZE);
 	}
 }
 
 void InertialSense::SavePersistent()
 {
     // Save persistent messages to flash
-	uint8_t cmd[11] = NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH;
+	uint8_t cmd[11] = NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH;
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, NMEA_CMD_SIZE);
 	}
 }
 
 void InertialSense::SoftwareReset()
 {
-	uint8_t cmd[11] = NMEA_STR_SOFTWARE_RESET;
+	uint8_t cmd[11] = NMEA_CMD_SOFTWARE_RESET;
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRaw((int)i, (uint8_t*)&cmd, sizeof(cmd));
+		comManagerSendRaw((int)i, (uint8_t*)&cmd, NMEA_CMD_SIZE);
 	}
 }
 
@@ -1323,13 +1323,13 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		time_t startTime = time(0);
 
 		// Query devices with 10 second timeout
-		uint8_t getNmeaInfoBuf[11] = NMEA_STR_QUERY_DEVICE_INFO;
+		uint8_t getNmeaInfoBuf[11] = NMEA_CMD_QUERY_DEVICE_INFO;
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			QueryDeviceInfo();
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
-				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, sizeof(getNmeaInfoBuf));
+				comManagerSendRaw((int)i, (uint8_t*)&getNmeaInfoBuf, NMEA_CMD_SIZE);
 				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
 				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);

@@ -1017,6 +1017,19 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 			if (ptype != _PTYPE_NONE) break;
 		}
 
+#if 0
+		if (!(c->isb.state  ||
+			  c->nmea.state ||
+			  c->rtcm.state ||
+			  c->sony.state ||
+			  c->sprt.state ||
+			  c->ubx.state) )
+		{	// Stray data received not contained inside a packet
+			c->rxErrorCount++;
+			return _PTYPE_PARSE_ERROR;
+		}
+#endif
+
 		buf->scan++;
 	}
 
