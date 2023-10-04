@@ -632,7 +632,7 @@ void InertialSense::StopBroadcasts(bool allPorts)
 	uint8_t *cmd = (allPorts ? cmdAll : cmdCur);
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRaw((int)i, (uint8_t*)&cmd, NMEA_CMD_SIZE);
+		comManagerSendRaw((int)i, (uint8_t*)cmd, NMEA_CMD_SIZE);
 	}
 }
 
