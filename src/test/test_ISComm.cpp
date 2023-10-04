@@ -22,6 +22,7 @@ extern "C"
 #define TXRX_WITH_OFFSET_TEST                	1
 #define SEGMENTED_RX_TEST                    	1
 #define BLAST_RX_TEST                        	1
+#define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS 	1
 
 // Protocols
 #define TEST_PROTO_ISB		1
@@ -721,6 +722,7 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
 	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+	EXPECT_EQ(g_comm.rxErrorCount, 0);
 }
 #endif
 
@@ -762,6 +764,7 @@ TEST(ISComm, BasicTxPortRxByteTest)
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
 	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+	EXPECT_EQ(g_comm.rxErrorCount, 0);
 }
 #endif
 
@@ -804,6 +807,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
 	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+	EXPECT_EQ(g_comm.rxErrorCount, 0);
 }
 #endif
 
@@ -817,18 +821,42 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 	// Generate and add data to deque
 	generateData(g_testTxDeque);
 
+	protocol_type_t ptype;
+	int rxErrorCount = 0;
+
 	for (int i=0; i<3; i++)
 	{
+		// Add garbage data that starts with ISB preamble
+		*g_comm.rxBuf.tail = 13; g_comm.rxBuf.tail++;
+
+		// Parse data to get parser into funny state
+		ptype = is_comm_parse(&g_comm);
+#if ENABLE_RX_ERROR_ON_NON_PKT_DATA
+		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
+		rxErrorCount++;
+#else
+		EXPECT_EQ(ptype, _PTYPE_NONE);
+#endif
+		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
+
 		// Add garbage data that starts with ISB preamble
 		*g_comm.rxBuf.tail = PSC_ISB_PREAMBLE_BYTE1; g_comm.rxBuf.tail++;
 		*g_comm.rxBuf.tail = PSC_ISB_PREAMBLE_BYTE2; g_comm.rxBuf.tail++;
 	#define GARBAGE_STR	"Garbage string.  Hello!\n"
 		memcpy(g_comm.rxBuf.tail, GARBAGE_STR, sizeof(GARBAGE_STR)); g_comm.rxBuf.tail += sizeof(GARBAGE_STR);
 
-		// Parse data to get parser into funny state
-		protocol_type_t ptype;
+		// Read start of correctup ISB packet
 		ptype = is_comm_parse(&g_comm);
-		EXPECT_EQ(ptype, _PTYPE_NONE);
+		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
+#if ENABLE_RX_ERROR_ON_NON_PKT_DATA
+		rxErrorCount++;
+		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
+		// Read stray data
+		ptype = is_comm_parse(&g_comm);
+		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
+#endif
+		rxErrorCount++;
+		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
 
 		// Add good packet to buffer
 		data_holder_t td = g_testTxDeque[0];
@@ -841,6 +869,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 
 		EXPECT_EQ(g_comm.rxPkt.data.size, td.size);
 		EXPECT_TRUE(memcmp(g_comm.rxPkt.data.ptr, td.data.buf, td.size) == 0);
+		EXPECT_EQ(g_comm.rxErrorCount, rxErrorCount);
 	}
 }
 #endif
@@ -878,6 +907,7 @@ TEST(ISComm, TxRxWithOffsetTest)
 		is_comm_copy_to_struct(&rxIns1, &g_comm, sizeof(uDatasets));
 
 		EXPECT_TRUE( memcmp(&txIns1, &rxIns1, sizeof(rxIns1)) == 0 );
+		EXPECT_EQ(g_comm.rxErrorCount, 0);
 	}
 }
 #endif
@@ -921,6 +951,7 @@ TEST(ISComm, SegmentedRxTest)
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
 	EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
+	EXPECT_EQ(g_comm.rxErrorCount, 0);
 }
 #endif
 
@@ -962,6 +993,7 @@ TEST(ISComm, BlastRxTest)
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
 	EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
+	EXPECT_EQ(g_comm.rxErrorCount, 0);
 }
 #endif
 
@@ -1044,5 +1076,116 @@ TEST(ISComm, IsCommGetDataTest)
 	EXPECT_EQ(request->size,   size);
 	EXPECT_EQ(request->offset, offset);
 	EXPECT_EQ(request->period, period);
+}
+#endif
+
+
+#if TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS
+uint8_t rxBuf[8192] = {0};
+uint8_t txBuf[1024] = {0};
+
+#define BUF_FREE    (txEnd-txPtr)
+#define BUF_USED    (txPtr-txBuf)
+#define WHILE_FULL  if (txPtr > txEnd - 100) break;
+
+TEST(ISComm, alternating_isb_nmea_parse_error_check)
+{
+    int n;
+
+    is_comm_init(&g_comm, rxBuf, sizeof(rxBuf));
+
+    uint8_t *txPtr = txBuf;
+    uint8_t *txEnd = txBuf + sizeof(txBuf);
+
+    int msgCntIsb = 0;
+    int msgCntNmea = 0;
+
+    for (int i=0;; i++)
+    {
+        // append NMEA dev info
+        dev_info_t info = {};
+        info.serialNumber = 123456 + i;
+        info.buildNumber = 789 + i;
+        n = nmea_dev_info((char*)txPtr, BUF_FREE, info);
+        txPtr += n;
+        msgCntNmea++;
+        WHILE_FULL;
+
+        // append ISB get data DEV_INFO
+        n = is_comm_get_data_to_buf(txPtr, BUF_FREE, &g_comm, DID_DEV_INFO, 0, sizeof(dev_info_t), 0);
+        txPtr += n;
+        msgCntIsb++;
+        WHILE_FULL;
+
+        // append NMEA query dev info
+        memcpy(txPtr, NMEA_CMD_QUERY_DEVICE_INFO, n = NMEA_CMD_SIZE);
+        txPtr += n;
+        msgCntNmea++;
+        WHILE_FULL;
+
+        // append ISB DID_INS_1
+        ins_1_t ins1 = {};
+        ins1.timeOfWeek = 123.456 + i*2;
+        ins1.hdwStatus = 78 + i*2;
+        ins1.insStatus = 90 + i*2;
+        n = is_comm_data_to_buf(txPtr, BUF_FREE, &g_comm, DID_INS_1, 0, sizeof(ins_1_t), &ins1);
+        txPtr += n;
+        msgCntIsb++;
+        WHILE_FULL;
+    }
+
+
+    for (txPtr = txBuf; txPtr < txEnd; )
+    {
+		// Get available size of g_comm buffer.
+		n = _MIN(is_comm_free(&g_comm), 10);
+
+		// Read data directly into g_comm buffer
+        memcpy(g_comm.rxBuf.tail, txPtr, n);
+
+        // Update g_comm buffer tail pointer
+        txPtr += n;
+        g_comm.rxBuf.tail += n;
+
+        // Search g_comm buffer for valid packets
+        protocol_type_t ptype;
+        while ((ptype = is_comm_parse(&g_comm)) != _PTYPE_NONE)
+        {
+            if (g_comm.rxErrorCount)
+            {
+                int j=0; j++;
+            }
+            ASSERT_EQ(g_comm.rxErrorCount, 0);
+
+            uint8_t error = 0;
+            uint8_t *dataPtr = g_comm.rxPkt.data.ptr + g_comm.rxPkt.dataHdr.offset;
+            uint32_t dataSize = g_comm.rxPkt.data.size;
+
+            switch (ptype)
+            {
+            case _PTYPE_PARSE_ERROR:
+                error = 1;
+                break;
+
+            case _PTYPE_INERTIAL_SENSE_DATA:
+            case _PTYPE_INERTIAL_SENSE_CMD:
+                msgCntIsb--;
+                if (!msgCntIsb && !msgCntNmea) { ASSERT_TRUE(true); return; } // Done
+                break;
+
+            case _PTYPE_NMEA:
+                msgCntNmea--;
+                if (!msgCntIsb && !msgCntNmea) { ASSERT_TRUE(true); return; } // Done
+                break;
+
+            default:    // We shouldn't get here
+                ASSERT_TRUE(false);
+            }
+        }
+    }
+
+    ASSERT_EQ(g_comm.rxErrorCount, 0);
+    ASSERT_EQ(msgCntIsb, 0);
+    ASSERT_EQ(msgCntNmea, 0);
 }
 #endif

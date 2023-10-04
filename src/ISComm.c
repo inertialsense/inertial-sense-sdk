@@ -1017,7 +1017,10 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 			if (ptype != _PTYPE_NONE) break;
 		}
 
-#if 0
+		buf->scan++;
+
+#if ENABLE_RX_ERROR_ON_NON_PKT_DATA	
+		// Count stray data not contained inside a packet as parse error
 		if (!(c->isb.state  ||
 			  c->nmea.state ||
 			  c->rtcm.state ||
@@ -1025,12 +1028,18 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 			  c->sprt.state ||
 			  c->ubx.state) )
 		{	// Stray data received not contained inside a packet
-			c->rxErrorCount++;
-			return _PTYPE_PARSE_ERROR;
+			if (!c->strayData)
+			{
+				c->strayData = 1;
+				c->rxErrorCount++;
+				return _PTYPE_PARSE_ERROR;
+			}
+		}
+		else
+		{
+			c->strayData = 0;
 		}
 #endif
-
-		buf->scan++;
 	}
 
 	if (ptype != _PTYPE_NONE) 
