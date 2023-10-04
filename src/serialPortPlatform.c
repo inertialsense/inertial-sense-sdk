@@ -347,7 +347,11 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
 #else
 
-    int fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(port, 
+        O_RDWR |        // enable read/write
+        O_NOCTTY |      // disable flow control
+        O_NDELAY        // non-blocking read
+    );
     if (fd < 0 || set_interface_attribs(fd, baudRate, 0) != 0)
     {
         return 0;
@@ -650,18 +654,27 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
         return 0;
     }
     
-    int count = write(handle->fd, buffer, writeCount);
-    if(count != writeCount) 
-    {   // Write error
+    int count;
+    do
+    {
+        count = write(handle->fd, buffer, writeCount);
+    }   // Retry if resource temporarily unavailable (errno 11)
+    while (count < 0 && errno == EAGAIN);
+
+    if (count < 0)
+    {
+        error_message("error %d: %s\n", errno, strerror(errno));
         return 0;
     }
 
-    int error = 0;
-    if(handle->blocking) error = tcdrain(handle->fd);
+    if(handle->blocking)
+    {
+        int error = tcdrain(handle->fd);
 
-    if (error != 0)
-    {   // Drain error
-        return 0;
+        if (error != 0)
+        {   // Drain error
+            return 0;
+        }
     }
 
     return count;

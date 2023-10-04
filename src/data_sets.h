@@ -1383,21 +1383,21 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1       = 12,           // (uint32 inv: 4294967283)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2       = 13,           // (uint32 inv: 4294967282)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0       = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 15,           // (uint32 inv: 4294967280)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 15,           // (uint32 inv: 4294967280)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2       = 16,           // (uint32 inv: 4294967279)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1      = 17,           // (uint32 inv: 4294967278)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1  = 18,           // (uint32 inv: 4294967277)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2  = 19,           // (uint32 inv: 4294967276)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1  = 18,           // (uint32 inv: 4294967277)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2  = 19,           // (uint32 inv: 4294967276)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)
 
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)
 
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                  = 30,           // (uint32 inv: 4294967265)
     SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER         = 31,           // (uint32 inv: 4294967264)
@@ -1410,7 +1410,7 @@ enum eSystemCommand
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
-    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840) 
+    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
     SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
@@ -1418,7 +1418,7 @@ enum eSystemCommand
 
 enum eSerialPortBridge
 {
-    SERIAL_PORT_BRIDGE_DISABLED         = 0,
+	SERIAL_PORT_BRIDGE_DISABLED         = 0,
 
     SERIAL_PORT_BRIDGE_GPS1_TO_USB      = 1,
     SERIAL_PORT_BRIDGE_GPS1_TO_SER0     = 2,
