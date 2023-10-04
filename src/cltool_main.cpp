@@ -230,12 +230,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
 		cout << "Sending save persistent messages." << endl;
-        inertialSenseInterface.SendRaw((uint8_t*)NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH, sizeof(NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH));
+        inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE);
     }
     if (g_commandLineOptions.softwareResetImx)
     {   // Issue software reset
 		cout << "Sending software reset." << endl;
-        inertialSenseInterface.SendRaw((uint8_t*)NMEA_STR_SOFTWARE_RESET, sizeof(NMEA_STR_SOFTWARE_RESET));
+        inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
     }
     if (g_commandLineOptions.softwareResetEvb)
     {   // Issue software reset to EVB
