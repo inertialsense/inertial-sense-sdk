@@ -857,7 +857,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 				instance->parseState = 0;
 			}
 			else 
-			{	// Searching for start byte
+			{	// Stray data received not contained inside a packet
 				if (instance->parseState != -1)
 				{
 					instance->parseState = -1;

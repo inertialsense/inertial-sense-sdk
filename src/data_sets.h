@@ -1417,7 +1417,7 @@ enum eSystemCommand
 
 enum eSerialPortBridge
 {
-    SERIAL_PORT_BRIDGE_DISABLED         = 0,
+	SERIAL_PORT_BRIDGE_DISABLED         = 0,
 
     SERIAL_PORT_BRIDGE_GPS1_TO_USB      = 1,
     SERIAL_PORT_BRIDGE_GPS1_TO_SER0     = 2,
