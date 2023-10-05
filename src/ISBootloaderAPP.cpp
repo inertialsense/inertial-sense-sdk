@@ -75,10 +75,9 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
             break;
     }
 
-	unsigned char txbuf[11] = NMEA_CMD_QUERY_DEVICE_INFO;
     for (i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     {
-        if (NMEA_CMD_SIZE != serialPortWrite(m_port, txbuf, NMEA_CMD_SIZE))
+        if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
         {
             //serialPortClose(m_port);
             return IS_IMAGE_SIGN_NONE;
@@ -201,9 +200,8 @@ uint32_t cISBootloaderAPP::get_device_info()
     is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize;
    
-	unsigned char txbuf[11] = NMEA_CMD_QUERY_DEVICE_INFO;
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (NMEA_CMD_SIZE != serialPortWrite(m_port, txbuf, NMEA_CMD_SIZE))
+    if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
