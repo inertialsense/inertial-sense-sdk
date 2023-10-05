@@ -413,7 +413,7 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 		}
 		else
 		{
-			numBytes = c->rxBuf.scan - p->head;
+			numBytes = (int)(c->rxBuf.scan - p->head);
 			if (numBytes > MAX_MSG_LENGTH_NMEA)
 			{	// Exceeds max length
 				return parseErrorResetState(c, p);
@@ -434,7 +434,7 @@ static protocol_type_t processNmeaPkt(is_comm_instance_t* c)
 	p->state = 0;
 
 	// Validate length
-	numBytes = c->rxBuf.scan - p->head + 1;
+	numBytes = (int)(c->rxBuf.scan - p->head) + 1;
 	if (numBytes < 8)
 	{	// Packet length too short
 		return parseErrorResetState(c, p);
@@ -535,7 +535,7 @@ static protocol_type_t processUbloxPkt(is_comm_instance_t* c)
 	uint16_t pktChecksum = *((uint16_t*)(c->rxBuf.scan - 1));
 	uint8_t* cksum_start = p->head + 2;
 	uint8_t* cksum_end   = c->rxBuf.scan - 1;
-	uint32_t cksum_size  = cksum_end - cksum_start;
+	uint32_t cksum_size  = (uint32_t)(cksum_end - cksum_start);
 	checksum16_u cksum;
 	cksum.ck = is_comm_fletcher16(0, cksum_start, cksum_size);
 	if (pktChecksum != cksum.ck)
@@ -891,7 +891,7 @@ static protocol_type_t processSpartnByte(is_comm_instance_t* c)
 
 			/////////////////////////////////////////////////////////
 			// Valid packet found - Checksum passed - Populate rxPkt
-			int numBytes = (uint32_t)(c->rxBuf.scan - p->head) + 1;
+			int numBytes = (int)(c->rxBuf.scan - p->head) + 1;
 			validPacketFound(c, p, numBytes, numBytes);
 
 			return _PTYPE_SPARTN;
@@ -1080,7 +1080,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 	// Header
 	pkt->hdr.preamble = PSC_ISB_PREAMBLE;
 	pkt->hdr.flags = flags;
-	pkt->hdr.id = did;
+	pkt->hdr.id = (uint8_t)did;
 	pkt->hdr.payloadSize = data_size;
 
 	// Payload
@@ -1206,7 +1206,7 @@ int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, int port
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
 {
-    if ((data->hdr.size + data->hdr.offset) <= maxsize)
+    if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
     {
         memcpy((uint8_t*)(data->ptr), (uint8_t*)sptr + data->hdr.offset, data->hdr.size);
         return 0;
@@ -1219,7 +1219,7 @@ char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int max
 
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize)
 {
-    if ((data->hdr.size + data->hdr.offset) <= maxsize)
+    if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
     {
         memcpy((uint8_t*)sptr + data->hdr.offset, data->ptr, data->hdr.size);
         return 0;
@@ -1232,7 +1232,7 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
 
 char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize)
 {
-    if ((data->hdr.size + data->hdr.offset) <= maxsize)
+    if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
     {
         memcpy((uint8_t*)sptr + data->hdr.offset, data->buf, data->hdr.size);
         return 0;
@@ -1246,7 +1246,7 @@ char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize)
 {
-    if ((dataHdr->size + dataHdr->offset) <= maxsize)
+    if ((unsigned int)(dataHdr->size + dataHdr->offset) <= maxsize)
     {
         memcpy((uint8_t*)sptr + dataHdr->offset, dataBuf, dataHdr->size);
         return 0;

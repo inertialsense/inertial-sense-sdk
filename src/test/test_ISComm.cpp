@@ -45,7 +45,7 @@ typedef struct
 	// com_manager_t			cm;
 	// com_manager_status_t	cmBufStatus[NUM_COM_PORTS] = { 0 };
 	// broadcast_msg_t			cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
-	struct  
+	struct 
 	{
 		dev_info_t			devInfo;
 		nvm_flash_cfg_t		nvmFlashCfg;
@@ -860,7 +860,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 
 		// Add good packet to buffer
 		data_holder_t td = g_testTxDeque[0];
-		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, g_comm.rxBuf.end - g_comm.rxBuf.head, &g_comm, td.did, td.size, 0, td.data.buf);
+		int n = is_comm_data_to_buf(g_comm.rxBuf.tail, (uint32_t)(g_comm.rxBuf.end - g_comm.rxBuf.head), &g_comm, td.did, td.size, 0, td.data.buf);
 		g_comm.rxBuf.tail += n;
 
 		// Parse data to find good packet
@@ -1084,8 +1084,8 @@ TEST(ISComm, IsCommGetDataTest)
 uint8_t rxBuf[8192] = {0};
 uint8_t txBuf[1024] = {0};
 
-#define BUF_FREE    (txEnd-txPtr)
-#define BUF_USED    (txPtr-txBuf)
+#define BUF_FREE    (uint32_t)(txEnd-txPtr)
+#define BUF_USED    (uint32_t)(txPtr-txBuf)
 #define WHILE_FULL  if (txPtr > txEnd - 100) break;
 
 TEST(ISComm, alternating_isb_nmea_parse_error_check)

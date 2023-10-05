@@ -777,7 +777,7 @@ char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t 
 // Indicates whether there is overlap in the data received and the backing data structure
 inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
-	return _MAX(dstOffset, src->hdr.offset) < _MIN(dstOffset + dstSize, src->hdr.offset + src->hdr.size);
+	return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
 }
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */

@@ -283,7 +283,7 @@ char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 {
 	char *ptr2 = ASCII_find_next_field(ptr);
-	int len = _MIN(max_len, ptr2-ptr) - 1;
+	int len = _MIN(max_len, (int)(ptr2-ptr)) - 1;
 	len = _MAX(0, len);		// prevent negative
 	memcpy(dst, ptr, len);
 	dst[len] = 0;			// Must be null terminated

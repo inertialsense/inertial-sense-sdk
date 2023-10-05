@@ -588,7 +588,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 		data.ptr = pkt->data.ptr;
 
 		// Validate and constrain Rx data size to fit within local data struct
-		if (regData->dataSet.size && (data.hdr.offset + data.hdr.size) > regData->dataSet.size)
+		if (regData->dataSet.size && (uint32_t)(data.hdr.offset + data.hdr.size) > regData->dataSet.size)
 		{
 			// trim the size down so it fits
 			uint16_t size = (int)(regData->dataSet.size - data.hdr.offset);
@@ -783,7 +783,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
 	// Copy reference to source data
 	bufTxRxPtr_t* dataSetPtr = &cmInstance->regData[req->id].dataSet;
 
-	if (req->offset + req->size > dataSetPtr->size)
+	if ((uint32_t)(req->offset + req->size) > dataSetPtr->size)
 	{
 		req->offset = 0;
 		req->size = dataSetPtr->size;

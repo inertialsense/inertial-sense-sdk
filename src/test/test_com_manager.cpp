@@ -145,11 +145,11 @@ static int msgHandlerNmea(int port, const uint8_t* msg, int msgSize)
 	}
 	else
 	{	// General NMEA messages
-		switch (messageIdUInt)
-		{
-		default:
-			break;
-		}
+		//switch (messageIdUInt)
+		//{
+		//default:
+		//	break;
+		//}
 	}
 
 	data_holder_t td = g_testRxDeque.front();
