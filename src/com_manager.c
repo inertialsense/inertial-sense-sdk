@@ -241,17 +241,6 @@ void comManagerStepInstance(CMHANDLE cmInstance_)
 	comManagerStepTxInstance(cmInstance);
 }
 
-#define TEST_BUF	100
-#define TEST_N      4
-typedef struct
-{
-	int len;
-    char buf[TEST_BUF];
-} test_struct_t;
-
-test_struct_t g_test[TEST_N] = {};
-int g_n = 0;
-
 void comManagerStepRxInstance(CMHANDLE cmInstance_)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
@@ -274,17 +263,6 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 		// Read data directly into comm buffer
 		if ((n = cmInstance->portRead(port, comm->rxBuf.tail, n)))
 		{
-            if (port == 3)
-            {   // USB
-                if (++g_n >= TEST_N)
-                {
-                    g_n = 0;
-                }
-                g_test[g_n].len = n;
-                memset(g_test[g_n].buf, 0, TEST_BUF);
-                memcpy(g_test[g_n].buf, comm->rxBuf.tail, _MIN(TEST_BUF,n));
-            }
-
 			// Update comm buffer tail pointer
 			comm->rxBuf.tail += n;
 
