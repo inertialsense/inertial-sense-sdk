@@ -580,6 +580,7 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 	while (ringBufUsed(&ringBuf)>0 && testDeque.size()>0)
 	{
 		ringBufRead(&ringBuf, &c, 1);
+		EXPECT_GT(is_comm_free(&comm), 0);
 
 		if((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE)
 		{
@@ -632,7 +633,9 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 
 	while (ringBufUsed(&ringBuf)>0 && testDeque.size()>0)
 	{
-		int n = ringBufUsed(&ringBuf);
+		int n = _MIN(ringBufUsed(&ringBuf), is_comm_free(&comm));
+		EXPECT_GT(n, 0);
+
 		ringBufRead(&ringBuf, comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
