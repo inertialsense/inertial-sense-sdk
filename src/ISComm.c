@@ -1043,7 +1043,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 	}
 
 	if (ptype != _PTYPE_NONE) 
-	{	
+	{	// Packet found or packet error
 		buf->scan++; 
 		resetParserState(c, ptype); 
 	}

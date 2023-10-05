@@ -54,7 +54,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         rmci_t &b = outRmci[i];
         ASSERT_EQ( a.bits, b.bits );
         ASSERT_EQ( a.bitsNmea, b.bitsNmea );
-        for (int j=0; j<DID_COUNT_UINS; j++)
+        for (int j=0; j<DID_COUNT; j++)
         {
             ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
         }    
@@ -95,7 +95,7 @@ TEST(protocol_nmea, nmea_parse_asce)
         rmci_t &b = outRmci[i];
         ASSERT_EQ( a.bits, b.bits );
         ASSERT_EQ( a.bitsNmea, b.bitsNmea );
-        for (int j=0; j<DID_COUNT_UINS; j++)
+        for (int j=0; j<DID_COUNT; j++)
         {
             ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
         }    

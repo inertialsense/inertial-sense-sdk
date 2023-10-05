@@ -116,7 +116,7 @@ void print_dids()
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	for (eDataIDs id = 0; id < DID_COUNT; id++)
 #else
-	for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+	for (eDataIDs id = 0; id < DID_COUNT; id++)
 #endif
 	{
 		printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
