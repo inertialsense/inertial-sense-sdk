@@ -46,13 +46,13 @@ public:
 	bool CloseWriteFile(int kid, sKmlLog& log);
 	bool OpenWithSystemApp(void) OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
-	p_data_t* ReadData() OVERRIDE;
+	p_data_buf_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".kml"); }
 
 private:
 	bool OpenNewSaveFile(int kid, sKmlLog &log) { (void)kid; (void)log; return true; }
-	p_data_t* ReadDataFromChunk();
+	p_data_buf_t* ReadDataFromChunk();
 	bool ReadChunkFromFile();
     bool WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t *dataBuf);
 

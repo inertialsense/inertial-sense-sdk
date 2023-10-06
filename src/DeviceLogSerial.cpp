@@ -144,9 +144,9 @@ bool cDeviceLogSerial::WriteChunkToFile()
 }
 
 
-p_data_t* cDeviceLogSerial::ReadData()
+p_data_buf_t* cDeviceLogSerial::ReadData()
 {
-	p_data_t* data = NULL;
+	p_data_buf_t* data = NULL;
 
 	// Read data from chunk
 	while (!(data = ReadDataFromChunk()))
@@ -164,7 +164,7 @@ p_data_t* cDeviceLogSerial::ReadData()
 }
 
 
-p_data_t* cDeviceLogSerial::ReadDataFromChunk()
+p_data_buf_t* cDeviceLogSerial::ReadDataFromChunk()
 {
 	// Ensure chunk has data
 	if (m_chunk.GetDataSize() <= 0)
@@ -172,7 +172,7 @@ p_data_t* cDeviceLogSerial::ReadDataFromChunk()
 		return NULL;
 	}
 
-	p_data_t* data = (p_data_t*)m_chunk.GetDataPtr();
+	p_data_buf_t* data = (p_data_buf_t*)m_chunk.GetDataPtr();
 	int size = data->hdr.size + sizeof(p_data_hdr_t);
 	if (m_chunk.PopFront(size))
 	{

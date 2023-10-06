@@ -92,7 +92,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         }
     }
 
-    uint32_t valid_signatures = 0;
+    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
     
     m_isb_major = buf[2];
     m_isb_minor = (char)buf[3];

@@ -72,8 +72,8 @@ public:
 	// update internal state, handle timeouts, etc.
 	void Update();
 	bool LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
-	p_data_t* ReadData(unsigned int device = 0);
-	p_data_t* ReadNextData(unsigned int& device);
+	p_data_buf_t* ReadData(unsigned int device = 0);
+	p_data_buf_t* ReadNextData(unsigned int& device);
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
 	bool Enabled() { return m_enabled; }
 	void CloseAllFiles();
@@ -88,9 +88,9 @@ public:
 	float FileSizeMB(unsigned int device = 0);
 	uint32_t FileCount(unsigned int device = 0);
 	std::string GetNewFileName(unsigned int device, uint32_t serialNumber, uint32_t fileCount, const char* suffix);
-	uint32_t GetDeviceCount() { return (uint32_t)m_devices.size(); }
+	uint32_t DeviceCount() { return (uint32_t)m_devices.size(); }
 	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
-	const dev_info_t* GetDeviceInfo(unsigned int device = 0);
+	const dev_info_t* DeviceInfo(unsigned int device = 0);
 	bool CopyLog(
 		cISLogger& log, 
 		const std::string& timestamp = g_emptyString, 
@@ -107,7 +107,7 @@ public:
 	* Get the timeout flush parameter in seconds
 	* @return the timeout flush parameter in seconds
 	*/
-	time_t GetTimeoutFlushSeconds() { return m_timeoutFlushSeconds; }
+	time_t TimeoutFlushSeconds() { return m_timeoutFlushSeconds; }
 
 	/**
 	* Set the timeout flush logger parameter in seconds
@@ -122,7 +122,7 @@ public:
 	static std::string CreateCurrentTimestamp();
 
     // check if a data packet is corrupt, NULL data is OK
-    static bool LogDataIsCorrupt(const p_data_t* data);
+    static bool LogDataIsCorrupt(const p_data_buf_t* data);
 
     // read all log data into memory - if the log is over 1.5 GB this will fail on 32 bit processes
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
@@ -137,7 +137,7 @@ public:
 		m_iconUpdatePeriodSec = updatePeriodSec;
 		m_altClampToGround = altClampToGround;
 
-		for (unsigned int dev = 0; dev < GetDeviceCount(); dev++)
+		for (unsigned int dev = 0; dev < DeviceCount(); dev++)
 		{
 			m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 		}

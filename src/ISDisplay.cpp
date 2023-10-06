@@ -608,28 +608,28 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	{
 	case DID_EVB_DEV_INFO:
 	case DID_GPX_DEV_INFO:
-	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);       break;
-	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                	break;
+	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
+	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
 	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
-	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              	break;
-	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              	break;
-	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              	break;
-	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              	break;
-	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         	break;
-	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       	break;
-	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);         break;
-	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);			break;
-	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);			break;
-	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);			break;
-	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);		break;
-	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break;
-	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);		break;
-	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break;
+	case DID_INS_1:             str = DataToStringINS1(d.ins1, data->hdr);              break;
+	case DID_INS_2:             str = DataToStringINS2(d.ins2, data->hdr);              break;
+	case DID_INS_3:             str = DataToStringINS3(d.ins3, data->hdr);              break;
+	case DID_INS_4:             str = DataToStringINS4(d.ins4, data->hdr);              break;
+	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
+	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
+	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
+	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
 	case DID_GPS1_RAW:
 	case DID_GPS2_RAW:
 	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);          break;
-    case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);    break;
-	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);	break;
+	case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);      break;
+	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);    break;
 	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);  break;
 	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
 	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);  break;
@@ -1412,14 +1412,14 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 	char* ptrEnd = buf + BUF_SIZE;
 
 	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %d%c, %04d-%02d-%02d",
 		info.serialNumber,
 		info.firmwareVer[0],
 		info.firmwareVer[1],
 		info.firmwareVer[2],
 		info.firmwareVer[3],
-		info.buildType,
 		info.buildNumber,
+        (info.buildType ? info.buildType : ' '),
 		info.buildYear + 2000,
 		info.buildMonth,
 		info.buildDay
@@ -1527,6 +1527,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	
 	return buf;
 }
+
 
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT	"%22s "
@@ -1651,7 +1652,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			if (m_editData.pData.hdr.id == m_editData.did &&
 				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData.buf + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
 			}
 		}
 		StopEditing();

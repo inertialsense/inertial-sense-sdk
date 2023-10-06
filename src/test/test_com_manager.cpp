@@ -4,7 +4,6 @@
 #include "../ring_buffer.h"
 #include "../protocol_nmea.h"
 
-
 #if 0
 extern "C"
 {
@@ -15,11 +14,12 @@ extern "C"
 }
 #endif
 
-#define TEST_PROTO_IS		1
+// Protocols
+#define TEST_PROTO_ISB		1
 #define TEST_PROTO_NMEA		1
 #define TEST_PROTO_UBLOX	1
 #define TEST_PROTO_RTCM3	1
-#define TEST_PROTO_SPARTN	1
+#define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
 #if 0
@@ -62,19 +62,19 @@ typedef struct
 	uint32_t		pktSize;	// size of encoded packet (pkt header, data header, data, pkt footer)
 } data_holder_t;
 
-test_data_t tcm = {};
-std::deque<data_holder_t> g_testRxDeque;
-std::deque<data_holder_t> g_testTxDeque;
+static test_data_t tcm = {};
+static std::deque<data_holder_t> g_testRxDeque;
+static std::deque<data_holder_t> g_testTxDeque;
 
 
-int portRead(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int portRead(int port, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-int portWrite(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int portWrite(int port, const unsigned char* buf, int len)
 {
-	if (ringBufWrite(&tcm.portTxBuf, buf, len))
+	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
 		DEBUG_PRINTF("tcm.portTxBuf ring buffer overflow: %d !!!\n", ringBufUsed(&tcm.portTxBuf) + len);
 		EXPECT_TRUE(false);
@@ -82,7 +82,7 @@ int portWrite(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 	return len;
 }
 
-void postRxRead(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead)
+static void postRxRead(int port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -91,24 +91,24 @@ void postRxRead(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead)
 
 	EXPECT_EQ(td.did, dataRead->hdr.id);
 	EXPECT_EQ(td.size, dataRead->hdr.size);
-	EXPECT_TRUE(memcmp(&td.data, dataRead->buf, td.size)==0);
+	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
 }
 
-void disableBroadcasts(CMHANDLE cmHandle, int pHandle)
+static void disableBroadcasts(int port)
 {
 }
 
-int prepDevInfo(CMHANDLE cmHandle, int pHandle, p_data_hdr_t* dataHdr)
+int prepDevInfo(int port, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(CMHANDLE cmHandle, int pHandle, p_data_t* data)
+void writeNvrUserpageFlashCfg(int port, p_data_t* data)
 {
 }
 
 // return 1 on success, 0 on failure
-int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerNmea(int port, const uint8_t* msg, int msgSize)
 {
 	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
@@ -123,11 +123,11 @@ int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSi
 			break;
 
 		case NMEA_MSG_UINT_STPB: // stop all broadcasts on all ports
-			disableBroadcasts(cmHandle, -1);
+			disableBroadcasts(-1);
 			break;
 
 		case NMEA_MSG_UINT_STPC: // stop all broadcasts on current port
-			disableBroadcasts(cmHandle, pHandle);
+			disableBroadcasts(port);
 			break;
 
 		case NMEA_MSG_UINT_BLEN: // bootloader enable
@@ -145,11 +145,11 @@ int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSi
 	}
 	else
 	{	// General NMEA messages
-		switch (messageIdUInt)
-		{
-		default:
-			break;
-		}
+		//switch (messageIdUInt)
+		//{
+		//default:
+		//	break;
+		//}
 	}
 
 	data_holder_t td = g_testRxDeque.front();
@@ -164,8 +164,7 @@ int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSi
 	return 0;
 }
 
-
-int msgHandlerUblox(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox(int port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -203,8 +202,7 @@ int msgHandlerUblox(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 	return 0;
 }
 
-
-int msgHandlerRtcm3(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -242,19 +240,30 @@ int msgHandlerRtcm3(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgS
 	return 0;
 }
 
+static void printNmeaMessage(const char *name, const uint8_t* str, int size)
+{
+	DEBUG_PRINTF("%s: ", name);
+	for (int i=0; i<size && str[i]!='\r' && str[i]!='\n'; i++)
+	{
+		DEBUG_PRINTF("%c", str[i]);
+		if (i==30) { DEBUG_PRINTF("..."); break; }
+	}
+	DEBUG_PRINTF("\n");
+}
+
 
 #define NUM_HANDLES			1
 static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
 static uint8_t				s_comm_buffer[NUM_HANDLES*PKT_BUF_SIZE] = { 0 };
 static com_manager_port_t	s_cmPort = {};
 
-bool initComManager(test_data_t &t)
+static bool initComManager(test_data_t &t)
 {
 	// Init ComManager
 	com_manager_init_t cmInit = {};
 	cmInit.broadcastMsg = t.cmBufBcastMsg;
 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, 0, TASK_PERIOD_MS, 0, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
+	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
 	{	// Fail to init
 		return false;
 	}
@@ -265,7 +274,7 @@ bool initComManager(test_data_t &t)
 	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR);
 
 	// Enable/disable protocols
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_IS);
+	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
@@ -284,7 +293,7 @@ bool init(test_data_t &t)
 }
 
 
-void generateData(std::deque<data_holder_t> &testDeque)
+static void generateData(std::deque<data_holder_t> &testDeque)
 {
 	testDeque.clear();
 	int byteSize = 0;
@@ -306,22 +315,22 @@ void generateData(std::deque<data_holder_t> &testDeque)
 		case 2:
 		case 3:
 			// INS 1
-			ins1.timeOfWeek = (double)i;
-			ins1.week = i;
+			ins1.timeOfWeek = (double)i + 0.123;
+			ins1.week = i + 100;
 			ins1.insStatus = i;
 			ins1.hdwStatus = i;
-			ins1.theta[0] = i * 2.0f;
-			ins1.theta[1] = i * 3.0f;
-			ins1.theta[2] = i * 4.0f;
-			ins1.uvw[0] = i * 5.0f;
-			ins1.uvw[1] = i * 6.0f;
-			ins1.uvw[2] = i * 7.0f;
+			ins1.theta[0] = i + 0.2f;
+			ins1.theta[1] = i - 0.3f;
+			ins1.theta[2] = i + 0.4f;
+			ins1.uvw[0] = i - 0.5f;
+			ins1.uvw[1] = i + 0.6f;
+			ins1.uvw[2] = i - 0.7f;
 			ins1.lla[0] = 40.330565516;
 			ins1.lla[1] = -111.725787806;
 			ins1.lla[2] = 1408.565264;
-			ins1.ned[0] = i * 1.234f;
-			ins1.ned[1] = i * 2.345f;
-			ins1.ned[2] = i * 3.456f;
+			ins1.ned[0] = i + 1.234f;
+			ins1.ned[1] = i - 2.345f;
+			ins1.ned[2] = i + 3.456f;
 
 			if (j == 3 )
 			{	// NMEA
@@ -332,7 +341,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			}
 			else
 			{	// Binary
-#if TEST_PROTO_IS
+#if TEST_PROTO_ISB
 				td.did = DID_INS_1;
 				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.ins1 = ins1;
@@ -359,7 +368,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			gps.towOffset = (double)i*123.4;
 			gps.leapS = (uint8_t)i;
 
-			if ((j == 5 || TEST_PROTO_IS == 0) && TEST_PROTO_NMEA)
+			if ((j == 5 || TEST_PROTO_ISB == 0) && TEST_PROTO_NMEA)
 			{	// NMEA
 #if TEST_PROTO_NMEA
 				td.ptype = _PTYPE_NMEA;
@@ -368,7 +377,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			}
 			else
 			{	// Binary
-#if TEST_PROTO_IS
+#if TEST_PROTO_ISB
 				td.did = DID_GPS1_POS;
 				td.ptype = _PTYPE_INERTIAL_SENSE_DATA;
 				td.data.set.gpsPos = gps;
@@ -481,11 +490,11 @@ void generateData(std::deque<data_holder_t> &testDeque)
 			DEBUG_PRINTF("[%2d] ", (int)testDeque.size());
 			switch (td.ptype)
 			{
-			case PSC_START_BYTE:
+			case PSC_ISB_PREAMBLE:
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("NMEA: %.30s...\n", td.data.buf);
+				printNmeaMessage("NMEA", td.data.buf, td.size);
 				break;
 			case _PTYPE_UBLOX:
 				DEBUG_PRINTF("UBLOX: size %d, (0x%02x 0x%02x)\n", td.size, td.data.buf[2], td.data.buf[3]);
@@ -511,7 +520,7 @@ void generateData(std::deque<data_holder_t> &testDeque)
 }
 
 
-void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
+static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
@@ -525,13 +534,14 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		int n = 0;
 
 		// Add packetized data to ring buffer
+		uint8_t buf[1024];
 		switch (td.ptype)
 		{
 		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
-			n = is_comm_set_data(&comm, td.did, 0, td.size, (void*)&(td.data));
+			n = is_comm_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
-			EXPECT_FALSE(ringBufWrite(rbuf, comm.buf.start, n));
+			EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
 			break;
 
 		case _PTYPE_NMEA:
@@ -570,37 +580,35 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
 				// Found data
-				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
+				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-				EXPECT_EQ(td.did, comm.dataHdr.id);
+				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
-			case _PTYPE_UBLOX:
-			case _PTYPE_RTCM3:
-				break;
+			case _PTYPE_UBLOX:	DEBUG_PRINTF("Found data: UBLOX\n");	break;
+			case _PTYPE_RTCM3:	DEBUG_PRINTF("Found data: RTCM3\n");	break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
+				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 				break;
 			}
 
-			EXPECT_EQ(td.size, comm.dataHdr.size);
-			EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, td.size) == 0);
+			EXPECT_EQ(td.size, comm.rxPkt.data.size);
+			EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
 		}
 	}
 }
 
 
-void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
+static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 {
 	uint8_t *buf = new uint8_t[len];
 
 	len = ringBufRead(src, buf, len);
 	EXPECT_FALSE(ringBufWrite(dst, buf, len));
 }
-
 
 #if 1
 TEST(ComManager, BasicTxTest)
@@ -620,13 +628,13 @@ TEST(ComManager, BasicTxTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			comManagerSendDataNoAckInstance(&tcm.cm, 0, td.did, &td.data, td.size, 0);
+			comManagerSendDataNoAckInstance(&tcm.cm, 0, &td.data, td.did, td.size, 0);
 			break;
 
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
-			portWrite(&(tcm.cm), 0, td.data.buf, td.size);
+			portWrite(0, td.data.buf, td.size);
 			break;
 		}
 
@@ -763,7 +771,7 @@ TEST(ComManager, RxWithGarbageTest)
 #if 1
 TEST(ComManager, Evb2AltDecodeBufferTest)
 {
-	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.buf.start buffer).
+	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.rxBuf.start buffer).
 
 	// Init Port Buffers
 	ringBufInit(&(tcm.portTxBuf), tcm.portTxBuffer, sizeof(tcm.portTxBuffer), 1);
@@ -771,8 +779,6 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 	initComManager(tcm);
 
 	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
-	uint8_t altDecodBuf[PKT_BUF_SIZE] = {};
-	comm.altDecodeBuf = altDecodBuf;
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);
@@ -791,10 +797,10 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&tcm.portRxBuf, comm.buf.tail, n)))
+		if ((n = ringBufRead(&tcm.portRxBuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm.buf.tail += n;
+			comm.rxBuf.tail += n;
 
 			protocol_type_t ptype = _PTYPE_NONE;
 			uDatasets dataWritten;
@@ -803,8 +809,8 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
 			{
 				uint8_t error = 0;
-				uint8_t *dataPtr = comm.dataPtr + comm.dataHdr.offset;
-				uint32_t dataSize = comm.dataHdr.size;
+				uint8_t *dataPtr = comm.rxPkt.data.ptr + comm.rxPkt.offset;
+				uint32_t dataSize = comm.rxPkt.data.size;
 
 				data_holder_t td = g_testRxDeque.front();
 				g_testRxDeque.pop_front();
@@ -813,22 +819,22 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 				{
 				case _PTYPE_INERTIAL_SENSE_DATA:
 					// Found data
-					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
+					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 					is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-					EXPECT_EQ(td.did, comm.dataHdr.id);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size)==0);
+					EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size)==0);
 					break;
 
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
-					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				case _PTYPE_NMEA:
-					DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				default:
@@ -847,7 +853,6 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 #endif
 
 
-
 #if 1
 TEST(ComManager, Evb2DataForwardTest)
 {
@@ -859,8 +864,6 @@ TEST(ComManager, Evb2DataForwardTest)
 	initComManager(tcm);
 
 	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
-	uint8_t altDecodBuf[PKT_BUF_SIZE] = {};
-	comm.altDecodeBuf = altDecodBuf;
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);
@@ -888,10 +891,10 @@ TEST(ComManager, Evb2DataForwardTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&evbRbuf, comm.buf.tail, n)))
+		if ((n = ringBufRead(&evbRbuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm.buf.tail += n;
+			comm.rxBuf.tail += n;
 
 			protocol_type_t ptype = _PTYPE_NONE;
 
@@ -899,8 +902,8 @@ TEST(ComManager, Evb2DataForwardTest)
 			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
 			{
 				uint8_t error = 0;
-				uint8_t *dataPtr = comm.dataPtr + comm.dataHdr.offset;
-				uint32_t dataSize = comm.dataHdr.size;
+				uint8_t *dataPtr = comm.rxPkt.data.ptr + comm.rxPkt.offset;
+				uint32_t dataSize = comm.rxPkt.data.size;
 
 				data_holder_t td = testRxDequeCopy.front();
 				testRxDequeCopy.pop_front();
@@ -908,14 +911,26 @@ TEST(ComManager, Evb2DataForwardTest)
 				switch (ptype)
 				{
 				case _PTYPE_INERTIAL_SENSE_DATA:
+					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.hdr), sizeof(packet_hdr_t));
+					if (comm.rxPkt.offset)
+					{
+						ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.offset), sizeof(comm.rxPkt.offset));
+					}
+					ringBufWrite(&tcm.portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.checksum), sizeof(comm.rxPkt.checksum));
+
+					if (td.pktSize != comm.rxPkt.size)
+					{
+						ASSERT_TRUE(false);
+					}
+					break;
 				case _PTYPE_NMEA:
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
 				{
-					uint32_t pktSize = (uint32_t)_MIN(comm.buf.scan - comm.pktPtr, PKT_BUF_SIZE);
-					ringBufWrite(&tcm.portRxBuf, comm.pktPtr, pktSize);
+					ringBufWrite(&tcm.portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 
-					if (td.pktSize != pktSize)
+					if (td.pktSize != comm.rxPkt.size)
 					{
 						ASSERT_TRUE(false);
 					}
@@ -944,10 +959,10 @@ TEST(ComManager, Evb2DataForwardTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&tcm.portRxBuf, comm.buf.tail, n)))
+		if ((n = ringBufRead(&tcm.portRxBuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
-			comm.buf.tail += n;
+			comm.rxBuf.tail += n;
 
 			protocol_type_t ptype = _PTYPE_NONE;
 			uDatasets dataWritten;
@@ -955,9 +970,13 @@ TEST(ComManager, Evb2DataForwardTest)
 			// Search comm buffer for valid packets
 			while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
 			{
-				uint8_t error = 0;
-				uint8_t *dataPtr = comm.dataPtr + comm.dataHdr.offset;
-				uint32_t dataSize = comm.dataHdr.size;
+				if (ptype == _PTYPE_PARSE_ERROR)
+				{
+					continue;
+				}
+
+				uint8_t *dataPtr = comm.rxPkt.data.ptr + comm.rxPkt.offset;
+				uint32_t dataSize = comm.rxPkt.data.size;
 
 				data_holder_t td = g_testRxDeque.front();
 				g_testRxDeque.pop_front();
@@ -966,22 +985,22 @@ TEST(ComManager, Evb2DataForwardTest)
 				{
 				case _PTYPE_INERTIAL_SENSE_DATA:
 					// Found data
-					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.dataHdr.id, comm.dataHdr.size);
+					DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
 
 					is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-					EXPECT_EQ(td.did, comm.dataHdr.id);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
-					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				case _PTYPE_NMEA:
-					DEBUG_PRINTF("Found data: %.30s...\n", comm.dataPtr);
-					EXPECT_TRUE(memcmp(td.data.buf, comm.dataPtr, comm.dataHdr.size) == 0);
+					DEBUG_PRINTF("Found data: %.30s...\n", comm.rxPkt.data.ptr);
+					EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, comm.rxPkt.data.size) == 0);
 					break;
 
 				default:
@@ -990,7 +1009,6 @@ TEST(ComManager, Evb2DataForwardTest)
 				}
 			}
 		}
-
 	}
 
 	// Check that no data was left behind 
