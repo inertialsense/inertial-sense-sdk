@@ -1154,10 +1154,6 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
         protocol_type_t ptype;
         while ((ptype = is_comm_parse(&g_comm)) != _PTYPE_NONE)
         {
-            if (g_comm.rxErrorCount)
-            {
-                int j=0; j++;
-            }
             ASSERT_EQ(g_comm.rxErrorCount, 0);
 
             uint8_t error = 0;
