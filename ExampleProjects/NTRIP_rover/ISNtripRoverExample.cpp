@@ -29,9 +29,11 @@ static cISStream *s_clientStream;
 
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
+	uint8_t buf[1024];
 	// Stop all broadcasts on the device
-	int n = is_comm_stop_broadcasts_all_ports(comm);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	int n = is_comm_write_to_buf(buf, sizeof(buf), comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);    
+
+	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -42,14 +44,15 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 
 int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-	int n = is_comm_get_data(comm, DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	uint8_t buf[1024];
+	int n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_POS, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
-	n = is_comm_get_data(comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
+	if (n != serialPortWrite(serialPort, buf, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -67,7 +70,7 @@ static struct
 
 void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 {
-	switch (comm->dataHdr.id)
+	switch (comm->rxPkt.hdr.id)
 	{
 	case DID_GPS1_RTK_POS_REL:
 		is_comm_copy_to_struct(&s_rx.rel, comm, sizeof(s_rx.rel));		
@@ -102,10 +105,10 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 			lastTime = currentTime;
 			if ((s_rx.gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{	// GPS position is valid
-				char buf[512];
-				int n = nmea_gga(buf, sizeof(buf), s_rx.gps);
-				clientStream->Write(buf, n);
-				printf("Sending position to Base: \n%s\n", string(buf,n).c_str());
+				char rxBuf[512];
+				int n = nmea_gga(rxBuf, sizeof(rxBuf), s_rx.gps);
+				clientStream->Write(rxBuf, n);
+				printf("Sending position to Base: \n%s\n", string(rxBuf,n).c_str());
 			}
 			else
 			{
@@ -125,10 +128,10 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if ((n = serialPortRead(serialPort, comm->buf.tail, n)))
+	if ((n = serialPortRead(serialPort, comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
-		comm->buf.tail += n;
+		comm->rxBuf.tail += n;
 
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
@@ -150,17 +153,17 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 	int n = is_comm_free(comm);
 
 	// Read data from RTK Base station
-	if ((n = clientStream->Read(comm->buf.tail, n)))
+	if ((n = clientStream->Read(comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
-		comm->buf.tail += n;
+		comm->rxBuf.tail += n;
 
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
 		{
 			if (ptype == _PTYPE_RTCM3)
 			{	// Forward RTCM3 packets to uINS
-				serialPortWrite(serialPort, comm->dataPtr, comm->dataHdr.size);
+				serialPortWrite(serialPort, comm->rxPkt.data.ptr, comm->rxPkt.data.size);
 				s_rx.baseCount++;
 			}
 		}

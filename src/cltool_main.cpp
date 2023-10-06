@@ -56,7 +56,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 	static uint64_t serverByteCountLast = 0;
 	static stringstream outstream;
 
-	uint64_t newServerByteCount = i->GetClientServerByteCount();
+	uint64_t newServerByteCount = i->ClientServerByteCount();
 	if (serverByteCount != newServerByteCount)
 	{
 		serverByteCount = newServerByteCount;
@@ -78,33 +78,33 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 		outstream << "\n";
 		if (server)
 		{
-			outstream << "Server: " << i->GetTcpServerIpAddressPort()   << "     Tx: ";
+			outstream << "Server: " << i->TcpServerIpAddressPort()   << "     Tx: ";
 		}
 		else
 		{
-			outstream << "Client: " << i->GetClientConnectionInfo()     << "     Rx: ";
+			outstream << "Client: " << i->ClientConnectionInfo()     << "     Rx: ";
 		}
-		outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->GetClientServerByteCount() << " bytes    \n";
+		outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
 		if (server)
 		{	// Server
-			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
+			outstream << "Connections: " << i->ClientConnectionCurrent() << " current, " << i->ClientConnectionTotal() << " total    \n";
 			if (showMessageSummary)
 			{
- 				outstream << i->getServerMessageStatsSummary();
+ 				outstream << i->ServerMessageStatsSummary();
 			}
 			refreshDisplay = true;
 		}
 		else
 		{	// Client
-			com_manager_status_t* status = comManagerGetStatus(0);
-			if (status != NULLPTR && status->communicationErrorCount>2)
+			is_comm_instance_t* comm = comManagerGetIsComm(0);
+			if (comm != NULLPTR && comm->rxErrorCount>2)
 			{
-				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
+				outstream << "Com errors: " << comm->rxErrorCount << "     \n";
 			}
 			if (showMessageSummary)
 			{
-				outstream << i->getClientMessageStatsSummary();
+				outstream << i->ClientMessageStatsSummary();
 			}
 		}
 	}
@@ -180,7 +180,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 	if (g_commandLineOptions.asciiMessages.size() != 0)
 	{
-		serialPortWriteAscii(inertialSenseInterface.GetSerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
+		serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
 		return true;
 	}
 

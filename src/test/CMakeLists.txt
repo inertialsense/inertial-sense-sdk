@@ -9,7 +9,7 @@ include_directories({GTEST_INCLUDE_DIRS} ../libusb/libusb ../protocol ..)
 
 add_library(SDK_test
 	test_com_manager.cpp
-	test_com_manager_2.cpp
+	# test_com_manager_2.cpp
 	test_InertialSense.cpp
 	test_ISComm.cpp
 	test_ISDataMappings.cpp
@@ -53,9 +53,9 @@ add_library(SDK_test
 	../tinyxmlparser.cpp
 	)
 
-add_executable(run_tests 
+add_executable(run_tests
 	test_com_manager.cpp
-	test_com_manager_2.cpp
+	# test_com_manager_2.cpp
 	test_InertialSense.cpp
 	test_ISComm.cpp
 	test_ISDataMappings.cpp

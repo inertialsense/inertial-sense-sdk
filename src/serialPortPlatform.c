@@ -221,8 +221,8 @@ static int set_interface_attribs(int fd, int speed, int parity)
     // no Ctrl-D suppression, no fill characters, no case mapping,
     // no local output processing
     //
-    // config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
-    // config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
+    // tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
+    // tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | OFILL | OLCUC | OPOST);
     tty.c_oflag = 0;
 
     // No line processing

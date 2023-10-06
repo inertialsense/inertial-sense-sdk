@@ -84,7 +84,7 @@ bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 	return isCorrupt;
 }
 
-bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
+bool cISLogger::LogDataIsCorrupt(const p_data_buf_t* data)
 {
     return (data != NULL && LogHeaderIsCorrupt(&data->hdr));
 }
@@ -409,10 +409,10 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
             // write to diagnostic text file
 #if 0        
             std::ostringstream outFilePath;
-            outFilePath << m_directory << "/diagnostic_" << m_devices[device]->GetDeviceInfo()->serialNumber << ".txt";
+            outFilePath << m_directory << "/diagnostic_" << m_devices[device]->DeviceInfo()->serialNumber << ".txt";
             cISLogFileBase *outfile = CreateISLogFile(outFilePath.str(), "a");
 #else
-            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(m_devices[device]->GetDeviceInfo()->serialNumber) + ".txt", "a");
+            cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(m_devices[device]->DeviceInfo()->serialNumber) + ".txt", "a");
 #endif            
             std::string msg = (((diag_msg_t*)dataBuf)->message);
             outfile->write(msg.c_str(), msg.length());
@@ -428,14 +428,14 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 }
 
 
-p_data_t* cISLogger::ReadData(unsigned int device)
+p_data_buf_t* cISLogger::ReadData(unsigned int device)
 {
 	if (device >= m_devices.size())
 	{
 		return NULL;
 	}
 
-	p_data_t* data = NULL;
+	p_data_buf_t* data = NULL;
 	while (LogDataIsCorrupt(data = m_devices[device]->ReadData()))
 	{
 	    m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
@@ -451,11 +451,11 @@ p_data_t* cISLogger::ReadData(unsigned int device)
 }
 
 
-p_data_t* cISLogger::ReadNextData(unsigned int& device)
+p_data_buf_t* cISLogger::ReadNextData(unsigned int& device)
 {
 	while (device < m_devices.size())
 	{
-		p_data_t* data = ReadData(device);
+		p_data_buf_t* data = ReadData(device);
 		if (data == NULL)
 		{
 			++device;
@@ -580,14 +580,14 @@ bool cISLogger::SetDeviceInfo(const dev_info_t *info, unsigned int device )
 	return true;
 }
 
-const dev_info_t* cISLogger::GetDeviceInfo( unsigned int device )
+const dev_info_t* cISLogger::DeviceInfo( unsigned int device )
 {
 	if (device >= m_devices.size())
 	{
 		return NULL;
 	}
 
-	return m_devices[device]->GetDeviceInfo();
+	return m_devices[device]->DeviceInfo();
 }
 
 int g_copyReadCount;
@@ -596,22 +596,22 @@ int g_copyReadDid;
 bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
 	m_logStats.Clear();
-	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.GetDeviceCount(), logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
+	if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, log.DeviceCount(), logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
 	{
 		return false;
 	}
 	EnableLogging(true);
-	p_data_t* data = NULL;
-	for (unsigned int dev = 0; dev < log.GetDeviceCount(); dev++)
+	p_data_buf_t* data = NULL;
+	for (unsigned int dev = 0; dev < log.DeviceCount(); dev++)
 	{
 		// Copy device info
-		const dev_info_t* devInfo = log.GetDeviceInfo(dev);
+		const dev_info_t* devInfo = log.DeviceInfo(dev);
 		SetDeviceInfo(devInfo, dev);
 
 #if LOG_DEBUG_GEN == 2
 		// Don't print status here
 #elif LOG_DEBUG_GEN || DEBUG_PRINT
-		printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev+1, log.GetDeviceCount());
+		printf("cISLogger::CopyLog SN%d type %d, (%d of %d)\n", devInfo->serialNumber, logType, dev+1, log.DeviceCount());
 #endif
 
 		// Set KML configuration
@@ -639,7 +639,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 					ins_1_t ins1;
 					ins_2_t ins2;
 
-					copyDataPToStructP(&ins2, data, sizeof(ins_2_t));
+					copyDataBufPToStructP(&ins2, data, sizeof(ins_2_t));
 					convertIns2ToIns1(&ins2, &ins1);
 
 					p_data_hdr_t hdr;
@@ -667,7 +667,7 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
     }
     unsigned int deviceId = 0;
     unsigned int lastDeviceId = 0xFFFFFEFE;
-    p_data_t* p;
+    p_data_buf_t* p;
 	vector<vector<uint8_t>>* currentDeviceData = NULL;
     const dev_info_t* info;
     uint8_t* ptr, *ptrEnd;
@@ -680,7 +680,7 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
         if (deviceId != lastDeviceId)
         {
             lastDeviceId = deviceId;
-            info = logger.GetDeviceInfo(deviceId);
+            info = logger.DeviceInfo(deviceId);
             data[info->serialNumber] = vector<vector<uint8_t>>();
             currentDeviceData = &data[info->serialNumber];
         }

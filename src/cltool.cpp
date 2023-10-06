@@ -116,7 +116,7 @@ void print_dids()
 #if defined(INCLUDE_LUNA_DATA_SETS)
 	for (eDataIDs id = 0; id < DID_COUNT; id++)
 #else
-	for (eDataIDs id = 0; id < DID_COUNT_UINS; id++)
+	for (eDataIDs id = 0; id < DID_COUNT; id++)
 #endif
 	{
 		printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
@@ -475,10 +475,11 @@ bool cltool_replayDataLog()
 	}
 
 	cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
-	p_data_t *data;
+	p_data_buf_t *data;
 	while ((data = logger.ReadData()) != NULL)
 	{
-		g_inertialSenseDisplay.ProcessData(data, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+		p_data_t d = {data->hdr, data->buf};
+		g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
 
 // 		if (data->hdr.id == DID_GPS1_RAW)
 // 		{
@@ -597,7 +598,7 @@ void cltool_outputHelp()
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
 	nvm_flash_cfg_t flashCfg;
-	inertialSenseInterface.GetFlashConfig(flashCfg);
+	inertialSenseInterface.FlashConfig(flashCfg);
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
 	if (flashCfgString.length() < 2)
@@ -648,7 +649,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
 	evb_flash_cfg_t evbFlashCfg;
-	inertialSenseInterface.GetEvbFlashConfig(evbFlashCfg);
+	inertialSenseInterface.EvbFlashConfig(evbFlashCfg);
 	const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_EVB_FLASH_CFG);
 
 	if (flashCfgString.length() < 2)
