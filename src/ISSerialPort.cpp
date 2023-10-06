@@ -79,9 +79,9 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyACM", ports);
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/serial", ports);
-
+    // ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
+    // ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyAMA", ports);
+    // ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/serial", ports);
 
 #endif
 
