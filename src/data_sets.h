@@ -3133,6 +3133,9 @@ typedef struct
     /** slip threshold of geometry-free phase (m) */
     double thresslip;
 
+    /* slip threshold of doppler (m) */
+    double thresdop;
+
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
     double varholdamb;
 
