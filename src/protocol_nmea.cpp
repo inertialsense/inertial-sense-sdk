@@ -492,7 +492,8 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		",%02d:%02d:%02d.%02d"	// 9
 		",%s"			// 10
 		",%d"			// 11
-		",%d",			// 12
+		",%d"			// 12
+		",%c",			// 13
 		(int)info.serialNumber,	// 1
 		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
 		info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3], // 3
@@ -504,9 +505,9 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
 		info.addInfo,			// 10
 		info.hardware,			// 11
-		(info.buildType ? info.buildType : ' '), // 12
-		info.reserved);			// 13
-		
+		info.reserved,			// 12
+		(info.buildType ? info.buildType : ' ')); // 13
+
 	return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -1611,11 +1612,12 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint16_t        hardware;
 	ptr = ASCII_to_u16(&info.hardware, ptr);
 
-	// uint8_t         build type;
-	ptr = ASCII_to_u8(&info.buildType, ptr);
-
 	// uint16_t        reserved;
 	ptr = ASCII_to_u16(&info.reserved, ptr);
+
+	// uint8_t         build type;
+	info.buildType = (uint8_t)*ptr;
+	if (info.buildType==0) { info.buildType = ' '; }
 
 	return 0;
 }

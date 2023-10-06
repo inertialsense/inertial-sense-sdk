@@ -1412,14 +1412,14 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 	char* ptrEnd = buf + BUF_SIZE;
 
 	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %d%c, %04d-%02d-%02d",
 		info.serialNumber,
 		info.firmwareVer[0],
 		info.firmwareVer[1],
 		info.firmwareVer[2],
 		info.firmwareVer[3],
-		info.buildType,
 		info.buildNumber,
+        (info.buildType ? info.buildType : ' '),
 		info.buildYear + 2000,
 		info.buildMonth,
 		info.buildDay
@@ -1527,6 +1527,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	
 	return buf;
 }
+
 
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT	"%22s "
