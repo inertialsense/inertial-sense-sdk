@@ -82,6 +82,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/serial", ports);
 
+
 #endif
 
 }

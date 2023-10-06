@@ -3,12 +3,13 @@
 
 #include "data_sets.h"
 
-#define NMEA_STR_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
-#define NMEA_STR_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
-#define NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
-#define NMEA_STR_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
-#define NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
-#define NMEA_STR_SOFTWARE_RESET                         "$SRST*06\r\n"
+#define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
+#define NMEA_CMD_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
+#define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
+#define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
+#define NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
+#define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
+#define NMEA_CMD_SIZE                                   10
 
 enum eNmeaMsgIdUint
 {
