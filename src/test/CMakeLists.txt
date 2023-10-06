@@ -13,7 +13,7 @@ add_library(SDK_test
 	test_InertialSense.cpp
 	test_ISComm.cpp
 	test_ISDataMappings.cpp
-	# test_ISFirmwareUpdate.cpp
+	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
 	test_protocol_nmea.cpp
@@ -59,7 +59,7 @@ add_executable(run_tests
 	test_InertialSense.cpp
 	test_ISComm.cpp
 	test_ISDataMappings.cpp
-	# test_ISFirmwareUpdate.cpp
+	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
 	test_ring_buffer.cpp

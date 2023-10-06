@@ -1,18 +1,16 @@
 #include <gtest/gtest.h>
 
-#if 1 // ((ROS_VERSION_MAJOR == 1) && (ROS_VERSION_MINOR <= 13))
+#if defined(GTestColor) // ((ROS_VERSION_MAJOR == 1) && (ROS_VERSION_MINOR <= 13))
 namespace testing
 {
     namespace internal
     {
-#if 0 // We are using a new-enough version that these are already defined...
         enum GTestColor {
             COLOR_DEFAULT,
             COLOR_RED,
             COLOR_GREEN,
             COLOR_YELLOW
         };
-#endif
 
         extern void ColoredPrintf(GTestColor color, const char* fmt, ...);
     }
