@@ -118,12 +118,12 @@ TEST(protocol_nmea, INFO)
         info.buildDate[i] = i;
         info.buildTime[i] = i+4;
     }
-    info.buildDate[0] = 0;
+    info.buildDate[0] = 'r';    // Build type
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_dev_info(abuf, ASCII_BUF_LEN, info);
-    // printf("%s\n", abuf);
+    printf("%s\n", abuf);
     dev_info_t result = {};
     nmea_parse_info(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&info, &result, sizeof(result)), 0);
