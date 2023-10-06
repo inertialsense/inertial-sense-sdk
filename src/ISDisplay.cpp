@@ -1412,7 +1412,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 	char* ptrEnd = buf + BUF_SIZE;
 
 	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %c%d, %04d-%02d-%02d",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %d%c, %04d-%02d-%02d",
 		info.serialNumber,
 		info.firmwareVer[0],
 		info.firmwareVer[1],

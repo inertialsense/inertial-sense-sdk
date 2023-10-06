@@ -133,7 +133,7 @@ TEST(protocol_nmea, INFO)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_dev_info(abuf, ASCII_BUF_LEN, info);
-    // printf("%s\n", abuf);
+    printf("%s\n", abuf);
     dev_info_t result = {};
     nmea_parse_info(result, abuf, ASCII_BUF_LEN);
     ASSERT_EQ(memcmp(&info, &result, sizeof(result)), 0);
