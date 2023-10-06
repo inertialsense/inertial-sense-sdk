@@ -76,13 +76,14 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 	}
 
 #else
-
+    // Computers using native serial ports need to uncomment the appropriate lines below, or if needed create a new line describing native serial port
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyACM", ports);
+#if 0	// Uncomment for Raspberry Pi
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
+    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyAMA", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/serial", ports);
-
-
+#endif	
 #endif
 
 }
