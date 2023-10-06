@@ -147,7 +147,6 @@ int main(int argc, char* argv[])
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
-	// uint32_t timeMs = current_timeMs();
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
 	is_comm_init(&comm, buffer, sizeof(buffer));
