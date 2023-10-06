@@ -76,7 +76,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 	}
 
 #else
-
+    //Computer using native serial ports need to uncomment the appropriate lines below, or if needed create a new line describing native serial port
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyACM", ports);
     // ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
