@@ -139,8 +139,9 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
+#define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_LAST                              124 /** Last of GPX DIDs */
+#define DID_GPX_LAST                              125 /** Last of GPX DIDs */
 
 
 // Adding a new data id?
@@ -1995,6 +1996,63 @@ typedef struct PACKED
 
 } bit_t;
 
+// GPXBit results bit
+#define GPXBit_resultsBit_PPS1      (0x01 << GPXBit_resultsPos_PPS1)
+#define GPXBit_resultsBit_PPS2      (0x01 << GPXBit_resultsPos_PPS2)
+#define GPXBit_resultsBit_UART      (0x01 << GPXBit_resultsPos_UART)
+#define GPXBit_resultsBit_IO        (0x01 << GPXBit_resultsPos_IO)
+#define GPXBit_resultsBit_GPS       (0x01 << GPXBit_resultsPos_GPS)
+#define GPXBit_resultsBit_FINISHED  (0x01 << GPXBit_resultsPos_FINISHED)
+#define GPXBit_resultsBit_CANCELED  (0x01 << GPXBit_resultsPos_CANCELED)
+#define GPXBit_resultsBit_ERROR     (0x01 << GPXBit_resultsPos_ERROR)
+
+// GPXBit commands
+enum GPXBit_CMDs{
+    GPXBit_CMDs_NONE = 0,
+    GPXBit_CMDs_START_MANUF_TEST,
+    GPXBit_CMDs_ALERT_UART_TEST_STR,
+    GPXBit_CMDs_ALERT_PPS1_RX,
+    GPXBit_CMDs_ALERT_PPS2_RX,
+    GPXBit_CMDs_REPORT,
+    GPXBit_CMDs_STOP,
+
+};
+
+// GPXBit results bit posisition
+enum GPXBit_resultsPos{
+    GPXBit_resultsPos_PPS1 = 0,
+    GPXBit_resultsPos_PPS2,
+    GPXBit_resultsPos_UART,
+    GPXBit_resultsPos_IO,
+    GPXBit_resultsPos_GPS,
+    GPXBit_resultsPos_FINISHED,
+
+    GPXBit_resultsPos_CANCELED,
+    GPXBit_resultsPos_ERROR,
+};
+
+// GPXBit commands
+#define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
+
+/** (DID_BIT) Built-in self-test parameters */
+typedef struct PACKED
+{
+    /** Calibration BIT status (see eCalBitStatusFlags) */
+    uint32_t                results;
+    
+    /** Command  **/
+    uint8_t                command;
+
+    /* what port we are running on*/
+    uint8_t                port;
+
+    /** Self-test mode*/
+    uint8_t                testMode;
+
+    /** Built-in self-test state */
+    uint8_t                state;
+
+} GPX_bit_t;
 
 enum eInfieldCalState
 {
