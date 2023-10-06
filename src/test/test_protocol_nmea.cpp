@@ -128,7 +128,7 @@ TEST(protocol_nmea, INFO)
     info.buildSecond = 20;
     info.buildMillisecond = 23;
 
-    info.buildType = 0;
+    info.buildType = ' ';
     snprintf(info.addInfo, DEVINFO_ADDINFO_STRLEN, "additional string   123");
 
     char abuf[ASCII_BUF_LEN] = { 0 };

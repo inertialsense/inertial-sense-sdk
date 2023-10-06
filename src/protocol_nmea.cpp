@@ -504,7 +504,8 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
 		info.addInfo,			// 10
 		info.hardware,			// 11
-		info.reserved);			// 12
+		(info.buildType ? info.buildType : ' '), // 12
+		info.reserved);			// 13
 		
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -1589,7 +1590,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
-	info.buildType = 0;
+	info.buildType = ' ';
 	info.buildYear = (uint8_t)(year - 2000);
 	info.buildMonth = (uint8_t)(month);
 	info.buildDay = (uint8_t)(day);
@@ -1609,6 +1610,9 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 
 	// uint16_t        hardware;
 	ptr = ASCII_to_u16(&info.hardware, ptr);
+
+	// uint8_t         build type;
+	ptr = ASCII_to_u8(&info.buildType, ptr);
 
 	// uint16_t        reserved;
 	ptr = ASCII_to_u16(&info.reserved, ptr);
