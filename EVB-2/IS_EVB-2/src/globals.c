@@ -90,9 +90,9 @@ void globals_init(void)
 	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
 
 #if defined(DEBUG)
-	g_evbDevInfo.buildDate[0] = 'd';					// Debug
+	g_evbDevInfo.buildType = 'd';					// Debug
 #else
-	g_evbDevInfo.buildDate[0] = 'r';					// Release
+	g_evbDevInfo.buildType = 'r';					// Release
 #endif
 
 #if 0

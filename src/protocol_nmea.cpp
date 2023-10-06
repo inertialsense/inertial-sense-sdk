@@ -506,7 +506,7 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.addInfo,			// 10
 		info.hardware,			// 11
 		info.reserved,			// 12
-		(info.buildDate[0] ? info.buildDate[0] : ' ')); // 13
+		(info.buildType ? info.buildType : ' ')); // 13
 
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -1616,8 +1616,8 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_u16(&info.reserved, ptr);
 
 	// uint8_t         build type;
-	info.buildDate[0] = (uint8_t)*ptr;
-	if (info.buildDate[0]==0) { info.buildDate[0] = ' '; }
+	info.buildType = (uint8_t)*ptr;
+	if (info.buildType==0) { info.buildType = ' '; }
 
 	return 0;
 }
