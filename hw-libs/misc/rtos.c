@@ -112,6 +112,7 @@ void rtosResetStats(void)
 	for (size_t i = 0; i < RTOS_NUM_TASKS; i++)
 	{
 		g_rtos.task[i].maxRunTimeUs = 0;
+		g_rtos_pro[i].maxRunTimeTicks = 0;
 	}
 }
 

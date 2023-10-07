@@ -1349,6 +1349,7 @@ enum eSystemCommand
     SYS_CMD_ZERO_MOTION                                 = 5,            // (uint32 inv: 4294967290)
     SYS_CMD_REF_POINT_STATIONARY                        = 6,            // (uint32 inv: 4294967289)
     SYS_CMD_REF_POINT_MOVING                            = 7,            // (uint32 inv: 4294967288)
+    SYS_CMD_RESET_RTOS_STATS                            = 8,            // (uint32 inv: 4294967287)
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG                 = 10,           // (uint32 inv: 4294967285)
     SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE                  = 11,           // (uint32 inv: 4294967284)
@@ -2466,10 +2467,10 @@ enum eIoConfig
 	/** GPS type - last type */
     IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
-#define IO_CONFIG_GPS1_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS2_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS1_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
-#define IO_CONFIG_GPS2_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS1_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS2_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 
 #define SET_IO_CFG_GPS1_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
 #define SET_IO_CFG_GPS2_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
