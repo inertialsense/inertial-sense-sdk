@@ -4215,9 +4215,6 @@ typedef struct PACKED
 	/** Last runtime microseconds */
 	uint32_t                runtimeUs;
 
-	/** Max runtime microseconds */
-	uint32_t                maxRuntimeUs;
-
 	/** Average runtime */
 	float					avgRuntimeUs;
 
@@ -4227,17 +4224,20 @@ typedef struct PACKED
 	/** Average of runtimes greater than avgRuntimeUs */
 	float					upperRuntimeUs;
 
+	/** Max runtime microseconds */
+	uint32_t                maxRuntimeUs;
+
+	/** Local time when task loop started (following delay) */
+	uint32_t                startTimeUs;
+
 	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
 
-	/** Cpu usage percent */
+	/** Processor usage percent */
     float					cpuUsage;
 
 	/** Handle */
 	uint32_t                handle;
-
-	/** Local time when task loop started (following delay) */
-	uint32_t                startTimeUs;
 	
 } rtos_task_t;
 
@@ -4250,9 +4250,6 @@ typedef struct PACKED
 	/** Runtime in microseconds */
 	uint32_t                runtimeTicks;
 
-	/** Maximum runtime microseconds */
-	uint32_t                maxRuntimeTicks;
-
 	/** LPF average runtime */
 	float					avgRuntimeTicks;
 
@@ -4261,6 +4258,9 @@ typedef struct PACKED
 
 	/** Average of runtimes greater than avgRuntimeTicks */
 	float					upperRuntimeTicks;
+
+	/** Maximum runtime microseconds */
+	uint32_t                maxRuntimeTicks;
 
 	/** Local time when task loop started (following delay) */
 	uint32_t                startTimeTicks;
