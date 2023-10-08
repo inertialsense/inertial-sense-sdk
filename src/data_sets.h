@@ -4212,15 +4212,21 @@ typedef struct PACKED
 	/** Task period ms */
 	uint32_t                periodMs;
 
-	/** Last run time microseconds */
-	uint32_t                runTimeUs;
+	/** Last runtime microseconds */
+	uint32_t                runtimeUs;
 
-	/** Max run time microseconds */
-	uint32_t                maxRunTimeUs;
-	
-	/** Rolling average over last 1000 executions */
-	float					averageRunTimeUs;
-	
+	/** Max runtime microseconds */
+	uint32_t                maxRuntimeUs;
+
+	/** Average runtime */
+	float					avgRuntimeUs;
+
+	/** Average of runtimes less than avgRuntimeUs */
+	float					lowerRuntimeUs;
+
+	/** Average of runtimes greater than avgRuntimeUs */
+	float					upperRuntimeUs;
+
 	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
 
@@ -4231,30 +4237,40 @@ typedef struct PACKED
 	uint32_t                handle;
 
 	/** Local time when task loop started (following delay) */
-	uint32_t                profileStartTimeUs;
+	uint32_t                startTimeUs;
 	
 } rtos_task_t;
 
 /** Internal RTOS task profiling info (processor ticks instead of usec) */
 typedef struct PACKED
 {
-	/** Last run time microseconds */
-	uint32_t                runTimeTicks;
+	/** Time in microseconds */
+	uint32_t                timeTicks;
 
-	/** Max run time microseconds */
-	uint32_t                maxRunTimeTicks;
-	
-	/** Rolling average over last 1000 executions */
-	float					averageRunTimeTicks;
+	/** Runtime in microseconds */
+	uint32_t                runtimeTicks;
+
+	/** Maximum runtime microseconds */
+	uint32_t                maxRuntimeTicks;
+
+	/** LPF average runtime */
+	float					avgRuntimeTicks;
+
+	/** Average of runtimes less than avgRuntimeTicks */
+	float					lowerRuntimeTicks;
+
+	/** Average of runtimes greater than avgRuntimeTicks */
+	float					upperRuntimeTicks;
 
 	/** Local time when task loop started (following delay) */
-	uint32_t                profileStartTimeTicks;
+	uint32_t                startTimeTicks;
 
 	/** Counter of times task took too long to run */
 	uint32_t				gapCount;
 
+	/** Task period ms */
 	uint32_t 				periodTicks;
-	
+
 } rtos_profile_t;
 
 /** (DID_RTOS_INFO) */
