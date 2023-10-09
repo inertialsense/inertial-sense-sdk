@@ -544,7 +544,8 @@ static void sigint_cb(int sig)
 }
 
 static int inertialSenseMain()
-{	
+{
+    int exitCode = 0;
 	// clear display
 	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
 	g_inertialSenseDisplay.SetKeyboardNonBlocking();
@@ -654,8 +655,24 @@ static int inertialSenseMain()
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
 					{	// device disconnected, exit
+                        exitCode = -2;
 						break;
 					}
+
+                    // Exit CLTool at end of Update
+                    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                        bool areDevicesUpdating = false;
+                        for (size_t i=0; i < inertialSenseInterface.GetDeviceCount(); i++) {
+                            auto device = inertialSenseInterface.GetComManagerDevice(i);
+                            if (device != nullptr && device->fwUpdater != nullptr) {
+                                areDevicesUpdating = true;
+                                break;
+                            }
+                        }
+                        if (!areDevicesUpdating) { // If nothing is updating. Exit
+                            break;
+                        }
+                    }
 
 					// Print to standard output
 					bool refreshDisplay = g_inertialSenseDisplay.PrintData();
@@ -670,13 +687,25 @@ static int inertialSenseMain()
 			}
 		}
 
+        //If Firmware Update is specified return an error code based on the Status of the Firmware Update
+
+        if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+            for (size_t i=0; i < inertialSenseInterface.GetDeviceCount(); i++) {
+                auto device = inertialSenseInterface.GetComManagerDevice(i);
+                if (device != nullptr && device->closeStatus < fwUpdate::NOT_STARTED) {
+                    exitCode = -3;
+                    break;
+                }
+            }
+        }
+
 		// [C++ COMM INSTRUCTION] STEP 6: Close interface
 		// Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
 		inertialSenseInterface.Close();
 		inertialSenseInterface.CloseServerConnection();
 	}
 
-	return 0;
+	return exitCode;
 }
 
 
