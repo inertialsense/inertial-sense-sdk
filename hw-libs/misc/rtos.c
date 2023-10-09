@@ -115,6 +115,8 @@ void rtosResetStats(void)
 #ifndef __INERTIAL_SENSE_EVB_2__
 		g_rtos_pro[i].maxRuntimeTicks = 0;
 #endif
+		g_rtos.task[i].gapCount = 0;
+		g_rtos_pro[i].gapCount = 0;
 	}
 }
 
