@@ -318,6 +318,10 @@ extern void vPortFree(void* pv);
 #define _LIMIT2(x, xmin, xmax) { if ((x) < (xmin)) { (x) = (xmin); } else { if ((x) > (xmax)) { (x) = (xmax); } } }
 #endif
 
+#ifndef _ROUNDUP
+#define _ROUNDUP(numToRound, multiple) (((numToRound + multiple - 1) / multiple) * multiple)
+#endif
+
 #ifndef _ISNAN
 #define _ISNAN(a) ((a)!=(a))
 #endif

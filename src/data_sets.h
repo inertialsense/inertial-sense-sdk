@@ -1266,17 +1266,17 @@ typedef struct PACKED
 	/** IMU sample period in milliseconds. Zero disables sampling. */
 	uint32_t				imuPeriodMs;
 
-	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
+	/** Preintegrated IMU (PIMU) integration period and navigation filter output period (ms). */
 	uint32_t				navPeriodMs;
 	
     /** Actual sample period relative to GPS PPS (sec) */
 	double					sensorTruePeriod;
 
-	/** Reserved */
+	/** Flash config checksum used with host SDK synchronization */
 	uint32_t				flashCfgChecksum;
 
-	/** Reserved */
-	float					reserved3;
+	/** Navigation filter update period (ms) */
+	uint32_t				ekfPeriodMs;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
