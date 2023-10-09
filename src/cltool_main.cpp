@@ -662,8 +662,8 @@ static int inertialSenseMain()
                     // Exit CLTool at end of Update
                     if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
                         bool areDevicesUpdating = false;
-                        for (size_t i=0; i < inertialSenseInterface.GetDeviceCount(); i++) {
-                            auto device = inertialSenseInterface.GetComManagerDevice(i);
+                        for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
+                            auto device = inertialSenseInterface.ComManagerDevice(i);
                             if (device != nullptr && device->fwUpdater != nullptr) {
                                 areDevicesUpdating = true;
                                 break;
@@ -690,8 +690,8 @@ static int inertialSenseMain()
         //If Firmware Update is specified return an error code based on the Status of the Firmware Update
 
         if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-            for (size_t i=0; i < inertialSenseInterface.GetDeviceCount(); i++) {
-                auto device = inertialSenseInterface.GetComManagerDevice(i);
+            for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
+                auto device = inertialSenseInterface.ComManagerDevice(i);
                 if (device != nullptr && device->closeStatus < fwUpdate::NOT_STARTED) {
                     exitCode = -3;
                     break;
