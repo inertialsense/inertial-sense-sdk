@@ -29,7 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MSG_PERIOD_SEND_ONCE		-1
 #define MSG_PERIOD_DISABLED			0
 
-static com_manager_t g_cm;
+static com_manager_t s_cm = {0};
 
 int initComManagerInstanceInternal
 (
@@ -60,7 +60,7 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
 
 static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype);
 
-CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
+CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int comManagerInit
 (	int numPorts,
@@ -75,7 +75,7 @@ int comManagerInit
 	com_manager_port_t *cmPorts)
 {
 	return initComManagerInstanceInternal(
-		&g_cm, 
+		&s_cm, 
 		numPorts, 
 		stepPeriodMilliseconds, 
 		portReadFnc, 
@@ -157,7 +157,7 @@ int initComManagerInstanceInternal
 	cmInstance->cmMsgHandlerUblox = NULL;
 	cmInstance->cmMsgHandlerRtcm3 = NULL;
 
-	if (buffers == NULL)
+    if (buffers == NULL || cmPorts == NULL)
 	{
 		return -1;
 	}
@@ -172,7 +172,7 @@ int initComManagerInstanceInternal
 		
 	// Port specific info
 	cmInstance->ports = cmPorts;
-	for (i = 0; i < numPorts; i++)
+		for (i = 0; i < numPorts; i++)
 	{	// Initialize IScomm instance, for serial reads / writes
 		com_manager_port_t *port = &(cmInstance->ports[i]);
 		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
@@ -196,7 +196,7 @@ int asciiMessageCompare(const void* elem1, const void* elem2)
 
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags)
 {
-	comManagerRegisterInstance(&g_cm, did, txFnc, pstRxFnc, txDataPtr, rxDataPtr, size, pktFlags);
+	comManagerRegisterInstance(&s_cm, did, txFnc, pstRxFnc, txDataPtr, rxDataPtr, size, pktFlags);
 }
 
 void comManagerRegisterInstance(CMHANDLE cmInstance_, uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags)
@@ -230,8 +230,8 @@ void comManagerRegisterInstance(CMHANDLE cmInstance_, uint16_t did, pfnComManage
 
 void comManagerStep(void)
 {
-	comManagerStepRxInstance(&g_cm);
-	comManagerStepTxInstance(&g_cm);
+	comManagerStepRxInstance(&s_cm);
+	comManagerStepTxInstance(&s_cm);
 }
 
 void comManagerStepInstance(CMHANDLE cmInstance_)
@@ -339,7 +339,7 @@ void comManagerStepTxInstance(CMHANDLE cmInstance_)
 
 void stepComManagerSendMessages(void)
 {
-	stepComManagerSendMessagesInstance(&g_cm);
+	stepComManagerSendMessagesInstance(&s_cm);
 }
 
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
@@ -391,7 +391,7 @@ void comManagerSetCallbacks(
 	pfnComManagerGenMsgHandler handlerRtcm3,
 	pfnComManagerGenMsgHandler handlerSpartn)
 {
-	comManagerSetCallbacksInstance(&g_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
+	comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
@@ -423,7 +423,7 @@ void* comManagerGetUserPointer(CMHANDLE cmInstance)
 
 is_comm_instance_t* comManagerGetIsComm(int pHandle)
 {
-	return comManagerGetIsCommInstance(&g_cm, pHandle);
+	return comManagerGetIsCommInstance(&s_cm, pHandle);
 }
 
 is_comm_instance_t* comManagerGetIsCommInstance(CMHANDLE cmInstance, int pHandle)
@@ -452,7 +452,7 @@ is_comm_instance_t* comManagerGetIsCommInstance(CMHANDLE cmInstance, int pHandle
 */
 void comManagerGetData(int pHandle, uint16_t did, uint16_t size, uint16_t offset, uint16_t period)
 {
-	comManagerGetDataInstance(&g_cm, pHandle, did, size, offset, period);
+	comManagerGetDataInstance(&s_cm, pHandle, did, size, offset, period);
 }
 
 void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did, uint16_t size, uint16_t offset, uint16_t period)
@@ -469,7 +469,7 @@ void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did, u
 
 void comManagerGetDataRmc(int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
 {
-	comManagerGetDataRmcInstance(&g_cm, pHandle, rmcBits, rmcOptions);
+	comManagerGetDataRmcInstance(&s_cm, pHandle, rmcBits, rmcOptions);
 }
 
 void comManagerGetDataRmcInstance(CMHANDLE cmInstance, int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
@@ -483,7 +483,7 @@ void comManagerGetDataRmcInstance(CMHANDLE cmInstance, int pHandle, uint64_t rmc
 
 int comManagerSendData(int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {	
-	return comManagerSendDataInstance(&g_cm, pHandle, data, did, size, offset);
+	return comManagerSendDataInstance(&s_cm, pHandle, data, did, size, offset);
 }
 
 int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, void* data, uint16_t did, uint16_t size, uint16_t offset)
@@ -493,7 +493,7 @@ int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, void* data, uin
 
 int comManagerSendDataNoAck(int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	return comManagerSendDataNoAckInstance(&g_cm, pHandle, data, did, size, offset);
+	return comManagerSendDataNoAckInstance(&s_cm, pHandle, data, did, size, offset);
 }
 
 int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
@@ -503,7 +503,7 @@ int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, void *data
 
 int comManagerSendRawData(int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	return comManagerSendRawDataInstance(&g_cm, pHandle, data, did, size, offset);
+	return comManagerSendRawDataInstance(&s_cm, pHandle, data, did, size, offset);
 }
 
 int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, void* data, uint16_t did, uint16_t size, uint16_t offset)
@@ -513,7 +513,7 @@ int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, void* data, 
 
 int comManagerSendRaw(int pHandle, void *dataPtr, int dataSize)
 {
-	return comManagerSendRawInstance(&g_cm, pHandle, dataPtr, dataSize);
+	return comManagerSendRawInstance(&s_cm, pHandle, dataPtr, dataSize);
 }
 
 // Returns 0 on success, -1 on failure.
@@ -526,7 +526,7 @@ int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, i
 
 int comManagerDisableData(int pHandle, uint16_t did)
 {
-	return comManagerDisableDataInstance(&g_cm, pHandle, did);
+	return comManagerDisableDataInstance(&s_cm, pHandle, did);
 }
 
 int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did)
@@ -536,7 +536,7 @@ int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did
 
 int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t size, uint16_t did, uint16_t offset)
 {
-	return comManagerSendInstance(&g_cm, pHandle, pFlags, data, did, size, offset);
+	return comManagerSendInstance(&s_cm, pHandle, pFlags, data, did, size, offset);
 }
 
 // Returns 0 on success, -1 on failure.
@@ -732,7 +732,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 
 bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did)
 {
-	return comManagerGetRegisteredDataInfoInstance(&g_cm, did);
+	return comManagerGetRegisteredDataInfoInstance(&s_cm, did);
 }
 
 bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint16_t did)
@@ -749,7 +749,7 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint
 // 0 on success. -1 on failure.
 int comManagerGetDataRequest(int port, p_data_get_t* req)
 {
-	return comManagerGetDataRequestInstance(&g_cm, port, req);
+	return comManagerGetDataRequestInstance(&s_cm, port, req);
 }
 
 int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_get_t* req)
@@ -914,7 +914,7 @@ void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg)
 
 void comManagerDisableBroadcasts(int pHandle)
 {
-	comManagerDisableBroadcastsInstance(&g_cm, pHandle);
+	comManagerDisableBroadcastsInstance(&s_cm, pHandle);
 }
 
 void comManagerDisableBroadcastsInstance(CMHANDLE cmInstance_, int pHandle)
