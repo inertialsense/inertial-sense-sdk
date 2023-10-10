@@ -91,12 +91,12 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
             cout << "Unable to load files" << endl;
     }
 
-    cout << "found " << logger_.GetDeviceCount() << " devices\n";
+    cout << "found " << logger_.DeviceCount() << " devices\n";
     vector<int> serialNumbers;
-    for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
+    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
     {
-        cout << logger_.GetDeviceInfo(i)->serialNumber << "\t";
-        serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
+        cout << logger_.DeviceInfo(i)->serialNumber << "\t";
+        serialNumbers.push_back(logger_.DeviceInfo(i)->serialNumber);
     }
     cout << endl;
     serialNumbers_ = py::cast(serialNumbers);
@@ -108,7 +108,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
 void LogReader::organizeData(int device_id)
 {
-    p_data_t* data = NULL;
+    p_data_buf_t* data = NULL;
     while ((data = logger_.ReadData(device_id)))
     {
         // if (data->hdr.id == DID_DEV_INFO)
@@ -311,7 +311,7 @@ void LogReader::forwardData(int device_id)
 
 bool LogReader::load()
 {
-    for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
+    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
     {
         if (dev_log_ != nullptr)
         {

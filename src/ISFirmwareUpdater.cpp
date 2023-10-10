@@ -5,10 +5,11 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) {
+bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) 
+{
     srand(time(NULL)); // get *some kind* of seed.
 
-    srcFile = new std::ifstream(filename);
+    srcFile = new std::ifstream(filename, std::ios::binary);
 
     // get the file size, and checksum for the file
     srcFile->seekg(0, srcFile->end); // move to the end
@@ -17,13 +18,20 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 
     // calculate the md5 checksum
     resetMd5();
+    
     uint8_t buff[512];
-    size_t curPos = 0;
-    while ( (curPos = srcFile->tellg()) < fileSize) {
+    size_t curPos = srcFile->tellg();
+
+    while ( curPos < fileSize) 
+    {
         int len = _MIN(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
+        srcFile->seekg(curPos);
         srcFile->read((char *)buff, len);
+
         hashMd5(len, buff);
+        curPos = srcFile->tellg();
     }
+
     getCurrentMd5(session_md5);
     printf("Image '%s', md5: %8x%8x%8x%8x\n", filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
 
@@ -90,6 +98,16 @@ bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     float percent = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char *message = (const char *)&msg.data.progress.message;
 
+    if(pfnUploadProgress_cb != nullptr)
+        pfnUploadProgress_cb(this, percent);
+
+    if(pfnVerifyProgress_cb != nullptr)
+        pfnVerifyProgress_cb(this, percent);
+    
+    if(pfnInfoProgress_cb != nullptr)
+        pfnInfoProgress_cb(this, message, ISBootloader::IS_LOG_LEVEL_INFO);
+    
+
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
     printf("[%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, getSessionStatusName(), msg.data.progress.msg_level, message);
     return true;
@@ -148,8 +166,8 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
 }
 
 bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    nextChunkSend = current_timeMs() + 5; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
-    int result = comManagerSendData(pHandle, DID_FIRMWARE_UPDATE, buffer, buff_len, 0);
+    nextChunkSend = current_timeMs() + 15; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
+    int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
 

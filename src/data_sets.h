@@ -139,8 +139,9 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
+#define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_LAST                              124 /** Last of GPX DIDs */
+#define DID_GPX_LAST                              125 /** Last of GPX DIDs */
 
 
 // Adding a new data id?
@@ -392,8 +393,8 @@ enum eHdwStatusFlags
 /** System status flags */
 enum eSysStatusFlags
 {
-    /**  */
-    SYS_STATUS_RESERVED							= (int)0x00000001,
+    /** Allow IMX to drive Testbed-3 status LEDs */
+    SYS_STATUS_TBED3_LEDS_ENABLED				= (int)0x00000001,
 };
 
 // Used to validate GPS position (and velocity)
@@ -479,11 +480,22 @@ typedef struct PACKED
 
 }pos_measurement_t;
 
+enum eDevInfoHardware
+{
+	DEV_INFO_HARDWARE_UINS      = 1,
+	DEV_INFO_HARDWARE_EVB       = 2,
+	DEV_INFO_HARDWARE_IMX       = 3,
+	DEV_INFO_HARDWARE_GPX       = 4,
+};
+
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
 {
-    /** Reserved bits */
-    uint32_t        reserved;
+	/** Reserved bits */
+	uint16_t        reserved;
+
+	/** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
+	uint16_t        hardware;
 
     /** Serial number */
     uint32_t        serialNumber;
@@ -544,7 +556,7 @@ typedef struct PACKED
 	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
 
-	/** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
+	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
 	int32_t			platformType;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
@@ -1371,15 +1383,21 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1       = 12,           // (uint32 inv: 4294967283)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2       = 13,           // (uint32 inv: 4294967282)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0       = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 15,           // (uint32 inv: 4294967280)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 15,           // (uint32 inv: 4294967280)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2       = 16,           // (uint32 inv: 4294967279)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1      = 17,           // (uint32 inv: 4294967278)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1  = 18,           // (uint32 inv: 4294967277)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2  = 19,           // (uint32 inv: 4294967276)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)	
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1  = 18,           // (uint32 inv: 4294967277)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2  = 19,           // (uint32 inv: 4294967276)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)
+
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)
 
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                  = 30,           // (uint32 inv: 4294967265)
     SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER         = 31,           // (uint32 inv: 4294967264)
@@ -1392,7 +1410,7 @@ enum eSystemCommand
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
-    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840) 
+    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
     SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
@@ -1400,7 +1418,7 @@ enum eSystemCommand
 
 enum eSerialPortBridge
 {
-    SERIAL_PORT_BRIDGE_DISABLED         = 0,
+	SERIAL_PORT_BRIDGE_DISABLED         = 0,
 
     SERIAL_PORT_BRIDGE_GPS1_TO_USB      = 1,
     SERIAL_PORT_BRIDGE_GPS1_TO_SER0     = 2,
@@ -1978,6 +1996,63 @@ typedef struct PACKED
 
 } bit_t;
 
+// GPXBit results bit
+#define GPXBit_resultsBit_PPS1      (0x01 << GPXBit_resultsPos_PPS1)
+#define GPXBit_resultsBit_PPS2      (0x01 << GPXBit_resultsPos_PPS2)
+#define GPXBit_resultsBit_UART      (0x01 << GPXBit_resultsPos_UART)
+#define GPXBit_resultsBit_IO        (0x01 << GPXBit_resultsPos_IO)
+#define GPXBit_resultsBit_GPS       (0x01 << GPXBit_resultsPos_GPS)
+#define GPXBit_resultsBit_FINISHED  (0x01 << GPXBit_resultsPos_FINISHED)
+#define GPXBit_resultsBit_CANCELED  (0x01 << GPXBit_resultsPos_CANCELED)
+#define GPXBit_resultsBit_ERROR     (0x01 << GPXBit_resultsPos_ERROR)
+
+// GPXBit commands
+enum GPXBit_CMDs{
+    GPXBit_CMDs_NONE = 0,
+    GPXBit_CMDs_START_MANUF_TEST,
+    GPXBit_CMDs_ALERT_UART_TEST_STR,
+    GPXBit_CMDs_ALERT_PPS1_RX,
+    GPXBit_CMDs_ALERT_PPS2_RX,
+    GPXBit_CMDs_REPORT,
+    GPXBit_CMDs_STOP,
+
+};
+
+// GPXBit results bit posisition
+enum GPXBit_resultsPos{
+    GPXBit_resultsPos_PPS1 = 0,
+    GPXBit_resultsPos_PPS2,
+    GPXBit_resultsPos_UART,
+    GPXBit_resultsPos_IO,
+    GPXBit_resultsPos_GPS,
+    GPXBit_resultsPos_FINISHED,
+
+    GPXBit_resultsPos_CANCELED,
+    GPXBit_resultsPos_ERROR,
+};
+
+// GPXBit commands
+#define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
+
+/** (DID_BIT) Built-in self-test parameters */
+typedef struct PACKED
+{
+    /** Calibration BIT status (see eCalBitStatusFlags) */
+    uint32_t                results;
+    
+    /** Command  **/
+    uint8_t                command;
+
+    /* what port we are running on*/
+    uint8_t                port;
+
+    /** Self-test mode*/
+    uint8_t                testMode;
+
+    /** Built-in self-test state */
+    uint8_t                state;
+
+} GPX_bit_t;
 
 enum eInfieldCalState
 {
@@ -2084,7 +2159,7 @@ typedef struct PACKED
     imus_t                  imu[NUM_IMU_DEVICES];
 
     /** Collected data used to solve for the bias error and INS rotation.  Vertical axis: 0 = X, 1 = Y, 2 = Z  */
-    infield_cal_vaxis_t		calData[3];
+    infield_cal_vaxis_t     calData[3];
 
 } infield_cal_t;
 
@@ -2104,68 +2179,69 @@ enum eSysConfigBits
     SYS_CFG_BITS_DISABLE_LEDS                           = (int)0x00000010,
 
     /** Magnetometer recalibration.  (see eMagCalState) 1 = multi-axis, 2 = single-axis */
-    SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
-    SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
+    SYS_CFG_BITS_MAG_RECAL_MODE_MASK                    = (int)0x00000700,
+    SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET                  = 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
 
     /** Disable magnetometer fusion */
-    SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
+    SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION            = (int)0x00001000,
     /** Disable barometer fusion */
-    SYS_CFG_BITS_DISABLE_BAROMETER_FUSION				= (int)0x00002000,
+    SYS_CFG_BITS_DISABLE_BAROMETER_FUSION               = (int)0x00002000,
     /** Disable GPS 1 fusion */
-    SYS_CFG_BITS_DISABLE_GPS1_FUSION					= (int)0x00004000,
+    SYS_CFG_BITS_DISABLE_GPS1_FUSION                    = (int)0x00004000,
     /** Disable GPS 2 fusion */
-    SYS_CFG_BITS_DISABLE_GPS2_FUSION					= (int)0x00008000,
+    SYS_CFG_BITS_DISABLE_GPS2_FUSION                    = (int)0x00008000,
 
     /** Disable automatic Zero Velocity Updates (ZUPT).  Disabling automatic ZUPT is useful for degraded GPS environments or applications with very slow velocities. */
-    SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES		= (int)0x00010000,
+    SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES     = (int)0x00010000,
     /** Disable automatic Zero Angular Rate Updates (ZARU).  Disabling automatic ZARU is useful for applications with small/slow angular rates. */
-    SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES	= (int)0x00020000,
+    SYS_CFG_BITS_DISABLE_AUTO_ZERO_ANGULAR_RATE_UPDATES = (int)0x00020000,
     /** Disable INS EKF updates */
-    SYS_CFG_BITS_DISABLE_INS_EKF						= (int)0x00040000,
+    SYS_CFG_BITS_DISABLE_INS_EKF                        = (int)0x00040000,
     /** Prevent built-in test (BIT) from running automatically on startup */
-    SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP			= (int)0x00080000,
+    SYS_CFG_BITS_DISABLE_AUTO_BIT_ON_STARTUP            = (int)0x00080000,
 
     /** Disable wheel encoder fusion */
-    SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION			= (int)0x00100000,
-    /** Disable packet encoding, binary data will have all bytes as is */
-    SYS_CFG_BITS_DISABLE_PACKET_ENCODING				= (int)0x00400000,
+    SYS_CFG_BITS_DISABLE_WHEEL_ENCODER_FUSION           = (int)0x00100000,
+
+    SYS_CFG_BITS_UNUSED3                                = (int)0x00200000,
+    SYS_CFG_BITS_UNUSED4                                = (int)0x00400000,
+    SYS_CFG_BITS_UNUSED5                                = (int)0x00800000,
 
     /** Use reference IMU in EKF instead of onboard IMU */
-    SYS_CFG_USE_REFERENCE_IMU_IN_EKF					= (int)0x01000000,
+    SYS_CFG_USE_REFERENCE_IMU_IN_EKF                    = (int)0x01000000,
     /** Reference point stationary on strobe input */
-    SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT	= (int)0x02000000,
-
+    SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT    = (int)0x02000000,
 };
 
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
-	/*! GPS  */
-	GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
-	/*! QZSS  */
-	GNSS_SAT_SIG_CONST_QZS                              = (uint16_t)0x000C,
-	/*! Galileo  */
-	GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
-	/*! BeiDou  */
-	GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
-	/*! GLONASS  */
-	GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
-	/*! SBAS  */
-	GNSS_SAT_SIG_CONST_SBS                              = (uint16_t)0x1000,
-	/*! IRNSS / NavIC  */
-	GNSS_SAT_SIG_CONST_IRN                              = (uint16_t)0x2000,
-	/*! IMES  */
-	GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
+    /*! GPS  */
+    GNSS_SAT_SIG_CONST_GPS                              = (uint16_t)0x0003,
+    /*! QZSS  */
+    GNSS_SAT_SIG_CONST_QZS                              = (uint16_t)0x000C,
+    /*! Galileo  */
+    GNSS_SAT_SIG_CONST_GAL                              = (uint16_t)0x0030,
+    /*! BeiDou  */
+    GNSS_SAT_SIG_CONST_BDS                              = (uint16_t)0x00C0,
+    /*! GLONASS  */
+    GNSS_SAT_SIG_CONST_GLO                              = (uint16_t)0x0300,
+    /*! SBAS  */
+    GNSS_SAT_SIG_CONST_SBS                              = (uint16_t)0x1000,
+    /*! IRNSS / NavIC  */
+    GNSS_SAT_SIG_CONST_IRN                              = (uint16_t)0x2000,
+    /*! IMES  */
+    GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
 
-	/*! GNSS default */
-	GNSS_SAT_SIG_CONST_DEFAULT = \
-		GNSS_SAT_SIG_CONST_GPS | \
-		GNSS_SAT_SIG_CONST_SBS | \
-		GNSS_SAT_SIG_CONST_QZS | \
-		GNSS_SAT_SIG_CONST_GAL | \
-		GNSS_SAT_SIG_CONST_GLO | \
-		GNSS_SAT_SIG_CONST_BDS
+    /*! GNSS default */
+    GNSS_SAT_SIG_CONST_DEFAULT = \
+        GNSS_SAT_SIG_CONST_GPS | \
+        GNSS_SAT_SIG_CONST_SBS | \
+        GNSS_SAT_SIG_CONST_QZS | \
+        GNSS_SAT_SIG_CONST_GAL | \
+        GNSS_SAT_SIG_CONST_GLO | \
+    	GNSS_SAT_SIG_CONST_BDS
 };
 
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
@@ -2541,27 +2617,27 @@ enum ePlatformConfig
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
     PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
-    PLATFORM_CFG_TYPE_NONE                      = (int)0,		// IMX-5 default
-    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		// uINS-3 default
+    PLATFORM_CFG_TYPE_NONE                      = (int)0,		    // IMX-5 default
+    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		    // uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
     PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
     PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
-    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	    // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
-    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,       // "
-    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,       // "
-    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,       // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,       // "
-    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,      // "
+    PLATFORM_CFG_TYPE_RUG2_1_G0                 = (int)5,	        // PCB RUG-2.1, Case RUG-3.  GPS1 timepulse on G9
+    PLATFORM_CFG_TYPE_RUG2_1_G1                 = (int)6,           // "
+    PLATFORM_CFG_TYPE_RUG2_1_G2                 = (int)7,           // "
+    PLATFORM_CFG_TYPE_RUG3_G0                   = (int)8,           // PCB RUG-3.x.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_RUG3_G1                   = (int)9,           // "
+    PLATFORM_CFG_TYPE_RUG3_G2                   = (int)10,          // "
     PLATFORM_CFG_TYPE_EVB2_G2                   = (int)11,
-    PLATFORM_CFG_TYPE_TBED3_GPX                 = (int)12,      // Testbed-3 w/ GPX
-    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,      // PCB IG-1.0.  GPS1 timepulse on G8
-    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,      // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
-    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,
-    PLATFORM_CFG_TYPE_IG2                       = (int)16,		// IG-2 w/ IMX-5 and GPX-1
-    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,		// Enable UBX output on Lambda for testbed
-    PLATFORM_CFG_TYPE_LAMBDA_G2                 = (int)18,		// "
-    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,		// Enable UBX input from Lambda
-    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,		// "
+    PLATFORM_CFG_TYPE_TBED3                     = (int)12,          // Testbed-3
+    PLATFORM_CFG_TYPE_IG1_0_G2                  = (int)13,          // PCB IG-1.0.  GPS1 timepulse on G8
+    PLATFORM_CFG_TYPE_IG1_G1                    = (int)14,          // PCB IG-1.1 and later.  GPS1 timepulse on GPS1_PPS TIMESYNC (pin 20)
+    PLATFORM_CFG_TYPE_IG1_G2                    = (int)15,  
+    PLATFORM_CFG_TYPE_IG2                       = (int)16,          // IG-2 w/ IMX-5 and GPX-1
+    PLATFORM_CFG_TYPE_LAMBDA_G1                 = (int)17,          // Enable UBX output on Lambda for testbed
+    PLATFORM_CFG_TYPE_LAMBDA_G2              	= (int)18,          // "
+    PLATFORM_CFG_TYPE_TBED2_G1_W_LAMBDA         = (int)19,          // Enable UBX input from Lambda
+    PLATFORM_CFG_TYPE_TBED2_G2_W_LAMBDA         = (int)20,          // "
     PLATFORM_CFG_TYPE_COUNT                     = (int)21,
 
     // Presets
@@ -2729,7 +2805,7 @@ typedef enum
     DYNAMIC_MODEL_AIRBORNE_4G       = 8,
     DYNAMIC_MODEL_WRIST             = 9,
     DYNAMIC_MODEL_INDOOR            = 10
-} eInsDynModel;
+} eDynamicModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
  * IMPORTANT! These fields should not be deleted, they can be deprecated and marked as reserved,
@@ -2767,7 +2843,7 @@ typedef struct PACKED
     /** X,Y,Z offset in meters in Sensor Frame to GPS 1 antenna. */
     float					gps1AntOffset[3];
  
-    /** INS dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** INS dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t					dynamicModel;
 
     /** Debug */
@@ -3114,6 +3190,9 @@ typedef struct
 
     /** slip threshold of geometry-free phase (m) */
     double thresslip;
+
+    /* slip threshold of doppler (m) */
+    double thresdop;
 
     /** variance for fix-and-hold pseudo measurements (cycle^2) */
     double varholdamb;
@@ -3842,7 +3921,7 @@ typedef struct
     /** Satellite system constellation used in GNSS solution.  (see eGnssSatSigConst) 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS */
     uint16_t                gnssSatSigConst;
 
-    /** Dynamic platform model (see eInsDynModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
+    /** Dynamic platform model (see eDynamicModel).  Options are: 0=PORTABLE, 2=STATIONARY, 3=PEDESTRIAN, 4=GROUND VEHICLE, 5=SEA, 6=AIRBORNE_1G, 7=AIRBORNE_2G, 8=AIRBORNE_4G, 9=WRIST.  Used to balance noise and performance characteristics of the system.  The dynamics selected here must be at least as fast as your system or you experience accuracy error.  This is tied to the GPS position estimation model and intend in the future to be incorporated into the INS position model. */
     uint8_t                 dynamicModel;
 
     /** Debug */
@@ -4494,7 +4573,7 @@ typedef struct
 {
     uint32_t runTimeUs;
     uint32_t maxRunTimeUs;
-    uint32_t lastStartTimeUs;
+    uint32_t StartTimeUs;
     uint32_t startPeriodUs;
 } runtime_profile_t;
 
@@ -4793,6 +4872,10 @@ convert satellite gnssID + svID to satellite number
 @return satellite number (0:error)
 */
 int satNumCalc(int gnssID, int svID);
+
+void profiler_start(runtime_profile_t *p, uint32_t timeUs);
+void profiler_stop(runtime_profile_t *p, uint32_t timeUs);
+void profiler_maintenance_1s(runtime_profiler_t *p);
 
 
 #ifdef __cplusplus

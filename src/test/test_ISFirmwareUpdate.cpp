@@ -640,7 +640,8 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     EXPECT_EQ( memcmp((void *)(aux_data), (void *)progress_msg, fuMsg.data.progress.msg_len), 0);
 }
 
-TEST(ISFirmwareUpdate, exchange__req_update_repl) {
+TEST(ISFirmwareUpdate, exchange__req_update_repl) 
+{
     static uint8_t buffer[2048];
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;

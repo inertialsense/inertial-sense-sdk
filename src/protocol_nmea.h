@@ -3,6 +3,13 @@
 
 #include "data_sets.h"
 
+#define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
+#define NMEA_CMD_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
+#define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
+#define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
+#define NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
+#define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
+#define NMEA_CMD_SIZE                                   10
 
 enum eNmeaMsgIdUint
 {
@@ -12,7 +19,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_STPC = 0x53545043,		// "STPC" - Stop broadcasts on current port
 	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on IMX (app firmware update)
 	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
-	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - Device info
+	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - IMX device info
 	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
 
 	NMEA_MSG_UINT_INTE = 0x494E5445,		// "INTE"
@@ -26,6 +33,7 @@ enum eNmeaMsgIdUint
 	NMEA_MSG_UINT_GGA = 0x4747412c,			// "GGA,"
 	NMEA_MSG_UINT_GLL = 0x474c4c2c,			// "GLL,"
 	NMEA_MSG_UINT_GSA = 0x4753412c,			// "GSA,"
+	NMEA_MSG_UINT_GSV = 0x4753562c,			// "GSV,"
 	NMEA_MSG_UINT_RMC = 0x524d432c, 		// "RMC,"
 	NMEA_MSG_UINT_VTG = 0x5654472c, 		// "VTG,"
 	NMEA_MSG_UINT_ZDA = 0x5a44412c, 		// "ZDA,"

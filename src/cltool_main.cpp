@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
+#include "protocol_nmea.h"
 
 #include <signal.h>
 
@@ -55,7 +56,7 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 	static uint64_t serverByteCountLast = 0;
 	static stringstream outstream;
 
-	uint64_t newServerByteCount = i->GetClientServerByteCount();
+	uint64_t newServerByteCount = i->ClientServerByteCount();
 	if (serverByteCount != newServerByteCount)
 	{
 		serverByteCount = newServerByteCount;
@@ -77,33 +78,33 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 		outstream << "\n";
 		if (server)
 		{
-			outstream << "Server: " << i->GetTcpServerIpAddressPort()   << "     Tx: ";
+			outstream << "Server: " << i->TcpServerIpAddressPort()   << "     Tx: ";
 		}
 		else
 		{
-			outstream << "Client: " << i->GetClientConnectionInfo()     << "     Rx: ";
+			outstream << "Client: " << i->ClientConnectionInfo()     << "     Rx: ";
 		}
-		outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->GetClientServerByteCount() << " bytes    \n";
+		outstream << fixed << setw(3) << setprecision(1) << serverKBps << " KB/s, " << (long long)i->ClientServerByteCount() << " bytes    \n";
 
 		if (server)
 		{	// Server
-			outstream << "Connections: " << i->GetClientConnectionCurrent() << " current, " << i->GetClientConnectionTotal() << " total    \n";
+			outstream << "Connections: " << i->ClientConnectionCurrent() << " current, " << i->ClientConnectionTotal() << " total    \n";
 			if (showMessageSummary)
 			{
- 				outstream << i->getServerMessageStatsSummary();
+ 				outstream << i->ServerMessageStatsSummary();
 			}
 			refreshDisplay = true;
 		}
 		else
 		{	// Client
-			com_manager_status_t* status = comManagerGetStatus(0);
-			if (status != NULLPTR && status->communicationErrorCount>2)
+			is_comm_instance_t* comm = comManagerGetIsComm(0);
+			if (comm != NULLPTR && comm->rxErrorCount>2)
 			{
-				outstream << "Com errors: " << status->communicationErrorCount << "     \n";
+				outstream << "Com errors: " << comm->rxErrorCount << "     \n";
 			}
 			if (showMessageSummary)
 			{
-				outstream << i->getClientMessageStatsSummary();
+				outstream << i->ClientMessageStatsSummary();
 			}
 		}
 	}
@@ -179,7 +180,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 	if (g_commandLineOptions.asciiMessages.size() != 0)
 	{
-		serialPortWriteAscii(inertialSenseInterface.GetSerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
+		serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
 		return true;
 	}
 
@@ -231,18 +232,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (g_commandLineOptions.persistentMessages)
     {   // Save persistent messages to flash
 		cout << "Sending save persistent messages." << endl;
-        system_command_t cfg;
-        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-        cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE);
     }
     if (g_commandLineOptions.softwareResetImx)
     {   // Issue software reset
 		cout << "Sending software reset." << endl;
-        system_command_t cfg;
-        cfg.command = SYS_CMD_SOFTWARE_RESET;
-        cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
     }
     if (g_commandLineOptions.softwareResetEvb)
     {   // Issue software reset to EVB
@@ -549,7 +544,8 @@ static void sigint_cb(int sig)
 }
 
 static int inertialSenseMain()
-{	
+{
+    int exitCode = 0;
 	// clear display
 	g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
 	g_inertialSenseDisplay.SetKeyboardNonBlocking();
@@ -659,8 +655,24 @@ static int inertialSenseMain()
 					// [C++ COMM INSTRUCTION] STEP 4: Read data
 					if (!inertialSenseInterface.Update())
 					{	// device disconnected, exit
+                        exitCode = -2;
 						break;
 					}
+
+                    // Exit CLTool at end of Update
+                    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                        bool areDevicesUpdating = false;
+                        for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
+                            auto device = inertialSenseInterface.ComManagerDevice(i);
+                            if (device != nullptr && device->fwUpdater != nullptr) {
+                                areDevicesUpdating = true;
+                                break;
+                            }
+                        }
+                        if (!areDevicesUpdating) { // If nothing is updating. Exit
+                            break;
+                        }
+                    }
 
 					// Print to standard output
 					bool refreshDisplay = g_inertialSenseDisplay.PrintData();
@@ -675,13 +687,25 @@ static int inertialSenseMain()
 			}
 		}
 
+        //If Firmware Update is specified return an error code based on the Status of the Firmware Update
+
+        if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+            for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
+                auto device = inertialSenseInterface.ComManagerDevice(i);
+                if (device != nullptr && device->closeStatus < fwUpdate::NOT_STARTED) {
+                    exitCode = -3;
+                    break;
+                }
+            }
+        }
+
 		// [C++ COMM INSTRUCTION] STEP 6: Close interface
 		// Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
 		inertialSenseInterface.Close();
 		inertialSenseInterface.CloseServerConnection();
 	}
 
-	return 0;
+	return exitCode;
 }
 
 

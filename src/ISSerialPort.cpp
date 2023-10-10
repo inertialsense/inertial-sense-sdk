@@ -79,8 +79,14 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
     // FIXME: This is actually a non-ideal approach, as it doesn't account for custom udev rules, etc -- better to look in /sys/class/tty and find devices that are actually enumerated as serial devices
     // there are a couple a approaches that we could/consider, many are outlined here: https://stackoverflow.com/questions/2530096/how-to-find-all-serial-devices-ttys-ttyusb-on-linux-without-opening-them
+    // Computers using native serial ports need to uncomment the appropriate lines below, or if needed create a new line describing native serial port
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
     ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyACM", ports);
+#if 0	// Uncomment for Raspberry Pi
+    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
+    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyAMA", ports);
+    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/serial", ports);
+#endif
 
 #endif
 

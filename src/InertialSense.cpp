@@ -19,66 +19,55 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-static int staticSendPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
-{
-	// Suppress compiler warnings
-	(void)pHandle; 
-	(void)cmHandle;
+static InertialSense *g_is;
+static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
-	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
-	if ((size_t)pHandle >= s->devices.size())
+static int staticSendData(int port, const unsigned char* buf, int len)
+{
+	if ((size_t)port >= s_cm_state->devices.size())
 	{
 		return 0;
 	}
-	return serialPortWrite(&s->devices[pHandle].serialPort, buf, len);
+	return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadPacket(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int staticReadData(int port, unsigned char* buf, int len)
 {
-	// Suppress compiler warnings
-	(void)pHandle;
-	(void)cmHandle;
-
-	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
-	if ((size_t)pHandle >= s->devices.size())
+	if ((size_t)port >= s_cm_state->devices.size())
 	{
 		return 0;
 	}
-	return serialPortReadTimeout(&s->devices[pHandle].serialPort, buf, len, 1);
+	return serialPortReadTimeout(&s_cm_state->devices[port].serialPort, buf, len, 1);
 }
 
-static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
+static void staticProcessRxData(int port, p_data_t* data)
 {
-	(void)cmHandle;
-
-	InertialSense::com_manager_cpp_state_t* s = (InertialSense::com_manager_cpp_state_t*)comManagerGetUserPointer(cmHandle);
-
-	if (data->hdr.id >= (sizeof(s->binaryCallback)/sizeof(pfnHandleBinaryData)))
+	if (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData)))
 	{
 		return;
 	}
 
-	pfnHandleBinaryData handler = s->binaryCallback[data->hdr.id];
-	s->stepLogFunction(s->inertialSenseInterface, data, pHandle);
+	pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
+	s_cm_state->stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
 
-	if ((size_t)pHandle > s->devices.size())
+	if ((size_t)port > s_cm_state->devices.size())
 	{
 		return;
 	}
 
 	if (handler != NULLPTR)
 	{
-		handler(s->inertialSenseInterface, data, pHandle);
+		handler(s_cm_state->inertialSenseInterface, data, port);
 	}
 
-	pfnHandleBinaryData handlerGlobal = s->binaryCallbackGlobal;
+	pfnHandleBinaryData handlerGlobal = s_cm_state->binaryCallbackGlobal;
 	if (handlerGlobal != NULLPTR)
 	{
 		// Called for all DID's
-		handlerGlobal(s->inertialSenseInterface, data, pHandle);
+		handlerGlobal(s_cm_state->inertialSenseInterface, data, port);
 	}
 
-	s->inertialSenseInterface->ProcessRxData(data, pHandle);
+	s_cm_state->inertialSenseInterface->ProcessRxData(port, data);
 
 	switch (data->hdr.id)
 	{
@@ -88,17 +77,38 @@ static void staticProcessRxData(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 		if (abs(currentTime - lastTime) > 5)
 		{	// Update every 5 seconds
 			lastTime = currentTime;
-			gps_pos_t &gps = *((gps_pos_t*)data->buf);
+			gps_pos_t &gps = *((gps_pos_t*)data->ptr);
 			if ((gps.status&GPS_STATUS_FIX_MASK) >= GPS_STATUS_FIX_3D)
 			{
-				*s->clientBytesToSend = nmea_gga(s->clientBuffer, s->clientBufferSize, gps);
+				*s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
 			}
 		}
 	}
 }
 
-InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
+static int staticProcessRxNmea(int port, const unsigned char* msg, int msgSize)
 {
+	if ((size_t)port > s_cm_state->devices.size())
+	{
+		return 0;
+	}
+
+	s_cm_state->inertialSenseInterface->ProcessRxNmea(port, msg, msgSize);
+	
+	return 0;
+}
+
+
+InertialSense::InertialSense(
+	pfnHandleBinaryData        handlerIsb,
+	pfnComManagerAsapMsg       handlerRmc,
+	pfnComManagerGenMsgHandler handlerNmea,
+	pfnComManagerGenMsgHandler handlerUblox, 
+	pfnComManagerGenMsgHandler handlerRtcm3,
+	pfnComManagerGenMsgHandler handlerSpartn ) : m_tcpServer(this)
+{
+	g_is = this;
+	s_cm_state = &m_comManagerState;
 	m_logThread = NULLPTR;
 	m_lastLogReInit = time(0);
 	m_clientStream = NULLPTR;
@@ -109,7 +119,7 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	{
 		m_comManagerState.binaryCallback[i] = {};
 	}
-	m_comManagerState.binaryCallbackGlobal = callback;
+	m_comManagerState.binaryCallbackGlobal = handlerIsb;
 	m_comManagerState.stepLogFunction = &InertialSense::StepLogger;
 	m_comManagerState.inertialSenseInterface = this;
 	m_comManagerState.clientBuffer = m_clientBuffer;
@@ -119,6 +129,13 @@ InertialSense::InertialSense(pfnHandleBinaryData callback) : m_tcpServer(this)
 	memset(&m_cmInit, 0, sizeof(m_cmInit));
 	m_cmPorts = NULLPTR;
 	is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer));
+
+	// Rx data callback functions
+	m_handlerRmc    = handlerRmc;
+	m_handlerNmea   = handlerNmea;
+	m_handlerUblox  = handlerUblox;
+	m_handlerRtcm3  = handlerRtcm3;
+	m_handlerSpartn = handlerSpartn;
 }
 
 InertialSense::~InertialSense()
@@ -203,7 +220,7 @@ void InertialSense::LoggerThread(void* info)
 	InertialSense* inertialSense = (InertialSense*)info;
 
 	// gather up packets in memory
-	map<int, vector<p_data_t>> packets;
+	map<int, vector<p_data_buf_t>> packets;
 
 	while (running)
 	{
@@ -211,7 +228,7 @@ void InertialSense::LoggerThread(void* info)
 		{
 			// lock so we can read and clear m_logPackets
 			cMutexLocker logMutexLocker(&inertialSense->m_logMutex);
-			for (map<int, vector<p_data_t>>::iterator i = inertialSense->m_logPackets.begin(); i != inertialSense->m_logPackets.end(); i++)
+			for (map<int, vector<p_data_buf_t>>::iterator i = inertialSense->m_logPackets.begin(); i != inertialSense->m_logPackets.end(); i++)
 			{
 				packets[i->first] = i->second;
 			}
@@ -226,7 +243,7 @@ void InertialSense::LoggerThread(void* info)
 		if (running)
 		{
 			// log the packets
-			for (map<int, vector<p_data_t>>::iterator i = packets.begin(); i != packets.end(); i++)
+			for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
 			{
 				for (size_t j = 0; j < i->second.size(); j++)
 				{
@@ -253,8 +270,11 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHand
 	cMutexLocker logMutexLocker(&i->m_logMutex);
 	if (i->m_logger.Enabled())
 	{
-		vector<p_data_t>& vec = i->m_logPackets[pHandle];
-		vec.push_back(*data);
+		p_data_buf_t d;
+		d.hdr = data->hdr;
+		memcpy(d.buf, data->ptr, d.hdr.size);
+		vector<p_data_buf_t>& vec = i->m_logPackets[pHandle];
+		vec.push_back(d);
 	}
 }
 
@@ -343,14 +363,14 @@ bool InertialSense::CreateHost(const string& connectionString)
 	return (m_tcpServer.Open(host, atoi(port.c_str())) == 0);
 }
 
-size_t InertialSense::GetDeviceCount()
+size_t InertialSense::DeviceCount()
 {
 	return m_comManagerState.devices.size();
 }
 
 bool InertialSense::Update()
 {
-	unsigned int timeMs = current_timeMs();
+	m_timeMs = current_timeMs();
 
 	if (m_tcpServer.IsOpen() && m_comManagerState.devices.size() > 0)
 	{
@@ -366,7 +386,7 @@ bool InertialSense::Update()
 		if (m_comManagerState.devices.size() > 0)
 		{
 			comManagerStep();
-            SyncFlashConfig(timeMs);
+            SyncFlashConfig(m_timeMs);
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (size_t devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
@@ -384,6 +404,7 @@ bool InertialSense::Update()
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
+						m_comManagerState.devices[devIdx].closeStatus = status;
 #ifdef DEBUG_CONSOLELOGGING
                     } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
@@ -421,10 +442,10 @@ bool InertialSense::UpdateServer()
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if ((n = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, comm->buf.tail, n, 0)))
+	if ((n = serialPortReadTimeout(&m_comManagerState.devices[0].serialPort, comm->rxBuf.tail, n, 0)))
 	{
 		// Update comm buffer tail pointer
-		comm->buf.tail += n;
+		comm->rxBuf.tail += n;
 
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
@@ -437,23 +458,23 @@ bool InertialSense::UpdateServer()
 			case _PTYPE_RTCM3:
 			case _PTYPE_UBLOX:
 				// forward data on to connected clients
-				m_clientServerByteCount += comm->dataHdr.size;
-				if (m_tcpServer.Write(comm->dataPtr, comm->dataHdr.size) != (int)comm->dataHdr.size)
+				m_clientServerByteCount += comm->rxPkt.data.size;
+				if (m_tcpServer.Write(comm->rxPkt.data.ptr, comm->rxPkt.data.size) != (int)comm->rxPkt.data.size)
 				{
 					cout << endl << "Failed to write bytes to tcp server!" << endl;
 				}
 				if (ptype == _PTYPE_RTCM3)
 				{
-					// len = messageStatsGetbitu(comm->dataPtr, 14, 10);
-					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
-					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					// len = messageStatsGetbitu(comm->rxPkt.data.ptr, 14, 10);
+					id = messageStatsGetbitu(comm->rxPkt.data.ptr, 24, 12);
+					if ((id == 1029) && (comm->rxPkt.data.size < 1024))
 					{
-						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+						str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
 					}
 				}
 				else if (ptype == _PTYPE_UBLOX)
 				{
-					id = *((uint16_t*)(&comm->dataPtr[2]));
+					id = *((uint16_t*)(&comm->rxPkt.data.ptr[2]));
 				}
 				break;
 
@@ -462,12 +483,12 @@ bool InertialSense::UpdateServer()
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
 			case _PTYPE_INERTIAL_SENSE_CMD:
-				id = comm->dataHdr.id;
+				id = comm->rxPkt.hdr.id;
 				break;
 
 			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
-					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pStart = comm->rxPkt.data.ptr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
 					pStart = _MAX(pStart, pEnd - 8);
 					memcpy(&id, pStart, (pEnd - pStart));
@@ -480,7 +501,7 @@ bool InertialSense::UpdateServer()
 
 			if (ptype != _PTYPE_NONE)
 			{	// Record message info
-				messageStatsAppend(str, m_serverMessageStats, ptype, id, current_timeMs());
+				messageStatsAppend(str, m_serverMessageStats, ptype, id, m_timeMs);
 			}
 		}
 	}
@@ -505,10 +526,10 @@ bool InertialSense::UpdateClient()
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if ((n = m_clientStream->Read(comm->buf.tail, n)))
+	if ((n = m_clientStream->Read(comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
-		comm->buf.tail += n;
+		comm->rxBuf.tail += n;
 
 		// Search comm buffer for valid packets
 		while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
@@ -520,20 +541,20 @@ bool InertialSense::UpdateClient()
 			{
 			case _PTYPE_UBLOX:
 			case _PTYPE_RTCM3:
-				m_clientServerByteCount += comm->dataHdr.size;
-				OnClientPacketReceived(comm->dataPtr, comm->dataHdr.size);
+				m_clientServerByteCount += comm->rxPkt.data.size;
+				OnClientPacketReceived(comm->rxPkt.data.ptr, comm->rxPkt.data.size);
 
 				if (ptype == _PTYPE_RTCM3)
 				{
-					id = messageStatsGetbitu(comm->dataPtr, 24, 12);
-					if ((id == 1029) && (comm->dataHdr.size < 1024))
+					id = messageStatsGetbitu(comm->rxPkt.data.ptr, 24, 12);
+					if ((id == 1029) && (comm->rxPkt.data.size < 1024))
 					{
-						str = string().assign(reinterpret_cast<char*>(comm->dataPtr + 12), comm->dataHdr.size - 12);
+						str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
 					}
 				}
 				else if (ptype == _PTYPE_UBLOX)
 				{
-					id = *((uint16_t*)(&comm->dataPtr[2]));
+					id = *((uint16_t*)(&comm->rxPkt.data.ptr[2]));
 				}
 				break;
 
@@ -547,12 +568,12 @@ bool InertialSense::UpdateClient()
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
 			case _PTYPE_INERTIAL_SENSE_CMD:
-				id = comm->dataHdr.id;
+				id = comm->rxPkt.hdr.id;
 				break;
 
 			case _PTYPE_NMEA:
 				{	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)   
-					uint8_t *pStart = comm->dataPtr + 2;
+					uint8_t *pStart = comm->rxPkt.data.ptr + 2;
 					uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
 					pStart = _MAX(pStart, pEnd - 8);
 					memcpy(&id, pStart, (pEnd - pStart));
@@ -565,7 +586,7 @@ bool InertialSense::UpdateClient()
 
 			if (ptype != _PTYPE_NONE)
 			{	// Record message info
-				messageStatsAppend(str, m_clientMessageStats, ptype, id, current_timeMs());
+				messageStatsAppend(str, m_clientMessageStats, ptype, id, m_timeMs);
 			}
 		}
 	}
@@ -579,17 +600,6 @@ bool InertialSense::UpdateClient()
 
 
 	return true;
-}
-
-void InertialSense::SetCallbacks(
-	pfnComManagerAsapMsg handlerRmc,
-	pfnComManagerGenMsgHandler handlerNmea,
-	pfnComManagerGenMsgHandler handlerUblox, 
-	pfnComManagerGenMsgHandler handlerRtcm3,
-	pfnComManagerGenMsgHandler handlerSpartn)
-{
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(handlerRmc, handlerNmea, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsOnClose)
@@ -639,25 +649,37 @@ vector<string> InertialSense::GetPorts()
 	return ports;
 }
 
-void InertialSense::StopBroadcasts(bool allPorts)
+void InertialSense::QueryDeviceInfo()
 {
-    uint8_t pid = (allPorts ? PID_STOP_BROADCASTS_ALL_PORTS : PID_STOP_BROADCASTS_CURRENT_PORT);
-
-	// Stop all broadcasts
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		// [C COMM INSTRUCTION]  Turns off (disable) all broadcasting and streaming on all ports from the uINS.
-		comManagerSend((int)i, pid, 0, 0, 0);
+		comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+	}
+}
+
+void InertialSense::StopBroadcasts(bool allPorts)
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE);
 	}
 }
 
 void InertialSense::SavePersistent()
 {
     // Save persistent messages to flash
-        system_command_t cfg;
-        cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
-        cfg.invCommand = ~cfg.command;
-        SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE);
+	}
+}
+
+void InertialSense::SoftwareReset()
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
+	}
 }
 
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
@@ -665,7 +687,7 @@ void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, ui
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
 		// [C COMM INSTRUCTION]  4.) Send data to the uINS.  
-		comManagerSendData((int)i, dataId, data, length, offset);
+		comManagerSendData((int)i, data, dataId, length, offset);
 	}
 }
 
@@ -673,7 +695,15 @@ void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length,
 {
 	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 	{
-		comManagerSendRawData((int)i, dataId, data, length, offset);
+		comManagerSendRawData((int)i, data, dataId, length, offset);
+	}
+}
+
+void InertialSense::SendRaw(uint8_t* data, uint32_t length)
+{
+	for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+	{
+		comManagerSendRaw((int)i, data, length);
 	}
 }
 
@@ -696,7 +726,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 		m_comManagerState.devices[pHandle].sysCmd.command = command;
 		m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
 		// [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.  
-		comManagerSendData(pHandle, DID_SYS_CMD, &m_comManagerState.devices[pHandle].sysCmd, sizeof(system_command_t), 0);
+		comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 	}
 }
 
@@ -731,7 +761,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
 	}
 }
 
-bool InertialSense::GetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
@@ -763,10 +793,10 @@ int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 	device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
 
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-	return comManagerSendData(pHandle, DID_FLASH_CONFIG, &device.flashCfg, sizeof(nvm_flash_cfg_t), 0);
+	return comManagerSendData(pHandle, &device.flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
 }
 
-bool InertialSense::GetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
+bool InertialSense::EvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 {
 	if ((size_t)pHandle >= m_comManagerState.devices.size())
 	{
@@ -792,18 +822,23 @@ int InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
 	device.evbFlashCfg = evbFlashCfg;
 
 	// [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.  
-	return comManagerSendData(pHandle, DID_EVB_FLASH_CFG, &device.evbFlashCfg, sizeof(evb_flash_cfg_t), 0);
+	return comManagerSendData(pHandle, &device.evbFlashCfg, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), 0);
 }
 
-void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
+void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 {
+	if (data->hdr.size==0 || data->ptr==NULL)
+	{
+		return;
+	}
+
 	is_device_t &device = m_comManagerState.devices[pHandle];
 
 	switch (data->hdr.id)
 	{
-	case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->buf;                               break;
-	case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->buf;                          break;
-	case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->buf;                      break;
+	case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;                               break;
+	case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
+	case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->ptr;                      break;
 	case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
 	case DID_FLASH_CONFIG:
 		copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));
@@ -815,8 +850,30 @@ void InertialSense::ProcessRxData(p_data_t* data, int pHandle)
     case DID_FIRMWARE_UPDATE:
         // we don't respond to messages if we don't already have an active Updater
         if (m_comManagerState.devices[pHandle].fwUpdater)
-            m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->buf, data->hdr.size);
+            m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->ptr, data->hdr.size);
         break;
+	}
+}
+
+// return 0 on success, -1 on failure
+void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
+{
+	if (m_handlerNmea)
+	{
+		m_handlerNmea(pHandle, msg, msgSize);	
+	}
+
+	is_device_t &device = m_comManagerState.devices[pHandle];
+
+	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg+1);
+	switch (messageIdUInt)
+	{
+	case NMEA_MSG_UINT_INFO:
+		if( memcmp(msg, "$INFO,", 6) == 0)
+		{	// IMX device Info
+			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
+		}
+		break;
 	}
 }
 
@@ -942,10 +999,14 @@ is_operation_result InertialSense::updateFirmware(
 
     for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
-        m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
+        
+		// TODO: Impliment maybe
+		// m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
+		// m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
+		// m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
+		
+		m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
     }
-
-    // cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
     printf("\n\r");
 
@@ -957,63 +1018,68 @@ is_operation_result InertialSense::updateFirmware(
 }
 
 /**
-	* Gets current update status for selected device index
-	* @param deviceIndex
-	*/
-InertialSense::is_update_status_t InertialSense::getUpdateStatus(uint32_t deviceIndex)
+* Gets current update status for selected device index
+* @param deviceIndex
+*/
+fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
 {
-	fwUpdate::update_status_e status;
 	try
 	{
 		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
-			status = m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+			return m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
 		else
-			return InertialSense::UPDATE_STATUS_DONE; //TODO: This need to be smarter!
-		
-		switch (status)
-		{
-			case fwUpdate::FINISHED:
-				return InertialSense::UPDATE_STATUS_DONE;
-
-			case fwUpdate::IN_PROGRESS:
-				return InertialSense::UPDATE_STATUS_UPDATING;
-
-			case fwUpdate::READY:
-			case fwUpdate::INITIALIZING:
-				return InertialSense::UPDATE_STATUS_WAITING;
-
-			case fwUpdate::NOT_STARTED:
-			case fwUpdate::ERR_INVALID_SESSION:
-			case fwUpdate::ERR_INVALID_SLOT:
-			case fwUpdate::ERR_NOT_ALLOWED:
-			case fwUpdate::ERR_NOT_ENOUGH_MEMORY:
-			case fwUpdate::ERR_OLDER_FIRMWARE:
-			case fwUpdate::ERR_MAX_CHUNK_SIZE:
-			case fwUpdate::ERR_TIMEOUT:
-			case fwUpdate::ERR_CHECKSUM_MISMATCH:
-			case fwUpdate::ERR_COMMS:
-			case fwUpdate::ERR_NOT_SUPPORTED:
-			case fwUpdate::ERR_FLASH_WRITE_FAILURE:
-			case fwUpdate::ERR_FLASH_OPEN_FAILURE:
-			case fwUpdate::ERR_FLASH_INVALID:
-				return InertialSense::UPDATE_STATUS_ERROR;
-			default:
-				return InertialSense::UPDATE_STATUS_UNKOWN;
-		}
+			return fwUpdate::ERR_UPDATER_CLOSED;
 
 	}
 	catch(...)
 	{
-		return InertialSense::UPDATE_STATUS_INVALID_INDEX;
+		return fwUpdate::ERR_INVALID_SLOT;
 	}
 
-
-	return InertialSense::UPDATE_STATUS_UNKOWN;
+	return fwUpdate::ERR_UNKOWN;
 }
 
 /**
-* Gets current update status for selected device index
+* Gets reason device was closed for selected device index
 * @param deviceIndex
+*/
+fwUpdate::update_status_e InertialSense::getCloseStatus(uint32_t deviceIndex)
+{
+	try
+	{
+		return m_comManagerState.devices[deviceIndex].closeStatus;
+	}
+	catch (...)
+	{
+		return fwUpdate::ERR_INVALID_SLOT;
+	}
+
+	return fwUpdate::ERR_UNKOWN;
+}
+
+/**
+* Gets current update percent for selected device index
+* @param deviceIndex
+*/
+float InertialSense::getUploadPercent(uint32_t deviceIndex)
+{
+	float totalChunks;
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
+	{
+		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks();
+
+		if (totalChunks > 0)
+			return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / totalChunks)*100;
+		else
+				return 100.0;
+	}
+	else
+		return 100.0; //TODO: This need to be smarter!
+}
+
+/**
+* Gets device index from COM port
+* @param COM port
 */
 int InertialSense::getUpdateDeviceIndex(const char* com)
 { 
@@ -1025,6 +1091,23 @@ int InertialSense::getUpdateDeviceIndex(const char* com)
 	return -1; 
 }
 
+/**
+* Gets current devInfo using device index
+* @param dev_info_t devI
+* @param uint32_t deviceIndex
+*/
+bool InertialSense::getUpdateDevInfo(dev_info_t* devI, uint32_t deviceIndex)
+{
+	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL || 1)
+	{
+		memcpy(devI, &m_comManagerState.devices[deviceIndex].devInfo, sizeof(dev_info_t));
+		return true;
+	}
+	else
+	{
+		return false; //TODO: This need to be smarter!
+	}
+}
 
 is_operation_result InertialSense::BootloadFile(
 	const string& comPort, 
@@ -1223,14 +1306,11 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
 	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-#define NUM_ENSURED_PKTS 10
-	if (m_cmInit.ensuredPackets) { delete [] m_cmInit.ensuredPackets; }
-	m_cmInit.ensuredPacketsSize = COM_MANAGER_BUF_SIZE_ENSURED_PKTS(NUM_ENSURED_PKTS);
-	m_cmInit.ensuredPackets = new ensured_pkt_t[NUM_ENSURED_PKTS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), NUM_ENSURED_PKTS, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
+	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
 	{	// Error
 		return false;
 	}
+	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
 
 	if (m_enableDeviceValidation)
 	{
@@ -1239,10 +1319,12 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// Query devices with 10 second timeout
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
+			QueryDeviceInfo();
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
+				comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
+				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
 				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
-				comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
 				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
 				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
 			}
@@ -1280,7 +1362,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// setup com manager again if serial ports dropped out with new count of serial ports
 		if (removedSerials)
 		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, 10, 10, staticReadPacket, staticSendPacket, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
 		}
 	}
 
@@ -1295,6 +1378,7 @@ void InertialSense::CloseSerialPorts()
 	}
 	m_comManagerState.devices.clear();
 }
+
 void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 {
 	nvm_flash_cfg_t* outData = &m_comManagerState.devices[pHandle].flashCfg;
@@ -1338,7 +1422,6 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
         refLla.push_back(outData->refLla[2]);
     map["refLla"] 					= refLla;
 
-
     YAML::Node lastLla = YAML::Node(YAML::NodeType::Sequence);
         lastLla.push_back(outData->lastLla[0]);
         lastLla.push_back(outData->lastLla[1]);
@@ -1350,7 +1433,6 @@ void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
     map["lastLlaUpdateDistance"] 	= outData->lastLlaUpdateDistance;
     map["ioConfig"] 				= outData->ioConfig;
     map["platformConfig"] 			= outData->platformConfig;
-
 
     YAML::Node gps2AntOffset = YAML::Node(YAML::NodeType::Sequence);
         gps2AntOffset.push_back(outData->gps2AntOffset[0]);
@@ -1421,7 +1503,7 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
     try
     {
         nvm_flash_cfg_t loaded_flash;
-        GetFlashConfig(loaded_flash);
+        FlashConfig(loaded_flash);
 
         YAML::Node inData = YAML::LoadFile(path);
         loaded_flash.size                     = inData["size"].as<uint32_t>();

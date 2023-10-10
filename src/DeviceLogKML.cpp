@@ -545,9 +545,9 @@ bool cDeviceLogKML::WriteDateToFile(const p_data_hdr_t *dataHdr, const uint8_t* 
 }
 
 
-p_data_t* cDeviceLogKML::ReadData()
+p_data_buf_t* cDeviceLogKML::ReadData()
 {
-	p_data_t* data = NULL;
+	p_data_buf_t* data = NULL;
 
 	// Read data from chunk
 	while (!(data = ReadDataFromChunk()))
@@ -565,7 +565,7 @@ p_data_t* cDeviceLogKML::ReadData()
 }
 
 
-p_data_t* cDeviceLogKML::ReadDataFromChunk()
+p_data_buf_t* cDeviceLogKML::ReadDataFromChunk()
 {
 	return NULL;
 }

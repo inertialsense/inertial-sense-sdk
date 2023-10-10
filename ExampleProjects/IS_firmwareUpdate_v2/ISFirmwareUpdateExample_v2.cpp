@@ -23,7 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISBootloaderBase.h"
 #include "../../src/ISSerialPort.h"
 
-// ADDED by Tony
 #include "../../src/InertialSense.h"
 #include "../../src/protocol/FirmwareUpdate.h"
 #include "../../src/ISLogger.h"
@@ -111,28 +110,17 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 
 int main(int argc, char* argv[])
 {
-
-	InertialSense::is_update_status_t status;
+	fwUpdate::update_status_e status;
 	string COMNum = "COM6";
-	//string COMNum = "";
-	string fileName = "../../../Firmware/IS_GPX-1_zephyr.signed.encrypted.bin";
-	//string fileName = "IS_GPX-1_zephyr.signed.encrypted.bin";
+	string fileName = "../../../Firmware/IS_GPX-1_zephyr_v2.0.0.6_b197_2023-09-18_120501.encrypted.bin";
 	uint32_t baudRate = IS_BAUDRATE_921600;
 
 	int deviceIndex = -1;
 
 	// check if we are using a static COM port
-	if(COMNum.empty())
+	if (argc == 2)
 	{
-		if (argc != 2)
-		{
-			printf("Please pass the com port\r\n");
-			printf("usage: %s {COMx}\r\n", argv[0]);
-			
-			return -1;
-		}
-		else
-			COMNum = argv[1];
+		COMNum = argv[1];
 	}
 
 	// print COM port to console
@@ -217,8 +205,7 @@ int main(int argc, char* argv[])
 
 						status = inertialSenseInterface.getUpdateStatus(deviceIndex);
 
-					} while (status != InertialSense::UPDATE_STATUS_ERROR && 
-							 status != InertialSense::UPDATE_STATUS_DONE);
+					} while (status >= fwUpdate::NOT_STARTED && status < fwUpdate::FINISHED);
 
 					cout << "Finished!\r\n";
 				}

@@ -12,6 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISBootloaderAPP.h"
 #include "ISComm.h"
+#include "protocol_nmea.h"
 
 #include <mutex>
 #include <algorithm>
@@ -33,40 +34,57 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
     return IS_OP_ERROR;
 }
 
+eImageSignature devInfoToValidSignatures(dev_info_t *devInfo)
+{
+    uint32_t valid_signatures = 0;
+
+    if(devInfo->hardware == DEV_INFO_HARDWARE_IMX || devInfo->hardwareVer[0] == 5)
+    {   /** IMX-5 */
+        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
+        valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+    }
+    else if (devInfo->hardware == DEV_INFO_HARDWARE_UINS || devInfo->hardwareVer[0] == 3 || devInfo->hardwareVer[0] == 4)
+    {   /** uINS-3/4 */
+        valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
+        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+    }
+
+    return (eImageSignature)valid_signatures;
+}
+
 eImageSignature cISBootloaderAPP::check_is_compatible()
 {
     serialPortFlush(m_port);
 
-    // Get DID_DEV_INFO from the uINS.
+    // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize, n, i;
 
-    // clear the Rx serial port
+    // clear the Rx serial buffer
     n = is_comm_free(&comm);
-    
+
     // In testing it was found that @ 330kb/s The buffer would take 10-11
-    // reads to clear after the stop broad casting message was sent. 
-    // 20 time represents double the imperical 
-    for (uint8_t i = 0; i < 20; i++) 
-    { 
+    // reads to clear after the stop broad casting message was sent.
+    // 20 time represents double the imperical
+    for (uint8_t i = 0; i < 20; i++)
+    {
         // Once the broad cast has stopped this function will break.
-        if (serialPortReadTimeout(m_port, comm.buf.start, n, 200) == 0)
-            break;         
+        if (serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200) == 0)
+            break;
     }
 
-    messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
     for (i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     {
-        if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+        if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
         {
             //serialPortClose(m_port);
             return IS_IMAGE_SIGN_NONE;
         }
     }
-    messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
+    if (messageSize != serialPortWrite(m_port, buffer, messageSize))
     {
         //serialPortClose(m_port);
         return IS_IMAGE_SIGN_NONE;
@@ -74,34 +92,29 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
 
     protocol_type_t ptype;
     n = is_comm_free(&comm);
-    dev_info_t* dev_info = NULL;
-    dev_info_t* evb_dev_info = NULL;
     uint32_t valid_signatures = 0;
-    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
-        comm.buf.tail += n;
+        comm.rxBuf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
+            switch (ptype)
             {
-                switch(comm.dataHdr.id)
+            default:
+                break;
+
+            case _PTYPE_INERTIAL_SENSE_DATA:
+                switch(comm.rxPkt.dataHdr.id)
                 {
                 case DID_DEV_INFO:
-                    dev_info = (dev_info_t*)comm.dataPtr;
+                    dev_info_t* dev_info;
+                    dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     m_sn = dev_info->serialNumber;
-                    if(dev_info->hardwareVer[0] == 5)
-                    {   /** IMX-5 */
-                        valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
-                        valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
-                    }
-                    else if (dev_info->hardwareVer[0] == 3 || dev_info->hardwareVer[0] == 4)
-                    {   /** uINS-3/4 */
-                        valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
-                        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-                    }
-                    break;    
+                    valid_signatures = devInfoToValidSignatures(dev_info);
+                    return (eImageSignature)valid_signatures;
                 case DID_EVB_DEV_INFO:
-                    evb_dev_info = (dev_info_t*)comm.dataPtr;
+                    dev_info_t* evb_dev_info;
+                    evb_dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     if (evb_dev_info->hardwareVer[0] == 2)
                     {   /** EVB-2 - all firmwares are valid except for STM32 bootloader (no VCP support) */
                         valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
@@ -109,8 +122,27 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                         valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
                         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
                     }
+                    return (eImageSignature)valid_signatures;
+                }
+                break;
+
+            case _PTYPE_NMEA:
+                int messageIdUInt = NMEA_MESSAGEID_TO_UINT(comm.rxPkt.data.ptr+1);
+                switch (messageIdUInt)
+                {
+                case NMEA_MSG_UINT_INFO:
+                    if( memcmp(comm.rxPkt.data.ptr, "$INFO,", 6) == 0)
+                    {	// IMX device Info
+                        dev_info_t devInfo;
+                        nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
+                        m_sn = devInfo.serialNumber;
+                        valid_signatures = devInfoToValidSignatures(&devInfo);
+                        return (eImageSignature)valid_signatures;
+                    }
                     break;
                 }
+                break;
             }
         }
     }
@@ -138,7 +170,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
-  
+
     for (size_t loop = 0; loop < 10; loop++)
     {
         if (!serialPortWriteAscii(m_port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
@@ -162,27 +194,26 @@ uint32_t cISBootloaderAPP::get_device_info()
 {
     serialPortFlush(m_port);
 
-    // Get DID_DEV_INFO from the uINS.
+    // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize;
-    
-    messageSize = is_comm_get_data(&comm, DID_DEV_INFO, 0, 0, 0);
+   
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
-    messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
     }
-    messageSize = is_comm_get_data(&comm, DID_EVB_STATUS, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
+    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_STATUS, 0, 0, 0);
+    if (messageSize != serialPortWrite(m_port, comm.rxBuf.start, messageSize))
     {
         // serialPortClose(&ctx->handle.port);
         return 0;
@@ -193,34 +224,55 @@ uint32_t cISBootloaderAPP::get_device_info()
 
     protocol_type_t ptype;
     int n = is_comm_free(&comm);
-    dev_info_t* dev_info = NULL;
-    dev_info_t* evb_dev_info = NULL;
-    evb_status_t* evb_status = NULL;
     uint8_t evb_version[4];
-    if ((n = serialPortReadTimeout(m_port, comm.buf.start, n, 200)))
+    if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
-        comm.buf.tail += n;
+        comm.rxBuf.tail += n;
         while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
         {
-            if(ptype == _PTYPE_INERTIAL_SENSE_DATA)
+            switch(ptype)
             {
-                switch(comm.dataHdr.id)
+            default:
+                break;
+
+            case _PTYPE_INERTIAL_SENSE_DATA:
+                switch(comm.rxPkt.dataHdr.id)
                 {
                 case DID_DEV_INFO:
-                    dev_info = (dev_info_t*)comm.dataPtr;
+                    dev_info_t* dev_info;
+                    dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     memcpy(m_app.uins_version, dev_info->hardwareVer, 4);
                     m_sn = dev_info->serialNumber;
-                    break;    
+                    break;
                 case DID_EVB_DEV_INFO:
-                    evb_dev_info = (dev_info_t*)comm.dataPtr;
+                    dev_info_t* evb_dev_info;
+                    evb_dev_info = (dev_info_t*)comm.rxPkt.data.ptr;
                     memcpy(evb_version, evb_dev_info->hardwareVer, 4);
                     break;
                 case DID_EVB_STATUS:
-                    evb_status = (evb_status_t*)comm.dataPtr;
+                    evb_status_t* evb_status;
+                    evb_status = (evb_status_t*)comm.rxPkt.data.ptr;
                     if(evb_status->firmwareVer[0]) memcpy(m_app.evb_version, evb_version, 4);
                     else memset(m_app.evb_version, 0, 4);
                     break;
                 }
+                break;
+
+            case _PTYPE_NMEA:
+                int messageIdUInt = NMEA_MESSAGEID_TO_UINT(comm.rxPkt.data.ptr+1);
+                switch (messageIdUInt)
+                {
+                case NMEA_MSG_UINT_INFO:
+                    if( memcmp(comm.rxPkt.data.ptr, "$INFO,", 6) == 0)
+                    {	// IMX device Info
+                        dev_info_t devInfo;
+                        nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
+                        m_sn = devInfo.serialNumber;
+                    }
+                    break;
+                }
+                break;
             }
         }
     }

@@ -23,6 +23,8 @@ namespace fwUpdate {
 
     FirmwareUpdateBase::FirmwareUpdateBase() { };
 
+    //int Md5Cnt = 0;
+
     size_t FirmwareUpdateBase::getPayloadSize(const payload_t* msg, bool include_aux) {
         switch (msg->hdr.msg_type) {
             case MSG_REQ_RESET:
@@ -63,7 +65,7 @@ namespace fwUpdate {
      * @return the number of bytes of the resulting buffer, after packing, or -1 if buffer is not large enough
      */
     int FirmwareUpdateBase::packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data) {
-        int payload_size = getPayloadSize(&payload, false);
+        int payload_size = (int)getPayloadSize(&payload, false);
         if (payload_size > max_len) return -1; // Not enough buffer space
         if (payload_size == 0) return -2; // Unknown/invalid message
 
@@ -338,6 +340,10 @@ namespace fwUpdate {
 
         // cleanup
         free(msg);
+
+        //debug
+        //Md5Cnt++;
+        //printf("%d:{%x,%x,%x,%x}\r\n",TonyMd5Cnt, md5hash[0], md5hash[1], md5hash[2], md5hash[3]);
 
         return (uint8_t *)&md5hash[0];
     }

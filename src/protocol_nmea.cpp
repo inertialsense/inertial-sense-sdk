@@ -282,10 +282,12 @@ char *ASCII_DegMin_to_Lon(double *vec, char *ptr)
 
 char *ASCII_to_char_array(char *dst, char *ptr, int max_len)
 {
-	STRNCPY(dst, ptr, max_len-1);
-	dst[max_len-1] = 0;			// Must be null terminated
-	ptr = ASCII_find_next_field(ptr);
-	return ptr;
+	char *ptr2 = ASCII_find_next_field(ptr);
+	int len = _MIN(max_len, (int)(ptr2-ptr)) - 1;
+	len = _MAX(0, len);		// prevent negative
+	memcpy(dst, ptr, len);
+	dst[len] = 0;			// Must be null terminated
+	return ptr2;
 }
 
 char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, char *ptr)
@@ -488,7 +490,10 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		",%s"			// 7
 		",%04d-%02d-%02d"		// 8
 		",%02d:%02d:%02d.%02d"	// 9
-		",%s",			// 10
+		",%s"			// 10
+		",%d"			// 11
+		",%d"			// 12
+		",%c",			// 13
 		(int)info.serialNumber,	// 1
 		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
 		info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3], // 3
@@ -498,8 +503,11 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		info.manufacturer,		// 7
 		info.buildYear+2000, info.buildMonth, info.buildDay, // 8
 		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
-		info.addInfo);			// 10
-		
+		info.addInfo,			// 10
+		info.hardware,			// 11
+		info.reserved,			// 12
+		(info.buildType ? info.buildType : ' ')); // 13
+
 	return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -1583,6 +1591,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
+	info.buildType = ' ';
 	info.buildYear = (uint8_t)(year - 2000);
 	info.buildMonth = (uint8_t)(month);
 	info.buildDay = (uint8_t)(day);
@@ -1599,6 +1608,16 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	
 	// char            addInfo[DEVINFO_ADDINFO_STRLEN];
 	ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
+
+	// uint16_t        hardware;
+	ptr = ASCII_to_u16(&info.hardware, ptr);
+
+	// uint16_t        reserved;
+	ptr = ASCII_to_u16(&info.reserved, ptr);
+
+	// uint8_t         build type;
+	info.buildType = (uint8_t)*ptr;
+	if (info.buildType==0) { info.buildType = ' '; }
 
 	return 0;
 }

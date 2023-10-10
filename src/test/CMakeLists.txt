@@ -2,13 +2,16 @@ cmake_minimum_required(VERSION 2.8.12)
 project(SDK_test)
 
 # Locate GTest
+
 find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS} ../libusb/libusb ../protocol ..)
+include_directories({GTEST_INCLUDE_DIRS} ../libusb/libusb ../protocol ..)
+
 
 add_library(SDK_test
 	test_com_manager.cpp
-	test_com_manager_2.cpp
+	# test_com_manager_2.cpp
 	test_InertialSense.cpp
+	test_ISComm.cpp
 	test_ISDataMappings.cpp
 	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
@@ -50,10 +53,11 @@ add_library(SDK_test
 	../tinyxmlparser.cpp
 	)
 
-add_executable(run_tests 
+add_executable(run_tests
 	test_com_manager.cpp
-	test_com_manager_2.cpp
+	# test_com_manager_2.cpp
 	test_InertialSense.cpp
+	test_ISComm.cpp
 	test_ISDataMappings.cpp
 	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp

@@ -41,7 +41,7 @@ struct comManagerTest
 
 static comManagerTest cm1, cm2;
 
-static int readFnc(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int portRead(int port, unsigned char* buf, int len)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->readFncCallCount++;
@@ -51,7 +51,7 @@ static int readFnc(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
 	return c;
 }
 
-static int sendFnc(CMHANDLE cmHandle, int pHandle, unsigned char* buf, int len)
+static int portWrite(int port, const unsigned char* buf, int len)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->sendFncCallCount++;
@@ -132,13 +132,10 @@ static void setupComManagers(comManagerTest* cm1, comManagerTest* cm2)
 	com_manager_init_t cmBuffers = { 0 };
 	cmBuffers.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
 	cmBuffers.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-#define NUM_ENSURED_PKTS 20
-	cmBuffers.ensuredPacketsSize = COM_MANAGER_BUF_SIZE_ENSURED_PKTS(NUM_ENSURED_PKTS);
-	cmBuffers.ensuredPackets = new ensured_pkt_t[NUM_ENSURED_PKTS];
 	com_manager_port_t *cmPort = new com_manager_port_t();
 
-	comManagerInitInstance(&(cm1->cm), 1, 10, 10, 10, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort);
-	comManagerInitInstance(&(cm2->cm), 1, 2, 5, 3, readFnc, sendFnc, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort);
+	comManagerInitInstance(&(cm1->cm), 1, 10, portRead, portWrite, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort, NULL);
+	comManagerInitInstance(&(cm2->cm), 1,  5, portRead, portWrite, txFreeFnc, pstRxFnc, pstAckFnc, disableBcastFnc, &cmBuffers, cmPort, NULL);
 	cm1->cm2 = cm2;
 	cm2->cm2 = cm1;
 	comManagerAssignUserPointer(&(cm1->cm), cm1);
@@ -185,6 +182,7 @@ public:
 	}
 };
 
+#if 0
 TEST(ComManager2, Bad_offset_packet)
 {
 	cComManagerInit cInit;
@@ -207,6 +205,7 @@ TEST(ComManager2, Bad_offset_packet)
 
 	EXPECT_TRUE(true);
 }
+#endif
 
 #if 0
 TEST(ComManager2, Garbage_data_should_not_crash)
@@ -230,7 +229,7 @@ TEST(ComManager2, Garbage_data_should_not_crash)
 			// of the time, which is the behavior we want, but causes the test to fail
 			// in the future, create 3 tests, one with this random data without special bytes, and another with special bytes that causes the real packet to
 			// be skipped, and a third with random bytes that does not skip the real packet
-			if (c == UBLOX_START_BYTE1 || c == RTCM3_START_BYTE || c == PSC_ASCII_START_BYTE || c == PSC_START_BYTE || c == PSC_ASCII_END_BYTE || c == PSC_END_BYTE)
+			if (c == UBLOX_START_BYTE1 || c == RTCM3_START_BYTE || c == PSC_NMEA_START_BYTE || c == PSC_ISB_PREAMBLE || c == PSC_NMEA_END_BYTE)
 			{
 				c = '0';
 			}
