@@ -106,7 +106,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
                     nextStartAttempt = current_timeMs() + attemptInterval;
                     if (requestUpdate()) {
                         startAttempts++;
-                        printf("Requesting Firmware Start (Attempt %d)\n", startAttempts);
+                        printf("[%s : %d] :: Requesting Firmware Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
                     } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
                     }

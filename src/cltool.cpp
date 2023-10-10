@@ -431,6 +431,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
             g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
         }
+        else if (startsWith(a, "-cxd-uf") && (i + 1) < argc)
+        {
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_SONY_CXD5610; // use the new firmware update mechanism and target the GPX specifically
+            g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
+        }
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
