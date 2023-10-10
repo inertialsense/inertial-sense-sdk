@@ -572,7 +572,7 @@ typedef struct
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
 
-	/** IS binary receive packet */
+	/** Receive packet */
 	packet_t rxPkt;
 
 	/** Data received outside of packet */
