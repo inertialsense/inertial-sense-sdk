@@ -386,7 +386,8 @@ namespace fwUpdate {
      *
      * Note: Internally, this method calls step(), so even if you don't call step(), it can still operate with just inbound messages, but interval updates/etc won't run.
      */
-    bool FirmwareUpdateDevice::processMessage(const payload_t& payload) {
+    bool FirmwareUpdateDevice::processMessage(const payload_t& payload) 
+    {
         bool result = false;
 
         if (payload.hdr.target_device != target_id)
@@ -747,7 +748,8 @@ namespace fwUpdate {
         return sendPayload(request);
     }
 
-    int FirmwareUpdateSDK::sendNextChunk() {
+    int FirmwareUpdateSDK::sendNextChunk() 
+    {
         payload_t* msg = (payload_t*)&build_buffer;
 
         if (next_chunk_id >= session_total_chunks)
@@ -768,8 +770,11 @@ namespace fwUpdate {
 
         uint32_t offset = msg->data.chunk.chunk_id * session_chunk_size;
         int chunk_len = getImageChunk(offset, msg->data.chunk.data_len, &chunk_data);
-        if (chunk_len == msg->data.chunk.data_len) {
+
+        if (chunk_len == msg->data.chunk.data_len) 
+        {
             chunks_sent++; // we track the total number of chunks that we've tried to send, regardless of whether we sent it successfully or not
+            
             if (writeToWire((fwUpdate::target_t) msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful
         }
