@@ -112,11 +112,13 @@ void rtosResetStats(void)
 	for (size_t i = 0; i < RTOS_NUM_TASKS; i++)
 	{
 		g_rtos.task[i].maxRuntimeUs = 0;
+		g_rtos.task[i].gapCount = 0;
+		g_rtos.task[i].doubleGapCount = 0;
 #ifndef __INERTIAL_SENSE_EVB_2__
 		g_rtos_pro[i].maxRuntimeTicks = 0;
-#endif
-		g_rtos.task[i].gapCount = 0;
 		g_rtos_pro[i].gapCount = 0;
+		g_rtos_pro[i].doubleGapCount = 0;
+#endif
 	}
 }
 

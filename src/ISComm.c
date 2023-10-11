@@ -576,6 +576,7 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 				{
 					instance->parseState = -1;
 					instance->rxErrorCount++;
+					buf->scan = buf->head+1;	// Reset scan to one past head (don't drop potentially valid data)
 					return _PTYPE_PARSE_ERROR;	// Return to notify of error
 				}
 				continue;						// Continue to scan for data

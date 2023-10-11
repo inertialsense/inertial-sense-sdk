@@ -1475,7 +1475,9 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "T0_avgUpperRuntimeUs", task[0].upperRuntimeUs, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "T0_maxRuntimeUs", task[0].maxRuntimeUs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "T0_startTimeUs", task[0].startTimeUs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "T0_gapCount", task[0].gapCount, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "T0_gapCount", task[0].gapCount, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "T0_doubleGapCount", task[0].doubleGapCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "T0_reserved", task[0].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "T0_cpuUsage", task[0].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "T0_handle", task[0].handle, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -1489,7 +1491,9 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "T1_avgUpperRuntimeUs", task[1].upperRuntimeUs, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "T1_maxRuntimeUs", task[1].maxRuntimeUs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "T1_startTimeUs", task[1].startTimeUs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "T1_gapCount", task[1].gapCount, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "T1_gapCount", task[1].gapCount, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "T1_doubleGapCount", task[1].doubleGapCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "T1_reserved", task[1].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "T1_cpuUsage", task[1].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "T1_handle", task[1].handle, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -1503,7 +1507,9 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "T2_avgUpperRuntimeUs", task[2].upperRuntimeUs, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "T2_maxRuntimeUs", task[2].maxRuntimeUs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "T2_startTimeUs", task[2].startTimeUs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "T2_gapCount", task[2].gapCount, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "T2_gapCount", task[2].gapCount, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "T2_doubleGapCount", task[2].doubleGapCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "T2_reserved", task[2].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "T2_cpuUsage", task[2].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "T2_handle", task[2].handle, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -1517,7 +1523,9 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "T3_avgUpperRuntimeUs", task[3].upperRuntimeUs, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "T3_maxRuntimeUs", task[3].maxRuntimeUs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "T3_startTimeUs", task[3].startTimeUs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "T3_gapCount", task[3].gapCount, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "T3_gapCount", task[3].gapCount, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "T3_doubleGapCount", task[3].doubleGapCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "T3_reserved", task[3].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "T3_cpuUsage", task[3].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "T3_handle", task[3].handle, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -1531,7 +1539,9 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "T4_avgUpperRuntimeUs", task[4].upperRuntimeUs, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "T4_maxRuntimeUs", task[4].maxRuntimeUs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "T4_startTimeUs", task[4].startTimeUs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "T4_gapCount", task[4].gapCount, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "T4_gapCount", task[4].gapCount, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "T4_doubleGapCount", task[4].doubleGapCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "T4_reserved", task[4].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "T4_cpuUsage", task[4].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "T4_handle", task[4].handle, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -1545,7 +1555,9 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "T5_avgUpperRuntimeUs", task[5].upperRuntimeUs, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "T5_maxRuntimeUs", task[5].maxRuntimeUs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "T5_startTimeUs", task[5].startTimeUs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "T5_gapCount", task[5].gapCount, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "T5_gapCount", task[5].gapCount, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "T5_doubleGapCount", task[5].doubleGapCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "T5_reserved", task[5].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "T5_cpuUsage", task[5].cpuUsage, 0, DataTypeFloat, f_t, 0);
     ADD_MAP(m, totalSize, "T5_handle", task[5].handle, 0, DataTypeUInt32, uint32_t, 0);
 
