@@ -1264,10 +1264,10 @@ typedef struct PACKED
 	uint32_t				sysStatus;
 
 	/** IMU sample period in milliseconds. Zero disables sampling. */
-	uint32_t				imuPeriodMs;
+	uint32_t				imuSamplePeriodMs;
 
-	/** Preintegrated IMU (PIMU) integration period and navigation filter output period (ms). */
-	uint32_t				navPeriodMs;
+	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
+	uint32_t				navOutputPeriodMs;
 	
     /** Actual sample period relative to GPS PPS (sec) */
 	double					sensorTruePeriod;
@@ -1275,8 +1275,8 @@ typedef struct PACKED
 	/** Flash config checksum used with host SDK synchronization */
 	uint32_t				flashCfgChecksum;
 
-	/** Navigation filter update period (ms) */
-	uint32_t				ekfPeriodMs;
+	/** Navigation/AHRS filter update period (ms) */
+	uint32_t				navUpdatePeriodMs;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
@@ -1667,7 +1667,7 @@ typedef struct PACKED
 	/** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
 	uint32_t				options;
 	
-	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
+	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navOutputPeriodMs */
 } rmc_t;
 
 enum eNmeaAsciiMsgId

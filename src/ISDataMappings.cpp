@@ -385,11 +385,11 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "baroTemp", baroTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "sysStatus", sysStatus, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "imuPeriodMs", imuPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "navPeriodMs", navPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "imuSamplePeriodMs", imuSamplePeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "navOutputPeriodMs", navOutputPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "sensorTruePeriod", sensorTruePeriod, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "ekfPeriodMs", ekfPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "navUpdatePeriodMs", navUpdatePeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
