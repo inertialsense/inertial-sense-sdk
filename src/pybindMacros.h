@@ -6,7 +6,7 @@ PYBIND11_NUMPY_DTYPE(gps_sat_sv_t, gnssId, svId, elev, azim, cno, status);
 PYBIND11_NUMPY_DTYPE(gps_sig_sv_t, gnssId, svId, sigId, cno, quality, status); 
 PYBIND11_NUMPY_DTYPE(sensors_imu_w_temp_t, pqr, acc, temp);
 PYBIND11_NUMPY_DTYPE(sensors_mag_t, mag);
-PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runtimeUs, avgRuntimeUs, lowerRuntimeUs, upperRuntimeUs, maxRuntimeUs, startTimeUs, gapCount, cpuUsage, handle);
+PYBIND11_NUMPY_DTYPE(rtos_task_t, name, priority, stackUnused, periodMs, runtimeUs, avgRuntimeUs, lowerRuntimeUs, upperRuntimeUs, maxRuntimeUs, startTimeUs, gapCount, doubleGapCount, reserved, cpuUsage, handle);
 PYBIND11_NUMPY_DTYPE(imus_t, pqr, acc);
 PYBIND11_NUMPY_DTYPE(imu3_t, time, status, I);
 PYBIND11_NUMPY_DTYPE(mag_xyz_t, xyz);
