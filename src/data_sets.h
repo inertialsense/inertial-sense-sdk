@@ -1263,7 +1263,7 @@ typedef struct PACKED
 	/** System status flags (eSysStatusFlags) */
 	uint32_t				sysStatus;
 
-	/** IMU sample period in milliseconds. Zero disables sampling. */
+	/** IMU sample period (ms). Zero disables sampling. */
 	uint32_t				imuSamplePeriodMs;
 
 	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
