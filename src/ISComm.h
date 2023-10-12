@@ -537,11 +537,11 @@ typedef struct
 
 typedef struct  
 {
-	uint8_t* head;
-	int16_t state;
-	uint16_t size;
-	uint8_t concurrentParse;	// Other parser was running when this parser started.  Don't report parse error in this case.
+	int16_t     state;
+	uint16_t    size;
 } is_comm_parser_t;
+
+typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
@@ -561,13 +561,10 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Protocol parser states */
-	is_comm_parser_t isb;
-	is_comm_parser_t ubx;
-	is_comm_parser_t nmea;
-	is_comm_parser_t rtcm;
-	is_comm_parser_t sony;
-	is_comm_parser_t sprt;
+	pFnProcessPkt processPkt;
+
+	/** Protocol parser state */
+	is_comm_parser_t parser;
 
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
