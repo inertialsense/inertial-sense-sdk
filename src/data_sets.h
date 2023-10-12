@@ -3209,7 +3209,8 @@ typedef struct
     /** reject threshold of NIS */
     double maxinnocode;
     double maxinnophase;
-    double maxnis;
+    double maxnis_lo;
+    double maxnis_hi;
 
     /** reject threshold of gdop */
     double maxgdop;
