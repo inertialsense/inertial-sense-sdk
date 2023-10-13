@@ -539,6 +539,7 @@ typedef struct
 {
 	int16_t     state;
 	uint16_t    size;
+	uint32_t    timeMs;		// Time of last parse
 } is_comm_parser_t;
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
@@ -591,6 +592,16 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
 * @param instance the comm instance passed to is_comm_init
 * @param byte the byte to decode
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
+* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
+*/
+protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t byte, uint32_t timeMs);
+
+/**
+* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+* @param instance the comm instance passed to is_comm_init
+* @param byte the byte to decode
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
 * @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
   For example usage, see comManagerStepRxInstance() in com_manager.c.
@@ -619,7 +630,19 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 		}
 	}
 */
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
+static inline protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
+{
+	return is_comm_parse_byte_timeout(instance, byte, 0);
+}
+
+/**
+* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+* @param instance the comm instance passed to is_comm_init
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
+* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
+*/
+protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -659,7 +682,10 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
 		}
 	}
 */
-protocol_type_t is_comm_parse(is_comm_instance_t* instance);
+static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+{
+	return is_comm_parse_timeout(instance, 0);
+}
 
 /**
 * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.

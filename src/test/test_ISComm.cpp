@@ -43,9 +43,6 @@ extern "C"
 
 typedef struct
 {
-	// com_manager_t			cm;
-	// com_manager_status_t	cmBufStatus[NUM_COM_PORTS] = { 0 };
-	// broadcast_msg_t			cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
 	struct 
 	{
 		dev_info_t			devInfo;
@@ -1192,7 +1189,7 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
 
 
 #if TEST_TRUNCATED_PACKETS
-TEST(ISComm, IncompletePackets)
+TEST(ISComm, TruncatedPackets)
 {
 	// Initialize Com Manager
 	init(tcm);

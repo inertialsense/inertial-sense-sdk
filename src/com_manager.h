@@ -242,10 +242,13 @@ int comManagerInitInstance
 
 /**
 * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
+* 
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
 */
 void comManagerStep(void);
+void comManagerStepTimeout(uint32_t timeMs);
 void comManagerStepInstance(CMHANDLE cmInstance_);
-void comManagerStepRxInstance(CMHANDLE cmInstance);
+void comManagerStepRxInstance(CMHANDLE cmInstance, uint32_t timeMs);
 void comManagerStepTxInstance(CMHANDLE cmInstance);
 
 /**
