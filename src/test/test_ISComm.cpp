@@ -16,13 +16,13 @@ extern "C"
 
 // Tests
 #define BASIC_TX_BUFFER_RX_BYTE_TEST         	1
-#define BASIC_TX_PORT_RX_BYTE_TEST           	0
-#define BASIC_TX_RX_MULTI_BYTE_TEST          	0
-#define TXRX_MULTI_BYTE_PRECEEDED_BY_GARBAGE 	0
-#define TXRX_WITH_OFFSET_TEST                	0
-#define SEGMENTED_RX_TEST                    	0
-#define BLAST_RX_TEST                        	0
-#define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS  0
+#define BASIC_TX_PORT_RX_BYTE_TEST           	1
+#define BASIC_TX_RX_MULTI_BYTE_TEST          	1
+#define TXRX_MULTI_BYTE_PRECEEDED_BY_GARBAGE 	1
+#define TXRX_WITH_OFFSET_TEST                	1
+#define SEGMENTED_RX_TEST                    	1
+#define BLAST_RX_TEST                        	1
+#define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS  1
 #define TEST_TRUNCATED_PACKETS                  1
 
 // Protocols
@@ -33,7 +33,7 @@ extern "C"
 #define TEST_PROTO_RTCM3	1
 #define TEST_PROTO_SPARTN	0
 
-#if 1
+#if 0
 #define DEBUG_PRINTF	printf
 #else
 #define DEBUG_PRINTF	
@@ -207,7 +207,7 @@ static void printNmeaMessage(const char *name, const uint8_t* str, int size)
 	for (int i=0; i<size && str[i]!='\r' && str[i]!='\n'; i++)
 	{
 		DEBUG_PRINTF("%c", str[i]);
-		// if (i==30) { DEBUG_PRINTF("..."); break; }
+		if (i==30) { DEBUG_PRINTF("..."); break; }
 	}
 	DEBUG_PRINTF("\n");
 }
@@ -1256,11 +1256,9 @@ TEST(ISComm, IncompletePackets)
 	uDatasets dataWritten;
 	int found=0;
 
-	while (ringBufUsed(&tcm.portTxBuf)>0 && g_testTxDeque.size()>0)
+	while (g_testTxDeque.size()>0)
 	{
 		int n = _MIN(ringBufUsed(&tcm.portTxBuf), is_comm_free(&comm));
-		EXPECT_GT(n, 0);
-
 		ringBufRead(&tcm.portTxBuf, comm.rxBuf.tail, n);
 
         // Update comm buffer tail pointer
@@ -1311,6 +1309,19 @@ TEST(ISComm, IncompletePackets)
 			}
 
 			found++;
+		}
+
+		if (ringBufUsed(&tcm.portTxBuf)<=0)
+		{
+			// No more data left in ring buffer.  Reset parser and try again with remaining data.
+			comm.parser.state = 0;
+			comm.rxBuf.scan = ++(comm.rxBuf.head);
+			comm.processPkt = NULL;
+
+			if (comm.rxBuf.head >= comm.rxBuf.tail)
+			{	// No more data to parse. 
+				break;
+			}
 		}
 	}
 
