@@ -22,7 +22,8 @@ extern "C"
 #define TXRX_WITH_OFFSET_TEST                	1
 #define SEGMENTED_RX_TEST                    	1
 #define BLAST_RX_TEST                        	1
-#define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS 	1
+#define TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS  1
+#define TEST_TRUNCATED_PACKETS                  1
 
 // Protocols
 #define TEST_PROTO_ISB		1
@@ -42,9 +43,6 @@ extern "C"
 
 typedef struct
 {
-	// com_manager_t			cm;
-	// com_manager_status_t	cmBufStatus[NUM_COM_PORTS] = { 0 };
-	// broadcast_msg_t			cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
 	struct 
 	{
 		dev_info_t			devInfo;
@@ -256,7 +254,7 @@ static bool generateDataAppend(std::deque<data_holder_t> &testDeque, data_holder
 		return false;
 	}
 
-	DEBUG_PRINTF("[%2d] ", (int)testDeque.size());
+	DEBUG_PRINTF("[%2d] ", (int)testDeque.size()-1);
 	switch (td.ptype)
 	{
 	case _PTYPE_INERTIAL_SENSE_DATA:
@@ -548,7 +546,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		{
 		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
-			uint8_t buf[1024];
+			uint8_t buf[COM_BUFFER_SIZE];
 			n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
 			EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
@@ -597,7 +595,7 @@ void parseRingBufByte(std::deque<data_holder_t> &testDeque, ring_buf_t &ringBuf)
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+				EXPECT_EQ((int)td.did, (int)comm.rxPkt.hdr.id);
 				break;
 
 			case _PTYPE_UBLOX:	DEBUG_PRINTF("[%d] Found data: UBLOX size %d, (0x%02x 0x%02x)\n", found, comm.rxPkt.data.size, comm.rxPkt.data.ptr[2], comm.rxPkt.data.ptr[3]);		break;
@@ -657,7 +655,7 @@ void parseRingBufMultiByte(std::deque<data_holder_t> &testDeque, ring_buf_t &rin
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
-				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+				EXPECT_EQ((int)td.did, (int)comm.rxPkt.hdr.id);
 				break;
 
 			case _PTYPE_UBLOX:	DEBUG_PRINTF("[%d] Found data: Ublox size %3d\n", found, comm.rxPkt.data.size);		break;
@@ -687,7 +685,6 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 
 
 #if BASIC_TX_BUFFER_RX_BYTE_TEST
-uint8_t g_buf[1024];
 TEST(ISComm, BasicTxBufferRxByteTest)
 {
 	// Initialize Com Manager
@@ -706,8 +703,9 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data_to_buf(g_buf, sizeof(g_buf), &g_comm, td.did, td.size, 0, td.data.buf);
-			portWrite(0, g_buf, n);
+			uint8_t buf[COM_BUFFER_SIZE];
+			n = is_comm_data_to_buf(buf, sizeof(buf), &g_comm, td.did, td.size, 0, td.data.buf);
+			portWrite(0, buf, n);
 			break;
 
 		case _PTYPE_NMEA:
@@ -1085,7 +1083,7 @@ TEST(ISComm, IsCommGetDataTest)
 
 #if TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS
 uint8_t rxBuf[8192] = {0};
-uint8_t txBuf[1024] = {0};
+uint8_t txBuf[1024] = {0};		// This buffer is intentially left smaller for testing
 
 #define BUF_FREE    (uint32_t)(txEnd-txPtr)
 #define BUF_USED    (uint32_t)(txPtr-txBuf)
@@ -1186,5 +1184,149 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
     ASSERT_EQ(g_comm.rxErrorCount, 0);
     ASSERT_EQ(msgCntIsb, 0);
     ASSERT_EQ(msgCntNmea, 0);
+}
+#endif
+
+
+#if TEST_TRUNCATED_PACKETS
+TEST(ISComm, TruncatedPackets)
+{
+	// Initialize Com Manager
+	init(tcm);
+
+	// Generate and add data to deque
+	generateData(g_testTxDeque);
+
+	int badPktCount = 0, goodPktCount = 0;
+	uint8_t buf[COM_BUFFER_SIZE] = {0};
+
+	// Use Com Manager to send deque data to Tx port ring buffer
+	for(int i=0; i<g_testTxDeque.size(); i++)
+	{
+		data_holder_t td = g_testTxDeque[i];
+
+		// Send data - writes data to tcm.txBuf
+		int n;
+		switch (td.ptype)
+		{
+		case _PTYPE_INERTIAL_SENSE_DATA:	// IS binary
+		case _PTYPE_INERTIAL_SENSE_CMD:
+			n = is_comm_data_to_buf(buf, sizeof(buf), &g_comm, td.did, td.size, 0, td.data.buf);
+			if (i%4 == 0)
+			{	// Throw away half of packet
+				n = n/2;
+				badPktCount++;
+				DEBUG_PRINTF("[%d] (%d) Bad  %d\n", i, n, badPktCount);
+			}
+			else
+			{
+				goodPktCount++;
+				DEBUG_PRINTF("[%d] (%d) Good %d\n", i, n, goodPktCount);
+			}
+			portWrite(0, buf, n);
+			break;
+
+		case _PTYPE_NMEA:
+		case _PTYPE_UBLOX:
+		case _PTYPE_RTCM3:
+		case _PTYPE_SONY:
+			n = td.size;
+			if (i%4 == 0)
+			{	// Throw away half of packet
+				n = n/2;
+				badPktCount++;
+				DEBUG_PRINTF("[%d] (%d) Bad  %d\n", i, n, badPktCount);
+			}
+			else
+			{
+				goodPktCount++;
+				DEBUG_PRINTF("[%d] (%d) Good %d\n", i, n, goodPktCount);
+			}
+			portWrite(0, td.data.buf, n);
+			break;
+		}
+	}
+
+	// Test that data parsed from Tx port matches deque data
+	is_comm_instance_t &comm = g_comm;
+	protocol_type_t ptype;
+	uDatasets dataWritten;
+	int found=0;
+
+	while (g_testTxDeque.size()>0)
+	{
+		int n = _MIN(ringBufUsed(&tcm.portTxBuf), is_comm_free(&comm));
+		ringBufRead(&tcm.portTxBuf, comm.rxBuf.tail, n);
+
+        // Update comm buffer tail pointer
+        comm.rxBuf.tail += n;
+
+		bool priorBad = false;
+        while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE) 
+		{
+			if (ptype == _PTYPE_PARSE_ERROR && priorBad)
+			{	// Ignore sequential parse errors
+				continue;
+			}
+
+			data_holder_t td = g_testTxDeque.front();
+			g_testTxDeque.pop_front();
+
+			switch (ptype)
+			{
+			case _PTYPE_INERTIAL_SENSE_DATA:
+				// Found data
+				DEBUG_PRINTF("[%d] (%d) Good %d: ISB %3d\n", found, comm.rxPkt.data.size, g_comm.rxPktCount, comm.rxPkt.hdr.id);
+
+				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
+
+				EXPECT_EQ((int)td.did, (int)comm.rxPkt.hdr.id);
+				break;
+
+			case _PTYPE_UBLOX:	DEBUG_PRINTF("[%d] (%d) Good %d: Ublox\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);		break;
+			case _PTYPE_RTCM3:	DEBUG_PRINTF("[%d] (%d) Good %d: RTCM3\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);		break;
+			case _PTYPE_SONY: 	DEBUG_PRINTF("[%d] (%d) Good %d: Sony\n",  found, comm.rxPkt.data.size, g_comm.rxPktCount);		break;
+
+			case _PTYPE_NMEA:
+				DEBUG_PRINTF("[%d] (%d) Good %d ", found, comm.rxPkt.data.size, g_comm.rxPktCount);
+				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+				break;
+			}
+
+			if (ptype != _PTYPE_PARSE_ERROR)
+			{
+				EXPECT_EQ(td.size, comm.rxPkt.data.size);
+				EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
+				priorBad = false;
+			}
+			else
+			{
+				DEBUG_PRINTF("[%d] (%d) Bad  %d\n", found, 0, g_comm.rxErrorCount);
+				priorBad = true;
+			}
+
+			found++;
+		}
+
+		if (ringBufUsed(&tcm.portTxBuf)<=0)
+		{
+			// No more data left in ring buffer.  Reset parser one byte ahead of head and try again until there's no more data iscomm buffer.
+			comm.rxBuf.head++;
+			is_comm_reset_parser(&comm);
+
+			if (comm.rxBuf.head >= comm.rxBuf.tail)
+			{	// No more data to parse. 
+				break;
+			}
+		}
+	}
+
+	// Check that we got all data
+	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+	EXPECT_TRUE(g_testTxDeque.empty());
+
+	// Check good and bad packet count
+	EXPECT_EQ(g_comm.rxPktCount, goodPktCount);
+	EXPECT_EQ(g_comm.rxErrorCount, badPktCount);
 }
 #endif
