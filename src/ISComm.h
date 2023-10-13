@@ -630,7 +630,7 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 		}
 	}
 */
-inline protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
+static inline protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
 {
 	return is_comm_parse_byte_timeout(instance, byte, 0);
 }
@@ -682,7 +682,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 		}
 	}
 */
-inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 {
 	return is_comm_parse_timeout(instance, 0);
 }

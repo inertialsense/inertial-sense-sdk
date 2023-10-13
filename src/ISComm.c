@@ -913,7 +913,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 #if PKT_PARSER_TIMEOUT_MS 
 	if (c->processPkt)
 	{	// Parse in progress
-		if (timeMs > p->timeMs + PKT_PARSER_TIMEOUT_MS)
+		if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS)
 		{	// Parser timeout.  Increment head and reset parser.
 			c->rxBuf.head++;
 			is_comm_reset_parser(c);
@@ -952,7 +952,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 #if PKT_PARSER_TIMEOUT_MS 
 	if (c->processPkt)
 	{	// Parsing in progress.  Record current time.
-		p->timeMs = timeMs;
+		c->parser.timeMs = timeMs;
 	}
 #endif
 
