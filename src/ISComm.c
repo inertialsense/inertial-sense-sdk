@@ -183,6 +183,14 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 	c->rxPkt.data.ptr = c->rxBuf.start;
 }
 
+void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
+{
+	is_comm_parser_t *p = &(c->parser);
+	p->state = 1;
+	c->rxBuf.head = c->rxBuf.scan;
+	c->processPkt = processPkt;
+}
+
 static protocol_type_t parseErrorResetState(is_comm_instance_t* c)
 {
 	is_comm_reset_parser(c);
@@ -883,14 +891,6 @@ int is_comm_free(is_comm_instance_t* c)
 	}
 
 	return bytesFree;
-}
-
-void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
-{
-	is_comm_parser_t *p = &(c->parser);
-	p->state = 1;
-	c->rxBuf.head = c->rxBuf.scan;
-	c->processPkt = processPkt;
 }
 
 protocol_type_t is_comm_parse_byte(is_comm_instance_t* c, uint8_t byte)
