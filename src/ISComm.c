@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAX_MSG_LENGTH_RTCM					1023	// RTCM3 standard
 #define MAX_MSG_LENGTH_UBX					1024
 #define MAX_MSG_LENGTH_SONY					4090
+#define PKT_PARSER_TIMEOUT_MS               100		// Set to 0 to disable timeout
 
 typedef union 
 {
@@ -181,6 +182,14 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 		// ENABLE_PROTOCOL_SPARTN;
 	
 	c->rxPkt.data.ptr = c->rxBuf.start;
+}
+
+void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
+{
+	is_comm_parser_t *p = &(c->parser);
+	p->state = 1;
+	c->rxBuf.head = c->rxBuf.scan;
+	c->processPkt = processPkt;
 }
 
 static protocol_type_t parseErrorResetState(is_comm_instance_t* c)
@@ -885,15 +894,7 @@ int is_comm_free(is_comm_instance_t* c)
 	return bytesFree;
 }
 
-void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
-{
-	is_comm_parser_t *p = &(c->parser);
-	p->state = 1;
-	c->rxBuf.head = c->rxBuf.scan;
-	c->processPkt = processPkt;
-}
-
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* c, uint8_t byte)
+protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, uint32_t timeMs)
 {
 	// Reset buffer if needed
 	is_comm_free(c);
@@ -902,13 +903,24 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* c, uint8_t byte)
 	*(c->rxBuf.tail) = byte;
 	c->rxBuf.tail++;
 	
-	return is_comm_parse(c);
+	return is_comm_parse_timeout(c, timeMs);
 }
 
-protocol_type_t is_comm_parse(is_comm_instance_t* c)
+protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 {
 	is_comm_buffer_t *buf = &(c->rxBuf);
 	is_comm_parser_t *p = &(c->parser);
+
+#if PKT_PARSER_TIMEOUT_MS 
+	if (c->processPkt)
+	{	// Parse in progress
+		if (timeMs > p->timeMs + PKT_PARSER_TIMEOUT_MS)
+		{	// Parser timeout.  Increment head and reset parser.
+			c->rxBuf.head++;
+			is_comm_reset_parser(c);
+		}
+	}
+#endif
 
 	// Search for packet
 	while (buf->scan < buf->tail)
@@ -937,6 +949,13 @@ protocol_type_t is_comm_parse(is_comm_instance_t* c)
 
 		buf->scan++;
 	}
+
+#if PKT_PARSER_TIMEOUT_MS 
+	if (c->processPkt)
+	{	// Parsing in progress.  Record current time.
+		p->timeMs = timeMs;
+	}
+#endif
 
 	return _PTYPE_NONE; 
 }
