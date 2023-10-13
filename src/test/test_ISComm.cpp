@@ -546,7 +546,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 		{
 		case _PTYPE_INERTIAL_SENSE_DATA:
 			// Packetize data 
-			uint8_t buf[1024];
+			uint8_t buf[COM_BUFFER_SIZE];
 			n = is_comm_set_data_to_buf(buf, sizeof(buf), &comm, td.did, td.size, 0, (void*)&(td.data));
 			td.pktSize = n;
 			EXPECT_FALSE(ringBufWrite(rbuf, buf, n));
@@ -703,7 +703,7 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			uint8_t buf[1024];
+			uint8_t buf[COM_BUFFER_SIZE];
 			n = is_comm_data_to_buf(buf, sizeof(buf), &g_comm, td.did, td.size, 0, td.data.buf);
 			portWrite(0, buf, n);
 			break;
@@ -1083,7 +1083,7 @@ TEST(ISComm, IsCommGetDataTest)
 
 #if TEST_ALTERNATING_ISB_NMEA_PARSE_ERRORS
 uint8_t rxBuf[8192] = {0};
-uint8_t txBuf[1024] = {0};
+uint8_t txBuf[1024] = {0};		// This buffer is intentially left smaller for testing
 
 #define BUF_FREE    (uint32_t)(txEnd-txPtr)
 #define BUF_USED    (uint32_t)(txPtr-txBuf)
@@ -1198,7 +1198,7 @@ TEST(ISComm, TruncatedPackets)
 	generateData(g_testTxDeque);
 
 	int badPktCount = 0, goodPktCount = 0;
-	uint8_t buf[4096] = {0};
+	uint8_t buf[COM_BUFFER_SIZE] = {0};
 
 	// Use Com Manager to send deque data to Tx port ring buffer
 	for(int i=0; i<g_testTxDeque.size(); i++)
