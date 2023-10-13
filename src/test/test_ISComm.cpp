@@ -1313,10 +1313,9 @@ TEST(ISComm, IncompletePackets)
 
 		if (ringBufUsed(&tcm.portTxBuf)<=0)
 		{
-			// No more data left in ring buffer.  Reset parser and try again with remaining data.
-			comm.parser.state = 0;
-			comm.rxBuf.scan = ++(comm.rxBuf.head);
-			comm.processPkt = NULL;
+			// No more data left in ring buffer.  Reset parser one byte ahead of head and try again until there's no more data iscomm buffer.
+			comm.rxBuf.head++;
+			is_comm_reset_parser(&comm);
 
 			if (comm.rxBuf.head >= comm.rxBuf.tail)
 			{	// No more data to parse. 
@@ -1327,8 +1326,10 @@ TEST(ISComm, IncompletePackets)
 
 	// Check that we got all data
 	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+	EXPECT_TRUE(g_testTxDeque.empty());
 
-	// Check 
+	// Check good and bad packet count
 	EXPECT_EQ(g_comm.rxPktCount, goodPktCount);
+	EXPECT_EQ(g_comm.rxErrorCount, badPktCount);
 }
 #endif

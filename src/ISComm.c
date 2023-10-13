@@ -185,9 +185,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 
 static protocol_type_t parseErrorResetState(is_comm_instance_t* c)
 {
-	c->parser.state = 0;
-	c->rxBuf.scan = c->rxBuf.head;
-	c->processPkt = NULL;
+	is_comm_reset_parser(c);
 	if (!c->rxErrorState)
 	{
 		c->rxErrorState = 1;
