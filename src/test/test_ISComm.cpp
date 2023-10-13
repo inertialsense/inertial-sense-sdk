@@ -688,7 +688,6 @@ static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
 
 
 #if BASIC_TX_BUFFER_RX_BYTE_TEST
-uint8_t g_buf[1024];
 TEST(ISComm, BasicTxBufferRxByteTest)
 {
 	// Initialize Com Manager
@@ -707,8 +706,9 @@ TEST(ISComm, BasicTxBufferRxByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data_to_buf(g_buf, sizeof(g_buf), &g_comm, td.did, td.size, 0, td.data.buf);
-			portWrite(0, g_buf, n);
+			uint8_t buf[1024];
+			n = is_comm_data_to_buf(buf, sizeof(buf), &g_comm, td.did, td.size, 0, td.data.buf);
+			portWrite(0, buf, n);
 			break;
 
 		case _PTYPE_NMEA:
@@ -1201,13 +1201,12 @@ TEST(ISComm, IncompletePackets)
 	generateData(g_testTxDeque);
 
 	int badPktCount = 0, goodPktCount = 0;
-	uint8_t buf[4096];
+	uint8_t buf[4096] = {0};
 
 	// Use Com Manager to send deque data to Tx port ring buffer
 	for(int i=0; i<g_testTxDeque.size(); i++)
 	{
 		data_holder_t td = g_testTxDeque[i];
-
 
 		// Send data - writes data to tcm.txBuf
 		int n;
@@ -1220,12 +1219,12 @@ TEST(ISComm, IncompletePackets)
 			{	// Throw away half of packet
 				n = n/2;
 				badPktCount++;
-				DEBUG_PRINTF("%d Bad\n", i);
+				DEBUG_PRINTF("[%d] (%d) Bad  %d\n", i, n, badPktCount);
 			}
 			else
 			{
 				goodPktCount++;
-				DEBUG_PRINTF("%d\n", i);
+				DEBUG_PRINTF("[%d] (%d) Good %d\n", i, n, goodPktCount);
 			}
 			portWrite(0, buf, n);
 			break;
@@ -1239,12 +1238,12 @@ TEST(ISComm, IncompletePackets)
 			{	// Throw away half of packet
 				n = n/2;
 				badPktCount++;
-				DEBUG_PRINTF("%d Bad\n", i);
+				DEBUG_PRINTF("[%d] (%d) Bad  %d\n", i, n, badPktCount);
 			}
 			else
 			{
 				goodPktCount++;
-				DEBUG_PRINTF("%d\n", i);
+				DEBUG_PRINTF("[%d] (%d) Good %d\n", i, n, goodPktCount);
 			}
 			portWrite(0, td.data.buf, n);
 			break;
@@ -1282,19 +1281,19 @@ TEST(ISComm, IncompletePackets)
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
 				// Found data
-				DEBUG_PRINTF("[%d] Found data: did %3d, size %3d\n", found, comm.rxPkt.hdr.id, comm.rxPkt.data.size);
+				DEBUG_PRINTF("[%d] (%d) Good %d: ISB %3d\n", found, comm.rxPkt.data.size, g_comm.rxPktCount, comm.rxPkt.hdr.id);
 
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
 
 				EXPECT_EQ((int)td.did, (int)comm.rxPkt.hdr.id);
 				break;
 
-			case _PTYPE_UBLOX:	DEBUG_PRINTF("[%d] Found data: Ublox size %3d\n", found, comm.rxPkt.data.size);		break;
-			case _PTYPE_RTCM3:	DEBUG_PRINTF("[%d] Found data: RTCM3 size %3d\n", found, comm.rxPkt.data.size);		break;
-			case _PTYPE_SONY: 	DEBUG_PRINTF("[%d] Found data: Sony size %3d\n", found, comm.rxPkt.data.size);		break;
+			case _PTYPE_UBLOX:	DEBUG_PRINTF("[%d] (%d) Good %d: Ublox\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);		break;
+			case _PTYPE_RTCM3:	DEBUG_PRINTF("[%d] (%d) Good %d: RTCM3\n", found, comm.rxPkt.data.size, g_comm.rxPktCount);		break;
+			case _PTYPE_SONY: 	DEBUG_PRINTF("[%d] (%d) Good %d: Sony\n",  found, comm.rxPkt.data.size, g_comm.rxPktCount);		break;
 
 			case _PTYPE_NMEA:
-				DEBUG_PRINTF("[%d] ", found);
+				DEBUG_PRINTF("[%d] (%d) Good %d ", found, comm.rxPkt.data.size, g_comm.rxPktCount);
 				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 				break;
 			}
@@ -1307,7 +1306,7 @@ TEST(ISComm, IncompletePackets)
 			}
 			else
 			{
-				DEBUG_PRINTF("[%d] Bad\n", found);
+				DEBUG_PRINTF("[%d] (%d) Bad  %d\n", found, 0, g_comm.rxErrorCount);
 				priorBad = true;
 			}
 

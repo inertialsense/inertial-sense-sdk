@@ -561,6 +561,7 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
+	/** Process packet function pointer. Null pointer indicates packet parsing is currently not running. */
 	pFnProcessPkt processPkt;
 
 	/** Protocol parser state */
@@ -572,8 +573,8 @@ typedef struct
 	/** Receive packet */
 	packet_t rxPkt;
 
-	/** Data received outside of packet */
-	uint8_t strayData;
+	/** Used to prevent counting more than one error count between valid packets */
+	uint8_t rxErrorState;
 
 } is_comm_instance_t;
 

@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define MAX_MSG_LENGTH_ISB					PKT_BUF_SIZE
 #define MAX_MSG_LENGTH_NMEA					200
-#define MAX_MSG_LENGTH_RTCM					1024
+#define MAX_MSG_LENGTH_RTCM					1023	// RTCM3 standard
 #define MAX_MSG_LENGTH_UBX					1024
 #define MAX_MSG_LENGTH_SONY					4090
 
@@ -188,8 +188,21 @@ static protocol_type_t parseErrorResetState(is_comm_instance_t* c)
 	c->parser.state = 0;
 	c->rxBuf.scan = c->rxBuf.head;
 	c->processPkt = NULL;
-	c->rxErrorCount++;
+	if (!c->rxErrorState)
+	{
+		c->rxErrorState = 1;
+		c->rxErrorCount++;
+	}
 	return _PTYPE_PARSE_ERROR;
+}
+
+
+static inline void validPacketReset(is_comm_instance_t* c, int pktSize)
+{
+	c->rxBuf.head = c->rxBuf.head + pktSize;
+	c->rxPktCount++;
+	c->processPkt = NULL;
+	c->rxErrorState = 0;
 }
 
 static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int dataSize)
@@ -201,9 +214,7 @@ static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int data
 	c->rxPkt.hdr.id    = 0;
 	c->rxPkt.offset    = 0;
 
-	c->rxBuf.head = c->rxBuf.head + pktSize;
-	c->rxPktCount++;
-	c->processPkt = NULL;
+	validPacketReset(c, pktSize);
 }
 
 static protocol_type_t processIsbPkt(void* v)
@@ -274,10 +285,8 @@ static protocol_type_t processIsbPkt(void* v)
 
 	/////////////////////////////////////////////////////////
 	// Valid packet found - Checksum passed - Populate rxPkt
-	c->rxBuf.head = c->rxBuf.head + numBytes;
-	c->rxPktCount++;
-	c->processPkt = NULL;
-
+	validPacketReset(c, numBytes);
+	
 	packet_t *pkt = &(c->rxPkt);
 
 	// Header
