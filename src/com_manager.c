@@ -228,20 +228,26 @@ void comManagerRegisterInstance(CMHANDLE cmInstance_, uint16_t did, pfnComManage
 	cmInstance->regData[did].pktFlags = pktFlags;
 }
 
-void comManagerStep(void)
+void comManagerStep()
 {
-	comManagerStepRxInstance(&s_cm);
+	comManagerStepRxInstance(&s_cm, 0);
+	comManagerStepTxInstance(&s_cm);
+}
+
+void comManagerStepTimeout(uint32_t timeMs)
+{
+	comManagerStepRxInstance(&s_cm, timeMs);
 	comManagerStepTxInstance(&s_cm);
 }
 
 void comManagerStepInstance(CMHANDLE cmInstance_)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	comManagerStepRxInstance(cmInstance);
+	comManagerStepRxInstance(cmInstance, 0);
 	comManagerStepTxInstance(cmInstance);
 }
 
-void comManagerStepRxInstance(CMHANDLE cmInstance_)
+void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 	int32_t port;
@@ -267,7 +273,7 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 			comm->rxBuf.tail += n;
 
 			// Search comm buffer for valid packets
-			while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+			while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
 			{	
 				int error = comManagerStepRxInstanceHandler(cmInstance, cmPort, comm, port, ptype);		
 				if(error == CM_ERROR_FORWARD_OVERRUN) 
