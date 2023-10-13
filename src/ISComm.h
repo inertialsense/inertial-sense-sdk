@@ -561,7 +561,7 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Process packet function pointer. Null pointer indicates packet parsing is currently not running. */
+	/** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
 	pFnProcessPkt processPkt;
 
 	/** Protocol parser state */
@@ -773,13 +773,13 @@ char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned 
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
 /** Indicates whether there is overlap in the data received and the backing data structure */
-inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
+static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
 	return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
 }
 
 /** Reset parser state */
-inline void is_comm_reset_parser(is_comm_instance_t* c)
+static inline void is_comm_reset_parser(is_comm_instance_t* c)
 {
 	c->parser.state = 0;
 	c->rxBuf.scan = c->rxBuf.head;

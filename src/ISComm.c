@@ -908,7 +908,6 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* c, uint8_t byte)
 protocol_type_t is_comm_parse(is_comm_instance_t* c)
 {
 	is_comm_buffer_t *buf = &(c->rxBuf);
-	is_comm_parser_t *p = &(c->parser);
 
 	// Search for packet
 	while (buf->scan < buf->tail)
