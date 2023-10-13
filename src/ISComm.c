@@ -909,7 +909,6 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, 
 protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 {
 	is_comm_buffer_t *buf = &(c->rxBuf);
-	is_comm_parser_t *p = &(c->parser);
 
 #if PKT_PARSER_TIMEOUT_MS 
 	if (c->processPkt)
