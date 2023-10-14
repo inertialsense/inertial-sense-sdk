@@ -227,6 +227,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	instance->config.enableUblox = 1;
 	instance->config.enableRTCM3 = 1;
 	
+	instance->parseState = -1;
 	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
 	instance->hasStartByte = 0;
