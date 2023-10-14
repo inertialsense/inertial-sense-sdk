@@ -506,6 +506,9 @@ typedef struct
 	/** Used to validate ublox, RTCM, and NMEA packets */
 	int32_t parseState;
 
+	/** Time of last parse */
+	int32_t parseTimeMs;
+
 	/** Data identifier (DID), size and offset */
 	p_data_hdr_t dataHdr;
 
@@ -534,6 +537,16 @@ POP_PACK
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize
 */
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
+
+/**
+* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+* @param instance the comm instance passed to is_comm_init
+* @param byte the byte to decode
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
+* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
+*/
+protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t byte, uint32_t timeMs);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -568,6 +581,15 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	}
 */
 protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
+
+/**
+* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+* @param instance the comm instance passed to is_comm_init
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
+* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
+*/
+protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -607,7 +629,10 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
 		}
 	}
 */
-protocol_type_t is_comm_parse(is_comm_instance_t* instance);
+static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+{
+	return is_comm_parse_timeout(instance, 0);
+}
 
 /**
 * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
@@ -694,9 +719,17 @@ char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int max
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
 // Indicates whether there is overlap in the data received and the backing data structure
-inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
+static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
 	return _MAX(dstOffset, src->hdr.offset) < _MIN(dstOffset + dstSize, src->hdr.offset + src->hdr.size);
+}
+
+/** Reset parser state */
+static inline void is_comm_reset_parser(is_comm_instance_t* c)
+{
+	c->parseState = 0;
+	c->buf.scan = c->buf.head;
+	c->hasStartByte = 0;
 }
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */

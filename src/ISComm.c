@@ -12,6 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISComm.h"
 
+#define PKT_PARSER_TIMEOUT_MS               100		// Set to 0 to disable timeout
+
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
 	// Actual on uINS:
 	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only)
@@ -533,7 +535,7 @@ int is_comm_free(is_comm_instance_t* instance)
 	return bytesFree;
 }
 
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
+protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t byte, uint32_t timeMs)
 {
 	// Reset buffer if needed
 	is_comm_free(instance);
@@ -542,16 +544,27 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
 	*(instance->buf.tail) = byte;
 	instance->buf.tail++;
 	
-	return is_comm_parse(instance);
+	return is_comm_parse_timeout(instance, timeMs);
 }
 
 #define FOUND_START_BYTE(init)		if(init){ instance->hasStartByte = byte; instance->buf.head = instance->buf.scan-1; }
 #define START_BYTE_SEARCH_ERROR()	
 
-protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+protocol_type_t is_comm_parse_timeout(is_comm_instance_t* instance, uint32_t timeMs)
 {
 	is_comm_buffer_t *buf = &(instance->buf);
 	protocol_type_t ptype;
+
+#if PKT_PARSER_TIMEOUT_MS 
+	if (instance->hasStartByte)
+	{	// Parse in progress
+		if (timeMs > instance->parseTimeMs + PKT_PARSER_TIMEOUT_MS)
+		{	// Parser timeout.  Increment head and reset parser.
+			instance->buf.head++;
+			is_comm_reset_parser(instance);
+		}
+	}
+#endif
 
 	// Search for packet
 	while (buf->scan < buf->tail)
@@ -621,6 +634,13 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			}
 		}
 	}
+
+#if PKT_PARSER_TIMEOUT_MS 
+	if (instance->hasStartByte)
+	{	// Parsing in progress.  Record current time.
+		instance->parseTimeMs = timeMs;
+	}
+#endif
 
 	// No valid data yet...
 	return _PTYPE_NONE;

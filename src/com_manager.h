@@ -315,8 +315,9 @@ int comManagerInitInstance
 Performs one round of sending and receiving message. This should be called as often as you want to send and receive data.
 */
 void comManagerStep(void);
+void comManagerStepTimeout(uint32_t timeMs);
 void comManagerStepInstance(CMHANDLE cmInstance_);
-void comManagerStepRxInstance(CMHANDLE cmInstance);
+void comManagerStepRxInstance(CMHANDLE cmInstance, uint32_t timeMs);
 void comManagerStepTxInstance(CMHANDLE cmInstance);
 
 /**
