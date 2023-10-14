@@ -580,7 +580,10 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 		}
 	}
 */
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
+static inline protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
+{
+	return is_comm_parse_byte_timeout(instance, byte, 0);
+}
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
