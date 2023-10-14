@@ -280,14 +280,20 @@ void comManagerRegisterInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComMan
 
 void comManagerStep(void)
 {
-	comManagerStepRxInstance(&g_cm);
+	comManagerStepRxInstance(&g_cm, 0);
+	comManagerStepTxInstance(&g_cm);
+}
+
+void comManagerStepTimeout(uint32_t timeMs)
+{
+	comManagerStepRxInstance(&g_cm, timeMs);
 	comManagerStepTxInstance(&g_cm);
 }
 
 void comManagerStepInstance(CMHANDLE cmInstance_)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	comManagerStepRxInstance(cmInstance);
+	comManagerStepRxInstance(cmInstance, 0);
 	comManagerStepTxInstance(cmInstance);
 }
 
@@ -297,7 +303,7 @@ void comManagerStepInstance(CMHANDLE cmInstance_)
 // 	
 // } 
 
-void comManagerStepRxInstance(CMHANDLE cmInstance_)
+void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
 {
 	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 	int32_t pHandle;
@@ -320,7 +326,7 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 		// Read from serial buffer until empty
 		while (cmInstance->readCallback(cmInstance, pHandle, &c, 1))
 		{
-			if ((ptype = is_comm_parse_byte(comm, c)) != _PTYPE_NONE)
+			if ((ptype = is_comm_parse_byte_timeout(comm, c, timeMs)) != _PTYPE_NONE)
 			{
 
 #else	// Read a set of bytes (fast method)
@@ -335,7 +341,7 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_)
 			comm->buf.tail += n;
 
 			// Search comm buffer for valid packets
-			while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+			while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
 			{
 #endif					
 				uint8_t error = 0;

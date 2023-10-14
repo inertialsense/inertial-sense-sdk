@@ -800,7 +800,7 @@ void sendRadio(uint8_t *data, int dataSize, bool sendXbee, bool sendXrad)
 			dataSize -= n;
 			ptr += n;
 		
-			while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+			while((ptype = is_comm_parse_timeout(&comm, g_comm_time_ms)) != _PTYPE_NONE)
 			{			
 				// Parse Data
 				switch(ptype)
@@ -857,7 +857,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 				
 		// Search comm buffer for valid packets
 		protocol_type_t ptype;
-		while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+		while((ptype = is_comm_parse_timeout(&comm, g_comm_time_ms)) != _PTYPE_NONE)
 		{
 			switch(srcPort)
 			{
@@ -930,7 +930,7 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 		
 		// Search comm buffer for valid packets
 		protocol_type_t ptype;
-		while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+		while ((ptype = is_comm_parse_timeout(&comm, g_comm_time_ms)) != _PTYPE_NONE)
 		{
 			if (srcPort == EVB2_PORT_USB)
 			{
