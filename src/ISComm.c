@@ -227,6 +227,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	instance->config.enableUblox = 1;
 	instance->config.enableRTCM3 = 1;
 	
+	instance->parseState = -1;
 	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
 	instance->hasStartByte = 0;
@@ -589,6 +590,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* instance, uint32_t tim
 				{
 					instance->parseState = -1;
 					instance->rxErrorCount++;
+					buf->scan = buf->head+1;	// Reset scan to one past head (don't drop potentially valid data)
 					return _PTYPE_PARSE_ERROR;	// Return to notify of error
 				}
 				continue;						// Continue to scan for data
