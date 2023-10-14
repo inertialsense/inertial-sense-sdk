@@ -507,7 +507,7 @@ typedef struct
 	int32_t parseState;
 
 	/** Time of last parse */
-	int32_t parseTimeMs;
+	uint32_t parseTimeMs;
 
 	/** Data identifier (DID), size and offset */
 	p_data_hdr_t dataHdr;
