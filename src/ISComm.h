@@ -131,8 +131,6 @@ typedef enum
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
 
-#define ENABLE_RX_ERROR_ON_NON_PKT_DATA		0		// Increment rxErrorCount when data is round outside of packets
-
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
 

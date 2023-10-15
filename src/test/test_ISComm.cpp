@@ -818,6 +818,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 {
 	// Initialize Com Manager
 	init(tcm);
+	g_comm.rxErrorState = 0;	// is_comm_init() sets this to -1 to prevent initial stray data from registering as a parse error.
 
 	// Generate and add data to deque
 	generateData(g_testTxDeque);
@@ -830,14 +831,10 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 		// Add garbage data that starts with ISB preamble
 		*g_comm.rxBuf.tail = 13; g_comm.rxBuf.tail++;
 
-		// Parse data to get parser into funny state
+		// Parse garbage data
 		ptype = is_comm_parse(&g_comm);
-#if ENABLE_RX_ERROR_ON_NON_PKT_DATA
 		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
 		rxErrorCount++;
-#else
-		EXPECT_EQ(ptype, _PTYPE_NONE);
-#endif
 		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
 
 		// Add garbage data that starts with ISB preamble
@@ -848,15 +845,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 
 		// Read start of correctup ISB packet
 		ptype = is_comm_parse(&g_comm);
-		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
-#if ENABLE_RX_ERROR_ON_NON_PKT_DATA
-		rxErrorCount++;
-		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
-		// Read stray data
-		ptype = is_comm_parse(&g_comm);
-		EXPECT_EQ(ptype, _PTYPE_PARSE_ERROR);
-#endif
-		rxErrorCount++;
+		EXPECT_EQ(ptype, _PTYPE_NONE);
 		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
 
 		// Add good packet to buffer
@@ -870,7 +859,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 
 		EXPECT_EQ(g_comm.rxPkt.data.size, td.size);
 		EXPECT_TRUE(memcmp(g_comm.rxPkt.data.ptr, td.data.buf, td.size) == 0);
-		EXPECT_EQ(g_comm.rxErrorCount, rxErrorCount);
+		EXPECT_EQ(rxErrorCount, g_comm.rxErrorCount);
 	}
 }
 #endif
@@ -1193,6 +1182,7 @@ TEST(ISComm, TruncatedPackets)
 {
 	// Initialize Com Manager
 	init(tcm);
+	g_comm.rxErrorState = 0;	// is_comm_init() sets this to -1 to prevent initial stray data from registering as a parse error.
 
 	// Generate and add data to deque
 	generateData(g_testTxDeque);
