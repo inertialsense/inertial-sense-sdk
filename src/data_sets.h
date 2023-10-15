@@ -1263,20 +1263,20 @@ typedef struct PACKED
 	/** System status flags (eSysStatusFlags) */
 	uint32_t				sysStatus;
 
-	/** IMU sample period in milliseconds. Zero disables sampling. */
-	uint32_t				imuPeriodMs;
+	/** IMU sample period (ms). Zero disables sampling. */
+	uint32_t				imuSamplePeriodMs;
 
-	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
-	uint32_t				navPeriodMs;
+	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
+	uint32_t				navOutputPeriodMs;
 	
     /** Actual sample period relative to GPS PPS (sec) */
 	double					sensorTruePeriod;
 
-	/** Reserved */
+	/** Flash config checksum used with host SDK synchronization */
 	uint32_t				flashCfgChecksum;
 
-	/** Reserved */
-	float					reserved3;
+	/** Navigation/AHRS filter update period (ms) */
+	uint32_t				navUpdatePeriodMs;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
@@ -1349,6 +1349,7 @@ enum eSystemCommand
     SYS_CMD_ZERO_MOTION                                 = 5,            // (uint32 inv: 4294967290)
     SYS_CMD_REF_POINT_STATIONARY                        = 6,            // (uint32 inv: 4294967289)
     SYS_CMD_REF_POINT_MOVING                            = 7,            // (uint32 inv: 4294967288)
+    SYS_CMD_RESET_RTOS_STATS                            = 8,            // (uint32 inv: 4294967287)
 
     SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG                 = 10,           // (uint32 inv: 4294967285)
     SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE                  = 11,           // (uint32 inv: 4294967284)
@@ -1666,7 +1667,7 @@ typedef struct PACKED
 	/** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
 	uint32_t				options;
 	
-	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
+	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navOutputPeriodMs */
 } rmc_t;
 
 enum eNmeaAsciiMsgId
@@ -2466,10 +2467,10 @@ enum eIoConfig
 	/** GPS type - last type */
     IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
-#define IO_CONFIG_GPS1_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS2_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS1_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
-#define IO_CONFIG_GPS2_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS1_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS2_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 
 #define SET_IO_CFG_GPS1_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
 #define SET_IO_CFG_GPS2_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
@@ -4211,49 +4212,77 @@ typedef struct PACKED
 	/** Task period ms */
 	uint32_t                periodMs;
 
-	/** Last run time microseconds */
-	uint32_t                runTimeUs;
+	/** Last runtime microseconds */
+	uint32_t                runtimeUs;
 
-	/** Max run time microseconds */
-	uint32_t                maxRunTimeUs;
-	
-	/** Rolling average over last 1000 executions */
-	float					averageRunTimeUs;
-	
+	/** Average runtime */
+	float					avgRuntimeUs;
+
+	/** Average of runtimes less than avgRuntimeUs */
+	float					lowerRuntimeUs;
+
+	/** Average of runtimes greater than avgRuntimeUs */
+	float					upperRuntimeUs;
+
+	/** Max runtime microseconds */
+	uint32_t                maxRuntimeUs;
+
+	/** Local time when task loop started (following delay) */
+	uint32_t                startTimeUs;
+
 	/** Counter of times task took too long to run */
-	uint32_t				gapCount;
+	uint16_t				gapCount;
 
-	/** Cpu usage percent */
+	/** Counter of times task took too long to run twice in a row */
+	uint8_t					doubleGapCount;
+
+	/** Reserved */
+	uint8_t					reserved;
+
+	/** Processor usage percent */
     float					cpuUsage;
 
 	/** Handle */
 	uint32_t                handle;
-
-	/** Local time when task loop started (following delay) */
-	uint32_t                profileStartTimeUs;
 	
 } rtos_task_t;
 
 /** Internal RTOS task profiling info (processor ticks instead of usec) */
 typedef struct PACKED
 {
-	/** Last run time microseconds */
-	uint32_t                runTimeTicks;
+	/** Time in microseconds */
+	uint32_t                timeTicks;
 
-	/** Max run time microseconds */
-	uint32_t                maxRunTimeTicks;
-	
-	/** Rolling average over last 1000 executions */
-	float					averageRunTimeTicks;
+	/** Runtime in microseconds */
+	uint32_t                runtimeTicks;
+
+	/** LPF average runtime */
+	float					avgRuntimeTicks;
+
+	/** Average of runtimes less than avgRuntimeTicks */
+	float					lowerRuntimeTicks;
+
+	/** Average of runtimes greater than avgRuntimeTicks */
+	float					upperRuntimeTicks;
+
+	/** Maximum runtime microseconds */
+	uint32_t                maxRuntimeTicks;
 
 	/** Local time when task loop started (following delay) */
-	uint32_t                profileStartTimeTicks;
+	uint32_t                startTimeTicks;
 
 	/** Counter of times task took too long to run */
-	uint32_t				gapCount;
+	uint16_t				gapCount;
 
+	/** Counter of times task took too long to run back-to-back */
+	uint8_t					doubleGapCount;
+
+	/** Indicates whether gap occurd on last update */
+	uint8_t					gapOnLast;
+
+	/** Task period ms */
 	uint32_t 				periodTicks;
-	
+
 } rtos_profile_t;
 
 /** (DID_RTOS_INFO) */
