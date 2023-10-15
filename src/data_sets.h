@@ -4602,7 +4602,7 @@ typedef struct PACKED
 typedef struct 
 {
     uint32_t runTimeUs;
-    uint32_t maxRunTimeUs;
+    uint32_t maxRuntimeUs;
     uint32_t StartTimeUs;
     uint32_t startPeriodUs;
 } runtime_profile_t;
