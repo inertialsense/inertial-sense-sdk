@@ -392,9 +392,9 @@ bool InertialSense::Update()
             for (size_t devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
                 if (serialPortIsOpen(&(m_comManagerState.devices[devIdx].serialPort)) && m_comManagerState.devices[devIdx].fwUpdater != nullptr) {
                     ISFirmwareUpdater* fwUpdater = m_comManagerState.devices[devIdx].fwUpdater;
-                    fwUpdater->step();
+                    fwUpdater->fwUpdate_step();
 
-                    fwUpdate::update_status_e status = fwUpdater->getSessionStatus();
+                    fwUpdate::update_status_e status = fwUpdater->fwUpdate_getSessionStatus();
                     if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
@@ -850,7 +850,7 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     case DID_FIRMWARE_UPDATE:
         // we don't respond to messages if we don't already have an active Updater
         if (m_comManagerState.devices[pHandle].fwUpdater)
-            m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->ptr, data->hdr.size);
+            m_comManagerState.devices[pHandle].fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
         break;
 	}
 }
@@ -1026,7 +1026,7 @@ fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
 	try
 	{
 		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
-			return m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+			return m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionStatus();
 		else
 			return fwUpdate::ERR_UPDATER_CLOSED;
 
@@ -1066,10 +1066,10 @@ float InertialSense::getUploadPercent(uint32_t deviceIndex)
 	float totalChunks;
 	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
 	{
-		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks();
+		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getTotalChunks();
 
 		if (totalChunks > 0)
-			return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / totalChunks)*100;
+			return (m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getNextChunkID() / totalChunks) * 100;
 		else
 				return 100.0;
 	}

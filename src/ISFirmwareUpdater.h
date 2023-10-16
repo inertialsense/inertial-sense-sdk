@@ -23,7 +23,7 @@ extern "C"
 }
 
 
-class ISFirmwareUpdater final : public fwUpdate::FirmwareUpdateSDK {
+class ISFirmwareUpdater final : public fwUpdate::FirmwareUpdateHost {
 private:
     int pHandle = 0;                    //! a handle to the comm port which we use to talk to the device
     const char *portName = nullptr;     //! the name of the port referenced by pHandle
@@ -50,7 +50,7 @@ public:
      * @param portHandle handle to the port (typically serial) to which the device is connected
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateSDK(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
+    ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
 
     ~ISFirmwareUpdater() override {};
 
@@ -62,17 +62,17 @@ public:
      * @param buffer a provided buffer to store the data into.
      * @return
      */
-    int getImageChunk(uint32_t offset, uint32_t len, void **buffer) override;
+    int fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) override;
 
     /**
      * @param msg
      * @return
      */
-    bool handleUpdateResponse(const fwUpdate::payload_t& msg);
+    bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg);
 
-    bool handleResendChunk(const fwUpdate::payload_t& msg);
+    bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg);
 
-    bool handleUpdateProgress(const fwUpdate::payload_t& msg);
+    bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg);
 
     void setUploadProgressCb(ISBootloader::pfnBootloadProgress pfnUploadProgress){pfnUploadProgress_cb = pfnUploadProgress;}
     void setVerifyProgressCb(ISBootloader::pfnBootloadProgress pfnVerifyProgress){pfnVerifyProgress_cb = pfnVerifyProgress;}
@@ -85,9 +85,9 @@ public:
      * device triggering a timeout and aborting the upgrade process.
      * @return the message type, if any that was most recently processed.
      */
-    virtual fwUpdate::msg_types_e step() override;
+    virtual fwUpdate::msg_types_e fwUpdate_step() override;
 
-    bool writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
+    bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
 };
 

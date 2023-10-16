@@ -354,7 +354,7 @@ public:
         if (exchangeBuffer.dataAvailable() > 0) {
             int offset = 0;
             do {
-                offset = exchangeBuffer.getNextDataOffsetForTarget(fwUpdate::TARGET_NONE);
+                offset = exchangeBuffer.getNextDataOffsetForTarget(fwUpdate::TARGET_HOST);
                 if (offset >= 0) {
                     // Data is waiting in the exchange buffer for us; let's pull and unpack it for analysis.
                     int buf_len = exchangeBuffer.readData(buffer, sizeof(buffer), offset);
@@ -668,7 +668,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl)
         if (msg_len > 0) {
             if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP) {
                 // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
-                EXPECT_EQ(msg->hdr.target_device, fwUpdate::TARGET_NONE);
+                EXPECT_EQ(msg->hdr.target_device, fwUpdate::TARGET_HOST);
                 EXPECT_EQ(msg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
                 EXPECT_EQ(msg->data.update_resp.session_id, 17767);
                 EXPECT_EQ(msg->data.update_resp.totl_chunks, 1206);

@@ -38,13 +38,13 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-    setTimeoutDuration(15000);
+    fwUpdate_setTimeoutDuration(15000);
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
-    return requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate);
+    return fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate);
 }
 
-int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
+int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
     if (srcFile && srcFile->is_open()) {
         srcFile->seekg((std::streampos)offset, srcFile->beg);
         len = _MIN(len, session_image_size - (uint32_t)srcFile->tellg());
@@ -53,8 +53,8 @@ int ISFirmwareUpdater::getImageChunk(uint32_t offset, uint32_t len, void **buffe
     return len;
 }
 
-bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
-    if ((session_id == msg.data.update_resp.session_id) && (session_status == msg.data.update_resp.status))
+bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg) {
+    if ((session_id == msg.data.update_resp.session_id) && (session_status == msg.data.update_resp.status) && (session_status != fwUpdate::INITIALIZING))
         return true; // we're receiving duplicate messages, so ignore them
 
     session_status = msg.data.update_resp.status;
@@ -62,7 +62,7 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
 
     switch (session_status) {
         case fwUpdate::ERR_MAX_CHUNK_SIZE:    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
-            return requestUpdate(target_id, session_image_slot, session_chunk_size / 2, session_image_size, md5hash);
+            return fwUpdate_requestUpdate(session_target, session_image_slot, session_chunk_size / 2, session_image_size, md5hash);
         case fwUpdate::ERR_INVALID_SESSION:   // indicates that the requested session ID is invalid.
         case fwUpdate::ERR_INVALID_SLOT:      // indicates that the request slot does not exist. Different targets have different number of slots which can be written to.
         case fwUpdate::ERR_NOT_ALLOWED:       // indicates that writing to the requested slot is not allowed, usually due to security constrains such as a locked firmware, Read-Only FLASH, etc.
@@ -85,13 +85,13 @@ bool ISFirmwareUpdater::handleUpdateResponse(const fwUpdate::payload_t &msg) {
     }
 }
 
-bool ISFirmwareUpdater::handleResendChunk(const fwUpdate::payload_t &msg) {
+bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg) {
     // TODO: LOG msg.data.req_resend.reason
     nextChunkSend = current_timeMs() + nextChunkDelay;
-    return sendNextChunk(); // we don't have to send this right away, but sure, why not!
+    return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
 
-bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
+bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg) {
     session_status = msg.data.progress.status;
     int num = msg.data.progress.num_chunks;
     int tot = msg.data.progress.totl_chunks;
@@ -109,26 +109,26 @@ bool ISFirmwareUpdater::handleUpdateProgress(const fwUpdate::payload_t &msg) {
     
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("[%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, getSessionStatusName(), msg.data.progress.msg_level, message);
+    printf("[%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, fwUpdate_getSessionStatusName(), msg.data.progress.msg_level, message);
     return true;
 }
 
-fwUpdate::msg_types_e ISFirmwareUpdater::step() {
+fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
     switch(session_status) {
         case fwUpdate::NOT_STARTED:
             // nothing to do..
             break;
         case fwUpdate::INITIALIZING:
-            if (startAttempts < maxAttempts) {
+            if ((startAttempts < maxAttempts) && (fwUpdate_getLastMessageAge() > attemptInterval)) {
                 if (nextStartAttempt < current_timeMs()) {// time has elapsed, so re-issue request to update
                     nextStartAttempt = current_timeMs() + attemptInterval;
-                    if (requestUpdate()) {
-                        startAttempts++;
+                    if (fwUpdate_requestUpdate()) {
                         printf("[%s : %d] :: Requesting Firmware Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
                     } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
                     }
                 }
+                startAttempts++;
             } else {
                 // backoff (wait attemptInternal * 3), and then try again.  Eventually, we will timeout below if there is a larger issue.
                 startAttempts = 0;
@@ -138,10 +138,10 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
         case fwUpdate::READY:
         case fwUpdate::IN_PROGRESS:
             if (nextChunkSend < current_timeMs()) // don't send chunks too fast
-                sendNextChunk();
+                fwUpdate_sendNextChunk();
             break;
         case fwUpdate::FINISHED:
-            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, getSessionStatusName());
+            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, fwUpdate_getSessionStatusName());
             break;
         case fwUpdate::ERR_MAX_CHUNK_SIZE:
             if (session_id != 0) {
@@ -151,21 +151,21 @@ fwUpdate::msg_types_e ISFirmwareUpdater::step() {
                 int bits = (lv == floor(lv)) ? (int)(lv-1) : (int)(lv); // round down to the nearest multiple of 2
                 session_chunk_size = 1 << bits;
                 session_id = (uint16_t) rand(); // since we ended on an error, we need a new session id.
-                requestUpdate();
+                fwUpdate_requestUpdate();
             }
             break;
         default:
-            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, getSessionStatusName());
+            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, fwUpdate_getSessionStatusName());
             break;
     }
 
-    if ((session_status > fwUpdate::NOT_STARTED) && (session_status < fwUpdate::FINISHED) && (getLastMessageAge() > timeout_duration))
+    if ((session_status > fwUpdate::NOT_STARTED) && (session_status < fwUpdate::FINISHED) && (fwUpdate_getLastMessageAge() > timeout_duration))
         session_status = fwUpdate::ERR_TIMEOUT;
 
     return fwUpdate::MSG_UNKNOWN;
 }
 
-bool ISFirmwareUpdater::writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
+bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     nextChunkSend = current_timeMs() + 15; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
     int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
