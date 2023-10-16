@@ -555,7 +555,8 @@ namespace fwUpdate {
      * @param payload the DID payload
      * @return
      */
-    bool FirmwareUpdateDevice::handleChunk(const payload_t& payload) {
+    bool FirmwareUpdateDevice::handleChunk(const payload_t& payload) 
+    {
         if (payload.hdr.msg_type != MSG_UPDATE_CHUNK)
             return false;
 
@@ -564,10 +565,11 @@ namespace fwUpdate {
             return false;
 
         // if the chunk id does match the next expected chunk id, then send an resend for the correct/missing chunk
-        if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) {
+        if (payload.data.chunk.chunk_id != (uint16_t)(last_chunk_id + 1)) 
+        {
             sendRetry(REASON_INVALID_SEQID);
             return false;
-        }
+        }     
 
         // ensure data_len is the same as session_chunk_size, unless its the very last chunk
         uint16_t mod_size = (session_image_size % session_chunk_size);
