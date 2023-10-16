@@ -448,12 +448,6 @@ namespace fwUpdate {
         return sendProgressFormatted(level, message.c_str());
     }
 
-    uint8_t fooCnt = 0;
-    void foo()
-    {
-        fooCnt++;
-    }
-
     /**
      * This is an internal method used to send an update message to the host system regarding the status of the update process
      * This variation allows for printf-based string formatting
@@ -576,11 +570,6 @@ namespace fwUpdate {
             sendRetry(REASON_INVALID_SEQID);
             return false;
         }     
-
-        if(payload.data.chunk.chunk_id == 209)  
-        {
-            foo();
-        } 
 
         // ensure data_len is the same as session_chunk_size, unless its the very last chunk
         uint16_t mod_size = (session_image_size % session_chunk_size);
