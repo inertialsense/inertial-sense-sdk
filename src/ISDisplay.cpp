@@ -1334,7 +1334,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %dms", sys.timeOfWeekMs);
 #endif
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%d,%d,%d\n", sys.imuPeriodMs, sys.navPeriodMs, sys.genFaultCode);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%d,%d,%d\n", sys.imuSamplePeriodMs, sys.navOutputPeriodMs, sys.genFaultCode);
 
 	if (m_displayMode == DMODE_PRETTY)
 	{
