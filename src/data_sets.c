@@ -963,7 +963,7 @@ void profiler_stop(runtime_profile_t *p, uint32_t timeUs)
 {
 #if ENABLE_PROFILER
 	p->runTimeUs = timeUs - p->StartTimeUs;
-	p->maxRunTimeUs = _MAX(p->maxRunTimeUs, p->runTimeUs);
+	p->maxRuntimeUs = _MAX(p->maxRuntimeUs, p->runTimeUs);
 #endif
 }
 
@@ -980,7 +980,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p)
 	// Reset max runtime
 	for (int i=0; i<RUNTIME_PROFILE_COUNT; i++)
 	{
-		p->p[i].maxRunTimeUs = p->p[i].runTimeUs;
+		p->p[i].maxRuntimeUs = p->p[i].runTimeUs;
 	}
 #endif
 }

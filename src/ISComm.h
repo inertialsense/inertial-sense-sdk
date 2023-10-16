@@ -131,8 +131,6 @@ typedef enum
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
 
-#define ENABLE_RX_ERROR_ON_NON_PKT_DATA		0		// Increment rxErrorCount when data is round outside of packets
-
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
 
@@ -537,11 +535,12 @@ typedef struct
 
 typedef struct  
 {
-	uint8_t* head;
-	int16_t state;
-	uint16_t size;
-	uint8_t concurrentParse;	// Other parser was running when this parser started.  Don't report parse error in this case.
+	int16_t     state;
+	uint16_t    size;
+	uint32_t    timeMs;		// Time of last parse
 } is_comm_parser_t;
+
+typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
@@ -561,13 +560,11 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Protocol parser states */
-	is_comm_parser_t isb;
-	is_comm_parser_t ubx;
-	is_comm_parser_t nmea;
-	is_comm_parser_t rtcm;
-	is_comm_parser_t sony;
-	is_comm_parser_t sprt;
+	/** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
+	pFnProcessPkt processPkt;
+
+	/** Protocol parser state */
+	is_comm_parser_t parser;
 
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
@@ -575,8 +572,8 @@ typedef struct
 	/** Receive packet */
 	packet_t rxPkt;
 
-	/** Data received outside of packet */
-	uint8_t strayData;
+	/** Used to prevent counting more than one error count between valid packets */
+	uint8_t rxErrorState;
 
 } is_comm_instance_t;
 
@@ -588,6 +585,16 @@ POP_PACK
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize
 */
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
+
+/**
+* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+* @param instance the comm instance passed to is_comm_init
+* @param byte the byte to decode
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
+* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
+*/
+protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t byte, uint32_t timeMs);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -621,7 +628,19 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 		}
 	}
 */
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
+static inline protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
+{
+	return is_comm_parse_byte_timeout(instance, byte, 0);
+}
+
+/**
+* Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
+* @param instance the comm instance passed to is_comm_init
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
+* @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
+*/
+protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -661,7 +680,10 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte);
 		}
 	}
 */
-protocol_type_t is_comm_parse(is_comm_instance_t* instance);
+static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+{
+	return is_comm_parse_timeout(instance, 0);
+}
 
 /**
 * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
@@ -774,10 +796,18 @@ char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
-// Indicates whether there is overlap in the data received and the backing data structure
-inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
+/** Indicates whether there is overlap in the data received and the backing data structure */
+static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
 	return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
+}
+
+/** Reset parser state */
+static inline void is_comm_reset_parser(is_comm_instance_t* c)
+{
+	c->parser.state = 0;
+	c->rxBuf.scan = c->rxBuf.head;
+	c->processPkt = NULL;
 }
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
