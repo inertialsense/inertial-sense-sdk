@@ -174,12 +174,13 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 	
 	// Set parse enable flags
 	c->config.enabledMask = 
-		ENABLE_PROTOCOL_ISB |
-		ENABLE_PROTOCOL_NMEA |
-		ENABLE_PROTOCOL_UBLOX |
-		ENABLE_PROTOCOL_RTCM3;
-		// ENABLE_PROTOCOL_SONY;
-		// ENABLE_PROTOCOL_SPARTN;
+		ENABLE_PROTOCOL_ISB
+		| ENABLE_PROTOCOL_NMEA
+		| ENABLE_PROTOCOL_UBLOX
+		| ENABLE_PROTOCOL_RTCM3
+		// | ENABLE_PROTOCOL_SONY
+		// | ENABLE_PROTOCOL_SPARTN
+		;
 	
 	c->rxPkt.data.ptr = c->rxBuf.start;
 	c->rxErrorState = 1;
