@@ -2806,7 +2806,7 @@ typedef enum
     DYNAMIC_MODEL_AIRBORNE_4G       = 8,
     DYNAMIC_MODEL_WRIST             = 9,
     DYNAMIC_MODEL_INDOOR            = 10,
-    DYNAMIC_MODEL_COUNT             = 11
+    DYNAMIC_MODEL_COUNT    // Must be last
 } eDynamicModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
