@@ -2284,7 +2284,11 @@ enum eGnssSatSigConst
         GNSS_SAT_SIG_CONST_QZS | \
         GNSS_SAT_SIG_CONST_GAL | \
         GNSS_SAT_SIG_CONST_GLO | \
-    	GNSS_SAT_SIG_CONST_BDS
+    	GNSS_SAT_SIG_CONST_BDS,
+
+    GNSS_SAT_SIG_CONST_DEFAULT_INTEL = \
+        GNSS_SAT_SIG_CONST_GPS | \
+        GNSS_SAT_SIG_CONST_GAL,
 };
 
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
