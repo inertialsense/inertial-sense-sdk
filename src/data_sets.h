@@ -1811,8 +1811,8 @@ typedef struct PACKED
 #define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
 
 #define GRMC_PRESET_GPX_IMX		(   GRMC_BITS_PRESET \
-                                    | GRMC_BITS_DEV_INFO \ 
-                                    | GRMC_BITS_RTOS_INFO \ 
+                                    | GRMC_BITS_DEV_INFO \
+                                    | GRMC_BITS_RTOS_INFO \
                                     | GRMC_BITS_STATUS \
                                     | GRMC_BITS_DEBUG_ARRAY \
                                     | GRMC_BITS_GPS1_POS \
@@ -1820,11 +1820,11 @@ typedef struct PACKED
                                     | GRMC_BITS_GPS1_VEL \
                                     | GRMC_BITS_GPS2_VEL \
                                     | GRMC_BITS_GPS1_SAT \
-                                    | GRMC_BITS_GPS2_SAT \ 
+                                    | GRMC_BITS_GPS2_SAT \
                                     | GRMC_BITS_GPS1_SIG \
-                                    | GRMC_BITS_GPS2_SIG \ 
+                                    | GRMC_BITS_GPS2_SIG \
                                     | GRMC_BITS_GPS1_VERSION \
-                                    | GRMC_BITS_GPS2_VERSION \ 
+                                    | GRMC_BITS_GPS2_VERSION \
                                     | GRMC_BITS_GPS1_RTK_POS \
                                     | GMRC_BITS_GPS2_RTK_CMP_REL \
                                     | GMRC_BITS_GPS2_RTK_CMP_MISC \
