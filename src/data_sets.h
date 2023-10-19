@@ -140,8 +140,9 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
+#define DID_GPX_RMC                     (eDataIDs)126 /** (debug_array_t) GPX debug */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_LAST                              125 /** Last of GPX DIDs */
+#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
 
 
 // Adding a new data id?
@@ -1767,6 +1768,17 @@ typedef struct PACKED
 } rmci_t;
 
 // GPX Realtime Message Controller (GRMC) - message broadcast mechanism.
+#define GRMC_OPTIONS_PORT_MASK           0x000000FF
+#define GRMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
+#define GRMC_OPTIONS_PORT_CURRENT        0x00000000
+#define GRMC_OPTIONS_PORT_SER0           0x00000001
+#define GRMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
+#define GRMC_OPTIONS_PORT_SER2           0x00000004
+#define GRMC_OPTIONS_PORT_USB            0x00000008
+#define GRMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define GRMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+
+
 #define GRMC_BITS_DEV_INFO              0x0000000000000001
 #define GRMC_BITS_FLASH_CFG             0x0000000000000002
 #define GRMC_BITS_STATUS                0x0000000000000004
@@ -1791,12 +1803,12 @@ typedef struct PACKED
 #define GMRC_BITS_GPS2_RTK_CMP_REL      0x0000000100000000
 #define GRMC_BITS_PRESET                0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
-#define RMC_PRESET_GPX_DEV_INFO_PERIOD_MS       1000
-#define RMC_PRESET_GPX_RTOS_INFO_PERIOD_MS      500
-#define RMC_PRESET_GPX_STATUS_PERIOD_MS         500
-#define RMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS    500
-#define RMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS   1000
-#define RMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
+#define GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS       1000
+#define GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS      500
+#define GRMC_PRESET_GPX_STATUS_PERIOD_MS         500
+#define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS    500
+#define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS   1000
+#define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
 
 #define GRMC_PRESET_GPX_IMX		(   GRMC_BITS_PRESET \
                                     | GRMC_BITS_DEV_INFO \ 
