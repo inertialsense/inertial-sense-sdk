@@ -2805,7 +2805,8 @@ typedef enum
     DYNAMIC_MODEL_AIRBORNE_2G       = 7,
     DYNAMIC_MODEL_AIRBORNE_4G       = 8,
     DYNAMIC_MODEL_WRIST             = 9,
-    DYNAMIC_MODEL_INDOOR            = 10
+    DYNAMIC_MODEL_INDOOR            = 10,
+    DYNAMIC_MODEL_COUNT    // Must be last
 } eDynamicModel;
 
 /** (DID_FLASH_CONFIG) Configuration data
@@ -3207,10 +3208,11 @@ typedef struct
     /** reset sat biases after this long trying to get fix if not acquired */
     int fix_reset_base_msgs;
 
-    /** reject threshold of NIS */
-    double maxinnocode;
-    double maxinnophase;
-    double maxnis;
+    /* reject threshold of innovation for phase [0] and code [1] (m) */
+    double maxinno[2];
+    /** reject thresholds of NIS */
+    double maxnis_lo;
+    double maxnis_hi;
 
     /** reject threshold of gdop */
     double maxgdop;
