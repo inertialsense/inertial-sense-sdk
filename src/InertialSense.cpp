@@ -392,10 +392,10 @@ bool InertialSense::Update()
             for (size_t devIdx = 0; devIdx < m_comManagerState.devices.size(); devIdx++) {
                 if (serialPortIsOpen(&(m_comManagerState.devices[devIdx].serialPort)) && m_comManagerState.devices[devIdx].fwUpdater != nullptr) {
                     ISFirmwareUpdater* fwUpdater = m_comManagerState.devices[devIdx].fwUpdater;
-                    fwUpdater->step();
+                    fwUpdater->fwUpdate_step();
 
-                    fwUpdate::update_status_e status = fwUpdater->getSessionStatus();
-                    if ((status == fwUpdate::FINISHED) || ( status < fwUpdate::NOT_STARTED)) {
+                    fwUpdate::update_status_e status = fwUpdater->fwUpdate_getSessionStatus();
+                    if (((status == fwUpdate::FINISHED) || (status < fwUpdate::NOT_STARTED)) && !fwUpdater->hasPendingCommands()) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
@@ -850,7 +850,7 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     case DID_FIRMWARE_UPDATE:
         // we don't respond to messages if we don't already have an active Updater
         if (m_comManagerState.devices[pHandle].fwUpdater)
-            m_comManagerState.devices[pHandle].fwUpdater->processMessage(data->ptr, data->hdr.size);
+            m_comManagerState.devices[pHandle].fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
         break;
 	}
 }
@@ -920,8 +920,7 @@ is_operation_result InertialSense::updateFirmware(
         const string& comPort,
         int baudRate,
         fwUpdate::target_t targetDevice,
-        int slotNum,
-        const string& fileName,
+        std::vector<std::string> cmds,
         ISBootloader::pfnBootloadProgress uploadProgress,
         ISBootloader::pfnBootloadProgress verifyProgress,
         ISBootloader::pfnBootloadStatus infoProgress,
@@ -971,14 +970,14 @@ is_operation_result InertialSense::updateFirmware(
             comPorts.begin(), comPorts.end(),
             back_inserter(ports_user_ignore));
 
-    // file exists?
-    ifstream tmpStream(fileName);
-    if (!tmpStream.good())
-    {
-        char buff[128];
-        printf("File does not exist: [%s] %s", getcwd(buff, sizeof(buff)-1), fileName.c_str());
-        return IS_OP_ERROR;
-    }
+//    // file exists?
+//    ifstream tmpStream(fileName);
+//    if (!tmpStream.good())
+//    {
+//        char buff[128];
+//        printf("File does not exist: [%s] %s", getcwd(buff, sizeof(buff)-1), fileName.c_str());
+//        return IS_OP_ERROR;
+//    }
 
 #if !PLATFORM_IS_WINDOWS
     fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
@@ -997,15 +996,15 @@ is_operation_result InertialSense::updateFirmware(
             ports_user_ignore.begin(), ports_user_ignore.end(),
             back_inserter(update_ports));
 
-    for (int i = 0; i < (int)m_comManagerState.devices.size(); i++) {
+    for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
-        
-		// TODO: Impliment maybe
-		// m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
-		// m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
-		// m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
-		
-		m_comManagerState.devices[i].fwUpdater->initializeUpdate(targetDevice, fileName, slotNum, false, 512, 250);
+
+        // TODO: Implement maybe
+        // m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
+        // m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
+        // m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
+
+        m_comManagerState.devices[i].fwUpdater->setCommands(targetDevice, cmds);
     }
 
     printf("\n\r");
@@ -1026,7 +1025,7 @@ fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
 	try
 	{
 		if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
-			return m_comManagerState.devices[deviceIndex].fwUpdater->getSessionStatus();
+			return m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionStatus();
 		else
 			return fwUpdate::ERR_UPDATER_CLOSED;
 
@@ -1036,7 +1035,7 @@ fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
 		return fwUpdate::ERR_INVALID_SLOT;
 	}
 
-	return fwUpdate::ERR_UNKOWN;
+	return fwUpdate::ERR_UNKNOWN;
 }
 
 /**
@@ -1054,7 +1053,7 @@ fwUpdate::update_status_e InertialSense::getCloseStatus(uint32_t deviceIndex)
 		return fwUpdate::ERR_INVALID_SLOT;
 	}
 
-	return fwUpdate::ERR_UNKOWN;
+	return fwUpdate::ERR_UNKNOWN;
 }
 
 /**
@@ -1066,10 +1065,10 @@ float InertialSense::getUploadPercent(uint32_t deviceIndex)
 	float totalChunks;
 	if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
 	{
-		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->getTotalChunks();
+		totalChunks = m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getTotalChunks();
 
 		if (totalChunks > 0)
-			return (m_comManagerState.devices[deviceIndex].fwUpdater->getNextChunkID() / totalChunks)*100;
+			return (m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getNextChunkID() / totalChunks) * 100;
 		else
 				return 100.0;
 	}

@@ -90,13 +90,14 @@ namespace fwUpdate {
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
     enum target_t : uint32_t {
-        TARGET_NONE = 0x00,
+        TARGET_HOST = 0x00,
         TARGET_IMX5 = 0x10,
         TARGET_GPX1 = 0x20,
         TARGET_VPX = 0x30, // RESERVED FOR VPX
         TARGET_UBLOX_F9P__1 = 0x111,
         TARGET_UBLOX_F9P__2 = 0x112,
         TARGET_UBLOX_F9P__ALL = 0x11F,
+        TARGET_SONY_CXD5610 = 0x120,
         TARGET_SONY_CXD5610__1 = 0x121,
         TARGET_SONY_CXD5610__2 = 0x122,
         TARGET_SONY_CXD5610__ALL = 0x12F,
@@ -125,7 +126,8 @@ namespace fwUpdate {
     };
 
     enum update_status_e : int16_t {
-        FINISHED = 4,               // indicates that all chunks have been received, and the checksum is valid.
+        FINISHED = 5,               // indicates that all operations are completed and device reports success (generally ready for a reset)
+        FINALIZING = 4,             // indicates that all chunks have been received, and checksum is valid, but still waiting on internal operations to complete
         IN_PROGRESS = 3,            // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
         READY = 2,                  // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
         INITIALIZING = 1,           // indicates that an update has been requested, but the subsystem is waiting on completion of the bootloader or other back-end mechanism to initialize before data transfer can begin.
@@ -143,8 +145,9 @@ namespace fwUpdate {
         ERR_FLASH_WRITE_FAILURE = -11,    // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
         ERR_FLASH_OPEN_FAILURE = -12,   // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
         ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
-        ERR_UPDATER_CLOSED = -14,
-        ERR_UNKOWN = -15,
+        ERR_UPDATER_CLOSED = -14,   //
+        ERR_INVALID_IMAGE = -15,    // indicates that the specified image file is invalid; this can also be reported directly by the host if the image file is not found.
+        ERR_UNKNOWN = -16,
         // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
     };
 
@@ -262,7 +265,7 @@ namespace fwUpdate {
          * @param max_len
          * @return
          */
-        static int packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data=nullptr);
+        static int fwUpdate_packPayload(uint8_t* buffer, int max_len, const payload_t& payload, const void *aux_data= nullptr);
 
         /**
          * Unpacks a DID payload byte buffer (from the comms system) into a firmware_update msg_payload_t struct
@@ -273,7 +276,7 @@ namespace fwUpdate {
          * @param msg_payload the payload_t struct that the data will be unpacked into.
          * @return true on success, otherwise false
          */
-        static int unpackPayload(const uint8_t* buffer, int buf_len, payload_t& payload, void *aux_data=nullptr, uint16_t max_aux=0);
+        static int fwUpdate_unpackPayload(const uint8_t* buffer, int buf_len, payload_t& payload, void *aux_data= nullptr, uint16_t max_aux= 0);
 
         /**
          * maps a DID payload byte buffer (from the comms system) into a fwUpdate::payload_t struct, and extracts aux_data if any.
@@ -282,7 +285,7 @@ namespace fwUpdate {
          * @param aux_data a double-pointer which on return will point to any auxilary data in the payload, or nullptr if there is none
          * @return returns the total number of bytes in the packet, including aux data if any
          */
-        static int mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data);
+        static int fwUpdate_mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data);
 
             /**
              * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
@@ -310,7 +313,7 @@ namespace fwUpdate {
         uint32_t timeout_duration = 15000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //! the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
 
-        target_t target_id = TARGET_NONE;
+        target_t session_target = TARGET_HOST;
         update_status_e session_status = NOT_STARTED;           //! last known state of this session
         uint16_t session_id = 0;                                //! the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         uint16_t session_chunk_size = 0;                        //! the negotiated maximum size for each chunk.
@@ -327,7 +330,7 @@ namespace fwUpdate {
          * @param aux_data the auxillary data to include, or nullptr if none.
          * @return
          */
-        bool sendPayload(fwUpdate::payload_t& payload, void *aux_data=nullptr);
+        bool fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data= nullptr);
 
         /**
          * Virtual function that must be implemented in the concrete implementations, responsible for writing buffer out to the wire (serial, or otherwise).
@@ -336,27 +339,27 @@ namespace fwUpdate {
          * @param buff_len
          * @return
          */
-        virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
+        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         /**
          * Sets the duration (in milliseconds) which will trigger a Timeout status if a session has been started, but no further communications has been received for this target (host or device).
          * @param timeout
          */
-        void setTimeoutDuration(uint32_t timeout) { timeout_duration = timeout; }
+        void fwUpdate_setTimeoutDuration(uint32_t timeout) { timeout_duration = timeout; }
 
         /**
          * Returns the elapsed time since the last message was received by this target, meant for this target.  Use this value > timeoutDuration to detect a timeout condition.
          * @return
          */
-        uint32_t getLastMessageAge() { return current_timeMs() - last_message; }
+        uint32_t fwUpdate_getLastMessageAge() { return current_timeMs() - last_message; }
 
         /**
          * Forces a reset of the last message time; this is useful when first starting a new session.
          */
-        void resetTimeout() { last_message = current_timeMs(); }
+        void fwUpdate_resetTimeout() { last_message = current_timeMs(); }
 
-        char* payloadToString(fwUpdate::payload_t* payload);
-        const char *getSessionStatusName(update_status_e status);
+        char* fwUpdate_payloadToString(fwUpdate::payload_t* payload);
+        const char *fwUpdate_getSessionStatusName(update_status_e status);
 
     private:
         /**
@@ -364,7 +367,7 @@ namespace fwUpdate {
          * @param msg
          * @return the number of bytes that this entire message contains, including headers, etc.
          */
-        static size_t getPayloadSize(const payload_t* payload, bool include_aux=false);
+        static size_t fwUpdate_getPayloadSize(const payload_t* payload, bool include_aux= false);
     };
 
     /**
@@ -388,19 +391,19 @@ namespace fwUpdate {
          * @param msg_payload the contents of the DID_FIRMWARE_UPDATE payload
          * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
          *
-         * Note: Internally, this method calls step(), so even if you don't call step(), but it can still operate with just inbound messages, but interval updates/etc won't run.
+         * Note: Internally, this method calls fwUpdate_step(), so even if you don't call fwUpdate_step(), but it can still operate with just inbound messages, but interval updates/etc won't run.
          */
-        bool processMessage(const payload_t& msg_payload);
-        bool processMessage(const uint8_t* buffer, int buf_len);
+        bool fwUpdate_processMessage(const payload_t& msg_payload);
+        bool fwUpdate_processMessage(const uint8_t* buffer, int buf_len);
 
-        update_status_e getSessionStatus() { return session_status; }
-        uint16_t getSessionID() { return session_id; }
-        float getResendRate() { return ((float)resend_count / (float)last_chunk_id); }
-        uint16_t getLastChunkID() { return last_chunk_id; }
-        uint16_t getChunkSize() { return session_chunk_size; }
-        uint16_t getTotalChunks() { return session_total_chunks; }
-        uint16_t getImageSize() { return session_image_size; }
-        uint16_t getImageSlot() { return session_image_slot; }
+        update_status_e fwUpdate_getSessionStatus() { return session_status; }
+        uint16_t fwUpdate_getSessionID() { return session_id; }
+        float fwUpdate_getResendRate() { return ((float)resend_count / (float)last_chunk_id); }
+        uint16_t fwUpdate_getLastChunkID() { return last_chunk_id; }
+        uint16_t fwUpdate_getChunkSize() { return session_chunk_size; }
+        uint16_t fwUpdate_getTotalChunks() { return session_total_chunks; }
+        uint16_t fwUpdate_getImageSize() { return session_image_size; }
+        uint16_t fwUpdate_getImageSlot() { return session_image_slot; }
 
 
         //===========  Functions which MUST be implemented ===========//
@@ -408,22 +411,22 @@ namespace fwUpdate {
         /**
          * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
          * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
-         * If you don't call step() things should still generally work, but it probably won't seem very responsive.
+         * If you don't call fwUpdate_step() things should still generally work, but it probably won't seem very responsive.
          * @return the message type for the most recently received/processed message
          */
-        virtual msg_types_e step() = 0;
+        virtual msg_types_e fwUpdate_step() = 0;
 
         /**
          * Writes the requested data (usually a packed payload_t) out to the specified device
          * Note that the implementation between a target and an actual interface is device-specific. In most cases,
-         * for a Device-implementation, this will typically specify TARGET_NONE, which should direct back to the
+         * for a Device-implementation, this will typically specify TARGET_HOST, which will direct back to the
          * controlling host.
          * @param target
          * @param buffer
          * @param buff_len
          * @return true if the data was successfully sent to the underlying communication system, otherwise false
          */
-        virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
+        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         /**
          * Performs a software managed reset (ie, by informing the OS/MCU to restart the system)
@@ -432,22 +435,22 @@ namespace fwUpdate {
          * @param target_id the device to reset
          * @return true if successful, otherwise false
          */
-        virtual int performSoftReset(target_t target_id) = 0;
+        virtual int fwUpdate_performSoftReset(target_t target_id) = 0;
 
         /**
          * Performs a hardware managed reset, usually by pulling interfacing pins into the MCU either HIGH or LOW to force a reset state on the hardware
          * @param target_id the device to reset
          * @return true if successful, otherwise false
          */
-        virtual int performHardReset(target_t target_id) = 0;
+        virtual int fwUpdate_performHardReset(target_t target_id) = 0;
 
         /**
          * Initializes the system to begin receiving firmware image chunks for the target device, image slot and image size.
          * @param msg the message which contains the request data, such as slot, file size, chunk size, md5 checksum, etc.
-         * @return an update_status_e indicating the continued state of the update process, or an error. For startFirmwareUpdate
+         * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_startUpdate
          * this should return "GOOD_TO_GO" on success.
          */
-        virtual update_status_e startFirmwareUpdate(const payload_t& msg) = 0;
+        virtual update_status_e fwUpdate_startUpdate(const payload_t& msg) = 0;
 
         /**
          * Writes data (of len bytes) as a chunk of a larger firmware image to the target and device-specific image slot, and with the specified offset
@@ -456,10 +459,10 @@ namespace fwUpdate {
          * @param offset the offset into the slot to write this chunk
          * @param len the number of bytes in this chunk
          * @param data the chunk data
-         * @return an update_status_e indicating the continued state of the update process, or an error. For writeImageChunk
+         * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_writeImageChunk
          * this should return "WAITING_FOR_DATA" if more chunks are expected, or an error.
          */
-        virtual update_status_e writeImageChunk(target_t target_id, int slot_id, int offset, int len, uint8_t *data) = 0;
+        virtual update_status_e fwUpdate_writeImageChunk(target_t target_id, int slot_id, int offset, int len, uint8_t *data) = 0;
 
         /**
          * Validated and finishes writing of the firmware image; that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization.
@@ -467,7 +470,7 @@ namespace fwUpdate {
          * @param slot_id the image slot, if applicable (otherwise 0)
          * @return
          */
-        virtual update_status_e finishFirmwareUpgrade(target_t target_id, int slot_id) = 0;
+        virtual update_status_e fwUpdate_finishUpdate(target_t target_id, int slot_id) = 0;
 
 
     protected:
@@ -476,7 +479,7 @@ namespace fwUpdate {
          * This message only include the number of chunks sent, and the total expected (sufficient for a percentage) and the
          * @return true if the message was sent, false if there was an error
          */
-        bool sendProgress();
+        bool fwUpdate_sendProgress();
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -484,7 +487,7 @@ namespace fwUpdate {
          * @param message the actual message to be sent to the host
          * @return true if the message was sent, false if there was an error
          */
-        bool sendProgress(int level, const std::string message);
+        bool fwUpdate_sendProgress(int level, const std::string message);
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -494,17 +497,28 @@ namespace fwUpdate {
          * @
          * @return true if the message was sent, false if there was an error
          */
-        bool sendProgressFormatted(int level, const char *message, ...);
+        bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
 
         /**
          * @return true if we have an active session and are updating.
          */
-        bool isUpdating();
+        bool fwUpdate_isUpdating();
+
+        /**
+         * @brief Notifies the host that the firmware update is complete for any reason, including an error.
+         * This call does not generate a response or acknowledgement from the host.
+         * 
+         * @param reason the specific reason the update was finished.
+         * @param clear_session if true, causes the current session to be invalidated
+         * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
+         * @return true if successfully sent, otherwise false.
+         */
+        bool fwUpdate_sendDone(update_status_e reason, bool clear_session, bool reset_device);
 
         /**
          * @return the target type for this instance.
          */
-        target_t getCurrentTarget() { return target_id; }
+        target_t fwUpdate_getCurrentTarget() { return session_target; }
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.
@@ -512,50 +526,50 @@ namespace fwUpdate {
          * This probably should be called after an update is finished, but is probably safest to call as the first step in a REQ_UPDATE.
          * @return true if the system was able to properly initialize, false if there was an error of something (you have a REAL problem in this case).
          */
-        bool resetEngine();
+        bool fwUpdate_resetEngine();
 
         /**
-         * Internally called by processMessage() when a REQ_UPDATE message is received.
+         * Internally called by fwUpdate_processMessage() when a REQ_UPDATE message is received.
          * @param payload the DID message
          * @return true if the message was received and parsed without error, false otherwise.
          *
          * NOTE, this function should call out and send an error status in the event of a failure.
          */
-        bool handleInitialize(const payload_t& payload);
+        bool fwUpdate_handleInitialize(const payload_t& payload);
 
         /**
-         * Internally called by processMessage() when a UPDATE_CHUNK message is received.
+         * Internally called by fwUpdate_processMessage() when a UPDATE_CHUNK message is received.
          * @param payload the DID payload
          * @return
          */
-        bool handleChunk(const payload_t& payload);
+        bool fwUpdate_handleChunk(const payload_t& payload);
 
         /**
-         * Internally called by processMessage() when a REQ_RESET message is received, to reset the target MCU.
+         * Internally called by fwUpdate_processMessage() when a REQ_RESET message is received, to reset the target MCU.
          * @param payload the DID message
          * @return true if the message was received and parsed without error, false otherwise.
          */
-        bool handleMcuReset(const payload_t& payload);
+        bool fwUpdate_handleReset(const payload_t& payload);
 
         /**
          * Sends a REQ_RESEND_CHUNK message in response to receiving an invalid CHUNK message. This will ALWAYS send with the current session_id, and the last received chunk_id + 1;
          * @param reason for the resend
          * @return return true is a retry was sent, or false if a retry was not sent.  NOTE this is not an error, as a valid message will not send a retry.
          */
-        bool sendRetry(resend_reason_e reason);
+        bool fwUpdate_sendRetry(resend_reason_e reason);
 
         uint32_t progress_interval = 500;               // we'll send progress updates at 2hz.
         uint32_t nextProgressReport = 0;                // the next system
         int32_t last_chunk_id = -1;                     // the last received chunk id from a CHUNK message. -1 = no chunk yet received; the next received chunk must be 0.
     };
 
-    class FirmwareUpdateSDK : public FirmwareUpdateBase {
+    class FirmwareUpdateHost : public FirmwareUpdateBase {
     public:
         /**
          * Creates a FirmwareUpdateSDK instance
          */
-        FirmwareUpdateSDK();
-        virtual ~FirmwareUpdateSDK() {};
+        FirmwareUpdateHost();
+        virtual ~FirmwareUpdateHost() {};
 
         /**
          * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
@@ -564,15 +578,15 @@ namespace fwUpdate {
          * device triggering a timeout and aborting the upgrade process.
          * @return the message type for the most recently received/processed message
          */
-        virtual msg_types_e step() = 0;
+        virtual msg_types_e fwUpdate_step() = 0;
 
         /**
          * Call this any time a DID_FIRMWARE_UPDATE is received by the comms system, to parse and process the message.
          * @param msg_payload the contents of the DID_FIRMWARE_UPDATE payload
          * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
          */
-        bool processMessage(const payload_t& msg_payload);
-        bool processMessage(const uint8_t* buffer, int buf_len);
+        bool fwUpdate_processMessage(const payload_t& msg_payload);
+        bool fwUpdate_processMessage(const uint8_t* buffer, int buf_len);
 
         /**
          * Called by the host application to initiate a request by the SDK to update a target device.
@@ -584,75 +598,82 @@ namespace fwUpdate {
          * @param progress_rate the rate (in millis) which the device should send out progress updates
          * @return
          */
-        bool requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate = 500);
+        bool fwUpdate_requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate = 500);
 
         /**
-         * Called by the hsot application to resend a previous "requestUpdate" with a full parameter set.
+         * Called by the hsot application to resend a previous "fwUpdate_requestUpdate" with a full parameter set.
          * @return
          */
-        bool requestUpdate();
+        bool fwUpdate_requestUpdate();
+
+        /**
+         * Requests that the remote device perform a reset. Note that this request does not need a session, or any other pre-negotiated state.
+         * @param hardReset
+         * @return true if the request was successfully sent
+         */
+        bool fwUpdate_requestReset(bool hardReset=false);
 
         /**
          * Sends the next chunk of the firmware image to the remote side.  Internally, this call handles fetching the requested
-         * data from the image file, through an implemented getImageChunk(), which actually handles the fileIO, etc.
+         * data from the image file, through an implemented fwUpdate_getImageChunk(), which actually handles the fileIO, etc.
          * @return the number of remaining chunks that still need sending (returning 0 = all chunks sent).
          */
-        int sendNextChunk(void);
+        int fwUpdate_sendNextChunk(void);
 
         /**
          * @return true if we have an active session and are updating.
          */
-        bool isUpdating();
+        bool fwUpdate_isUpdating();
 
         /**
          * @return a human-readable status name for the current session status
          */
-        const char *getSessionStatusName();
+        const char *fwUpdate_getSessionStatusName();
 
         /**
          * @return the current session status
          */
-        update_status_e getSessionStatus() { return session_status; }
+        update_status_e fwUpdate_getSessionStatus() { return session_status; }
 
         /**
          * @return the current session id, or 0 if no session has been started
          */
-        uint16_t getSessionID() { return session_id; }
+        uint16_t fwUpdate_getSessionID() { return session_id; }
 
         /**
          * @return the ID of the next chunk to be sent
          */
-        uint16_t getNextChunkID() { return next_chunk_id; }
+        uint16_t fwUpdate_getNextChunkID() { return next_chunk_id; }
 
         /**
          * @returns total number of complete chunks
         */
-       uint16_t getChunksSent() {return chunks_sent; }
+       uint16_t fwUpdate_getChunksSent() {return chunks_sent; }
 
         /**
          * @return the negotiated chunk size for this session
          */
-        uint16_t getChunkSize() { return session_chunk_size; }
+        uint16_t fwUpdate_getChunkSize() { return session_chunk_size; }
 
         /**
          * @return the total number of chunks negotiated for this session, determined by the image size
          */
-        uint16_t getTotalChunks() { return session_total_chunks; }
+        uint16_t fwUpdate_getTotalChunks() { return session_total_chunks; }
 
         /**
          * @return the size of the firmware image for this session
          */
-        uint16_t getImageSize() { return session_image_size; }
+        uint16_t fwUpdate_getImageSize() { return session_image_size; }
 
         /**
          * @return the number of chunks that the remote device has specifically requested be resent
          */
-        uint16_t getResendCount() { return resend_count; }
+        uint16_t fwUpdate_getResendCount() { return resend_count; }
 
         /**
          * @return a percentage of the number of resent chunks vs total chunks sent (indicates an error rate)
          */
-        float getResendRate() { return (chunks_sent > 0) ? ((float)resend_count / (float)chunks_sent) : 0.f; }
+        float fwUpdate_getResendRate() { return (chunks_sent > 0) ? ((float)resend_count / (float)chunks_sent) : 0.f; }
 
 
     protected:
@@ -666,7 +687,7 @@ namespace fwUpdate {
          * @param buff_len the length of the data to be sent
          * @return returns true if the data was successfully sent, otherwise false
          */
-        virtual bool writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
+        virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         /**
          * To be implemented by the concrete class, this method loads the next image chunk from disk (or whereever) and
@@ -679,7 +700,7 @@ namespace fwUpdate {
          * @return the actual number of bytes loaded into the buffer. Any other value other than the requested len, will likely
          * result in an error.  If an error is encountered reading the data, you should return a negative value here.
          */
-        virtual int getImageChunk(uint32_t offset, uint32_t len, void **buffer) = 0;
+        virtual int fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) = 0;
 
         /**
          * To be implemented by the concrete class, this method is called when the API receives a response to an update request.
@@ -687,7 +708,7 @@ namespace fwUpdate {
          * @param msg the payload message for the update response
          * @return true if this message was properly handled (regardless of error, etc), otherwise false
          */
-        virtual bool handleUpdateResponse(const payload_t& msg) = 0;
+        virtual bool fwUpdate_handleUpdateResponse(const payload_t& msg) = 0;
 
         /**
          * To be implemented by the concrete class, this method is called when the API receives a request from the remote
@@ -696,7 +717,7 @@ namespace fwUpdate {
          * @param msg the payload message for the resend request
          * @return true if this message was properly handled (regardless of error, etc), otherwise false
          */
-        virtual bool handleResendChunk(const payload_t& msg) = 0;
+        virtual bool fwUpdate_handleResendChunk(const payload_t& msg) = 0;
 
         /**
          * To be implemented by the concrete class, this method is called when the API receives a progress message from
@@ -705,7 +726,17 @@ namespace fwUpdate {
          * @param msg the progress payload message
          * @return true if this message was properly handled (regardless of error, etc), otherwise false
          */
-        virtual bool handleUpdateProgress(const payload_t& msg) = 0;
+        virtual bool fwUpdate_handleUpdateProgress(const payload_t& msg) = 0;
+
+        /**
+         * To be implemented by the concrete class, this method is called when the API receives DONE message from the
+         * remote device indicating the completion (success or error) of the Update process. This effectively denotes
+         * that the session is closed, and a new session will have to be initiated. This message is informational only,
+         * and can generally be ignored, but maybe useful for communicating status messages and progress back to the user.
+         * @param msg the progress payload message
+         * @return true if this message was properly handled (regardless of error, etc), otherwise false
+         */
+        virtual bool fwUpdate_handleDone(const payload_t& msg) = 0;
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.
@@ -713,7 +744,7 @@ namespace fwUpdate {
          * This probably should be called after an update is finished, but is probably safest to call as the first step in a REQ_UPDATE.
          * @return true if the system was able to properly initialize, false if there was an error of something (you have a REAL problem in this case).
          */
-        bool resetEngine();
+        bool fwUpdate_resetEngine();
 
         uint16_t next_chunk_id = 0;                     //! the next chuck id to send, at the next send.
         uint16_t chunks_sent = 0;                       //! the total number of chunks that have been sent, including resends
