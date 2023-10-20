@@ -64,7 +64,7 @@ public:
     bool hasPendingCommands() { return !commands.empty(); }
     void clearAllCommands() { commands.clear(); }
 
-    bool initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
+    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
 
     /**
      * @param offset the offset into the image file to pull data from
