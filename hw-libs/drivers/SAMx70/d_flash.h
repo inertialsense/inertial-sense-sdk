@@ -39,7 +39,7 @@ uint32_t flash_erase_block(uint32_t address);
 extern void flash_erase_chip(void);
 
 // Enable ROM bootloader (DFU) mode - Since it is a RAM function, it needs 'extern' declaration.
-extern flash_enable_rom_bootloader(void);
+extern void flash_enable_rom_bootloader(void);
 
 // read the user signature, size must be multiple of 4 and less than or equal to 512
 uint32_t flash_get_user_signature(volatile void* ptr, uint32_t size);
