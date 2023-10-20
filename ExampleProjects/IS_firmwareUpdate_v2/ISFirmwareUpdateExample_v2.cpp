@@ -168,12 +168,17 @@ int main(int argc, char* argv[])
 		{
 			if (!fileName.empty()) 
 			{
+                std::vector<std::string> commands;
+                commands.push_back("slot=0"); // target slot-0 (only valid slot for GPX)
+                commands.push_back("timeout=10000") // set the timeout to 10 seconds (default is 15 sec)
+                commands.push_back("upload=" + fileName); // upload image to device
+                commands.push_back("reset"); // reset device
+
 				if (inertialSenseInterface.updateFirmware(
 					COMNum, // COM port
 					baudRate, // baud rate
 					fwUpdate::TARGET_GPX1, // Target GPX
-					0,	// Slot 0 since not GNSS update
-					fileName, // Firmware file
+                    commands, // vector of strings, commands to run when performing the update
 					uploadProgress,
 					verifyProgress,
 					statusText,
