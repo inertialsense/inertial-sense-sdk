@@ -92,6 +92,7 @@ typedef struct
 	uint32_t sysCommand;
 	int32_t platformType;
 	bool chipEraseEvb2;
+	bool romBootloadEvb2;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

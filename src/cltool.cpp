@@ -179,13 +179,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
-		else if (startsWith(a, "-romBootloadEvb"))
+		else if (startsWith(a, "-chipEraseEvb"))
 		{
 			g_commandLineOptions.chipEraseEvb2 = true;
 		}
-		else if (startsWith(a, "-romBootloadIMX"))
+		else if (startsWith(a, "-chipEraseIMX"))
 		{
-			g_commandLineOptions.sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
 		}
 		else if (matches(a, "-c") && (i + 1) < argc)
 		{
@@ -361,6 +361,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.logPath = argv[++i];	// use next argument
+		}
+		else if (startsWith(a, "-romBootloadEvb"))
+		{
+			g_commandLineOptions.romBootloadEvb2 = true;
+		}
+		else if (startsWith(a, "-romBootloadIMX"))
+		{
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
 		}
 		else if (startsWith(a, "-rs="))
 		{
