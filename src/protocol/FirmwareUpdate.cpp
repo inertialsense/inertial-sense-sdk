@@ -619,7 +619,7 @@ namespace fwUpdate {
 
             session_status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot);
             if (session_status != fwUpdate::FINALIZING)
-                fwUpdate_sendDone(session_status, true, false);
+                fwUpdate_sendDone(session_status, false, false);
         }
 
         return true;
