@@ -5,11 +5,19 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate) 
+bool ISFirmwareUpdater::setCommands(fwUpdate::target_t _target, std::vector<std::string> cmds) {
+    target = _target;
+    commands = cmds;
+
+    return true;
+}
+
+fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate)
 {
     srand(time(NULL)); // get *some kind* of seed.
 
     srcFile = new std::ifstream(filename, std::ios::binary);
+    if (!srcFile->is_open()) return fwUpdate::ERR_INVALID_IMAGE;
 
     // get the file size, and checksum for the file
     srcFile->seekg(0, srcFile->end); // move to the end
@@ -33,15 +41,12 @@ bool ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::
     }
 
     getCurrentMd5(session_md5);
-    printf("Image '%s', md5: %8x%8x%8x%8x\n", filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
-
-
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-    fwUpdate_setTimeoutDuration(15000);
+    printf("Requesting Firmware Update with Image '%s', md5: %08x-%08x-%08x-%08x\n", filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
-    return fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate);
+    return (fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
 }
 
 int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
@@ -109,13 +114,49 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("[%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", portName, devInfo->serialNumber, num, tot, percent, fwUpdate_getSessionStatusName(), msg.data.progress.msg_level, message);
+    printf("[%5.2f] [%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", current_timeMs() / 1000.0f, portName, devInfo->serialNumber, num, tot, percent, fwUpdate_getSessionStatusName(), msg.data.progress.msg_level, message);
+    return true;
+}
+
+bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
+    session_status = msg.data.resp_done.status;
+    printf("[%5.2f] [%s : %d] :: Update Finished:%s\n", current_timeMs() / 1000.0f, portName, devInfo->serialNumber, fwUpdate_getSessionStatusName());
     return true;
 }
 
 fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
+    static uint32_t last_msg = 0;
     switch(session_status) {
         case fwUpdate::NOT_STARTED:
+            startAttempts = 0;
+            if (!commands.empty()) {
+                auto cmd = commands[0];
+                commands.erase(commands.begin()); // pop the command off the front
+                std::vector<std::string> args;
+                splitString(cmd, '=', args);
+                if (!args.empty()) {
+                    if ((args[0] == "slot") && (args.size() == 2)){
+                        slotNum = strtol(args[1].c_str(), nullptr, 10);
+                    } else if ((args[0] == "timeout") && (args.size() == 2)) {
+                        fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
+                    } else if (args[0] == "force") {
+                        forceUpdate = (args[1] == "true" ? true : false);
+                    } else if (args[0] == "reset") {
+                        bool hard = (args.size() == 2 && args[1] == "hard");
+                        fwUpdate_requestReset(hard);
+                    } else if (args[0] == "chunk") {
+                        chunkSize = strtol(args[1].c_str(), nullptr, 10);
+                    } else if (args[0] == "rate") {
+                        progressRate = strtol(args[1].c_str(), nullptr, 10);
+                    } else if (args[0] == "upload") {
+                        filename = args[1];
+                        if (initializeUpdate(target, filename, slotNum, forceUpdate, chunkSize, progressRate)) {
+                            // do something on success?
+                        }
+                    }
+                }
+            }
+
             // nothing to do..
             break;
         case fwUpdate::INITIALIZING:
@@ -123,7 +164,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
                 if (nextStartAttempt < current_timeMs()) {// time has elapsed, so re-issue request to update
                     nextStartAttempt = current_timeMs() + attemptInterval;
                     if (fwUpdate_requestUpdate()) {
-                        printf("[%s : %d] :: Requesting Firmware Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
+                        printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
                     } else {
                         session_status = fwUpdate::ERR_COMMS; // error sending the request
                     }
@@ -140,8 +181,12 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
             if (nextChunkSend < current_timeMs()) // don't send chunks too fast
                 fwUpdate_sendNextChunk();
             break;
+        case fwUpdate::FINALIZING:
+            break; // do nothing, just wait
         case fwUpdate::FINISHED:
             printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, fwUpdate_getSessionStatusName());
+            if (hasPendingCommands())
+                session_status = fwUpdate::NOT_STARTED;
             break;
         case fwUpdate::ERR_MAX_CHUNK_SIZE:
             if (session_id != 0) {
@@ -154,8 +199,14 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
                 fwUpdate_requestUpdate();
             }
             break;
+        case fwUpdate::ERR_TIMEOUT:
+            printf("Firmware Update Error: No Response from device [%s : %d].\n", portName, devInfo->serialNumber);
+            clearAllCommands();
+            break;
         default:
-            printf("Firmware uploaded in %0.1f seconds: %s\n", (current_timeMs() - updateStartTime) / 1000.f, fwUpdate_getSessionStatusName());
+            if (session_status < fwUpdate::NOT_STARTED)
+                clearAllCommands();
+            printf("Unexpected Response: %s\n", fwUpdate_getSessionStatusName());
             break;
     }
 

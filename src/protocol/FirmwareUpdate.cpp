@@ -14,7 +14,7 @@ namespace fwUpdate {
 
     static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_FINISHED", "REQ_VERSION", "VERSION_RESP"};
     static const char* status_names[] = { "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
-    "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINISHED"};
+    "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
     static const char* reason_names[] = { "NONE", "INVALID_SEQID", "WRITE_ERROR", "INVALID_SIZE" };
 
     /*==================================================================================*
@@ -389,7 +389,8 @@ namespace fwUpdate {
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const payload_t& msg_payload) {
         bool result = false;
 
-        if (msg_payload.hdr.target_device != session_target)
+        target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
+        if (target_masked != session_target)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
         fwUpdate_resetTimeout();
@@ -413,7 +414,6 @@ namespace fwUpdate {
         }
 
         fwUpdate_step(); // TODO: we should probably do something with the step() result, but not sure what just yet
-
         return result;
     }
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
@@ -490,6 +490,31 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateDevice::fwUpdate_isUpdating() {
         return (session_id != 0) && (session_status > NOT_STARTED);
+    }
+
+    /**
+     * @brief Notifies the host that the firmware update is complete for any reason, including an error.
+     * This call does not generate a response or acknowledgement from the host.
+     * 
+     * @param reason the specific reason the update was finished.
+     * @param clear_session if true, causes the current session to be invalidated
+     * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
+     * @return true if successfully sent, otherwise false.
+     */
+    bool FirmwareUpdateDevice::fwUpdate_sendDone(update_status_e reason, bool clear_session, bool reset_device) {
+        payload_t response;
+        response.hdr.target_device = TARGET_HOST;
+        response.hdr.msg_type = MSG_UPDATE_FINISHED;
+        response.data.resp_done.session_id = session_id;
+        response.data.resp_done.status = session_status = reason;
+        fwUpdate_sendPayload(response);
+
+        bool result = true;
+        if (clear_session)
+            result = fwUpdate_resetEngine();
+        if (reset_device)
+            result = fwUpdate_performSoftReset(session_target);
+        return result;
     }
 
     /**
@@ -592,14 +617,9 @@ namespace fwUpdate {
         if (last_chunk_id >= (session_total_chunks-1)) { // remember, chunk_ids are 0-based
             fwUpdate_sendProgress(); // force sending of a final progress message (which should report 100% complete)
 
-            payload_t response;
-            response.hdr.target_device = TARGET_HOST;
-            response.hdr.msg_type = MSG_UPDATE_FINISHED;
-            response.data.resp_done.session_id = session_id;
-
-            // check our md5 hash
-            response.data.resp_done.status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot);
-            fwUpdate_sendPayload(response);
+            session_status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot);
+            if (session_status != fwUpdate::FINALIZING)
+                fwUpdate_sendDone(session_status, true, false);
         }
 
         return true;
@@ -639,7 +659,7 @@ namespace fwUpdate {
     }
 
     /*==================================================================================*
-     * SDK-API goes here                                                                *
+     * HOST-API goes here                                                                *
      *==================================================================================*/
 
     /**
@@ -671,7 +691,7 @@ namespace fwUpdate {
                 return fwUpdate_handleResendChunk(msg_payload);
             case MSG_UPDATE_FINISHED:
                 session_status = msg_payload.data.resp_done.status;
-                return true;
+                return fwUpdate_handleDone(msg_payload);
             case MSG_VERSION_INFO_RESP:
                 // FIXME: we want to do something with this data...
                 return false;
@@ -743,6 +763,17 @@ namespace fwUpdate {
         request.data.req_update.md5_hash[1] = session_md5[1];
         request.data.req_update.md5_hash[2] = session_md5[2];
         request.data.req_update.md5_hash[3] = session_md5[3];
+
+        return fwUpdate_sendPayload(request);
+    }
+
+    bool FirmwareUpdateHost::fwUpdate_requestReset(bool hardReset) {
+        if ((session_status != NOT_STARTED) || (session_id == 0))
+            return false;
+
+        fwUpdate::payload_t request;
+        request.hdr.target_device = session_target;
+        request.hdr.msg_type = fwUpdate::MSG_REQ_RESET;
 
         return fwUpdate_sendPayload(request);
     }

@@ -43,6 +43,12 @@ private:
     ISBootloader::pfnBootloadProgress pfnVerifyProgress_cb = nullptr;
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
+    std::vector<std::string> commands;
+    int slotNum = 0, chunkSize = 512, progressRate = 250;
+    bool forceUpdate = false;
+    std::string filename;
+    fwUpdate::target_t target;
+
 public:
 
     /**
@@ -51,8 +57,12 @@ public:
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
     ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
-
     ~ISFirmwareUpdater() override {};
+
+    bool setCommands(fwUpdate::target_t, std::vector<std::string> cmds);
+    bool addCommands(fwUpdate::target_t, std::vector<std::string> cmds);
+    bool hasPendingCommands() { return !commands.empty(); }
+    void clearAllCommands() { commands.clear(); }
 
     bool initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
 
@@ -73,6 +83,8 @@ public:
     bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg);
 
     bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg);
+
+    bool fwUpdate_handleDone(const fwUpdate::payload_t &msg);
 
     void setUploadProgressCb(ISBootloader::pfnBootloadProgress pfnUploadProgress){pfnUploadProgress_cb = pfnUploadProgress;}
     void setVerifyProgressCb(ISBootloader::pfnBootloadProgress pfnVerifyProgress){pfnVerifyProgress_cb = pfnVerifyProgress;}

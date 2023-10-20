@@ -623,13 +623,14 @@ static int inertialSenseMain()
 			}
 			try
 			{
-                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
                     if(inertialSenseInterface.updateFirmware(
                             g_commandLineOptions.comPort,
                             g_commandLineOptions.baudRate,
                             g_commandLineOptions.updateFirmwareTarget,
-                            0,
-                            g_commandLineOptions.updateAppFirmwareFilename,
+                            g_commandLineOptions.fwUpdateCmds,
+                            // g_commandLineOptions.updateFirmwareSlot,
+                            // g_commandLineOptions.updateAppFirmwareFilename,
                             bootloadUpdateCallback,
                             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
                             cltool_bootloadUpdateInfo,

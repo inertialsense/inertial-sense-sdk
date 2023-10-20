@@ -126,7 +126,8 @@ namespace fwUpdate {
     };
 
     enum update_status_e : int16_t {
-        FINISHED = 4,               // indicates that all chunks have been received, and the checksum is valid.
+        FINISHED = 5,               // indicates that all operations are completed and device reports success (generally ready for a reset)
+        FINALIZING = 4,             // indicates that all chunks have been received, and checksum is valid, but still waiting on internal operations to complete
         IN_PROGRESS = 3,            // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
         READY = 2,                  // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
         INITIALIZING = 1,           // indicates that an update has been requested, but the subsystem is waiting on completion of the bootloader or other back-end mechanism to initialize before data transfer can begin.
@@ -144,8 +145,9 @@ namespace fwUpdate {
         ERR_FLASH_WRITE_FAILURE = -11,    // indicates that writing of the chunk to flash/nvme storage failed (this can be retried)
         ERR_FLASH_OPEN_FAILURE = -12,   // indicates that an attempt to "open" a particular flash location failed for unknown reasons.
         ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
-        ERR_UPDATER_CLOSED = -14,
-        ERR_UNKOWN = -15,
+        ERR_UPDATER_CLOSED = -14,   //
+        ERR_INVALID_IMAGE = -15,    // indicates that the specified image file is invalid; this can also be reported directly by the host if the image file is not found.
+        ERR_UNKNOWN = -16,
         // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
     };
 
@@ -503,6 +505,17 @@ namespace fwUpdate {
         bool fwUpdate_isUpdating();
 
         /**
+         * @brief Notifies the host that the firmware update is complete for any reason, including an error.
+         * This call does not generate a response or acknowledgement from the host.
+         * 
+         * @param reason the specific reason the update was finished.
+         * @param clear_session if true, causes the current session to be invalidated
+         * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
+         * @return true if successfully sent, otherwise false.
+         */
+        bool fwUpdate_sendDone(update_status_e reason, bool clear_session, bool reset_device);
+
+        /**
          * @return the target type for this instance.
          */
         target_t fwUpdate_getCurrentTarget() { return session_target; }
@@ -592,6 +605,13 @@ namespace fwUpdate {
          * @return
          */
         bool fwUpdate_requestUpdate();
+
+        /**
+         * Requests that the remote device perform a reset. Note that this request does not need a session, or any other pre-negotiated state.
+         * @param hardReset
+         * @return true if the request was successfully sent
+         */
+        bool fwUpdate_requestReset(bool hardReset=false);
 
         /**
          * Sends the next chunk of the firmware image to the remote side.  Internally, this call handles fetching the requested
@@ -707,6 +727,16 @@ namespace fwUpdate {
          * @return true if this message was properly handled (regardless of error, etc), otherwise false
          */
         virtual bool fwUpdate_handleUpdateProgress(const payload_t& msg) = 0;
+
+        /**
+         * To be implemented by the concrete class, this method is called when the API receives DONE message from the
+         * remote device indicating the completion (success or error) of the Update process. This effectively denotes
+         * that the session is closed, and a new session will have to be initiated. This message is informational only,
+         * and can generally be ignored, but maybe useful for communicating status messages and progress back to the user.
+         * @param msg the progress payload message
+         * @return true if this message was properly handled (regardless of error, etc), otherwise false
+         */
+        virtual bool fwUpdate_handleDone(const payload_t& msg) = 0;
 
         /**
          * Internal method use to reinitialize the update engine.  This should clear the the current session_id, existing image data, running md5 sums, etc.

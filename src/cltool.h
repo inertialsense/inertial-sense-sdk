@@ -55,6 +55,7 @@ typedef struct
 	std::string comPort; 					// -c com_port
 	std::string updateAppFirmwareFilename; 	// -uf file_name
 	std::string updateBootloaderFilename; 	// -ub file_name
+    std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
 	bool forceBootloaderUpdate;				// -fb
 	bool bootloaderVerify; 					// -bv
 	bool replayDataLog;
@@ -93,6 +94,7 @@ typedef struct
 	int32_t platformType;
 	bool chipEraseEvb2;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
+    uint32_t updateFirmwareSlot = 0;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

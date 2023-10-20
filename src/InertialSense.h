@@ -440,7 +440,8 @@ public:
      * of the update process.
      * @param comPort
      * @param baudRate
-     * @param fileName
+     * @param targetDevice the device which all commands should be directed to
+     * @param cmds a vector of strings to be interpreted as commands, performed in sequence.  ie ["slot=0","upload=myfirmware.bin","slot=1","upload=configuration.conf","softReset"]
      * @param uploadProgress
      * @param verifyProgress
      * @param infoProgress
@@ -452,8 +453,7 @@ public:
             const std::string& comPort,
             int baudRate,
             fwUpdate::target_t targetDevice,
-            int slotNum,
-            const std::string& fileName,
+            std::vector<std::string> cmds,
             ISBootloader::pfnBootloadProgress uploadProgress,
             ISBootloader::pfnBootloadProgress verifyProgress,
             ISBootloader::pfnBootloadStatus infoProgress,
