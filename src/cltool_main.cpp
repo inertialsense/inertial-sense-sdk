@@ -245,11 +245,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.chipEraseEvb2)
     {   // Chip erase EVB
-		cout << "Sending EVB chip erase." << endl;
+		cout << "Sending EVB enable ROM bootloader." << endl;
         uint32_t sysCommand;		
 		sysCommand = SYS_CMD_MANF_UNLOCK;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
-        sysCommand = SYS_CMD_MANF_CHIP_ERASE;
+        sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
         inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
     }
     if (g_commandLineOptions.sysCommand != 0)
@@ -267,7 +267,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 		case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
 			cout << "Disable serial bridge"; break;
 		case SYS_CMD_MANF_FACTORY_RESET:            cout << " Factory Reset";           break;
-		case SYS_CMD_MANF_CHIP_ERASE:               cout << " Chip Erase";              break;
+		case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:    cout << " Enable ROM bootloader";   break;
 		case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    cout << " Downgrade Calibration";   break;
 		}
 		cout << endl;

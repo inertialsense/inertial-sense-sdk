@@ -121,7 +121,7 @@ __no_inline RAMFUNC void flash_erase_chip(void)
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
 		UPDATE_WATCHDOG();
 
-	//Clear GPNVM Bits
+	// Clear GPNVM Bits
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(0) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Protect bit
 	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
 		UPDATE_WATCHDOG();
@@ -140,7 +140,41 @@ __no_inline RAMFUNC void flash_erase_chip(void)
 			
 	LEDS_ALL_OFF();
 
-	//Reset Device
+	// Reset Device
+	RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
+	while(1);
+}
+
+__no_inline RAMFUNC void flash_enable_rom_bootloader(void)
+{
+	LED_COLOR_RED();
+
+	cpu_irq_disable();	
+	UPDATE_WATCHDOG();
+		
+	// Make sure all blocks are unlocked
+	flash_unlock(IFLASH_ADDR, IFLASH_ADDR + IFLASH_SIZE, NULL, NULL);
+	
+	// Clear GPNVM Bits
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(0) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Protect bit
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		UPDATE_WATCHDOG();
+	
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(1) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Enter SAM-BA
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		UPDATE_WATCHDOG();
+	
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(7) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//TCM config
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		UPDATE_WATCHDOG();
+	
+	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(8) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//TCM config
+	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+		UPDATE_WATCHDOG();
+			
+	LEDS_ALL_OFF();
+
+	// Reset Device
 	RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
 	while(1);
 }

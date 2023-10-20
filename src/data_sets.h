@@ -1323,8 +1323,8 @@ enum eGenFaultCodes
 	GFC_INIT_BAROMETER					= 0x00200000,
 	/*! Fault: I2C initialization */
 	GFC_INIT_I2C						= 0x00800000,
-	/*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
-	GFC_CHIP_ERASE_INVALID				= 0x01000000,
+	/*! Fault: Bootmode pin toggled but did not meet required hold time.  This is caused by noise/transient on bootmode_enable pin.  */
+	GFC_BOOTMODE_INVALID				= 0x01000000,
 };
 
 
@@ -1379,6 +1379,7 @@ enum eSystemCommand
     SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
 enum eSerialPortBridge

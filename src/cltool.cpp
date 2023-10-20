@@ -179,13 +179,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
 		}
-		else if (startsWith(a, "-chipEraseEvb"))
+		else if (startsWith(a, "-romBootloadEvb"))
 		{
 			g_commandLineOptions.chipEraseEvb2 = true;
 		}
-		else if (startsWith(a, "-chipEraseIMX"))
+		else if (startsWith(a, "-romBootloadIMX"))
 		{
-			g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
 		}
 		else if (matches(a, "-c") && (i + 1) < argc)
 		{
@@ -524,8 +524,8 @@ void cltool_outputUsage()
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	if (g_internal)
 	{
-	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
-	cout << "    -chipEraseEvb2 " << boldOff << " CAUTION!!! Erase everything on EVB2 (firmware, config, etc.)" << endlbOn;
+	cout << "    -romBootloadIMX " << boldOff << "  Enable ROM bootloader (DFU) mode on IMX." << endlbOn;
+	cout << "    -romBootloadEvb2 " << boldOff << " Enable ROM bootloader (DFU) mode on EVB2." << endlbOn;
 	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
 	}
 

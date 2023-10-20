@@ -624,22 +624,30 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 			switch (g_status.sysCommand)
 			{
-			case SYS_CMD_SOFTWARE_RESET:			// Reset processor
+			case SYS_CMD_SOFTWARE_RESET:				// Reset processor
 				soft_reset_backup_register(SYS_FAULT_STATUS_USER_RESET);
 				break;
 
-			case SYS_CMD_MANF_UNLOCK:				// Unlock process for chip erase
+			case SYS_CMD_MANF_UNLOCK:					// Unlock process for chip erase
 				manfUnlock = true;
 				g_status.evbStatus |= EVB_STATUS_MANF_UNLOCKED;
 				break;
 
-			case SYS_CMD_MANF_CHIP_ERASE:			// chip erase and reboot - do NOT reset calibration!
+			case SYS_CMD_MANF_CHIP_ERASE:				// full chip erase and reboot - do NOT reset calibration!
 				if(manfUnlock)
 				{
 					BEGIN_CRITICAL_SECTION
-					
-					// erase chip
 					flash_erase_chip();
+					END_CRITICAL_SECTION
+				}
+				break;
+
+			case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:	// reboot into rom bootloader (DFU) mode!
+				if(manfUnlock)
+				{
+					BEGIN_CRITICAL_SECTION					
+					flash_enable_rom_bootloader();
+					END_CRITICAL_SECTION
 				}
 				break;
 			}

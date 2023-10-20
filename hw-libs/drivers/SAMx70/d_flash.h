@@ -35,8 +35,11 @@ uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize,
 // erase the flash block at the 8K aligned address
 uint32_t flash_erase_block(uint32_t address);
 
-// Erase chip - Since it is a RAM function, it needs 'extern' declaration.
+// Full chip erase - Since it is a RAM function, it needs 'extern' declaration.
 extern void flash_erase_chip(void);
+
+// Enable ROM bootloader (DFU) mode - Since it is a RAM function, it needs 'extern' declaration.
+extern flash_enable_rom_bootloader(void);
 
 // read the user signature, size must be multiple of 4 and less than or equal to 512
 uint32_t flash_get_user_signature(volatile void* ptr, uint32_t size);
