@@ -144,7 +144,6 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_LAST                              126 /** Last of GPX DIDs */
 
-
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
 // 2] Add flip doubles and flip strings entries in data_sets.c
