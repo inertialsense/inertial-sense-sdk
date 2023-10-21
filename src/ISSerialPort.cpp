@@ -14,6 +14,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISFileManager.h"
 
+#include <stdio.h>
+#include <string.h>
+
+#if PLATFORM_IS_LINUX
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/serial.h>
+#endif
+
 using namespace std;
 
 
@@ -57,6 +66,79 @@ int cISSerialPort::Write(const void* data, int dataLength)
 	return serialPortWrite(&m_serial, (const unsigned char*)data, dataLength);
 }
 
+
+#if PLATFORM_IS_LINUX
+
+static string get_driver(const string& tty) 
+{
+    struct stat st;
+    string devicedir = tty;
+
+    // Append '/device' to the tty-path
+    devicedir += "/device";
+    
+    if (lstat(devicedir.c_str(), &st)==0 && S_ISLNK(st.st_mode)) 
+	{	// Stat the devicedir and handle it if it is a symlink
+        char buffer[1024];
+        memset(buffer, 0, sizeof(buffer));
+
+        // Append '/driver' and return basename of the target
+        devicedir += "/driver";
+
+        if (readlink(devicedir.c_str(), buffer, sizeof(buffer)) > 0)
+		{
+            return basename(buffer);
+		}
+    }
+    return "";
+}
+
+static void register_comport( vector<string>& comList, vector<string>& comList8250, const string& dir) 
+{
+    // Get the driver the device is using
+    string driver = get_driver(dir);
+    
+    if (driver.size() > 0) 
+	{	// Skip devices without a driver
+        string devfile = string("/dev/") + basename(dir.c_str());
+
+        if (driver == "serial8250") 
+		{	// Put serial8250-devices in a seperate list
+            comList8250.push_back(devfile);
+        } else
+		{
+            comList.push_back(devfile);
+		}
+    }
+}
+
+static void probe_serial8250_comports(vector<string>& comList, vector<string> comList8250) 
+{
+    struct serial_struct serinfo;
+    vector<string>::iterator it = comList8250.begin();
+
+    // Iterate over all serial8250-devices
+    while (it != comList8250.end()) 
+	{   // Try to open the device
+        int fd = open((*it).c_str(), O_RDWR | O_NONBLOCK | O_NOCTTY);
+
+        if (fd >= 0) 
+		{   // Get serial_info
+            if (ioctl(fd, TIOCGSERIAL, &serinfo)==0) 
+			{   
+                if (serinfo.type != PORT_UNKNOWN)
+				{	// device type is no PORT_UNKNOWN we accept the port
+                    comList.push_back(*it);
+				}
+            }
+            close(fd);
+        }
+        it ++;
+    }
+}
+
+#endif // #if PLATFORM_IS_LINUX
+
 void cISSerialPort::GetComPorts(vector<string>& ports)
 {
 	ports.clear();
@@ -75,17 +157,48 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 		}
 	}
 
-#else
-    // Computers using native serial ports need to uncomment the appropriate lines below, or if needed create a new line describing native serial port
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyUSB", ports);
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyACM", ports);
-#if 0	// Uncomment for Raspberry Pi
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyS", ports);
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/ttyAMA", ports);
-    ISFileManager::GetAllFilesInDirectory("/dev", false, "^/dev/serial", ports);
-#endif	
+#else	// Linux
+
+    struct dirent **namelist;
+    vector<string> comList8250;
+    const char* sysdir = "/sys/class/tty/";
+
+    // Scan through /sys/class/tty - it contains all tty-devices in the system
+    int n = scandir(sysdir, &namelist, NULL, NULL);
+    if (n < 0)
+	{
+        perror("scandir");
+	}
+    else 
+	{
+        while (n--) 
+		{
+            if (strcmp(namelist[n]->d_name,"..") && strcmp(namelist[n]->d_name,".")) 
+			{   // Construct full absolute file path
+                string devicedir = sysdir;
+                devicedir += namelist[n]->d_name;
+
+                // Register the device
+                register_comport(ports, comList8250, devicedir);
+            }
+            free(namelist[n]);
+        }
+        free(namelist);
+    }
+
+    // Only non-serial8250 has been added to comList without any further testing
+    // serial8250-devices must be probe to check for validity
+    probe_serial8250_comports(ports, comList8250);
+
 #endif
 
+#if 0
+	cout << "Available ports: " << endl;
+	for (vector<string>::iterator it = ports.begin(); it < ports.end(); it++) 
+	{
+        cout << *it << endl;
+    }
+#endif
 }
 
 std::string cISSerialPort::ConnectionInfo()
