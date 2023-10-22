@@ -14,9 +14,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogger.h"
 #include "ISFileManager.h"
 
-#include <stdio.h>
-#include <string.h>
-
 #if PLATFORM_IS_LINUX
 #include <fcntl.h>
 #include <sys/ioctl.h>
