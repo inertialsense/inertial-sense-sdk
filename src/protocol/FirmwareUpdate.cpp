@@ -210,6 +210,21 @@ namespace fwUpdate {
             return fwUpdate::status_names[status - fwUpdate::ERR_FLASH_INVALID];
     }
 
+    /**
+     * @return a human-readable status name for the current session target
+     */
+    const char *FirmwareUpdateBase::fwUpdate_getSessionTargetName(target_t target) {
+        target_t target_masked = (target_t)((uint32_t)target & 0xFFFF0);
+        switch (target_masked) {
+            case TARGET_HOST: return "HOST";
+            case TARGET_IMX5: return "IMX-5";
+            case TARGET_GPX1: return "GPX-1";
+            case TARGET_VPX: return "VPX-1";
+            case TARGET_UBLOX_F9P: return "uBlox-F9P";
+            case TARGET_SONY_CXD5610: return "Sony-CDX5610";
+            default: return "[UNKNOWN]";
+        }
+    }
 
     //
     // MD5 implementation from here: https://gist.github.com/creationix/4710780
@@ -837,6 +852,13 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateHost::fwUpdate_getSessionStatusName() {
         return FirmwareUpdateBase::fwUpdate_getSessionStatusName(session_status);
+    }
+
+    /**
+     * @return a human-readable status name for the current session status
+     */
+    const char *FirmwareUpdateHost::fwUpdate_getSessionTargetName() {
+        return FirmwareUpdateBase::fwUpdate_getSessionTargetName(session_target);
     }
 
 } // fwUpdate

@@ -114,7 +114,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     
 
     // FIXME: We really want this to call back into the InertialSense class, with some kind of a status callback mechanism; or it should be a callback provided by the original caller
-    printf("[%5.2f] [%s : %d] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", current_timeMs() / 1000.0f, portName, devInfo->serialNumber, num, tot, percent, fwUpdate_getSessionStatusName(), msg.data.progress.msg_level, message);
+    printf("[%5.2f] [%s:%d > %s] :: Progress %d/%d (%0.1f%%) [%s] :: [%d] %s\n", current_timeMs() / 1000.0f, portName, devInfo->serialNumber, fwUpdate_getSessionTargetName(), num, tot, percent, fwUpdate_getSessionStatusName(), msg.data.progress.msg_level, message);
     return true;
 }
 
@@ -135,7 +135,13 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
                 std::vector<std::string> args;
                 splitString(cmd, '=', args);
                 if (!args.empty()) {
-                    if ((args[0] == "slot") && (args.size() == 2)){
+                    if ((args[0] == "target") && (args.size() == 2)) {
+                        if (args[1] == "IMX5") target = fwUpdate::TARGET_IMX5;
+                        else if (args[1] == "GPX1") target = fwUpdate::TARGET_GPX1;
+                        else if (args[1] == "GNSS1") target = fwUpdate::TARGET_SONY_CXD5610__1;
+                        else if (args[1] == "GNSS2") target = fwUpdate::TARGET_SONY_CXD5610__2;
+                        else return fwUpdate::MSG_UNKNOWN;
+                    } else if ((args[0] == "slot") && (args.size() == 2)){
                         slotNum = strtol(args[1].c_str(), nullptr, 10);
                     } else if ((args[0] == "timeout") && (args.size() == 2)) {
                         fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
