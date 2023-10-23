@@ -404,7 +404,8 @@ namespace fwUpdate {
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const payload_t& msg_payload) {
         bool result = false;
 
-        target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
+        //target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
+        target_t target_masked = msg_payload.hdr.target_device;
         if (target_masked != session_target)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 

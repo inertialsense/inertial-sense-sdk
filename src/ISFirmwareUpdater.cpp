@@ -43,10 +43,12 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     getCurrentMd5(session_md5);
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
-    printf("Requesting Firmware Update with Image '%s', md5: %08x-%08x-%08x-%08x\n", filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
-    return (fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
+
+    return result;
 }
 
 int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
@@ -120,7 +122,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
 
 bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
     session_status = msg.data.resp_done.status;
-    printf("[%5.2f] [%s : %d] :: Update Finished:%s\n", current_timeMs() / 1000.0f, portName, devInfo->serialNumber, fwUpdate_getSessionStatusName());
+    printf("[%5.2f] [%s:%d > %s] :: Update Finished:%s\n", current_timeMs() / 1000.0f, portName, devInfo->serialNumber, fwUpdate_getSessionTargetName(), fwUpdate_getSessionStatusName());
     return true;
 }
 
