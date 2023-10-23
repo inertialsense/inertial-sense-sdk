@@ -210,6 +210,21 @@ namespace fwUpdate {
             return fwUpdate::status_names[status - fwUpdate::ERR_FLASH_INVALID];
     }
 
+    /**
+     * @return a human-readable status name for the current session target
+     */
+    const char *FirmwareUpdateBase::fwUpdate_getSessionTargetName(target_t target) {
+        target_t target_masked = (target_t)((uint32_t)target & 0xFFFF0);
+        switch (target_masked) {
+            case TARGET_HOST: return "HOST";
+            case TARGET_IMX5: return "IMX-5";
+            case TARGET_GPX1: return "GPX-1";
+            case TARGET_VPX: return "VPX-1";
+            case TARGET_UBLOX_F9P: return "uBlox-F9P";
+            case TARGET_SONY_CXD5610: return "Sony-CDX5610";
+            default: return "[UNKNOWN]";
+        }
+    }
 
     //
     // MD5 implementation from here: https://gist.github.com/creationix/4710780
@@ -389,7 +404,8 @@ namespace fwUpdate {
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const payload_t& msg_payload) {
         bool result = false;
 
-        target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
+        //target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
+        target_t target_masked = msg_payload.hdr.target_device;
         if (target_masked != session_target)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
@@ -495,7 +511,7 @@ namespace fwUpdate {
     /**
      * @brief Notifies the host that the firmware update is complete for any reason, including an error.
      * This call does not generate a response or acknowledgement from the host.
-     * 
+     *
      * @param reason the specific reason the update was finished.
      * @param clear_session if true, causes the current session to be invalidated
      * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
@@ -837,6 +853,13 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateHost::fwUpdate_getSessionStatusName() {
         return FirmwareUpdateBase::fwUpdate_getSessionStatusName(session_status);
+    }
+
+    /**
+     * @return a human-readable status name for the current session status
+     */
+    const char *FirmwareUpdateHost::fwUpdate_getSessionTargetName() {
+        return FirmwareUpdateBase::fwUpdate_getSessionTargetName(session_target);
     }
 
 } // fwUpdate

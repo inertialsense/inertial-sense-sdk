@@ -94,6 +94,7 @@ namespace fwUpdate {
         TARGET_IMX5 = 0x10,
         TARGET_GPX1 = 0x20,
         TARGET_VPX = 0x30, // RESERVED FOR VPX
+        TARGET_UBLOX_F9P = 0x110,
         TARGET_UBLOX_F9P__1 = 0x111,
         TARGET_UBLOX_F9P__2 = 0x112,
         TARGET_UBLOX_F9P__ALL = 0x11F,
@@ -360,6 +361,7 @@ namespace fwUpdate {
 
         char* fwUpdate_payloadToString(fwUpdate::payload_t* payload);
         const char *fwUpdate_getSessionStatusName(update_status_e status);
+        const char *fwUpdate_getSessionTargetName(target_t target);
 
     private:
         /**
@@ -507,7 +509,7 @@ namespace fwUpdate {
         /**
          * @brief Notifies the host that the firmware update is complete for any reason, including an error.
          * This call does not generate a response or acknowledgement from the host.
-         * 
+         *
          * @param reason the specific reason the update was finished.
          * @param clear_session if true, causes the current session to be invalidated
          * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
@@ -629,6 +631,11 @@ namespace fwUpdate {
          * @return a human-readable status name for the current session status
          */
         const char *fwUpdate_getSessionStatusName();
+
+        /**
+         * @return a human-readable name for the current session target device
+         */
+        const char *fwUpdate_getSessionTargetName();
 
         /**
          * @return the current session status
