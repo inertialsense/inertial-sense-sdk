@@ -1824,7 +1824,7 @@ typedef struct PACKED
                                     | GRMC_BITS_GPS2_SIG \
                                     | GRMC_BITS_GPS1_VERSION \
                                     | GRMC_BITS_GPS2_VERSION \
-                                    | GRMC_BITS_GPS1_RTK_POS \
+                                    /*| GRMC_BITS_GPS1_RTK_POS*/ \
                                     | GMRC_BITS_GPS2_RTK_CMP_REL \
                                     | GMRC_BITS_GPS2_RTK_CMP_MISC \
                                     | GRMC_BITS_GPS1_RAW \
