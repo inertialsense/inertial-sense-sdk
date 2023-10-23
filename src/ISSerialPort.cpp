@@ -191,9 +191,9 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
 #if 0
 	cout << "Available ports: " << endl;
-	for (vector<string>::iterator it = ports.begin(); it < ports.end(); it++) 
+    for (int i = 0; i < ports.size(); i++)
 	{
-        cout << *it << endl;
+        cout << ports[i] << endl;
     }
 #endif
 }
