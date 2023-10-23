@@ -558,7 +558,7 @@ static int inertialSenseMain()
 		return !cltool_replayDataLog();
 	}
 	// if app firmware was specified on the command line, do that now and return
-	else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_NONE) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
+	else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
 	{
         // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)
 		signal(SIGINT, sigint_cb);
@@ -623,13 +623,14 @@ static int inertialSenseMain()
 			}
 			try
 			{
-                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
                     if(inertialSenseInterface.updateFirmware(
                             g_commandLineOptions.comPort,
                             g_commandLineOptions.baudRate,
                             g_commandLineOptions.updateFirmwareTarget,
-                            0,
-                            g_commandLineOptions.updateAppFirmwareFilename,
+                            g_commandLineOptions.fwUpdateCmds,
+                            // g_commandLineOptions.updateFirmwareSlot,
+                            // g_commandLineOptions.updateAppFirmwareFilename,
                             bootloadUpdateCallback,
                             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
                             cltool_bootloadUpdateInfo,
@@ -660,7 +661,7 @@ static int inertialSenseMain()
 					}
 
                     // Exit CLTool at end of Update
-                    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+                    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
                         bool areDevicesUpdating = false;
                         for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
                             auto device = inertialSenseInterface.ComManagerDevice(i);
@@ -689,7 +690,7 @@ static int inertialSenseMain()
 
         //If Firmware Update is specified return an error code based on the Status of the Firmware Update
 
-        if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_NONE) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+        if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
             for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
                 auto device = inertialSenseInterface.ComManagerDevice(i);
                 if (device != nullptr && device->closeStatus < fwUpdate::NOT_STARTED) {

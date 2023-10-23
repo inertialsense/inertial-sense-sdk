@@ -149,7 +149,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.surveyIn.minAccuracy = 0;
 	g_commandLineOptions.outputOnceDid = 0;
 	g_commandLineOptions.platformType = -1;
-    g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE;
+    g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
 
 	if(argc <= 1)
 	{	// Display usage menu if no options are provided 
@@ -413,24 +413,34 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}
 		else if (startsWith(a, "-ub") && (i + 1) < argc)
 		{
-            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE; // use legacy firmware update mechanism
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST; // use legacy firmware update mechanism
 			g_commandLineOptions.updateBootloaderFilename = argv[++i];	// use next argument
 		}
         else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
-            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE; // use legacy firmware update mechanism
-            g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
+            if ((strcmp(a, "-uf-gpx") == 0) && (i + 1) < argc)
+            {
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
+                //g_commandLineOptions.fwUpdateCmds.push_back(std::string("upload="+argv[++i]));
+                //g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
+            }
+            else if ((strcmp(a, "-uf-cxd") == 0) && (i + 1) < argc)
+            {
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_SONY_CXD5610__1; // use the new firmware update mechanism and target the GPX specifically
+                splitString(std::string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
+                //g_commandLineOptions.fwUpdateCmds = argv[++i];	// use next argument
+            }
+            else
+            {
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST; // use legacy firmware update mechanism
+                g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
+            }
         }
 		else if (startsWith(a, "-uv"))
 		{
-            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_NONE; // use legacy firmware update mechanism
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST; // use legacy firmware update mechanism
 			g_commandLineOptions.bootloaderVerify = true;
 		}
-        else if (startsWith(a, "-gpx-uf") && (i + 1) < argc)
-        {
-            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
-            g_commandLineOptions.updateAppFirmwareFilename = argv[++i];	// use next argument
-        }
 		else
 		{
 			cout << "Unrecognized command line option: " << a << endl;
