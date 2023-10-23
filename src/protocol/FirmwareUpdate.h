@@ -509,7 +509,7 @@ namespace fwUpdate {
         /**
          * @brief Notifies the host that the firmware update is complete for any reason, including an error.
          * This call does not generate a response or acknowledgement from the host.
-         * 
+         *
          * @param reason the specific reason the update was finished.
          * @param clear_session if true, causes the current session to be invalidated
          * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.

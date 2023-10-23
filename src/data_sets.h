@@ -140,9 +140,9 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
+#define DID_GPX_RMC                     (eDataIDs)126 /** (debug_array_t) GPX debug */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_LAST                              125 /** Last of GPX DIDs */
-
+#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -1767,6 +1767,17 @@ typedef struct PACKED
 } rmci_t;
 
 // GPX Realtime Message Controller (GRMC) - message broadcast mechanism.
+#define GRMC_OPTIONS_PORT_MASK           0x000000FF
+#define GRMC_OPTIONS_PORT_ALL            (RMC_OPTIONS_PORT_MASK)
+#define GRMC_OPTIONS_PORT_CURRENT        0x00000000
+#define GRMC_OPTIONS_PORT_SER0           0x00000001
+#define GRMC_OPTIONS_PORT_SER1           0x00000002	// also SPI
+#define GRMC_OPTIONS_PORT_SER2           0x00000004
+#define GRMC_OPTIONS_PORT_USB            0x00000008
+#define GRMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
+#define GRMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
+
+
 #define GRMC_BITS_DEV_INFO              0x0000000000000001
 #define GRMC_BITS_FLASH_CFG             0x0000000000000002
 #define GRMC_BITS_STATUS                0x0000000000000004
@@ -1784,10 +1795,40 @@ typedef struct PACKED
 #define GRMC_BITS_GPS2_SIG              0x0000000000800000
 #define GRMC_BITS_GPS2_RAW              0x0000000001000000
 #define GRMC_BITS_GPS2_VERSION          0x0000000002000000
-#define GMRC_BITS_GPS1_RTK_POS_MISC     0x0000000010000000
-#define GMRC_BITS_GPS1_RTK_POS_REL      0x0000000020000000
-#define GMRC_BITS_GPS2_RTK_CMP_MISC     0x0000000040000000
-#define GMRC_BITS_GPS2_RTK_CMP_REL      0x0000000080000000
+#define GRMC_BITS_GPS1_RTK_POS          0x0000000010000000
+#define GMRC_BITS_GPS1_RTK_POS_MISC     0x0000000020000000
+#define GMRC_BITS_GPS1_RTK_POS_REL      0x0000000040000000
+#define GMRC_BITS_GPS2_RTK_CMP_MISC     0x0000000080000000
+#define GMRC_BITS_GPS2_RTK_CMP_REL      0x0000000100000000
+#define GRMC_BITS_PRESET                0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
+
+#define GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS       1000
+#define GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS      500
+#define GRMC_PRESET_GPX_STATUS_PERIOD_MS         500
+#define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS    500
+#define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS   1000
+#define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
+
+#define GRMC_PRESET_GPX_IMX		(   GRMC_BITS_PRESET \
+                                    | GRMC_BITS_DEV_INFO \
+                                    | GRMC_BITS_RTOS_INFO \
+                                    | GRMC_BITS_STATUS \
+                                    | GRMC_BITS_DEBUG_ARRAY \
+                                    | GRMC_BITS_GPS1_POS \
+                                    | GRMC_BITS_GPS2_POS \
+                                    | GRMC_BITS_GPS1_VEL \
+                                    | GRMC_BITS_GPS2_VEL \
+                                    | GRMC_BITS_GPS1_SAT \
+                                    | GRMC_BITS_GPS2_SAT \
+                                    | GRMC_BITS_GPS1_SIG \
+                                    | GRMC_BITS_GPS2_SIG \
+                                    | GRMC_BITS_GPS1_VERSION \
+                                    | GRMC_BITS_GPS2_VERSION \
+                                    /*| GRMC_BITS_GPS1_RTK_POS*/ \
+                                    | GMRC_BITS_GPS2_RTK_CMP_REL \
+                                    | GMRC_BITS_GPS2_RTK_CMP_MISC \
+                                    | GRMC_BITS_GPS1_RAW \
+                                    | GRMC_BITS_GPS2_RAW )
 
 /** (DID_IO) Input/Output */
 typedef struct PACKED
@@ -2242,7 +2283,11 @@ enum eGnssSatSigConst
         GNSS_SAT_SIG_CONST_QZS | \
         GNSS_SAT_SIG_CONST_GAL | \
         GNSS_SAT_SIG_CONST_GLO | \
-    	GNSS_SAT_SIG_CONST_BDS
+    	GNSS_SAT_SIG_CONST_BDS,
+
+    GNSS_SAT_SIG_CONST_DEFAULT_INTEL = \
+        GNSS_SAT_SIG_CONST_GPS | \
+        GNSS_SAT_SIG_CONST_GAL,
 };
 
 /** RTK Configuration (used with nvm_flash_cfg_t.RTKCfgBits) */
