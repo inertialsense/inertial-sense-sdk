@@ -381,32 +381,11 @@ double timeToGpst(gtime_t t, int *week)
 	return (double)(sec-(double)w*86400*7)+t.sec;
 }
 
-
-#define SET_ASCII_RMCI(did, ascii_rmc_bits, period) { \
-	rmci.periodMultiple[did] = (uint8_t)(period); \
-	if (period) { \
-		rmci.bitsNmea |=  (ascii_rmc_bits); \
-	} else { \
-		rmci.bitsNmea &= ~(ascii_rmc_bits); \
-	} \
-}
-
-#define SET_ASCII_RMCI_GPS(did, ascii_rmc_bits, period) { \
-	if (period){ \
-		if (rmci.periodMultiple[did]){ \
-			rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], (uint8_t)(period)); \
-		} else { \
-			rmci.periodMultiple[did] = (uint8_t)(period); \
-		} \
-		rmci.bitsNmea |=  (ascii_rmc_bits); \
-	} else { \
-		rmci.bitsNmea &= ~(ascii_rmc_bits); \
-	} \
-}
-
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 {
-	uint32_t bitsNmea = (1<<nmeaId);
+	uint32_t nmeaBits = (1<<nmeaId);
 	int did = 0;
 
 	switch (nmeaId)
@@ -430,26 +409,28 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	default: return;
 	}
 
+	rmci.nmeaPeriod[nmeaId] = periodMultiple;
+
 	if (did == DID_GPS1_POS)
 	{	// DID_GPS1_POS shared by multiple NMEA messages
 		if (periodMultiple)
 		{
 			if (rmci.periodMultiple[did]){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], periodMultiple); } 
 			else                         { rmci.periodMultiple[did] = periodMultiple; }
-			rmci.bitsNmea |=  (bitsNmea);
+			rmci.nmeaBits |=  (nmeaBits);
 		} 
 		else 
 		{
-			rmci.bitsNmea &= ~(bitsNmea);
+			rmci.nmeaBits &= ~(nmeaBits);
 		}
 	}
 	else
 	{	// Unshared DIDs
 		rmci.periodMultiple[did] = periodMultiple;
 		if (periodMultiple) {
-			rmci.bitsNmea |=  (bitsNmea);
+			rmci.nmeaBits |=  (nmeaBits);
 		} else {
-			rmci.bitsNmea &= ~(bitsNmea);
+			rmci.nmeaBits &= ~(nmeaBits);
 		}
 	}
 }
@@ -471,7 +452,7 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 	nmea_enable_stream(rmci, NMEA_MSG_ID_GSV,   tmp.gsv);
 	nmea_enable_stream(rmci, NMEA_MSG_ID_VTG,   tmp.vtg);
 }
-
+#pragma GCC pop_options
 
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA
