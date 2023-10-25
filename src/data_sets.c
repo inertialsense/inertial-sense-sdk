@@ -742,6 +742,32 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
 	[DID_GPS2_RTK_CMP_REL]       = GMRC_BITS_GPS2_RTK_CMP_REL,
 };
 
+const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
+{
+	[GRMC_BIT_POS_DEV_INFO] 		    = GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS,
+    [GRMC_BIT_POS_FLASH_CFG] 		    = 1,
+    [GRMC_BIT_POS_STATUS] 			    = GRMC_PRESET_GPX_STATUS_PERIOD_MS,
+    [GRMC_BIT_POS_RTOS_INFO] 		    = GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS,
+    [GRMC_BIT_POS_DEBUG_ARRAY] 	    = GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS,
+    [GRMC_BIT_POS_GPS1_POS] 		    = 1,
+    [GRMC_BIT_POS_GPS1_VEL] 		    = 1,
+    [GRMC_BIT_POS_GPS1_SAT] 		    = 1,
+    [GRMC_BIT_POS_GPS1_SIG] 		    = 1,
+    [GRMC_BIT_POS_GPS1_RAW] 		    = 1,
+    [GRMC_BIT_POS_GPS1_VERSION] 	    = GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS,
+    [GRMC_BIT_POS_GPS2_POS] 		    = 1,
+    [GRMC_BIT_POS_GPS2_VEL] 		    = 1,
+    [GRMC_BIT_POS_GPS2_SAT] 		    = 1,
+    [GRMC_BIT_POS_GPS2_SIG] 		    = 1,
+    [GRMC_BIT_POS_GPS2_RAW] 		    = 1,
+	[GRMC_BIT_POS_GPS2_VERSION] 	    = GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS,
+    [GRMC_BIT_POS_GPS1_RTK_POS]        = 1,
+    [GMRC_BIT_POS_GPS1_RTK_POS_MISC]   = 1,
+    [GMRC_BIT_POS_GPS1_RTK_POS_REL]    = 1,
+    [GMRC_BIT_POS_GPS2_RTK_CMP_MISC]   = 1,
+    [GMRC_BIT_POS_GPS2_RTK_CMP_REL]    = 1,	
+};
+
 void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)
 {
 	double j1, j2, j3, j4, j5;
