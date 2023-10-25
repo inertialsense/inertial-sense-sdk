@@ -381,8 +381,6 @@ double timeToGpst(gtime_t t, int *week)
 	return (double)(sec-(double)w*86400*7)+t.sec;
 }
 
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
 void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 {
 	uint32_t nmeaBits = (1<<nmeaId);
@@ -452,7 +450,6 @@ void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp)
 	nmea_enable_stream(rmci, NMEA_MSG_ID_GSV,   tmp.gsv);
 	nmea_enable_stream(rmci, NMEA_MSG_ID_VTG,   tmp.vtg);
 }
-#pragma GCC pop_options
 
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA
