@@ -307,6 +307,21 @@ namespace fwUpdate {
          */
         void getCurrentMd5(uint32_t(&md5sum)[4]);
 
+        /**
+         * Returns the string representation of the passed status
+         * @param status
+         * @return a constant char * to a string representing the specified status
+         */
+        const char *fwUpdate_getStatusName(update_status_e status);
+
+        /**
+         * Returns the string representation of the passed target
+         * @param target
+         * @return a constant char * to a string representing the specified target
+         */
+        const char *fwUpdate_getTargetName(target_t target);
+
+
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
         uint32_t md5hash[4];                                    //! storage for running md5 hash
@@ -360,8 +375,6 @@ namespace fwUpdate {
         void fwUpdate_resetTimeout() { last_message = current_timeMs(); }
 
         char* fwUpdate_payloadToString(fwUpdate::payload_t* payload);
-        const char *fwUpdate_getSessionStatusName(update_status_e status);
-        const char *fwUpdate_getSessionTargetName(target_t target);
 
     private:
         /**
