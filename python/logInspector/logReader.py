@@ -386,8 +386,8 @@ class Log:
             thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
             if not self.navMode: 
                 # AHRS
-                thresholdAtt[:2] = 0.28  # (deg) Att (roll, pitch)
-                thresholdAtt[2]  = 0.5   # (deg) Att (yaw)
+                thresholdAtt[:2] = 0.1  # (deg) Att (roll, pitch)
+                thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
 
         if self.compassing:
             thresholdNED[:2] = 0.5
