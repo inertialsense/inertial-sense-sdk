@@ -1802,7 +1802,6 @@ enum GRMC_BIT_POS{
     GMRC_BIT_POS_GPS2_RTK_CMP_MISC =   20,
     GMRC_BIT_POS_GPS2_RTK_CMP_REL =    21,
     GRMC_BIT_POS_COUNT,
-    GRMC_BIT_POS_PRESET =                  63,
 };
 
 #define GRMC_BITS_DEV_INFO              (0x0000000000000001 << GRMC_BIT_POS_DEV_INFO)
@@ -1827,7 +1826,7 @@ enum GRMC_BIT_POS{
 #define GMRC_BITS_GPS1_RTK_POS_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS1_RTK_POS_REL)
 #define GMRC_BITS_GPS2_RTK_CMP_MISC     (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_MISC)
 #define GMRC_BITS_GPS2_RTK_CMP_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_REL)
-#define GRMC_BITS_PRESET                (0x0000000000000001 << GRMC_BIT_POS_PRESET)	// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
+#define GRMC_BITS_PRESET                (0x8000000000000000)	// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_GPX_DEV_INFO_PERIOD_MS       1000
 #define GRMC_PRESET_GPX_RTOS_INFO_PERIOD_MS      500
