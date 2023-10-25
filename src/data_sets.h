@@ -2063,6 +2063,9 @@ enum eSysConfigBits
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
 
+	// When set WMM will be used to set declanation
+	SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION				= (int)0x00000800,
+
 	/** Disable magnetometer fusion */
 	SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
 	/** Disable barometer fusion */
