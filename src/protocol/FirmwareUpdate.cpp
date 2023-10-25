@@ -2,8 +2,6 @@
 // Created by kylemallory on 7/26/23.
 //
 
-#include <istream>
-#include <stdarg.h>
 #include "FirmwareUpdate.h"
 
 #ifdef __ZEPHYR__
@@ -13,7 +11,7 @@
 namespace fwUpdate {
 
     static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_FINISHED", "REQ_VERSION", "VERSION_RESP"};
-    static const char* status_names[] = { "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
+    static const char* status_names[] = { "ERR_INVALID_IMAGE", "ERR_UPDATER_CLOSED", "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
     "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
     static const char* reason_names[] = { "NONE", "INVALID_SEQID", "WRITE_ERROR", "INVALID_SIZE" };
 
@@ -69,12 +67,9 @@ namespace fwUpdate {
         if (payload_size > max_len) return -1; // Not enough buffer space
         if (payload_size == 0) return -2; // Unknown/invalid message
 
-#ifdef DEBUG_CONSOLE_LOGGING
-#ifdef __ZEPHYR__
-        printk("fwTX: %s\n", payloadToString((payload_t *)&payload));
-#elif !(PLATFORM_IS_EMBEDDED)
-        printf("fwTX: %s\n", payloadToString((payload_t *)&payload));
-#endif
+#ifdef DEBUG_LOG
+        DEBUG_LOG("fwTX: %s\n", payloadToString((payload_t *)&payload));
+        DEBUG_LOG("fwTX: %s\n", payloadToString((payload_t *)&payload));
 #endif
 
         memcpy(buffer, (void *) &payload, payload_size);
@@ -174,14 +169,14 @@ namespace fwUpdate {
         static char tmp[256];
         int cur_len = 0;
 
-        cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "%d : %s ", payload->hdr.target_device, type_names[payload->hdr.msg_type]);
+        cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "%s : %s ", fwUpdate_getTargetName(payload->hdr.target_device), type_names[payload->hdr.msg_type]);
         switch (payload->hdr.msg_type) {
             case MSG_REQ_UPDATE:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ", payload->data.req_update.session_id, payload->data.req_update.file_size, payload->data.req_update.chunk_size);
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]", payload->data.req_update.md5_hash[0], payload->data.req_update.md5_hash[1], payload->data.req_update.md5_hash[2], payload->data.req_update.md5_hash[3]);
                 break;
             case MSG_UPDATE_RESP:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]", payload->data.update_resp.session_id, fwUpdate_getSessionStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]", payload->data.update_resp.session_id, fwUpdate_getStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
                 break;
             case MSG_UPDATE_CHUNK:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]", payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
@@ -190,7 +185,7 @@ namespace fwUpdate {
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, reason='%s']", payload->data.req_resend.session_id, payload->data.req_resend.chunk_id, reason_names[payload->data.req_resend.reason]);
                 break;
             case MSG_UPDATE_PROGRESS:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]", payload->data.progress.session_id, fwUpdate_getSessionStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]", payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
                 if (payload->data.progress.msg_len > 0)
                     cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %s", &payload->data.progress.message);
                 break;
@@ -203,17 +198,17 @@ namespace fwUpdate {
     /**
      * @return a human-readable status name for the current session status
      */
-    const char *FirmwareUpdateBase::fwUpdate_getSessionStatusName(update_status_e status) {
+    const char *FirmwareUpdateBase::fwUpdate_getStatusName(update_status_e status) {
         if (status >= 0)
-            return fwUpdate::status_names[status + abs(fwUpdate::ERR_FLASH_INVALID)];
+            return fwUpdate::status_names[status + abs(fwUpdate::ERR_UNKNOWN+1)];
         else
-            return fwUpdate::status_names[status - fwUpdate::ERR_FLASH_INVALID];
+            return fwUpdate::status_names[status - (fwUpdate::ERR_UNKNOWN+1)];
     }
 
     /**
      * @return a human-readable status name for the current session target
      */
-    const char *FirmwareUpdateBase::fwUpdate_getSessionTargetName(target_t target) {
+    const char *FirmwareUpdateBase::fwUpdate_getTargetName(target_t target) {
         target_t target_masked = (target_t)((uint32_t)target & 0xFFFF0);
         switch (target_masked) {
             case TARGET_HOST: return "HOST";
@@ -852,14 +847,14 @@ namespace fwUpdate {
      * @return a human-readable status name for the current session status
      */
     const char *FirmwareUpdateHost::fwUpdate_getSessionStatusName() {
-        return FirmwareUpdateBase::fwUpdate_getSessionStatusName(session_status);
+        return FirmwareUpdateBase::fwUpdate_getStatusName(session_status);
     }
 
     /**
      * @return a human-readable status name for the current session status
      */
     const char *FirmwareUpdateHost::fwUpdate_getSessionTargetName() {
-        return FirmwareUpdateBase::fwUpdate_getSessionTargetName(session_target);
+        return FirmwareUpdateBase::fwUpdate_getTargetName(session_target);
     }
 
 } // fwUpdate
