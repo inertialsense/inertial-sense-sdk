@@ -172,20 +172,31 @@ namespace fwUpdate {
         cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "%s : %s ", fwUpdate_getTargetName(payload->hdr.target_device), type_names[payload->hdr.msg_type]);
         switch (payload->hdr.msg_type) {
             case MSG_REQ_UPDATE:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ", payload->data.req_update.session_id, payload->data.req_update.file_size, payload->data.req_update.chunk_size);
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]", payload->data.req_update.md5_hash[0], payload->data.req_update.md5_hash[1], payload->data.req_update.md5_hash[2], payload->data.req_update.md5_hash[3]);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ", 
+                    payload->data.req_update.session_id, 
+                    (unsigned int)payload->data.req_update.file_size, 
+                    payload->data.req_update.chunk_size);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]", 
+                    (unsigned int)payload->data.req_update.md5_hash[0], 
+                    (unsigned int)payload->data.req_update.md5_hash[1], 
+                    (unsigned int)payload->data.req_update.md5_hash[2], 
+                    (unsigned int)payload->data.req_update.md5_hash[3]);
                 break;
             case MSG_UPDATE_RESP:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]", payload->data.update_resp.session_id, fwUpdate_getStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]", 
+                    payload->data.update_resp.session_id, fwUpdate_getStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
                 break;
             case MSG_UPDATE_CHUNK:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]", payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]", 
+                    payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
                 break;
             case MSG_REQ_RESEND_CHUNK:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, reason='%s']", payload->data.req_resend.session_id, payload->data.req_resend.chunk_id, reason_names[payload->data.req_resend.reason]);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, reason='%s']", 
+                    payload->data.req_resend.session_id, payload->data.req_resend.chunk_id, reason_names[payload->data.req_resend.reason]);
                 break;
             case MSG_UPDATE_PROGRESS:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]", payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]", 
+                    payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
                 if (payload->data.progress.msg_len > 0)
                     cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %s", &payload->data.progress.message);
                 break;

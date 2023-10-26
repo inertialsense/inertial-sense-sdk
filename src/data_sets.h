@@ -1729,6 +1729,7 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_GSV       = 14,
     NMEA_MSG_ID_VTG       = 15,
     NMEA_MSG_ID_INTEL     = 16,
+    NMEA_MSG_ID_COUNT,
 }; 
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
@@ -1762,7 +1763,10 @@ typedef struct PACKED
     uint8_t                 periodMultiple[DID_COUNT];
 
     /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
-    uint32_t                bitsNmea;
+    uint32_t                nmeaBits;
+
+    /** NMEA period multiple of above period multiple indexed by NMEA_MSG_ID... */
+    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
 
 } rmci_t;
 
