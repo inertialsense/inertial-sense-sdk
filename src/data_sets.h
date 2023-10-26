@@ -4933,7 +4933,6 @@ extern const uint64_t g_didToNmeaRmcBit[DID_COUNT];
 /** DID to GPX RMC bit look-up table */
 extern const uint64_t g_gpxDidToGrmcBit[DID_COUNT];
 extern const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT];
-extern const uint8_t g_didToGpxSubId[DID_COUNT];
 
 //Time conversion constants
 #define SECONDS_PER_WEEK        604800
