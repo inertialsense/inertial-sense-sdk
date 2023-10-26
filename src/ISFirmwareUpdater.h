@@ -44,6 +44,7 @@ private:
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
     std::vector<std::string> commands;
+    bool requestMade = false; // true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
     std::string filename;

@@ -126,41 +126,74 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
 }
 
 fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
+    uint32_t lastMsgAge = 0;
+
     switch(session_status) {
         case fwUpdate::NOT_STARTED:
             startAttempts = 0;
-            if (!commands.empty()) {
-                auto cmd = commands[0];
-                commands.erase(commands.begin()); // pop the command off the front
-                std::vector<std::string> args;
-                splitString(cmd, '=', args);
-                if (!args.empty()) {
-                    if ((args[0] == "target") && (args.size() == 2)) {
-                        if (args[1] == "IMX5") target = fwUpdate::TARGET_IMX5;
-                        else if (args[1] == "GPX1") target = fwUpdate::TARGET_GPX1;
-                        else if (args[1] == "GNSS1") target = fwUpdate::TARGET_SONY_CXD5610__1;
-                        else if (args[1] == "GNSS2") target = fwUpdate::TARGET_SONY_CXD5610__2;
-                        else return fwUpdate::MSG_UNKNOWN;
-                    } else if ((args[0] == "slot") && (args.size() == 2)){
-                        slotNum = strtol(args[1].c_str(), nullptr, 10);
-                    } else if ((args[0] == "timeout") && (args.size() == 2)) {
-                        fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
-                    } else if (args[0] == "force") {
-                        forceUpdate = (args[1] == "true" ? true : false);
-                    } else if (args[0] == "reset") {
-                        bool hard = (args.size() == 2 && args[1] == "hard");
-                        fwUpdate_requestReset(hard);
-                    } else if (args[0] == "chunk") {
-                        chunkSize = strtol(args[1].c_str(), nullptr, 10);
-                    } else if (args[0] == "rate") {
-                        progressRate = strtol(args[1].c_str(), nullptr, 10);
-                    } else if (args[0] == "upload") {
-                        filename = args[1];
-                        fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, forceUpdate, chunkSize, progressRate);
-                        if (status < fwUpdate::NOT_STARTED) {
-                            // there was an error -- probably should flush the command queue
-                            printf("Error running Firmware Update upload [%s]: %s\n", filename.c_str(), fwUpdate_getStatusName(status));
-                            commands.clear();
+            if (requestMade) {
+                lastMsgAge = fwUpdate_getLastMessageAge();
+                if (lastMsgAge > 1500) {
+                    if (startAttempts >= maxAttempts) {
+                        // backoff (wait attemptInternal * 3), and then try again.  Eventually, we will timeout below if there is a larger issue.
+                        startAttempts = 0;
+                        nextStartAttempt = current_timeMs() + (attemptInterval * 10);
+                    } else {
+                        if (nextStartAttempt < current_timeMs()) {// time has elapsed, so re-issue request to update
+                            nextStartAttempt = current_timeMs() + attemptInterval;
+                            if (fwUpdate_requestUpdate()) {
+                                startAttempts++;
+                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
+                            } else {
+                                printf("Error attempting to initiate Firmware Update\n");
+                                session_status = fwUpdate::ERR_COMMS; // error sending the request
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (!commands.empty()) {
+                    auto cmd = commands[0];
+                    commands.erase(commands.begin()); // pop the command off the front
+                    std::vector<std::string> args;
+                    splitString(cmd, '=', args);
+                    if (!args.empty()) {
+                        if ((args[0] == "target") && (args.size() == 2)) {
+                            if (args[1] == "IMX5") target = fwUpdate::TARGET_IMX5;
+                            else if (args[1] == "GPX1") target = fwUpdate::TARGET_GPX1;
+                            else if (args[1] == "GNSS1") target = fwUpdate::TARGET_SONY_CXD5610__1;
+                            else if (args[1] == "GNSS2") target = fwUpdate::TARGET_SONY_CXD5610__2;
+                            else {
+                                printf("Firmware Update Error :: Invalid Target: %s    (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)\n", args[1].c_str());
+                                commands.clear();
+                                target = fwUpdate::TARGET_HOST;
+                            }
+                        } else if ((args[0] == "slot") && (args.size() == 2)) {
+                            slotNum = strtol(args[1].c_str(), nullptr, 10);
+                        } else if ((args[0] == "timeout") && (args.size() == 2)) {
+                            fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
+                        } else if (args[0] == "force") {
+                            forceUpdate = (args[1] == "true" ? true : false);
+                        } else if (args[0] == "reset") {
+                            bool hard = (args.size() == 2 && args[1] == "hard");
+                            session_target = target; // kinda janky (we should pass the target into this call)
+                            fwUpdate_requestReset(hard);
+                        } else if (args[0] == "chunk") {
+                            chunkSize = strtol(args[1].c_str(), nullptr, 10);
+                        } else if (args[0] == "rate") {
+                            progressRate = strtol(args[1].c_str(), nullptr, 10);
+                        } else if (args[0] == "upload") {
+                            filename = args[1];
+                            fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, forceUpdate, chunkSize, progressRate);
+                            if (status < fwUpdate::NOT_STARTED) {
+                                // there was an error -- probably should flush the command queue
+                                printf("Error running Firmware Update upload [%s]: %s\n", filename.c_str(), fwUpdate_getStatusName(status));
+                                commands.clear();
+                            } else {
+                                requestMade = true;
+                                nextStartAttempt = current_timeMs() + attemptInterval;
+                                // session_status = fwUpdate::NOT_STARTED;
+                            }
                         }
                     }
                 }
@@ -169,21 +202,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
             // nothing to do..
             break;
         case fwUpdate::INITIALIZING:
-            if ((startAttempts < maxAttempts) && (fwUpdate_getLastMessageAge() > attemptInterval)) {
-                if (nextStartAttempt < current_timeMs()) {// time has elapsed, so re-issue request to update
-                    nextStartAttempt = current_timeMs() + attemptInterval;
-                    if (fwUpdate_requestUpdate()) {
-                        printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
-                    } else {
-                        session_status = fwUpdate::ERR_COMMS; // error sending the request
-                    }
-                }
-                startAttempts++;
-            } else {
-                // backoff (wait attemptInternal * 3), and then try again.  Eventually, we will timeout below if there is a larger issue.
-                startAttempts = 0;
-                nextStartAttempt = current_timeMs() + (attemptInterval * 3);
-            }
+            requestMade = false;
             break;
         case fwUpdate::READY:
         case fwUpdate::IN_PROGRESS:
