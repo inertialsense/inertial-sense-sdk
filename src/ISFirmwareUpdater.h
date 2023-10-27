@@ -44,7 +44,7 @@ private:
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
     std::vector<std::string> commands;
-    bool requestMade = false; // true is an update has been requested, but we're still waiting on a response.
+    bool requestPending = false; // true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
     std::string filename;
@@ -101,7 +101,6 @@ public:
     virtual fwUpdate::msg_types_e fwUpdate_step() override;
 
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
-
 };
 
 #endif //SDK_ISFIRMWAREUPDATER_H

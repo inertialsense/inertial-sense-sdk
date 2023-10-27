@@ -288,9 +288,9 @@ namespace fwUpdate {
          */
         static int fwUpdate_mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data);
 
-            /**
-             * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
-             */
+        /**
+         * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
+         */
         void resetMd5();
 
         /**
@@ -312,14 +312,22 @@ namespace fwUpdate {
          * @param status
          * @return a constant char * to a string representing the specified status
          */
-        const char *fwUpdate_getStatusName(update_status_e status);
+        static const char *fwUpdate_getStatusName(update_status_e status);
+
+        /**
+         * Returns a human-friendly string describing the update status, used for UIs
+         * @param status
+         * @return a constant char * to a string representing the specified status
+         */
+        static const char *fwUpdate_getNiceStatusName(update_status_e status);
+
 
         /**
          * Returns the string representation of the passed target
          * @param target
          * @return a constant char * to a string representing the specified target
          */
-        const char *fwUpdate_getTargetName(target_t target);
+        static const char *fwUpdate_getTargetName(target_t target);
 
 
     protected:
@@ -668,7 +676,7 @@ namespace fwUpdate {
         /**
          * @returns total number of complete chunks
         */
-       uint16_t fwUpdate_getChunksSent() {return chunks_sent; }
+        uint16_t fwUpdate_getChunksSent() { return chunks_sent; }
 
         /**
          * @return the negotiated chunk size for this session
@@ -773,7 +781,7 @@ namespace fwUpdate {
 } // fwUpdate
 
 #ifdef __cplusplus
-    }
+}
 #endif
 
 #endif //IS_FIRMWAREUPDATE_H
