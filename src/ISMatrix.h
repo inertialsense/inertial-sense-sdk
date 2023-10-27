@@ -63,6 +63,8 @@ extern "C" {
 #define set_Vec3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define set_Vec4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
+#define is_NaN(v)					((v) != (v))
+
 // Zero order low-pass filter 
 typedef struct
 {
@@ -710,7 +712,7 @@ static __inline int isNan_array( f_t *a, int size )
 
     for( i=0; i<size; i++ )
     {
-        if( a[i] != a[i] )
+        if( is_NaN(a[i]) )
             return 1;
     }
 
@@ -727,7 +729,7 @@ static __inline int isNan_array_d( double *a, int size )
 
     for( i=0; i<size; i++ )
     {
-        if( a[i] != a[i] )
+        if( is_NaN(a[i]) )
             return 1;
     }
 
