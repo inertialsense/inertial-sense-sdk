@@ -11,8 +11,33 @@
 namespace fwUpdate {
 
     static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_FINISHED", "REQ_VERSION", "VERSION_RESP"};
-    static const char* status_names[] = { "ERR_INVALID_IMAGE", "ERR_UPDATER_CLOSED", "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
-    "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
+    static const char* status_names[] = { "ERR_UNKNOWN", "ERR_INVALID_IMAGE", "ERR_UPDATER_CLOSED", "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
+                                          "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
+    static const char* status_names_nice[] = {
+            "Error: Unknown Error",             // ERR_UNKNOWN
+            "Error: Invalid Image",             // ERR_INVALID_IMAGE
+            "Error: Updater Closed",            // ERR_UPDATER_CLOSED
+            "Error: Flash Invalid",             // ERR_FLASH_INVALID
+            "Error: Flash Open Failure",        // ERR_FLASH_OPEN_FAILURE
+            "Error: Flash Write Failure",       // ERR_FLASH_WRITE_FAILURE
+            "Error: Not Supported",             // ERR_NOT_SUPPORTED
+            "Error: Communications Error",      // ERR_COMMS
+            "Error: Checksum Mismatch",         // ERR_CHECKSUM_MISMATCH
+            "Error: Communications Timeout",    // ERR_TIMEOUT
+            "Error: Max Chunk Size Exceeded",  // ERR_MAX_CHUNK_SIZE
+            "Error: Older Firmware",           // ERR_OLDER_FIRMWARE
+            "Error: Not Enough Memory",        // ERR_NOT_ENOUGH_MEMORY
+            "Error: Operation Not Allowed",    // ERR_NOT_ALLOWED
+            "Error: Invalid Device Slot",      // ERR_INVALID_SLOT
+            "Error: Invalid Session",          // ERR_INVALID_SESSION
+            "Not Started",                     // NOT_STARTED
+            "Initializing",                    // INITIALIZING
+            "Ready",                           // READY
+            "In Progress",                     // IN_PROGRESS
+            "Finalizing",                      // FINALIZING
+            "Finished"                         // FINISHED
+    };
+
     static const char* reason_names[] = { "NONE", "INVALID_SEQID", "WRITE_ERROR", "INVALID_SIZE" };
 
     /*==================================================================================*
@@ -143,7 +168,7 @@ namespace fwUpdate {
         *payload = (payload_t*)buffer;
 
 #ifdef DEBUG_CONSOLE_LOGGING
-#ifdef __ZEPHYR__
+        #ifdef __ZEPHYR__
         printk("fwRX: %s\n", payloadToString((payload_t*)buffer));
 #elif !(PLATFORM_IS_EMBEDDED)
         // printf("fwRX: %s\n", payloadToString((payload_t*)buffer));
@@ -172,31 +197,31 @@ namespace fwUpdate {
         cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "%s : %s ", fwUpdate_getTargetName(payload->hdr.target_device), type_names[payload->hdr.msg_type]);
         switch (payload->hdr.msg_type) {
             case MSG_REQ_UPDATE:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ", 
-                    payload->data.req_update.session_id, 
-                    (unsigned int)payload->data.req_update.file_size, 
-                    payload->data.req_update.chunk_size);
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]", 
-                    (unsigned int)payload->data.req_update.md5_hash[0], 
-                    (unsigned int)payload->data.req_update.md5_hash[1], 
-                    (unsigned int)payload->data.req_update.md5_hash[2], 
-                    (unsigned int)payload->data.req_update.md5_hash[3]);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ",
+                                    payload->data.req_update.session_id,
+                                    (unsigned int)payload->data.req_update.file_size,
+                                    payload->data.req_update.chunk_size);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]",
+                                    (unsigned int)payload->data.req_update.md5_hash[0],
+                                    (unsigned int)payload->data.req_update.md5_hash[1],
+                                    (unsigned int)payload->data.req_update.md5_hash[2],
+                                    (unsigned int)payload->data.req_update.md5_hash[3]);
                 break;
             case MSG_UPDATE_RESP:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]", 
-                    payload->data.update_resp.session_id, fwUpdate_getStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]",
+                                    payload->data.update_resp.session_id, fwUpdate_getStatusName(payload->data.update_resp.status), payload->data.update_resp.totl_chunks);
                 break;
             case MSG_UPDATE_CHUNK:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]", 
-                    payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, len=%d]",
+                                    payload->data.chunk.session_id, payload->data.chunk.chunk_id, payload->data.chunk.data_len);
                 break;
             case MSG_REQ_RESEND_CHUNK:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, reason='%s']", 
-                    payload->data.req_resend.session_id, payload->data.req_resend.chunk_id, reason_names[payload->data.req_resend.reason]);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, chunk=%d, reason='%s']",
+                                    payload->data.req_resend.session_id, payload->data.req_resend.chunk_id, reason_names[payload->data.req_resend.reason]);
                 break;
             case MSG_UPDATE_PROGRESS:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]", 
-                    payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', total=%d, chunks=%d]",
+                                    payload->data.progress.session_id, fwUpdate_getStatusName(payload->data.progress.status), payload->data.progress.totl_chunks, payload->data.progress.num_chunks);
                 if (payload->data.progress.msg_len > 0)
                     cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %s", &payload->data.progress.message);
                 break;
@@ -211,9 +236,21 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateBase::fwUpdate_getStatusName(update_status_e status) {
         if (status >= 0)
-            return fwUpdate::status_names[status + abs(fwUpdate::ERR_UNKNOWN+1)];
+            return fwUpdate::status_names[status + abs(fwUpdate::ERR_UNKNOWN)];
         else
-            return fwUpdate::status_names[status - (fwUpdate::ERR_UNKNOWN+1)];
+            return fwUpdate::status_names[status - (fwUpdate::ERR_UNKNOWN)];
+    }
+
+    /**
+     * Returns a human-friendly string describing the update status, used for UIs
+     * @param status
+     * @return a constant char * to a string representing the specified status
+     */
+    const char *FirmwareUpdateBase::fwUpdate_getNiceStatusName(update_status_e status) {
+        if (status >= 0)
+            return fwUpdate::status_names_nice[status + abs(fwUpdate::ERR_UNKNOWN)];
+        else
+            return fwUpdate::status_names_nice[status - (fwUpdate::ERR_UNKNOWN)];
     }
 
     /**
@@ -226,8 +263,8 @@ namespace fwUpdate {
             case TARGET_IMX5: return "IMX-5";
             case TARGET_GPX1: return "GPX-1";
             case TARGET_VPX: return "VPX-1";
-            case TARGET_UBLOX_F9P: return "uBlox-F9P";
-            case TARGET_SONY_CXD5610: return "Sony-CDX5610";
+            case TARGET_UBLOX_F9P: return "uBlox F9P";
+            case TARGET_SONY_CXD5610: return "CDX5610";
             default: return "[UNKNOWN]";
         }
     }
@@ -268,9 +305,9 @@ namespace fwUpdate {
         // r specifies the per-round shift amounts
 
         static uint32_t r[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
-                        5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
-                        4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
-                        6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
+                               5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
+                               4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+                               6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
 
         // Use binary integer part of the sines of integers (in radians) as constants// Initialize variables:
         static uint32_t k[] = {
