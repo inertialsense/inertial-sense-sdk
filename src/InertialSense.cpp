@@ -1004,7 +1004,7 @@ is_operation_result InertialSense::updateFirmware(
         // m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
         // m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
 
-        m_comManagerState.devices[i].fwUpdater->setCommands(targetDevice, cmds);
+        m_comManagerState.devices[i].fwUpdater->setCommands(cmds);
     }
 
     printf("\n\r");

@@ -887,6 +887,7 @@ namespace fwUpdate {
         session_chunk_size = 512;
         session_image_size = 0;
         session_image_slot = 0;
+        next_chunk_id = 0;
         resetMd5();
         return true;
     }

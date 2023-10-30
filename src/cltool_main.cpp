@@ -586,8 +586,6 @@ static int inertialSenseMain()
                             g_commandLineOptions.baudRate,
                             g_commandLineOptions.updateFirmwareTarget,
                             g_commandLineOptions.fwUpdateCmds,
-                            // g_commandLineOptions.updateFirmwareSlot,
-                            // g_commandLineOptions.updateAppFirmwareFilename,
                             bootloadUpdateCallback,
                             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
                             cltool_bootloadUpdateInfo,

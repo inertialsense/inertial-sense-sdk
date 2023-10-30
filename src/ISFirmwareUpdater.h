@@ -50,6 +50,9 @@ private:
     std::string filename;
     fwUpdate::target_t target;
 
+    int getImageFileDetails(std::string filename, size_t& filesize, uint32_t(&md5hash)[4]);
+    void runCommand(std::string cmd);
+
 public:
 
     /**
@@ -60,8 +63,8 @@ public:
     ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
     ~ISFirmwareUpdater() override {};
 
-    bool setCommands(fwUpdate::target_t, std::vector<std::string> cmds);
-    bool addCommands(fwUpdate::target_t, std::vector<std::string> cmds);
+    bool setCommands(std::vector<std::string> cmds);
+    bool addCommands(std::vector<std::string> cmds);
     bool hasPendingCommands() { return !commands.empty(); }
     void clearAllCommands() { commands.clear(); }
 
@@ -101,6 +104,22 @@ public:
     virtual fwUpdate::msg_types_e fwUpdate_step() override;
 
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
+
+
+    /**
+     * Firmware Package Support -- Firmware packages are zip files with a YAML-based manifest, which describes the devices, images, and related metadata necessary to update multiple devices
+     * together.  This allows for a user to update a number of connected devices (IMX, GPX, and GNSS Receiver Firmware) using a single file, and without any coordination of which files are
+     * necessary for which devices, etc.
+     */
+
+    int openFirmwarePackage(const std::string& pkg_file);
+
+    int processPackageManifest(const std::string& manifest_file);
+
+    int parsePackageManifestToCommands();
+
+    int cleanupFirmwarePackage();
+
 };
 
 #endif //SDK_ISFIRMWAREUPDATER_H
