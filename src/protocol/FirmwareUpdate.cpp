@@ -557,7 +557,7 @@ namespace fwUpdate {
      *
      * @param reason the specific reason the update was finished.
      * @param clear_session if true, causes the current session to be invalidated
-     * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
+     * @param reset_device if true, will call fwUpdate_performReset() after sending the message.
      * @return true if successfully sent, otherwise false.
      */
     bool FirmwareUpdateDevice::fwUpdate_sendDone(update_status_e reason, bool clear_session, bool reset_device) {
@@ -572,7 +572,7 @@ namespace fwUpdate {
         if (clear_session)
             result = fwUpdate_resetEngine();
         if (reset_device)
-            result = fwUpdate_performSoftReset(session_target);
+            result = fwUpdate_performReset(session_target, RESET_SOFT);
         return result;
     }
 
@@ -698,7 +698,7 @@ namespace fwUpdate {
         response.hdr.msg_type = MSG_RESET_RESP;
         fwUpdate_sendPayload(response); // make sure this goes out before the reset happens. We might need to schedule the reset, so the send can happen, if the underlying call doesn't block.
 
-        return fwUpdate_performSoftReset(session_target); // TODO: add option to support both hard and soft resets?
+        return fwUpdate_performReset(session_target, payload.data.req_reset.reset_flags);
     }
 
     /**
@@ -826,13 +826,15 @@ namespace fwUpdate {
         return fwUpdate_sendPayload(request);
     }
 
-    bool FirmwareUpdateHost::fwUpdate_requestReset(bool hardReset) {
-        if ((session_status != NOT_STARTED) || (session_id == 0))
-            return false;
+    bool FirmwareUpdateHost::fwUpdate_requestReset(uint16_t reset_flags) {
+        // We don't care about having a session in order to request a reset (it's session independent)
+        // if ((session_status != NOT_STARTED) || (session_id == 0))
+        //    return false;
 
         fwUpdate::payload_t request;
         request.hdr.target_device = session_target;
         request.hdr.msg_type = fwUpdate::MSG_REQ_RESET;
+        request.data.req_reset.reset_flags = reset_flags;
 
         return fwUpdate_sendPayload(request);
     }

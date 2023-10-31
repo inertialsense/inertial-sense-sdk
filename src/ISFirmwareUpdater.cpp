@@ -232,7 +232,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
         } else if (args[0] == "reset") {
             bool hard = (args.size() == 2 && args[1] == "hard");
             session_target = target; // kinda janky (we should pass the target into this call)
-            fwUpdate_requestReset(hard);
+            fwUpdate_requestReset(hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
         } else if ((args[0] == "chunk") && (args.size() == 2)) {
             chunkSize = strtol(args[1].c_str(), nullptr, 10);
         } else if ((args[0] == "rate") && (args.size() == 2)) {
@@ -360,13 +360,11 @@ int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesiz
     std::ifstream ifs(filename, std::ios::binary);
     if (!ifs.good()) return errno;
 
-    uint8_t buff[512];
-    size_t size = 0;
-    size_t curPos = ifs.tellg();
-
     // calculate the md5 checksum
+    uint8_t buff[512];
     resetMd5();
 
+    filesize = 0;
     while (ifs)
     {
         ifs.read((char *)buff, sizeof(buff));
