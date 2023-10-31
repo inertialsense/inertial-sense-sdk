@@ -159,8 +159,18 @@ namespace fwUpdate {
         REASON_INVALID_SIZE = 3,    // unless the chunk id is the last chunk, the size of the chunk should always be the negotiated session_chunk_size;
     };
 
+    enum reset_flags_e : uint16_t {
+        RESET_SOFT = 0,             // typically, a software reset (start the program over, but don't remove power or clear RAM)
+        RESET_HARD = 1,             // a hard reset, in which the device is power-cycled; this may not always be possible since generally software on a device can't remove its own power
+        RESET_INTO_BOOTLOADER = 2,  // indicates that the device should reset into the bootloader (this may not always be possible)
+        RESET_CONFIG = 4,           // indicates that the device should clear its configuration before performing the reset (Ie, factory restart?)
+        RESET_UPSTREAM = 8,         // indicates that this device should reset all of its upstream devices, in addition to itself
+    };
+
     typedef union PACKED {
-        struct { } req_reset;
+        struct {
+            uint16_t reset_flags;
+        } req_reset;
 
         struct { } rpl_reset;
 
@@ -226,6 +236,7 @@ namespace fwUpdate {
             uint8_t buildSecond;    //! Build time second
             uint8_t buildMillis;    //! Build time millisecond
         } version_resp;
+
     } msg_data_t;
 
     typedef struct PACKED {
@@ -452,20 +463,14 @@ namespace fwUpdate {
         virtual bool fwUpdate_writeToWire(target_t target, uint8_t* buffer, int buff_len) = 0;
 
         /**
-         * Performs a software managed reset (ie, by informing the OS/MCU to restart the system)
+         * Performs a system reset of various severity per reset_flags, (ie, RESET_SOFT by informing the OS/MCU to restart the system,
+         * vs RESET_HARD, usually by pulling interfacing pins into the MCU either HIGH or LOW to force a reset state on the hardware).
          * Note that some systems may not always be able to respond with a success before the system is reset.
-         * If a system is NOT able to perform a reset, this MUST return false.
+         * If a system is NOT able to perform a reset (ie UNSUPPORTED, etc), this MUST return false.
          * @param target_id the device to reset
          * @return true if successful, otherwise false
          */
-        virtual int fwUpdate_performSoftReset(target_t target_id) = 0;
-
-        /**
-         * Performs a hardware managed reset, usually by pulling interfacing pins into the MCU either HIGH or LOW to force a reset state on the hardware
-         * @param target_id the device to reset
-         * @return true if successful, otherwise false
-         */
-        virtual int fwUpdate_performHardReset(target_t target_id) = 0;
+        virtual int fwUpdate_performReset(target_t target_id, uint16_t reset_flags) = 0;
 
         /**
          * Initializes the system to begin receiving firmware image chunks for the target device, image slot and image size.
@@ -533,7 +538,7 @@ namespace fwUpdate {
          *
          * @param reason the specific reason the update was finished.
          * @param clear_session if true, causes the current session to be invalidated
-         * @param reset_device if true, will call fwUpdate_performHardReset() after sending the message.
+         * @param reset_device if true, will call fwUpdate_performReset() after sending the message.
          * @return true if successfully sent, otherwise false.
          */
         bool fwUpdate_sendDone(update_status_e reason, bool clear_session, bool reset_device);
@@ -634,7 +639,7 @@ namespace fwUpdate {
          * @param hardReset
          * @return true if the request was successfully sent
          */
-        bool fwUpdate_requestReset(bool hardReset=false);
+        bool fwUpdate_requestReset(uint16_t reset_flags);
 
         /**
          * Sends the next chunk of the firmware image to the remote side.  Internally, this call handles fetching the requested
