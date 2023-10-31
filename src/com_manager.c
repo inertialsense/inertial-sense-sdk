@@ -700,7 +700,6 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
             (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
             (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))
         {
-            //comManagerSend(COM0_PORT_NUM, pkt->hdr.flags, pkt, pkt->size, ((p_data_get_t*)(pkt->data.ptr))->id, 0);
             comManagerSend(COM0_PORT_NUM, pkt->hdr.flags, pkt->data.ptr, pkt->hdr.payloadSize, 0, 0);
         }
         else
