@@ -432,9 +432,11 @@ enum eGpsStatus
      GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
-    GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
-    GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
+	GPS_STATUS_FLAGS_RTK_SHARED_FLAGS_MASK          = (int)0x0FF06000,      // These RTK flags are common between GPS1 and GPS2 status
+	GPS_STATUS_FLAGS_RTK_SHARED_FLAGS_MASK          = (int)0x0FF06000,      // These RTK flags are common between GPS1 and GPS2 status
+	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
+	GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
+	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
     GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR    = (int)0x00800000,      // GPS1 RTK error: observations or ephemeris are invalid or not received (i.e. RTK differential corrections)
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING     = (int)0x01000000,      // GPS1 RTK error: Either base observations or antenna position have not been received.
     GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING  = (int)0x02000000,      // GPS1 RTK error: base position moved when it should be stationary
@@ -2255,14 +2257,17 @@ enum eSysConfigBits
     SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET                  = 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
 
-    /** Disable magnetometer fusion */
-    SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION            = (int)0x00001000,
-    /** Disable barometer fusion */
-    SYS_CFG_BITS_DISABLE_BAROMETER_FUSION               = (int)0x00002000,
-    /** Disable GPS 1 fusion */
-    SYS_CFG_BITS_DISABLE_GPS1_FUSION                    = (int)0x00004000,
-    /** Disable GPS 2 fusion */
-    SYS_CFG_BITS_DISABLE_GPS2_FUSION                    = (int)0x00008000,
+	// When set WMM will be used to set declanation
+	SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION				= (int)0x00000800,
+
+	/** Disable magnetometer fusion */
+	SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
+	/** Disable barometer fusion */
+	SYS_CFG_BITS_DISABLE_BAROMETER_FUSION				= (int)0x00002000,
+	/** Disable GPS 1 fusion */
+	SYS_CFG_BITS_DISABLE_GPS1_FUSION					= (int)0x00004000,
+	/** Disable GPS 2 fusion */
+	SYS_CFG_BITS_DISABLE_GPS2_FUSION					= (int)0x00008000,
 
     /** Disable automatic Zero Velocity Updates (ZUPT).  Disabling automatic ZUPT is useful for degraded GPS environments or applications with very slow velocities. */
     SYS_CFG_BITS_DISABLE_AUTO_ZERO_VELOCITY_UPDATES     = (int)0x00010000,
