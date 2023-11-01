@@ -294,7 +294,7 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
                         int image_slot = 0;
                         uint32_t image_size = 0;
                         uint32_t image_hash[4] = {};
-                        uint8_t image_version[4] = {};
+                        // uint8_t image_version[4] = {};
 
                         size_t file_size = 0;
                         uint32_t file_hash[4] = {};
