@@ -63,6 +63,8 @@ public:
     ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
     ~ISFirmwareUpdater() override {};
 
+    void setDefaultTarget(fwUpdate::target_t _target) { target = _target; }
+
     bool setCommands(std::vector<std::string> cmds);
     bool addCommands(std::vector<std::string> cmds);
     bool hasPendingCommands() { return !commands.empty(); }
