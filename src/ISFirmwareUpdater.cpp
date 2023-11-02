@@ -5,42 +5,23 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-bool ISFirmwareUpdater::setCommands(fwUpdate::target_t _target, std::vector<std::string> cmds) {
-    target = _target;
-    commands = cmds;
+#ifndef __EMBEDDED__
+    #include "yaml-cpp/yaml.h"
+#endif
 
+bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
+    commands = cmds;
     return true;
 }
 
 fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate)
 {
-    srand(time(NULL)); // get *some kind* of seed.
+    srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
+    size_t fileSize = 0;
+    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
+        return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
-    if (!srcFile->is_open()) return fwUpdate::ERR_INVALID_IMAGE;
-
-    // get the file size, and checksum for the file
-    srcFile->seekg(0, srcFile->end); // move to the end
-    size_t fileSize = srcFile->tellg(); // get the position
-    srcFile->seekg(0, srcFile->beg); // move back to the start
-
-    // calculate the md5 checksum
-    resetMd5();
-
-    uint8_t buff[512];
-    size_t curPos = srcFile->tellg();
-
-    while ( curPos < fileSize)
-    {
-        int len = _MIN(fileSize - curPos, sizeof(buff)); // are we doing a full block, or partial block
-        srcFile->seekg(curPos);
-        srcFile->read((char *)buff, len);
-
-        hashMd5(len, buff);
-        curPos = srcFile->tellg();
-    }
-
-    getCurrentMd5(session_md5);
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
     updateStartTime = current_timeMs();
@@ -129,7 +110,13 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
 
     switch(session_status) {
         case fwUpdate::NOT_STARTED:
-            if (requestPending) {
+            if (!requestPending) {
+                if (!commands.empty()) {
+                    auto cmd = commands[0];
+                    commands.erase(commands.begin()); // pop the command off the front
+                    runCommand(cmd);
+                }
+            } else {
                 lastMsgAge = fwUpdate_getLastMessageAge();
                 if (lastMsgAge > 1500) {
                     // if we have already made the initial request, but haven't yet received a response after 1500ms...
@@ -149,52 +136,6 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
                                 printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
                             } else {
                                 printf("Error attempting to initiate Firmware Update\n");
-                            }
-                        }
-                    }
-                }
-            } else {
-                if (!commands.empty()) {
-                    auto cmd = commands[0];
-                    commands.erase(commands.begin()); // pop the command off the front
-                    std::vector<std::string> args;
-                    splitString(cmd, '=', args);
-                    if (!args.empty()) {
-                        if ((args[0] == "target") && (args.size() == 2)) {
-                            if (args[1] == "IMX5") target = fwUpdate::TARGET_IMX5;
-                            else if (args[1] == "GPX1") target = fwUpdate::TARGET_GPX1;
-                            else if (args[1] == "GNSS1") target = fwUpdate::TARGET_SONY_CXD5610__1;
-                            else if (args[1] == "GNSS2") target = fwUpdate::TARGET_SONY_CXD5610__2;
-                            else {
-                                printf("Firmware Update Error :: Invalid Target: %s    (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)\n", args[1].c_str());
-                                commands.clear();
-                                target = fwUpdate::TARGET_HOST;
-                            }
-                        } else if ((args[0] == "slot") && (args.size() == 2)) {
-                            slotNum = strtol(args[1].c_str(), nullptr, 10);
-                        } else if ((args[0] == "timeout") && (args.size() == 2)) {
-                            fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
-                        } else if (args[0] == "force") {
-                            forceUpdate = (args[1] == "true" ? true : false);
-                        } else if (args[0] == "reset") {
-                            bool hard = (args.size() == 2 && args[1] == "hard");
-                            session_target = target; // kinda janky (we should pass the target into this call)
-                            fwUpdate_requestReset(hard);
-                        } else if (args[0] == "chunk") {
-                            chunkSize = strtol(args[1].c_str(), nullptr, 10);
-                        } else if (args[0] == "rate") {
-                            progressRate = strtol(args[1].c_str(), nullptr, 10);
-                        } else if (args[0] == "upload") {
-                            filename = args[1];
-                            fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, forceUpdate, chunkSize, progressRate);
-                            if (status < fwUpdate::NOT_STARTED) {
-                                // there was an error -- probably should flush the command queue
-                                printf("Error initiating Firmware upload: [%s] %s\n", filename.c_str(), fwUpdate_getStatusName(status));
-                                commands.clear();
-                            } else {
-                                requestPending = true;
-                                nextStartAttempt = current_timeMs() + attemptInterval;
-                                // session_status = fwUpdate::NOT_STARTED;
                             }
                         }
                     }
@@ -255,4 +196,186 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     nextChunkSend = current_timeMs() + 15; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
     int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
+}
+
+void ISFirmwareUpdater::runCommand(std::string cmd) {
+    std::vector<std::string> args;
+    splitString(cmd, '=', args);
+    if (!args.empty()) {
+        if ((args[0] == "package") && (args.size() == 2)) {
+            bool isManifest = (args[1].length() >= 5) && (0 == args[1].compare (args[1].length() - 5, 5, ".yaml"));
+            if (isManifest) {
+                int err_result = 0;
+                if ((err_result = processPackageManifest(args[1])) != 0) {
+                    printf("Error processing Firmware Package :: %d\n", err_result);
+                    commands.clear();
+                    target = fwUpdate::TARGET_HOST;
+                }
+            } else
+                openFirmwarePackage(args[1]);
+        } else if ((args[0] == "target") && (args.size() == 2)) {
+            if (args[1] == "IMX5") target = fwUpdate::TARGET_IMX5;
+            else if (args[1] == "GPX1") target = fwUpdate::TARGET_GPX1;
+            else if (args[1] == "GNSS1") target = fwUpdate::TARGET_SONY_CXD5610__1;
+            else if (args[1] == "GNSS2") target = fwUpdate::TARGET_SONY_CXD5610__2;
+            else {
+                printf("Firmware Update Error :: Invalid Target: %s    (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)\n", args[1].c_str());
+                commands.clear();
+                target = fwUpdate::TARGET_HOST;
+            }
+        } else if ((args[0] == "slot") && (args.size() == 2)) {
+            slotNum = strtol(args[1].c_str(), nullptr, 10);
+        } else if ((args[0] == "timeout") && (args.size() == 2)) {
+            fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
+        } else if (args[0] == "force") {
+            forceUpdate = (args[1] == "true" ? true : false);
+        } else if (args[0] == "reset") {
+            bool hard = (args.size() == 2 && args[1] == "hard");
+            session_target = target; // kinda janky (we should pass the target into this call)
+            fwUpdate_requestReset(hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
+        } else if ((args[0] == "chunk") && (args.size() == 2)) {
+            chunkSize = strtol(args[1].c_str(), nullptr, 10);
+        } else if ((args[0] == "rate") && (args.size() == 2)) {
+            progressRate = strtol(args[1].c_str(), nullptr, 10);
+        } else if ((args[0] == "upload") && (args.size() == 2)) {
+            filename = args[1];
+            fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, forceUpdate, chunkSize, progressRate);
+            if (status < fwUpdate::NOT_STARTED) {
+                // there was an error -- probably should flush the command queue
+                printf("Error initiating Firmware upload: [%s] %s\n", filename.c_str(), fwUpdate_getStatusName(status));
+                commands.clear();
+            } else {
+                requestPending = true;
+                nextStartAttempt = current_timeMs() + attemptInterval;
+                // session_status = fwUpdate::NOT_STARTED;
+            }
+        }
+    }
+}
+
+int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
+    YAML::Node manifest = YAML::LoadFile("manifest.yaml");
+
+    YAML::Node images = manifest["images"];
+    if (!images.IsMap())
+        return -1; // images must be a map (of maps)
+
+    YAML::Node steps = manifest["steps"];
+
+    if (!steps.IsSequence())
+        return -2; // steps must be a sequence (of maps)
+
+    for (auto steps_iv : steps) {
+        // each step in the list of steps defines a target, which is then also a sequence of commands
+        for (auto target : steps_iv) {
+            YAML::Node key = target.first;
+            YAML::Node actions = target.second;
+
+            if (!key.IsScalar())
+                return -3; // key must identify a target name
+            std::string target_name = key.as<std::string>();
+            if ((target_name != "IMX5") &&
+                (target_name != "GPX1") &&
+                (target_name != "GNSS1") &&
+                (target_name != "GNSS2") )
+                return -4; // target name is invalid/unsupported
+
+            if (!actions.IsSequence())
+                return -5; // actions must be a sequence (of maps)
+
+            commands.push_back("target=" + target_name);
+            for (auto actions_iv : actions) {
+                for (auto cmd : actions_iv) {
+                    auto cmd_name = cmd.first.as<std::string>();
+                    auto cmd_arg = cmd.second.as<std::string>();
+
+                    if (cmd_name == "image") {
+                        std::string filename;
+                        int image_slot = 0;
+                        uint32_t image_size = 0;
+                        uint32_t image_hash[4] = {};
+                        // uint8_t image_version[4] = {};
+
+                        size_t file_size = 0;
+                        uint32_t file_hash[4] = {};
+
+                        // this is an "image" command, so lookup the key in the images map
+                        YAML::Node image = images[cmd_arg];
+                        if (!image.IsDefined() || !image.IsMap())
+                            return -6; // step references invalid or non-existent image in manifest
+
+                        if (!image["filename"].IsDefined() && !image["filename"].IsScalar())
+                            return -7; // an image must define AT LEAST a filename
+
+                        filename = image["filename"].as<std::string>();
+
+                        if (getImageFileDetails(filename, file_size, file_hash) != 0)
+                            return -8; // file is invalid or non-existent
+
+                        // the following are optional parameters; including them in the manifest image forces us to validate that parameter BEFORE allowing the image to be send to the device
+                        if (image["size"].IsDefined() && image["size"].IsScalar()) {
+                            image_size = image["size"].as<int>();
+
+                            if (image_size != file_size)
+                                return -9; // file size doesn't match the manifest image size
+                        }
+
+                        if (image["md5sum"].IsDefined() && image["md5sum"].IsScalar()) {
+                            std::string hash_str = image["md5sum"].as<std::string>();
+                            sscanf(hash_str.c_str(), "%08x%08x%08x%08x", &image_hash[0], &image_hash[1], &image_hash[2], &image_hash[3]);
+
+                            if (memcmp(image_hash, file_hash, sizeof(image_hash)) != 0)
+                                return -10; // file hash doesn't make the manifest image hash
+                        }
+
+                        if (image["slot"].IsDefined() && image["slot"].IsScalar())
+                            image_slot = image["slot"].as<int>();
+
+                        commands.push_back("slot=" + std::to_string(image_slot));
+                        commands.push_back("upload=" + filename);
+                    } else {
+                        // anything that isn't "image" is treated like a normal command
+                        commands.push_back(cmd_name + "=" + cmd_arg);
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) { return 0; }
+
+int ISFirmwareUpdater::cleanupFirmwarePackage() { return 0; }
+
+/**
+ * checks the status of the requested file, returning the file size and calculated md5sum of the file
+ * @param filename the file to validate/fetch details for
+ * @param filesize [OUT] the size of the file, as read from the scan
+ * @param md5result [OUT] the MD5 checksum calculated for the file
+ * @return 0 on success, errno (negative) if error
+ */
+int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesize, uint32_t(&md5hash)[4]) {
+    std::ifstream ifs(filename, std::ios::binary);
+    if (!ifs.good()) return errno;
+
+    // calculate the md5 checksum
+    uint8_t buff[512];
+    resetMd5();
+
+    filesize = 0;
+    while (ifs)
+    {
+        ifs.read((char *)buff, sizeof(buff));
+        size_t len = ifs.gcount();
+        hashMd5(len, buff);
+        if (ifs.eof())
+            filesize += len;
+        else
+            filesize = ifs.tellg();
+    }
+    getCurrentMd5(md5hash);
+
+    return 0;
 }

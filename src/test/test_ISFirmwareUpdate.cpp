@@ -178,8 +178,7 @@ public:
 
     bool sendProgressUpdates = true;
 
-    int fwUpdate_performSoftReset(fwUpdate::target_t target_id) { return 0; };
-    int fwUpdate_performHardReset(fwUpdate::target_t target_id) { return 0; };
+    int fwUpdate_performReset(fwUpdate::target_t target_id, uint16_t reset_flags) { return 0; };
 
     // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
     fwUpdate::update_status_e fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {

@@ -999,12 +999,14 @@ is_operation_result InertialSense::updateFirmware(
     for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
         m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
 
+        m_comManagerState.devices[i].fwUpdater->setDefaultTarget(targetDevice);
+
         // TODO: Implement maybe
         // m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
         // m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
         // m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
 
-        m_comManagerState.devices[i].fwUpdater->setCommands(targetDevice, cmds);
+        m_comManagerState.devices[i].fwUpdater->setCommands(cmds);
     }
 
     printf("\n\r");
