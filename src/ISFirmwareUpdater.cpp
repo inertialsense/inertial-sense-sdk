@@ -27,7 +27,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
-    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n%s\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3], fwUpdate_getNiceStatusName(result));
+    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
     return result;
 }
 
@@ -107,14 +107,7 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
 
 bool ISFirmwareUpdater::fwUpdate_isDone()
 {
-    if (hasPendingCommands())
-        return false;
-    else if (requestPending)
-        return false;
-    else if((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED))
-        return false;
-    else
-        return true;
+    return !(hasPendingCommands() || requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)));
 }
 
 fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() 
