@@ -27,7 +27,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
-    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
+    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n%s\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3], fwUpdate_getNiceStatusName(result));
     return result;
 }
 
@@ -105,7 +105,20 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
     return true;
 }
 
-fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
+bool ISFirmwareUpdater::fwUpdate_isDone()
+{
+    if (hasPendingCommands())
+        return false;
+    else if (requestPending)
+        return false;
+    else if((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED))
+        return false;
+    else
+        return true;
+}
+
+fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() 
+{
     uint32_t lastMsgAge = 0;
 
     switch(session_status) {
@@ -193,7 +206,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
 }
 
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    nextChunkSend = current_timeMs() + 15; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
+    nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
     int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
