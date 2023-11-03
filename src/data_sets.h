@@ -417,7 +417,6 @@ enum eGpsStatus
  	GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
-	GPS_STATUS_FLAGS_RTK_SHARED_FLAGS_MASK          = (int)0x0FF06000,      // These RTK flags are common between GPS1 and GPS2 status
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
 	GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
 	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
