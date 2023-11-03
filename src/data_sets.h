@@ -134,15 +134,16 @@ typedef uint32_t eDataIDs;
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
-#define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
+#define DID_GPX_FIRST                             120 /** First of GPX DIDs */
+#define DID_GPX_DEVICE_INFO             (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (debug_array_t) GPX debug */
-#define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
+#define DID_GPX_MANUFACTURING_INFO      (eDataIDs)127 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
+#define DID_GPX_LAST                              127 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -483,10 +484,10 @@ typedef struct PACKED
 
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS      = 1,
+	DEV_INFO_HARDWARE_UINS32    = 1,
 	DEV_INFO_HARDWARE_EVB       = 2,
-	DEV_INFO_HARDWARE_IMX       = 3,
-	DEV_INFO_HARDWARE_GPX       = 4,
+	DEV_INFO_HARDWARE_IMX5      = 3,
+	DEV_INFO_HARDWARE_GPX1      = 4,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -549,7 +550,10 @@ typedef struct PACKED
     uint32_t		serialNumber;
 
     /** Inertial Sense lot number */
-    uint32_t		lotNumber;
+    uint16_t		lotNumber;
+
+    /** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
+    uint16_t        hardware;
 
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];

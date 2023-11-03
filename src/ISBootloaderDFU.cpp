@@ -208,6 +208,8 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
 
     uidstr = std::string((const char*)uid);
 
+    // TODO make this IMX/GPX aware (OTP location maybe processor and/or product/device dependent)
+
     // Get the 1K OTP section from the chip
     // 0x1FFF7000 is the address. Little endian.
     {

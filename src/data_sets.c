@@ -683,7 +683,7 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
 	[DID_GPX_STATUS]          = RMC_BITS_GPX_STATUS,
 	[DID_GPX_RTOS_INFO]       = RMC_BITS_GPX_RTOS_INFO,
 	[DID_GPX_DEBUG_ARRAY]     = RMC_BITS_GPX_DEBUG,
-	[DID_GPX_DEV_INFO]        = RMC_BITS_GPX_DEV_INFO,
+	[DID_GPX_DEVICE_INFO]        = RMC_BITS_GPX_DEV_INFO,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -718,7 +718,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 // DID to GPX RMC bit look-up table
 const uint64_t g_gpxDidToGrmcBit[DID_COUNT] = 
 {
-    [DID_GPX_DEV_INFO]           = GRMC_BITS_DEV_INFO,
+    [DID_GPX_DEVICE_INFO]           = GRMC_BITS_DEV_INFO,
     [DID_GPX_FLASH_CFG]          = GRMC_BITS_FLASH_CFG,
     [DID_GPX_RTOS_INFO]          = GRMC_BITS_RTOS_INFO,
     [DID_GPX_STATUS]             = GRMC_BITS_STATUS,
