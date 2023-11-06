@@ -4045,11 +4045,6 @@ enum eGpxStatus
     GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
-enum eGPXGNSSStatus
-{
-
-};
-
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -4067,10 +4062,6 @@ typedef struct
     uint64_t                grmcBitsSer2;
     uint64_t                grmcBitsUSB;
 
-    // GNSS status (eGPXGNSSStatus)
-    uint32_t                gnss1Status;
-    uint32_t                gnss2Status;
-
     /** Hardware status flags (eHdwStatusFlags) */
     uint32_t                hdwStatus;
 
@@ -4083,8 +4074,12 @@ typedef struct
 	/** Flash config checksum used with host SDK synchronization */
 	uint32_t				flashCfgChecksum;
 
+    /** RTK Mode bits (see eRTKConfigBits) **/
     uint32_t                rtkMode;
 
+    /** GNSS status (see RunState) **/
+    uint8_t                 gnss1Status;
+    uint8_t                 gnss2Status;
 } gpx_status_t;
 
 
