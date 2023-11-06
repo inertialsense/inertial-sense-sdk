@@ -4045,6 +4045,11 @@ enum eGpxStatus
     GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
+enum eGPXGNSSStatus
+{
+
+};
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -4055,6 +4060,30 @@ typedef struct
 	
 	/** Status (eGpxStatus) */
 	uint32_t                status;
+
+    /** GRMC BITS **/
+    uint64_t                grmcBitsSer0;
+    uint64_t                grmcBitsSer1;
+    uint64_t                grmcBitsSer2;
+    uint64_t                grmcBitsUSB;
+
+    // GNSS status (eGPXGNSSStatus)
+    uint32_t                gnss1Status;
+    uint32_t                gnss2Status;
+
+    /** Hardware status flags (eHdwStatusFlags) */
+    uint32_t                hdwStatus;
+
+    /** MCU temperature (not available yet) */
+    float					mcuTemp;
+
+	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
+	uint32_t				navOutputPeriodMs;
+	
+	/** Flash config checksum used with host SDK synchronization */
+	uint32_t				flashCfgChecksum;
+
+    uint32_t                rtkMode;
 
 } gpx_status_t;
 
