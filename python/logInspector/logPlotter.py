@@ -592,7 +592,7 @@ class logPlot:
             ax[2].plot(insTime, euler[:,2]*RAD2DEG, label=self.log.serials[d])
         ax[2].legend(ncol=2)
 
-        if 1:
+        if 0:
             gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
 
             gpsHdg_unwrap = self.angle_unwrap(gpsHdg)
