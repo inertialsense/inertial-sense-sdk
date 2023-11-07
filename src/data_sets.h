@@ -4045,6 +4045,17 @@ enum eGpxStatus
     GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
+typedef enum {
+    kReset = 0,
+    kInit,
+    kRun,
+    kPassthrough,
+    kFwInit,    // initializing into FwUpdate mode (prep for code injections)
+    kFwUpdate,  // ready and able to accept code injections
+    kError,
+    kShutdown,
+}GPXGnssRunState_t;
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
@@ -4078,8 +4089,8 @@ typedef struct
     uint32_t                rtkMode;
 
     /** GNSS status (see RunState) **/
-    uint8_t                 gnss1Status;
-    uint8_t                 gnss2Status;
+    GPXGnssRunState_t       gnss1Status;
+    GPXGnssRunState_t       gnss2Status;
 } gpx_status_t;
 
 
