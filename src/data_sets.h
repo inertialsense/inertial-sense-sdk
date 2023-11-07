@@ -4054,7 +4054,7 @@ typedef enum {
     kFwUpdate,  // ready and able to accept code injections
     kError,
     kShutdown,
-}GPXGnssRunState_t;
+}eGPXGnssRunState;
 
 /**
 * (DID_GPX_STATUS) GPX status.
@@ -4089,8 +4089,8 @@ typedef struct
     uint32_t                rtkMode;
 
     /** GNSS status (see RunState) **/
-    GPXGnssRunState_t       gnss1Status;
-    GPXGnssRunState_t       gnss2Status;
+    GPXGnssRunState_t       gnss1RunState;
+    GPXGnssRunState_t       gnss2RunState;
 } gpx_status_t;
 
 
