@@ -4061,11 +4061,11 @@ typedef enum {
 */
 typedef struct
 {
-	/** GPS time of week (since Sunday morning) in milliseconds */
-	uint32_t               	timeOfWeekMs;
-	
-	/** Status (eGpxStatus) */
-	uint32_t                status;
+    /** GPS time of week (since Sunday morning) in milliseconds */
+    uint32_t               	timeOfWeekMs;
+        
+    /** Status (eGpxStatus) */
+    uint32_t                status;
 
     /** GRMC BITS **/
     uint64_t                grmcBitsSer0;
@@ -4077,13 +4077,13 @@ typedef struct
     uint32_t                hdwStatus;
 
     /** MCU temperature (not available yet) */
-    float					mcuTemp;
+    float                   mcuTemp;
 
-	/** Nav output period (ms). */
-	uint32_t				navOutputPeriodMs;
-	
-	/** Flash config checksum used with host SDK synchronization */
-	uint32_t				flashCfgChecksum;
+    /** Nav output period (ms). */
+    uint32_t                navOutputPeriodMs;
+        
+    /** Flash config checksum used with host SDK synchronization */
+    uint32_t                flashCfgChecksum;
 
     /** RTK Mode bits (see eRTKConfigBits) **/
     uint32_t                rtkMode;
