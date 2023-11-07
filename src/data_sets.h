@@ -4045,17 +4045,52 @@ enum eGpxStatus
     GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
+typedef enum {
+    kReset = 0,
+    kInit,
+    kRun,
+    kPassthrough,
+    kFwInit,    // initializing into FwUpdate mode (prep for code injections)
+    kFwUpdate,  // ready and able to accept code injections
+    kError,
+    kShutdown,
+}eGPXGnssRunState;
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
 typedef struct
 {
-	/** GPS time of week (since Sunday morning) in milliseconds */
-	uint32_t               	timeOfWeekMs;
-	
-	/** Status (eGpxStatus) */
-	uint32_t                status;
+    /** GPS time of week (since Sunday morning) in milliseconds */
+    uint32_t               	timeOfWeekMs;
+        
+    /** Status (eGpxStatus) */
+    uint32_t                status;
 
+    /** GRMC BITS **/
+    uint64_t                grmcBitsSer0;
+    uint64_t                grmcBitsSer1;
+    uint64_t                grmcBitsSer2;
+    uint64_t                grmcBitsUSB;
+
+    /** Hardware status flags (eHdwStatusFlags) */
+    uint32_t                hdwStatus;
+
+    /** MCU temperature (not available yet) */
+    float                   mcuTemp;
+
+    /** Nav output period (ms). */
+    uint32_t                navOutputPeriodMs;
+        
+    /** Flash config checksum used with host SDK synchronization */
+    uint32_t                flashCfgChecksum;
+
+    /** RTK Mode bits (see eRTKConfigBits) **/
+    uint32_t                rtkMode;
+
+    /** GNSS status (see RunState) **/
+    eGPXGnssRunState       gnss1RunState;
+    eGPXGnssRunState       gnss2RunState;
 } gpx_status_t;
 
 
