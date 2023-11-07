@@ -4079,7 +4079,7 @@ typedef struct
     /** MCU temperature (not available yet) */
     float					mcuTemp;
 
-	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
+	/** Nav output period (ms). */
 	uint32_t				navOutputPeriodMs;
 	
 	/** Flash config checksum used with host SDK synchronization */
