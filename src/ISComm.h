@@ -130,6 +130,7 @@ typedef enum
 
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
+#define MAX_MSG_LENGTH_NMEA					200
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
