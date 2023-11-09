@@ -1840,10 +1840,10 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
 
 #define GRMC_PRESET_GPX_IMX		(   GRMC_BITS_PRESET \
-                                    | GRMC_BITS_DEV_INFO \
-                                    | GRMC_BITS_RTOS_INFO \
+                                    /*| GRMC_BITS_DEV_INFO*/ \
+                                    /*| GRMC_BITS_RTOS_INFO*/ \
                                     | GRMC_BITS_STATUS \
-                                    | GRMC_BITS_DEBUG_ARRAY \
+                                    /*| GRMC_BITS_DEBUG_ARRAY*/ \
                                     | GRMC_BITS_GPS1_POS \
                                     | GRMC_BITS_GPS2_POS \
                                     | GRMC_BITS_GPS1_VEL \
