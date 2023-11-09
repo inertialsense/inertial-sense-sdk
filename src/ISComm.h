@@ -129,6 +129,7 @@ typedef enum
 
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
+#define MAX_MSG_LENGTH_NMEA					200
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1

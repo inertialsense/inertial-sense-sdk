@@ -73,7 +73,7 @@ void nmea_print_u32(char buf[], int bufSize, int &offset, int precision, uint32_
 	}
 }
 
-uint32_t ASCII_compute_checksum(uint8_t* str, int size)
+uint32_t nmea_compute_checksum(uint8_t* str, int size)
 {
 	uint32_t checksum = 0;
 	
@@ -176,7 +176,7 @@ static int nmea_talker(char* a, int aSize, uint8_t gnssId=s_gnssId)
 
 int nmea_sprint_footer(char* a, int aSize, int &n)
 {
-	unsigned int checkSum = ASCII_compute_checksum((uint8_t*)(a+1), n);	
+	unsigned int checkSum = nmea_compute_checksum((uint8_t*)(a+1), n);	
 	n += ssnprintf(a+n, aSize-n, "*%.2X\r\n", checkSum);
 	return n;
 }
