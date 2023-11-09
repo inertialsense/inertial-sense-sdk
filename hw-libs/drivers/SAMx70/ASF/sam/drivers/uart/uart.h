@@ -65,6 +65,7 @@ typedef struct sam_uart_opt {
 } sam_uart_opt_t;
 
 uint32_t uart_init(Uart *p_uart, const sam_uart_opt_t *p_uart_opt);
+uint32_t uart_baud_rate(Uart *p_uart, uint32_t ul_mck);
 void uart_enable_tx(Uart *p_uart);
 void uart_disable_tx(Uart *p_uart);
 void uart_reset_tx(Uart *p_uart);

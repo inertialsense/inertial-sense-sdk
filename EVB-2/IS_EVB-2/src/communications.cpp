@@ -183,13 +183,13 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg)
         // Set baudrate based on USB CDC baudrate
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_UINS0))
         {
-            serSetBaudRate(EVB2_PORT_UINS0, baudrate);
+            serSyncBaudRate(EVB2_PORT_UINS0, &baudrate);
         }
 
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_UINS1) &&
 		  !(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE))
         {
-            serSetBaudRate(EVB2_PORT_UINS1, baudrate);
+            serSyncBaudRate(EVB2_PORT_UINS1, &baudrate);
         }
     }
 
@@ -197,26 +197,25 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg)
     {
         // 	    if(g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_XBEE))
         // 	    {
-        // 		    serSetBaudRate(EVB2_PORT_XBEE, baudrate);
+        // 		    serSyncBaudRate(EVB2_PORT_XBEE, &baudrate);
         // 	    }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_XRADIO))
         {
-            serSetBaudRate(EVB2_PORT_XRADIO, baudrate);
+            serSyncBaudRate(EVB2_PORT_XRADIO, &baudrate);
         }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_BLE))
         {
-            serSetBaudRate(EVB2_PORT_BLE, baudrate);
+            serSyncBaudRate(EVB2_PORT_BLE, &baudrate);
         }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_SP330))
         {
-            serSetBaudRate(EVB2_PORT_SP330, baudrate);
+            serSyncBaudRate(EVB2_PORT_SP330, &baudrate);
         }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_GPIO_H8))
         {
-            serSetBaudRate(EVB2_PORT_GPIO_H8, baudrate);
+            serSyncBaudRate(EVB2_PORT_GPIO_H8, &baudrate);
         }
     }
-
 }
 
 void callback_cdc_set_dtr(uint8_t port, bool b_enable)

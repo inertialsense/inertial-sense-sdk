@@ -84,9 +84,6 @@ typedef enum
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
 } protocol_type_t;
 
-/** uINS default baud rate */
-#define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
-
 /** The maximum allowable dataset size */
 #define MAX_DATASET_SIZE        1024
 

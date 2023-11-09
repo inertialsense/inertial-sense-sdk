@@ -122,7 +122,7 @@ public:
 	* @param disableBroadcastsOnClose whether to send a stop broadcasts command to all units on Close
 	* @return true if opened, false if failure (i.e. baud rate is bad or port fails to open)
 	*/
-	bool Open(const char* port, int baudRate=IS_COM_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose=false);
+	bool Open(const char* port, int baudRate=IS_BAUDRATE_DEFAULT, bool disableBroadcastsOnClose=false);
 
 	/**
 	* Check if the connection is open

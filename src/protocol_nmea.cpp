@@ -1974,21 +1974,18 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ tmp.gsv = (uint16_t)atoi(ptr);	}
 		
 	// Copy tmp to corresponding port(s)
-	switch (options&RMC_OPTIONS_PORT_MASK)
+	uint32_t ports = options&RMC_OPTIONS_PORT_MASK;
+	switch (ports)
 	{	
-	case 0xFF:	// All ports
-		for(int i=0; i<NUM_COM_PORTS; i++)
-		{
-			nmea_set_rmc_period_multiple(rmci[i], tmp);
-		}
-		break;
+	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp); break;
+	case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i], tmp); } break;
 		
 	default:	// Current port
-	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp);	break;
-	case RMC_OPTIONS_PORT_SER0:		nmea_set_rmc_period_multiple(rmci[0], tmp);			break;
-	case RMC_OPTIONS_PORT_SER1:		nmea_set_rmc_period_multiple(rmci[1], tmp);			break;
-	case RMC_OPTIONS_PORT_SER2:		nmea_set_rmc_period_multiple(rmci[2], tmp);			break;
-	case RMC_OPTIONS_PORT_USB:		nmea_set_rmc_period_multiple(rmci[3], tmp);			break;
+		if (ports & RMC_OPTIONS_PORT_SER0)	{ nmea_set_rmc_period_multiple(rmci[0], tmp); }
+		if (ports & RMC_OPTIONS_PORT_SER1)	{ nmea_set_rmc_period_multiple(rmci[1], tmp); }
+		if (ports & RMC_OPTIONS_PORT_SER2)	{ nmea_set_rmc_period_multiple(rmci[2], tmp); }
+		if (ports & RMC_OPTIONS_PORT_USB)	{ nmea_set_rmc_period_multiple(rmci[3], tmp); }
+		break;
 	}
 		
 	return options;
@@ -2039,21 +2036,17 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	}
 
 	// Copy tmp to corresponding port(s)
-	switch (options&RMC_OPTIONS_PORT_MASK)
+	uint32_t ports = options&RMC_OPTIONS_PORT_MASK; 
+	switch (ports)
 	{	
-	case 0xFF:	// All ports
-		for(int i=0; i<NUM_COM_PORTS; i++)
-		{
-			nmea_set_rmc_period_multiple(rmci[i], tmp);
-		}
-		break;
-		
-	default:	// Current port
 	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle], tmp);	break;
-	case RMC_OPTIONS_PORT_SER0:		nmea_set_rmc_period_multiple(rmci[0], tmp);			break;
-	case RMC_OPTIONS_PORT_SER1:		nmea_set_rmc_period_multiple(rmci[1], tmp);			break;
-	case RMC_OPTIONS_PORT_SER2:		nmea_set_rmc_period_multiple(rmci[2], tmp);			break;
-	case RMC_OPTIONS_PORT_USB:		nmea_set_rmc_period_multiple(rmci[3], tmp);			break;
+	case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i], tmp); } break;	
+	default:
+		if (ports & RMC_OPTIONS_PORT_SER0)	{ nmea_set_rmc_period_multiple(rmci[0], tmp); }
+		if (ports & RMC_OPTIONS_PORT_SER1)	{ nmea_set_rmc_period_multiple(rmci[1], tmp); }
+		if (ports & RMC_OPTIONS_PORT_SER2)	{ nmea_set_rmc_period_multiple(rmci[2], tmp); }
+		if (ports & RMC_OPTIONS_PORT_USB)	{ nmea_set_rmc_period_multiple(rmci[3], tmp); }
+		break;
 	}
 		
 	return options;

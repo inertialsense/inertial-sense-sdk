@@ -113,7 +113,7 @@ int validateBaudRate(unsigned int baudRate)
 		}
 	}
 	else if (baudRate <= IS_BAUDRATE_MAX)
-	{	// High speed baud rates
+	{	// High speed custom baud rates
 		return 0;
 	}
 
