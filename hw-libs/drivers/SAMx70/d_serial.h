@@ -105,7 +105,7 @@ int serSetBaudRate( int serialNum, int baudrate );
 /**
  * \brief Read USART baudrate.  Return value is the baudrate or -1 on failure.
  */
-int serGetBaudRate( int serialNum );
+int serBaudRate( int serialNum );
 
 /**
  * \brief Initialize serial port with specific USART/UART and DMA settings.  If not NULL, the overrun status will have bits HDW_STATUS_ERR_COM_TX_LIMITED and HDW_STATUS_ERR_COM_RX_OVERRUN set during buffer limitation.  

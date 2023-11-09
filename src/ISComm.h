@@ -143,14 +143,12 @@ typedef enum
     IS_BAUDRATE_115200          = 115200,       //  IMX-5.0,  uINS-3,  Actual baudrates                                             
     IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
     IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
-    IS_BAUDRATE_921600          = 921600,       //   930233,  937734,  (default baudrate)
-    IS_BAUDRATE_3200000_IMX5p0  = 3200000,      //  3200000  ( IMX-5 only)
-    IS_BAUDRATE_10000000_IMX5p0 = 10000000,     // 10000000  ( IMX-5 only)
-    IS_BAUDRATE_COUNT           = 10,
-
-    IS_BAUDRATE_3125000_UINS3   = 3125000,      //  3125000  (uINS-3 only)
-    IS_BAUDRATE_9375000_UINS3   = 9375000,      //  9375000  (uINS-3 only)
-    IS_BAUDRATE_18750000_UINS3  = 18750000,     // 18750000  (uINS-3 ser1 only)
+    IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
+    IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
+    IS_BAUDRATE_COUNT           = 9,
+	IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
+	IS_BAUDRATE_STANDARD_MAX    = IS_BAUDRATE_921600,
+	IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
 
 /** List of valid baud rates */

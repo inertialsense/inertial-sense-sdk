@@ -1028,7 +1028,7 @@ int serSetBaudRate( int serialNum, int baudrate )
 /**
  * \brief Read USART baudrate.  Return value is the baudrate or -1 on failure.
  */
-int serGetBaudRate( int serialNum )
+int serBaudRate( int serialNum )
 {
 	usartDMA_t *ser = (usartDMA_t*)&g_usartDMA[serialNum];
 	if( !ser ) return -1;
