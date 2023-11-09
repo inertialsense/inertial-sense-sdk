@@ -61,7 +61,7 @@ static bool matches(const char* str, const char* pre)
 	return lenstr != lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
-#define CL_DEFAULT_BAUD_RATE				IS_COM_BAUDRATE_DEFAULT 
+#define CL_DEFAULT_BAUD_RATE				IS_BAUDRATE_DEFAULT 
 #define CL_DEFAULT_COM_PORT					"*"
 #define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_PRETTY 
 #define CL_DEFAULT_LOG_TYPE					"dat"

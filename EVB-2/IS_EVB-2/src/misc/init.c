@@ -474,7 +474,7 @@ void board_IO_config(void)
 	    ioport_set_pin_output_mode(SP330_N485_RXEN_PIN, IOPORT_PIN_LEVEL_HIGH);     // Disable RS485 receiver
     	ioport_set_pin_output_mode(SP330_485_N232_PIN, IOPORT_PIN_LEVEL_LOW);       // Enable RS232 mode
     }
-    serSetBaudRate(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate);
+    serSyncBaudRate(EVB2_PORT_SP330, &(g_flashCfg->h3sp330BaudRate));
 #endif
 
 	//////////////////////////////////////////////////////////////////////////
@@ -550,8 +550,8 @@ void board_IO_config(void)
 		}
     }
     serSetBaudRate(EVB2_PORT_BLE, 115200);
-    serSetBaudRate(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate);
-    serSetBaudRate(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate);
+    serSyncBaudRate(EVB2_PORT_XRADIO, &(g_flashCfg->h4xRadioBaudRate));
+    serSyncBaudRate(EVB2_PORT_GPIO_H8, &(g_flashCfg->h8gpioBaudRate));
 
 	//////////////////////////////////////////////////////////////////////////
 	// CAN
@@ -700,7 +700,7 @@ void board_init()
 #ifdef CONF_BOARD_SERIAL_EXT_RADIO      // External Radio
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_RXD_PIN, UART_EXT_RADIO_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_EXT_RADIO_TXD_PIN, UART_EXT_RADIO_TXD_FLAGS);
-    serInit(EVB2_PORT_XRADIO, g_flashCfg->h4xRadioBaudRate, NULL);
+    serInitSyncBaudrate(EVB2_PORT_XRADIO, &(g_flashCfg->h4xRadioBaudRate), NULL);
 //     ioport_set_pin_dir(EXT_RADIO_RST, IOPORT_DIR_OUTPUT);
 //     ioport_set_pin_level(EXT_RADIO_RST, IOPORT_PIN_LEVEL_HIGH);         // Low assert
 #endif
@@ -716,7 +716,7 @@ void board_init()
 #ifdef CONF_BOARD_SERIAL_SP330          // RS232/RS422/RS485 converter
     ioport_set_pin_peripheral_mode(UART_SP330_RXD_PIN, UART_SP330_RXD_FLAGS);
     ioport_set_pin_peripheral_mode(UART_SP330_TXD_PIN, UART_SP330_TXD_FLAGS);
-    serInit(EVB2_PORT_SP330, g_flashCfg->h3sp330BaudRate, NULL);
+    serInitSyncBaudrate(EVB2_PORT_SP330, &(g_flashCfg->h3sp330BaudRate), NULL);
 	ioport_set_pin_output_mode(SP330_NSLEW_PIN, IOPORT_PIN_LEVEL_HIGH);         // Don't limit data rate to less than 250 Kbps
 	ioport_set_pin_output_mode(SP330_NFULL_DPLX_PIN, IOPORT_PIN_LEVEL_LOW);    // RS485 full duplex (RS232 N/A)
 	ioport_set_pin_output_mode(SP330_NSHDN_PIN, IOPORT_PIN_LEVEL_HIGH);         // Enable device
@@ -727,7 +727,7 @@ void board_init()
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_RXD_PIN, GPIO_H8_UART_RXD_FLAGS);
 	MATRIX->CCFG_SYSIO |= CCFG_SYSIO_SYSIO4;
     ioport_set_pin_peripheral_mode(GPIO_H8_UART_TXD_PIN, GPIO_H8_UART_TXD_FLAGS);
-    serInit(EVB2_PORT_GPIO_H8, g_flashCfg->h8gpioBaudRate, NULL);
+    serInitSyncBaudrate(EVB2_PORT_GPIO_H8, &(g_flashCfg->h8gpioBaudRate), NULL);
 #endif
 
     //////////////////////////////////////////////////////////////////////////

@@ -84,9 +84,6 @@ typedef enum
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
 } protocol_type_t;
 
-/** uINS default baud rate */
-#define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
-
 /** The maximum allowable dataset size */
 #define MAX_DATASET_SIZE        1024
 
@@ -137,19 +134,19 @@ PUSH_PACK_1
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	IS_BAUDRATE_9600        = 9600,
-	IS_BAUDRATE_19200       = 19200,
-	IS_BAUDRATE_38400       = 38400,
-	IS_BAUDRATE_57600       = 57600,
-	IS_BAUDRATE_115200      = 115200,		// Actual on uINS:
-	IS_BAUDRATE_230400      = 230400,		// 232700
-	IS_BAUDRATE_460800      = 460800,		// 468600
-	IS_BAUDRATE_921600      = 921600,		// 937734 (default)
-	IS_BAUDRATE_3125000     = 3125000,		// 3125000
-	IS_BAUDRATE_9375000     = 9375000,		// 9375000
-	IS_BAUDRATE_18750000    = 18750000,		// 18750000 (uINS ser1 only)
-
-	IS_BAUDRATE_COUNT = 12
+    IS_BAUDRATE_9600            = 9600,
+    IS_BAUDRATE_19200           = 19200,
+    IS_BAUDRATE_38400           = 38400,
+    IS_BAUDRATE_57600           = 57600,
+    IS_BAUDRATE_115200          = 115200,       //  IMX-5.0,  uINS-3,  Actual baudrates                                             
+    IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
+    IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
+    IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
+    IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
+    IS_BAUDRATE_COUNT           = 9,
+	IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
+	IS_BAUDRATE_STANDARD_MAX    = IS_BAUDRATE_921600,
+	IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
 
 /** List of valid baud rates */
