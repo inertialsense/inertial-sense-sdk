@@ -1534,8 +1534,15 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 	return n;
 }
 
+/**
+ * Returns eNmeaMsgIdInx if NMEA head is recognised.
+ * Error -1 for NMEA head not found 
+ * 		 -2 for invalid length 
+*/
 int getNMEAMsgType(char *msgBuf, int msgSize)
 {
+	if(msgSize < 5)
+		return -2;
 
     if(msgBuf[1] == 'A')
     {
@@ -1604,11 +1611,8 @@ int getNMEAMsgType(char *msgBuf, int msgSize)
 			else if(msgBuf[2] == 'R')
 				return NMEA_MSG_UINT_PRIM_IDX;    	// "PRIM"
 		}
-		else
-		{
-			if(msgBuf[2] == 'A' && msgBuf[3] == 'S' && msgBuf[4] == 'H' )
-				return NMEA_MSG_UINT_PASH_IDX;  	// "PASH"
-		}
+		else if(msgBuf[2] == 'A' && msgBuf[3] == 'S' && msgBuf[4] == 'H' )
+			return NMEA_MSG_UINT_PASH_IDX;  	// "PASH"
 	}
 	else if(msgBuf[1] == 'R')
 	{
@@ -1617,12 +1621,15 @@ int getNMEAMsgType(char *msgBuf, int msgSize)
 	}
 	else if(msgBuf[1] == 'S')
 	{
-		if(msgBuf[2] == 'R' && msgBuf[3] == 'S' && msgBuf[4] == 'T' )
+		if(msgBuf[2] == 'T' && msgBuf[3] == 'P' )
+		{
+			if(msgBuf[4] == 'B' )
+				return NMEA_MSG_UINT_STPB_IDX;    	// "STPB" - Stop broadcasts on all ports
+			else if(msgBuf[4] == 'C' )
+				return NMEA_MSG_UINT_STPC_IDX;   	// "STPC" - Stop broadcasts on current port
+		}
+		else if(msgBuf[2] == 'R' && msgBuf[3] == 'S' && msgBuf[4] == 'T' )
 	        return NMEA_MSG_UINT_SRST_IDX;   	// "SRTS" - Software reset
-		if(msgBuf[2] == 'T' && msgBuf[3] == 'P' && msgBuf[4] == 'B' )
-	        return NMEA_MSG_UINT_STPB_IDX;    	// "STPB" - Stop broadcasts on all ports
-		if(msgBuf[2] == 'T' && msgBuf[3] == 'P' && msgBuf[4] == 'C' )
-	        return NMEA_MSG_UINT_STPC_IDX;   	// "STPC" - Stop broadcasts on current port
 	}
 	else if(msgBuf[1] == 'V')
 	{
@@ -1634,6 +1641,8 @@ int getNMEAMsgType(char *msgBuf, int msgSize)
 		if(msgBuf[2] == 'D' && msgBuf[3] == 'A' && msgBuf[4] == ',' )
 	        return NMEA_MSG_UINT_ZDA_IDX;  		// "ZDA,"
 	}
+
+	return -1;
 }
 
 //////////////////////////////////////////////////////////////////////////
