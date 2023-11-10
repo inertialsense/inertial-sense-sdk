@@ -136,11 +136,11 @@ typedef uint32_t eDataIDs;
 
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
-#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
+#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gpx_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
-#define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
-#define DID_GPX_RMC                     (eDataIDs)126 /** (debug_array_t) GPX debug */
+#define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
+#define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_LAST                              126 /** Last of GPX DIDs */
 
@@ -1753,11 +1753,8 @@ enum eNmeaAsciiMsgId
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
-    /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
-    uint64_t                bits;
-
-    /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
-    uint32_t				options;
+     /** Data stream enable bits and options for the specified ports.  (see RMC_BITS_...) */
+    rmc_t                   rmc;
     
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT];
@@ -1840,10 +1837,10 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
 
 #define GRMC_PRESET_GPX_IMX		(   GRMC_BITS_PRESET \
-                                    | GRMC_BITS_DEV_INFO \
-                                    | GRMC_BITS_RTOS_INFO \
+                                    /*| GRMC_BITS_DEV_INFO*/ \
+                                    /*| GRMC_BITS_RTOS_INFO*/ \
                                     | GRMC_BITS_STATUS \
-                                    | GRMC_BITS_DEBUG_ARRAY \
+                                    /*| GRMC_BITS_DEBUG_ARRAY*/ \
                                     | GRMC_BITS_GPS1_POS \
                                     | GRMC_BITS_GPS2_POS \
                                     | GRMC_BITS_GPS1_VEL \
@@ -1859,6 +1856,8 @@ enum GRMC_BIT_POS{
                                     | GMRC_BITS_GPS2_RTK_CMP_MISC \
                                     | GRMC_BITS_GPS1_RAW \
                                     | GRMC_BITS_GPS2_RAW )
+
+
 
 /** (DID_IO) Input/Output */
 typedef struct PACKED
@@ -2106,7 +2105,7 @@ enum GPXBit_resultsPos{
 // GPXBit commands
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
 
-/** (DID_BIT) Built-in self-test parameters */
+/** (DID_GPX_BIT) Built-in self-test parameters */
 typedef struct PACKED
 {
     /** Calibration BIT status (see eCalBitStatusFlags) */
@@ -4072,6 +4071,11 @@ typedef struct
     uint64_t                grmcBitsSer1;
     uint64_t                grmcBitsSer2;
     uint64_t                grmcBitsUSB;
+
+    uint64_t                grmcNMEABitsSer0;
+    uint64_t                grmcNMEABitsSer1;
+    uint64_t                grmcNMEABitsSer2;
+    uint64_t                grmcNMEABitsUSB;
 
     /** Hardware status flags (eHdwStatusFlags) */
     uint32_t                hdwStatus;

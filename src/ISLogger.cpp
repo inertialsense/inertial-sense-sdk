@@ -60,24 +60,11 @@ bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 
 	if (hdr != NULL)
 	{
-		if (hdr->id == DID_GPS1_RAW || hdr->id == DID_GPS2_RAW)
-		{
-			// if any case is true this is corrupt
-			isCorrupt = (hdr->size == 0 ||
-				hdr->offset + hdr->size > MAX_DATASET_SIZE ||
-				hdr->id == 0 ||
-				hdr->offset % 4 != 0);
-
-		}
-		else
-		{
-			// if any case is true this is corrupt
-			isCorrupt = (hdr->size == 0 ||
-				hdr->offset + hdr->size > MAX_DATASET_SIZE ||
-				hdr->id == 0 ||
-				hdr->offset % 4 != 0 ||
-				hdr->size % 4 != 0);
-		}
+		// if any case is true this is corrupt
+		isCorrupt = (hdr->size == 0 ||
+			hdr->offset + hdr->size > MAX_DATASET_SIZE ||
+			hdr->id == 0 ||
+			hdr->offset % 4 != 0);
 			
 	}
 
