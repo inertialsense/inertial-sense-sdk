@@ -557,8 +557,10 @@ static int inertialSenseMain()
         // Create InertialSense object, passing in data callback function pointer.
         InertialSense inertialSenseInterface(cltool_dataCallback);
 
-        // Disable device response requirement to validate open port
-        inertialSenseInterface.EnableDeviceValidation(false);
+        if (g_commandLineOptions.flashCfg.size() == 0)
+        {   // Disable device response requirement to validate open port
+            inertialSenseInterface.EnableDeviceValidation(false);
+        }
 
         // [C++ COMM INSTRUCTION] STEP 2: Open serial port
         if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
