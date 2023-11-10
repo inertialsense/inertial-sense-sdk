@@ -1096,6 +1096,10 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "grmcBitsSer1", grmcBitsSer1, 0, DataTypeUInt64, uint64_t, 0);
     ADD_MAP(m, totalSize, "grmcBitsSer2", grmcBitsSer2, 0, DataTypeUInt64, uint64_t, 0);
     ADD_MAP(m, totalSize, "grmcBitsUSB", grmcBitsUSB, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsSer0", grmcNMEABitsSer0, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsSer1", grmcNMEABitsSer1, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsSer2", grmcNMEABitsSer2, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsUSB", grmcNMEABitsUSB, 0, DataTypeUInt64, uint64_t, 0);
     ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "navOutputPeriodMs", navOutputPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
