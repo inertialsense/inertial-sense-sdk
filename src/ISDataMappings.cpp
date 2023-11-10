@@ -162,8 +162,9 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
-    sizeMap[DID_GPX_RTOS_INFO] = sizeof(rtos_info_t);
+    sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
     sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
+    sizeMap[DID_GPX_RMC] = sizeof(rmc_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -1082,6 +1083,19 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
+{///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
+    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
+    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
+    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
+    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
+    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
+    typedef gpx_flash_cfg_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_GPX_FLASH_CFG];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t, 0);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2571,8 +2585,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RTOS_INFO",                // 122
     "DID_GPX_STATUS",                   // 123
     "DID_GPX_DEBUG_ARRAY",              // 124
-    "",                                 // 125
-    "",                                 // 126
+    "DID_GPX_BIT",                      // 125
+    "DID_GPX_RMC",                      // 126
     "",                                 // 127
     "",                                 // 128
     "",                                 // 129
@@ -2640,6 +2654,7 @@ cISDataMappings::cISDataMappings()
     PopulateGpxFlashCfgMappings(m_lookupInfo);
     // DID_GPX_RTOS_INFO
     // DID_GPX_STATUS
+    PopulateGpxStatusMappings(m_lookupInfo);
     PopulateDebugArrayMappings(m_lookupInfo, DID_GPX_DEBUG_ARRAY);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
