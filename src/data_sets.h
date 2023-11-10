@@ -1753,11 +1753,8 @@ enum eNmeaAsciiMsgId
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
-    /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
-    uint64_t                bits;
-
-    /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
-    uint32_t				options;
+     /** Data stream enable bits and options for the specified ports.  (see RMC_BITS_...) */
+    rmc_t                   rmc;
     
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT];
