@@ -1086,16 +1086,23 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
 }
 
 static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
-{///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
-    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
-    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
-    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
-    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
-    ///////////////////////TTTTTTTTTTTTTTTTTTTTTTOOOOOOOOOOOOOOOOOOODDDDDDDDDDDDDDDDOOOOOOOOOOOO
-    typedef gpx_flash_cfg_t MAP_TYPE;
-    map_name_to_info_t& m = mappings[DID_GPX_FLASH_CFG];
+{
+    typedef gpx_status_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_GPX_STATUS];
     uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "size", size, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsSer0", grmcBitsSer0, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsSer1", grmcBitsSer1, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsSer2", grmcBitsSer2, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsUSB", grmcBitsUSB, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "navOutputPeriodMs", navOutputPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "rtkMode", rtkMode, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "gnss1RunState", gnss1RunState, 0, DataTypeUInt32, eGPXGnssRunState, 0);
+    ADD_MAP(m, totalSize, "gnss2RunState", gnss2RunState, 0, DataTypeUInt32, eGPXGnssRunState, 0);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
