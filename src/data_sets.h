@@ -2707,10 +2707,10 @@ typedef struct PACKED
     /** Manufacturer method for restoring flash defaults */
     uint32_t                key;
 
-    /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
+    /** IMU sample (system input) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Navigation filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
+    /** Navigation filter (system output) output period in milliseconds set on startup.  Used to initialize sysParams.navOutputPeriodMs. */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
@@ -2779,7 +2779,7 @@ typedef struct PACKED
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
     uint32_t				gpsTimeSyncPeriodMs;
 	
-	/** GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
+	/** GPS measurement (system input) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
     uint32_t				startupGPSDtMs;
 	
 	/** RTK configuration bits (see eRTKConfigBits). */
