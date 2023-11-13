@@ -482,6 +482,43 @@ typedef struct PACKED
 
 }pos_measurement_t;
 
+/***
+ * Product Info Mask  [6:4:6]
+ * Product Info is masked into 16 bits:
+ *  [ 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ]
+ *    |- TYPE  -| |MAJOR| |- MINOR -|
+ *
+ *  Upper 6 bits are the hardware/product type (IMX, GPX, uINS, etc; 64 possible values)
+ *  Middle 4 bits are the major hardware/product version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
+ *  Lower 6 bits are the minor hardware/product version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *
+ *  If the TYPE and MAJOR are 0, then fall back to eDevInfoHardware to determine the type from the legacy map:
+ *      0 = Unknown
+ *      1 = UINS32
+ *      2 = EVB
+ *      3 = IMX5
+ *      4 = GPX1
+ */
+
+#define PRODUDCT_TYPE__MASK                         0xFC00
+#define PRODUDCT_TYPE__SHIFT                        10
+#define DECODE_PRODUDCT_TYPE(x)                     ((x & PRODUDCT_TYPE_MASK) >> PRODUDCT_TYPE__SHIFT)
+#define PRODUDCT_TYPE__UNKNOWN                      0
+#define PRODUDCT_TYPE__UINS                         1
+#define PRODUDCT_TYPE__EVB                          2
+#define PRODUDCT_TYPE__IMX                          3
+#define PRODUDCT_TYPE__GPX                          4
+
+#define PRODUDCT_MAJOR__MASK                        0x03C0
+#define PRODUDCT_MAJOR__SHIFT                       6
+#define DECODE_PRODUDCT_MAJOR(x)                    ((x & PRODUDCT_MAJOR__MASK) >> PRODUDCT_MAJOR__SHIFT)
+
+#define PRODUDCT_MINOR__MASK                        0x003F
+#define PRODUDCT_MINOR__SHIFT                       0
+#define DECODE_PRODUDCT_MINOR(x)                    ((x & PRODUDCT_MINOR__MASK) >> PRODUDCT_MINOR__SHIFT)
+
+#define ENCODE_PRODUDCT_INFO(type, major, minor)    ( ((type << PRODUDCT_TYPE__SHIFT) & PRODUDCT_TYPE__MASK) | ((major << PRODUDCT_MAJOR__SHIFT) & PRODUDCT_MAJOR__MASK) | ((minor << PRODUDCT_MINOR__SHIFT) & PRODUDCT_MINOR__MASK) )
+
 enum eDevInfoHardware
 {
 	DEV_INFO_HARDWARE_UINS32    = 1,

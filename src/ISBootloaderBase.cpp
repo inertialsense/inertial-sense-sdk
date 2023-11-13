@@ -402,7 +402,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
         }
         else if (bl_uINS_3 | bl_IMX_5 | bl_EVB_2)
         {
-            (obj)->m_info_callback(obj, "(ISB) Bootloader upgrade not supported on this port. Trying APP update...", IS_LOG_LEVEL_INFO);
+            (obj)->m_info_callback(obj, IS_LOG_LEVEL_INFO, "(ISB) Bootloader upgrade not supported on this port. Trying APP update...");
             delete obj;
             return IS_OP_CLOSED;
         }
@@ -439,12 +439,11 @@ is_operation_result cISBootloaderBase::update_device
     uint32_t bl_IMX_5 = get_image_signature(filenames.bl_IMX_5.path) & IS_IMAGE_SIGN_ISB_STM32L4;
 
     obj = new cISBootloaderDFU(updateProgress, verifyProgress, statusfn, handle);
+    (obj)->get_device_info();
     device = (obj)->check_is_compatible();
     if ((device & IS_IMAGE_SIGN_DFU) & bl_IMX_5)
     {
         (obj)->m_filename = filenames.bl_IMX_5.path;
-        
-        (obj)->get_device_info();
         (obj)->m_use_progress = true;
         addMutex->lock();
         contexts.push_back(obj);
@@ -460,7 +459,7 @@ is_operation_result cISBootloaderBase::update_device
             }
             else if(result != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(DFU) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), IS_LOG_LEVEL_ERROR, "(DFU) Update failed, retrying...");
                 (obj)->m_use_progress = false;
                 (obj)->reboot();
                 continue;
@@ -470,7 +469,7 @@ is_operation_result cISBootloaderBase::update_device
             return IS_OP_CLOSED;
         }
 
-        (obj)->m_info_callback((obj), "(DFU) Update failed, too many retries", IS_LOG_LEVEL_ERROR);
+        (obj)->m_info_callback((obj), IS_LOG_LEVEL_ERROR, "(DFU) Update failed, too many retries");
         return IS_OP_CLOSED;
     }
     else
@@ -478,7 +477,7 @@ is_operation_result cISBootloaderBase::update_device
         delete obj;
     }
 
-    statusfn(NULL, "    | (DFU) Firmware image incompatible with DFU device", IS_LOG_LEVEL_INFO);
+    statusfn(NULL, IS_LOG_LEVEL_INFO, "    | (DFU) Firmware image incompatible with DFU device");
     return IS_OP_ERROR;
 }
 
@@ -562,7 +561,7 @@ is_operation_result cISBootloaderBase::update_device
             } 
             else
             {
-                statusfn(NULL, "    | (SAM-BA) Firmware image incompatible with SAM-BA device", IS_LOG_LEVEL_ERROR);
+                statusfn(NULL, IS_LOG_LEVEL_ERROR, "    | (SAM-BA) Firmware image incompatible with SAM-BA device");
                 delete obj;
                 return IS_OP_CANCELLED;
             }
@@ -579,7 +578,7 @@ is_operation_result cISBootloaderBase::update_device
     {
         char msg[120] = { 0 };
         SNPRINTF(msg, sizeof(msg), "    | (%s) Unable to open port at %d baud", handle->port, baud);
-        statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+        statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
         return IS_OP_ERROR;
     }
 
@@ -591,7 +590,7 @@ is_operation_result cISBootloaderBase::update_device
         delete obj;
         char msg[120] = { 0 };
         SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", handle->port);
-        statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+        statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
         return IS_OP_ERROR;
     }
     else if(device == IS_IMAGE_SIGN_ERROR)
@@ -623,7 +622,7 @@ is_operation_result cISBootloaderBase::update_device
             }
             else if(result != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), IS_LOG_LEVEL_ERROR, "(ISB) Update failed, retrying...");
                 (obj)->m_use_progress = false;
                 (obj)->reboot_force();
                 return IS_OP_CLOSED;
@@ -652,7 +651,7 @@ is_operation_result cISBootloaderBase::update_device
             }
             else if(result != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), IS_LOG_LEVEL_ERROR, "(ISB) Update failed, retrying...");
                 (obj)->m_use_progress = false;
                 (obj)->reboot_force();
                 return IS_OP_CLOSED;
@@ -681,7 +680,7 @@ is_operation_result cISBootloaderBase::update_device
             }
             else if(result != IS_OP_OK)
             {
-                (obj)->m_info_callback((obj), "(ISB) Update failed, retrying...", IS_LOG_LEVEL_ERROR);
+                (obj)->m_info_callback((obj), IS_LOG_LEVEL_ERROR, "(ISB) Update failed, retrying...");
                 (obj)->m_use_progress = false;
                 (obj)->reboot_force();
                 return IS_OP_CLOSED;
@@ -690,7 +689,7 @@ is_operation_result cISBootloaderBase::update_device
         }
         else
         {
-            statusfn(NULL, "    | (ISB) Firmware image incompatible with ISB device", IS_LOG_LEVEL_ERROR);
+            statusfn(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB) Firmware image incompatible with ISB device");
             delete obj;
             return IS_OP_CANCELLED;
         }
@@ -702,6 +701,6 @@ is_operation_result cISBootloaderBase::update_device
 
     char msg[120] = {0};
     SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device selected", handle->port);
-    statusfn(NULL, msg, IS_LOG_LEVEL_ERROR);
+    statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
     return IS_OP_ERROR;
 }

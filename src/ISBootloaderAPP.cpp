@@ -155,7 +155,7 @@ is_operation_result cISBootloaderAPP::reboot()
     // TODO: Implement
     // SYS_CMD_SOFTWARE_RESET
 
-    m_info_callback(this, "(APP) Rebooting...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(APP) Rebooting...");
 
     return IS_OP_OK;
 }
@@ -166,7 +166,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
     (void)minor;
     (void)major;
 
-    m_info_callback(this, "(APP) Rebooting to IS-bootloader mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(APP) Rebooting to IS-bootloader mode...");
 
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
