@@ -54,14 +54,14 @@ public:
 
 	enum eDisplayMode
 	{
+		DMODE_QUIET = 0,
 		DMODE_PRETTY,
 		DMODE_SCROLL,
 		DMODE_EDIT,
 		DMODE_STATS,
-		DMODE_QUIET,
 	};
 
-	cInertialSenseDisplay(eDisplayMode displayMode = DMODE_PRETTY);
+	cInertialSenseDisplay(eDisplayMode displayMode = DMODE_QUIET);
 	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
@@ -135,7 +135,7 @@ private:
 
 	bool m_nonblockingkeyboard = false;
 	std::vector<std::string> m_didMsgs;
-	eDisplayMode m_displayMode = DMODE_PRETTY;
+	eDisplayMode m_displayMode = DMODE_QUIET;
 	uint16_t m_rxCount = 0;
 
 	bool m_enableReplay = false;
