@@ -423,25 +423,25 @@ is_operation_result cISBootloaderDFU::get_dfu_device_info(libusb_device_handle* 
     }
 
     if ((info.hdwType == 0xFFFF) && (processor_hint != IS_PROCESSOR_UNKNOWN)) {
-        if (processor_hint == IS_PROCESSOR_STM32L4) hardwareType = DEV_INFO_HARDWARE_IMX5; // only the IMX-5 uses the STM32L4
-        else if (processor_hint == IS_PROCESSOR_STM32U5) hardwareType = DEV_INFO_HARDWARE_GPX1; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
+        if (processor_hint == IS_PROCESSOR_STM32L4) hardwareType = DEV_INFO_HARDWARE_IMX; // only the IMX-5 uses the STM32L4
+        else if (processor_hint == IS_PROCESSOR_STM32U5) hardwareType = DEV_INFO_HARDWARE_GPX; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
     }
 
     // based on what we know so far, let's try and figure out a hardware type
     if ((hardwareType & 0xFFF0) == 0) {
         // if this is true, then we don't *really* know the hardware type or version (just the type)
         switch (hardwareType) {
-            case DEV_INFO_HARDWARE_UINS32:
-                hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_UINS32, 3, 2);
+            case DEV_INFO_HARDWARE_UINS:
+                hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_UINS, 3, 2);
                 break;
             case DEV_INFO_HARDWARE_EVB:
                 hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_EVB, 2, 0);
                 break;
-            case DEV_INFO_HARDWARE_IMX5:
-                hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_IMX5, 5, 0);
+            case DEV_INFO_HARDWARE_IMX:
+                hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_IMX, 5, 0);
                 break;
-            case DEV_INFO_HARDWARE_GPX1:
-                hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_GPX1, 1, 0);
+            case DEV_INFO_HARDWARE_GPX:
+                hardwareType = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_GPX, 1, 0);
                 break;
         }
     }

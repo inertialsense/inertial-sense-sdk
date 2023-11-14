@@ -499,31 +499,31 @@ typedef struct PACKED
  *      4 = GPX1
  */
 
-#define PRODUDCT_TYPE__MASK                         0xFC00
-#define PRODUDCT_TYPE__SHIFT                        10
-#define DECODE_PRODUDCT_TYPE(x)                     ((x & PRODUDCT_TYPE_MASK) >> PRODUDCT_TYPE__SHIFT)
-#define PRODUDCT_TYPE__UNKNOWN                      0
-#define PRODUDCT_TYPE__UINS                         1
-#define PRODUDCT_TYPE__EVB                          2
-#define PRODUDCT_TYPE__IMX                          3
-#define PRODUDCT_TYPE__GPX                          4
+#define HDW_TYPE__MASK                         0xFC00
+#define HDW_TYPE__SHIFT                        10
+#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE_MASK) >> HDW_TYPE__SHIFT)
+#define HDW_TYPE__UNKNOWN                      0
+#define HDW_TYPE__UINS                         1
+#define HDW_TYPE__EVB                          2
+#define HDW_TYPE__IMX                          3
+#define HDW_TYPE__GPX                          4
 
-#define PRODUDCT_MAJOR__MASK                        0x03C0
-#define PRODUDCT_MAJOR__SHIFT                       6
-#define DECODE_PRODUDCT_MAJOR(x)                    ((x & PRODUDCT_MAJOR__MASK) >> PRODUDCT_MAJOR__SHIFT)
+#define HDW_MAJOR__MASK                        0x03C0
+#define HDW_MAJOR__SHIFT                       6
+#define DECODE_HDW_MAJOR(x)                    ((x & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
 
-#define PRODUDCT_MINOR__MASK                        0x003F
-#define PRODUDCT_MINOR__SHIFT                       0
-#define DECODE_PRODUDCT_MINOR(x)                    ((x & PRODUDCT_MINOR__MASK) >> PRODUDCT_MINOR__SHIFT)
+#define HDW_MINOR__MASK                        0x003F
+#define HDW_MINOR__SHIFT                       0
+#define DECODE_HDW_MINOR(x)                    ((x & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
-#define ENCODE_PRODUDCT_INFO(type, major, minor)    ( ((type << PRODUDCT_TYPE__SHIFT) & PRODUDCT_TYPE__MASK) | ((major << PRODUDCT_MAJOR__SHIFT) & PRODUDCT_MAJOR__MASK) | ((minor << PRODUDCT_MINOR__SHIFT) & PRODUDCT_MINOR__MASK) )
+#define ENCODE_HDW_INFO(type, major, minor)    ( ((type << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((major << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((minor << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS32    = 1,
-	DEV_INFO_HARDWARE_EVB       = 2,
-	DEV_INFO_HARDWARE_IMX5      = 3,
-	DEV_INFO_HARDWARE_GPX1      = 4,
+	DEV_INFO_HARDWARE_UINS     = 1,
+	DEV_INFO_HARDWARE_EVB      = 2,
+	DEV_INFO_HARDWARE_IMX      = 3,
+	DEV_INFO_HARDWARE_GPX      = 4,
 };
 
 /** (DID_DEV_INFO) Device information */
