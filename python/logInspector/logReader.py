@@ -524,22 +524,26 @@ class Log:
             '\n\n------------------------------------------- Device Info -------------------------------------------------\n')
         for n, dev in enumerate(uINS_device_idx):
             devInfo = self.data[dev, DID_DEV_INFO][0]
-            hver = devInfo['hardwareVer']
-            cver = devInfo['protocolVer']
-            fver = devInfo['firmwareVer']
-            buld = devInfo['buildNumber']
-            repo = devInfo['repoRevision']
-            date = devInfo['buildDate']
-            time = devInfo['buildTime']
-            addi = devInfo['addInfo']
+            hver    = devInfo['hardwareVer']
+            cver    = devInfo['protocolVer']
+            fver    = devInfo['firmwareVer']
+            buld    = devInfo['buildNumber']
+            repo    = devInfo['repoRevision']
+            year    = devInfo['buildYear'] + 2000
+            month   = devInfo['buildMonth']
+            day     = devInfo['buildDay']
+            hour    = devInfo['buildHour']
+            minute  = devInfo['buildMinute']
+            second  = devInfo['buildSecond']
+            addi    = devInfo['addInfo']
             f.write(
                 '%2d SN%d  HW: %d.%d.%d.%d   FW: %d.%d.%d.%d build %d repo %d   Proto: %d.%d.%d.%d  Date: %04d-%02d-%02d %02d:%02d:%02d  %s\n' % (
                     n, devInfo['serialNumber'],
                     hver[3], hver[2], hver[1], hver[0],
                     fver[3], fver[2], fver[1], fver[0], buld, repo,
                     cver[3], cver[2], cver[1], cver[0],
-                    2000 + date[2], date[1], date[0],
-                    time[3], time[2], time[1],
+                    year, month, day,
+                    hour, minute, second,
                     addi))
         f.write('\n')
 

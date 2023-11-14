@@ -1560,7 +1560,7 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
-	if (m_editData.mapInfo == NULL)
+	if (m_editData.mapInfo == NULL || data->ptr == NULL)
 	{
 		return "";
 	}

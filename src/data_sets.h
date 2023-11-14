@@ -135,13 +135,13 @@ typedef uint32_t eDataIDs;
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_DEVICE_INFO             (eDataIDs)120 /** (dev_info_t) GPX device information */
+#define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
-#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gps_rtos_info_t) GPX RTOs info */
+#define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gpx_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
-#define DID_GPX_BIT                     (eDataIDs)125 /** (debug_array_t) GPX debug */
-#define DID_GPX_RMC                     (eDataIDs)126 /** (debug_array_t) GPX debug */
+#define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
+#define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
 #define DID_GPX_MANUFACTURING_INFO      (eDataIDs)127 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
 #define DID_GPX_LAST                              127 /** Last of GPX DIDs */
 
@@ -433,7 +433,6 @@ enum eGpsStatus
      GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
-	GPS_STATUS_FLAGS_RTK_SHARED_FLAGS_MASK          = (int)0x0FF06000,      // These RTK flags are common between GPS1 and GPS2 status
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
 	GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,      // Static mode
 	GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,      // GPS2 RTK moving base mode enabled
@@ -590,7 +589,7 @@ typedef struct PACKED
     uint16_t		lotNumber;
 
     /** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-    uint16_t        hardware;
+    uint16_t        product;
 
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
@@ -1795,11 +1794,8 @@ enum eNmeaAsciiMsgId
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
-    /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
-    uint64_t                bits;
-
-    /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
-    uint32_t				options;
+     /** Data stream enable bits and options for the specified ports.  (see RMC_BITS_...) */
+    rmc_t                   rmc;
     
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT];
@@ -1882,10 +1878,10 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS   1000
 
 #define GRMC_PRESET_GPX_IMX		(   GRMC_BITS_PRESET \
-                                    | GRMC_BITS_DEV_INFO \
-                                    | GRMC_BITS_RTOS_INFO \
+                                    /*| GRMC_BITS_DEV_INFO*/ \
+                                    /*| GRMC_BITS_RTOS_INFO*/ \
                                     | GRMC_BITS_STATUS \
-                                    | GRMC_BITS_DEBUG_ARRAY \
+                                    /*| GRMC_BITS_DEBUG_ARRAY*/ \
                                     | GRMC_BITS_GPS1_POS \
                                     | GRMC_BITS_GPS2_POS \
                                     | GRMC_BITS_GPS1_VEL \
@@ -2148,7 +2144,7 @@ enum GPXBit_resultsPos{
 // GPXBit commands
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
 
-/** (DID_BIT) Built-in self-test parameters */
+/** (DID_GPX_BIT) Built-in self-test parameters */
 typedef struct PACKED
 {
     /** Calibration BIT status (see eCalBitStatusFlags) */
@@ -4087,17 +4083,57 @@ enum eGpxStatus
     GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
+typedef enum {
+    kReset = 0,
+    kInit,
+    kRun,
+    kPassthrough,
+    kFwInit,    // initializing into FwUpdate mode (prep for code injections)
+    kFwUpdate,  // ready and able to accept code injections
+    kError,
+    kShutdown,
+}eGPXGnssRunState;
+
 /**
 * (DID_GPX_STATUS) GPX status.
 */
 typedef struct
 {
-	/** GPS time of week (since Sunday morning) in milliseconds */
-	uint32_t               	timeOfWeekMs;
-	
-	/** Status (eGpxStatus) */
-	uint32_t                status;
+    /** GPS time of week (since Sunday morning) in milliseconds */
+    uint32_t               	timeOfWeekMs;
 
+    /** Status (eGpxStatus) */
+    uint32_t                status;
+
+    /** GRMC BITS **/
+    uint64_t                grmcBitsSer0;
+    uint64_t                grmcBitsSer1;
+    uint64_t                grmcBitsSer2;
+    uint64_t                grmcBitsUSB;
+
+    uint64_t                grmcNMEABitsSer0;
+    uint64_t                grmcNMEABitsSer1;
+    uint64_t                grmcNMEABitsSer2;
+    uint64_t                grmcNMEABitsUSB;
+
+    /** Hardware status flags (eHdwStatusFlags) */
+    uint32_t                hdwStatus;
+
+    /** MCU temperature (not available yet) */
+    float                   mcuTemp;
+
+    /** Nav output period (ms). */
+    uint32_t                navOutputPeriodMs;
+
+    /** Flash config checksum used with host SDK synchronization */
+    uint32_t                flashCfgChecksum;
+
+    /** RTK Mode bits (see eRTKConfigBits) **/
+    uint32_t                rtkMode;
+
+    /** GNSS status (see RunState) **/
+    eGPXGnssRunState       gnss1RunState;
+    eGPXGnssRunState       gnss2RunState;
 } gpx_status_t;
 
 

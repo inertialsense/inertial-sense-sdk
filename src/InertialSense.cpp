@@ -395,7 +395,7 @@ bool InertialSense::Update()
                     fwUpdater->fwUpdate_step();
 
                     fwUpdate::update_status_e status = fwUpdater->fwUpdate_getSessionStatus();
-                    if (((status == fwUpdate::FINISHED) || (status < fwUpdate::NOT_STARTED)) && !fwUpdater->hasPendingCommands()) {
+                    if (fwUpdater->fwUpdate_isDone()) {
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
@@ -404,7 +404,7 @@ bool InertialSense::Update()
                         // release the FirmwareUpdater
                         delete m_comManagerState.devices[devIdx].fwUpdater;
                         m_comManagerState.devices[devIdx].fwUpdater = nullptr;
-                        m_comManagerState.devices[devIdx].closeStatus = status;
+                        m_comManagerState.devices[devIdx].closeStatus = (status == fwUpdate::NOT_STARTED) ? fwUpdate::FINISHED : status;
 #ifdef DEBUG_CONSOLELOGGING
                         } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
@@ -1024,10 +1024,8 @@ is_operation_result InertialSense::updateFirmware(
 bool InertialSense::isFirmwareUpdateFinished() {
     for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
         ISFirmwareUpdater *fwUpdater = m_comManagerState.devices[i].fwUpdater;
-        if (fwUpdater != nullptr) {
-            if (fwUpdater->hasPendingCommands() || (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || (fwUpdater->fwUpdate_getSessionStatus() >= fwUpdate::FINISHED))
-                return false;
-        }
+        if (fwUpdater != nullptr && !fwUpdater->fwUpdate_isDone())
+            return false;
     }
     return true;
 }
@@ -1038,12 +1036,8 @@ bool InertialSense::isFirmwareUpdateFinished() {
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
         ISFirmwareUpdater *fwUpdater = m_comManagerState.devices[i].fwUpdater;
-        if (fwUpdater != nullptr) {
-            if (fwUpdater->hasPendingCommands() || (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED))
-                return false;
-        } else if (m_comManagerState.devices[i].closeStatus < fwUpdate::NOT_STARTED) {
+        if (fwUpdater != nullptr && !fwUpdater->fwUpdate_isDone() && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) 
             return false;
-        }
     }
     return true;
 }

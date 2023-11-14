@@ -105,7 +105,13 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
     return true;
 }
 
-fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
+bool ISFirmwareUpdater::fwUpdate_isDone()
+{
+    return !(hasPendingCommands() || requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)));
+}
+
+fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() 
+{
     uint32_t lastMsgAge = 0;
 
     switch(session_status) {
@@ -193,7 +199,7 @@ fwUpdate::msg_types_e ISFirmwareUpdater::fwUpdate_step() {
 }
 
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    nextChunkSend = current_timeMs() + 15; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
+    nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
     int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
