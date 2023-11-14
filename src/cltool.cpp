@@ -63,7 +63,7 @@ static bool matches(const char* str, const char* pre)
 
 #define CL_DEFAULT_BAUD_RATE				IS_BAUDRATE_DEFAULT 
 #define CL_DEFAULT_COM_PORT					"*"
-#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_PRETTY 
+#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_QUIET 
 #define CL_DEFAULT_LOG_TYPE					"dat"
 #define CL_DEFAULT_LOGS_DIRECTORY			DEFAULT_LOGS_DIRECTORY
 #define CL_DEFAULT_ENABLE_LOGGING			false 
@@ -124,6 +124,11 @@ void print_dids()
 	cltool_outputHelp();
 }
 
+void enable_display_mode(int mode = cInertialSenseDisplay::DMODE_PRETTY)
+{   
+    g_commandLineOptions.displayMode = mode;
+}
+
 bool cltool_parseCommandLine(int argc, char* argv[])
 {
 	// defaults
@@ -170,10 +175,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		if (startsWith(a, "-asciiMessages="))
 		{
 			g_commandLineOptions.asciiMessages = &a[15];
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-base="))
 		{
 			g_commandLineOptions.baseConnection = &a[6];
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-baud="))
 		{
@@ -222,6 +229,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 					}
 				}
 			}			
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-edit"))
 		{
@@ -278,14 +286,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-lms="))
 		{
 			g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-lmf="))
 		{
 			g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
+            enable_display_mode();
 		}
         else if (startsWith(a, "-log-flush-timeout="))
         {
             g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
+            enable_display_mode();
         }
         else if (startsWith(a, "-lts="))
 		{
@@ -320,6 +331,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.rmcPreset = 0;
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-platform"))
 		{
@@ -344,10 +356,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-presetPPD"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-presetINS2"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+            enable_display_mode();
 		}
         else if (startsWith(a, "-persistent"))
         {
@@ -361,11 +375,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.logPath = argv[++i];	// use next argument
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-rs="))
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
+            enable_display_mode();
 		}
         else if (startsWith(a, "-resetEvb"))
         {
@@ -383,14 +399,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			stream_did_t dataset = {};
 			read_did_argument(&dataset, "DID_GPS1_POS");
 			g_commandLineOptions.datasets.push_back(dataset);
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-r"))
 		{
 			g_commandLineOptions.replayDataLog = true;
+            enable_display_mode();
 		}
         else if (startsWith(a, "-stats"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
+            enable_display_mode();
 		}
         else if (startsWith(a, "-survey="))
         {
@@ -401,6 +420,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
             }
+            enable_display_mode();
         }
 		else if (startsWith(a, "-sysCmd="))
 		{
@@ -408,7 +428,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}		
 		else if (startsWith(a, "-s"))
 		{
-			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
+            enable_display_mode(cInertialSenseDisplay::DMODE_SCROLL);
 		}
 		else if (startsWith(a, "-ub") && (i + 1) < argc)
 		{
@@ -601,7 +621,6 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 				cout << i->second.name << " = " << stringBuffer << endl;
 			}
 		}
-		return false;
 	}
 	else
 	{
@@ -629,9 +648,9 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 			}
 		}
 		inertialSenseInterface.SetFlashConfig(flashCfg);
-		g_inertialSenseDisplay.Clear();
-		return true;
 	}
+
+    return false;
 }
 
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
@@ -652,7 +671,6 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 				cout << i->second.name << " = " << stringBuffer << endl;
 			}
 		}
-		return false;
 	}
 	else
 	{
@@ -680,7 +698,7 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 			}
 		}
 		inertialSenseInterface.SetEvbFlashConfig(evbFlashCfg);
-		g_inertialSenseDisplay.Clear();
-		return true;
 	}
+
+    return false;
 }
