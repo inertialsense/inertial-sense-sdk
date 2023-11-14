@@ -99,6 +99,7 @@ double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp);
 int getNMEAMsgType(char *msgBuf, int msgSize);
+int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA
