@@ -159,7 +159,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
     sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
-    sizeMap[DID_GPX_DEVICE_INFO] = sizeof(dev_info_t);
+    sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
     sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
@@ -2592,7 +2592,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "",                                 // 117
     "",                                 // 118
     "",                                 // 119
-    "DID_GPX_DEVICE_INFO",              // 120
+    "DID_GPX_DEV_INFO",                 // 120
     "DID_GPX_FLASH_CFG",                // 121
     "DID_GPX_RTOS_INFO",                // 122
     "DID_GPX_STATUS",                   // 123
@@ -2662,7 +2662,7 @@ cISDataMappings::cISDataMappings()
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
     PopulateInfieldCalMappings(m_lookupInfo);
 
-    PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEVICE_INFO);
+    PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
     PopulateGpxFlashCfgMappings(m_lookupInfo);
     // DID_GPX_RTOS_INFO
     // DID_GPX_STATUS
