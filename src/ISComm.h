@@ -86,9 +86,6 @@ typedef enum
 	_PTYPE_SONY                 = 0x7FFFFFFF,				/** Protocol Type: Sony binary */
 } protocol_type_t;
 
-/** uINS default baud rate */
-#define IS_COM_BAUDRATE_DEFAULT IS_BAUDRATE_921600
-
 /** The maximum allowable dataset size */
 #define MAX_DATASET_SIZE        1024
 
@@ -130,6 +127,7 @@ typedef enum
 
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
+#define MAX_MSG_LENGTH_NMEA					200
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
 typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
@@ -140,19 +138,19 @@ PUSH_PACK_1
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	IS_BAUDRATE_9600        = 9600,
-	IS_BAUDRATE_19200       = 19200,
-	IS_BAUDRATE_38400       = 38400,
-	IS_BAUDRATE_57600       = 57600,
-	IS_BAUDRATE_115200      = 115200,		// Actual on uINS:
-	IS_BAUDRATE_230400      = 230400,		// 232700
-	IS_BAUDRATE_460800      = 460800,		// 468600
-	IS_BAUDRATE_921600      = 921600,		// 937734 (default)
-	IS_BAUDRATE_3125000     = 3125000,		// 3125000
-	IS_BAUDRATE_9375000     = 9375000,		// 9375000
-	IS_BAUDRATE_18750000    = 18750000,		// 18750000 (uINS ser1 only)
-
-	IS_BAUDRATE_COUNT = 12
+    IS_BAUDRATE_9600            = 9600,
+    IS_BAUDRATE_19200           = 19200,
+    IS_BAUDRATE_38400           = 38400,
+    IS_BAUDRATE_57600           = 57600,
+    IS_BAUDRATE_115200          = 115200,       //  IMX-5.0,  uINS-3,  Actual baudrates                                             
+    IS_BAUDRATE_230400          = 230400,       //   230547,  232700, 
+    IS_BAUDRATE_460800          = 460800,       //   462428,  468600, 
+    IS_BAUDRATE_921600          = 921600,       //   930233,  937734,
+    IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
+    IS_BAUDRATE_COUNT           = 9,
+	IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
+	IS_BAUDRATE_STANDARD_MAX    = IS_BAUDRATE_921600,
+	IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
 
 /** List of valid baud rates */
@@ -773,11 +771,35 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief Encode ISB InertialSense binary (ISB) packet header.
+ * 
+ * @param pkt Packet storage location.
+ * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
+ * @param did ISB data ID
+ * @param data_size Size in bytes of the payload data.
+ * @param offset Offset of the payload data into the data set structure.
+ * @param data Pointer to payload data.
+ */
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 // Returns number of bytes written
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt);
 
-// Returns number of bytes written
+
+/**
+ * @brief Generate InertialSense binary (ISB) packet.
+ * 
+ * @param buf Buffer to write to.
+ * @param buf_size Available size of buffer.
+ * @param comm ISComm instance.
+ * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
+ * @param did ISB data ID
+ * @param data_size Size in bytes of the payload data.
+ * @param offset Offset of the payload data into the data set structure.
+ * @param data Pointer to payload data.
+ * @return number of bytes written 
+ */
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 

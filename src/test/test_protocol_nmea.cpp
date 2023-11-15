@@ -52,7 +52,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
     {
         rmci_t &a = rmci[i];
         rmci_t &b = outRmci[i];
-        ASSERT_EQ( a.bits, b.bits );
+        ASSERT_EQ( a.rmc.bits, b.rmc.bits );
         ASSERT_EQ( a.nmeaBits, b.nmeaBits );
         for (int j=0; j<DID_COUNT; j++)
         {
@@ -93,7 +93,7 @@ TEST(protocol_nmea, nmea_parse_asce)
     {
         rmci_t &a = rmci[i];
         rmci_t &b = outRmci[i];
-        ASSERT_EQ( a.bits, b.bits );
+        ASSERT_EQ( a.rmc.bits, b.rmc.bits );
         ASSERT_EQ( a.nmeaBits, b.nmeaBits );
         for (int j=0; j<DID_COUNT_UINS; j++)
         {

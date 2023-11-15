@@ -162,8 +162,9 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPX_DEVICE_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
-    sizeMap[DID_GPX_RTOS_INFO] = sizeof(rtos_info_t);
+    sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
     sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
+    sizeMap[DID_GPX_RMC] = sizeof(rmc_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -1083,6 +1084,30 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef gpx_status_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_GPX_STATUS];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "timeOfWeekMs", timeOfWeekMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsSer0", grmcBitsSer0, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsSer1", grmcBitsSer1, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsSer2", grmcBitsSer2, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcBitsUSB", grmcBitsUSB, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsSer0", grmcNMEABitsSer0, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsSer1", grmcNMEABitsSer1, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsSer2", grmcNMEABitsSer2, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "grmcNMEABitsUSB", grmcNMEABitsUSB, 0, DataTypeUInt64, uint64_t, 0);
+    ADD_MAP(m, totalSize, "hdwStatus", hdwStatus, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "mcuTemp", mcuTemp, 0, DataTypeFloat, float, 0);
+    ADD_MAP(m, totalSize, "navOutputPeriodMs", navOutputPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "rtkMode", rtkMode, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "gnss1RunState", gnss1RunState, 0, DataTypeUInt32, eGPXGnssRunState, 0);
+    ADD_MAP(m, totalSize, "gnss2RunState", gnss2RunState, 0, DataTypeUInt32, eGPXGnssRunState, 0);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2572,8 +2597,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_RTOS_INFO",                // 122
     "DID_GPX_STATUS",                   // 123
     "DID_GPX_DEBUG_ARRAY",              // 124
-    "",                                 // 125
-    "",                                 // 126
+    "DID_GPX_BIT",                      // 125
+    "DID_GPX_RMC",                      // 126
     "",                                 // 127
     "",                                 // 128
     "",                                 // 129
@@ -2641,6 +2666,7 @@ cISDataMappings::cISDataMappings()
     PopulateGpxFlashCfgMappings(m_lookupInfo);
     // DID_GPX_RTOS_INFO
     // DID_GPX_STATUS
+    PopulateGpxStatusMappings(m_lookupInfo);
     PopulateDebugArrayMappings(m_lookupInfo, DID_GPX_DEBUG_ARRAY);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)

@@ -544,7 +544,7 @@ int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did
     return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_STOP_DID_BROADCAST, NULL, did, 0, 0);
 }
 
-int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t size, uint16_t did, uint16_t offset)
+int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return comManagerSendInstance(&s_cm, pHandle, pFlags, data, did, size, offset);
 }
@@ -700,7 +700,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
             (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
             (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))
         {
-            comManagerSend(COM0_PORT_NUM, pkt->hdr.flags, pkt->data.ptr, pkt->hdr.payloadSize, 0, 0);
+            comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
         }
         else
         #endif
