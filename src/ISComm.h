@@ -771,11 +771,35 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief Encode ISB InertialSense binary (ISB) packet header.
+ * 
+ * @param pkt Packet storage location.
+ * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
+ * @param did ISB data ID
+ * @param data_size Size in bytes of the payload data.
+ * @param offset Offset of the payload data into the data set structure.
+ * @param data Pointer to payload data.
+ */
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 // Returns number of bytes written
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt);
 
-// Returns number of bytes written
+
+/**
+ * @brief Generate InertialSense binary (ISB) packet.
+ * 
+ * @param buf Buffer to write to.
+ * @param buf_size Available size of buffer.
+ * @param comm ISComm instance.
+ * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
+ * @param did ISB data ID
+ * @param data_size Size in bytes of the payload data.
+ * @param offset Offset of the payload data into the data set structure.
+ * @param data Pointer to payload data.
+ * @return number of bytes written 
+ */
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 

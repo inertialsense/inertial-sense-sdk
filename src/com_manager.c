@@ -544,7 +544,7 @@ int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did
     return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_STOP_DID_BROADCAST, NULL, did, 0, 0);
 }
 
-int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t size, uint16_t did, uint16_t offset)
+int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return comManagerSendInstance(&s_cm, pHandle, pFlags, data, did, size, offset);
 }
