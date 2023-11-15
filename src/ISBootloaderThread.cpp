@@ -297,7 +297,10 @@ void cISBootloaderThread::update_thread_libusb(void* context)
     thread_libusb_t* thread_info = (thread_libusb_t*)context; 
     cISBootloaderBase* new_context;
 
-    is_operation_result result = cISBootloaderBase::update_device(m_firmware, thread_info->usb_device, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    if (thread_info->usb_handle == nullptr)
+        libusb_open(thread_info->usb_device, &thread_info->usb_handle);
+
+    is_operation_result result = cISBootloaderBase::update_device(m_firmware, thread_info->usb_handle, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
     if (result == IS_OP_OK)
     {   

@@ -83,6 +83,7 @@ public:
     {
         void* thread;
         libusb_device* usb_device;
+        libusb_device_handle* usb_handle;
         char uid[100];
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
