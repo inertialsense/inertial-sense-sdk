@@ -219,8 +219,8 @@ enum eInsStatusFlags
     INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
-    /** Reserved for internal purpose */
-    INS_STATUS_RESERVED_1                       = (int)0x00000400,
+    /** Magnetometer calibration set is active */
+    INS_STATUS_MAG_ACTIVE_CAL_SET               = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
