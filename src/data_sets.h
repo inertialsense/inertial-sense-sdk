@@ -429,7 +429,7 @@ enum eGpsStatus
     /** Flags  */
     GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
     GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
-     GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
+    GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
