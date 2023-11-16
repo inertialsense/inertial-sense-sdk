@@ -259,6 +259,10 @@ public:
     void publishGPS1();
     void publishGPS2();
 
+    // Helper
+    bool diff(const double x[3], const double y[3]);
+    void set_refLLA(const double newLLA[3], std::string& message, bool& success);
+
     enum PositionCovarianceType
     {
         COVARIANCE_TYPE_UNKNOWN = 0,

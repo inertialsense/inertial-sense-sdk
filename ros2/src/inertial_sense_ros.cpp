@@ -997,6 +997,10 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         Pe[1] = msg->ecef[1];
         Pe[2] = msg->ecef[2];
         ecef2lla(Pe, lla);
+        //Put to global variables for set current position as refLLA
+        lla_[0] = lla[0] ;
+        lla_[1] = lla[1] ;
+        lla_[2] = lla[2] ;
         quat_ecef2ned(lla[0], lla[1], qe2n);
 
         if (rs_.odom_ins_ecef.enabled)
@@ -1967,22 +1971,25 @@ void InertialSenseROS::diagnostics_callback()
     rs_.diagnostics.pub->publish(diag_array);
 }
 
-void InertialSenseROS::set_current_position_as_refLLA(const std::shared_ptr<std_srvs::srv::Trigger::Request> req, std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+bool InertialSenseROS::diff(const double x[3], const double y[3])
 {
-    (void)req;
-    double current_lla_[3];
-    current_lla_[0] = lla_[0];
-    current_lla_[1] = lla_[1];
-    current_lla_[2] = lla_[2];
+    for(int i = 0;i < 3; i++)
+    {
+        if(abs(x[i] - y[i]) > 0.0001) return true;
+    }
+    return false;
+}
 
-    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_flash_cfg_t, refLla));
+void InertialSenseROS::set_refLLA(const double newLLA[3], std::string& message, bool& success)
+{
+    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&newLLA), sizeof(double[3]), offsetof(nvm_flash_cfg_t, refLla));
 
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
     IS_.GetFlashConfig(current_flash);
-    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
+    while (diff(current_flash.refLla, current_flash.refLla))
     {
         comManagerStep();
         i++;
@@ -1992,52 +1999,31 @@ void InertialSenseROS::set_current_position_as_refLLA(const std::shared_ptr<std_
         }
     }
 
-    if (current_lla_[0] == current_flash.refLla[0] && current_lla_[1] == current_flash.refLla[1] && current_lla_[2] == current_flash.refLla[2])
+    if (diff(current_flash.refLla, newLLA))
     {
         comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-        res->success = true;
-        res->message = ("Update was succesful.  refLla: Lat: " + std::to_string(current_lla_[0]) + "  Lon: " + std::to_string(current_lla_[1]) + "  Alt: " + std::to_string(current_lla_[2]));
+        success = true;
+        message = ("Update was succesful.  refLla: Lat: " + std::to_string(newLLA[0]) + "  Lon: " + std::to_string(newLLA[1]) + "  Alt: " + std::to_string(newLLA[2]));
     }
     else
     {
         comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-        res->success = false;
-        res->message = "Unable to update refLLA. Please try again.";
+        success = false;
+        message = "Unable to update refLLA. Please try again.";
     }
+}
 
+void InertialSenseROS::set_current_position_as_refLLA(const std::shared_ptr<std_srvs::srv::Trigger::Request> req, std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+{
+    (void)req;
+    double current_lla_[3] = {lla_[0] * 180 / M_PI, lla_[1] * 180 / M_PI, lla_[2]};
+    set_refLLA(current_lla_, res->message, res->success);
 }
 
 void InertialSenseROS::set_refLLA_to_value(const std::shared_ptr<inertial_sense_ros::srv::RefLLAUpdate::Request> req, std::shared_ptr<inertial_sense_ros::srv::RefLLAUpdate::Response> res)
 {
-    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req->lla), sizeof(req->lla), offsetof(nvm_flash_cfg_t, refLla));
-
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 1);
-
-    int i = 0;
-    nvm_flash_cfg_t current_flash;
-    IS_.GetFlashConfig(current_flash);
-    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
-    {
-        comManagerStep();
-        i++;
-        if (i > 100)
-        {
-            break;
-        }
-    }
-
-    if (req->lla[0] == current_flash.refLla[0] && req->lla[1] == current_flash.refLla[1] && req->lla[2] == current_flash.refLla[2])
-    {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-        res->success = true;
-        res->message = ("Update was succesful.  refLla: Lat: " + std::to_string(req->lla[0]) + "  Lon: " + std::to_string(req->lla[1]) + "  Alt: " + std::to_string(req->lla[2]));
-    }
-    else
-    {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-        res->success = false;
-        res->message = "Unable to update refLLA. Please try again.";
-    }
+    double new_lla_[3] = {req->lla[0], req->lla[1], req->lla[2]};
+    set_refLLA(new_lla_, res->message, res->success);
 }
 
 void InertialSenseROS::perform_mag_cal_srv_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request> req, std::shared_ptr<std_srvs::srv::Trigger::Response>  res)
