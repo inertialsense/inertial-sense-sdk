@@ -2309,6 +2309,17 @@ enum eGnssSatSigConst
     GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
 
     /*! GNSS default */
+    GNSS_SAT_SIG_CONST_ALL = \
+        GNSS_SAT_SIG_CONST_GPS | \
+        GNSS_SAT_SIG_CONST_QZS | \
+        GNSS_SAT_SIG_CONST_GAL | \
+        GNSS_SAT_SIG_CONST_BDS | \
+        GNSS_SAT_SIG_CONST_GLO | \
+        GNSS_SAT_SIG_CONST_SBS | \
+        GNSS_SAT_SIG_CONST_IRN | \
+    	GNSS_SAT_SIG_CONST_IME,
+
+    /*! GNSS default */
     GNSS_SAT_SIG_CONST_DEFAULT = \
         GNSS_SAT_SIG_CONST_GPS | \
         GNSS_SAT_SIG_CONST_SBS | \
