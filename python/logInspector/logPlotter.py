@@ -287,10 +287,11 @@ class logPlot:
     def gpsPosNED(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3,1, sharex=True)
+        ax = fig.subplots(4,1, sharex=True)
         self.configureSubplot(ax[0], 'GPS North', 'm')
         self.configureSubplot(ax[1], 'GPS East', 'm')
         self.configureSubplot(ax[2], 'GPS Down', 'm')
+        self.configureSubplot(ax[3], 'GPS NED Magnitude', 'm')
         fig.suptitle('GPS NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
@@ -298,15 +299,19 @@ class logPlot:
                 refLla = self.getData(d, DID_GPS1_POS, 'lla')[-1]
 
             [gpsTime, gpsNed] = self.getGpsPosNED(d, DID_GPS1_POS, refLla)
+            gpsNedNorm = np.linalg.norm(gpsNed, axis=1)
             ax[0].plot(gpsTime, gpsNed[:, 0], label=self.log.serials[d])
             ax[1].plot(gpsTime, gpsNed[:, 1])
             ax[2].plot(gpsTime, gpsNed[:, 2])
+            ax[3].plot(gpsTime, gpsNedNorm)
 
             if (np.shape(self.active_devs)[0]==1) or SHOW_GPS2:
-                [gpsTime, gpsNed] = self.getGpsPosNED(d, DID_GPS2_POS, refLla)
-                ax[0].plot(gpsTime, gpsNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
-                ax[1].plot(gpsTime, gpsNed[:, 1])
-                ax[2].plot(gpsTime, gpsNed[:, 2])
+                [gps2Time, gps2Ned] = self.getGpsPosNED(d, DID_GPS2_POS, refLla)
+                gps2NedNorm = np.linalg.norm(gps2Ned, axis=1)
+                ax[0].plot(gps2Time, gps2Ned[:, 0], label=("%s GPS2" % (self.log.serials[d])))
+                ax[1].plot(gps2Time, gps2Ned[:, 1])
+                ax[2].plot(gps2Time, gps2Ned[:, 2])
+                ax[3].plot(gps2Time, gps2NedNorm)
 
         ax[0].legend(ncol=2)
         for a in ax:
@@ -329,25 +334,30 @@ class logPlot:
     def gpsVelNED(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3,1, sharex=True)
+        ax = fig.subplots(4,1, sharex=True)
         self.configureSubplot(ax[0], 'GPS Velocity North', 'm/s')
         self.configureSubplot(ax[1], 'GPS Velocity East', 'm/s')
         self.configureSubplot(ax[2], 'GPS Velocity Down', 'm/s')
+        self.configureSubplot(ax[3], 'GPS Velocity Magnitude', 'm/s')
         fig.suptitle('GPS Velocity NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
             if refLla is None:
                 refLla = self.getData(d, DID_GPS1_POS, 'lla')[-1]
             [gpsTime, gpsVelNed] = self.getGpsVelNed(d, DID_GPS1_VEL, refLla)
+            gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
             ax[0].plot(gpsTime, gpsVelNed[:, 0], label=self.log.serials[d])
             ax[1].plot(gpsTime, gpsVelNed[:, 1])
             ax[2].plot(gpsTime, gpsVelNed[:, 2])
+            ax[3].plot(gpsTime, gpsVelNorm)
 
             if SHOW_GPS2:
                 [gps2Time, gps2VelNed] = self.getGpsVelNed(d, DID_GPS2_VEL, refLla)
+                gps2VelNorm = np.linalg.norm(gps2VelNed, axis=1)
                 ax[0].plot(gps2Time, gps2VelNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                 ax[1].plot(gps2Time, gps2VelNed[:, 1])
                 ax[2].plot(gps2Time, gps2VelNed[:, 2])
+                ax[3].plot(gps2Time, gps2VelNorm)
 
         ax[0].legend(ncol=2)
         for a in ax:

@@ -219,8 +219,8 @@ enum eInsStatusFlags
     INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
-    /** Reserved for internal purpose */
-    INS_STATUS_RESERVED_1                       = (int)0x00000400,
+    /** Magnetometer calibration set is active */
+    INS_STATUS_MAG_ACTIVE_CAL_SET               = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
@@ -429,7 +429,7 @@ enum eGpsStatus
     /** Flags  */
     GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
     GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
-     GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
+    GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
