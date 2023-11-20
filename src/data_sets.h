@@ -135,7 +135,7 @@ typedef uint32_t eDataIDs;
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
-#define DID_GPX_DEVICE_INFO             (eDataIDs)120 /** (dev_info_t) GPX device information */
+#define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gpx_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
@@ -219,8 +219,8 @@ enum eInsStatusFlags
     INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
-    /** Reserved for internal purpose */
-    INS_STATUS_RESERVED_1                       = (int)0x00000400,
+    /** Magnetometer calibration set is active */
+    INS_STATUS_MAG_ACTIVE_CAL_SET               = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
@@ -429,7 +429,7 @@ enum eGpsStatus
     /** Flags  */
     GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
     GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
-     GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
+    GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
@@ -480,12 +480,49 @@ typedef struct PACKED
 
 }pos_measurement_t;
 
+/***
+ * Product Info Mask  [6:4:6]
+ * Product Info is masked into 16 bits:
+ *  [ 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ]
+ *    |- TYPE  -| |MAJOR| |- MINOR -|
+ *
+ *  Upper 6 bits are the hardware/product type (IMX, GPX, uINS, etc; 64 possible values)
+ *  Middle 4 bits are the major hardware/product version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
+ *  Lower 6 bits are the minor hardware/product version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *
+ *  If the TYPE and MAJOR are 0, then fall back to eDevInfoHardware to determine the type from the legacy map:
+ *      0 = Unknown
+ *      1 = UINS32
+ *      2 = EVB
+ *      3 = IMX5
+ *      4 = GPX1
+ */
+
+#define HDW_TYPE__MASK                         0xFC00
+#define HDW_TYPE__SHIFT                        10
+#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE_MASK) >> HDW_TYPE__SHIFT)
+#define HDW_TYPE__UNKNOWN                      0
+#define HDW_TYPE__UINS                         1
+#define HDW_TYPE__EVB                          2
+#define HDW_TYPE__IMX                          3
+#define HDW_TYPE__GPX                          4
+
+#define HDW_MAJOR__MASK                        0x03C0
+#define HDW_MAJOR__SHIFT                       6
+#define DECODE_HDW_MAJOR(x)                    ((x & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
+
+#define HDW_MINOR__MASK                        0x003F
+#define HDW_MINOR__SHIFT                       0
+#define DECODE_HDW_MINOR(x)                    ((x & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
+
+#define ENCODE_HDW_INFO(type, major, minor)    ( ((type << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((major << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((minor << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
+
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS      = 1,
-	DEV_INFO_HARDWARE_EVB       = 2,
-	DEV_INFO_HARDWARE_IMX       = 3,
-	DEV_INFO_HARDWARE_GPX       = 4,
+	DEV_INFO_HARDWARE_UINS     = 1,
+	DEV_INFO_HARDWARE_EVB      = 2,
+	DEV_INFO_HARDWARE_IMX      = 3,
+	DEV_INFO_HARDWARE_GPX      = 4,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -547,8 +584,8 @@ typedef struct PACKED
     /** Inertial Sense serial number */
     uint32_t		serialNumber;
 
-    /** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-    uint16_t        hardware;
+    /** Hardware ID: This is a packed identifier, which includes the Hardware Type, hardwareVer Major, and hardwareVer Minor */
+    uint16_t        hardwareId;
 
     /** Inertial Sense lot number */
     uint16_t		lotNumber;
@@ -561,6 +598,8 @@ typedef struct PACKED
 
 	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
 	int32_t			platformType;
+
+    int32_t         reserved;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
 	uint32_t 		uid[4];
@@ -1859,8 +1898,6 @@ enum GRMC_BIT_POS{
                                     | GMRC_BITS_GPS2_RTK_CMP_MISC \
                                     | GRMC_BITS_GPS1_RAW \
                                     | GRMC_BITS_GPS2_RAW )
-
-
 
 /** (DID_IO) Input/Output */
 typedef struct PACKED

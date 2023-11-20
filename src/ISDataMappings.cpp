@@ -159,7 +159,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
     sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
-    sizeMap[DID_GPX_DEVICE_INFO] = sizeof(dev_info_t);
+    sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
     sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
@@ -267,11 +267,12 @@ static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_CO
     map_name_to_info_t& m = mappings[DID_MANUFACTURING_INFO];
     uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "hardwareId", hardwareId, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "lotNumber", lotNumber, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "hardware", hardware, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "date", date, 16, DataTypeString, char[16], 0);
     ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "platformType", platformType, 0, DataTypeInt32, int32_t, 0);
+    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeInt32, int32_t, 0);
     ADD_MAP(m, totalSize, "uid[0]", uid[0], 0, DataTypeUInt32, uint32_t&, 0);
     ADD_MAP(m, totalSize, "uid[1]", uid[1], 0, DataTypeUInt32, uint32_t&, 0);
     ADD_MAP(m, totalSize, "uid[2]", uid[2], 0, DataTypeUInt32, uint32_t&, 0);
@@ -2592,7 +2593,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "",                                 // 117
     "",                                 // 118
     "",                                 // 119
-    "DID_GPX_DEVICE_INFO",              // 120
+    "DID_GPX_DEV_INFO",                 // 120
     "DID_GPX_FLASH_CFG",                // 121
     "DID_GPX_RTOS_INFO",                // 122
     "DID_GPX_STATUS",                   // 123
@@ -2662,7 +2663,7 @@ cISDataMappings::cISDataMappings()
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
     PopulateInfieldCalMappings(m_lookupInfo);
 
-    PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEVICE_INFO);
+    PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
     PopulateGpxFlashCfgMappings(m_lookupInfo);
     // DID_GPX_RTOS_INFO
     // DID_GPX_STATUS
