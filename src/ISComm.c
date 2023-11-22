@@ -319,16 +319,16 @@ static protocol_type_t processIsbPkt(void* v)
 	// Payload
 	if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
 	{	// Offset is first two bytes in payload  
-		pkt->data.size = _MAX(payloadSize-2, 0);
-		pkt->data.ptr  = (pkt->data.size ? payload+2 : NULL);
-		pkt->offset    = *((uint16_t*)payload);
-		// Data starts after offset if data size is non-zero
+		pkt->data.size     = _MAX(payloadSize-2, 0);
+		pkt->data.ptr      = (pkt->data.size ? payload+2 : NULL);	// Data starts after offset if data size is non-zero
+		pkt->offset        = *((uint16_t*)payload);
+		pkt->dataHdr.size  = pkt->data.size;		// rxPkt.hdr.payloadSize and rxPkt.dataHdr.size share same memory.  Remove offset size from payload/data size.
 	}
 	else
 	{	// No offset
-		pkt->data.size = payloadSize;
-		pkt->data.ptr  = (payloadSize ? payload : NULL);
-		pkt->offset    = 0;
+		pkt->data.size     = payloadSize;
+		pkt->data.ptr      = (payloadSize ? payload : NULL);
+		pkt->offset        = 0;
 	}
 
 	// Footer
