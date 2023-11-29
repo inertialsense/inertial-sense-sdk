@@ -156,7 +156,7 @@ class DeviceInfoDialog(QDialog):
         self.mainlayout = QVBoxLayout()
         self.mainlayout.addWidget(self.table)
         self.setLayout(self.mainlayout)
-        self.resize(2000, 800)
+        self.resize(1280, 800)
 
 class FlashConfigDialog(QDialog):
     def __init__(self, log, parent=None):
