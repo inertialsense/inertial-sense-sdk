@@ -109,8 +109,14 @@ def setDataInformationDirectory(path, startMode=START_MODE_HOT):
 def verArrayToString(array):
     return str(array[0]) + '.' + str(array[1]) + '.' + str(array[2]) #+ '.' + str(array[3])
 
-def dateTimeArrayToString(date, time):
-    return str(date[1]+2000) + '-' + f'{date[2]:02}' + '-' + f'{date[3]:02}' + ' ' + f'{time[0]:02}' + ':' + f'{time[1]:02}' + ':' + f'{time[2]:02}'
+def dateTimeArrayToString(info):
+    year   = info['buildYear']
+    month  = info['buildMonth']
+    day    = info['buildDay']
+    hour   = info['buildHour']
+    minute = info['buildMinute']
+    second = info['buildSecond']
+    return str(year+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
 
 class DeviceInfoDialog(QDialog):
 
@@ -135,17 +141,17 @@ class DeviceInfoDialog(QDialog):
         self.table.setHorizontalHeaderLabels(['Serial#','Hardware','Firmware','Build','Protocol','Repo','Build Date','Manufacturer','AddInfo'])
 
         for d, dev in enumerate(log.data):
-            data = dev[DID_DEV_INFO][0]
+            devInfo = dev[DID_DEV_INFO][0]
             self.table.setRowCount(d+1)
-            self.table.setItem(d, 0, QTableWidgetItem(str(data[1])))                         # Serial#
-            self.table.setItem(d, 1, QTableWidgetItem(verArrayToString(data[2])))  # Hardware version
-            self.table.setItem(d, 2, QTableWidgetItem(verArrayToString(data[3])))  # Firmware version
-            self.table.setItem(d, 3, QTableWidgetItem(str(data[4])))   # Build
-            self.table.setItem(d, 4, QTableWidgetItem(verArrayToString(data[5])))  # Protocol
-            self.table.setItem(d, 5, QTableWidgetItem(str(data[6])))   # Repo
-            self.table.setItem(d, 6, QTableWidgetItem(dateTimeArrayToString(data[8], data[9]))) # Build Date & Time
-            self.table.setItem(d, 7, QTableWidgetItem(data[7].decode('UTF-8')))         # Manufacturer
-            self.table.setItem(d, 8, QTableWidgetItem(data[10].decode('UTF-8')))        # Additional Info
+            self.table.setItem(d, 0, QTableWidgetItem(str(devInfo['serialNumber'])))
+            self.table.setItem(d, 1, QTableWidgetItem(verArrayToString(devInfo['hardwareVer'])))
+            self.table.setItem(d, 2, QTableWidgetItem(verArrayToString(devInfo['firmwareVer'])))
+            self.table.setItem(d, 3, QTableWidgetItem(str(devInfo['buildNumber']))) 
+            self.table.setItem(d, 4, QTableWidgetItem(verArrayToString(devInfo['protocolVer'])))
+            self.table.setItem(d, 5, QTableWidgetItem(str(devInfo['repoRevision'])))   # Repo
+            self.table.setItem(d, 6, QTableWidgetItem(dateTimeArrayToString(devInfo))) # Build Date & Time
+            self.table.setItem(d, 7, QTableWidgetItem(devInfo['manufacturer'].decode('UTF-8')))         # Manufacturer
+            self.table.setItem(d, 8, QTableWidgetItem(devInfo['addInfo'].decode('UTF-8')))        # Additional Info
 
         self.mainlayout = QVBoxLayout()
         self.mainlayout.addWidget(self.table)
@@ -286,7 +292,7 @@ class LogInspectorWindow(QMainWindow):
             if  size != 0:
                 info = self.log.data[0,DID_DEV_INFO][0]
                 if size == 1:
-                    infoStr = 'SN' + str(info[1]) + ', H:' + verArrayToString(info[2]) + ', F:' + verArrayToString(info[3]) + ' build ' + str(info[4]) + ', ' + dateTimeArrayToString(info[8], info[9]) + ', ' + info[10].decode('UTF-8')
+                    infoStr = 'SN' + str(info['serialNumber']) + ', H:' + verArrayToString(info['hardwareVer']) + ', F:' + verArrayToString(info['firmwareVer']) + ' build ' + str(info['buildNumber']) + ', ' + dateTimeArrayToString(info) + ', ' + info['addInfo'].decode('UTF-8')
                 else:
                     infoStr = 'Devices: [' + " ".join([str(x) for x in self.log.serials]) + "]"
                 if self.log.using_mounting_bias:
