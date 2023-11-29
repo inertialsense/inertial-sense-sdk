@@ -615,6 +615,7 @@ namespace fwUpdate {
 
         if (session_status > NOT_STARTED) {
             session_image_slot = payload.data.req_update.image_slot;
+            session_image_flags = payload.data.req_update.image_flags;
             session_total_chunks = (uint16_t) ceil((float)session_image_size / (float)session_chunk_size);
             session_md5[0] = payload.data.req_update.md5_hash[0];
             session_md5[1] = payload.data.req_update.md5_hash[1];
@@ -676,7 +677,7 @@ namespace fwUpdate {
         if (last_chunk_id >= (session_total_chunks-1)) { // remember, chunk_ids are 0-based
             fwUpdate_sendProgress(); // force sending of a final progress message (which should report 100% complete)
 
-            session_status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot);
+            session_status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot, session_image_flags);
             if (session_status != fwUpdate::FINALIZING)
                 fwUpdate_sendDone(session_status, false, false);
         }
@@ -778,7 +779,7 @@ namespace fwUpdate {
      * @param chunk_size
      * @return
      */
-    bool FirmwareUpdateHost::fwUpdate_requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate) {
+    bool FirmwareUpdateHost::fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate) {
 
         // FIXME:  Should probably check to see if an update is already in progress, and attempt to finish it first?
         fwUpdate_resetEngine();
@@ -795,6 +796,7 @@ namespace fwUpdate {
         request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
         request.data.req_update.session_id = session_id;
         request.data.req_update.image_slot = session_image_slot = image_slot;
+        request.data.req_update.image_flags = session_image_flags = image_flags;
         request.data.req_update.chunk_size = session_chunk_size = chunk_size;
         request.data.req_update.file_size = session_image_size = image_size;
         request.data.req_update.progress_rate = progress_rate;
@@ -816,6 +818,7 @@ namespace fwUpdate {
         request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
         request.data.req_update.session_id = session_id;
         request.data.req_update.image_slot = session_image_slot;
+        request.data.req_update.image_flags = session_image_flags;
         request.data.req_update.chunk_size = session_chunk_size;
         request.data.req_update.file_size = session_image_size;
         request.data.req_update.md5_hash[0] = session_md5[0];

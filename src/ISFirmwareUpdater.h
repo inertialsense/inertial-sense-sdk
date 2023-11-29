@@ -71,7 +71,7 @@ public:
     bool hasPendingCommands() { return !commands.empty(); }
     void clearAllCommands() { commands.clear(); }
 
-    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
+    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
 
     /**
      * @param offset the offset into the image file to pull data from
@@ -108,7 +108,6 @@ public:
     virtual fwUpdate::msg_types_e fwUpdate_step() override;
 
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
-
 
     /**
      * Firmware Package Support -- Firmware packages are zip files with a YAML-based manifest, which describes the devices, images, and related metadata necessary to update multiple devices
