@@ -338,6 +338,10 @@ namespace fwUpdate {
         //append "0" bit until message length in bit ≡ 448 (mod 512)
         //append length mod (2 pow 64) to message
 
+        // If data has not length return
+        if (data_len == 0)
+            return (uint8_t*)&md5hash[0];
+
         int new_len = ((((data_len + 8) / 64) + 1) * 64) - 8;
 
         msg = static_cast<uint8_t *>(calloc(new_len + 64, 1)); // also appends "0" bits
@@ -398,10 +402,6 @@ namespace fwUpdate {
 
         // cleanup
         free(msg);
-
-        //debug
-        //Md5Cnt++;
-        //printf("%d:{%x,%x,%x,%x}\r\n",TonyMd5Cnt, md5hash[0], md5hash[1], md5hash[2], md5hash[3]);
 
         return (uint8_t *)&md5hash[0];
     }
