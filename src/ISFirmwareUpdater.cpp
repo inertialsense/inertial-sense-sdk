@@ -385,7 +385,9 @@ int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesiz
     {
         ifs.read((char *)buff, sizeof(buff));
         size_t len = ifs.gcount();
+
         hashMd5(len, buff);
+
         if (ifs.eof())
             filesize += len;
         else
