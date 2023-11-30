@@ -75,6 +75,11 @@ static int get_string_descriptor_ascii(libusb_device_handle *devh, uint8_t desc_
         tbuf[0] = r;	/* fix up descriptor length */
     }
 
+    /** Inertial Sense lot number */
+	uint16_t		lotNumber;
+
+    /** Inertial Sense Hardware/Product ID (UINS, IMX, GPX, VPX, etc) */
+    uint16_t        hardwareId;
     /* convert from 16-bit unicode to ascii string */
     for (di = 0, si = 2; si + 1 < tbuf[0] && di < length; si += 2) {
         if (tbuf[si + 1])	/* high byte of unicode char */
@@ -260,6 +265,7 @@ is_operation_result cISBootloaderDFU::read_memory(libusb_device_handle** handle,
     txBuf[2] = memloc>>8 & 0xFF;
     txBuf[3] = memloc>>16 & 0xFF;
     txBuf[4] = memloc>>24 & 0xFF;
+
 
     ret_libusb = dfu_DNLOAD(handle, 0, txBuf, sizeof(txBuf));
     if(ret_libusb < LIBUSB_SUCCESS) { libusb_release_interface(*handle, 0); return IS_OP_ERROR; }

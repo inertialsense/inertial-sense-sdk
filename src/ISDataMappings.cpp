@@ -267,11 +267,12 @@ static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_CO
     map_name_to_info_t& m = mappings[DID_MANUFACTURING_INFO];
     uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "hardwareId", hardwareId, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "lotNumber", lotNumber, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "hardware", hardware, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "date", date, 16, DataTypeString, char[16], 0);
     ADD_MAP(m, totalSize, "key", key, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "platformType", platformType, 0, DataTypeInt32, int32_t, 0);
+    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeInt32, int32_t, 0);
     ADD_MAP(m, totalSize, "uid[0]", uid[0], 0, DataTypeUInt32, uint32_t&, 0);
     ADD_MAP(m, totalSize, "uid[1]", uid[1], 0, DataTypeUInt32, uint32_t&, 0);
     ADD_MAP(m, totalSize, "uid[2]", uid[2], 0, DataTypeUInt32, uint32_t&, 0);

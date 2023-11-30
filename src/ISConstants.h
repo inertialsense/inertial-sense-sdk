@@ -130,9 +130,6 @@ extern "C" {
 #endif 
 
 #if __ZEPHYR__
-    #include <zephyr/irq.h>
-    #define BEGIN_CRITICAL_SECTION irq_lock();
-    #define END_CRITICAL_SECTION irq_unlock(0);
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf_
     #define VSNPRINTF vsnprintf
@@ -174,16 +171,22 @@ extern "C" {
     #endif
 #endif // defined(_MSC_VER)
 
-#if defined(PLATFORM_IS_EVB_2)
-    #define _MKDIR(dir) f_mkdir(dir)
-    #define _RMDIR(dir) f_unlink(dir)
-    #define _GETCWD(buf, len) f_getcwd(buf, len)
+#if __ZEPHYR__
+    #include <zephyr/irq.h>
+    #define BEGIN_CRITICAL_SECTION irq_lock();
+    #define END_CRITICAL_SECTION irq_unlock(0);
 #elif !PLATFORM_IS_EMBEDDED
     #define BEGIN_CRITICAL_SECTION
     #define END_CRITICAL_SECTION
     #define DBGPIO_ENABLE(pin)
     #define DBGPIO_TOGGLE(pin)
+#endif
 
+#if defined(PLATFORM_IS_EVB_2)
+    #define _MKDIR(dir) f_mkdir(dir)
+    #define _RMDIR(dir) f_unlink(dir)
+    #define _GETCWD(buf, len) f_getcwd(buf, len)
+#elif !PLATFORM_IS_EMBEDDED
     #if PLATFORM_IS_WINDOWS
         #include <direct.h>
         #include <sys/utime.h>

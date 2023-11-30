@@ -142,8 +142,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
-#define DID_GPX_MANUFACTURING_INFO      (eDataIDs)127 /** INTERNAL USE ONLY (manufacturing_info_t) Manufacturing info */
-#define DID_GPX_LAST                              127 /** Last of GPX DIDs */
+#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -220,8 +219,8 @@ enum eInsStatusFlags
     INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
-    /** Reserved for internal purpose */
-    INS_STATUS_RESERVED_1                       = (int)0x00000400,
+    /** Magnetometer calibration set is active */
+    INS_STATUS_MAG_ACTIVE_CAL_SET               = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
@@ -430,7 +429,7 @@ enum eGpsStatus
     /** Flags  */
     GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,      // within limits (e.g. DOP & accuracy)
     GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,      // Differential GPS (DGPS) used.
-     GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
+    GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,      // RTK feedback on the integer solutions to drive the float biases towards the resolved integers
 // 	GPS_STATUS_FLAGS_WEEK_VALID                     = (int)0x00040000,
 // 	GPS_STATUS_FLAGS_TOW_VALID                      = (int)0x00080000,
 	GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,      // GPS1 RTK precision positioning mode enabled
@@ -585,11 +584,11 @@ typedef struct PACKED
     /** Inertial Sense serial number */
     uint32_t		serialNumber;
 
+    /** Hardware ID: This is a packed identifier, which includes the Hardware Type, hardwareVer Major, and hardwareVer Minor */
+    uint16_t        hardwareId;
+
     /** Inertial Sense lot number */
     uint16_t		lotNumber;
-
-    /** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-    uint16_t        product;
 
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
@@ -599,6 +598,8 @@ typedef struct PACKED
 
 	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
 	int32_t			platformType;
+
+    int32_t         reserved;
 
 	/** Microcontroller unique identifier, 128 bits for SAM / 96 for STM32 */
 	uint32_t 		uid[4];
@@ -2348,6 +2349,17 @@ enum eGnssSatSigConst
     GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
 
     /*! GNSS default */
+    GNSS_SAT_SIG_CONST_ALL = \
+        GNSS_SAT_SIG_CONST_GPS | \
+        GNSS_SAT_SIG_CONST_QZS | \
+        GNSS_SAT_SIG_CONST_GAL | \
+        GNSS_SAT_SIG_CONST_BDS | \
+        GNSS_SAT_SIG_CONST_GLO | \
+        GNSS_SAT_SIG_CONST_SBS | \
+        GNSS_SAT_SIG_CONST_IRN | \
+    	GNSS_SAT_SIG_CONST_IME,
+
+    /*! GNSS default */
     GNSS_SAT_SIG_CONST_DEFAULT = \
         GNSS_SAT_SIG_CONST_GPS | \
         GNSS_SAT_SIG_CONST_SBS | \
@@ -2940,10 +2952,10 @@ typedef struct PACKED
     /** Manufacturer method for restoring flash defaults */
     uint32_t                key;
 
-    /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
+    /** IMU sample (system input) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Navigation filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
+    /** Navigation filter (system output) output period in milliseconds set on startup.  Used to initialize sysParams.navOutputPeriodMs. */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
@@ -3012,7 +3024,7 @@ typedef struct PACKED
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
     uint32_t				gpsTimeSyncPeriodMs;
     
-    /** GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
+    /** GPS measurement (system input) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
     uint32_t				startupGPSDtMs;
     
     /** RTK configuration bits (see eRTKConfigBits). */
