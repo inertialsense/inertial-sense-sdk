@@ -430,7 +430,8 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(*(uint32_t*)(buffer+0), fwUpdate::TARGET_GPX1);       // uint32_t (0 + 4)
     EXPECT_EQ(*(uint32_t*)(buffer+4), fwUpdate::MSG_REQ_UPDATE);    // uint32_t (4 + 4)
     EXPECT_EQ(*(uint16_t*)(buffer+8), session_id);                  // uint16_t (8 + 2)
-    EXPECT_EQ(*(uint16_t*)(buffer+10), 1);                          // uint16_t (10 + 2)
+    EXPECT_EQ(*(uint8_t*)(buffer+10), 1);                          // uint16_t (10 + 1)
+    EXPECT_EQ(*(uint8_t*)(buffer+10), 5);                          // uint16_t (11 + 1)
     EXPECT_EQ(*(uint32_t*)(buffer+12), 1234567);                    // uint32_t (12 + 4)
     EXPECT_EQ(*(uint16_t*)(buffer+16), 1024);                       // uint16_t (16 + 2)
     EXPECT_EQ(*(uint16_t*)(buffer+18), 789);                        // uint16_t (18 + 2)
@@ -447,6 +448,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(outMsg->hdr.msg_type, fwUpdate::MSG_REQ_UPDATE);
     EXPECT_EQ(outMsg->data.req_update.session_id, session_id);
     EXPECT_EQ(outMsg->data.req_update.image_slot, 0x01);
+    EXPECT_EQ(outMsg->data.req_update.image_flags, 0x05);
     EXPECT_EQ(outMsg->data.req_update.file_size, 1234567);
     EXPECT_EQ(outMsg->data.req_update.chunk_size, 1024);
     EXPECT_EQ(outMsg->data.req_update.md5_hash[0], 0x00010203);
