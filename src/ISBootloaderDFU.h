@@ -91,7 +91,7 @@ typedef struct
     uint16_t		lotNumber;
 
     /** Inertial Sense lot number */
-    uint16_t		hardware;
+    uint16_t		hardwareId;
 
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
