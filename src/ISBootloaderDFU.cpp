@@ -75,11 +75,6 @@ static int get_string_descriptor_ascii(libusb_device_handle *devh, uint8_t desc_
         tbuf[0] = r;	/* fix up descriptor length */
     }
 
-    /** Inertial Sense lot number */
-	uint16_t		lotNumber;
-
-    /** Inertial Sense Hardware/Product ID (UINS, IMX, GPX, VPX, etc) */
-    uint16_t        hardwareId;
     /* convert from 16-bit unicode to ascii string */
     for (di = 0, si = 2; si + 1 < tbuf[0] && di < length; si += 2) {
         if (tbuf[si + 1])	/* high byte of unicode char */
@@ -421,7 +416,7 @@ is_operation_result cISBootloaderDFU::get_dfu_device_info(libusb_device_handle* 
         is_dfu_otp_id_t* id = decode_otp_data(rxBuf, sizeof(rxBuf));
         if(id != nullptr) {
             info.sn = id->serialNumber;
-            hardwareType = id->hardware;
+            hardwareType = id->hardwareId;
         }
     } else {
         libusb_release_interface(handle, 0);

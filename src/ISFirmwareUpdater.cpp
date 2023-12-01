@@ -14,7 +14,7 @@ bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
     return true;
 }
 
-fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t target, uint32_t uId, const std::string &filename, int progressRate)
+fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int progressRate)
 {
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
@@ -30,15 +30,18 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
     if (dfuUpdater != nullptr) {
         // we probably want to kill the previous instance and start with a new one... but maybe not?
         delete dfuUpdater;
-        dfuUpdater = new ISDFUFirmwareUpdater(usbDevice, uId);
+
+        std::vector<dfu::DFUDevice*> devices;
+        dfu::ISDFUFirmwareUpdater::getAvailableDevices(devices);
+        // dfuUpdater = new ISDFUFirmwareUpdater(usbDevice, (uint32_t)target, deviceId);
     }
 
-    if (dfuUpdater->isConnected() == false) {
-        delete dfuUpdater;
-        return fwUpdate::ERR_UNKNOWN;
-    }
+//    if (dfuUpdater->isConnected() == false) {
+//        delete dfuUpdater;
+//        return fwUpdate::ERR_UNKNOWN;
+//    }
 
-    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
     return result;
 }
