@@ -416,6 +416,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     fuMsg.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
     fuMsg.data.req_update.session_id = session_id;
     fuMsg.data.req_update.image_slot = 1;
+    fuMsg.data.req_update.image_flags = 5;
     fuMsg.data.req_update.file_size = 1234567;
     fuMsg.data.req_update.chunk_size = 1024;
     fuMsg.data.req_update.progress_rate = 789;
