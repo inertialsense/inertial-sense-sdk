@@ -47,7 +47,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 }
 
 
-fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, bool forceUpdate, int chunkSize, int progressRate)
+fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, int flags, bool forceUpdate, int chunkSize, int progressRate)
 {
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
@@ -59,7 +59,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
 
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
-    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
     return result;
 }
@@ -82,7 +82,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
 
     switch (session_status) {
         case fwUpdate::ERR_MAX_CHUNK_SIZE:    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
-            return fwUpdate_requestUpdate(session_target, session_image_slot, session_chunk_size / 2, session_image_size, md5hash);
+            return fwUpdate_requestUpdate(session_target, session_image_slot, session_image_flags, session_chunk_size / 2, session_image_size, md5hash);
         case fwUpdate::ERR_INVALID_SESSION:   // indicates that the requested session ID is invalid.
         case fwUpdate::ERR_INVALID_SLOT:      // indicates that the request slot does not exist. Different targets have different number of slots which can be written to.
         case fwUpdate::ERR_NOT_ALLOWED:       // indicates that writing to the requested slot is not allowed, usually due to security constrains such as a locked firmware, Read-Only FLASH, etc.
@@ -304,7 +304,17 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             progressRate = strtol(args[1].c_str(), nullptr, 10);
         } else if ((args[0] == "upload") && (args.size() == 2)) {
             filename = args[1];
-            fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, forceUpdate, chunkSize, progressRate);
+
+            // check if any flags should be set
+            uint8_t flags = 0;
+
+            // TODO move this to it's own function before we expand this any father
+            // check for non encrypted file CXD update slot 4 or slot 2 if .fpk
+            if((target == fwUpdate::TARGET_SONY_CXD5610__1 || target == fwUpdate::TARGET_SONY_CXD5610__2) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
+                flags |= fwUpdate::image_flags_imageNotEncrypted;
+
+            fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);
+
             if (status < fwUpdate::NOT_STARTED) {
                 // there was an error -- probably should flush the command queue
                 printf("Error initiating Firmware upload: [%s] %s\n", filename.c_str(), fwUpdate_getStatusName(status));
@@ -435,6 +445,7 @@ int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesiz
         ifs.read((char *)buff, sizeof(buff));
         size_t len = ifs.gcount();
         hashMd5(len, buff);
+
         if (ifs.eof())
             filesize += len;
         else
