@@ -167,6 +167,14 @@ namespace fwUpdate {
         RESET_UPSTREAM = 8,         // indicates that this device should reset all of its upstream devices, in addition to itself
     };
 
+    enum image_flagsPos_e : uint8_t{
+        image_flags_imageNotEncrypted_pos = 0,  // position of bit that informs firmware that sony image is not encrypted
+    };
+
+    enum image_flagsMask_e : uint8_t{
+        image_flags_imageNotEncrypted = 0x01 << image_flags_imageNotEncrypted_pos, // bit mask that informs firmware that sony image is not encrypted
+    };
+
     typedef union PACKED {
         struct {
             uint16_t reset_flags;
@@ -175,10 +183,10 @@ namespace fwUpdate {
         struct { } rpl_reset;
 
         struct { } req_version;
-
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
-            uint16_t image_slot;    //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
+            uint8_t image_slot;     //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
+            uint8_t image_flags;    //! flags for update (see image_flagsMask_e)
             uint32_t file_size;     //! the total size of the entire firmware file
             uint16_t chunk_size;    //! the maximum size of each chunk
             uint16_t progress_rate; //! the rate (millis) at which the device should publish progress reports back to the host.
@@ -355,6 +363,7 @@ namespace fwUpdate {
         uint16_t session_total_chunks = 0;                      //! the total number of chunks for the given image size
         uint32_t session_image_size = 0;                        //! the total size of the image to be sent
         uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
+        uint8_t session_image_flags = 0;                         //! the "slot" to which this image will be written in the flash
         uint32_t session_md5[4] = {0, 0, 0, 0};   //! the md5 of the firmware image
 
 
@@ -498,7 +507,7 @@ namespace fwUpdate {
          * @param slot_id the image slot, if applicable (otherwise 0)
          * @return
          */
-        virtual update_status_e fwUpdate_finishUpdate(target_t target_id, int slot_id) = 0;
+        virtual update_status_e fwUpdate_finishUpdate(target_t target_id, int slot_id, int flags) = 0;
 
 
     protected:
@@ -626,7 +635,7 @@ namespace fwUpdate {
          * @param progress_rate the rate (in millis) which the device should send out progress updates
          * @return
          */
-        bool fwUpdate_requestUpdate(target_t target_id, int image_slot, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate = 500);
+        bool fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate = 500);
 
         /**
          * Called by the hsot application to resend a previous "fwUpdate_requestUpdate" with a full parameter set.
