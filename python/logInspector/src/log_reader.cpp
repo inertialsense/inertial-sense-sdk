@@ -94,8 +94,8 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     vector<int> serialNumbers;
     for (int i = 0; i < (int)logger_.DeviceCount(); i++)
     {
-        cout << (i==0 ? "  " : ", ") << logger_.GetDeviceInfo(i)->serialNumber;
-        serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
+        cout << (i==0 ? "  " : ", ") << logger_.DeviceInfo(i)->serialNumber;
+        serialNumbers.push_back(logger_.DeviceInfo(i)->serialNumber);
     }
     cout << endl;
     serialNumbers_ = py::cast(serialNumbers);
