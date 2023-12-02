@@ -1419,7 +1419,7 @@ class logPlot:
                 for i in range(3):
                     axislable = 'P' if (i == 0) else 'Q' if (i==1) else 'R'
                     for n, pqr in enumerate([ pqr0, pqr1, pqr2 ]):
-                        if pqr != [] and n<pqrCount:
+                        if n<pqrCount:
                             if (pqr is not None) and pqr.any(None):
                                 pqr = quatRot(self.log.mount_bias_quat[d,:], pqr)
                                 mean = np.mean(pqr[:, i])
@@ -1493,7 +1493,7 @@ class logPlot:
                 for i in range(3):
                     axislable = 'X' if (i == 0) else 'Y' if (i==1) else 'Z'
                     for n, acc in enumerate([ acc0, acc1, acc2 ]):
-                        if acc != [] and n<accCount:
+                        if n<accCount:
                             if (acc is not None) and acc.any(None):
                                 mean = np.mean(acc[:, i])
                                 std = np.std(acc[:, i])
