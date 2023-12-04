@@ -120,14 +120,17 @@ class SuperNPP():
 
 		if self.startMode == 1:
 			for i in range(len(cmds)):
-				cmds[i] += ' -mode COLD -kml'	# Cold init, enable KML output
+				cmds[i] += ' -mode COLD -kml'		# Cold init, enable KML output
 
 		if self.startMode == 2:
 			for i in range(len(cmds)):
 				cmds[i] += ' -mode FACTORY -kml'	# Factory init, enable KML output
 
 		for i in range(len(cmds)):
-			cmds[i] += ' --outputoff'	# disable INS display output
+			cmds[i] += ' --outputoff'				# disable INS display output
+
+		for i in range(len(cmds)):
+			cmds[i] += ' --disableBaroFusion'		# disable barometer fusion
 
 		print("Running NPP...")
 
