@@ -364,6 +364,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Vel NED', 'velNED')
         self.addListItem('Vel UVW', 'velUVW')
         self.addListItem('Attitude', 'attitude')
+        self.addListItem('Altitude', 'altitude')
         self.addListItem('Heading', 'heading')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')

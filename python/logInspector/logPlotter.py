@@ -1483,6 +1483,35 @@ class logPlot:
                 ax[d][i].grid(True)
         self.saveFig(fig, 'gyroPSD')
 
+    def altitude(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(3, 1, sharex=True)
+
+        self.configureSubplot(ax[0], 'Altitude - Barometer', ',m')
+        self.configureSubplot(ax[1], 'Altitude - GPS', ',m')
+        self.configureSubplot(ax[2], 'Altitude - Barometer & GPS', ',m')
+        fig.suptitle('Altitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        
+        for d in self.active_devs:
+            timeBar = self.getData(d, DID_BAROMETER, 'time')
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+            altGps = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            if np.shape(towOffset)[0] != 0:
+                timeBar = timeBar + towOffset[-1]
+            mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
+            ax[0].plot(timeBar, mslBar, label=self.log.serials[d])
+            ax[1].plot(timeGps, altGps)
+            ax[2].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
+            ax[2].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
+
+        ax[0].legend(ncol=2)
+        ax[2].legend(ncol=2)
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'altitude')
+
     def magnetometer(self, fig=None):
         if fig is None:
             fig = plt.figure()
