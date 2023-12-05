@@ -33,7 +33,6 @@ using namespace std;
 #define MAX_FILE_SIZE_DISK_PERCENT_50	.5
 #define MAX_FILE_SIZE_100k				100000
 
-
 bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 {
     inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
