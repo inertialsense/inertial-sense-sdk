@@ -28,6 +28,8 @@ uint8_t* md5_hash(md5hash_t& md5hash, uint16_t data_len, uint8_t* data) {
     uint8_t *msg = (uint8_t *)0;
 
     // Note: All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
+    if (data_len == 0)
+        return (uint8_t *)&md5hash.dwords[0];
 
     // r specifies the per-round shift amounts
 

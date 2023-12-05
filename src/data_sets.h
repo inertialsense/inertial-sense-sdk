@@ -500,7 +500,7 @@ typedef struct PACKED
 
 #define HDW_TYPE__MASK                         0xFC00
 #define HDW_TYPE__SHIFT                        10
-#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE_MASK) >> HDW_TYPE__SHIFT)
+#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
 #define HDW_TYPE__UNKNOWN                      0
 #define HDW_TYPE__UINS                         1
 #define HDW_TYPE__EVB                          2

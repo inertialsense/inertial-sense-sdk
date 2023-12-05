@@ -41,7 +41,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 //        return fwUpdate::ERR_UNKNOWN;
 //    }
 
-    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
+    fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
     return result;
 }

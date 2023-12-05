@@ -108,23 +108,48 @@ typedef enum    // From DFU manual, do not change
     DFU_STATE_NUM,
 } dfu_state;
 
-typedef enum {
+/**
+
+    Reference:: UM0424 STM32 USB-FS-Device Development Kit, Pages 71 & 72
+                https://www.st.com/content/ccc/resource/technical/document/user_manual/01/c6/32/df/79/ad/48/32/CD00158241.pdf/files/CD00158241.pdf/jcr:content/translations/en.CD00158241.pdf
+
+    Alternate settings have to be used to access additional memory segments and other
+    memories (Flash memory, RAM, EEPROM) which may or may not be physically
+    implemented in the CPU memory mapping, such as external serial SPI Flash memory or
+    external NOR/NAND Flash memory.
+
+    The name of the alternate setting string descriptor respects the description of [4] chapter 10.
+        @Target Memory Name/Start Address/Sector(1)_Count*Sector(1)_Size Sector(1)_Type,
+                                          Sector(2)_Count*Sector(2)_Size Sector(2)_Type,
+                                          ...
+                                          Sector(n)_Count*Sector(n)_Size Sector(n)_Type
+
+    // STM32L4 / IMX-5
+    path="3-11.3", alt=3, name="@Device Feature/0xFFFF0000/01*004 e"
+    path="3-11.3", alt=2, name="@OTP Memory /0x1FFF7000/01*0001Ke"
+    path="3-11.3", alt=1, name="@Option Bytes  /0x1FFF7800/01*040 e"
+    path="3-11.3", alt=0, name="@Internal Flash  /0x08000000/0256*0002Kg"
+
+    // STM32U5 / GPX-1
+    path="3-11.4", alt=2, name="@OTP Memory   /0x0BFA0000/01*512 e"
+    path="3-11.4", alt=1, name="@Option Bytes   /0x40022040/01*64 e"
+    path="3-11.4", alt=0, name="@Internal Flash   /0x08000000/128*08Kg"
+**/
+
+typedef struct {
+    uint64_t address;                       // the base address of the accessible memory, reported by the DFU descriptor
+    uint16_t pages;                         // the number of pages for this descriptor, reported by the DFU descriptor
+    uint32_t pageSize;                      // the size of each page related to this descriptor, reported by the DFU descriptor
+    uint8_t pageType;                       // the page type (readable/writable/erasable, etc)
+} dfu_memory_t;
+
+typedef enum : uint16_t {
     STM32_DFU_INTERFACE_FLASH = 0, // @Internal Flash
     STM32_DFU_INTERFACE_OPTIONS = 1, // @Option Bytes
     STM32_DFU_INTERFACE_OTP = 2, // @OTP Memory
     STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature
 } dfu_interface_alternatives;
 
-/**
-    path="3-11.3", alt=3, name="@Device Feature/0xFFFF0000/01*004 e"
-    path="3-11.3", alt=2, name="@OTP Memory /0x1FFF7000/01*0001Ke"
-    path="3-11.3", alt=1, name="@Option Bytes  /0x1FFF7800/01*040 e"
-    path="3-11.3", alt=0, name="@Internal Flash  /0x08000000/0256*0002Kg"
-
-    path="3-11.4", alt=2, name="@OTP Memory   /0x0BFA0000/01*512 e"
-    path="3-11.4", alt=1, name="@Option Bytes   /0x40022040/01*64 e"
-    path="3-11.4", alt=0, name="@Internal Flash   /0x08000000/128*08Kg"
-**/
 
 typedef enum    // Internal only, can change as needed
 {
@@ -148,11 +173,22 @@ typedef enum {
     IS_PROCESSOR_NUM,               // Must be last
 } eProcessorType;
 
+typedef enum {
+    IS_LOG_LEVEL_NONE  = 0,
+    IS_LOG_LEVEL_ERROR = 1,
+    IS_LOG_LEVEL_WARN  = 2,
+    IS_LOG_LEVEL_INFO  = 3,
+    IS_LOG_LEVEL_DEBUG = 4,
+    IS_LOG_LEVEL_SILLY = 5
+} eLogLevel;
+
+typedef void (*pfnFwUpdateStatus)(void* obj, int logLevel, const char* msg, ...);
+typedef void (*pfnFwUpdateProgress)(void* obj, const std::string stepName, int stepNo, int totalSteps, float percent);
 
 class DFUDevice {
 public:
 
-    DFUDevice(libusb_device *device) : usbDevice(device), usbHandle(nullptr) {
+    DFUDevice(libusb_device *device, pfnFwUpdateProgress cbProgress = nullptr, pfnFwUpdateStatus cbStatus = nullptr) : usbDevice(device), progressFn(cbProgress), statusFn(cbStatus), usbHandle(nullptr) {
         fetchDeviceInfo();
     }
 
@@ -164,45 +200,53 @@ public:
      */
     dfu_error open();
 
-    dfu_error writeFirmware(std::string filename, uint64_t baseAddress = 0x08000000);
+    dfu_error updateFirmware(std::string filename, uint64_t baseAddress = 0);
 
-    /**
-     * Erases the flash memory on the device only where the image will live
-     * @param image_sections
-     * @param image an array of image sections which need to be erased.
-     * @return
-     */
-    dfu_error erase(int image_sections, ihex_image_section_t *image);
+    dfu_error finalizeFirmware();
 
     dfu_error close();
 
     md5hash_t getFingerprint() { return fingerprint; }
+
+    void setProgressCb(pfnFwUpdateProgress cbProgress){progressFn = cbProgress;}
+    void setStatusCb(pfnFwUpdateStatus cbStatus) {statusFn = cbStatus;}
 
 protected:
     dfu_error fetchDeviceInfo();
 
     int get_string_descriptor_ascii(uint8_t desc_index, char *data, int length);
 
-    // static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uid, uint8_t sn_idx);
-    // static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint16_t& hdw, uint32_t& sn, std::string& uid, uint8_t sn_idx);
+    dfu_error prepAndValidateBeforeDownload(uint32_t address, uint32_t data_len);
+
+    dfu_error eraseFlash(const dfu_memory_t& mem, uint32_t& address, uint32_t data_len);
+
+    dfu_error writeFlash(const dfu_memory_t& mem, uint32_t& address, uint32_t data_len, uint8_t *data);
 
 private:
-    // Recipe for DFU UID number:
-    // sprintf(ctx->match_props.uid, "%X%X", manufacturing_info->uid[0] + manufacturing_info->uid[2], (uint16_t)(manufacturing_info->uid[1] >> 16));
-    libusb_device *usbDevice = nullptr;
-    libusb_device_handle *usbHandle = nullptr; // if this is not null, then this should be a valid, open handle.
+    libusb_device *usbDevice;
+    libusb_device_handle *usbHandle;            // if this is not null, then this should be a valid, open handle.
 
     uint16_t vid;                               // the vendor id for this device (for filtering/selection)
     uint16_t pid;                               // the product id for this device (for filtering/selection)
-    uint8_t iSerialNumber = 0;                  // the index of the USB/DFU descriptor which contains the device serial number
-    std::string dfuSerial;                      // the extracted DFU device serial number, from descriptors (see iSerialNumber above)
+    usb_dfu_func_descriptor funcDescriptor;     // a copy of the DFU functional descriptor
     std::vector<std::string> dfuDescriptors;    // a array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
+
+    std::string dfuManufacturer;                // the extracted manufacturer id/name (as a string) from the iManufacturer descriptor
+    std::string dfuProduct;                     // the extracted product id/name (as a string) from the iProduct descriptor
+    std::string dfuSerial;                      // the extracted DFU device serial number, from descriptors (see iSerialNumber above)
 
     uint32_t sn;                                // Inertial Sense serial number (from OTP data)
     uint16_t hardwareId;                        // Inertial Sense Hardware ID (from OTP data)
     eProcessorType processorType;               // detected processor type/family
+    dfu_memory_t segments[4];                   // memory segment detail, corresponding with the alternate descriptor ID
 
     md5hash_t fingerprint;                      // an MD5 hash of various data/parameters used to uniquely identify this device
+
+    uint16_t dlBlockNum = 0;                    // download block count; should be reset for each separate transfer
+    uint16_t ulBlockNum = 0;                    // upload block count; should be reset for each separate transfer
+
+    pfnFwUpdateProgress progressFn = nullptr;
+    pfnFwUpdateStatus statusFn = nullptr;
 
     /**
      * @brief OTP section
@@ -211,35 +255,37 @@ private:
         uint32_t serialNumber;   //! Inertial Sense serial number
         uint16_t lotNumber;      //! Inertial Sense lot number
         uint16_t hardwareId;     //! Inertial Sense Hardware Id (type/version)
-        char date[16];       //! Inertial Sense manufacturing date (YYYYMMDDHHMMSS)
+        char date[16];           //! Inertial Sense manufacturing date (YYYYMMDDHHMMSS)
     } otp_info_t;
 
-    static int detach(libusb_device_handle *handle, uint8_t timeout);
+    int detach(uint8_t timeout);
 
-    static int download(libusb_device_handle *handle, uint16_t wValue, uint8_t *buf, uint16_t len);
+    int download(uint16_t& wValue, uint8_t *buf, uint16_t len);
 
-    static int upload(libusb_device_handle *dev_handle, uint16_t wValue, uint8_t *buf, uint16_t len);
+    int upload(uint16_t& wValue, uint8_t *buf, uint16_t len);
 
-    static int getStatus(libusb_device_handle *handle, dfu_status *status, uint32_t *delay, dfu_state *state, uint8_t *i_string);
+    int getStatus(dfu_status *status, uint32_t *delay, dfu_state *state, uint8_t *i_string);
 
-    static int clearStatus(libusb_device_handle *handle);
+    int clearStatus();
 
-    static int getState(libusb_device_handle *handle, dfu_state *buf);
+    int getState(dfu_state *buf);
 
-    static int abort(libusb_device_handle *handle);
+    int abort();
 
-    static int reset(libusb_device_handle *dev_handle);
+    int reset();
 
-    static int waitForState(libusb_device_handle *dev_handle, dfu_state required_state);
+    int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr );
 
-    static int setAddress(libusb_device_handle *dev_handle, uint32_t address);
+    int setAddress(uint16_t& wValue, uint32_t address);
 
-    static int readMemory(libusb_device_handle *handle, uint32_t memloc, uint8_t *rxBuf, size_t rxLen);
+    int readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen);
 
 
     static DFUDevice::otp_info_t *decodeOTPData(uint8_t *raw, int len);
 
     static int findDescriptor(const uint8_t *desc_list, int list_len, uint8_t desc_type, void *res_buf, int res_size);
+
+    static int decodeMemoryPageDescriptor(const std::string& altSetting, dfu_memory_t& segment);
 };
 
 class ISDFUFirmwareUpdater : public fwUpdate::FirmwareUpdateDevice {
@@ -254,10 +300,6 @@ public:
      */
     ISDFUFirmwareUpdater(libusb_device *device, uint32_t hdwId, uint32_t serialNo);
 
-    /**
-     * @return Returns true if there is an active USB DFU device connection which matches the filter/validation conditions specified in the constructor.
-     */
-
     static int getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
     static int filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
@@ -267,8 +309,10 @@ public:
 
 private:
     DFUDevice *curDevice;
+    typedef void (*pfnFwUpdateStatus)(void* obj, int logLevel, const char* msg, ...);
+    typedef void (*pfnFwUpdateProgress)(void* obj, int stepNo, int totalSteps, float percent);
 
 };
 
-}
+} // namespace dfu
 #endif //IS_DFU_FIRMWAREUPDATER_H
