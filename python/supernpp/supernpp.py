@@ -174,6 +174,10 @@ def buildNPP(npp_build_folder):
 	cmd = ['cmake .. -DCMAKE_BUILD_TYPE=Debug && make -j12 -l12']
 	process = Popen(cmd, shell=True, cwd=npp_build_folder)
 	process.wait()
+ 
+def nppPrint(str):
+	# print(str)	# Comment out to disable output
+	pass
 
 if __name__ == "__main__":
 
@@ -221,11 +225,8 @@ if __name__ == "__main__":
 	snpp = SuperNPP(directory, serials, computeRMS=computeRMS)
 	snpp.run()
 
-	print("====================  Super NPP Results  ====================")
 	rmsPassFilename = directory+"/rms_pass.txt"
 	rmsFailFilename = directory+"/rms_fail.txt"
-	# print(rmsPassFilename)
-	# print(rmsFailFilename)
 
 	# Remove old files
 	try:
@@ -237,22 +238,23 @@ if __name__ == "__main__":
 	except OSError:
 		pass
 
+	nppPrint("====================  Super NPP Results  ====================")
 	if snpp.rmsPassResults != []:
-		print("  RMS Tests PASSED")
+		nppPrint("  RMS Tests PASSED")
 		f = open(rmsPassFilename, "w")
 		for val in snpp.rmsPassResults:
-			print("   ", val)
+			nppPrint("   " + val)
 			f.write(val+"\n")
 		f.close()
 
 	if snpp.rmsFailResults != []:
-		print("  RMS Tests FAILED:")
+		nppPrint("  RMS Tests FAILED:")
 		f = open(rmsFailFilename, "w")
 		for val in snpp.rmsFailResults:
-			print("  ", val)
+			nppPrint("  " + val)
 			f.write(val+"\n")
 		f.close()
+	nppPrint("=============================================================")
 
 	snpp.exitHack()
-	print("=============================================================")
 
