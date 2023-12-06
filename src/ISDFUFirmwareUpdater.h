@@ -206,6 +206,8 @@ public:
 
     dfu_error close();
 
+    const char *getDescription();
+
     md5hash_t getFingerprint() { return fingerprint; }
 
     void setProgressCb(pfnFwUpdateProgress cbProgress){progressFn = cbProgress;}

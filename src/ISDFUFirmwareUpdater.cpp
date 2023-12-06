@@ -130,15 +130,15 @@ namespace dfu {
         md5_reset(fingerprint);
 
         // Get the serial number
-        if (libusb_get_string_descriptor_ascii(usbHandle, desc.iSerialNumber, str_buff, sizeof(str_buff)) == LIBUSB_SUCCESS)
+        if (libusb_get_string_descriptor_ascii(usbHandle, desc.iSerialNumber, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
             dfuSerial = std::string((const char *) str_buff);
 
         // Get the product description
-        if (libusb_get_string_descriptor_ascii(usbHandle, desc.iProduct, str_buff, sizeof(str_buff)) == LIBUSB_SUCCESS)
+        if (libusb_get_string_descriptor_ascii(usbHandle, desc.iProduct, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
             dfuProduct = std::string((const char *) str_buff);
 
         // Get the manufacturer description
-        if (libusb_get_string_descriptor_ascii(usbHandle, desc.iManufacturer, str_buff, sizeof(str_buff)) == LIBUSB_SUCCESS)
+        if (libusb_get_string_descriptor_ascii(usbHandle, desc.iManufacturer, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
             dfuManufacturer = std::string((const char *) str_buff);
 
         // iterate configurations
@@ -372,7 +372,7 @@ namespace dfu {
             // Load the firmware image
             image_sections = ihex_load_sections(filename.c_str(), image, MAX_NUM_IHEX_SECTIONS);
             if (image_sections <= 0) {
-                return DFU_ERROR_INVALID_ARG;
+                return DFU_ERROR_FILE_NOTFOUND;
             }
 
             // If baseAddress is not zero, then we will try and align the firmware to the specified base, otherwise we'll take it like it is (for better or for worse).
@@ -384,8 +384,11 @@ namespace dfu {
                 }
             }
         } else {
-            image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
             std::ifstream file(filename, std::ios::binary);
+            if (!file.is_open())
+                return DFU_ERROR_FILE_NOTFOUND;
+
+            image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
             auto fsize = file.tellg();
             file.seekg( 0, std::ios::end );
             image[0].len = file.tellg() - fsize;
@@ -398,39 +401,38 @@ namespace dfu {
             image_sections = 1;
         }
 
+        uint32_t offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
+        if (statusFn) {
+            int lastSep = filename.find_last_of('/')+1;
+            std::string fname(filename.substr(lastSep, filename.length() - lastSep));
+            statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Updating flash with firmware \"%s\" (@ 0x%08X)", getDescription(), fname.c_str(), segments[STM32_DFU_INTERFACE_FLASH].address + offset);
+        }
+
         ret_libusb = abort();
         if (ret_libusb == LIBUSB_SUCCESS) {
-            uint32_t offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
-
             if (statusFn) {
-                int lastSep = filename.find_last_of('/')+1;
-                std::string fname(filename.substr(lastSep, filename.length() - lastSep));
-                statusFn(this, IS_LOG_LEVEL_INFO, "Updating firmware on %s-%d.%d (SN%d) via '%s' at address 0x%08X with image \"%s\"",
-                         (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"),
-                         DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId),
-                         sn, dfuProduct.c_str(), segments[STM32_DFU_INTERFACE_FLASH].address + offset, fname.c_str());
+                statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Erasing flash memory...", getDescription());
             }
 
-            if (statusFn) {
-                statusFn(this, IS_LOG_LEVEL_INFO, "(SN%d) Erasing flash memory...", sn);
-            }
+            offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
             for (size_t i = 0; i < image_sections; i++) {
                 //offset = image[i].address + offset;
                 ret_dfu = eraseFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len);
                 if (ret_dfu != DFU_ERROR_NONE) {
-                    statusFn(this, IS_LOG_LEVEL_INFO, "Error erasing flash: %04x", -ret_dfu);
+                    statusFn(this, IS_LOG_LEVEL_ERROR, "(%s) Error erasing flash: %04x", getDescription(), -ret_dfu);
                     return ret_dfu;
                 }
             }
 
             if (statusFn) {
-                statusFn(this, IS_LOG_LEVEL_INFO, "(SN%d) Programming flash memory...", sn);
+                statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Programming flash memory...", getDescription());
             }
+
             offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
             for (size_t i = 0; i < image_sections; i++) {
                 ret_dfu = writeFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len, image[i].image);
                 if (ret_dfu != DFU_ERROR_NONE) {
-                    statusFn(this, IS_LOG_LEVEL_INFO, "Error writing flash: %04x", -ret_dfu);
+                    statusFn(this, IS_LOG_LEVEL_ERROR, "(%s) Error writing flash: %04x", getDescription(), -ret_dfu);
                     return ret_dfu;
                 }
             }
@@ -461,10 +463,6 @@ namespace dfu {
 
         if (data_len == 0)
             return DFU_ERROR_NONE; // nothing to do
-
-        if (statusFn) {
-            statusFn(this, IS_LOG_LEVEL_INFO, "(DFU) Erasing flash...");
-        }
 
         // Erase memory
         uint32_t bytes_erased = 0;
@@ -517,14 +515,15 @@ namespace dfu {
         if (data_len == 0)
             return DFU_ERROR_NONE; // nothing to do
 
-        if (statusFn) {
-            statusFn(this, IS_LOG_LEVEL_INFO, "(DFU) Programming flash...");
-        }
-
         // Write memory
         uint32_t bytes_written = 0;
         uint32_t byteInSection = 0;
         uint8_t* payload = new uint8_t[mem.pageSize];
+
+        if (progressFn) {
+            float progress = (float) bytes_written / (float) data_len;
+            progressFn(this, "WRITING", 2, 2, progress);
+        }
 
         do {
             uint32_t payloadLen = mem.pageSize;
@@ -587,7 +586,7 @@ namespace dfu {
         }
 
         if (statusFn) {
-            statusFn(this, IS_LOG_LEVEL_INFO, "(DFU) Finalizing DFU programming...");
+            statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Finalizing DFU programming...", getDescription());
         }
 
         if (processorType == IS_PROCESSOR_STM32L4) {
@@ -646,6 +645,12 @@ namespace dfu {
 
         // Wait for the drop to the MANIFEST-SYNC state
         ret_libusb = waitForState(DFU_STATE_MANIFEST_SYNC, &state);
+        if (state == DFU_STATE_APP_IDLE) {
+            // if we immediately fall back to APP-IDLE, then we're done.  Just return success;
+            reset();
+            return DFU_ERROR_NONE;
+        }
+
         if (ret_libusb < LIBUSB_SUCCESS)
             return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
 
@@ -691,6 +696,19 @@ namespace dfu {
         libusb_release_interface(usbHandle, 0);
 
         return DFU_ERROR_NONE;
+    }
+
+    /**
+     * Produces a human-readable, unique identifier for this device
+     * @return
+     */
+    const char *DFUDevice::getDescription() {
+        static char buff[64];
+        if (sn != -1)
+            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != -1 ? sn : 0));
+        else
+            sprintf(buff, "%s-%d.%d:DFU-%s", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
+        return buff;
     }
 
     /**
@@ -1062,6 +1080,7 @@ namespace dfu {
  * @return
  */
     int DFUDevice::download(uint16_t& wValue, uint8_t *buf, uint16_t len) {
+        dfu_state state = DFU_STATE_IDLE;
         int ret_libusb = LIBUSB_SUCCESS;
         int bytesRemain = len, bytesSent = 0;
         do {
@@ -1072,8 +1091,11 @@ namespace dfu {
                 bytesRemain -= ret_libusb;
                 wValue++;
 
-                if (len != 0) // if len == 0, we expect to fall into the MANIFEST cycle
-                    ret_libusb = waitForState(DFU_STATE_DNLOAD_IDLE);
+                if (len != 0) { // if len == 0, we expect to fall into the MANIFEST cycle
+                    ret_libusb = waitForState(DFU_STATE_DNLOAD_IDLE, &state);
+                    if (state == DFU_STATE_APP_IDLE)
+                        ret_libusb = LIBUSB_SUCCESS;
+                }
             }
         } while ((bytesRemain > 0) && (ret_libusb >= LIBUSB_SUCCESS));
         return (ret_libusb >= LIBUSB_SUCCESS) ? bytesSent : ret_libusb;

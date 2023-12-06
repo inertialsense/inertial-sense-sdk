@@ -33,6 +33,8 @@ using namespace std;
 #define MAX_FILE_SIZE_DISK_PERCENT_50	.5
 #define MAX_FILE_SIZE_100k				100000
 
+bool g_showProgress = true;
+
 bool setupCommunicationsDIDs(InertialSense& inertialSenseInterface)
 {
     inertialSenseInterface.StopBroadcasts();	// Stop streaming any prior messages
@@ -108,7 +110,10 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 }
 
 static void fwUpdateProgress(void* obj, const std::string stepName, int step, int steps, float pct) {
-    printf(" [%s] Step %d of %d: %5.1f %%\n", stepName.c_str(), step, steps, pct * 100.0f);
+    if (g_showProgress) {
+        printf("    [%s] Step %d of %d: %5.1f %%\r", stepName.c_str(), step, steps, pct * 100.0f);
+        fflush(stdout);
+    }
 }
 
 static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
@@ -132,33 +137,85 @@ static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
 static int doDFUFirmwareUpdate(int argc, char* argv[]) {
     std::vector<dfu::DFUDevice*> devices;
     libusb_init(NULL);
-    int result = dfu::DFU_ERROR_NONE;
+
+    std::string imx_firmware;
+    std::string imx_bootloader;
+
+    std::string gpx_firmware;
+    std::string gpx_bootloader;
+
+    const char *dfu_errors[] = {
+        "SUCCESS",
+        "DEVICE_NOT_FOUND",
+        "DEVICE_BUSY",
+        "DEVICE_TIMEOUT",
+        "LIBUSB_ERROR",
+        "INVALID_STATUS",
+        "INVALID_ARGUMENT",
+        "FILE_NOT_FOUND",
+        "INVALID_IMAGE",
+    };
+
+    // parse arguments
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--imx-app")) {
+            imx_firmware = std::string(argv[++i]);
+        } else if (!strcmp(argv[i], "--imx-bl")) {
+            imx_bootloader = std::string(argv[++i]);
+        } else if (!strcmp(argv[i], "--gpx-app")) {
+            gpx_firmware = std::string(argv[++i]);
+        } else if (!strcmp(argv[i], "--gpx-bl")) {
+            gpx_bootloader = std::string(argv[++i]);
+        } else if (!strcmp(argv[i], "--no-progress")) {
+            g_showProgress = false;
+        }
+    }
 
     int count = dfu::ISDFUFirmwareUpdater::getAvailableDevices(devices);
+    fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "Found %d DFU devices suitable for update.", count);
+
     for (auto device : devices) {
         device->setStatusCb(fwUpdateStatus);
         device->setProgressCb(fwUpdateProgress);
         if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32L4)) {
-            if (result == dfu::DFU_ERROR_NONE)
-                result = device->updateFirmware("/home/kylemallory/is-zephyr/is-gpx/is-common/cpp/hdw-src/IMX-5/Release/IS_IMX-5.bin", 0x08000000 + 24576);
-            if (result == dfu::DFU_ERROR_NONE)
-                result = device->updateFirmware("/home/kylemallory/is-zephyr/is-gpx/is-common/cpp/hdw-src/bootloader/bootloader-STM32L4/bootloader/Release/IS_bootloader-STM32L4.hex");
-            if (result == dfu::DFU_ERROR_NONE)
-                device->finalizeFirmware();
+            int fw_result = dfu::DFU_ERROR_NONE;
+            int bl_result = dfu::DFU_ERROR_NONE;
+            int dev_result = dfu::DFU_ERROR_NONE;
 
-            fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "Firmware update finished with status: %d", result);
+            if (!imx_firmware.empty()) {
+                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 24576);
+                if (fw_result != dfu::DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+            }
+            if (!imx_bootloader.empty()) {
+                bl_result = device->updateFirmware(imx_bootloader);
+                if (bl_result != dfu::DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+            }
+
+            // always do this to get us back to a "normal" state???
+            dev_result = device->finalizeFirmware();
+            fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
         }
         if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32U5)) {
             // NOTE THAT GPX BOOTLOADER/FIRMWARE .hex files are ALWAYS configured to write to the correct memory location
-            result = dfu::DFU_ERROR_NONE;
-            if (result == dfu::DFU_ERROR_NONE)
-                result = device->updateFirmware("/home/kylemallory/is-zephyr/is-gpx/scripts/IS_GPX-1_zephyr_v2.0.0.10_b376_2023-12-01_104805.signed.bin", 0x08084000);
-            if (result == dfu::DFU_ERROR_NONE)
-                result = device->updateFirmware("/home/kylemallory/is-zephyr/is-gpx/scripts/IS_GPX-1_mcuboot_v2.0.0.10_b376_2023-12-01_104805.bin");
-            if (result == dfu::DFU_ERROR_NONE)
-                result = device->finalizeFirmware();
+            int fw_result = dfu::DFU_ERROR_NONE;
+            int bl_result = dfu::DFU_ERROR_NONE;
+            int dev_result = dfu::DFU_ERROR_NONE;
 
-            fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "Firmware update finished with status: %d", result);
+            if (!gpx_firmware.empty()) {
+                fw_result = device->updateFirmware(gpx_firmware, 0x08084000); // mcu-boot SLOT 2
+                if (fw_result != dfu::DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+            }
+            if (!gpx_bootloader.empty()) {
+                bl_result = device->updateFirmware(gpx_bootloader);
+                if (bl_result != dfu::DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+            }
+
+            dev_result = device->finalizeFirmware();
+            fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
         }
     }
     return 0;
@@ -172,7 +229,7 @@ int main(int argc, char* argv[])
     uint32_t baudRate = IS_BAUDRATE_921600;
     int deviceIndex = -1;
 
-    if ((argc == 2) && !strcmp(argv[1], "--dfu"))
+    if ((argc > 2) && !strcmp(argv[1], "--dfu"))
     {
         return doDFUFirmwareUpdate(argc, argv);
     }
