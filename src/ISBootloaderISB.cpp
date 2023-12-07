@@ -132,7 +132,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
 is_operation_result cISBootloaderISB::reboot_up()
 {
-    m_info_callback(this, "(ISB) Rebooting to APP mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
@@ -158,14 +158,14 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
           (major == m_isb_major && minor <= m_isb_minor))
         {
             SNPRINTF(message+n, sizeof(message)-n, "No update.");
-            m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+            m_info_callback(this, IS_LOG_LEVEL_INFO, message);
             return IS_OP_OK;
         }
     }
 
     SNPRINTF(message+n, sizeof(message)-n, "Update needed...");
-    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-    m_info_callback(this, "(ISB) Rebooting to ROM-bootloader mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, message);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to ROM-bootloader mode...");
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.
@@ -200,7 +200,7 @@ is_operation_result cISBootloaderISB::reboot()
         return IS_OP_ERROR;
     }
 
-    m_info_callback(this, "(ISB) Resetting before App update...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Resetting before App update...");
 
     // restart bootloader command
     if(reboot_force() == IS_OP_OK)

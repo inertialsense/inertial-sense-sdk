@@ -500,7 +500,7 @@ typedef struct PACKED
 
 #define HDW_TYPE__MASK                         0xFC00
 #define HDW_TYPE__SHIFT                        10
-#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE_MASK) >> HDW_TYPE__SHIFT)
+#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
 #define HDW_TYPE__UNKNOWN                      0
 #define HDW_TYPE__UINS                         1
 #define HDW_TYPE__EVB                          2
@@ -4477,6 +4477,7 @@ typedef struct
 #define SYS_FAULT_STATUS_FLASH_MIGRATION_EVENT          0x00000020
 #define SYS_FAULT_STATUS_FLASH_MIGRATION_COMPLETED      0x00000040
 #define SYS_FAULT_STATUS_RTK_MISC_ERROR                 0x00000080
+#define SYS_FAULT_STATUS_MCUBOOT_SWAP_FAILURE           0x00000100
 #define SYS_FAULT_STATUS_MASK_GENERAL_ERROR             0xFFFFFFF0
 // Critical: (usually associated with system reset)
 #define SYS_FAULT_STATUS_HARD_FAULT                     0x00010000

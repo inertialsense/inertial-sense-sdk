@@ -52,9 +52,17 @@ static is_operation_result bootloaderVerifyProgress(void* obj, float pct)
 	return IS_OP_OK;
 }
 
-static void bootloaderStatusText(void* obj, const char* info, eLogLevel level)
+static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ...)
 {
 	if (obj == NULL) return;
+
+    static char buffer[256];
+
+    va_list ap;
+    va_start(ap, str);
+    vsnprintf(buffer, sizeof(buffer) - 1, str, ap);
+    va_end(ap);
+
 
 	cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
 
@@ -75,7 +83,7 @@ static void bootloaderStatusText(void* obj, const char* info, eLogLevel level)
 		printf("SN?:\r");
 	}
 
-	printf("\t\t\t%s\r\n", info);
+	printf("\t\t\t%s\r\n", buffer);
 }
 
 int main(int argc, char* argv[])

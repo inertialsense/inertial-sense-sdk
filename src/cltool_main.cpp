@@ -403,13 +403,19 @@ is_operation_result bootloadVerifyCallback(void* obj, float percent)
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level)
+void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
 {
     print_mutex.lock();
+    static char buffer[256];
+
+    va_list ap;
+    va_start(ap, str);
+    vsnprintf(buffer, sizeof(buffer) - 1, str, ap);
+    va_end(ap);
 
     if(obj == NULL)
     {
-        cout << str << endl;
+        cout << buffer << endl;
         print_mutex.unlock();
         return;
     }
@@ -433,7 +439,7 @@ void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLev
         printf("    | SN?:\r");
     }
 
-    printf("\t\t\t\t%s\r\n", str);
+    printf("\t\t\t\t%s\r\n", buffer);
     print_mutex.unlock();
 }
 
@@ -496,7 +502,7 @@ static int cltool_createHost()
 static void sigint_cb(int sig)
 {
     g_killThreadsNow = true;
-    cltool_bootloadUpdateInfo(NULL, "Update cancelled, killing threads and exiting...", ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR);
+    cltool_bootloadUpdateInfo(NULL, ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR, "Update cancelled, killing threads and exiting...");
     signal(SIGINT, SIG_DFL);
 }
 
