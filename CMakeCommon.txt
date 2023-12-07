@@ -1,4 +1,4 @@
-# CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
+# CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 # instructions:
 # install cmake, put it in your path for ease of use
 # Linux: sudo apt install build-essential libudev-dev cmake
