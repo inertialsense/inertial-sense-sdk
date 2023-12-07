@@ -89,10 +89,14 @@ namespace fwUpdate {
 #define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
+    static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
+
     enum target_t : uint32_t {
         TARGET_HOST = 0x00,
         TARGET_IMX5 = 0x10,
+        TARGET_DFU_IMX5 = (TARGET_DFU_FLAG | TARGET_IMX5),
         TARGET_GPX1 = 0x20,
+        TARGET_DFU_GPX1 = (TARGET_DFU_FLAG | TARGET_GPX1),
         TARGET_VPX = 0x30, // RESERVED FOR VPX
         TARGET_UBLOX_F9P = 0x110,
         TARGET_UBLOX_F9P__1 = 0x111,
@@ -148,13 +152,14 @@ namespace fwUpdate {
         ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
         ERR_UPDATER_CLOSED = -14,   //
         ERR_INVALID_IMAGE = -15,    // indicates that the specified image file is invalid; this can also be reported directly by the host if the image file is not found.
+        ERR_INVALID_CHUNK = 16,     // indicates a repeated failure to deliver the correct chunk id or size
         ERR_UNKNOWN = -16,
         // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
     };
 
     enum resend_reason_e : int16_t {
         REASON_NONE = 0,
-        REASON_INVALID_SEQID = 1,
+        REASON_INVALID_SEQID = 1,   // the last received chunk was out of order, so we're requesting the correct chunk id.
         REASON_WRITE_ERROR = 2,     // there was an error writing the data to FLASH (perhaps it took too long?)
         REASON_INVALID_SIZE = 3,    // unless the chunk id is the last chunk, the size of the chunk should always be the negotiated session_chunk_size;
     };

@@ -384,13 +384,14 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, "Initializing devices for update...", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Initializing devices for update...");
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_app` to put all APP devices into IS-bootloader mode
     ////////////////////////////////////////////////////////////////////////////
 
     // Put all devices in the correct mode
+    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Waiting for devices to initialize...");
     while(m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
@@ -438,6 +439,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                 strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
+
+                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Discovered device on port %s", new_thread->serial_name);
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
 
@@ -446,7 +449,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         }
 
         // Break after 5 seconds
-        if (current_timeMs() - m_timeStart > 5000) 
+        if (current_timeMs() - m_timeStart > 5000)
         {
             m_continue_update = false;
         }
@@ -567,7 +570,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         }
 
         // Break after 3 seconds
-        if (current_timeMs() - m_timeStart > 3000) 
+        if (current_timeMs() - m_timeStart > 3000)
         {
             m_continue_update = false;
         }
@@ -608,7 +611,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         SLEEP_MS(100);
 
         // Timeout after 5 seconds
-        if (current_timeMs() - m_timeStart > 3000) 
+        if (current_timeMs() - m_timeStart > 3000)
         {
             m_continue_update = false;
         }
@@ -753,7 +756,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
 
         // Break after 5 seconds
-        if (current_timeMs() - m_timeStart > 5000) 
+        if (current_timeMs() - m_timeStart > 5000)
         {
             m_continue_update = false;
         }
@@ -788,7 +791,7 @@ is_operation_result cISBootloaderThread::update(
         SLEEP_MS(100);
 
         // Timeout after 5 seconds
-        if (current_timeMs() - m_timeStart > 5000) 
+        if (current_timeMs() - m_timeStart > 5000)
         {
             m_continue_update = false;
         }
@@ -804,7 +807,7 @@ is_operation_result cISBootloaderThread::update(
         if(m_waitAction) m_waitAction(); 
         return IS_OP_CANCELLED; 
     }
-    m_infoProgress(NULL, "Updating...", IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Updating...");
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
@@ -901,7 +904,7 @@ is_operation_result cISBootloaderThread::update(
         {
             m_timeStart = current_timeMs();
         }
-        else if (current_timeMs() - m_timeStart > 3000) 
+        else if (current_timeMs() - m_timeStart > 3000)
         {
             m_continue_update = false;
         }
@@ -919,7 +922,7 @@ is_operation_result cISBootloaderThread::update(
 
             tmp = "Update timeout... Timeout of " + to_string(((double)timeout) / 1000) + " Seconds reached.";
 
-            m_infoProgress(NULL, tmp.c_str(), IS_LOG_LEVEL_ERROR);
+            m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, tmp.c_str());
         }
     }
 
@@ -927,7 +930,7 @@ is_operation_result cISBootloaderThread::update(
 
     tmp = "Update run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
 
-    m_infoProgress(NULL, tmp.c_str(), IS_LOG_LEVEL_INFO);
+    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
 
     threadJoinAndFree(libusb_thread);
 

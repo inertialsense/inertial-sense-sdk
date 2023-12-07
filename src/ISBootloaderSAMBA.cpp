@@ -46,7 +46,7 @@ using namespace ISBootloader;
 #define SAMBA_FLASH_START_ADDRESS 0x00400000
 #define SAMBA_BOOTLOADER_SIZE_24K 0x6000
 
-#define SAMBA_STATUS(x, level) m_info_callback(this, x, level)
+#define SAMBA_STATUS(x, level) m_info_callback(this, level, x)
 #define SAMBA_ERROR_CHECK(x, error) if(x != IS_OP_OK) \
     { /* serialPortClose(port); */ \
         SAMBA_STATUS(error, IS_LOG_LEVEL_ERROR); \
@@ -110,7 +110,7 @@ is_operation_result cISBootloaderSAMBA::reboot()
 
 is_operation_result cISBootloaderSAMBA::reboot_up()
 {
-    m_info_callback(this, "(SAM-BA) Rebooting to IS-bootloader mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(SAM-BA) Rebooting to IS-bootloader mode...");
 
     // EEFC.FCR, EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG_BOOT | EEFC_FCR_FCMD_SGPB
     if (write_word(0x400e0c04, 0x5a00010b) == IS_OP_OK)

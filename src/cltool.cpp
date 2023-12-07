@@ -542,7 +542,7 @@ void cltool_outputUsage()
     cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
     cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
     cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
-    cout << "    -gpx-uf " << boldOff << "FILEPATH    Update GPX application firmware using file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
+    cout << "    -uf-cmd " << boldOff << "CMDSET    Update one or more V2-protocol devices using V2 command sets." << endlbOn;
 
     cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
     cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;

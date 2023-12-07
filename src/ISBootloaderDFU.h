@@ -30,14 +30,14 @@ namespace ISBootloader {
 
 static constexpr int IS_DFU_UID_MAX_SIZE = 20;
 static constexpr int IS_DFU_LIST_LEN = 256;
-    
+
 enum
 {
     STM32_DESCRIPTOR_VENDOR_ID = 0x0483,
     STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11
 };
 
-typedef struct 
+typedef struct
 {
     // Recipe for DFU UID number:
     // sprintf(ctx->match_props.uid, "%X%X", manufacturing_info->uid[0] + manufacturing_info->uid[2], (uint16_t)(manufacturing_info->uid[1] >> 16));
@@ -49,7 +49,7 @@ typedef struct
     uint8_t iSerialNumber;
 } is_dfu_id;
 
-typedef struct 
+typedef struct
 {
     is_dfu_id id[IS_DFU_LIST_LEN];
     size_t present;
@@ -161,8 +161,8 @@ private:
     static int dfu_CLRSTATUS(libusb_device_handle** handle);
     static int dfu_GETSTATE(libusb_device_handle** handle, uint8_t* buf);
     static int dfu_ABORT(libusb_device_handle** handle);
-    
-    static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uid, uint8_t sn_idx); 
+
+    static is_operation_result get_serial_number_libusb(libusb_device_handle** handle, uint32_t& sn, std::string& uid, uint8_t sn_idx);
 
     static dfu_error dfu_set_address_pointer(libusb_device_handle** dev_handle, uint32_t address);
     static dfu_error dfu_wait_for_state(libusb_device_handle** dev_handle, dfu_state required_state);
