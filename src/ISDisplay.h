@@ -36,7 +36,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cInertialSenseDisplay
 {
 public:
-	typedef struct
+	typedef struct edit_data_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (pData)
 	{
 		const map_name_to_info_t 			*mapInfo;
 		map_name_to_info_t::const_iterator 	mapInfoSelection;

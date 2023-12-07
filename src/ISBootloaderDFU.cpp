@@ -44,13 +44,13 @@ typedef struct
 	/** Inertial Sense serial number */
 	uint32_t		serialNumber;
 
-    /** Inertial Sense lot number */
+	/** Inertial Sense lot number */
 	uint16_t		lotNumber;
 
     /** Inertial Sense Hardware/Product ID (UINS, IMX, GPX, VPX, etc) */
     uint16_t        hardwareId;
 
-    /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
+	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
     /** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
@@ -444,7 +444,7 @@ is_operation_result cISBootloaderDFU::reboot_up()
     int ret_libusb;
     dfu_error ret_dfu;
 
-    m_info_callback(this, "(DFU) Rebooting to IS-bootloader mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(DFU) Rebooting to IS-bootloader mode...");
 
     // Option bytes
     // This hard-coded array sets mostly defaults, but without PH3 enabled and
