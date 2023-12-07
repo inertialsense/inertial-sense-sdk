@@ -828,7 +828,7 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(4, 1, sharex=True)
+        ax = fig.subplots(5, 1, sharex=True, gridspec_kw={'height_ratios': [1, 2, 2, 2, 1]})
         did_gps_vel = did_gps_pos+(DID_GPS1_VEL-DID_GPS1_POS)
         if did_gps_pos==DID_GPS1_POS:
             gps_num = 1
@@ -836,9 +836,10 @@ class logPlot:
             gps_num = 2
         fig.suptitle('GPS ' + str(gps_num) + ' Stats - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'Satellites Used in Solution', '')
-        self.configureSubplot(ax[1], 'Accuracy', 'm')
-        self.configureSubplot(ax[2], 'CNO', 'dBHz')
-        self.configureSubplot(ax[3], 'Status', '')
+        self.configureSubplot(ax[1], 'CNO (dBHz)', 'dBHz')
+        self.configureSubplot(ax[2], 'Position Accuracy (m)', 'm')
+        self.configureSubplot(ax[3], 'Speed Accuracy: sAcc (m/s)', 'm/s')
+        self.configureSubplot(ax[4], 'Status', '')
 
         plot_legend = 1
         for d in self.active_devs:
@@ -848,34 +849,35 @@ class logPlot:
             gStatus = self.getData(d, did_gps_pos, 'status')
 
             ax[0].plot(time, gStatus & 0xFF, label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
-            ax[1].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
-            ax[1].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
-            ax[1].plot(velTime, self.getData(d, did_gps_vel, 'sAcc'), 'c', label="sAcc")
+            ax[1].plot(time, self.getData(d, did_gps_pos, 'cnoMean'))
+            ax[2].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
+            ax[2].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
+            ax[2].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
             if self.log.data[d, DID_GPS1_RTK_POS] is not []:
                 rtktime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_POS, 'timeOfWeekMs'))
-                ax[1].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
+                ax[2].plot(rtktime, self.getData(d, DID_GPS1_RTK_POS, 'vAcc'), 'g', label="rtkHor")
+            ax[3].plot(velTime, self.getData(d, did_gps_vel, 'sAcc'), label="sAcc")
+
             if plot_legend:
                 plot_legend = 0
-                ax[1].legend(ncol=2)
-            ax[2].plot(time, self.getData(d, did_gps_pos, 'cnoMean'))
+                ax[2].legend(ncol=2)
 
             cnt = 0
-            ax[3].plot(time, -cnt * 1.5 + ((gStatus & 0x04000000) != 0))
-            p1 = ax[3].get_xlim()[0] + 0.02 * (ax[3].get_xlim()[1] - ax[3].get_xlim()[0])
-            if r: ax[3].text(p1, -cnt * 1.5, 'RTK Positioning Valid')
+            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x04000000) != 0))
+            p1 = ax[4].get_xlim()[0] + 0.02 * (ax[4].get_xlim()[1] - ax[4].get_xlim()[0])
+            if r: ax[4].text(p1, -cnt * 1.5, 'RTK Positioning Valid')
             cnt += 1
-            ax[3].plot(time, -cnt * 1.5 + ((gStatus & 0x08000000) != 0))
-            if r: ax[3].text(p1, -cnt * 1.5, 'RTK Compassing Valid (fix & hold)')
+            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x08000000) != 0))
+            if r: ax[4].text(p1, -cnt * 1.5, 'RTK Compassing Valid (fix & hold)')
             cnt += 1
-            ax[3].plot(time, -cnt * 1.5 + ((gStatus & 0x00002000) != 0))
-            if r: ax[3].text(p1, -cnt * 1.5, 'GPS Compass Baseline BAD')
+            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x00002000) != 0))
+            if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline BAD')
             cnt += 1
-            ax[3].plot(time, -cnt * 1.5 + ((gStatus & 0x00004000) != 0))
-            if r: ax[3].text(p1, -cnt * 1.5, 'GPS Compass Baseline UNSET')
+            ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x00004000) != 0))
+            if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline UNSET')
             cnt += 1
 
-        self.setPlotYSpanMin(ax[2], 5)
+        self.setPlotYSpanMin(ax[1], 5)
 
         ax[0].legend(ncol=2)
         for a in ax:
