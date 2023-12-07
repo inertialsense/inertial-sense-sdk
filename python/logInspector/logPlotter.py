@@ -849,7 +849,7 @@ class logPlot:
             gStatus = self.getData(d, did_gps_pos, 'status')
 
             ax[0].plot(time, gStatus & 0xFF, label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, did_gps_pos, 'cnoMean'))
+            ax[1].plot(time, self.getData(d, did_gps_pos, 'cnoMean'), label=self.log.serials[d])
             ax[2].plot(time, self.getData(d, did_gps_pos, 'hAcc'), 'r', label="hAcc")
             ax[2].plot(time, self.getData(d, did_gps_pos, 'vAcc'), 'b', label="vAcc")
             ax[2].plot(time, self.getData(d, did_gps_pos, 'pDop'), 'm', label="pDop")
@@ -879,7 +879,7 @@ class logPlot:
 
         self.setPlotYSpanMin(ax[1], 5)
 
-        ax[0].legend(ncol=2)
+        ax[1].legend(ncol=2)
         for a in ax:
             a.grid(True)
         self.saveFig(fig, 'Gps Stats')
