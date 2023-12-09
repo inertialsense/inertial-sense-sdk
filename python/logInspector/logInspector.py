@@ -458,6 +458,9 @@ class LogInspectorWindow(QMainWindow):
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(self.config["logs_directory"])
         self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
+        self.upDirPushButton = QPushButton()
+        self.upDirPushButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        self.upDirPushButton.clicked.connect(self.fileTreeUpDir)
         self.dirLineEdit = QLineEdit()
         self.dirLineEdit.setText(self.config["logs_directory"])
         self.dirLineEdit.setFixedHeight(25)
@@ -473,9 +476,11 @@ class LogInspectorWindow(QMainWindow):
         self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
         self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
+        self.fileTree.doubleClicked.connect(self.setTreeViewDirectoryRoot)
         # self.populateRMSCheck(self.config['logs_directory'])
 
         self.controlDirLayout = QHBoxLayout()
+        self.controlDirLayout.addWidget(self.upDirPushButton)
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
         self.controlLayout.addWidget(self.fileTree)
@@ -620,6 +625,11 @@ class LogInspectorWindow(QMainWindow):
                     self.showError(e)
                 break
             
+    def fileTreeUpDir(self):
+        self.dirLineEdit.setText(os.path.abspath(os.path.join(self.dirLineEdit.text(), '..')))
+        self.config["logs_directory"] = self.dirLineEdit.text()
+        self.handleTreeDirChange()        
+            
     def runNpp(self, directory, startMode):
         cleanFolder(directory)
         setDataInformationDirectory(directory, startMode=startMode)
@@ -631,8 +641,13 @@ class LogInspectorWindow(QMainWindow):
         spp.run()
         self.setStatus("NPP done.")
 
+    def setTreeViewDirectoryRoot(self, event):
+        directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])
+        self.dirLineEdit.setText(directory)
+        self.handleTreeDirChange()
+
     def handleTreeViewRightClick(self, event):
-        directory = self.config['directory']
+        directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])
         menu = QMenu(self)
         copyAction = menu.addAction("Copy path")
         nppActionHot        = menu.addAction("Run NPP, HOT start")
