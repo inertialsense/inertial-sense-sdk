@@ -407,9 +407,9 @@ class logPlot:
     def angle_wrap(self, angle):
         result = np.copy(angle)
         for i in range(np.shape(result)[0]):
-            if result[i] > np.pi: 
+            while result[i] > np.pi: 
                 result[i] -= 2*np.pi
-            elif result[i] < -np.pi: 
+            while result[i] < -np.pi: 
                 result[i] += 2*np.pi
         return result
 
