@@ -318,6 +318,7 @@ class LogInspectorWindow(QMainWindow):
 
     def load(self, directory):
         print("loading files from " + directory)
+        self.setStatus("Loading...")
         # if self.log is None:
         self.log = Log()
         self.log.load(directory)
@@ -325,7 +326,7 @@ class LogInspectorWindow(QMainWindow):
         self.plotter.setLog(self.log)
         self.plotter.setDownSample(self.downsample)
         self.updatePlot()
-        self.stopLoadingIndicator()
+        self.setStatus("")
 
     def setupUi(self):
         self.setObjectName("LogInspector")
@@ -458,6 +459,9 @@ class LogInspectorWindow(QMainWindow):
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(self.config["logs_directory"])
         self.dirModel.setFilter(QtCore.QDir.Dirs | QtCore.QDir.NoDotAndDotDot)
+        self.upDirPushButton = QPushButton()
+        self.upDirPushButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        self.upDirPushButton.clicked.connect(self.fileTreeUpDir)
         self.dirLineEdit = QLineEdit()
         self.dirLineEdit.setText(self.config["logs_directory"])
         self.dirLineEdit.setFixedHeight(25)
@@ -473,9 +477,11 @@ class LogInspectorWindow(QMainWindow):
         self.fileTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.fileTree.setSelectionMode(QAbstractItemView.SingleSelection) 
         self.fileTree.customContextMenuRequested.connect(self.handleTreeViewRightClick)
+        self.fileTree.doubleClicked.connect(self.setTreeViewDirectoryRoot)
         # self.populateRMSCheck(self.config['logs_directory'])
 
         self.controlDirLayout = QHBoxLayout()
+        self.controlDirLayout.addWidget(self.upDirPushButton)
         self.controlDirLayout.addWidget(self.dirLineEdit)
         self.controlLayout.addLayout(self.controlDirLayout)
         self.controlLayout.addWidget(self.fileTree)
@@ -488,21 +494,16 @@ class LogInspectorWindow(QMainWindow):
     def createStatus(self):
         self.statusLabel = QLabel()
         self.controlLayout.addWidget(self.statusLabel)
-        self.statusLabel.setVisible(False)
+        # self.statusLabel.setVisible(False)
 
     def setStatus(self, str):
-        self.statusLabel.setVisible(str != "")     # Hide status if string is empty
+        # self.statusLabel.setVisible(str != "")     # Hide status if string is empty
         self.statusLabel.setText(str)
+        QtCore.QCoreApplication.processEvents() # refresh UI
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
         self.toolLayout.addWidget(self.toolbar)
-
-        self.loadingIndictator = QLabel()
-        self.loadingMovie = QMovie('assets/loader.gif')
-        self.emptyLoadingPicture = QPixmap('assets/empty_loader.png')
-        self.stopLoadingIndicator()
-        # self.toolLayout.addWidget(self.loadingIndictator)
 
         self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
@@ -620,6 +621,11 @@ class LogInspectorWindow(QMainWindow):
                     self.showError(e)
                 break
             
+    def fileTreeUpDir(self):
+        self.dirLineEdit.setText(os.path.abspath(os.path.join(self.dirLineEdit.text(), '..')))
+        self.config["logs_directory"] = self.dirLineEdit.text()
+        self.handleTreeDirChange()        
+            
     def runNpp(self, directory, startMode):
         cleanFolder(directory)
         setDataInformationDirectory(directory, startMode=startMode)
@@ -627,23 +633,43 @@ class LogInspectorWindow(QMainWindow):
         from supernpp.supernpp import SuperNPP
         spp = SuperNPP(directory, self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
-        QtCore.QCoreApplication.processEvents() # refresh UI
         spp.run()
+        
+        # Expand file tree so "post_processed" directory is visable
+        self.updateFileTree()
+        QtCore.QCoreApplication.processEvents() # refresh UI
+        index = self.fileTree.selectedIndexes()[0]
+        self.fileTree.expand(index)
+        QtCore.QCoreApplication.processEvents() # refresh UI
+        
+        # Select post_processed directory in file tree view
+        for row in range(index.model().rowCount(index)):
+            if self.fileTree.model().fileName(index.child(row, 0)) == "post_processed":
+                self.fileTree.setCurrentIndex(index.child(row, 0))
+                QtCore.QCoreApplication.processEvents() # refresh UI
+                self.handleTreeViewClick()
+                continue
+            
         self.setStatus("NPP done.")
 
+    def setTreeViewDirectoryRoot(self, event):
+        directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])
+        self.dirLineEdit.setText(directory)
+        self.handleTreeDirChange()
+
     def handleTreeViewRightClick(self, event):
-        directory = self.config['directory']
+        directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
         menu = QMenu(self)
-        copyAction = menu.addAction("Copy path")
-        nppActionHot        = menu.addAction("Run NPP, HOT start")
-        nppActionCold       = menu.addAction("Run NPP, COLD start")
-        nppActionFactory    = menu.addAction("Run NPP, FACTORY start")
+        copyAction                  = menu.addAction("Copy path")
+        nppActionHot                = menu.addAction("Run NPP, HOT start")
+        nppActionCold               = menu.addAction("Run NPP, COLD start")
+        nppActionFactory            = menu.addAction("Run NPP, FACTORY start")
         setDataInfoDirHotAction     = menu.addAction("Set dataInfo.json directory, HOT start")
         setDataInfoDirColdAction    = menu.addAction("Set dataInfo.json directory, COLD start")
         setDataInfoDirFactoryAction = menu.addAction("Set dataInfo.json directory, FACTORY start")
-        exploreAction = menu.addAction("Explore folder")
-        cleanFolderAction = menu.addAction("Clean folder")
-        deleteFolderAction = menu.addAction("Delete folder")
+        exploreAction               = menu.addAction("Explore folder")
+        cleanFolderAction           = menu.addAction("Clean folder")
+        deleteFolderAction          = menu.addAction("Delete folder")
         action = menu.exec_(self.fileTree.viewport().mapToGlobal(event))
         if action == copyAction:
             cb = QApplication.clipboard()
@@ -674,15 +700,6 @@ class LogInspectorWindow(QMainWindow):
             if result == QMessageBox.Yes:
                 removeDirectory(directory)
 
-    def startLoadingIndicator(self):
-        self.loadingIndictator.setMovie(self.loadingMovie)
-        self.loadingMovie.start()
-
-    def stopLoadingIndicator(self):
-        self.loadingMovie.stop()
-        self.loadingIndictator.clear()
-        self.loadingIndictator.setPixmap(self.emptyLoadingPicture)
-
     def showDeviceInfo(self):
         dlg = DeviceInfoDialog(self.log, self)
         dlg.show()
@@ -708,7 +725,6 @@ class LogInspectorWindow(QMainWindow):
                 getattr(self.plotter, func)(self.figure)
 
         self.canvas.draw()
-        self.stopLoadingIndicator()
         print("done plotting")
 
 def kill_handler(*args):

@@ -583,6 +583,7 @@ class Log:
                 plt.plot(self.att_error[n, :, m])
         plt.show()
 
+    # This does not work when running in debug mode
     def openRMSReport(self):
         filename = os.path.join(self.directory, 'RMS_report_new_logger.txt')
         if 'win' in sys.platform:
