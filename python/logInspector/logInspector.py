@@ -451,9 +451,6 @@ class LogInspectorWindow(QMainWindow):
         self.LayoutBelowPlotSelection.addWidget(self.saveAllPushButton)
 
         self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
-    
-    # def findTreeIndex(self, directory):
-        
 
     def createFileTree(self):
         self.dirModel = QFileSystemModel()
