@@ -4327,65 +4327,67 @@ typedef struct PACKED
 } evb_rtos_info_t;
 enum
 {
-	CID_INS_TIME,
-	CID_INS_STATUS,
-	CID_INS_EULER,
-	CID_INS_QUATN2B,
-	CID_INS_QUATE2B,
-	CID_INS_UVW,
-	CID_INS_VE,
-	CID_INS_LAT,
-	CID_INS_LON,
-	CID_INS_ALT,
-	CID_INS_NORTH_EAST,
-	CID_INS_DOWN,
-	CID_INS_ECEF_X,
-	CID_INS_ECEF_Y,
-	CID_INS_ECEF_Z,
-	CID_INS_MSL,
-	CID_PREINT_PX,
-	CID_PREINT_QY,
-	CID_PREINT_RZ,
-	CID_DUAL_PX,
-	CID_DUAL_QY,
-	CID_DUAL_RZ,
-	CID_GPS1_POS,
-	CID_GPS1_RTK_REL,
-	CID_ROLL_ROLLRATE,
-	NUM_CIDS
+    CID_INS_TIME,
+    CID_INS_STATUS,
+    CID_INS_EULER,
+    CID_INS_QUATN2B,
+    CID_INS_QUATE2B,
+    CID_INS_UVW,
+    CID_INS_VE,
+    CID_INS_LAT,
+    CID_INS_LON,
+    CID_INS_ALT,
+    CID_INS_NORTH_EAST,
+    CID_INS_DOWN,
+    CID_INS_ECEF_X,
+    CID_INS_ECEF_Y,
+    CID_INS_ECEF_Z,
+    CID_INS_MSL,
+    CID_PREINT_PX,
+    CID_PREINT_QY,
+    CID_PREINT_RZ,
+    CID_DUAL_PX,
+    CID_DUAL_QY,
+    CID_DUAL_RZ,
+    CID_GPS1_POS,
+    CID_GPS2_POS,
+    CID_GPS1_RTK_POS_REL,
+    CID_GPS2_RTK_CMP_REL,
+    CID_ROLL_ROLLRATE,
+    NUM_CIDS
 };
 
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	CAN_BAUDRATE_20_KBPS   =   20,
-	CAN_BAUDRATE_33_KBPS   =   33,
-	CAN_BAUDRATE_50_KBPS   =   50,
-	CAN_BAUDRATE_83_KBPS   =   83,
-	CAN_BAUDRATE_100_KBPS  =  100,
-	CAN_BAUDRATE_125_KBPS  =  125,
-	CAN_BAUDRATE_200_KBPS  =  200,
-	CAN_BAUDRATE_250_KBPS  =  250,
-	CAN_BAUDRATE_500_KBPS  =  500,
-	CAN_BAUDRATE_1000_KBPS = 1000,
+    CAN_BAUDRATE_20_KBPS   =   20,
+    CAN_BAUDRATE_33_KBPS   =   33,
+    CAN_BAUDRATE_50_KBPS   =   50,
+    CAN_BAUDRATE_83_KBPS   =   83,
+    CAN_BAUDRATE_100_KBPS  =  100,
+    CAN_BAUDRATE_125_KBPS  =  125,
+    CAN_BAUDRATE_200_KBPS  =  200,
+    CAN_BAUDRATE_250_KBPS  =  250,
+    CAN_BAUDRATE_500_KBPS  =  500,
+    CAN_BAUDRATE_1000_KBPS = 1000,
 
-	CAN_BAUDRATE_COUNT = 10
+    CAN_BAUDRATE_COUNT = 10
 } can_baudrate_t;
 
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
-	/** Broadcast period multiple - CAN time message. 0 to disable. */
-	uint16_t				can_period_mult[NUM_CIDS];
-	
-	/** Transmit address. */
-	uint32_t				can_transmit_address[NUM_CIDS];
-	
-	/** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
-	uint16_t				can_baudrate_kbps;
+    /** Broadcast period multiple - CAN time message. 0 to disable. */
+    uint16_t				can_period_mult[NUM_CIDS];
+    
+    /** Transmit address. */
+    uint32_t				can_transmit_address[NUM_CIDS];
+    
+    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
+    uint16_t				can_baudrate_kbps;
 
-	/** Receive address. */
-	uint32_t				can_receive_address;
+    /** Receive address. */
+    uint32_t				can_receive_address;
 
 } can_config_t;
 
