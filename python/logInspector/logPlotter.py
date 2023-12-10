@@ -1731,10 +1731,10 @@ class logPlot:
                 f.write('%d.%d.%d,%s,%d,' % (hdwVer[0], hdwVer[1], hdwVer[2], str(today), self.log.serials[d]))
                 for n, acc in enumerate([ acc0, acc1, acc2 ]):
                     if np.all(acc) != None and n<accCount:
-                            for i in range(3):
-                                f.write('%f,' % (sumBI[i][n][d]))
-                            for i in range(3):
-                                f.write('%f,' % (sumRW[i][n][d]))
+                        for i in range(3):
+                            f.write('%f,' % (sumBI[i][n][d]))
+                        for i in range(3):
+                            f.write('%f,' % (sumRW[i][n][d]))
                 f.write('\n')
 
     def accelPSD(self, fig=None):

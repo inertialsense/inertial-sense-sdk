@@ -11,7 +11,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import numpy as np
-from time import sleep 
 
 from logReader import Log
 from logPlotter import logPlot
@@ -452,9 +451,6 @@ class LogInspectorWindow(QMainWindow):
         self.LayoutBelowPlotSelection.addWidget(self.saveAllPushButton)
 
         self.controlLayout.addLayout(self.LayoutBelowPlotSelection)
-    
-    # def findTreeIndex(self, directory):
-        
 
     def createFileTree(self):
         self.dirModel = QFileSystemModel()
@@ -659,7 +655,7 @@ class LogInspectorWindow(QMainWindow):
         self.handleTreeDirChange()
 
     def handleTreeViewRightClick(self, event):
-        directory = self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0])
+        directory = os.path.normpath(self.fileTree.model().filePath(self.fileTree.selectedIndexes()[0]))
         menu = QMenu(self)
         copyAction                  = menu.addAction("Copy path")
         nppActionHot                = menu.addAction("Run NPP, HOT start")
