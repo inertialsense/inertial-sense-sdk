@@ -2495,13 +2495,13 @@ enum eIoConfig
 	// IO_CONFIG_                               = (int)0x80000000,
 };
 
-#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
+#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)
 
 enum ePlatformConfig
 {
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
-    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
     PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,           // uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
