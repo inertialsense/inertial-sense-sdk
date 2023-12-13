@@ -12,19 +12,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISComm.h"
 
+#define PKT_PARSER_TIMEOUT_MS               100		// Set to 0 to disable timeout
+
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
-	// Actual on uINS:
-	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only)
-	IS_BAUDRATE_9375000,    // 9375000
-	IS_BAUDRATE_3125000,    // 3125000
-	IS_BAUDRATE_921600,     // 937734 (default)
-	IS_BAUDRATE_460800,     // 468600
-	IS_BAUDRATE_230400,     // 232700
-	IS_BAUDRATE_115200,
-	IS_BAUDRATE_57600,
-	IS_BAUDRATE_38400,
-	IS_BAUDRATE_19200,
-	IS_BAUDRATE_9600 
+                            // Actual on IMX-5:
+    IS_BAUDRATE_10000000,  	// 10000000
+    IS_BAUDRATE_921600,    	//   930233 (default baudrate)
+    IS_BAUDRATE_460800,    	//   462428
+    IS_BAUDRATE_230400,    	//   230547
+    IS_BAUDRATE_115200,
+    IS_BAUDRATE_57600,
+    IS_BAUDRATE_38400,
+    IS_BAUDRATE_19200,
+    IS_BAUDRATE_9600 
 };
 
 static int s_packetEncodingEnabled = 1;
@@ -101,14 +101,22 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate)
 {
-	// Valid baudrates for InertialSense hardware
-	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
+	if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
 	{
-		if (g_validBaudRates[i] == baudRate)
+		// Valid baudrates for InertialSense hardware
+		for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
 		{
-			return 0;
+			if (g_validBaudRates[i] == baudRate)
+			{
+				return 0;
+			}
 		}
 	}
+	else if (baudRate <= IS_BAUDRATE_MAX)
+	{	// High speed custom baud rates
+		return 0;
+	}
+
 	return -1;
 }
 
@@ -225,6 +233,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 	instance->config.enableUblox = 1;
 	instance->config.enableRTCM3 = 1;
 	
+	instance->parseState = -1;
 	instance->txPktCount = 0;
 	instance->rxErrorCount = 0;
 	instance->hasStartByte = 0;
@@ -533,7 +542,7 @@ int is_comm_free(is_comm_instance_t* instance)
 	return bytesFree;
 }
 
-protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
+protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t byte, uint32_t timeMs)
 {
 	// Reset buffer if needed
 	is_comm_free(instance);
@@ -542,16 +551,27 @@ protocol_type_t is_comm_parse_byte(is_comm_instance_t* instance, uint8_t byte)
 	*(instance->buf.tail) = byte;
 	instance->buf.tail++;
 	
-	return is_comm_parse(instance);
+	return is_comm_parse_timeout(instance, timeMs);
 }
 
 #define FOUND_START_BYTE(init)		if(init){ instance->hasStartByte = byte; instance->buf.head = instance->buf.scan-1; }
 #define START_BYTE_SEARCH_ERROR()	
 
-protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+protocol_type_t is_comm_parse_timeout(is_comm_instance_t* instance, uint32_t timeMs)
 {
 	is_comm_buffer_t *buf = &(instance->buf);
 	protocol_type_t ptype;
+
+#if PKT_PARSER_TIMEOUT_MS 
+	if (instance->hasStartByte)
+	{	// Parse in progress
+		if (timeMs > instance->parseTimeMs + PKT_PARSER_TIMEOUT_MS)
+		{	// Parser timeout.  Increment head and reset parser.
+			instance->buf.head++;
+			is_comm_reset_parser(instance);
+		}
+	}
+#endif
 
 	// Search for packet
 	while (buf->scan < buf->tail)
@@ -571,11 +591,12 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 				instance->parseState = 0;
 			}
 			else 
-			{	// Searching for start byte
+			{	// Stray data received not contained inside a packet
 				if (instance->parseState != -1)
 				{
 					instance->parseState = -1;
 					instance->rxErrorCount++;
+					buf->scan = buf->head+1;	// Reset scan to one past head (don't drop potentially valid data)
 					return _PTYPE_PARSE_ERROR;	// Return to notify of error
 				}
 				continue;						// Continue to scan for data
@@ -620,6 +641,13 @@ protocol_type_t is_comm_parse(is_comm_instance_t* instance)
 			}
 		}
 	}
+
+#if PKT_PARSER_TIMEOUT_MS 
+	if (instance->hasStartByte)
+	{	// Parsing in progress.  Record current time.
+		instance->parseTimeMs = timeMs;
+	}
+#endif
 
 	// No valid data yet...
 	return _PTYPE_NONE;

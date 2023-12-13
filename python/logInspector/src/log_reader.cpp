@@ -81,7 +81,6 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     cout << "reading serial numbers ";
     for (int i = 0; i < (int)stl_serials.size(); i++)
         cout << stl_serials[i] << "\n";
-    cout << endl;
 
     // first try DAT files, if that doesn't work, then try SDAT files
     if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials))
@@ -95,7 +94,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     vector<int> serialNumbers;
     for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
     {
-        cout << logger_.GetDeviceInfo(i)->serialNumber << "\t";
+        cout << (i==0 ? "  " : ", ") << logger_.GetDeviceInfo(i)->serialNumber;
         serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
     }
     cout << endl;

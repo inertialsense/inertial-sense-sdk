@@ -1265,20 +1265,20 @@ typedef struct PACKED
 	/** System status flags (eSysStatusFlags) */
 	uint32_t				sysStatus;
 
-	/** IMU sample period in milliseconds. Zero disables sampling. */
-	uint32_t				imuPeriodMs;
+	/** IMU sample period (ms). Zero disables sampling. */
+	uint32_t				imuSamplePeriodMs;
 
-	/** Preintegrated IMU (PIMU) integration period and navigation filter update period (ms). */
-	uint32_t				navPeriodMs;
+	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
+	uint32_t				navOutputPeriodMs;
 	
     /** Actual sample period relative to GPS PPS (sec) */
 	double					sensorTruePeriod;
 
-	/** Reserved */
+	/** Flash config checksum used with host SDK synchronization */
 	uint32_t				flashCfgChecksum;
 
-	/** Reserved */
-	float					reserved3;
+	/** Navigation/AHRS filter update period (ms) */
+	uint32_t				navUpdatePeriodMs;
 
 	/** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
 	uint32_t                genFaultCode;
@@ -1343,42 +1343,71 @@ typedef struct PACKED
 
 enum eSystemCommand 
 {
-    SYS_CMD_NONE                                    = 0,            // (uint32 inv: 4294967295)
-    SYS_CMD_SAVE_PERSISTENT_MESSAGES                = 1,            // (uint32 inv: 4294967294)
-    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET             = 2,            // (uint32 inv: 4294967293)
-    SYS_CMD_ENABLE_SENSOR_STATS                     = 3,            // (uint32 inv: 4294967292)
-    SYS_CMD_ENABLE_RTOS_STATS                       = 4,            // (uint32 inv: 4294967291)
-    SYS_CMD_ZERO_MOTION                             = 5,            // (uint32 inv: 4294967290)
-    SYS_CMD_REF_POINT_STATIONARY                    = 6,            // (uint32 inv: 4294967289)
-    SYS_CMD_REF_POINT_MOVING                        = 7,            // (uint32 inv: 4294967288)
+    SYS_CMD_NONE                                        = 0,            // (uint32 inv: 4294967295)
+    SYS_CMD_SAVE_PERSISTENT_MESSAGES                    = 1,            // (uint32 inv: 4294967294)
+    SYS_CMD_ENABLE_BOOTLOADER_AND_RESET                 = 2,            // (uint32 inv: 4294967293)
+    SYS_CMD_ENABLE_SENSOR_STATS                         = 3,            // (uint32 inv: 4294967292)
+    SYS_CMD_ENABLE_RTOS_STATS                           = 4,            // (uint32 inv: 4294967291)
+    SYS_CMD_ZERO_MOTION                                 = 5,            // (uint32 inv: 4294967290)
+    SYS_CMD_REF_POINT_STATIONARY                        = 6,            // (uint32 inv: 4294967289)
+    SYS_CMD_REF_POINT_MOVING                            = 7,            // (uint32 inv: 4294967288)
+    SYS_CMD_RESET_RTOS_STATS                            = 8,            // (uint32 inv: 4294967287)
 
-    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG             = 10,           // (uint32 inv: 4294967285)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1   = 11,           // (uint32 inv: 4294967284)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2   = 12,           // (uint32 inv: 4294967283)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0   = 13,           // (uint32 inv: 4294967282)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1   = 14,           // (uint32 inv: 4294967281)
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2   = 15,           // (uint32 inv: 4294967280)	
-    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1  = 16,           // (uint32 inv: 4294967279)
-    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE              = 17,           // (uint32 inv: 4294967278)
+    SYS_CMD_ENABLE_GPS_LOW_LEVEL_CONFIG                 = 10,           // (uint32 inv: 4294967285)
+    SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE                  = 11,           // (uint32 inv: 4294967284)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1       = 12,           // (uint32 inv: 4294967283)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS2       = 13,           // (uint32 inv: 4294967282)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER0       = 14,           // (uint32 inv: 4294967281)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1       = 15,           // (uint32 inv: 4294967280)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2       = 16,           // (uint32 inv: 4294967279)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1      = 17,           // (uint32 inv: 4294967278)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1  = 18,           // (uint32 inv: 4294967277)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2  = 19,           // (uint32 inv: 4294967276)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB   = 20,           // (uint32 inv: 4294967275)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)
 
-    SYS_CMD_SAVE_FLASH                              = 97,           // (uint32 inv: 4294967198)
-    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET          = 98,           // (uint32 inv: 4294967197)
-    SYS_CMD_SOFTWARE_RESET                          = 99,           // (uint32 inv: 4294967196)
-    SYS_CMD_MANF_UNLOCK                             = 1122334455,   // (uint32 inv: 3172632840) 
-    SYS_CMD_MANF_FACTORY_RESET                      = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                         = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_DOWNGRADE_CALIBRATION              = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)
+
+    SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
+    SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
+    SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
+    SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
+    SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
 };
 
 enum eSerialPortBridge
 {
 	SERIAL_PORT_BRIDGE_DISABLED         = 0,
-	SERIAL_PORT_BRIDGE_USB_TO_GPS1      = 1,
-	SERIAL_PORT_BRIDGE_USB_TO_GPS2      = 2,
-	SERIAL_PORT_BRIDGE_USB_TO_SER0      = 3,
-	SERIAL_PORT_BRIDGE_USB_TO_SER1      = 4,
-	SERIAL_PORT_BRIDGE_USB_TO_SER2      = 5,
-	SERIAL_PORT_BRIDGE_SER0_TO_GPS1		= 6,
+
+    SERIAL_PORT_BRIDGE_GPS1_TO_USB      = 1,
+    SERIAL_PORT_BRIDGE_GPS1_TO_SER0     = 2,
+    SERIAL_PORT_BRIDGE_GPS1_TO_SER1     = 3,
+    SERIAL_PORT_BRIDGE_GPS1_TO_SER2     = 4,
+
+    SERIAL_PORT_BRIDGE_GPS2_TO_USB      = 5,
+    SERIAL_PORT_BRIDGE_GPS2_TO_SER0     = 6,
+    SERIAL_PORT_BRIDGE_GPS2_TO_SER1     = 7,
+    SERIAL_PORT_BRIDGE_GPS2_TO_SER2     = 8,
+
+    SERIAL_PORT_BRIDGE_USB_TO_SER0      = 9,
+    SERIAL_PORT_BRIDGE_USB_TO_SER1      = 10,
+    SERIAL_PORT_BRIDGE_USB_TO_SER2      = 11,
+    SERIAL_PORT_BRIDGE_SER0_TO_SER1     = 12,
+    SERIAL_PORT_BRIDGE_SER0_TO_SER2     = 13,
+    SERIAL_PORT_BRIDGE_SER1_TO_SER2     = 14,
+
+    SERIAL_PORT_BRIDGE_USB_TO_USB       = 15,   // loopback
+    SERIAL_PORT_BRIDGE_SER0_TO_SER0     = 16,   // loopback
+    SERIAL_PORT_BRIDGE_SER1_TO_SER1     = 17,   // loopback
+    SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,   // loopback
 };
 
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
@@ -1640,7 +1669,7 @@ typedef struct PACKED
 	/** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
 	uint32_t				options;
 	
-	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
+	/** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navOutputPeriodMs */
 } rmc_t;
 
 enum eNmeaAsciiMsgId
@@ -1660,7 +1689,8 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_PSTRB     = 12,
     NMEA_MSG_ID_INFO      = 13,
     NMEA_MSG_ID_GSV       = 14,
-    NMEA_MSG_ID_VTG       = 15
+    NMEA_MSG_ID_VTG       = 15,
+    NMEA_MSG_ID_COUNT
 }; 
 
 #define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)
@@ -1693,7 +1723,10 @@ typedef struct PACKED
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
     /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
-    uint32_t                bitsNmea;
+    uint32_t                nmeaBits;
+
+    /** NMEA period multiple of above period multiple indexed by NMEA_MSG_ID... */
+    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
 
 } rmci_t;
 
@@ -2035,6 +2068,9 @@ enum eSysConfigBits
 	SYS_CFG_BITS_MAG_RECAL_MODE_MASK					= (int)0x00000700,
 	SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET					= 8,
 #define SYS_CFG_BITS_MAG_RECAL_MODE(sysCfgBits) ((sysCfgBits&SYS_CFG_BITS_MAG_RECAL_MODE_MASK)>>SYS_CFG_BITS_MAG_RECAL_MODE_OFFSET)
+
+	// When set WMM will be used to set declanation
+	SYS_CFG_BITS_MAG_ENABLE_WMM_DECLINATION				= (int)0x00000800,
 
 	/** Disable magnetometer fusion */
 	SYS_CFG_BITS_DISABLE_MAGNETOMETER_FUSION			= (int)0x00001000,
@@ -2440,10 +2476,10 @@ enum eIoConfig
 	/** GPS type - last type */
     IO_CONFIG_GPS_TYPE_LAST						= IO_CONFIG_GPS_TYPE_NMEA,		// Set to last type
 
-#define IO_CONFIG_GPS1_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS2_SOURCE(ioConfig) (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
-#define IO_CONFIG_GPS1_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
-#define IO_CONFIG_GPS2_TYPE(ioConfig)   (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS1_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS1_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS2_SOURCE(ioConfig)     (((ioConfig)>>IO_CONFIG_GPS2_SOURCE_OFFSET)&IO_CONFIG_GPS_SOURCE_MASK)
+#define IO_CONFIG_GPS1_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GPS1_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
+#define IO_CONFIG_GPS2_TYPE(ioConfig)       (((ioConfig)>>IO_CONFIG_GPS2_TYPE_OFFSET)&IO_CONFIG_GPS_TYPE_MASK)
 
 #define SET_IO_CFG_GPS1_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS1_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
 #define SET_IO_CFG_GPS2_SOURCE(result,val)  SET_STATUS_OFFSET_MASK(result, val, IO_CONFIG_GPS2_SOURCE_OFFSET, IO_CONFIG_GPS_SOURCE_MASK)
@@ -2461,13 +2497,13 @@ enum eIoConfig
 	// IO_CONFIG_                               = (int)0x80000000,
 };
 
-#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
+#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)
 
 enum ePlatformConfig
 {
     // IMX Carrier Board
     PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
-    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
     PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
     PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,           // uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
@@ -2673,10 +2709,10 @@ typedef struct PACKED
     /** Manufacturer method for restoring flash defaults */
     uint32_t                key;
 
-    /** IMU sample (system input data) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
+    /** IMU sample (system input) period in milliseconds set on startup. Cannot be larger than startupNavDtMs. Zero disables sensor/IMU sampling. */
     uint32_t				startupImuDtMs;
 
-    /** Navigation filter (system output data) update period in milliseconds set on startup. 1ms minimum (1KHz max). */
+    /** Navigation filter (system output) output period in milliseconds set on startup.  Used to initialize sysParams.navOutputPeriodMs. */
     uint32_t				startupNavDtMs;
 
     /** Serial port 0 baud rate in bits per second */
@@ -2745,7 +2781,7 @@ typedef struct PACKED
     /** Time between GPS time synchronization pulses in milliseconds.  Requires reboot to take effect. */
     uint32_t				gpsTimeSyncPeriodMs;
 	
-	/** GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
+	/** GPS measurement (system input) update period in milliseconds set on startup. 200ms minimum (5Hz max). */
     uint32_t				startupGPSDtMs;
 	
 	/** RTK configuration bits (see eRTKConfigBits). */
@@ -4185,49 +4221,77 @@ typedef struct PACKED
 	/** Task period ms */
 	uint32_t                periodMs;
 
-	/** Last run time microseconds */
-	uint32_t                runTimeUs;
+	/** Last runtime microseconds */
+	uint32_t                runtimeUs;
 
-	/** Max run time microseconds */
-	uint32_t                maxRunTimeUs;
-	
-	/** Rolling average over last 1000 executions */
-	float					averageRunTimeUs;
-	
+	/** Average runtime */
+	float					avgRuntimeUs;
+
+	/** Average of runtimes less than avgRuntimeUs */
+	float					lowerRuntimeUs;
+
+	/** Average of runtimes greater than avgRuntimeUs */
+	float					upperRuntimeUs;
+
+	/** Max runtime microseconds */
+	uint32_t                maxRuntimeUs;
+
+	/** Local time when task loop started (following delay) */
+	uint32_t                startTimeUs;
+
 	/** Counter of times task took too long to run */
-	uint32_t				gapCount;
+	uint16_t				gapCount;
 
-	/** Cpu usage percent */
+	/** Counter of times task took too long to run twice in a row */
+	uint8_t					doubleGapCount;
+
+	/** Reserved */
+	uint8_t					reserved;
+
+	/** Processor usage percent */
     float					cpuUsage;
 
 	/** Handle */
 	uint32_t                handle;
-
-	/** Local time when task loop started (following delay) */
-	uint32_t                profileStartTimeUs;
 	
 } rtos_task_t;
 
 /** Internal RTOS task profiling info (processor ticks instead of usec) */
 typedef struct PACKED
 {
-	/** Last run time microseconds */
-	uint32_t                runTimeTicks;
+	/** Time in microseconds */
+	uint32_t                timeTicks;
 
-	/** Max run time microseconds */
-	uint32_t                maxRunTimeTicks;
-	
-	/** Rolling average over last 1000 executions */
-	float					averageRunTimeTicks;
+	/** Runtime in microseconds */
+	uint32_t                runtimeTicks;
+
+	/** LPF average runtime */
+	float					avgRuntimeTicks;
+
+	/** Average of runtimes less than avgRuntimeTicks */
+	float					lowerRuntimeTicks;
+
+	/** Average of runtimes greater than avgRuntimeTicks */
+	float					upperRuntimeTicks;
+
+	/** Maximum runtime microseconds */
+	uint32_t                maxRuntimeTicks;
 
 	/** Local time when task loop started (following delay) */
-	uint32_t                profileStartTimeTicks;
+	uint32_t                startTimeTicks;
 
 	/** Counter of times task took too long to run */
-	uint32_t				gapCount;
+	uint16_t				gapCount;
 
+	/** Counter of times task took too long to run back-to-back */
+	uint8_t					doubleGapCount;
+
+	/** Indicates whether gap occurd on last update */
+	uint8_t					gapOnLast;
+
+	/** Task period ms */
 	uint32_t 				periodTicks;
-	
+
 } rtos_profile_t;
 
 /** (DID_RTOS_INFO) */
@@ -4265,65 +4329,67 @@ typedef struct PACKED
 } evb_rtos_info_t;
 enum
 {
-	CID_INS_TIME,
-	CID_INS_STATUS,
-	CID_INS_EULER,
-	CID_INS_QUATN2B,
-	CID_INS_QUATE2B,
-	CID_INS_UVW,
-	CID_INS_VE,
-	CID_INS_LAT,
-	CID_INS_LON,
-	CID_INS_ALT,
-	CID_INS_NORTH_EAST,
-	CID_INS_DOWN,
-	CID_INS_ECEF_X,
-	CID_INS_ECEF_Y,
-	CID_INS_ECEF_Z,
-	CID_INS_MSL,
-	CID_PREINT_PX,
-	CID_PREINT_QY,
-	CID_PREINT_RZ,
-	CID_DUAL_PX,
-	CID_DUAL_QY,
-	CID_DUAL_RZ,
-	CID_GPS1_POS,
-	CID_GPS1_RTK_REL,
-	CID_ROLL_ROLLRATE,
-	NUM_CIDS
+    CID_INS_TIME,
+    CID_INS_STATUS,
+    CID_INS_EULER,
+    CID_INS_QUATN2B,
+    CID_INS_QUATE2B,
+    CID_INS_UVW,
+    CID_INS_VE,
+    CID_INS_LAT,
+    CID_INS_LON,
+    CID_INS_ALT,
+    CID_INS_NORTH_EAST,
+    CID_INS_DOWN,
+    CID_INS_ECEF_X,
+    CID_INS_ECEF_Y,
+    CID_INS_ECEF_Z,
+    CID_INS_MSL,
+    CID_PREINT_PX,
+    CID_PREINT_QY,
+    CID_PREINT_RZ,
+    CID_DUAL_PX,
+    CID_DUAL_QY,
+    CID_DUAL_RZ,
+    CID_GPS1_POS,
+    CID_GPS2_POS,
+    CID_GPS1_RTK_POS_REL,
+    CID_GPS2_RTK_CMP_REL,
+    CID_ROLL_ROLLRATE,
+    NUM_CIDS
 };
 
 /** Valid baud rates for Inertial Sense hardware */
 typedef enum
 {
-	CAN_BAUDRATE_20_KBPS   =   20,
-	CAN_BAUDRATE_33_KBPS   =   33,
-	CAN_BAUDRATE_50_KBPS   =   50,
-	CAN_BAUDRATE_83_KBPS   =   83,
-	CAN_BAUDRATE_100_KBPS  =  100,
-	CAN_BAUDRATE_125_KBPS  =  125,
-	CAN_BAUDRATE_200_KBPS  =  200,
-	CAN_BAUDRATE_250_KBPS  =  250,
-	CAN_BAUDRATE_500_KBPS  =  500,
-	CAN_BAUDRATE_1000_KBPS = 1000,
+    CAN_BAUDRATE_20_KBPS   =   20,
+    CAN_BAUDRATE_33_KBPS   =   33,
+    CAN_BAUDRATE_50_KBPS   =   50,
+    CAN_BAUDRATE_83_KBPS   =   83,
+    CAN_BAUDRATE_100_KBPS  =  100,
+    CAN_BAUDRATE_125_KBPS  =  125,
+    CAN_BAUDRATE_200_KBPS  =  200,
+    CAN_BAUDRATE_250_KBPS  =  250,
+    CAN_BAUDRATE_500_KBPS  =  500,
+    CAN_BAUDRATE_1000_KBPS = 1000,
 
-	CAN_BAUDRATE_COUNT = 10
+    CAN_BAUDRATE_COUNT = 10
 } can_baudrate_t;
 
 /** (DID_CAN_BCAST_PERIOD) Broadcast period of CAN messages */
 typedef struct PACKED
 {
-	/** Broadcast period multiple - CAN time message. 0 to disable. */
-	uint16_t				can_period_mult[NUM_CIDS];
-	
-	/** Transmit address. */
-	uint32_t				can_transmit_address[NUM_CIDS];
-	
-	/** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
-	uint16_t				can_baudrate_kbps;
+    /** Broadcast period multiple - CAN time message. 0 to disable. */
+    uint16_t				can_period_mult[NUM_CIDS];
+    
+    /** Transmit address. */
+    uint32_t				can_transmit_address[NUM_CIDS];
+    
+    /** Baud rate (kbps)  (See can_baudrate_t for valid baud rates)  */
+    uint16_t				can_baudrate_kbps;
 
-	/** Receive address. */
-	uint32_t				can_receive_address;
+    /** Receive address. */
+    uint32_t				can_receive_address;
 
 } can_config_t;
 

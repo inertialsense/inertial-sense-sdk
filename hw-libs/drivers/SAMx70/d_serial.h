@@ -103,14 +103,25 @@ int serFindCharacter( int serialNum, uint8_t ch);
 int serSetBaudRate( int serialNum, int baudrate );
 
 /**
+ * \brief Change USART baudrate.  0 on success, -1 on failure.  Parameter 'baudRate' returns actual baud rate in hardware if non-standard (>921600).
+ */
+int serSyncBaudRate(int serialNum, uint32_t *baudRate);
+
+/**
  * \brief Read USART baudrate.  Return value is the baudrate or -1 on failure.
  */
-int serGetBaudRate( int serialNum );
+int serBaudRate( int serialNum );
 
 /**
  * \brief Initialize serial port with specific USART/UART and DMA settings.  If not NULL, the overrun status will have bits HDW_STATUS_ERR_COM_TX_LIMITED and HDW_STATUS_ERR_COM_RX_OVERRUN set during buffer limitation.  
  */
-int serInit( int serialNum, uint32_t baudRate, sam_usart_opt_t *options);
+int serInit( int serialNum, uint32_t baudrate, sam_usart_opt_t *options);
+
+/**
+ * \brief Initialize serial port with specific USART/UART and DMA settings.  If not NULL, the overrun status will have bits HDW_STATUS_ERR_COM_TX_LIMITED and HDW_STATUS_ERR_COM_RX_OVERRUN set during buffer limitation.  
+ * \param baudrate Returns the actual baud rate in hardware if non-standard (>921600).
+ */
+int serInitSyncBaudrate(int serialNum, uint32_t *baudrate, sam_usart_opt_t *options);
 
 #ifdef __cplusplus
 }

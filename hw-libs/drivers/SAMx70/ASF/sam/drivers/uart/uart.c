@@ -80,7 +80,7 @@ extern "C" {
  */
 uint32_t uart_init(Uart *p_uart, const sam_uart_opt_t *p_uart_opt)
 {
-	uint32_t cd = 0;
+	uint32_t clock_divisor = 0;
 
 	/* Reset and disable receiver & transmitter */
 	p_uart->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX
@@ -88,11 +88,12 @@ uint32_t uart_init(Uart *p_uart, const sam_uart_opt_t *p_uart_opt)
 
 	/* Check and configure baudrate */
 	/* Asynchronous, no oversampling */
-	cd = (p_uart_opt->ul_mck / p_uart_opt->ul_baudrate) / UART_MCK_DIV;
-	if (cd < UART_MCK_DIV_MIN_FACTOR || cd > UART_MCK_DIV_MAX_FACTOR)
+	clock_divisor = ((p_uart_opt->ul_mck / UART_MCK_DIV) + p_uart_opt->ul_baudrate/2) / p_uart_opt->ul_baudrate;	// Round to closest baud rate
+	if (clock_divisor < UART_MCK_DIV_MIN_FACTOR || clock_divisor > UART_MCK_DIV_MAX_FACTOR)
 		return 1;
 
-	p_uart->UART_BRGR = cd;
+	/* Set baud rate */
+	p_uart->UART_BRGR = clock_divisor;
 	/* Configure mode */
 	p_uart->UART_MR = p_uart_opt->ul_mode;
 
@@ -105,6 +106,12 @@ uint32_t uart_init(Uart *p_uart, const sam_uart_opt_t *p_uart_opt)
 	p_uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;
 
 	return 0;
+}
+
+uint32_t uart_baud_rate(Uart *p_uart, uint32_t ul_mck)
+{
+	uint32_t baud_rate = (ul_mck / UART_MCK_DIV) / p_uart->UART_BRGR;
+	return baud_rate;
 }
 
 /**

@@ -3,12 +3,13 @@
 
 #include "data_sets.h"
 
-#define NMEA_STR_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
-#define NMEA_STR_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
-#define NMEA_STR_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
-#define NMEA_STR_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
-#define NMEA_STR_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
-#define NMEA_STR_SOFTWARE_RESET                         "$SRST*06\r\n"
+#define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
+#define NMEA_CMD_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
+#define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
+#define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
+#define NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
+#define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
+#define NMEA_CMD_SIZE                                   10
 
 enum eNmeaMsgIdUint
 {
@@ -52,6 +53,7 @@ enum eNmeaProtocolVersion
 void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple);
 void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
+uint32_t nmea_compute_checksum(uint8_t* str, int size);
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...);
 int nmea_sprint_footer(char* a, int aSize, int &n);
 char *ASCII_find_next_field(char *str);

@@ -325,10 +325,11 @@ class Log:
         mount_bias_output = dict()
         for n, dev in enumerate(uINS_device_idx):
             mount_bias = np.mean(self.att_error[n, :, :], axis=0)
-            if self.compassing:
+            #if self.compassing:
                 # When in compassing, assume all units are sharing the same GPS antennas and should therefore have
                 # no mounting bias in heading
-                mount_bias[2] = 0
+                # NOTE 2: The units can have a common mounting bias relative to antenna offsets. So we should keep non-zero mount_bias[2]
+            #    mount_bias[2] = 0
             self.mount_bias_euler[dev, :] = mount_bias  # quat2eulerArray(qexp(mount_bias))
             self.mount_bias_quat[dev,:] = euler2quat(self.mount_bias_euler[dev, :])
             self.using_mounting_bias = True
@@ -386,8 +387,8 @@ class Log:
             thresholdAtt = np.array([0.045, 0.045, 0.16])   # (deg) Att (roll, pitch, yaw)
             if not self.navMode: 
                 # AHRS
-                thresholdAtt[:2] = 0.28  # (deg) Att (roll, pitch)
-                thresholdAtt[2]  = 0.5   # (deg) Att (yaw)
+                thresholdAtt[:2] = 0.1  # (deg) Att (roll, pitch)
+                thresholdAtt[2]  = 1.0  # (deg) Att (yaw)
 
         if self.compassing:
             thresholdNED[:2] = 0.5
@@ -578,6 +579,7 @@ class Log:
                 plt.plot(self.att_error[n, :, m])
         plt.show()
 
+    # This does not work when running in debug mode
     def openRMSReport(self):
         filename = os.path.join(self.directory, 'RMS_report_new_logger.txt')
         if 'win' in sys.platform:
