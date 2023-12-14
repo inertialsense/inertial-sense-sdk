@@ -672,8 +672,8 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV HIGH VARIANCE\n");   break;
     case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS\n");                break;
     case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS HIGH VARIANCE\n");  break;
-    case INS_STATUS_SOLUTION_VRS:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: VRS\n");                break;
-    case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: VRS HIGH VARIANCE\n");  break;
+    case INS_STATUS_SOLUTION_VRS:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: VRS\n");                 break;
+    case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: VRS HIGH VARIANCE\n");   break;
     }
 // 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Align Good: Att %d, Vel %d, Pos %d\n",
 // 		(insStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
