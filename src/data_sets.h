@@ -1752,6 +1752,8 @@ typedef struct PACKED
     /** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
+
+
 enum eNmeaAsciiMsgId
 {
     NMEA_MSG_ID_PIMU      = 0,
@@ -1792,6 +1794,16 @@ enum eNmeaAsciiMsgId
 #define NMEA_RMC_BITS_VTG           (1<<NMEA_MSG_ID_VTG)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
+
+typedef struct PACKED
+{
+     /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
+    uint32_t                nmeaBits;
+
+    /** NMEA period multiple of above ISB period multiple indexed by NMEA_MSG_ID... */
+    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+}rmcNmea_t;
+
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
@@ -1801,11 +1813,7 @@ typedef struct PACKED
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT];
 
-    /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
-    uint32_t                nmeaBits;
-
-    /** NMEA period multiple of above period multiple indexed by NMEA_MSG_ID... */
-    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+    rmcNmea_t               rmcNmea;
 
 } rmci_t;
 

@@ -408,7 +408,7 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 	default: return;
 	}
 
-	rmci.nmeaPeriod[nmeaId] = periodMultiple;
+	rmci.rmcNmea.nmeaPeriod[nmeaId] = periodMultiple;
 
 	if (did == DID_GPS1_POS)
 	{	// DID_GPS1_POS shared by multiple NMEA messages
@@ -416,20 +416,20 @@ void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple)
 		{
 			if (rmci.periodMultiple[did]){ rmci.periodMultiple[did] = _MIN(rmci.periodMultiple[did], periodMultiple); } 
 			else                         { rmci.periodMultiple[did] = periodMultiple; }
-			rmci.nmeaBits |=  (nmeaBits);
+			rmci.rmcNmea.nmeaBits |=  (nmeaBits);
 		} 
 		else 
 		{
-			rmci.nmeaBits &= ~(nmeaBits);
+			rmci.rmcNmea.nmeaBits &= ~(nmeaBits);
 		}
 	}
 	else
 	{	// Unshared DIDs
 		rmci.periodMultiple[did] = periodMultiple;
 		if (periodMultiple) {
-			rmci.nmeaBits |=  (nmeaBits);
+			rmci.rmcNmea.nmeaBits |=  (nmeaBits);
 		} else {
-			rmci.nmeaBits &= ~(nmeaBits);
+			rmci.rmcNmea.nmeaBits &= ~(nmeaBits);
 		}
 	}
 }
