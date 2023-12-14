@@ -177,7 +177,7 @@ typedef uint32_t eDataIDs;
 enum eInsStatusFlags
 {
     /** Attitude estimate is usable but outside spec (COARSE) */
-    INS_STATUS_ATT_ALIGN_COARSE                 = (int)0x00000001,
+    INS_STATUS_HDG_ALIGN_COARSE                 = (int)0x00000001,
     /** Velocity estimate is usable but outside spec (COARSE) */
     INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
     /** Position estimate is usable but outside spec (COARSE) */
@@ -189,7 +189,7 @@ enum eInsStatusFlags
     INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
     /** Attitude estimate is within spec (FINE) */
-    INS_STATUS_ATT_ALIGN_FINE                   = (int)0x00000010,
+    INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
     /** Position estimate is within spec (FINE) */
@@ -226,11 +226,12 @@ enum eInsStatusFlags
 
     INS_STATUS_SOLUTION_OFF                     = 0,    // System is off 
     INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
-    INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE      = 2,    // System is aligned but not enough dynamics have been experienced to be with specifications.
     INS_STATUS_SOLUTION_NAV                     = 3,    // System is in navigation mode and solution is good.
     INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,    // System is in navigation mode but the attitude uncertainty has exceeded the threshold.
     INS_STATUS_SOLUTION_AHRS                    = 5,    // System is in AHRS mode and solution is good.
     INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,    // System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_VRS                     = 7,    // System is in VRS mode (no earth relative heading) and roll and pitch are good.
+    INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE       = 8,    // System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold.
 
     /** GPS compassing antenna offsets are not set in flashCfg. */
     INS_STATUS_RTK_COMPASSING_BASELINE_UNSET    = (int)0x00100000,
@@ -1127,10 +1128,10 @@ typedef struct PACKED
 	int						rot_motion;
 	int						zero_vel;
 	int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
-	float					att_err;
-	int						att_coarse;				// Flag whether initial attitude error converged
-	int						att_aligned;			// Flag whether initial attitude error converged
-	int						att_aligning;
+	float					hdg_err;
+	int						hdg_coarse;				// Flag whether initial attitude error converged
+	int						hdg_aligned;			// Flag whether initial attitude error converged
+	int						hdg_aligning;
 	int						start_proc_done;		// Cold/hot start procedure completed
 	int						mag_cal_good;
 	int						mag_cal_done;
