@@ -1907,6 +1907,17 @@ enum GRMC_BIT_POS{
                                     | GRMC_BITS_GPS1_RAW \
                                     | GRMC_BITS_GPS2_RAW )
 
+
+typedef struct PACKED 
+{
+    rmc_t rmc;
+
+    uint16_t periodMultiple[GRMC_BIT_POS_COUNT];
+
+    /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
+    rmcNmea_t rmcNmea;
+} grmci_t;
+
 /** (DID_IO) Input/Output */
 typedef struct PACKED
 {
