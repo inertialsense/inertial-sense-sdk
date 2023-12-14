@@ -175,7 +175,7 @@ def buildNPP(npp_build_folder):
 	process.wait()
  
 def nppPrint(str):
-	# print(str)	# Comment out to disable output
+	print(str)	# Comment out to disable output
 	pass
 
 if __name__ == "__main__":
