@@ -577,6 +577,10 @@ typedef struct PACKED
 
     /** Additional info */
     char            addInfo[DEVINFO_ADDINFO_STRLEN];
+
+    /** Firmware MD5 hash */
+    uint32_t         firmwareMD5Hash[4];
+
 } dev_info_t;
 
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
