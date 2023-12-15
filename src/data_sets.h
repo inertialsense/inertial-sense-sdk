@@ -1487,6 +1487,8 @@ enum eSerialPortBridge
     SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,   // loopback
 };
 
+#define NMEA_BUFFER_SIZE 256
+
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
