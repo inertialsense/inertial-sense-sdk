@@ -594,7 +594,7 @@ typedef struct PACKED
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
-	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
+	/** Key - write: unlock manufacturing info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
 
 	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */

@@ -115,8 +115,8 @@ class SuperNPP():
 		else:
 			# cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
 			# npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
-			cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
-			npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
+			cmds = [r'navpp.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
+			npp_build_folder = "../../../cpp/NavPostProcess/build/Release"
 
 		if self.startMode == 1:
 			for i in range(len(cmds)):
@@ -176,7 +176,7 @@ def buildNPP(npp_build_folder):
 	process.wait()
  
 def nppPrint(str):
-	# print(str)	# Comment out to disable output
+	print(str)	# Comment out to disable output
 	pass
 
 if __name__ == "__main__":
