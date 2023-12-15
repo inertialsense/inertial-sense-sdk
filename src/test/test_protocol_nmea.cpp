@@ -28,7 +28,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
     r.periodMultiple[DID_INS_2] = 2;
     r.periodMultiple[DID_PIMU] = 1;
     r.periodMultiple[DID_GPS1_POS] = 1;
-    r.nmeaBits = 
+    r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS2 |
         NMEA_RMC_BITS_PPIMU |
         NMEA_RMC_BITS_GGA;
@@ -53,7 +53,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         rmci_t &a = rmci[i];
         rmci_t &b = outRmci[i];
         ASSERT_EQ( a.rmc.bits, b.rmc.bits );
-        ASSERT_EQ( a.nmeaBits, b.nmeaBits );
+        ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
         for (int j=0; j<DID_COUNT; j++)
         {
             ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
@@ -71,7 +71,7 @@ TEST(protocol_nmea, nmea_parse_asce)
     r.periodMultiple[DID_INS_2] = 2;
     r.periodMultiple[DID_PIMU] = 1;
     r.periodMultiple[DID_GPS1_POS] = 1;
-    r.nmeaBits = 
+    r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS2 |
         NMEA_RMC_BITS_PPIMU |
         NMEA_RMC_BITS_GGA;
@@ -94,7 +94,7 @@ TEST(protocol_nmea, nmea_parse_asce)
         rmci_t &a = rmci[i];
         rmci_t &b = outRmci[i];
         ASSERT_EQ( a.rmc.bits, b.rmc.bits );
-        ASSERT_EQ( a.nmeaBits, b.nmeaBits );
+        ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
         for (int j=0; j<DID_COUNT_UINS; j++)
         {
             ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
