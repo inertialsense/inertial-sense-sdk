@@ -257,10 +257,10 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     ADD_MAP(m, totalSize, "buildSecond", buildSecond, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "buildMillisecond", buildMillisecond, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "addInfo", addInfo, DEVINFO_ADDINFO_STRLEN, DataTypeString, char[DEVINFO_ADDINFO_STRLEN], 0);
-    ADD_MAP(m, totalSize, "firmwareMD5Hash[0]", firmwareMD5Hash[0], 0, DataTypeUInt34, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "firmwareMD5Hash[1]", firmwareMD5Hash[1], 0, DataTypeUInt34, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "firmwareMD5Hash[2]", firmwareMD5Hash[2], 0, DataTypeUInt34, uint32_t&, 0);
-    ADD_MAP(m, totalSize, "firmwareMD5Hash[3]", firmwareMD5Hash[3], 0, DataTypeUInt34, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "firmwareMD5Hash[0]", firmwareMD5Hash[0], 0, DataTypeUInt32, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "firmwareMD5Hash[1]", firmwareMD5Hash[1], 0, DataTypeUInt32, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "firmwareMD5Hash[2]", firmwareMD5Hash[2], 0, DataTypeUInt32, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "firmwareMD5Hash[3]", firmwareMD5Hash[3], 0, DataTypeUInt32, uint32_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
