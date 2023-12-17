@@ -579,7 +579,7 @@ typedef struct PACKED
     char            addInfo[DEVINFO_ADDINFO_STRLEN];
 
     /** Firmware MD5 hash */
-    uint32_t         firmwareMD5Hash[4];
+    uint32_t        firmwareMD5Hash[4];
 
 } dev_info_t;
 
