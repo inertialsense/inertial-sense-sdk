@@ -384,60 +384,12 @@ double timeToGpst(gtime_t t, int *week)
 void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_t periodMultiple)
 {
 	uint32_t nmeaBits = (1<<nmeaId);
-	// int did = 0;
-
-	// switch (nmeaId)
-	// {
-	// case NMEA_MSG_ID_INFO:      did = DID_DEV_INFO; break;
-	// case NMEA_MSG_ID_PIMU:      did = DID_IMU; break;
-	// case NMEA_MSG_ID_PPIMU:     did = DID_PIMU; break;
-	// case NMEA_MSG_ID_PRIMU:     did = DID_IMU_RAW; break;
-	// case NMEA_MSG_ID_PINS1:     did = DID_INS_1; break;
-	// case NMEA_MSG_ID_PINS2:     did = DID_INS_2; break;
-	// case NMEA_MSG_ID_PGPSP:     
-	// case NMEA_MSG_ID_GGA:       
-	// case NMEA_MSG_ID_GLL:       
-	// case NMEA_MSG_ID_GSA:       
-	// case NMEA_MSG_ID_RMC:       
-	// case NMEA_MSG_ID_ZDA:       
-	// case NMEA_MSG_ID_INTEL:     
-	// case NMEA_MSG_ID_VTG:     
-	// case NMEA_MSG_ID_PASHR:     
-	// case NMEA_MSG_ID_PSTRB:     did = DID_GPS1_POS; break;	
-	// case NMEA_MSG_ID_GSV:       did = DID_GPS1_SAT; break;	
-	// default: return;
-	// }
-
 	period[nmeaId] = periodMultiple;
 
-	// if (did == DID_GPS1_POS)
-	// {	// DID_GPS1_POS shared by multiple NMEA messages
-	// 	if (periodMultiple)
-	// 	{
-	// 		if (period[did])
-	// 		{ 
-	// 			period[did] = _MIN(period[did], periodMultiple); 
-	// 		} 
-	// 		else                         
-	// 		{ 
-	// 			period[did] = periodMultiple; 
-	// 		}
-	// 		bits |=  (nmeaBits);
-	// 	} 
-	// 	else 
-	// 	{
-	// 		bits &= ~(nmeaBits);
-	// 	}
-	// }
-	// else
-	{	// Unshared DIDs
-		period[nmeaId] = periodMultiple;
-		if (periodMultiple) {
-			bits |=  (nmeaBits);
-		} else {
-			bits &= ~(nmeaBits);
-		}
-	}
+	if (periodMultiple)
+		bits |=  (nmeaBits);
+	else 
+		bits &= ~(nmeaBits);
 }
 
 void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t tmp)
