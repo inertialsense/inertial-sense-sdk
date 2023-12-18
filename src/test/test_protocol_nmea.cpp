@@ -38,7 +38,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
     int n=0;
     nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCB,%u,,%u,,%u,,,%u", 
         options, 
-        r.periodMultiple[DID_PIMU],
+        r.rmcNmea.nmeaPeriod.periodMultiple[DID_PIMU],
         r.periodMultiple[DID_INS_2],
         r.periodMultiple[DID_GPS1_POS]
         );
@@ -56,7 +56,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
         for (int j=0; j<DID_COUNT; j++)
         {
-            ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
+            ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.periodMultiple[j] );
         }    
     }
 }
