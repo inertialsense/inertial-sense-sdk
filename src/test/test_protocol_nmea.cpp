@@ -25,9 +25,9 @@ TEST(protocol_nmea, nmea_parse_ascb)
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
-    r.periodMultiple[DID_INS_2] = 2;
-    r.periodMultiple[DID_PIMU] = 1;
-    r.periodMultiple[DID_GPS1_POS] = 1;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = 2;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU] = 1;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA] = 1;
     r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS2 |
         NMEA_RMC_BITS_PPIMU |
@@ -38,9 +38,9 @@ TEST(protocol_nmea, nmea_parse_ascb)
     int n=0;
     nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCB,%u,,%u,,%u,,,%u", 
         options, 
-        r.rmcNmea.nmeaPeriod[DID_PIMU],
-        r.rmcNmea.nmeaPeriod[DID_INS_2],
-        r.rmcNmea.nmeaPeriod[DID_GPS1_POS]
+        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU],
+        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2],
+        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]
         );
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
@@ -54,7 +54,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         rmci_t &b = outRmci[i];
         ASSERT_EQ( a.rmc.bits, b.rmc.bits );
         ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
-        for (int j=0; j<DID_COUNT; j++)
+        for (int j=0; j<NMEA_MSG_ID_COUNT; j++)
         {
             ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.periodMultiple[j] );
         }    
