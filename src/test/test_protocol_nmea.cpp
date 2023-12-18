@@ -40,7 +40,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         options, 
         't',//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU],
         'o',//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2],
-        'n',//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]
+        'n'//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]
         );
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
