@@ -56,7 +56,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
         for (int j=0; j<NMEA_MSG_ID_COUNT; j++)
         {
-            ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.periodMultiple[j] );
+            ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );
         }    
     }
 }
