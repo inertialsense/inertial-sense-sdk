@@ -38,9 +38,9 @@ TEST(protocol_nmea, nmea_parse_ascb)
     int n=0;
     nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCB,%u,,%u,,%u,,,%u", 
         options, 
-        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU],
-        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2],
-        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]
+        't',//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU],
+        'o',//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2],
+        'n',//r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]
         );
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
