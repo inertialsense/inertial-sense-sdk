@@ -83,7 +83,7 @@ TEST(protocol_nmea, nmea_parse_asce)
     int n=0;
 	nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", options);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PPIMU, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PIMU, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GGA,   r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
@@ -106,7 +106,6 @@ TEST(protocol_nmea, nmea_parse_asce)
         }   
     }
 }
-
 
 TEST(protocol_nmea, INFO)
 {
