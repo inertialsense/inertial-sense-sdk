@@ -192,7 +192,7 @@ typedef uint32_t eDataIDs;
 enum eInsStatusFlags
 {
     /** Attitude estimate is usable but outside spec (COARSE) */
-    INS_STATUS_ATT_ALIGN_COARSE                 = (int)0x00000001,
+    INS_STATUS_HDG_ALIGN_COARSE                 = (int)0x00000001,
     /** Velocity estimate is usable but outside spec (COARSE) */
     INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
     /** Position estimate is usable but outside spec (COARSE) */
@@ -204,7 +204,7 @@ enum eInsStatusFlags
     INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
     /** Attitude estimate is within spec (FINE) */
-    INS_STATUS_ATT_ALIGN_FINE                   = (int)0x00000010,
+    INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
     /** Position estimate is within spec (FINE) */
@@ -241,11 +241,12 @@ enum eInsStatusFlags
 
     INS_STATUS_SOLUTION_OFF                     = 0,    // System is off 
     INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
-    INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE      = 2,    // System is aligned but not enough dynamics have been experienced to be with specifications.
     INS_STATUS_SOLUTION_NAV                     = 3,    // System is in navigation mode and solution is good.
     INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE       = 4,    // System is in navigation mode but the attitude uncertainty has exceeded the threshold.
     INS_STATUS_SOLUTION_AHRS                    = 5,    // System is in AHRS mode and solution is good.
     INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE      = 6,    // System is in AHRS mode but the attitude uncertainty has exceeded the threshold.
+    INS_STATUS_SOLUTION_VRS                     = 7,    // System is in VRS mode (no earth relative heading) and roll and pitch are good.
+    INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE       = 8,    // System is in VRS mode (no earth relative heading) but roll and pitch uncertainty has exceeded the threshold.
 
     /** GPS compassing antenna offsets are not set in flashCfg. */
     INS_STATUS_RTK_COMPASSING_BASELINE_UNSET    = (int)0x00100000,
@@ -593,7 +594,7 @@ typedef struct PACKED
     /** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
 
-	/** Key - write: unlock manufacting info, read: number of times OTP has been set, 15 max */
+	/** Key - write: unlock manufacturing info, read: number of times OTP has been set, 15 max */
 	uint32_t		key;
 
 	/** Platform / carrier board (ePlatformConfig::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
@@ -1190,21 +1191,21 @@ typedef struct PACKED
 // (DID_INL2_STATUS)
 typedef struct PACKED
 {
-    int						ahrs;
-    int						zero_accel;
-    int						zero_angrate;
-    int						accel_motion;
-    int						rot_motion;
-    int						zero_vel;
-    int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
-    float					att_err;
-    int						att_coarse;				// Flag whether initial attitude error converged
-    int						att_aligned;			// Flag whether initial attitude error converged
-    int						att_aligning;
-    int						start_proc_done;		// Cold/hot start procedure completed
-    int						mag_cal_good;
-    int						mag_cal_done;
-    int						stat_magfield;
+	int						ahrs;
+	int						zero_accel;
+	int						zero_angrate;
+	int						accel_motion;
+	int						rot_motion;
+	int						zero_vel;
+	int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
+	float					hdg_err;
+	int						hdg_coarse;				// Flag whether initial attitude error converged
+	int						hdg_aligned;			// Flag whether initial attitude error converged
+	int						hdg_aligning;
+	int						start_proc_done;		// Cold/hot start procedure completed
+	int						mag_cal_good;
+	int						mag_cal_done;
+	int						stat_magfield;
 } inl2_status_t;
 
 /** Generic 1 axis sensor */
@@ -2739,15 +2740,15 @@ enum eIoConfig
     IO_CONFIG_IMU_3_DISABLE						= (int)0x80000000,
 };
 
-#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT | (IO_CONFIG_GPS_SOURCE_ONBOARD_1<<IO_CONFIG_GPS1_SOURCE_OFFSET) | (IO_CONFIG_GPS_SOURCE_ONBOARD_2<<IO_CONFIG_GPS2_SOURCE_OFFSET))
+#define IO_CONFIG_DEFAULT 	(IO_CONFIG_G1G2_DEFAULT | IO_CONFIG_G5G8_DEFAULT | IO_CONFIG_G6G7_DEFAULT | IO_CONFIG_G9_DEFAULT)
 
 enum ePlatformConfig
 {
     // IMX Carrier Board
-    PLATFORM_CFG_TYPE_MASK                      = (int)0x0000001F,
-    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory
-    PLATFORM_CFG_TYPE_NONE                      = (int)0,		    // IMX-5 default
-    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,		    // uINS-3 default
+    PLATFORM_CFG_TYPE_MASK                      = (int)0x0000003F,
+    PLATFORM_CFG_TYPE_FROM_MANF_OTP             = (int)0x00000080,  // Type is overwritten from manufacturing OTP memory.  Write protection, prevents direct change of platformType in flashConfig.
+    PLATFORM_CFG_TYPE_NONE                      = (int)0,           // IMX-5 default
+    PLATFORM_CFG_TYPE_NONE_ONBOARD_G2           = (int)1,           // uINS-3 default
     PLATFORM_CFG_TYPE_RUG1                      = (int)2,
     PLATFORM_CFG_TYPE_RUG2_0_G1                 = (int)3,
     PLATFORM_CFG_TYPE_RUG2_0_G2                 = (int)4,
