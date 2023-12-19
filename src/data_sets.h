@@ -4166,8 +4166,8 @@ typedef struct
     uint32_t                rtkMode;
 
     /** GNSS status (see RunState) **/
-    eGPXGnssRunState       gnss1RunState;
-    eGPXGnssRunState       gnss2RunState;
+    uint32_t                 gnss1RunState;
+    uint32_t                 gnss2RunState;
 } gpx_status_t;
 
 
