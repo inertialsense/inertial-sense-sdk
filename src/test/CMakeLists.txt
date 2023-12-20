@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 project(SDK_test)
 
 # Locate GTest
