@@ -7,30 +7,30 @@
 \date    2007-11-29
 \since   2005-07-30
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
-- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter \n
-- http://aa.usno.navy.mil/faq/docs/UT.html \n
-- http://wwwmacho.mcmaster.ca/JAVA/JD.html \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter     
+- http://aa.usno.navy.mil/faq/docs/UT.html     
+- http://wwwmacho.mcmaster.ca/JAVA/JD.html     
 - Raquet, J. F. (2002), GPS Receiver Design Lecture Notes. Geomatics Engineering, 
-  University of Calgary Graduate Course. \n
+  University of Calgary Graduate Course.     
 
-\b "LICENSE INFORMATION" \n
-Copyright (c) 2007, refer to 'author' doxygen tags \n
-All rights reserved. \n
+\b "LICENSE INFORMATION"     
+Copyright (c) 2007, refer to 'author' doxygen tags     
+All rights reserved.     
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided the following conditions are met: \n
+modification, are permitted provided the following conditions are met:     
 
 - Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer. \n
+  notice, this list of conditions and the following disclaimer.     
 - Redistributions in binary form must reproduce the above copyright
   notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution. \n
+  documentation and/or other materials provided with the distribution.     
 - The name(s) of the contributor(s) may not be used to endorse or promote 
   products derived from this software without specific prior written 
-  permission. \n
+  permission.     
 
 THIS SOFTWARE IS PROVIDED BY THE CONTRIBUTORS ``AS IS'' AND ANY EXPRESS 
 OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
@@ -117,7 +117,7 @@ int TIMECONV_SetSystemTime(
 \since    2008-12-03
 \return   1(1) if successful, 0(0) otherwise.
 
-\b REFERENCES \n
+\b REFERENCES     
 http://en.wikipedia.org/wiki/Julian_day
 */
 int TIMECONV_GetDayOfWeekFromJulianDate(
@@ -134,9 +134,9 @@ int TIMECONV_GetDayOfWeekFromJulianDate(
 \since    2005-08-22
 \return   1(1) if successful, 0(0) otherwise.
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetJulianDateFromGPSTime(
   const unsigned short    gps_week,      //!< GPS week (0-1024+)             [week]
@@ -156,11 +156,11 @@ int TIMECONV_GetJulianDateFromGPSTime(
 \remarks
 - Verified calculation using http://aa.usno.navy.mil/data/docs/JulianDate.html,
   a Julian Date Converter and http://wwwmacho.mcmaster.ca/JAVA/JD.html,
-  another online converter tool. \n
+  another online converter tool.     
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetJulianDateFromUTCTime(
  const unsigned short     utc_year,      //!< Universal Time Coordinated  [year]
@@ -183,9 +183,9 @@ int TIMECONV_GetJulianDateFromUTCTime(
 \since    2005-08-22
 \return   1(1) if successful, 0(0) otherwise.
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetGPSTimeFromJulianDate(
   const double            julian_date, //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
@@ -202,9 +202,9 @@ int TIMECONV_GetGPSTimeFromJulianDate(
 \since    2005-08-22
 \return   1(1) if successful, 0(0) otherwise.
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetUTCTimeFromJulianDate(
   const double        julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
@@ -227,9 +227,9 @@ int TIMECONV_GetUTCTimeFromJulianDate(
 \remarks
 (1) The utc offset is determined automatically from a look up table
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetGPSTimeFromUTCTime(
   unsigned short     utc_year,     //!< Universal Time Coordinated    [year]
@@ -256,9 +256,9 @@ int TIMECONV_GetGPSTimeFromUTCTime(
 - There is no UTC offset to apply
 - The RINEX time system must be the GPS Time system to use this function.
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 - RINEX version 2.11, (http://www.aiub-download.unibe.ch/rinex/rinex211.txt)
 */
 int TIMECONV_GetGPSTimeFromRinexTime(
@@ -284,9 +284,9 @@ int TIMECONV_GetGPSTimeFromRinexTime(
 \remarks
 - The utc offset is determined automatically from a look up table
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetUTCTimeFromGPSTime(
   unsigned short     gps_week,     //!< GPS week (0-1024+)            [week]
@@ -312,27 +312,27 @@ int TIMECONV_GetUTCTimeFromGPSTime(
 \remarks
 - This function must be updated when the next UTC *utc_offset step occurs. Current max is (13).
  
-\b REFERENCES \n
+\b REFERENCES     
 - Raquet, J. F. (2002), GPS Receiver Design Lecture Notes. Geomatics Engineering, 
-  University of Calgary Graduate Course. \n
+  University of Calgary Graduate Course.     
 
-\b "Offset Table" \n
-UTCOffset, UTC Date, Julian Date [days] \n
-0,    Jan 06 1980 00:00:00.0,    2444244.5000 \n
-1,    Jul 01 1981 00:00:00.0,    2444786.5000 \n
-2,    Jul 01 1982 00:00:00.0,    2445151.5000 \n
-3,    Jul 01 1983 00:00:00.0,    2445516.5000 \n
-4,    Jul 01 1985 00:00:00.0,    2446247.5000 \n
-5,    Jan 01 1988 00:00:00.0,    2447161.5000 \n
-6,    Jan 01 1990 00:00:00.0,    2447892.5000 \n
-7,    Jan 01 1991 00:00:00.0,    2448257.5000 \n
-8,    Jul 01 1992 00:00:00.0,    2448804.5000 \n
-9,    Jul 01 1993 00:00:00.0,    2449169.5000 \n
-10,   Jul 01 1994 00:00:00.0,    2449534.5000 \n
-11,   Jan 01 1996 00:00:00.0,    2450083.5000 \n
-12,   Jul 01 1997 00:00:00.0,    2450630.5000 \n
-13,   Jan 01 1999 00:00:00.0,    2451179.5000 \n
-14,   Jan 01 2006 00:00:00.0,    2453736.5000 \n
+\b "Offset Table"     
+UTCOffset, UTC Date, Julian Date [days]     
+0,    Jan 06 1980 00:00:00.0,    2444244.5000     
+1,    Jul 01 1981 00:00:00.0,    2444786.5000     
+2,    Jul 01 1982 00:00:00.0,    2445151.5000     
+3,    Jul 01 1983 00:00:00.0,    2445516.5000     
+4,    Jul 01 1985 00:00:00.0,    2446247.5000     
+5,    Jan 01 1988 00:00:00.0,    2447161.5000     
+6,    Jan 01 1990 00:00:00.0,    2447892.5000     
+7,    Jan 01 1991 00:00:00.0,    2448257.5000     
+8,    Jul 01 1992 00:00:00.0,    2448804.5000     
+9,    Jul 01 1993 00:00:00.0,    2449169.5000     
+10,   Jul 01 1994 00:00:00.0,    2449534.5000     
+11,   Jan 01 1996 00:00:00.0,    2450083.5000     
+12,   Jul 01 1997 00:00:00.0,    2450630.5000     
+13,   Jan 01 1999 00:00:00.0,    2451179.5000     
+14,   Jan 01 2006 00:00:00.0,    2453736.5000     
 */
 int TIMECONV_DetermineUTCOffset(
   double julian_date,       //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
@@ -347,9 +347,9 @@ int TIMECONV_DetermineUTCOffset(
 \since    2005-08-22
 \return   1(1) if successful, 0(0) otherwise.
 
-\b REFERENCES \n
+\b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetNumberOfDaysInMonth(
   const unsigned short year,        //!< Universal Time Coordinated    [year]
@@ -367,7 +367,7 @@ int TIMECONV_GetNumberOfDaysInMonth(
 \returns  1(1) if the given year is a leap year, 0(0) otherwise
 
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42 \n
+  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_IsALeapYear( const unsigned short year );
 
