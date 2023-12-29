@@ -1,50 +1,3 @@
-// TAKEN FROM https://svn.code.sf.net/p/gnsstk/code/trunk/src/time_conversion.h
-
-/**
-\file    time_conversion.h
-\brief   GNSS core 'c' function library: converting time information.
-\author  Glenn D. MacGougan (GDM)
-\date    2007-11-29
-\since   2005-07-30
-
-\b REFERENCES     
-- Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
-- http://aa.usno.navy.mil/data/docs/JulianDate.html - Julian Date Converter     
-- http://aa.usno.navy.mil/faq/docs/UT.html     
-- http://wwwmacho.mcmaster.ca/JAVA/JD.html     
-- Raquet, J. F. (2002), GPS Receiver Design Lecture Notes. Geomatics Engineering, 
-  University of Calgary Graduate Course.     
-
-\b "LICENSE INFORMATION"     
-Copyright (c) 2007, refer to 'author' doxygen tags     
-All rights reserved.     
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided the following conditions are met:     
-
-- Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.     
-- Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.     
-- The name(s) of the contributor(s) may not be used to endorse or promote 
-  products derived from this software without specific prior written 
-  permission.     
-
-THIS SOFTWARE IS PROVIDED BY THE CONTRIBUTORS ``AS IS'' AND ANY EXPRESS 
-OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
-OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
-SUCH DAMAGE.
-*/
-
 #ifndef _C_TIMECONV_H_
 #define _C_TIMECONV_H_
 
@@ -52,19 +5,24 @@ SUCH DAMAGE.
 extern "C" {
 #endif
 
-/*************************************************************************************************/
-// preprocessor constant definitions, any related enumerations and descriptors
+#include "stdint.h"
 
-// error, define to printf or something if you want
-#define GNSS_ERROR_MSG(errorMsg)
 
-#ifndef SECONDS_IN_DAY
-#define SECONDS_IN_DAY (86400.0)
-#endif
+/** Convert GPS time of week in milliseconds to UTC time */
+void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, uint32_t* hours, uint32_t* minutes, uint32_t* seconds, uint32_t* milliseconds);
 
-#ifndef SECONDS_IN_WEEK
-#define SECONDS_IN_WEEK (604800.0)
-#endif
+/** Convert Julian Date to calendar date. */
+void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond);
+
+/** Convert GPS Week and Ms and leapSeconds to Unix seconds**/
+double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds);
+
+/** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
+double gpsToJulian(uint32_t gpsWeek, uint32_t gpsMilliseconds, uint32_t leapSeconds);
+
+
+
+#if 0
 
 /**
 \brief    Obtains the UTC time, GPS time, and Julian date from PC system time.
@@ -76,17 +34,17 @@ extern "C" {
 \remarks  (1) Millisecond time is obtained
 */
 int TIMECONV_GetSystemTime(
-  unsigned short*     utc_year,     //!< Universal Time Coordinated    [year]
-  unsigned char*      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
-  unsigned char*      utc_day,      //!< Universal Time Coordinated    [1-31 days]
-  unsigned char*      utc_hour,     //!< Universal Time Coordinated    [hours]
-  unsigned char*      utc_minute,   //!< Universal Time Coordinated    [minutes]
-  float*              utc_seconds,  //!< Universal Time Coordinated    [s]
-  unsigned char*      utc_offset,   //!< Integer seconds that GPS is ahead of UTC time, always positive             [s], obtained from a look up table
-  double*             julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-  unsigned short*     gps_week,     //!< GPS week (0-1024+)            [week]
-  double*             gps_tow       //!< GPS time of week (0-604800.0) [s]
-  );
+    unsigned short*     utc_year,     //!< Universal Time Coordinated    [year]
+    unsigned char*      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
+    unsigned char*      utc_day,      //!< Universal Time Coordinated    [1-31 days]
+    unsigned char*      utc_hour,     //!< Universal Time Coordinated    [hours]
+    unsigned char*      utc_minute,   //!< Universal Time Coordinated    [minutes]
+    float*              utc_seconds,  //!< Universal Time Coordinated    [s]
+    unsigned char*      utc_offset,   //!< Integer seconds that GPS is ahead of UTC time, always positive             [s], obtained from a look up table
+    double*             julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    unsigned short*     gps_week,     //!< GPS week (0-1024+)            [week]
+    double*             gps_tow       //!< GPS time of week (0-604800.0) [s]
+    );
 
 
 #ifdef WIN32
@@ -99,13 +57,13 @@ int TIMECONV_GetSystemTime(
 \return   1(1) if successful, 0(0) otherwise.
 */
 int TIMECONV_SetSystemTime(
-  const unsigned short  utc_year,     //!< Universal Time Coordinated    [year]
-  const unsigned char   utc_month,    //!< Universal Time Coordinated    [1-12 months] 
-  const unsigned char   utc_day,      //!< Universal Time Coordinated    [1-31 days]
-  const unsigned char   utc_hour,     //!< Universal Time Coordinated    [hours]
-  const unsigned char   utc_minute,   //!< Universal Time Coordinated    [minutes]
-  const float           utc_seconds   //!< Universal Time Coordinated    [s]
-  );
+    const unsigned short  utc_year,     //!< Universal Time Coordinated    [year]
+    const unsigned char   utc_month,    //!< Universal Time Coordinated    [1-12 months] 
+    const unsigned char   utc_day,      //!< Universal Time Coordinated    [1-31 days]
+    const unsigned char   utc_hour,     //!< Universal Time Coordinated    [hours]
+    const unsigned char   utc_minute,   //!< Universal Time Coordinated    [minutes]
+    const float           utc_seconds   //!< Universal Time Coordinated    [s]
+    );
 #endif
 
 
@@ -121,9 +79,9 @@ int TIMECONV_SetSystemTime(
 http://en.wikipedia.org/wiki/Julian_day
 */
 int TIMECONV_GetDayOfWeekFromJulianDate(
-  const double julian_date,   //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-  unsigned char *day_of_week  //!< 0-Sunday, 1-Monday, 2-Tuesday, 3-Wednesday, 4-Thursday, 5-Friday, 6-Saturday [].
-  );
+    const double julian_date,   //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    unsigned char *day_of_week  //!< 0-Sunday, 1-Monday, 2-Tuesday, 3-Wednesday, 4-Thursday, 5-Friday, 6-Saturday [].
+    );
 
 
 /**
@@ -136,14 +94,14 @@ int TIMECONV_GetDayOfWeekFromJulianDate(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetJulianDateFromGPSTime(
-  const unsigned short    gps_week,      //!< GPS week (0-1024+)             [week]
-  const double            gps_tow,       //!< GPS time of week (0-604800.0)  [s]
-  const unsigned char     utc_offset,    //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
-  double*                 julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-  );
+    const unsigned short    gps_week,      //!< GPS week (0-1024+)             [week]
+    const double            gps_tow,       //!< GPS time of week (0-604800.0)  [s]
+    const unsigned char     utc_offset,    //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
+    double*                 julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    );
 
 /**
 \brief    Computes the Julian date from UTC time
@@ -155,22 +113,22 @@ int TIMECONV_GetJulianDateFromGPSTime(
 
 \remarks
 - Verified calculation using http://aa.usno.navy.mil/data/docs/JulianDate.html,
-  a Julian Date Converter and http://wwwmacho.mcmaster.ca/JAVA/JD.html,
-  another online converter tool.     
+    a Julian Date Converter and http://wwwmacho.mcmaster.ca/JAVA/JD.html,
+    another online converter tool.     
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
 Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetJulianDateFromUTCTime(
- const unsigned short     utc_year,      //!< Universal Time Coordinated  [year]
- const unsigned char      utc_month,     //!< Universal Time Coordinated  [1-12 months] 
- const unsigned char      utc_day,       //!< Universal Time Coordinated  [1-31 days]
- const unsigned char      utc_hour,      //!< Universal Time Coordinated  [hours]
- const unsigned char      utc_minute,    //!< Universal Time Coordinated  [minutes]
- const float              utc_seconds,   //!< Universal Time Coordinated  [s]
- double*                  julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
- );
+    const unsigned short     utc_year,      //!< Universal Time Coordinated  [year]
+    const unsigned char      utc_month,     //!< Universal Time Coordinated  [1-12 months] 
+    const unsigned char      utc_day,       //!< Universal Time Coordinated  [1-31 days]
+    const unsigned char      utc_hour,      //!< Universal Time Coordinated  [hours]
+    const unsigned char      utc_minute,    //!< Universal Time Coordinated  [minutes]
+    const float              utc_seconds,   //!< Universal Time Coordinated  [s]
+    double*                  julian_date    //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    );
 
 
 
@@ -185,14 +143,14 @@ int TIMECONV_GetJulianDateFromUTCTime(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetGPSTimeFromJulianDate(
-  const double            julian_date, //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-  const unsigned char     utc_offset,  //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
-  unsigned short*         gps_week,    //!< GPS week (0-1024+)            [week]
-  double*                 gps_tow      //!< GPS time of week [s]
-  );
+    const double            julian_date, //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    const unsigned char     utc_offset,  //!< Integer seconds that GPS is ahead of UTC time, always positive [s]
+    unsigned short*         gps_week,    //!< GPS week (0-1024+)            [week]
+    double*                 gps_tow      //!< GPS time of week [s]
+    );
 
 /**
 \brief    Computes UTC time from the Julian date
@@ -204,17 +162,17 @@ int TIMECONV_GetGPSTimeFromJulianDate(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetUTCTimeFromJulianDate(
-  const double        julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-  unsigned short*     utc_year,     //!< Universal Time Coordinated    [year]
-  unsigned char*      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
-  unsigned char*      utc_day,      //!< Universal Time Coordinated    [1-31 days]
-  unsigned char*      utc_hour,     //!< Universal Time Coordinated    [hours]
-  unsigned char*      utc_minute,   //!< Universal Time Coordinated    [minutes]
-  float*              utc_seconds   //!< Universal Time Coordinated    [s]
-  );
+    const double        julian_date,  //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    unsigned short*     utc_year,     //!< Universal Time Coordinated    [year]
+    unsigned char*      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
+    unsigned char*      utc_day,      //!< Universal Time Coordinated    [1-31 days]
+    unsigned char*      utc_hour,     //!< Universal Time Coordinated    [hours]
+    unsigned char*      utc_minute,   //!< Universal Time Coordinated    [minutes]
+    float*              utc_seconds   //!< Universal Time Coordinated    [s]
+    );
 
 /**
 \brief    Computes GPS time from UTC time
@@ -229,23 +187,23 @@ int TIMECONV_GetUTCTimeFromJulianDate(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetGPSTimeFromUTCTime(
-  unsigned short     utc_year,     //!< Universal Time Coordinated    [year]
-  unsigned char      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
-  unsigned char      utc_day,      //!< Universal Time Coordinated    [1-31 days]
-  unsigned char      utc_hour,     //!< Universal Time Coordinated    [hours]
-  unsigned char      utc_minute,   //!< Universal Time Coordinated    [minutes]
-  float              utc_seconds,  //!< Universal Time Coordinated    [s]
-  unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
-  double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
-  );
+    unsigned short     utc_year,     //!< Universal Time Coordinated    [year]
+    unsigned char      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
+    unsigned char      utc_day,      //!< Universal Time Coordinated    [1-31 days]
+    unsigned char      utc_hour,     //!< Universal Time Coordinated    [hours]
+    unsigned char      utc_minute,   //!< Universal Time Coordinated    [minutes]
+    float              utc_seconds,  //!< Universal Time Coordinated    [s]
+    unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
+    double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
+    );
 
 
 /**
 \brief    Computes GPS time from RINEX time. RINEX time looks like UTC
-          but it is GPS time in year, month, day, hours, minutes, seconds.
+                    but it is GPS time in year, month, day, hours, minutes, seconds.
 
 \author   Glenn D. MacGougan (GDM)
 \date     2007-12-07
@@ -258,19 +216,19 @@ int TIMECONV_GetGPSTimeFromUTCTime(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 - RINEX version 2.11, (http://www.aiub-download.unibe.ch/rinex/rinex211.txt)
 */
 int TIMECONV_GetGPSTimeFromRinexTime(
-  unsigned short     utc_year,     //!< Universal Time Coordinated    [year]
-  unsigned char      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
-  unsigned char      utc_day,      //!< Universal Time Coordinated    [1-31 days]
-  unsigned char      utc_hour,     //!< Universal Time Coordinated    [hours]
-  unsigned char      utc_minute,   //!< Universal Time Coordinated    [minutes]
-  float              utc_seconds,  //!< Universal Time Coordinated    [s]
-  unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
-  double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
-  );
+    unsigned short     utc_year,     //!< Universal Time Coordinated    [year]
+    unsigned char      utc_month,    //!< Universal Time Coordinated    [1-12 months] 
+    unsigned char      utc_day,      //!< Universal Time Coordinated    [1-31 days]
+    unsigned char      utc_hour,     //!< Universal Time Coordinated    [hours]
+    unsigned char      utc_minute,   //!< Universal Time Coordinated    [minutes]
+    float              utc_seconds,  //!< Universal Time Coordinated    [s]
+    unsigned short*    gps_week,     //!< GPS week (0-1024+)            [week]
+    double*            gps_tow       //!< GPS time of week (0-604800.0) [s]
+    );
 
 
 /**
@@ -286,19 +244,18 @@ int TIMECONV_GetGPSTimeFromRinexTime(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
-int TIMECONV_GetUTCTimeFromGPSTime(
-  unsigned short     gps_week,     //!< GPS week (0-1024+)            [week]
-  double             gps_tow,      //!< GPS time of week (0-604800.0) [s]
-  unsigned short*    utc_year,     //!< Universal Time Coordinated    [year]
-  unsigned char*     utc_month,    //!< Universal Time Coordinated    [1-12 months] 
-  unsigned char*     utc_day,      //!< Universal Time Coordinated    [1-31 days]
-  unsigned char*     utc_hour,     //!< Universal Time Coordinated    [hours]
-  unsigned char*     utc_minute,   //!< Universal Time Coordinated    [minutes]
-  float*             utc_seconds   //!< Universal Time Coordinated    [s]
-  );
-
+int TIMECONV_UTCTimeFromGPSTime(
+    unsigned short     gps_week,     //!< GPS week (0-1024+)            [week]
+    double             gps_tow,      //!< GPS time of week (0-604800.0) [s]
+    unsigned short*    utc_year,     //!< Universal Time Coordinated    [year]
+    unsigned char*     utc_month,    //!< Universal Time Coordinated    [1-12 months] 
+    unsigned char*     utc_day,      //!< Universal Time Coordinated    [1-31 days]
+    unsigned char*     utc_hour,     //!< Universal Time Coordinated    [hours]
+    unsigned char*     utc_minute,   //!< Universal Time Coordinated    [minutes]
+    float*             utc_seconds   //!< Universal Time Coordinated    [s]
+    );
 
 
 /**
@@ -314,7 +271,7 @@ int TIMECONV_GetUTCTimeFromGPSTime(
  
 \b REFERENCES     
 - Raquet, J. F. (2002), GPS Receiver Design Lecture Notes. Geomatics Engineering, 
-  University of Calgary Graduate Course.     
+    University of Calgary Graduate Course.     
 
 \b "Offset Table"     
 UTCOffset, UTC Date, Julian Date [days]     
@@ -335,9 +292,9 @@ UTCOffset, UTC Date, Julian Date [days]
 14,   Jan 01 2006 00:00:00.0,    2453736.5000     
 */
 int TIMECONV_DetermineUTCOffset(
-  double julian_date,       //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
-  unsigned char* utc_offset //!< Integer seconds that GPS is ahead of UTC time, always positive             [s], obtained from a look up table
-  );
+    double julian_date,       //!< Number of days since noon Universal Time Jan 1, 4713 BCE (Julian calendar) [days]
+    unsigned char* utc_offset //!< Integer seconds that GPS is ahead of UTC time, always positive             [s], obtained from a look up table
+    );
 
 /**
 \brief    Determines the number of days in a month, given the month and year.
@@ -349,13 +306,13 @@ int TIMECONV_DetermineUTCOffset(
 
 \b REFERENCES     
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_GetNumberOfDaysInMonth(
-  const unsigned short year,        //!< Universal Time Coordinated    [year]
-  const unsigned char month,        //!< Universal Time Coordinated    [1-12 months] 
-  unsigned char* days_in_month      //!< Days in the specified month   [1-28|29|30|31 days]
-  );
+    const unsigned short year,        //!< Universal Time Coordinated    [year]
+    const unsigned char month,        //!< Universal Time Coordinated    [1-12 months] 
+    unsigned char* days_in_month      //!< Days in the specified month   [1-28|29|30|31 days]
+    );
 
 
 /**
@@ -367,7 +324,7 @@ int TIMECONV_GetNumberOfDaysInMonth(
 \returns  1(1) if the given year is a leap year, 0(0) otherwise
 
 - Hofmann-Wellenhof, B., H. Lichtenegger, and J. Collins (1994). GPS Theory and 
-  Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
+    Practice, Third, revised edition. Springer-Verlag, Wien New York. pp. 38-42     
 */
 int TIMECONV_IsALeapYear( const unsigned short year );
 
@@ -406,8 +363,8 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
  double*              gps_tow    //!< GPS time of week (0-604800.0) [s]
  );
 
- 
-  
+#endif 
+    
 #ifdef __cplusplus
 }
 #endif

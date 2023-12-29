@@ -18,6 +18,7 @@ add_library(SDK_test
 	test_math.cpp
 	test_protocol_nmea.cpp
 	test_ring_buffer.cpp
+	test_time_conversion.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -64,6 +65,7 @@ add_executable(run_tests
 	test_math.cpp
 	test_ring_buffer.cpp
 	test_protocol_nmea.cpp
+	test_time_conversion.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
