@@ -313,6 +313,48 @@ TEST(protocol_nmea, GGA)
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
+TEST(protocol_nmea, GGA2)
+{
+    char gga[ASCII_BUF_LEN] = { 0 };
+    snprintf(gga, ASCII_BUF_LEN, "$GNGGA,181457.400,3903.80427,N,07709.29556,W,2,12,0.47,1438.20,M,-18.80,M,,*7D\r\n");
+    gps_pos_t pos = {};
+    pos.week = 2260;
+    pos.timeOfWeekMs = 152115400;
+    pos.satsUsed = 12;
+    pos.status =
+        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GPS_STATUS_FLAGS_FIX_OK |
+        GPS_STATUS_FLAGS_DGPS_USED |
+        GPS_STATUS_FIX_DGPS |
+        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    pos.hMSL = 1438.2;
+    pos.lla[0] = (39.0 + 3.80427 / 60.0);
+    pos.lla[1] = -(77.0 + 9.29556 / 60.0);
+    pos.lla[2] = pos.hMSL - 18.8;
+    pos.pDop = 0.47;
+    pos.leapS = LEAP_SEC;
+    // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+    ixVector3d lla;
+    lla[0] = DEG2RAD(pos.lla[0]);
+    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[2] = pos.lla[2];		// Use ellipsoid altitude
+    lla2ecef(lla, pos.ecef);
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
+    //printf("%s\n", gga);
+    //printf("%s\n", abuf);
+    ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
+
+    gps_pos_t result = {};
+    result.week = pos.week;
+    result.leapS = pos.leapS;
+    uint32_t weekday = pos.timeOfWeekMs / 86400000;
+    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    pos.hAcc = result.hAcc;
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
 TEST(protocol_nmea, GLL)
 {
     gps_pos_t pos = {};
@@ -356,6 +398,45 @@ TEST(protocol_nmea, GSA)
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
 }
 
+TEST(protocol_nmea, RMC)
+{
+    char rmc[ASCII_BUF_LEN] = { 0 };
+    snprintf(rmc, ASCII_BUF_LEN, "$GNRMC,181457,A,4003.34252,N,11139.51903,W,000.0,000.0,010523,000.0,E*71\r\n");
+    gps_pos_t pos = {};
+    gps_vel_t vel = {};
+    float magDeclination = 0.0f;
+    pos.week = 2260;
+    pos.timeOfWeekMs = 152115000;
+    pos.satsUsed = 12;
+    pos.status =
+        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GPS_STATUS_FLAGS_FIX_OK |
+        GPS_STATUS_FLAGS_DGPS_USED |
+        GPS_STATUS_FIX_DGPS |
+        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    pos.hMSL = 1438.2;
+    pos.lla[0] = (40.0 + 3.34252 / 60.0);
+    pos.lla[1] = -(111.0 + 39.51903 / 60.0);
+    pos.lla[2] = pos.hMSL - 18.8;
+    pos.pDop = 0.47;
+    pos.leapS = LEAP_SEC;
+    // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+    ixVector3d lla;
+    lla[0] = DEG2RAD(pos.lla[0]);
+    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[2] = pos.lla[2];		// Use ellipsoid altitude
+    lla2ecef(lla, pos.ecef);
+
+    // float courseMadeTrue  = 0.0f * C_DEG2RAD_F;
+    // float speed2dKnots = 0.0f;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_rmc(abuf, ASCII_BUF_LEN, pos, vel, magDeclination);
+    printf("%s\n", rmc);
+    printf("%s\n", abuf);
+    ASSERT_EQ(memcmp(&rmc, &abuf, n), 0);
+}
+
 TEST(protocol_nmea, ZDA)
 {
     gps_pos_t pos = {};
@@ -391,7 +472,7 @@ TEST(protocol_nmea, VTG)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_vtg(abuf, ASCII_BUF_LEN, pos, vel, magVarCorrectionRad);
-    printf("%s\n", abuf);
+    // printf("%s\n", abuf);
     gps_vel_t resultVel = {};
 
     nmea_parse_vtg_to_did_gps(resultVel, abuf, n, pos.lla);
@@ -1328,5 +1409,66 @@ TEST(protocol_nmea, generate_example_nmea_for_user_manual)
         a[n] = 0;
         printf("%s", a);
     }
+}
+#endif
+
+
+#if 0   // Uncomment to generate example NMEA strings for select customer. 
+TEST(protocol_nmea, generate_example_nmea_for_customer)
+{
+    uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
+
+    char a[ASCII_BUF_LEN] = {};
+    int n=0;
+    nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", 0);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GGA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GLL, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GSA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_ZDA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GSV, 1);
+    nmea_sprint_footer(a, ASCII_BUF_LEN, n);
+    a[n] = 0;
+    printf("%s", a);
+}
+#endif
+
+
+#if 1
+void testChecksum(const char* str)
+{
+    char a[200] = {};
+    char b[200] = {};
+    int m = snprintf(a, sizeof(a), "%s", str);
+    int n = m-5;
+    memcpy(b, a, n);
+    nmea_sprint_footer(b, sizeof(b), n);
+    DEBUG_PRINTF("%s", a);
+    DEBUG_PRINTF("%s", b);
+    ASSERT_EQ(m, n);     // Check that 5 characters (*xx\r\n) were added
+    ASSERT_TRUE(memcmp(a, b, m) == 0);
+}
+
+TEST(protocol_nmea, checksum)
+{
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,521,047,46,04,21,047,40,261,49,224,47,05,49,224,42*54\r\n");
+    testChecksum("$GAGSV,3,2,12,267715.76121,W,1,11,1.10,0.00,M,169.55,M,,*2D\r\n");  // NEMA Wrong Checksum 2d lenREc=59
+    testChecksum("$GNVTG,0.00,T,,M,0.0.000*57\r\n");  // NEMA Wrong Checksum 57 lenREc=27
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,52,11,32,140,37*61\r\n");   // NEMA Wrong Checksum 61 lenREc=74
+    testChecksum("$GAGSV,3,3,12,290,39,316,47,34,39,316,42,292,84,16305,10,13,15,18,23,24,29,04,05,09,11,1.1,1.0,1.0*5E\r\n");    // NEMA Wrong Checksum 5e lenREc=101
+    testChecksum("$GNRMC,160350,A,3911.2480.26,+2.50,+0.00,0.009,0.009,2.676,1,0*38\r\n");    // NEMA Wrong Checksum 38 lenREc=65
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,5,12,260,21,047,46,04,21,047,40,261,49,224,47,05,49,224,42*4F\r\n");    // NEMA Wrong Checksum 4f lenREc=117
+    testChecksum("$GAGSV,34843,N,07715.76121,W,1,11,1.10,0.00,M,169.55,M,,*41\r\n");  // NEMA Wrong Checksum 41 lenREc=59
+    testChecksum("$GNGSA,A,03,05,00.0,E*6C\r\n"); // NEMA Wrong Checksum 6c lenREc=24
+    testChecksum("$GNVTG,0.00,0.000,0.000*7E\r\n");   // NEMA Wrong Checksum 7e lenREc=26
+    testChecksum("$GAGSV,3,1,12,260,21,047,46,04,21,047,40,261,49,224,43,48,36,84,163,44*49\r\n");    // NEMA Wrong Checksum 49 lenREc=73
+    testChecksum("$GNGGA,160351.000,3911.24843,N,07715.76121,W,1,11,1.3911.24843,N,07715.76121,W,000.0,000.0,180923,000.0,E*12\r\n"); // NEMA Wrong Checksum 12 lenREc=108
+    testChecksum("$GNZDA,160351.00000,2280,0,0.000,0.000,0,0.000,0.000,0.000,0.000,0.000,0.000*40\r\n");  // NEMA Wrong Checksum 40 lenREc=79
+    testChecksum("$GPGSV,3,3,12,522,10,279,46,530,67,310,54,535,42,295,50,5,12,260,21,047,46,04,21,047,40,261,49,224,47,05,49,224,42*4F\r\n");    // NEMA Wrong Checksum 4f lenREc=117
+    testChecksum("$GAGSV,34843,N,07715.76121,W,1,11,1.10,0.00,M,169.55,M,,*41\r\n");  // NEMA Wrong Checksum 41 lenREc=59
+    testChecksum("$GNGSA,A,03,05,00.0,E*6C\r\n"); // NEMA Wrong Checksum 6c lenREc=24
+    testChecksum("$GNVTG,0.00,0.000,0.000*7E\r\n");   // NEMA Wrong Checksum 7e lenREc=26
+    testChecksum("$GAGSV,3,1,12,260,21,047,46,04,21,047,40,261,49,224,43,48,36,84,163,44*49\r\n");    // NEMA Wrong Checksum 49 lenREc=73
+    testChecksum("$GNGGA,160352.000,3911.24843,N,07715.76121,W,1,11,1.911.24843,N,07715.76121,W,000.0,000.0,180923,000.0,E*22\r\n");  // NEMA Wrong Checksum 22 lenREc=107
+    testChecksum("$GNZDA,160352.000,00,2280,0,0.000,0.000,0,0.000,0.000,0.000,0.000,0.000,0.000*6F\r\n"); // NEMA Wrong Checksum 6f lenREc=80
 }
 #endif
