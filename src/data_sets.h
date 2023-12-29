@@ -4570,20 +4570,6 @@ uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoR
 /** DID to NMEA RMC bit look-up table */
 extern const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS];
 
-//Time conversion constants
-#define SECONDS_PER_WEEK        604800
-#define SECONDS_PER_DAY         86400
-#define GPS_TO_UNIX_OFFSET      315964800
-/** Convert GPS Week and Ms and leapSeconds to Unix seconds**/
-double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds);
-
-/** Convert Julian Date to calendar date. */
-void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond);
-
-/** Convert GPS Week and Seconds to Julian Date.  Leap seconds are the GPS-UTC offset (18 seconds as of December 31, 2016). */
-double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds);
-
-
 #ifndef RTKLIB_H
 #define SYS_NONE    0x00                /* navigation system: none */
 #define SYS_GPS     0x01                /* navigation system: GPS */

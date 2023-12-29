@@ -1371,6 +1371,14 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\protocol_nmea.h</Link>
     </Compile>
+    <Compile Include="..\..\src\time_conversion.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\time_conversion.c</Link>
+    </Compile>
+    <Compile Include="..\..\src\time_conversion.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\time_conversion.h</Link>
+    </Compile>
     <Compile Include="src\ASF\sam\drivers\afec\afec.c">
       <SubType>compile</SubType>
     </Compile>

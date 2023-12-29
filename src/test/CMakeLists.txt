@@ -42,6 +42,7 @@ add_library(SDK_test
 	../ISPose.c
 	../ISUtilities.cpp
 	../protocol_nmea.cpp
+	../time_conversion.c
 	../linked_list.c
 	../ring_buffer.c
 	../tinystr.cpp
@@ -72,6 +73,7 @@ add_executable(run_tests
 	../ISPose.c
 	../ISUtilities.cpp
 	../protocol_nmea.cpp
+	../time_conversion.c
 	../linked_list.c
 	../ring_buffer.c
 	)
