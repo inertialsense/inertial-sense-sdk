@@ -42,9 +42,9 @@ add_library(SDK_test
 	../ISPose.c
 	../ISUtilities.cpp
 	../protocol_nmea.cpp
-	../time_conversion.c
 	../linked_list.c
 	../ring_buffer.c
+	../time_conversion.c
 	../tinystr.cpp
 	../tinyxml.cpp
 	../tinyxmlerror.cpp
@@ -73,9 +73,9 @@ add_executable(run_tests
 	../ISPose.c
 	../ISUtilities.cpp
 	../protocol_nmea.cpp
-	../time_conversion.c
 	../linked_list.c
 	../ring_buffer.c
+	../time_conversion.c
 	)
 
 target_link_libraries(run_tests gtest_main ${GTEST_LIBRARIES} pthread)

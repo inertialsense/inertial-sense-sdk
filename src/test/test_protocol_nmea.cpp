@@ -12,6 +12,12 @@ using namespace std;
 #define POS_ALT_M       1406.39
 #define LEAP_SEC        18
 
+#if 0
+#define DEBUG_PRINTF	printf
+#else
+#define DEBUG_PRINTF	
+#endif
+
 TEST(protocol_nmea, nmea_parse_ascb)
 {
 	PRINT_TEST_DESCRIPTION("Tests the $ASCB parser function nmea_parse_ascb().");
