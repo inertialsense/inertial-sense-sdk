@@ -15,6 +15,7 @@ add_library(SDK_test
 	test_math.cpp
 	test_protocol_nmea.cpp
 	test_ring_buffer.cpp
+	test_time_conversion.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -43,6 +44,7 @@ add_library(SDK_test
 	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c
+	../time_conversion.c
 	../tinystr.cpp
 	../tinyxml.cpp
 	../tinyxmlerror.cpp
@@ -59,6 +61,7 @@ add_executable(run_tests
 	test_math.cpp
 	test_ring_buffer.cpp
 	test_protocol_nmea.cpp
+	test_time_conversion.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -72,6 +75,7 @@ add_executable(run_tests
 	../protocol_nmea.cpp
 	../linked_list.c
 	../ring_buffer.c
+	../time_conversion.c
 	)
 
 target_link_libraries(run_tests gtest_main ${GTEST_LIBRARIES} pthread)
