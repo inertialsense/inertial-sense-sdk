@@ -363,7 +363,7 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
  double*              gps_tow    //!< GPS time of week (0-604800.0) [s]
  );
 
-#endif 
+#endif  // #if 0
     
 #ifdef __cplusplus
 }

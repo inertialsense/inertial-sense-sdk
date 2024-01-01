@@ -57,7 +57,6 @@ ext_modules = [
          '../../src/linked_list.c',
          '../../src/message_stats.cpp',
          '../../src/protocol_nmea.cpp',
-         '../../src/time_conversion.c',
          '../../src/serialPort.c',
          '../../src/serialPortPlatform.c',
          '../../src/time_conversion.c',
