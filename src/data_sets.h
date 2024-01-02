@@ -4754,7 +4754,6 @@ typedef struct PACKED
 
     /** Tasks */
     rtos_task_t             task[IMX_RTOS_NUM_TASKS];
-
 } rtos_info_t;
 
 /** (DID_GPX_RTOS_INFO) */
