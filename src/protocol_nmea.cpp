@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include "protocol_nmea.h"
+#include "time_conversion.h"
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
@@ -600,31 +601,26 @@ static void nmea_lonToDegMin(char* a, int aSize, int &offset, double v)
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	offset += ssnprintf(a, aSize, ",%03d%07.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
+	offset += ssnprintf(a, aSize, ",%03d%08.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
 }
 
-static void nmea_GPSTimeOfLastFix(char* a, int aSize, int &offset, uint32_t timeOfWeekMs)
+static void nmea_GPSTimeToUTCTime(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
 	aSize -= offset;
-	a += offset;
-	unsigned int millisecondsToday = timeOfWeekMs % 86400000;
-	unsigned int hours = millisecondsToday / 3600000;
-	unsigned int minutes = (millisecondsToday / 60000) % 60;
-	unsigned int seconds = (millisecondsToday / 1000) % 60;
+	a += offset;	
+	uint32_t hours, minutes, seconds, milliseconds;
+	gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &hours, &minutes,  &seconds, &milliseconds);
 	
 	offset += ssnprintf(a, aSize, ",%02u%02u%02u", hours, minutes, seconds);
 }
 
-static void nmea_GPSTimeOfLastFixMilliseconds(char* a, int aSize, int &offset, uint32_t timeOfWeekMs)
+static void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
 	aSize -= offset;
-	a += offset;
-	unsigned int millisecondsToday = timeOfWeekMs % 86400000;
-	unsigned int hours = millisecondsToday / 3600000;
-	unsigned int minutes = (millisecondsToday / 60000) % 60;
-	unsigned int seconds = (millisecondsToday / 1000) % 60;
-	unsigned int milliseconds = millisecondsToday % 1000;
-	
+	a += offset;	
+	uint32_t hours, minutes, seconds, milliseconds;
+	gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &hours, &minutes,  &seconds, &milliseconds);
+
 	offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", hours, minutes, seconds, milliseconds);
 }
 
@@ -633,7 +629,7 @@ static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &po
 	aSize -= offset;
 	a += offset;
 	double julian = gpsToJulian(pos.week, pos.timeOfWeekMs, pos.leapS);
-	int32_t year, month, day, hours, minutes, seconds, milliseconds;
+	uint32_t year, month, day, hours, minutes, seconds, milliseconds;
 	julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
 	
 	offset += ssnprintf(a, aSize, ",%02u%02u%02u", (unsigned int)day, (unsigned int)month, (unsigned int)(year-2000));
@@ -644,7 +640,7 @@ static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t 
 	aSize -= offset;
 	a += offset;
 	double julian = gpsToJulian(pos.week, pos.timeOfWeekMs, pos.leapS);
-	int32_t year, month, day, hours, minutes, seconds, milliseconds;
+	uint32_t year, month, day, hours, minutes, seconds, milliseconds;
 	julianToDate(julian, &year, &month, &day, &hours, &minutes, &seconds, &milliseconds);
 	
 	offset += ssnprintf(a, aSize, ",%02u,%02u,%04u", (unsigned int)day, (unsigned int)month, (unsigned int)year);
@@ -696,15 +692,15 @@ int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "GGA");
-	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
-	nmea_latToDegMin(a, aSize, n, pos.lla[0]);			// 2,3
-	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);			// 4,5
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);						// 1
+	nmea_latToDegMin(a, aSize, n, pos.lla[0]);						// 2,3
+	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);						// 4,5
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)fixQuality);		// 6 - GPS quality
 	nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));		// 7 - Satellites used
-	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);						// 8 - HDop
+	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);					// 8 - HDop
 	nmea_sprint(a, aSize, n, ",%.2f,M", pos.hMSL);					// 9,10 - MSL altitude
 	nmea_sprint(a, aSize, n, ",%.2f,M", pos.lla[2] - pos.hMSL);		// 11,12 - Geoid separation
-	nmea_sprint(a, aSize, n, ",,"); 									// 13,14 - Age of differential, DGPS station ID number	
+	nmea_sprint(a, aSize, n, ",,"); 								// 13,14 - Age of differential, DGPS station ID number	
 	return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -722,10 +718,10 @@ int nmea_gll(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "GLL");
-	nmea_latToDegMin(a, aSize, n, pos.lla[0]);			// 1,2
-	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);			// 3,4
-	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 5
-	nmea_sprint(a, aSize, n, ",A");	// 6
+	nmea_latToDegMin(a, aSize, n, pos.lla[0]);                      // 1,2
+	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                      // 3,4
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);                        // 5
+	nmea_sprint(a, aSize, n, ",A");                                 // 6
 	return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -820,7 +816,7 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "RMC");
-	nmea_GPSTimeOfLastFix(a, aSize, n, pos.timeOfWeekMs - (pos.leapS*1000));		// 1 - UTC time of last fix
+	nmea_GPSTimeToUTCTime(a, aSize, n, pos);										// 1 - UTC time of last fix
 	if((pos.status&GPS_STATUS_FIX_MASK)!=GPS_STATUS_FIX_NONE)
 	{
 		nmea_sprint(a, aSize, n, ",A");												// 2 - A=active (good)
@@ -867,9 +863,9 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "ZDA");
-	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);	// 1
-	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										    // 2,3,4
-	nmea_sprint(a, aSize, n, ",00,00");												    // 5,6
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);										// 1
+	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
+	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -958,18 +954,18 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 		hh - Checksum
 	*/
 	
-	int n = ssnprintf(a, aSize, "$PASHR");															// 1 - Name
-	nmea_GPSTimeOfLastFixMilliseconds(a, aSize, n, pos.timeOfWeekMs - pos.leapS*1000);				// 2 - UTC Time
+	int n = ssnprintf(a, aSize, "$PASHR");											// 1 - Name
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);										// 2 - UTC Time
 
-	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));										// 3 - Heading value in decimal degrees.
-	nmea_sprint(a, aSize, n, ",T");																	// 4 - T (heading respect to True North)
-	nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[0]));										// 5 - Roll in degrees
-	nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[1]));										// 6 - Pitch in degrees
-	nmea_sprint(a, aSize, n, ",%+.2f", heave);														// 7 - Heave
+	nmea_sprint(a, aSize, n, ",%.2f", RAD2DEG(ins1.theta[2]));						// 3 - Heading value in decimal degrees.
+	nmea_sprint(a, aSize, n, ",T");													// 4 - T (heading respect to True North)
+	nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[0]));						// 5 - Roll in degrees
+	nmea_sprint(a, aSize, n, ",%+.2f", RAD2DEG(ins1.theta[1]));						// 6 - Pitch in degrees
+	nmea_sprint(a, aSize, n, ",%+.2f", heave);										// 7 - Heave
 	
-	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[0])); //roll accuracy	//8
-	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[1])); //pitch accuracy	//9
-	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[2])); //heading accuracy	//10
+	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[0])); 				// 8 - roll accuracy
+	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[1])); 				// 9 - pitch accuracy
+	nmea_sprint(a, aSize, n, ",%.3f", RAD2DEG(sigma.StdAttNed[2])); 				// 10 - heading accuracy
 	
 	int fix = 0;
 	if(INS_STATUS_NAV_FIX_STATUS(ins1.insStatus) >= GPS_NAV_FIX_POSITIONING_RTK_FLOAT)
@@ -980,8 +976,8 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 	{
 		fix = 1;
 	}
-	nmea_sprint(a, aSize, n, ",%d", fix);															// 11 - GPS Quality
-	nmea_sprint(a, aSize, n, ",%d", INS_STATUS_SOLUTION(ins1.insStatus) >= INS_STATUS_SOLUTION_NAV); // 12 - INS Status
+	nmea_sprint(a, aSize, n, ",%d", fix);																// 11 - GPS Quality
+	nmea_sprint(a, aSize, n, ",%d", INS_STATUS_SOLUTION(ins1.insStatus) >= INS_STATUS_SOLUTION_NAV); 	// 12 - INS Status
 	
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -1493,7 +1489,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 }
 
 /**
- * Returns eNmeaMsgIdInx if NMEA head is recognised.
+ * Returns eNmeaMsgIdInx if NMEA head is recognized.
  * Error -1 for NMEA head not found 
  * 		 -2 for invalid length 
 */

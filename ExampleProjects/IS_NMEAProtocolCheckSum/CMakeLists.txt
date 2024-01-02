@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
 # Required: set the project
 project(IS_NMEAProtocolCheckSum)
