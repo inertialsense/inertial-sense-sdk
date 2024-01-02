@@ -326,6 +326,48 @@ TEST(protocol_nmea, GGA)
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
+TEST(protocol_nmea, GGA2)
+{
+    char gga[ASCII_BUF_LEN] = { 0 };
+    snprintf(gga, ASCII_BUF_LEN, "$GNGGA,181457.400,3903.80427,N,07709.29556,W,2,12,0.47,1438.20,M,-18.80,M,,*7D\r\n");
+    gps_pos_t pos = {};
+    pos.week = 2260;
+    pos.timeOfWeekMs = 152115400;
+    pos.satsUsed = 12;
+    pos.status =
+        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GPS_STATUS_FLAGS_FIX_OK |
+        GPS_STATUS_FLAGS_DGPS_USED |
+        GPS_STATUS_FIX_DGPS |
+        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    pos.hMSL = 1438.2;
+    pos.lla[0] = (39.0 + 3.80427 / 60.0);
+    pos.lla[1] = -(77.0 + 9.29556 / 60.0);
+    pos.lla[2] = pos.hMSL - 18.8;
+    pos.pDop = 0.47;
+    pos.leapS = LEAP_SEC;
+    // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+    ixVector3d lla;
+    lla[0] = DEG2RAD(pos.lla[0]);
+    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[2] = pos.lla[2];		// Use ellipsoid altitude
+    lla2ecef(lla, pos.ecef);
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
+    //printf("%s\n", gga);
+    //printf("%s\n", abuf);
+    ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
+
+    gps_pos_t result = {};
+    result.week = pos.week;
+    result.leapS = pos.leapS;
+    uint32_t weekday = pos.timeOfWeekMs / 86400000;
+    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    pos.hAcc = result.hAcc;
+    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
 TEST(protocol_nmea, GLL)
 {
     gps_pos_t pos = {};
@@ -367,6 +409,45 @@ TEST(protocol_nmea, GSA)
     nmea_parse_gsa_to_did_gps(resultPos, resultSat, abuf, n);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
+}
+
+TEST(protocol_nmea, RMC)
+{
+    char rmc[ASCII_BUF_LEN] = { 0 };
+    snprintf(rmc, ASCII_BUF_LEN, "$GNRMC,181457,A,4003.34252,N,11139.51903,W,000.0,000.0,010523,000.0,E*71\r\n");
+    gps_pos_t pos = {};
+    gps_vel_t vel = {};
+    float magDeclination = 0.0f;
+    pos.week = 2260;
+    pos.timeOfWeekMs = 152115000;
+    pos.satsUsed = 12;
+    pos.status =
+        GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+        GPS_STATUS_FLAGS_FIX_OK |
+        GPS_STATUS_FLAGS_DGPS_USED |
+        GPS_STATUS_FIX_DGPS |
+        GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+    pos.hMSL = 1438.2;
+    pos.lla[0] = (40.0 + 3.34252 / 60.0);
+    pos.lla[1] = -(111.0 + 39.51903 / 60.0);
+    pos.lla[2] = pos.hMSL - 18.8;
+    pos.pDop = 0.47;
+    pos.leapS = LEAP_SEC;
+    // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+    ixVector3d lla;
+    lla[0] = DEG2RAD(pos.lla[0]);
+    lla[1] = DEG2RAD(pos.lla[1]);
+    lla[2] = pos.lla[2];		// Use ellipsoid altitude
+    lla2ecef(lla, pos.ecef);
+
+    // float courseMadeTrue  = 0.0f * C_DEG2RAD_F;
+    // float speed2dKnots = 0.0f;
+
+    char abuf[ASCII_BUF_LEN] = { 0 };
+    int n = nmea_rmc(abuf, ASCII_BUF_LEN, pos, vel, magDeclination);
+    printf("%s\n", rmc);
+    printf("%s\n", abuf);
+    ASSERT_EQ(memcmp(&rmc, &abuf, n), 0);
 }
 
 TEST(protocol_nmea, ZDA)
