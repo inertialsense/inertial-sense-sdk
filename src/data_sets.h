@@ -1487,6 +1487,8 @@ enum eSerialPortBridge
     SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,   // loopback
 };
 
+#define NMEA_BUFFER_SIZE 256
+
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
@@ -1753,6 +1755,8 @@ typedef struct PACKED
     /** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
+
+
 enum eNmeaAsciiMsgId
 {
     NMEA_MSG_ID_PIMU      = 0,
@@ -1793,6 +1797,16 @@ enum eNmeaAsciiMsgId
 #define NMEA_RMC_BITS_VTG           (1<<NMEA_MSG_ID_VTG)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
+
+typedef struct PACKED
+{
+     /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
+    uint32_t                nmeaBits;
+
+    /** NMEA period multiple of above ISB period multiple indexed by NMEA_MSG_ID... */
+    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+}rmcNmea_t;
+
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
@@ -1802,11 +1816,7 @@ typedef struct PACKED
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT];
 
-    /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
-    uint32_t                nmeaBits;
-
-    /** NMEA period multiple of above period multiple indexed by NMEA_MSG_ID... */
-    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+    rmcNmea_t               rmcNmea;
 
 } rmci_t;
 
@@ -1899,6 +1909,17 @@ enum GRMC_BIT_POS{
                                     | GMRC_BITS_GPS2_RTK_CMP_MISC \
                                     | GRMC_BITS_GPS1_RAW \
                                     | GRMC_BITS_GPS2_RAW )
+
+
+typedef struct PACKED 
+{
+    rmc_t rmc;
+
+    uint16_t periodMultiple[GRMC_BIT_POS_COUNT];
+
+    /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
+    rmcNmea_t rmcNmea;
+} grmci_t;
 
 /** (DID_IO) Input/Output */
 typedef struct PACKED
@@ -4145,8 +4166,8 @@ typedef struct
     uint32_t                rtkMode;
 
     /** GNSS status (see RunState) **/
-    eGPXGnssRunState       gnss1RunState;
-    eGPXGnssRunState       gnss2RunState;
+    uint32_t                 gnss1RunState;
+    uint32_t                 gnss2RunState;
 } gpx_status_t;
 
 
