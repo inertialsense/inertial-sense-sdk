@@ -1727,7 +1727,7 @@ typedef struct PACKED
     rmc_t                   rmc;
     
     /** Used for both the DID binary and NMEA messages.  */
-    uint8_t                 periodMultiple[DID_COUNT];
+    uint8_t                 periodMultiple[DID_COUNT_UINS];
 
     rmcNmea_t               rmcNmea;
 
