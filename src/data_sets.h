@@ -1409,6 +1409,8 @@ enum eSerialPortBridge
     SERIAL_PORT_BRIDGE_SER2_TO_SER2     = 18,   // loopback
 };
 
+#define NMEA_BUFFER_SIZE 256
+
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
@@ -1709,23 +1711,25 @@ enum eNmeaAsciiMsgId
 #define NMEA_RMC_BITS_GSV     		(1<<NMEA_MSG_ID_GSV)
 #define NMEA_RMC_BITS_VTG     		(1<<NMEA_MSG_ID_VTG)
 
+typedef struct PACKED
+{
+     /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
+    uint32_t                nmeaBits;
+
+    /** NMEA period multiple of above ISB period multiple indexed by NMEA_MSG_ID... */
+    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+}rmcNmea_t;
+
 /** Realtime message controller internal (RMCI). */
 typedef struct PACKED
 {
-    /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
-    uint64_t                bits;
-
-    /** Options to select alternate ports to output data, etc.  (see RMC_OPTIONS_...) */
-    uint32_t				options;
+     /** Data stream enable bits and options for the specified ports.  (see RMC_BITS_...) */
+    rmc_t                   rmc;
     
     /** Used for both the DID binary and NMEA messages.  */
     uint8_t                 periodMultiple[DID_COUNT_UINS];
 
-    /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
-    uint32_t                nmeaBits;
-
-    /** NMEA period multiple of above period multiple indexed by NMEA_MSG_ID... */
-    uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+    rmcNmea_t               rmcNmea;
 
 } rmci_t;
 

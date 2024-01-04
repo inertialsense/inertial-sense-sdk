@@ -25,22 +25,22 @@ TEST(protocol_nmea, nmea_parse_ascb)
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
-    r.periodMultiple[DID_INS_2] = 2;
-    r.periodMultiple[DID_PIMU] = 1;
-    r.periodMultiple[DID_GPS1_POS] = 1;
-    r.nmeaBits = 
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = '1';
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU] = '2';
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA] = '3';
+    r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS2 |
-        NMEA_RMC_BITS_PPIMU |
+        NMEA_RMC_BITS_PIMU |
         NMEA_RMC_BITS_GGA;
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
     char a[ASCII_BUF_LEN] = {};
     int n=0;
-    nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCB,%u,,%u,,%u,,,%u", 
+    nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCB,%u,%u,,,%u,,,%u,", 
         options, 
-        r.periodMultiple[DID_PIMU],
-        r.periodMultiple[DID_INS_2],
-        r.periodMultiple[DID_GPS1_POS]
+        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU],
+        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2],
+        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]
         );
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
@@ -52,11 +52,13 @@ TEST(protocol_nmea, nmea_parse_ascb)
     {
         rmci_t &a = rmci[i];
         rmci_t &b = outRmci[i];
-        ASSERT_EQ( a.bits, b.bits );
-        ASSERT_EQ( a.nmeaBits, b.nmeaBits );
-        for (int j=0; j<DID_COUNT_UINS; j++)
+        ASSERT_EQ( a.rmc.bits, b.rmc.bits );
+        ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
+        //cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
+        for (int j=0; j<NMEA_MSG_ID_COUNT; j++)
         {
-            ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
+            // cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n"; 
+            ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );
         }    
     }
 }
@@ -68,21 +70,21 @@ TEST(protocol_nmea, nmea_parse_asce)
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
     rmci_t &r = rmci[port];
-    r.periodMultiple[DID_INS_2] = 2;
-    r.periodMultiple[DID_PIMU] = 1;
-    r.periodMultiple[DID_GPS1_POS] = 1;
-    r.nmeaBits = 
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = '2';
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU] = '1';
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA] = '0';
+    r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS2 |
-        NMEA_RMC_BITS_PPIMU |
+        NMEA_RMC_BITS_PIMU |
         NMEA_RMC_BITS_GGA;
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
     char a[ASCII_BUF_LEN] = {};
     int n=0;
 	nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", options);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.periodMultiple[DID_INS_2]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PPIMU, r.periodMultiple[DID_PIMU]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GGA,   r.periodMultiple[DID_GPS1_POS]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PIMU, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GGA,   r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GGA]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
     rmci_t outRmci[NUM_COM_PORTS] = {};
@@ -93,15 +95,17 @@ TEST(protocol_nmea, nmea_parse_asce)
     {
         rmci_t &a = rmci[i];
         rmci_t &b = outRmci[i];
-        ASSERT_EQ( a.bits, b.bits );
-        ASSERT_EQ( a.nmeaBits, b.nmeaBits );
-        for (int j=0; j<DID_COUNT_UINS; j++)
+        ASSERT_EQ( a.rmc.bits, b.rmc.bits );
+         
+        // cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
+        ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
+        for (int j=0; j < NMEA_MSG_ID_COUNT; j++)
         {
-            ASSERT_EQ( a.periodMultiple[j], b.periodMultiple[j] );
-        }    
+            // cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n";  
+            ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );
+        }   
     }
 }
-
 
 TEST(protocol_nmea, INFO)
 {
