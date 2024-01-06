@@ -1,10 +1,14 @@
+// #include <iostream>
+#include <fstream>
+#include <string>
 #include "md5.h"
+using namespace std;
 
 /**
  * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
  */
-void md5_reset(md5hash_t& hash) {
-    // seed the hash
+void md5_reset(md5hash_t& hash) 
+{   // seed the hash
     hash.dwords[0] = 0x67452301;
     hash.dwords[1] = 0xefcdab89;
     hash.dwords[2] = 0x98badcfe;
@@ -23,7 +27,8 @@ void md5_reset(md5hash_t& hash) {
  * define a static buffer of MAX_CHUNK_SIZE and go that route as well.
  */
 #define MD5_LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
-uint8_t* md5_hash(md5hash_t& md5hash, uint16_t data_len, uint8_t* data) {
+uint8_t* md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data) 
+{
     // Message (to prepare)
     uint8_t *msg = (uint8_t *)0;
 
@@ -57,7 +62,6 @@ uint8_t* md5_hash(md5hash_t& md5hash, uint16_t data_len, uint8_t* data) {
             0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
             0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391};
 
-
     // Pre-processing: adding a single 1 bit
     //append "1" bit to message
     /* Notice: the input bytes are considered as bits strings,
@@ -72,10 +76,10 @@ uint8_t* md5_hash(md5hash_t& md5hash, uint16_t data_len, uint8_t* data) {
     msg = (uint8_t *)(calloc(new_len + 64, 1)); // also appends "0" bits
     // (we alloc also 64 extra bytes...)
     memcpy(msg, data, data_len);
-    msg[data_len] = 128; // write the "1" bit
+    msg[data_len] = 128;                        // write the "1" bit
 
-    uint32_t bits_len = 8*data_len; // note, we append the len
-    memcpy(msg + new_len, &bits_len, 4);           // in bits at the end of the buffer
+    uint32_t bits_len = 8*data_len;             // note, we append the len
+    memcpy(msg + new_len, &bits_len, 4);        // in bits at the end of the buffer
 
     // Process the message in successive 512-bit chunks:
     //for each 512-bit chunk of message:
@@ -128,4 +132,57 @@ uint8_t* md5_hash(md5hash_t& md5hash, uint16_t data_len, uint8_t* data) {
     free(msg);
 
     return (uint8_t *)&md5hash.dwords[0];
+}
+
+
+/**
+ * checks the status of the requested file, returning the file size and calculated md5sum of the file
+ * @param filename the file to validate/fetch details for
+ * @param filesize [OUT] the size of the file, as read from the scan
+ * @param md5result [OUT] the MD5 checksum calculated for the file
+ * @return 0 on success, errno (negative) if error
+ */
+int md5_file_details(string filename, size_t& filesize, uint32_t(&md5hash)[4]) 
+{
+    ifstream ifs(filename, ios::binary);
+    if (!ifs.good()) return errno;
+
+    // Calculate the md5 checksum
+    uint8_t buff[1];
+    md5hash_t hash;
+    md5_reset(hash);
+
+    filesize = 0;
+    while (ifs)
+    {
+        ifs.read((char *)buff, sizeof(buff));
+        size_t len = ifs.gcount();
+        md5_hash(hash, len, buff);
+
+        if (ifs.eof())
+        {
+            filesize += len;
+        }
+        else
+        {
+            filesize = ifs.tellg();
+        }
+    }
+
+    // Copy hash
+    for (int i=0; i<4; i++)
+    {
+        md5hash[i] = hash.dwords[i];
+    }
+
+    return 0;
+}
+
+
+void md5_print_hash(md5hash_t& md5hash)
+{
+    for (int i=0; i<16; i++)
+    {
+        printf("%02x", md5hash.bytes[i]);
+    }
 }
