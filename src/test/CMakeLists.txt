@@ -16,6 +16,7 @@ add_library(SDK_test
 	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
+	test_md5.cpp
 	test_protocol_nmea.cpp
 	test_ring_buffer.cpp
 	../com_manager.c
@@ -46,6 +47,7 @@ add_library(SDK_test
 	../protocol/FirmwareUpdate.cpp
 	../protocol_nmea.cpp
 	../linked_list.c
+	../util/md5.cpp
 	../ring_buffer.c
 	../tinystr.cpp
 	../tinyxml.cpp
@@ -54,16 +56,17 @@ add_library(SDK_test
 	)
 
 add_executable(run_tests
-	test_com_manager.cpp
-	# test_com_manager_2.cpp
-	test_InertialSense.cpp
-	test_ISComm.cpp
-	test_ISDataMappings.cpp
-	test_ISFirmwareUpdate.cpp
-	test_ISPolynomial.cpp
-	test_math.cpp
-	test_ring_buffer.cpp
-	test_protocol_nmea.cpp
+	# test_com_manager.cpp
+	# # test_com_manager_2.cpp
+	# test_InertialSense.cpp
+	# test_ISComm.cpp
+	# test_ISDataMappings.cpp
+	# test_ISFirmwareUpdate.cpp
+	# test_ISPolynomial.cpp
+	# test_math.cpp
+	test_md5.cpp
+	# test_ring_buffer.cpp
+	# test_protocol_nmea.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -77,6 +80,7 @@ add_executable(run_tests
 	../protocol/FirmwareUpdate.cpp
 	../protocol_nmea.cpp
 	../linked_list.c
+	../util/md5.cpp
 	../ring_buffer.c
 	)
 

@@ -424,34 +424,3 @@ int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) { return
 
 int ISFirmwareUpdater::cleanupFirmwarePackage() { return 0; }
 
-/**
- * checks the status of the requested file, returning the file size and calculated md5sum of the file
- * @param filename the file to validate/fetch details for
- * @param filesize [OUT] the size of the file, as read from the scan
- * @param md5result [OUT] the MD5 checksum calculated for the file
- * @return 0 on success, errno (negative) if error
- */
-int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesize, uint32_t(&md5hash)[4]) {
-    std::ifstream ifs(filename, std::ios::binary);
-    if (!ifs.good()) return errno;
-
-    // calculate the md5 checksum
-    uint8_t buff[512];
-    resetMd5();
-
-    filesize = 0;
-    while (ifs)
-    {
-        ifs.read((char *)buff, sizeof(buff));
-        size_t len = ifs.gcount();
-        hashMd5(len, buff);
-
-        if (ifs.eof())
-            filesize += len;
-        else
-            filesize = ifs.tellg();
-    }
-    getCurrentMd5(md5hash);
-
-    return 0;
-}
