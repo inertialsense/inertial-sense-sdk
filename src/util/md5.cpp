@@ -6,117 +6,6 @@
 #include "md5.h"
 using namespace std;
 
-/**
- * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
- */
-void md5_reset(md5hash_t& hash) 
-{   // seed the hash
-    hash.dwords[0] = 0x67452301;
-    hash.dwords[1] = 0xefcdab89;
-    hash.dwords[2] = 0x98badcfe;
-    hash.dwords[3] = 0x10325476;
-}
-
-/**
- * Adds the specified data into the running MD5 hash
- * @param len the number of bytes to consume into the hash
- * @param data the bytes to consume into the hash
- * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
- *
- * TODO: This function uses dynamic memory to allocate memory for the data buffer. Since our implementation
- * will generally be using the fixed size of the session_chunk_size, we can probably do this allocation once and
- * reuse the buffer, instead of allocating and then freeing with each call.  Likewise, we maybe able to
- * define a static buffer of MAX_CHUNK_SIZE and go that route as well.
- */
-uint8_t* md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data) 
-{
-    MD5_CTX_t context;
-    unsigned char digest[16];
-    MD5Init(&context);
-    MD5Update(&context, (const unsigned char *)data, data_len);
-    MD5Final(digest, &context);
-
-    for (int i=0; i<4; i++)
-    {
-        md5hash.dwords[i] = context.state[i];
-    }
-
-    return (uint8_t *)&md5hash.dwords[0];
-}
-
-/**
- * checks the status of the requested file, returning the file size and calculated md5sum of the file
- * @param filename the file to validate/fetch details for
- * @param filesize [OUT] the size of the file, as read from the scan
- * @param md5result [OUT] the MD5 checksum calculated for the file
- * @return 0 on success, errno (negative) if error
- */
-int md5_file_details(string filename, size_t& filesize, uint32_t(&md5hash)[4]) 
-{
-    ifstream ifs(filename, ios::binary);
-    if (!ifs.good()) return errno;
-
-    MD5_CTX_t context;
-    unsigned char digest[16];
-    MD5Init(&context);
-
-    filesize = 0;
-    while (ifs)
-    {
-        uint8_t buff[64] = {};
-        ifs.read((char *)buff, sizeof(buff));
-        size_t len = ifs.gcount();
-
-        MD5Update(&context, (const unsigned char *)buff, len);
-
-        if (ifs.eof())
-        {
-            filesize += len;
-        }
-        else
-        {
-            filesize = ifs.tellg();
-        }
-    }
-
-    MD5Final(digest, &context);
-
-    // Copy hash
-    for (int i=0; i<4; i++)
-    {
-        md5hash[i] = context.state[i];
-    }
-
-    return 0;
-}
-
-string md5_hash_string(md5hash_t& md5hash)
-{
-    std::stringstream stream;
-
-    for (int i=0; i<16; i++)
-    {
-        stream << std::hex << std::setfill('0') << std::setw(2) << (int)md5hash.bytes[i];
-    }
-
-    return stream.str();
-}
-
-void md5_print_hash(md5hash_t& md5hash)
-{
-#if 1
-    cout << md5_hash_string(md5hash);
-#else
-    for (int i=0; i<16; i++)
-    {
-        printf("%02x", md5hash.bytes[i]);
-    }
-#endif
-}
-
-
-
-
 
 // Constants for MD5Transform routine
 #define S11 7
@@ -179,10 +68,10 @@ void MD5Init(MD5_CTX_t *context) {
     context->count[0] = context->count[1] = 0;
 
     // Load magic initialization constants
-    context->state[0] = 0x67452301;
-    context->state[1] = 0xefcdab89;
-    context->state[2] = 0x98badcfe;
-    context->state[3] = 0x10325476;
+    context->state.dwords[0] = 0x67452301;
+    context->state.dwords[1] = 0xefcdab89;
+    context->state.dwords[2] = 0x98badcfe;
+    context->state.dwords[3] = 0x10325476;
 }
 
 // MD5 block update operation
@@ -203,10 +92,10 @@ void MD5Update(MD5_CTX_t *context, const unsigned char *input, unsigned int inpu
     // Transform as many times as possible
     if (inputLen >= partLen) {
         MD5_memcpy((unsigned char *)&context->buffer[index], (unsigned char *)input, partLen);
-        MD5Transform(context->state, context->buffer);
+        MD5Transform(context->state.dwords, context->buffer);
 
         for (i = partLen; i + 63 < inputLen; i += 64) {
-            MD5Transform(context->state, &input[i]);
+            MD5Transform(context->state.dwords, &input[i]);
         }
 
         index = 0;
@@ -237,7 +126,7 @@ void MD5Final(unsigned char digest[16], MD5_CTX_t *context) {
     MD5Update(context, bits, 8);
 
     // Store state in digest
-    Encode(digest, context->state, 16);
+    Encode(digest, context->state.dwords, 16);
 
     // Zeroize sensitive information
     // MD5_memset((unsigned char *)context, 0, sizeof(*context));
@@ -369,5 +258,99 @@ void MD5_memset(unsigned char *output, int value, unsigned int len) {
     for (i = 0; i < len; i++) {
         ((char *)output)[i] = (char)value;
     }
+}
+
+/**
+ * Adds the specified data into the running MD5 hash
+ * @param len the number of bytes to consume into the hash
+ * @param data the bytes to consume into the hash
+ * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
+ *
+ * TODO: This function uses dynamic memory to allocate memory for the data buffer. Since our implementation
+ * will generally be using the fixed size of the session_chunk_size, we can probably do this allocation once and
+ * reuse the buffer, instead of allocating and then freeing with each call.  Likewise, we maybe able to
+ * define a static buffer of MAX_CHUNK_SIZE and go that route as well.
+ */
+uint8_t* md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data) 
+{
+    MD5_CTX_t context;
+    unsigned char digest[16];
+    MD5Init(&context);
+    MD5Update(&context, (const unsigned char *)data, data_len);
+    MD5Final(digest, &context);
+
+    md5hash = context.state;
+
+    return (uint8_t *)&md5hash.dwords[0];
+}
+
+/**
+ * checks the status of the requested file, returning the file size and calculated md5sum of the file
+ * @param filename the file to validate/fetch details for
+ * @param filesize [OUT] the size of the file, as read from the scan
+ * @param md5result [OUT] the MD5 checksum calculated for the file
+ * @return 0 on success, errno (negative) if error
+ */
+int md5_file_details(string filename, size_t& filesize, uint32_t(&md5hash)[4]) 
+{
+    ifstream ifs(filename, ios::binary);
+    if (!ifs.good()) return errno;
+
+    MD5_CTX_t context;
+    unsigned char digest[16];
+    MD5Init(&context);
+
+    filesize = 0;
+    while (ifs)
+    {
+        uint8_t buff[64] = {};
+        ifs.read((char *)buff, sizeof(buff));
+        size_t len = ifs.gcount();
+
+        MD5Update(&context, (const unsigned char *)buff, len);
+
+        if (ifs.eof())
+        {
+            filesize += len;
+        }
+        else
+        {
+            filesize = ifs.tellg();
+        }
+    }
+
+    MD5Final(digest, &context);
+
+    // Copy hash
+    for (int i=0; i<4; i++)
+    {
+        md5hash[i] = context.state.dwords[i];
+    }
+
+    return 0;
+}
+
+string md5_string(md5hash_t& md5hash)
+{
+    std::stringstream stream;
+
+    for (int i=0; i<16; i++)
+    {
+        stream << std::hex << std::setfill('0') << std::setw(2) << (int)md5hash.bytes[i];
+    }
+
+    return stream.str();
+}
+
+void md5_print(md5hash_t& md5hash)
+{
+#if 1
+    cout << md5_string(md5hash);
+#else
+    for (int i=0; i<16; i++)
+    {
+        printf("%02x", md5hash.bytes[i]);
+    }
+#endif
 }
 
