@@ -81,7 +81,7 @@ enum eNmeaProtocolVersion
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
-void nmea_enable_stream(rmci_t &rmci, uint32_t nmeaId, uint8_t periodMultiple);
+void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_t periodMultiple);
 void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
 uint32_t nmea_compute_checksum(uint8_t* str, int size);
@@ -98,7 +98,7 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
-void nmea_set_rmc_period_multiple(rmci_t &rmci, nmea_msgs_t tmp);
+void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t tmp);
 int getNMEAMsgType(char *msgBuf, int msgSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
@@ -145,6 +145,7 @@ int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS]);
 int nmea_parse_zda(const char msgBuf[], int msgSize, double &day, double &month, double &year);
 int nmea_parse_gns(const char msgBuf[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
 int nmea_parse_gga(const char a[], int aSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);

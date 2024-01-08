@@ -3,7 +3,7 @@
 # The one define BUILD_INERTIAL_SENSE_SDK needs to be checked, and if on,
 #  link the InertialSense library only
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
 project(ISCommunicationsExample)
 
