@@ -95,7 +95,6 @@ jobs:
     runs-on: [self-hosted, linux, x64, focal]
     if: false  # disable this job
     timeout-minutes: 5
-    needs: [imx5-integration-tests, ins3-integration-tests]
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
