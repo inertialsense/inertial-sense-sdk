@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <string>
 #include "md5.h"
 using namespace std;
 
@@ -271,7 +270,7 @@ void MD5_memset(unsigned char *output, int value, unsigned int len) {
  * reuse the buffer, instead of allocating and then freeing with each call.  Likewise, we maybe able to
  * define a static buffer of MAX_CHUNK_SIZE and go that route as well.
  */
-uint8_t* md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data) 
+void md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data) 
 {
     MD5_CTX_t context;
     unsigned char digest[16];
@@ -280,8 +279,6 @@ uint8_t* md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data)
     MD5Final(digest, &context);
 
     md5hash = context.state;
-
-    return (uint8_t *)&md5hash.dwords[0];
 }
 
 /**
@@ -291,7 +288,7 @@ uint8_t* md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data)
  * @param md5result [OUT] the MD5 checksum calculated for the file
  * @return 0 on success, errno (negative) if error
  */
-int md5_file_details(string filename, size_t& filesize, uint32_t(&md5hash)[4]) 
+int md5_file_details(const char *filename, size_t& filesize, uint32_t(&md5hash)[4]) 
 {
     ifstream ifs(filename, ios::binary);
     if (!ifs.good()) return errno;
@@ -330,6 +327,8 @@ int md5_file_details(string filename, size_t& filesize, uint32_t(&md5hash)[4])
     return 0;
 }
 
+#if !defined(PLATFORM_IS_EMBEDDED) 
+
 string md5_string(md5hash_t& md5hash)
 {
     std::stringstream stream;
@@ -354,3 +353,4 @@ void md5_print(md5hash_t& md5hash)
 #endif
 }
 
+#endif  // #if !defined(PLATFORM_IS_EMBEDDED) 

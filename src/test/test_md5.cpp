@@ -32,7 +32,7 @@ long GetFileSize(string filename)
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
-void check_md5_file(string filename)
+void check_md5_file(const char *filename)
 {
     // Compute md5 hash using our library
     size_t filesize = 0;
@@ -53,7 +53,7 @@ void check_md5_file(string filename)
     EXPECT_EQ(hashStr, string(path));
 
     // Compare filesize
-    EXPECT_EQ(filesize, GetFileSize(filename.c_str()));
+    EXPECT_EQ(filesize, GetFileSize(filename));
 
 #if 0   // Print results
     printf("size: %d %s %s\n", (int)filesize, hashStr.c_str(), path);
@@ -65,7 +65,7 @@ TEST(md5, file_md5_hash)
 {
 
 #if 1   // Repeat string with index count
-    string filename = "md5_test.txt";
+    const char *filename = "md5_test.txt";
     // Create test file
     ofstream myfile(filename);
     for (int i=0; i<1024; i++)
@@ -85,7 +85,7 @@ TEST(md5, file_md5_hash)
 #if 1
 TEST(md5, md5_1_to_400k_file_size)
 {
-    string filename = "md5_test.txt";
+    const char *filename = "md5_test.txt";
 
     for (int len=1; len<400000; )
     {
@@ -105,7 +105,7 @@ TEST(md5, md5_1_to_400k_file_size)
     }
 
     // Remove test file
-    remove(filename.c_str());
+    remove(filename);
 }
 #endif
 
