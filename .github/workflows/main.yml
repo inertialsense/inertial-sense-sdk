@@ -37,7 +37,7 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.ALL_REPO_PAT }}
+          # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
@@ -77,7 +77,7 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.ALL_REPO_PAT }}
+          # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
@@ -122,7 +122,7 @@ jobs:
       - name: Checkout source and submodules
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.ALL_REPO_PAT }}
+          # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
 
       - name: Install dependencies
