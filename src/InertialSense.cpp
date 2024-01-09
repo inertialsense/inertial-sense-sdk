@@ -1088,24 +1088,32 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_enableDeviceValidation)
 	{
 		time_t startTime = time(0);
+        bool removedSerials = false;
 
 		// Query devices with 10 second timeout
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
-				comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
-				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
-				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
-				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
-				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
+                if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
+                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) <= 0))
+                {
+                    // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+                    RemoveDevice(i);
+                    removedSerials = true, i--;
+                }
+                else
+                {
+                    // comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+                    comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
+                    comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
+                    comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);
+                }
 			}
 
 			SLEEP_MS(100);
 			comManagerStep();
 		}
-
-		bool removedSerials = false;
 
 		// remove each failed device where communications were not received
 		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
@@ -1113,7 +1121,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			if (!HasReceivedResponseFromDevice(i))
 			{
 				RemoveDevice(i);
-				removedSerials = true;
+				removedSerials = true, i--;
 			}
 		}
 
