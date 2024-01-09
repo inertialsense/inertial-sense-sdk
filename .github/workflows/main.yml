@@ -41,15 +41,12 @@ jobs:
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
-      - name: Install embedded compilers
-        run: ./install_compilers.sh
-
       - name: Install dependencies
         run: |
-          ../SDK/scripts/install_log_inspector_dependencies.sh
-          ../SDK/scripts/install_sdk_dependencies.sh
-          ./install_gtest.sh
-          ./install_evaltool_dep.sh
+          ./install_log_inspector_dependencies.sh
+          ./install_sdk_dependencies.sh
+      #           ./install_gtest.sh
+
 
       - name: Clean All
         run: ./clean_all.sh
