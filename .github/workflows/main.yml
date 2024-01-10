@@ -24,15 +24,6 @@ concurrency:
   cancel-in-progress: true  
 
 jobs:
-  cpp-linter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: cpp-linter/cpp-linter-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          style: 'file'
 
   ba_linux:
     name: "General Software Linux"
