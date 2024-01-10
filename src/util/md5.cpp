@@ -324,10 +324,8 @@ int md5_file_details(const char *filename, size_t& filesize, uint32_t md5hash[4]
 }
 
 // Converts md5 hexadecimal char array to binary integer 
-md5hash_t md5_from_char_array(const char hashStr[])
+void md5_from_char_array(md5hash_t& md5, const char hashStr[])
 {
-    md5hash_t md5 = {};
-
     for (int i=0; i<16; i++)
     {
         int j = i*2;
@@ -337,8 +335,6 @@ md5hash_t md5_from_char_array(const char hashStr[])
         md5.bytes[i] <<= 4;
         md5.bytes[i] |= ((b <= '9') ? b - '0' : (b & 0x7) + 9);
     }
-
-    return md5;
 }
 
 // Converts md5 binary integer to char array hexadecimal 
@@ -366,7 +362,9 @@ md5hash_t md5_from_string(string hashStr)
     if (hashStr.size() < 32)
         return {};
 
-    return md5_from_char_array(hashStr.c_str());
+    md5hash_t md5;
+    md5_from_char_array(md5, hashStr.c_str());
+    return md5;
 }
 
 // Converts md5 binary integer to char string hexadecimal 

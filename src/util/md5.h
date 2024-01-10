@@ -42,7 +42,7 @@ inline bool md5_matches(const md5hash_t &a, const md5hash_t &b) {
 }
 
 // Helper functions
-md5hash_t md5_from_char_array(const char hashStr[]);
+void md5_from_char_array(md5hash_t& md5, const char hashStr[]);
 bool md5_to_char_array(md5hash_t& md5, char hashStr[], int hashStrMaxLen);
 #ifndef ARM
 md5hash_t md5_from_string(std::string hashStr);
