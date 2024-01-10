@@ -5,6 +5,7 @@
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
+#include "util/md5.h"
 
 
 static int s_protocol_version = 0;
@@ -257,22 +258,8 @@ char *ASCII_to_vec3d(double vec[], char *ptr)
 
 char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
 {
-	union 
-	{
-		uint8_t bytes[16];
-		uint16_t words[8];
-		uint32_t dwords[4];
-		uint64_t ldwords[2];
-	} md5;
-	char *pEnd;	
-	md5.ldwords[0] = (uint64_t)strtol((const char*)ptr, &pEnd, 16);
-	md5.ldwords[1] = (uint64_t)strtol((const char*)pEnd, &pEnd, 16);
-	for (int i=0; i<4; i++)
-	{
-		md5hash[i] = md5.dwords[i];
-	}
-
-	return pEnd;
+	md5_to_char_array(*(md5hash_t*)md5hash, ptr, 33);
+	return ptr+32;
 }
 
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)

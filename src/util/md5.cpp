@@ -323,6 +323,7 @@ int md5_file_details(const char *filename, size_t& filesize, uint32_t md5hash[4]
     return 0;
 }
 
+// Converts md5 hexadecimal char array to binary integer 
 md5hash_t md5_from_char_array(const char hashStr[])
 {
     md5hash_t md5 = {};
@@ -340,6 +341,7 @@ md5hash_t md5_from_char_array(const char hashStr[])
     return md5;
 }
 
+// Converts md5 binary integer to char array hexadecimal 
 bool md5_to_char_array(md5hash_t& md5, char hashStr[], int hashStrMaxLen)
 {
     if (hashStrMaxLen <= 32)
@@ -358,6 +360,7 @@ bool md5_to_char_array(md5hash_t& md5, char hashStr[], int hashStrMaxLen)
 
 #ifndef ARM
 
+// Converts md5 hexadecimal string to binary integer 
 md5hash_t md5_from_string(string hashStr)
 {
     if (hashStr.size() < 32)
@@ -366,6 +369,7 @@ md5hash_t md5_from_string(string hashStr)
     return md5_from_char_array(hashStr.c_str());
 }
 
+// Converts md5 binary integer to char string hexadecimal 
 string md5_to_string(md5hash_t& md5hash)
 {
     char array[33]; // Include extra byte for null termination
@@ -375,6 +379,7 @@ string md5_to_string(md5hash_t& md5hash)
     return str.assign(array, 32);
 }
 
+// Converts md5 binary integer to char string hexadecimal 
 string md5_to_string_u32(uint32_t hash[4]) 
 { 
     return md5_to_string(*(md5hash_t*)hash); 
