@@ -357,7 +357,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
     // we're doing a quick and dirty check to make sure we can even attempt to read data successfully.  Some bad devices will fail here if they aren't initialized correctly
     uint8_t tmp;
-    serialPortReadTimeoutPlatform(serialPort, &tmp, 1, 1);
+    serialPortReadTimeoutPlatform(serialPort, &tmp, 1, 10);
     if (serialPort->errorCode == ENOENT) {
         serialPortClose(serialPort);
         return 0;
@@ -383,7 +383,7 @@ static int serialPortIsOpenPlatform(serial_port_t* serialPort)
 #else
 
     struct stat sb;
-    if (stat(serialPort->port, &sb) != 0) {
+    if (fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0) {
         serialPort->errorCode = errno;
         return 0;
     }
@@ -544,14 +544,16 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             int pollrc = poll(fds, 1, timeoutMilliseconds);
             if (pollrc <= 0 || !(fds[0].revents & POLLIN))
             {
+                if ((pollrc < 0) && (fds[0].revents & POLLERR))
+                    return -1; // more than a timeout occurred.
                 break;
             }
         }
         n = read(handle->fd, buffer + totalRead, readCount - totalRead);
-        if (n < -1)
+        if (n <= -1)
         {
-            error_message("error %d from read, fd %d", errno, handle->fd);
-            return 0;
+            // error_message("error %d from read, fd %d", errno, handle->fd);
+            return -1;
         }
         else if (n != -1)
         {
@@ -582,8 +584,10 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-    if (!handle)
-        return 0;
+    if (!handle) {
+        serialPort->errorCode = ENODEV;
+        return -1;
+    }
 
     if (timeoutMilliseconds < 0)
     {
@@ -591,26 +595,25 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
     }
 
 #if PLATFORM_IS_WINDOWS
-
     int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
-
 #else
-
     int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
-
-
 #endif
 
-    if ((result <= 0) && !((errno == EAGAIN) && !handle->blocking))
+    if ((result < 0) && !((errno == EAGAIN) && !handle->blocking))
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
+    else
+        serialPort->errorCode = 0; // clear any previous errorcode
     return result;
 }
 
 static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-    if (!handle)
-        return 0;
+    if (!handle) {
+        serialPort->errorCode = ENODEV;
+        return -1;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
@@ -642,8 +645,10 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned char* buffer, int writeCount)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-    if (!handle)
-        return 0;
+    if (!handle) {
+        serialPort->errorCode = ENODEV;
+        return -1;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
@@ -672,7 +677,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 #else
 
     struct stat sb;
-    if(stat(serialPort->port, &sb) != 0)
+    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
     {   // Serial port not open
         serialPort->errorCode = errno;
         return 0;
