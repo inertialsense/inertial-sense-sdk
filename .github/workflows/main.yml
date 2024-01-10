@@ -24,9 +24,19 @@ concurrency:
   cancel-in-progress: true  
 
 jobs:
+  cpp-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cpp-linter/cpp-linter-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          style: 'file'
+
   ba_linux:
     name: "General Software Linux"
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     # if: false  # disable this job
 
     defaults:
@@ -37,22 +47,19 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.ALL_REPO_PAT }}
+          # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
-      - name: Install embedded compilers
-        run: ./install_compilers.sh
-
       - name: Install dependencies
         run: |
-          ../SDK/scripts/install_log_inspector_dependencies.sh
-          ../SDK/scripts/install_sdk_dependencies.sh
+          ./install_log_inspector_dependencies.sh
+          ./install_sdk_dependencies.sh
           ./install_gtest.sh
-          ./install_evaltool_dep.sh
 
       - name: Clean All
-        run: ./clean_all.sh
+        run: |
+          rm -rf ../cltool/build ../ExampleProjects/build
 
       - name: SDK Unit Tests
         run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../src/test
@@ -67,7 +74,7 @@ jobs:
     name: "General Software Windows"
     runs-on: [self-hosted, windows, x64]
     if: false  # disable this job
-    if: (github.ref == 'refs/heads/master') || (github.ref == 'refs/heads/development') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
+    # if: (github.ref == 'refs/heads/master') || (github.ref == 'refs/heads/development') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
 
     defaults:
       run:
@@ -77,7 +84,7 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.ALL_REPO_PAT }}
+          # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
           fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
@@ -95,7 +102,6 @@ jobs:
     runs-on: [self-hosted, linux, x64, focal]
     if: false  # disable this job
     timeout-minutes: 5
-    needs: [imx5-integration-tests, ins3-integration-tests]
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
@@ -123,7 +129,7 @@ jobs:
       - name: Checkout source and submodules
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.ALL_REPO_PAT }}
+          # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
 
       - name: Install dependencies
