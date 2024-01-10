@@ -250,8 +250,8 @@ private:
     uint16_t dlBlockNum = 0;                    // download block count; should be reset for each separate transfer
     uint16_t ulBlockNum = 0;                    // upload block count; should be reset for each separate transfer
 
-    pfnFwUpdateProgress progressFn = nullptr;
-    pfnFwUpdateStatus statusFn = nullptr;
+    pfnFwUpdateProgress progressFn;
+    pfnFwUpdateStatus statusFn;
 
     /**
      * @brief OTP section
