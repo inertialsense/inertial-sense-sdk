@@ -63,8 +63,9 @@ ext_modules = [
          '../../src/tinystr.cpp',
          '../../src/tinyxml.cpp',
          '../../src/tinyxmlerror.cpp',
-         '../../src/tinyxmlparser.cpp'],
+         '../../src/tinyxmlparser.cpp',
          '../../src/util/md5.cpp',
+         ],
         include_dirs = [
             # Path to pybind11 headers
             'include',
