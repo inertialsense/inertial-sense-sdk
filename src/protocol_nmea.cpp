@@ -1670,7 +1670,8 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         build type;
 	info.buildType = (uint8_t)*ptr;
 	if (info.buildType==0) { info.buildType = ' '; }
-    ptr = ASCII_find_next_field(ptr);
+
+    // ptr = ASCII_find_next_field(ptr);
 
 	// TODO: dev_info_t.firmwareMD5Hash support
 	// uint32_t         firmwareMD5Hash[4];
