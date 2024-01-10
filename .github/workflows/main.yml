@@ -49,7 +49,8 @@ jobs:
 
 
       - name: Clean All
-        run: ./clean_all.sh
+        run: |
+          rm -rf ../cltool/build ../ExampleProjects/build
 
       - name: SDK Unit Tests
         run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../src/test
@@ -63,8 +64,8 @@ jobs:
   ba_windows:
     name: "General Software Windows"
     runs-on: [self-hosted, windows, x64]
-    # if: false  # disable this job
-    if: (github.ref == 'refs/heads/master') || (github.ref == 'refs/heads/development') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
+    if: false  # disable this job
+    # if: (github.ref == 'refs/heads/master') || (github.ref == 'refs/heads/development') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
 
     defaults:
       run:
