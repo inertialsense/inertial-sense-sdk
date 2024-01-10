@@ -4,6 +4,7 @@
 
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
+#include "util/md5.h"
 
 #ifndef __EMBEDDED__
     #include "yaml-cpp/yaml.h"
@@ -19,7 +20,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
+    if (md5_file_details(filename.c_str(), fileSize, session_md5) != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
@@ -52,7 +53,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
+    if (md5_file_details(filename.c_str(), fileSize, session_md5) != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
@@ -384,7 +385,7 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
 
                         filename = image["filename"].as<std::string>();
 
-                        if (getImageFileDetails(filename, file_size, file_hash) != 0)
+                        if (md5_file_details(filename.c_str(), file_size, file_hash) != 0)
                             return -8; // file is invalid or non-existent
 
                         // the following are optional parameters; including them in the manifest image forces us to validate that parameter BEFORE allowing the image to be send to the device

@@ -9,22 +9,6 @@
 using namespace std;
 
 
-#if 1
-TEST(md5, md5_hash)
-{
-    const char* data = "The quick brown fox jumped over the lazy dogs.\n";
-    md5hash_t hash;
-
-    md5_hash(hash, strlen(data), (uint8_t *) data);
-    // md5_print(hash);    printf("\n");
-    
-    EXPECT_EQ(hash.dwords[0], SWAP32(0xb2616109));  // b261610902182c0581c791ac874f588c
-    EXPECT_EQ(hash.dwords[1], SWAP32(0x02182c05));
-    EXPECT_EQ(hash.dwords[2], SWAP32(0x81c791ac));
-    EXPECT_EQ(hash.dwords[3], SWAP32(0x874f588c));
-}
-#endif
-
 long GetFileSize(string filename)
 {
     struct stat stat_buf;
@@ -40,7 +24,7 @@ void check_md5_file(const char *filename)
     EXPECT_EQ( md5_file_details(filename, filesize, hash.dwords), 0 );
 
     // Compare md5 hash using Linux md5sum app
-    string hashStr = md5_string(hash); 
+    string hashStr = md5_to_string(hash); 
     std::stringstream cmd;
     cmd << "md5sum " << filename;
     FILE *fp = popen(cmd.str().c_str(), "r");
@@ -60,10 +44,37 @@ void check_md5_file(const char *filename)
 #endif
 }
 
-#if 1
-TEST(md5, file_md5_hash)
+TEST(md5, hash)
 {
+    // GTEST_SKIP();
+    const char* data = "The quick brown fox jumped over the lazy dogs.\n";
+    md5hash_t hash;
+    md5_hash(hash, strlen(data), (uint8_t *) data);
 
+    EXPECT_EQ(hash.dwords[0], SWAP32(0xb2616109));  // b261610902182c0581c791ac874f588c
+    EXPECT_EQ(hash.dwords[1], SWAP32(0x02182c05));
+    EXPECT_EQ(hash.dwords[2], SWAP32(0x81c791ac));
+    EXPECT_EQ(hash.dwords[3], SWAP32(0x874f588c));
+}
+
+TEST(md5, hash_to_string_to_hash)
+{
+    // GTEST_SKIP();
+    const char* data = "The quick brown fox jumped over the lazy dogs.\n";
+    md5hash_t hash;
+    md5_hash(hash, strlen(data), (uint8_t *) data);
+    string str = md5_to_string(hash);
+    md5hash_t hash2 = md5_from_string(str);
+
+    for (int i=0; i<4; i++)
+    {
+        EXPECT_EQ(hash.dwords[i], hash2.dwords[i]);
+    }
+ }
+
+TEST(md5, hash_from_file)
+{
+    // GTEST_SKIP();
 #if 1   // Repeat string with index count
     const char *filename = "md5_test.txt";
     // Create test file
@@ -80,11 +91,10 @@ TEST(md5, file_md5_hash)
 
     check_md5_file(filename);
 }
-#endif
 
-#if 1
-TEST(md5, md5_1_to_400k_file_size)
+TEST(md5, hash_from_file_1_to_400k_file_size)
 {
+    // GTEST_SKIP();
     const char *filename = "md5_test.txt";
 
     for (int len=1; len<400000; )
@@ -107,5 +117,4 @@ TEST(md5, md5_1_to_400k_file_size)
     // Remove test file
     remove(filename);
 }
-#endif
 

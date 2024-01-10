@@ -70,7 +70,7 @@ static constexpr uint16_t STM32_DESCRIPTOR_PRODUCT_ID = 0xdf11;
 //const md5hash_t DFU_FINGERPRINT_STM32U5 = {.dwords = {0x076e3e2e, 0xdce8b63b, 0x067292ec, 0xc4c985b9}};
 
 const md5hash_t DFU_FINGERPRINT_STM32L4 = { 0x42, 0x8a, 0x29, 0x9c, 0x0a, 0xf5, 0xe7, 0x29, 0x86, 0xdd, 0x57, 0x5c, 0x7b, 0xd1, 0xb7, 0xae };
-const md5hash_t DFU_FINGERPRINT_STM32U5 = {0x07, 0x6e, 0x3e, 0x2e, 0xdc, 0xe8, 0xb6, 0x3b, 0x06, 0x72, 0x92, 0xec, 0xc4, 0xc9, 0x85, 0xb9 };
+const md5hash_t DFU_FINGERPRINT_STM32U5 = { 0x07, 0x6e, 0x3e, 0x2e, 0xdc, 0xe8, 0xb6, 0x3b, 0x06, 0x72, 0x92, 0xec, 0xc4, 0xc9, 0x85, 0xb9 };
 
 typedef enum    // From DFU manual, do not change
 {
@@ -211,7 +211,7 @@ public:
 
     const char *getDescription();
 
-    md5hash_t getFingerprint() { return fingerprint; }
+    md5hash_t getFingerprint() { return fingerprint.state; }
 
     void setProgressCb(pfnFwUpdateProgress cbProgress){progressFn = cbProgress;}
     void setStatusCb(pfnFwUpdateStatus cbStatus) {statusFn = cbStatus;}
@@ -245,7 +245,7 @@ private:
     eProcessorType processorType;               // detected processor type/family
     dfu_memory_t segments[4];                   // memory segment detail, corresponding with the alternate descriptor ID
 
-    md5hash_t fingerprint;                      // an MD5 hash of various data/parameters used to uniquely identify this device
+    md5Context_t fingerprint;                      // an MD5 hash of various data/parameters used to uniquely identify this device
 
     uint16_t dlBlockNum = 0;                    // download block count; should be reset for each separate transfer
     uint16_t ulBlockNum = 0;                    // upload block count; should be reset for each separate transfer

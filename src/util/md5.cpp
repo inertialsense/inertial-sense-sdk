@@ -63,7 +63,7 @@ void MD5_memset(unsigned char *output, int value, unsigned int len);
   }
 
 // MD5 initialization
-void MD5Init(MD5_CTX_t *context) {
+void md5_init(md5Context_t *context) {
     context->count[0] = context->count[1] = 0;
 
     // Load magic initialization constants
@@ -74,7 +74,7 @@ void MD5Init(MD5_CTX_t *context) {
 }
 
 // MD5 block update operation
-void MD5Update(MD5_CTX_t *context, const unsigned char *input, unsigned int inputLen) {
+void md5_update(md5Context_t *context, const unsigned char *input, unsigned int inputLen) {
     unsigned int i, index, partLen;
 
     // Compute number of bytes mod 64
@@ -107,7 +107,7 @@ void MD5Update(MD5_CTX_t *context, const unsigned char *input, unsigned int inpu
 }
 
 // MD5 finalization
-void MD5Final(unsigned char digest[16], MD5_CTX_t *context) {
+void md5_final(unsigned char digest[16], md5Context_t *context) {
     unsigned char bits[8];
     unsigned int index, padLen;
     unsigned char PADDING[64] = {}; 
@@ -119,10 +119,10 @@ void MD5Final(unsigned char digest[16], MD5_CTX_t *context) {
     // Pad out to 56 mod 64
     index = (unsigned int)((context->count[0] >> 3) & 0x3f);
     padLen = (index < 56) ? (56 - index) : (120 - index);
-    MD5Update(context, PADDING, padLen);
+    md5_update(context, PADDING, padLen);
 
     // Append length (before padding)
-    MD5Update(context, bits, 8);
+    md5_update(context, bits, 8);
 
     // Store state in digest
     Encode(digest, context->state.dwords, 16);
@@ -260,42 +260,38 @@ void MD5_memset(unsigned char *output, int value, unsigned int len) {
 }
 
 /**
- * Adds the specified data into the running MD5 hash
- * @param len the number of bytes to consume into the hash
- * @param data the bytes to consume into the hash
- * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
- *
- * TODO: This function uses dynamic memory to allocate memory for the data buffer. Since our implementation
- * will generally be using the fixed size of the session_chunk_size, we can probably do this allocation once and
- * reuse the buffer, instead of allocating and then freeing with each call.  Likewise, we maybe able to
- * define a static buffer of MAX_CHUNK_SIZE and go that route as well.
+ * Compute the MD5 hash for the specified data.
+ * @param md5 the md5 hash output
+ * @param data_len the number of bytes of the data
+ * @param data the data
  */
-void md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data) 
+void md5_hash(md5hash_t& md5, uint32_t data_len, uint8_t* data) 
 {
-    MD5_CTX_t context;
+    md5Context_t context;
     unsigned char digest[16];
-    MD5Init(&context);
-    MD5Update(&context, (const unsigned char *)data, data_len);
-    MD5Final(digest, &context);
+    md5_init(&context);
+    md5_update(&context, (const unsigned char *)data, data_len);
+    md5_final(digest, &context);
 
-    md5hash = context.state;
+    // Copy output
+    md5 = context.state;
 }
 
 /**
- * checks the status of the requested file, returning the file size and calculated md5sum of the file
+ * Gets the file size and calculated md5sum of the specified file.
  * @param filename the file to validate/fetch details for
  * @param filesize [OUT] the size of the file, as read from the scan
  * @param md5result [OUT] the MD5 checksum calculated for the file
  * @return 0 on success, errno (negative) if error
  */
-int md5_file_details(const char *filename, size_t& filesize, uint32_t(&md5hash)[4]) 
+int md5_file_details(const char *filename, size_t& filesize, uint32_t md5hash[4]) 
 {
     ifstream ifs(filename, ios::binary);
     if (!ifs.good()) return errno;
 
-    MD5_CTX_t context;
+    md5Context_t context;
     unsigned char digest[16];
-    MD5Init(&context);
+    md5_init(&context);
 
     filesize = 0;
     while (ifs)
@@ -304,7 +300,7 @@ int md5_file_details(const char *filename, size_t& filesize, uint32_t(&md5hash)[
         ifs.read((char *)buff, sizeof(buff));
         size_t len = ifs.gcount();
 
-        MD5Update(&context, (const unsigned char *)buff, len);
+        md5_update(&context, (const unsigned char *)buff, len);
 
         if (ifs.eof())
         {
@@ -316,7 +312,7 @@ int md5_file_details(const char *filename, size_t& filesize, uint32_t(&md5hash)[
         }
     }
 
-    MD5Final(digest, &context);
+    md5_final(digest, &context);
 
     // Copy hash
     for (int i=0; i<4; i++)
@@ -327,30 +323,74 @@ int md5_file_details(const char *filename, size_t& filesize, uint32_t(&md5hash)[
     return 0;
 }
 
-#if !defined(PLATFORM_IS_EMBEDDED) 
-
-string md5_string(md5hash_t& md5hash)
+md5hash_t md5_from_char_array(const char hashStr[])
 {
-    std::stringstream stream;
+    md5hash_t md5 = {};
 
     for (int i=0; i<16; i++)
     {
-        stream << std::hex << std::setfill('0') << std::setw(2) << (int)md5hash.bytes[i];
+        int j = i*2;
+        uint8_t a = hashStr[j];
+        uint8_t b = hashStr[j+1];
+        md5.bytes[i] = ((a <= '9') ? a - '0' : (a & 0x7) + 9);
+        md5.bytes[i] <<= 4;
+        md5.bytes[i] |= ((b <= '9') ? b - '0' : (b & 0x7) + 9);
     }
 
-    return stream.str();
+    return md5;
 }
 
-void md5_print(md5hash_t& md5hash)
+bool md5_to_char_array(md5hash_t& md5, char hashStr[], int hashStrMaxLen)
+{
+    if (hashStrMaxLen <= 32)
+    {
+        return false;
+    }
+
+    for (int i=0; i<16; i++)
+    {
+        int j = i*2;
+        snprintf(&(hashStr[j]), hashStrMaxLen-j, "%02x", md5.bytes[i]);
+    }
+
+    return true;
+}
+
+#ifndef ARM
+
+md5hash_t md5_from_string(string hashStr)
+{
+    if (hashStr.size() < 32)
+        return {};
+
+    return md5_from_char_array(hashStr.c_str());
+}
+
+string md5_to_string(md5hash_t& md5hash)
+{
+    char array[33]; // Include extra byte for null termination
+    md5_to_char_array(md5hash, array, sizeof(array));
+
+    string str;
+    return str.assign(array, 32);
+}
+
+string md5_to_string_u32(uint32_t hash[4]) 
+{ 
+    return md5_to_string(*(md5hash_t*)hash); 
+}
+
+void md5_print(md5hash_t& md5)
 {
 #if 1
-    cout << md5_string(md5hash);
+    cout << md5_to_string(md5);
 #else
     for (int i=0; i<16; i++)
     {
-        printf("%02x", md5hash.bytes[i]);
+        printf("%02x", md5.bytes[i]);
     }
 #endif
 }
 
-#endif  // #if !defined(PLATFORM_IS_EMBEDDED) 
+#endif  // #ifndef ARM
+
