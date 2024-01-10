@@ -6,7 +6,7 @@
 
 #include "ISConstants.h"
 #ifndef ARM
-#include <string.h>
+#include <string>
 #endif
 
 typedef union {
