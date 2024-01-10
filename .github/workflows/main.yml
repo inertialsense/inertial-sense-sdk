@@ -24,9 +24,19 @@ concurrency:
   cancel-in-progress: true  
 
 jobs:
+  cpp-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cpp-linter/cpp-linter-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          style: 'file'
+          
   ba_linux:
     name: "General Software Linux"
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     # if: false  # disable this job
 
     defaults:
@@ -45,8 +55,6 @@ jobs:
         run: |
           ./install_log_inspector_dependencies.sh
           ./install_sdk_dependencies.sh
-      #           ./install_gtest.sh
-
 
       - name: Clean All
         run: |
