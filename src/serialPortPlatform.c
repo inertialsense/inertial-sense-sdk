@@ -552,7 +552,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         n = read(handle->fd, buffer + totalRead, readCount - totalRead);
         if (n <= -1)
         {
-            // error_message("error %d from read, fd %d", errno, handle->fd);
+            if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+                error_message("error %d from read, fd %d", errno, handle->fd);
+            }
             return -1;
         }
         else if (n != -1)
@@ -700,8 +702,10 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
     if (count < 0)
     {
-        error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
-        serialPort->errorCode = errno;
+        if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+            error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
+            serialPort->errorCode = errno;
+        }
         return 0;
     }
 
