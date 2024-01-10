@@ -55,6 +55,9 @@ jobs:
         run: |
           ./install_log_inspector_dependencies.sh
           ./install_sdk_dependencies.sh
+          sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make && sudo cp lib/*.a /usr/lib && sudo ln -s /usr/lib/libgtest.a /usr/local/lib/libgtest.a && sudo ln -s /usr/lib/libgtest_main.a /usr/local/lib/libgtest_main.a
+          mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Werror" ..
+          cd build && make
 
       - name: Clean All
         run: |
