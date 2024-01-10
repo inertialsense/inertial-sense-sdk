@@ -258,8 +258,9 @@ char *ASCII_to_vec3d(double vec[], char *ptr)
 
 char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
 {
-	md5_from_char_array(*(md5hash_t*)md5hash, ptr, 33);
-	return ptr+32;
+	md5_from_char_array(*(md5hash_t*)md5hash, ptr);
+	ptr = ASCII_find_next_field(ptr);
+	return ptr;
 }
 
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
