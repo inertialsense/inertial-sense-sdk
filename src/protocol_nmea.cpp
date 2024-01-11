@@ -1437,7 +1437,116 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 	return n;
 }
 
+/**
+ * Returns eNmeaMsgIdInx if NMEA head is recognized.
+ * Error -1 for NMEA head not found 
+ * 		 -2 for invalid length 
+*/
+int getNMEAMsgType(char *msgBuf, int msgSize)
+{
+	if(msgSize < 5)
+		return -2;
 
+    if(msgBuf[1] == 'A')
+    {
+		if(msgBuf[2] == 'S' && msgBuf[3] == 'C')
+		{
+			if(msgBuf[4] == 'B' )
+				return NMEA_MSG_UINT_ASCB_IDX;      // "ASCB" - NMEA messages broadcast periods
+			
+			if(msgBuf[4] == 'E' )
+				return NMEA_MSG_UINT_ASCE_IDX;      // "ASCE" - NMEA messages broadcast enable
+		}
+	}
+	else if(msgBuf[1] == 'B')
+	{ 
+		if(msgBuf[2] == 'L' && msgBuf[3] == 'E' && msgBuf[4] == 'N' )
+		    return NMEA_MSG_UINT_BLEN_IDX;	 	// "EBLE" - Enable bootloader on IMX (app firmware update)
+	} 
+	else if(msgBuf[1] == 'G')
+	{
+		if(msgBuf[4] == ',')
+		{
+			if(msgBuf[2] == 'S')
+			{
+				if(msgBuf[3] == 'A')
+					return NMEA_MSG_UINT_GSA_IDX;   	// "GSA,"
+				else if(msgBuf[3] == 'V')
+					return NMEA_MSG_UINT_GSV_IDX;  		// "GSV,"
+			}
+			else if(msgBuf[2] == 'L')
+			{
+				if(msgBuf[3] == 'L')
+					return NMEA_MSG_UINT_GLL_IDX;  		// "GLL,"
+			}
+		}
+	}
+	else if(msgBuf[1] == 'I')
+	{
+		if(msgBuf[2] == 'N')
+		{
+			if(msgBuf[3] == 'F' && msgBuf[4] == 'O' )
+				return NMEA_MSG_UINT_INFO_IDX;    	// "INFO" - IMX device info
+			else if(msgBuf[3] == 'T' && msgBuf[4] == 'E' )
+				return NMEA_MSG_UINT_INTE_IDX;    	// "INTE"
+		}
+	}
+	else if(msgBuf[1] == 'P')
+	{
+		if(msgBuf[2] == 'I')
+		{
+			if(msgBuf[3] == 'M' && msgBuf[4] == 'U' )
+				return NMEA_MSG_UINT_PIMU_IDX;   	// "PIMU"
+			else if(msgBuf[3] == 'N' && msgBuf[4] == 'S' )
+				return NMEA_MSG_UINT_PINS_IDX;    	// "PINS"
+		}
+		else if(msgBuf[4] == 'S' )
+		{
+			if(msgBuf[2] == 'E' && msgBuf[3] == 'R')
+				return NMEA_MSG_UINT_PERS_IDX;  	// "PERS" - Save perstent messages
+			else if(msgBuf[2] == 'G' && msgBuf[3] == 'P')
+				return NMEA_MSG_UINT_PGPS_IDX;    	// "PGPS"
+		}
+		else if(msgBuf[3] == 'I' && msgBuf[4] == 'M' )
+		{
+			if(msgBuf[2] == 'P')
+				return NMEA_MSG_UINT_PPIM_IDX;    	// "PPIM"
+			else if(msgBuf[2] == 'R')
+				return NMEA_MSG_UINT_PRIM_IDX;    	// "PRIM"
+		}
+		else if(msgBuf[2] == 'A' && msgBuf[3] == 'S' && msgBuf[4] == 'H' )
+			return NMEA_MSG_UINT_PASH_IDX;  	// "PASH"
+	}
+	else if(msgBuf[1] == 'R')
+	{
+		if(msgBuf[2] == 'M' && msgBuf[3] == 'C' && msgBuf[4] == ',' )
+	        return NMEA_MSG_UINT_RMC_IDX;   	// "RMC,"
+	}
+	else if(msgBuf[1] == 'S')
+	{
+		if(msgBuf[2] == 'T' && msgBuf[3] == 'P' )
+		{
+			if(msgBuf[4] == 'B' )
+				return NMEA_MSG_UINT_STPB_IDX;    	// "STPB" - Stop broadcasts on all ports
+			else if(msgBuf[4] == 'C' )
+				return NMEA_MSG_UINT_STPC_IDX;   	// "STPC" - Stop broadcasts on current port
+		}
+		else if(msgBuf[2] == 'R' && msgBuf[3] == 'S' && msgBuf[4] == 'T' )
+	        return NMEA_MSG_UINT_SRST_IDX;   	// "SRTS" - Software reset
+	}
+	else if(msgBuf[1] == 'V')
+	{
+		if(msgBuf[2] == 'T' && msgBuf[3] == 'G' && msgBuf[4] == ',' )
+	        return NMEA_MSG_UINT_VTG_IDX;   	// "VTG,"
+	}
+	else if(msgBuf[1] == 'Z')
+	{
+		if(msgBuf[2] == 'D' && msgBuf[3] == 'A' && msgBuf[4] == ',' )
+	        return NMEA_MSG_UINT_ZDA_IDX;  		// "ZDA,"
+	}
+
+	return -1;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
@@ -1954,7 +2063,6 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	uint32_t options = 0;
 	uint32_t id;
 	uint32_t ports;
-
 	uint8_t period;
 
 	if(pHandle >= NUM_COM_PORTS)
