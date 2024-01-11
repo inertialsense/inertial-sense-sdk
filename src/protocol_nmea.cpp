@@ -2128,7 +2128,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ tmp.gsv = (uint8_t)atoi(ptr);	}
 		
 	// Copy tmp to corresponding port(s)
-	uint32_t ports = options&RMC_OPTIONS_PORT_MASK;
+	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
 	switch (ports)
 	{
 	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
@@ -2153,7 +2153,6 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	uint32_t options = 0;
 	uint32_t id;
 	uint32_t ports;
-
 	uint8_t period;
 
 	if(pHandle >= NUM_COM_PORTS)
@@ -2212,25 +2211,45 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
-	
+	char *ptr;
+
+	uint32_t options = 0;
+	uint32_t id;
+	uint32_t ports;
+	uint8_t period;
+
 	if(pHandle >= NUM_COM_PORTS)
 	{
 		return 0;
 	}
-	char *ptr = (char *)&msg[6];				// $ASCE
 	
-	uint32_t options = 0;
-	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
+	ptr = (char *)&msg[6];				// $ASCE
+	
+	// check if next index is ','
+	if(*ptr != ',')
+		options = (uint32_t)atoi(ptr);
+	
+	// get next uint32_t and assign it to options and move pointer
 	ptr = ASCII_to_u32(&options, ptr);
-	uint32_t id;
-	uint8_t period;
-	uint32_t ports = options&RMC_OPTIONS_PORT_MASK;
+
+	// extract port from options
+	ports = options&RMC_OPTIONS_PORT_MASK;
+	
 	for (int i=0; i<20; i++)
 	{
-		if(*ptr=='*'){ break; }
-		id = ((*ptr==',') ? 0 : atoi(ptr));
+		// end of nmea string
+		if(*ptr == '*')
+		 	break;
+		
+		// set id and increament ptr to next field
+		id = ((*ptr == ',') ? 0 : atoi(ptr));
 		ptr = ASCII_find_next_field(ptr);
-		if(*ptr=='*'){ break; }
+
+		// end of nmea string
+		if(*ptr=='*')
+			break;
+		
+		// set period multiple and increament ptr to next field
 		period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
 		ptr = ASCII_find_next_field(ptr);
 

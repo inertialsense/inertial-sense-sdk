@@ -1797,7 +1797,6 @@ enum eNmeaAsciiMsgId
 #define NMEA_RMC_BITS_VTG           (1<<NMEA_MSG_ID_VTG)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
-
 typedef struct PACKED
 {
      /** Data stream enable bits for the specified ports.  (see RMC_BITS_...) */
