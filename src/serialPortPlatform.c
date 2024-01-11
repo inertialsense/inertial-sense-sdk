@@ -144,7 +144,7 @@ static int set_interface_attribs(int fd, int speed, int parity)
     memset(&tty, 0, sizeof tty);
     if (tcgetattr(fd, &tty) != 0)
     {
-        error_message("error %d from tcgetattr", errno);
+        error_message("error %d from tcgetattr\n", errno);
         return -1;
     }
 
@@ -189,7 +189,7 @@ static int set_interface_attribs(int fd, int speed, int parity)
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0)
     {
-        error_message("error %d from tcsetattr", errno);
+        error_message("error %d from tcsetattr\n", errno);
         return -1;
     }
 
@@ -341,15 +341,25 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     int fd = open(port, 
         O_RDWR |        // enable read/write
         O_NOCTTY |      // disable flow control
-        O_NDELAY        // non-blocking read
+        O_NONBLOCK      // what is the difference between this an O_NDELAY??  According to all the docs, we should be using O_NONBLOCK now
+        // O_NDELAY     // non-blocking read
     );
-    if (fd < 0 || set_interface_attribs(fd, baudRate, 0) != 0)
+    if (fd < 0)
     {
+        error_message("[%s] open():: Error opening port: %d\n", port, errno);
         serialPort->errorCode = errno;
         return 0;
     }
+
+    if (set_interface_attribs(fd, baudRate, 0) != 0) {
+        error_message("[%s] open():: Error configuring port: %d\n", port, errno);
+        serialPort->errorCode = errno;
+        return 0;
+    }
+
     ioctl(fd, TIOCEXCL);    // Put device into exclusive mode
     flock(fd, LOCK_EX | LOCK_NB);   // Add advisory lock
+
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->fd = fd;
     handle->blocking = blocking;
@@ -357,10 +367,11 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
     // we're doing a quick and dirty check to make sure we can even attempt to read data successfully.  Some bad devices will fail here if they aren't initialized correctly
     uint8_t tmp;
-    serialPortReadTimeoutPlatform(serialPort, &tmp, 1, 1);
-    if (serialPort->errorCode == ENOENT) {
-        serialPortClose(serialPort);
-        return 0;
+    if (serialPortReadTimeoutPlatform(serialPort, &tmp, 1, 10) < 0) {
+        if (serialPort->errorCode == ENOENT) {
+            serialPortClose(serialPort);
+            return 0;
+        }
     }
 
 #endif
@@ -383,7 +394,7 @@ static int serialPortIsOpenPlatform(serial_port_t* serialPort)
 #else
 
     struct stat sb;
-    if (stat(serialPort->port, &sb) != 0) {
+    if (fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0) {
         serialPort->errorCode = errno;
         return 0;
     }
@@ -544,14 +555,18 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             int pollrc = poll(fds, 1, timeoutMilliseconds);
             if (pollrc <= 0 || !(fds[0].revents & POLLIN))
             {
+                if ((pollrc < 0) && (fds[0].revents & POLLERR))
+                    return -1; // more than a timeout occurred.
                 break;
             }
         }
         n = read(handle->fd, buffer + totalRead, readCount - totalRead);
-        if (n < -1)
+        if (n <= -1)
         {
-            error_message("error %d from read, fd %d", errno, handle->fd);
-            return 0;
+            if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+                error_message("error %d from read, fd %d", errno, handle->fd);
+            }
+            return -1;
         }
         else if (n != -1)
         {
@@ -582,8 +597,10 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-    if (!handle)
-        return 0;
+    if (!handle) {
+        serialPort->errorCode = ENODEV;
+        return -1;
+    }
 
     if (timeoutMilliseconds < 0)
     {
@@ -591,26 +608,25 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
     }
 
 #if PLATFORM_IS_WINDOWS
-
     int result = serialPortReadTimeoutPlatformWindows(handle, buffer, readCount, timeoutMilliseconds);
-
 #else
-
     int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
-
-
 #endif
 
-    if ((result <= 0) && !((errno == EAGAIN) && !handle->blocking))
+    if ((result < 0) && !((errno == EAGAIN) && !handle->blocking))
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
+    else
+        serialPort->errorCode = 0; // clear any previous errorcode
     return result;
 }
 
 static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-    if (!handle)
-        return 0;
+    if (!handle) {
+        serialPort->errorCode = ENODEV;
+        return -1;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
@@ -642,8 +658,10 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned char* buffer, int writeCount)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
-    if (!handle)
-        return 0;
+    if (!handle) {
+        serialPort->errorCode = ENODEV;
+        return -1;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
@@ -672,10 +690,28 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 #else
 
     struct stat sb;
-    if(stat(serialPort->port, &sb) != 0)
+    errno = 0;
+    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
     {   // Serial port not open
         serialPort->errorCode = errno;
         return 0;
+    }
+
+    // make a quick attempt to poll WRITE availability
+    struct pollfd fds[1];
+    fds[0].fd = handle->fd;
+    fds[0].events = POLLOUT;
+    int pollrc = poll(fds, 1, 10);
+    if (pollrc <= 0 || !(fds[0].revents & POLLOUT))
+    {
+        if ((pollrc <= 0) && !(fds[0].revents & POLLOUT)) {
+            if (fds[0].revents & POLLERR) {
+                error_message("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
+                serialPort->errorCode = errno;
+                return -1; // more than a timeout occurred.
+            }
+            return 0;
+        }
     }
 
     int count, retry = 0;
@@ -695,8 +731,10 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
     if (count < 0)
     {
-        error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
-        serialPort->errorCode = errno;
+        if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
+            error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
+            serialPort->errorCode = errno;
+        }
         return 0;
     }
 
