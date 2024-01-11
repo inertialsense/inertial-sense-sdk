@@ -63,7 +63,7 @@ static bool matches(const char* str, const char* pre)
 
 #define CL_DEFAULT_BAUD_RATE				IS_BAUDRATE_DEFAULT 
 #define CL_DEFAULT_COM_PORT					"*"
-#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_QUIET 
+#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_SCROLL
 #define CL_DEFAULT_LOG_TYPE					"dat"
 #define CL_DEFAULT_LOGS_DIRECTORY			DEFAULT_LOGS_DIRECTORY
 #define CL_DEFAULT_ENABLE_LOGGING			false 
