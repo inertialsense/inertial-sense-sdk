@@ -121,6 +121,8 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                 case fwUpdate::REASON_INVALID_SIZE:
                     session_status = fwUpdate::ERR_INVALID_CHUNK;
                     break;
+                case fwUpdate::REASON_NONE:
+                    break;
             }
             return false;
         }

@@ -191,7 +191,11 @@ typedef void (*pfnFwUpdateProgress)(void* obj, const std::string stepName, int s
 class DFUDevice {
 public:
 
-    DFUDevice(libusb_device *device, pfnFwUpdateProgress cbProgress = nullptr, pfnFwUpdateStatus cbStatus = nullptr) : usbDevice(device), progressFn(cbProgress), statusFn(cbStatus), usbHandle(nullptr) {
+    DFUDevice(libusb_device *device, pfnFwUpdateProgress cbProgress = nullptr, pfnFwUpdateStatus cbStatus = nullptr) {
+        usbDevice = device;
+        progressFn = cbProgress;
+        statusFn = cbStatus;
+        usbHandle = nullptr;
         fetchDeviceInfo();
     }
 
