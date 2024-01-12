@@ -1775,7 +1775,7 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_INFO      = 13,
     NMEA_MSG_ID_GxGSV     = 14,
     NMEA_MSG_ID_GxVTG     = 15,
-    NMEA_MSG_ID_INTE      = 16,
+    NMEA_MSG_ID_INTEL     = 16,
     NMEA_MSG_ID_COUNT,
 
 	// IMX/GPX Input Commands
@@ -1806,7 +1806,7 @@ enum eNmeaAsciiMsgId
 #define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
 #define NMEA_RMC_BITS_GxGSV         (1<<NMEA_MSG_ID_GxGSV)
 #define NMEA_RMC_BITS_GxVTG         (1<<NMEA_MSG_ID_GxVTG)
-#define NMEA_RMC_BITS_INTE          (1<<NMEA_MSG_ID_INTE)
+#define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
 typedef struct PACKED
 {

@@ -703,7 +703,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
 	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GxGSV,
 	[DID_GPS1_POS]				=
-		NMEA_RMC_BITS_INTE  |
+		NMEA_RMC_BITS_INTEL  |
 		NMEA_RMC_BITS_PGPSP |
 		NMEA_RMC_BITS_GxGGA |
 		NMEA_RMC_BITS_GxGLL |
