@@ -240,8 +240,6 @@ typedef enum
 } asciiDataType;
 
 /** create a uint from an NMEA message id that is the same, regardless of CPU architecture */
-#define NMEA_MESSAGEID_TO_UINT(c4) ((uint32_t)(c4)[0] << 24 | ((uint32_t)(c4)[1] << 16) | ((uint32_t)(c4)[2] << 8) | ((uint32_t)(c4)[3]))
-
 enum ePktHdrFlags
 {
 	// bit set for little endian, bit cleared for big endian

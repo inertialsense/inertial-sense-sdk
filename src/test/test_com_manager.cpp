@@ -109,44 +109,43 @@ void writeNvrUserpageFlashCfg(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 // return 1 on success, 0 on failure
 int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
 {
-	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
 
 	if (msgSize == 10)
 	{	// 4 character commands (i.e. "$STPB*14\r\n")
-		switch (messageIdUInt)
+		switch (getNmeaMsgId(msg, msgSize))
 		{
-		case NMEA_MSG_UINT_ASCB:	// query NMEA message broadcast rates
+		case NMEA_MSG_ID_ASCB:	// query NMEA message broadcast rates
 		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
 			break;
 
-		case NMEA_MSG_UINT_STPB: // stop all broadcasts on all ports
+		case NMEA_MSG_ID_STPB: // stop all broadcasts on all ports
 			disableBroadcasts(cmHandle, -1);
 			break;
 
-		case NMEA_MSG_UINT_STPC: // stop all broadcasts on current port
+		case NMEA_MSG_ID_STPC: // stop all broadcasts on current port
 			disableBroadcasts(cmHandle, pHandle);
 			break;
 
-		case NMEA_MSG_UINT_BLEN: // bootloader enable
+		case NMEA_MSG_ID_BLEN: // bootloader enable
 			break;
 
-		case NMEA_MSG_UINT_SRST: // soft reset
+		case NMEA_MSG_ID_SRST: // soft reset
 			break;
 
-		case NMEA_MSG_UINT_INFO: // query device version information
+		case NMEA_MSG_ID_INFO: // query device version information
 			break;
 
-		case NMEA_MSG_UINT_PERS: // Save persistent messages to flash memory
+		case NMEA_MSG_ID_PERS: // Save persistent messages to flash memory
 			break;
 		}
 	}
 	else
 	{	// General NMEA messages
-		switch (messageIdUInt)
+		switch (getNmeaMsgId(msg, msgSize))
 		{
-		case NMEA_MSG_UINT_NELB: // SAM bootloader assistant (SAM-BA) enable
+		case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 // 			if (msgSize == 22 &&	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
 // 				(pHandle == COM0_PORT_NUM || pHandle == USB_PORT_NUM) &&
 // 				strncmp((const char*)(msg + 6), "!!SAM-BA!!", 6) == 0)

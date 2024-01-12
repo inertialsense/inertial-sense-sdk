@@ -113,6 +113,7 @@ C_SRCS += \
 	$(SDK_DIR)/src/ISMatrix.c                                                                      \
 	$(SDK_DIR)/src/ISPose.cpp                                                                      \
 	$(SDK_DIR)/src/ISUtilities.cpp                                                                 \
+	$(SDK_DIR)/src/protocol_nmea.cpp                                                               \
 	$(ASF_DIR)/sam/utils/syscalls/gcc/syscalls.c                                                   \
 	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc.c                                            \
 	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc_mem.c                                        \
