@@ -1681,16 +1681,16 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_PINS1     = 3,
     NMEA_MSG_ID_PINS2     = 4,
     NMEA_MSG_ID_PGPSP     = 5,
-    NMEA_MSG_ID_GGA       = 6,
-    NMEA_MSG_ID_GLL       = 7,
-    NMEA_MSG_ID_GSA       = 8,
-    NMEA_MSG_ID_RMC       = 9,
-    NMEA_MSG_ID_ZDA       = 10,
+    NMEA_MSG_ID_GxGGA     = 6,
+    NMEA_MSG_ID_GxGLL     = 7,
+    NMEA_MSG_ID_GxGSA     = 8,
+    NMEA_MSG_ID_GxRMC     = 9,
+    NMEA_MSG_ID_GxZDA     = 10,
     NMEA_MSG_ID_PASHR     = 11, 
     NMEA_MSG_ID_PSTRB     = 12,
     NMEA_MSG_ID_INFO      = 13,
-    NMEA_MSG_ID_GSV       = 14,
-    NMEA_MSG_ID_VTG       = 15,
+    NMEA_MSG_ID_GxGSV     = 14,
+    NMEA_MSG_ID_GxVTG     = 15,
     NMEA_MSG_ID_INTE      = 16,
     NMEA_MSG_ID_COUNT,
 
@@ -1706,22 +1706,22 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_STPC,         // "STPC" - Stop broadcasts on current port
 }; 
 
-#define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)
-#define NMEA_RMC_BITS_PPIMU   		(1<<NMEA_MSG_ID_PPIMU)
-#define NMEA_RMC_BITS_PRIMU   		(1<<NMEA_MSG_ID_PRIMU)
-#define NMEA_RMC_BITS_PINS1   		(1<<NMEA_MSG_ID_PINS1)
-#define NMEA_RMC_BITS_PINS2   		(1<<NMEA_MSG_ID_PINS2)
-#define NMEA_RMC_BITS_PGPSP   		(1<<NMEA_MSG_ID_PGPSP)
-#define NMEA_RMC_BITS_GGA     		(1<<NMEA_MSG_ID_GGA)
-#define NMEA_RMC_BITS_GLL     		(1<<NMEA_MSG_ID_GLL)
-#define NMEA_RMC_BITS_GSA     		(1<<NMEA_MSG_ID_GSA)
-#define NMEA_RMC_BITS_RMC     		(1<<NMEA_MSG_ID_RMC)
-#define NMEA_RMC_BITS_ZDA     		(1<<NMEA_MSG_ID_ZDA)
-#define NMEA_RMC_BITS_PASHR   		(1<<NMEA_MSG_ID_PASHR)
-#define NMEA_RMC_BITS_PSTRB   		(1<<NMEA_MSG_ID_PSTRB)
-#define NMEA_RMC_BITS_INFO    		(1<<NMEA_MSG_ID_INFO)
-#define NMEA_RMC_BITS_GSV     		(1<<NMEA_MSG_ID_GSV)
-#define NMEA_RMC_BITS_VTG     		(1<<NMEA_MSG_ID_VTG)
+#define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
+#define NMEA_RMC_BITS_PPIMU         (1<<NMEA_MSG_ID_PPIMU)
+#define NMEA_RMC_BITS_PRIMU         (1<<NMEA_MSG_ID_PRIMU)
+#define NMEA_RMC_BITS_PINS1         (1<<NMEA_MSG_ID_PINS1)
+#define NMEA_RMC_BITS_PINS2         (1<<NMEA_MSG_ID_PINS2)
+#define NMEA_RMC_BITS_PGPSP         (1<<NMEA_MSG_ID_PGPSP)
+#define NMEA_RMC_BITS_GxGGA         (1<<NMEA_MSG_ID_GxGGA)
+#define NMEA_RMC_BITS_GxGLL         (1<<NMEA_MSG_ID_GxGLL)
+#define NMEA_RMC_BITS_GxGSA         (1<<NMEA_MSG_ID_GxGSA)
+#define NMEA_RMC_BITS_GxRMC         (1<<NMEA_MSG_ID_GxRMC)
+#define NMEA_RMC_BITS_GxZDA         (1<<NMEA_MSG_ID_GxZDA)
+#define NMEA_RMC_BITS_PASHR         (1<<NMEA_MSG_ID_PASHR)
+#define NMEA_RMC_BITS_PSTRB         (1<<NMEA_MSG_ID_PSTRB)
+#define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
+#define NMEA_RMC_BITS_GxGSV         (1<<NMEA_MSG_ID_GxGSV)
+#define NMEA_RMC_BITS_GxVTG         (1<<NMEA_MSG_ID_GxVTG)
 
 typedef struct PACKED
 {

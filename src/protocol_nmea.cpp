@@ -401,14 +401,14 @@ void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t t
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS1, tmp.pins1);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS2, tmp.pins2);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PGPSP, tmp.pgpsp);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GGA,   tmp.gga);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GLL,   tmp.gll);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GSA,   tmp.gsa);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_RMC,   tmp.rmc);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_ZDA,   tmp.zda);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGGA, tmp.gga);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGLL, tmp.gll);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSA, tmp.gsa);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxRMC, tmp.rmc);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxZDA, tmp.zda);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PASHR, tmp.pashr);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GSV,   tmp.gsv);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_VTG,   tmp.vtg);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSV, tmp.gsv);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxVTG, tmp.vtg);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -863,7 +863,7 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "ZDA");
-	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);										// 1
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);								// 1
 	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
 	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
 	
@@ -1462,9 +1462,13 @@ int getNmeaMsgId(const void *msg, int msgSize)
 		break;
 
 	case 'G':
-		if      (UINT32_MATCH(talker,"GSA,"))       { return NMEA_MSG_ID_GSA;  }
-		else if (UINT32_MATCH(talker,"GSV,"))       { return NMEA_MSG_ID_GSV;  }
-		else if (UINT32_MATCH(talker,"GLL,"))       { return NMEA_MSG_ID_GLL;  }
+		if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
+		else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }
+		else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GxGSA; }
+		else if (UINT32_MATCH(talker+2,"GSV,"))     { return NMEA_MSG_ID_GxGSV; }
+		else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GxRMC; }
+		else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GxVTG; }
+		else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GxZDA; }
 		break;
 
 	case 'I':
@@ -1482,23 +1486,11 @@ int getNmeaMsgId(const void *msg, int msgSize)
 		else if (UINT32_MATCH(talker,"PASH"))       { return NMEA_MSG_ID_PASHR; }
 		break;
 
-	case 'R':
-		if      (UINT32_MATCH(talker,"RMC,"))       { return NMEA_MSG_ID_RMC;  }
-		break;
-		
 	case 'S':
 		if      (UINT32_MATCH(talker,"STPB"))       { return NMEA_MSG_ID_STPB; }
 		else if (UINT32_MATCH(talker,"STPC"))       { return NMEA_MSG_ID_STPC; }
 		else if (UINT32_MATCH(talker,"SRST"))       { return NMEA_MSG_ID_SRST; }
-		break;
-		
-	case 'V':
-		if      (UINT32_MATCH(talker,"VTG,"))       { return NMEA_MSG_ID_VTG;  }
-		break;
-		
-	case 'Z':
-		if      (UINT32_MATCH(talker,"ZDA,"))       { return NMEA_MSG_ID_ZDA;  }
-        break;
+		break;		
 	}
 
 	return -1;
