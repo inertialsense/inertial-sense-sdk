@@ -694,10 +694,9 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 	case _PTYPE_NMEA:
 		{
-			uint32_t messageIdUInt = NMEA_MESSAGEID_TO_UINT(&(dataPtr[1]));
 			if(comm->dataHdr.size == 10)
 			{	// 4 character commands (i.e. "$STPB*14\r\n")
-				switch (messageIdUInt)
+				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
 				{
 				case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
 					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
@@ -723,7 +722,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			}
 			else
 			{	// General NMEA							
-				switch (messageIdUInt)
+				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
 				{
 				case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 					if (comm->dataHdr.size == 22 &&

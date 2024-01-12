@@ -109,13 +109,12 @@ void writeNvrUserpageFlashCfg(CMHANDLE cmHandle, int pHandle, p_data_t* data)
 // return 1 on success, 0 on failure
 int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSize)
 {
-	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg + 1);
 // 	comWrite(pHandle, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
 
 	if (msgSize == 10)
 	{	// 4 character commands (i.e. "$STPB*14\r\n")
-		switch (messageIdUInt)
+		switch (getNmeaMsgId(msg, msgSize))
 		{
 		case NMEA_MSG_ID_ASCB:	// query NMEA message broadcast rates
 		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
@@ -144,7 +143,7 @@ int msgHandlerNmea(CMHANDLE cmHandle, int pHandle, const uint8_t* msg, int msgSi
 	}
 	else
 	{	// General NMEA messages
-		switch (messageIdUInt)
+		switch (getNmeaMsgId(msg, msgSize))
 		{
 		case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 // 			if (msgSize == 22 &&	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
