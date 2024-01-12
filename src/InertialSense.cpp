@@ -1338,7 +1338,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
                 if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
-                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) <= 0))
+                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0))
                 {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     RemoveDevice(i);
