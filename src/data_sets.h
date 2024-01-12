@@ -222,7 +222,7 @@ enum eInsStatusFlags
     /** INS/AHRS Solution Status */
     INS_STATUS_SOLUTION_MASK                    = (int)0x000F0000,
     INS_STATUS_SOLUTION_OFFSET                  = 16,
-#define INS_STATUS_SOLUTION(insStatus)          ((insStatus&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
+#define INS_STATUS_SOLUTION(insStatus)          (((insStatus)&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
 
     INS_STATUS_SOLUTION_OFF                     = 0,    // System is off 
     INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
@@ -247,7 +247,7 @@ enum eInsStatusFlags
     /** GPS navigation fix type (see eGpsNavFixStatus) */
     INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
     INS_STATUS_GPS_NAV_FIX_OFFSET               = 24,
-#define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
+#define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
 
     /** RTK compassing heading is accurate.  (RTK fix and hold status) */
     INS_STATUS_RTK_COMPASSING_VALID             = (int)0x04000000,
@@ -1869,7 +1869,7 @@ enum eHdwBitStatusFlags
     HDW_BIT_PASSED_NO_GPS           = (int)0x00000002,    // Passed w/o valid GPS signal
     HDW_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
     HDW_BIT_MODE_OFFSET             = (int)4,
-#define HDW_BIT_MODE(hdwBitStatus) ((hdwBitStatus&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
+#define HDW_BIT_MODE(hdwBitStatus) (((hdwBitStatus)&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
     HDW_BIT_FAILED_MASK             = (int)0xFFFFFF00,
     HDW_BIT_FAILED_AHRS_MASK        = (int)0xFFFF0F00,
     HDW_BIT_FAULT_NOISE_PQR         = (int)0x00000100,
@@ -1889,7 +1889,7 @@ enum eCalBitStatusFlags
     CAL_BIT_PASSED_ALL              = (int)0x00000001,
     CAL_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
     CAL_BIT_MODE_OFFSET             = (int)4,
-#define CAL_BIT_MODE(calBitStatus) ((calBitStatus&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
+#define CAL_BIT_MODE(calBitStatus) (((calBitStatus)&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
     CAL_BIT_FAILED_MASK             = (int)0x00FFFF00,
     CAL_BIT_FAULT_TCAL_EMPTY        = (int)0x00000100,    // Temperature calibration not present
     CAL_BIT_FAULT_TCAL_TSPAN        = (int)0x00000200,    // Temperature calibration temperature range is inadequate
@@ -2447,7 +2447,7 @@ enum eIoConfig
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13	= (int)6,
 #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }	
-#define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) ((ioConfig>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
+#define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
 	
 	/** GPS 1 source OFFSET */
 	IO_CONFIG_GPS1_SOURCE_OFFSET				= (int)16,
@@ -3927,10 +3927,10 @@ typedef enum
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
-#define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {bits&=EVB_CFG_BITS_WIFI_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
-#define EVB_CFG_BITS_SET_IDX_SERVER(bits,idx)   {bits&=EVB_CFG_BITS_SERVER_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_SERVER_SELECT_OFFSET)&EVB_CFG_BITS_SERVER_SELECT_MASK);}
-#define EVB_CFG_BITS_IDX_WIFI(bits)             ((bits&EVB_CFG_BITS_WIFI_SELECT_MASK)>>EVB_CFG_BITS_WIFI_SELECT_OFFSET)
-#define EVB_CFG_BITS_IDX_SERVER(bits)           ((bits&EVB_CFG_BITS_SERVER_SELECT_MASK)>>EVB_CFG_BITS_SERVER_SELECT_OFFSET)
+#define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {(bits)&=EVB_CFG_BITS_WIFI_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
+#define EVB_CFG_BITS_SET_IDX_SERVER(bits,idx)   {(bits)&=EVB_CFG_BITS_SERVER_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_SERVER_SELECT_OFFSET)&EVB_CFG_BITS_SERVER_SELECT_MASK);}
+#define EVB_CFG_BITS_IDX_WIFI(bits)             (((bits)&EVB_CFG_BITS_WIFI_SELECT_MASK)>>EVB_CFG_BITS_WIFI_SELECT_OFFSET)
+#define EVB_CFG_BITS_IDX_SERVER(bits)           (((bits)&EVB_CFG_BITS_SERVER_SELECT_MASK)>>EVB_CFG_BITS_SERVER_SELECT_OFFSET)
 
 /**
 * (DID_EVB_FLASH_CFG) EVB-2 flash config for monitor, config, and logger control interface
