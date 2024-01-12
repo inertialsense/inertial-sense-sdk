@@ -28,8 +28,6 @@ using namespace std;
 void MD5Transform(uint32_t state[4], const unsigned char block[64]);
 void Encode(unsigned char *output, const uint32_t *input, unsigned int len);
 void Decode(uint32_t *output, const unsigned char *input, unsigned int len);
-void MD5_memcpy(unsigned char *output, const unsigned char *input, unsigned int len);
-void MD5_memset(unsigned char *output, int value, unsigned int len);
 
 // F, G, H and I are basic MD5 functions
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
@@ -90,7 +88,7 @@ void md5_update(md5Context_t *context, const unsigned char *input, unsigned int 
 
     // Transform as many times as possible
     if (inputLen >= partLen) {
-        MD5_memcpy((unsigned char *)&context->buffer[index], (unsigned char *)input, partLen);
+        memcpy(&context->buffer[index], input, partLen);
         MD5Transform(context->state.dwords, context->buffer);
 
         for (i = partLen; i + 63 < inputLen; i += 64) {
@@ -103,7 +101,7 @@ void md5_update(md5Context_t *context, const unsigned char *input, unsigned int 
     }
 
     // Buffer remaining input
-    MD5_memcpy((unsigned char *)&context->buffer[index], (unsigned char *)&input[i], inputLen - i);
+    memcpy(&context->buffer[index], &input[i], inputLen - i);
 }
 
 // MD5 finalization
@@ -128,7 +126,7 @@ void md5_final(unsigned char digest[16], md5Context_t *context) {
     Encode(digest, context->state.dwords, 16);
 
     // Zeroize sensitive information
-    // MD5_memset((unsigned char *)context, 0, sizeof(*context));
+    // memset(context, 0, sizeof(*context));
 }
 
 // MD5 basic transformation
@@ -216,7 +214,7 @@ void MD5Transform(uint32_t state[4], const unsigned char block[64]) {
     state[3] += d;
 
     // Zeroize sensitive information
-    MD5_memset((unsigned char *)x, 0, sizeof(x));
+    memset(x, 0, sizeof(x));
 }
 
 // Encodes input (uint32_t) into output (unsigned char)
@@ -238,24 +236,6 @@ void Decode(uint32_t *output, const unsigned char *input, unsigned int len) {
     for (i = 0, j = 0; j < len; i++, j += 4) {
         output[i] = ((uint32_t)input[j]) | (((uint32_t)input[j+1]) << 8) |
                     (((uint32_t)input[j+2]) << 16) | (((uint32_t)input[j+3]) << 24);
-    }
-}
-
-// Copies memory
-void MD5_memcpy(unsigned char *output, const unsigned char *input, unsigned int len) {
-    unsigned int i;
-
-    for (i = 0; i < len; i++) {
-        output[i] = input[i];
-    }
-}
-
-// Sets memory
-void MD5_memset(unsigned char *output, int value, unsigned int len) {
-    unsigned int i;
-
-    for (i = 0; i < len; i++) {
-        ((char *)output)[i] = (char)value;
     }
 }
 
