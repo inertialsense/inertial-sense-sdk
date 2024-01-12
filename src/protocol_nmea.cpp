@@ -5,6 +5,7 @@
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
+#include "util/md5.h"
 
 
 static int s_protocol_version = 0;
@@ -255,6 +256,13 @@ char *ASCII_to_vec3d(double vec[], char *ptr)
 	return ptr;
 }
 
+char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
+{
+	md5_from_char_array(*(md5hash_t*)md5hash, ptr);
+	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
 {
 	int degrees;
@@ -418,32 +426,36 @@ void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t t
 int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 {
 	int n = ssnprintf(a, aSize, "$INFO"
-		",%d"			// 1
-		",%d.%d.%d.%d"	// 2
-		",%d.%d.%d.%d"	// 3
-		",%d"			// 4
-		",%d.%d.%d.%d"	// 5
-		",%d"			// 6
-		",%s"			// 7
-		",%04d-%02d-%02d"		// 8
-		",%02d:%02d:%02d.%02d"	// 9
-		",%s"			// 10
-		",%d"			// 11
-		",%d"			// 12
-		",%c",			// 13
-		(int)info.serialNumber,	// 1
-		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
-		info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3], // 3
-		(int)info.buildNumber,	// 4
-		info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3], // 5
-		(int)info.repoRevision,	// 6
-		info.manufacturer,		// 7
-		info.buildYear+2000, info.buildMonth, info.buildDay, // 8
-		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
-		info.addInfo,			// 10
-		info.hardware,			// 11
-		info.reserved,			// 12
-		(info.buildType ? info.buildType : ' ')); // 13
+		",%d"                   // 1
+		",%d.%d.%d.%d"          // 2
+		",%d.%d.%d.%d"          // 3
+		",%d"                   // 4
+		",%d.%d.%d.%d"          // 5
+		",%d"                   // 6
+		",%s"                   // 7
+		",%04d-%02d-%02d"       // 8
+		",%02d:%02d:%02d.%02d"  // 9
+		",%s"                   // 10
+		",%d"                   // 11
+		",%d"                   // 12
+		",%c"                   // 13
+		// TODO: dev_info_t.firmwareMD5Hash support
+		// ",%08x%08x%08x%08x"     // 14
+		, (int)info.serialNumber // 1
+		, info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3] // 2
+		, info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3] // 3
+		, (int)info.buildNumber  // 4
+		, info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3] // 5
+		, (int)info.repoRevision // 6
+		, info.manufacturer      // 7
+		, info.buildYear+2000, info.buildMonth, info.buildDay // 8
+		, info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond // 9
+		, info.addInfo           // 10
+		, info.hardware          // 11
+		, info.reserved          // 12
+		, (info.buildType ? info.buildType : ' ') // 13
+		// , info.firmwareMD5Hash[0], info.firmwareMD5Hash[1], info.firmwareMD5Hash[2], info.firmwareMD5Hash[3]	// 14
+		);
 
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -1607,6 +1619,12 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         build type;
 	info.buildType = (uint8_t)*ptr;
 	if (info.buildType==0) { info.buildType = ' '; }
+
+    // ptr = ASCII_find_next_field(ptr);
+
+	// TODO: dev_info_t.firmwareMD5Hash support
+	// uint32_t         firmwareMD5Hash[4];
+	// ptr = ASCII_to_MD5(info.firmwareMD5Hash, ptr);
 
 	return 0;
 }

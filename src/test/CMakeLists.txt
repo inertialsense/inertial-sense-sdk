@@ -16,6 +16,7 @@ add_library(SDK_test
 	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
+	test_md5.cpp
 	test_protocol_nmea.cpp
 	test_ring_buffer.cpp
 	test_time_conversion.cpp
@@ -48,6 +49,7 @@ add_library(SDK_test
 	../protocol_nmea.cpp
 	../time_conversion.c
 	../linked_list.c
+	../util/md5.cpp
 	../ring_buffer.c
 	../time_conversion.c
 	../tinystr.cpp
@@ -65,9 +67,9 @@ add_executable(run_tests
 	test_ISFirmwareUpdate.cpp
 	test_ISPolynomial.cpp
 	test_math.cpp
+	test_md5.cpp
 	test_ring_buffer.cpp
 	test_protocol_nmea.cpp
-	test_time_conversion.cpp
 	../com_manager.c
 	../convert_ins.cpp
 	../data_sets.c
@@ -82,6 +84,7 @@ add_executable(run_tests
 	../protocol_nmea.cpp
 	../time_conversion.c
 	../linked_list.c
+	../util/md5.cpp
 	../ring_buffer.c
 	../time_conversion.c
 	)

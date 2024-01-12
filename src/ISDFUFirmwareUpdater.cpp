@@ -127,7 +127,7 @@ namespace dfu {
         vid = desc.idVendor;
         pid = desc.idProduct;
         usbDevice = usb_device;
-        md5_reset(fingerprint);
+        md5_init(&fingerprint);
 
         // Get the serial number
         if (libusb_get_string_descriptor_ascii(usbHandle, desc.iSerialNumber, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
@@ -205,18 +205,18 @@ namespace dfu {
         // Calculate a fingerprint from the device info/descriptors (Don't use anything that isn't guaranteed unique per device-type!!)
         // TODO: IF YOU CHANGE THE DATA USED IN THE HASHING BELOW, YOU WILL ALSO HAVE TO CHANGE THE RESPECTIVE FINGERPRINTS in ISBootloaderDFU.h
         // DO NOT MODIFY THESE IF YOU DON'T KNOW WHAT YOU'RE DOING AND WHY
-        md5_hash(fingerprint, sizeof(vid), (uint8_t *) &vid);
-        md5_hash(fingerprint, sizeof(pid), (uint8_t *) &pid);
+        md5_update(&fingerprint, (uint8_t *) &vid, sizeof(vid));
+        md5_update(&fingerprint, (uint8_t *) &pid, sizeof(pid));
         for (auto dfuDesc: dfuDescriptors) {
-            md5_hash(fingerprint, dfuDesc.size(), (uint8_t *) dfuDesc.c_str());
+            md5_update(&fingerprint, (uint8_t *) dfuDesc.c_str(), dfuDesc.size());
         }
 
         // TODO: make this work for both GPX-1 and IMX-5.1
         uint16_t hardwareType = 0;
         processorType = IS_PROCESSOR_UNKNOWN;
 
-        if (md5_matches(fingerprint, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4; // possible IMX
-        else if (md5_matches(fingerprint, DFU_FINGERPRINT_STM32U5)) processorType = IS_PROCESSOR_STM32U5; // possible GPX
+        if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4; // possible IMX
+        else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5)) processorType = IS_PROCESSOR_STM32U5; // possible GPX
 
         // try and read the OTP memory
         dfu_memory_t otp = segments[STM32_DFU_INTERFACE_OTP];

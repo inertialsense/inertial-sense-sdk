@@ -368,9 +368,8 @@ namespace fwUpdate {
         uint16_t session_total_chunks = 0;                      //! the total number of chunks for the given image size
         uint32_t session_image_size = 0;                        //! the total size of the image to be sent
         uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
-        uint8_t session_image_flags = 0;                         //! the "slot" to which this image will be written in the flash
-        uint32_t session_md5[4] = {0, 0, 0, 0};   //! the md5 of the firmware image
-
+        uint8_t session_image_flags = 0;                        //! the "slot" to which this image will be written in the flash
+        uint32_t session_md5[4] = {0, 0, 0, 0};                 //! the md5 of the firmware image
 
         /**
          * packages and sends the specified payload, including any auxillary data.
