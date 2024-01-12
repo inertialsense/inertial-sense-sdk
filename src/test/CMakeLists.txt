@@ -47,7 +47,6 @@ add_library(SDK_test
 	../ISUtilities.cpp
 	../protocol/FirmwareUpdate.cpp
 	../protocol_nmea.cpp
-	../time_conversion.c
 	../linked_list.c
 	../util/md5.cpp
 	../ring_buffer.c
@@ -82,7 +81,6 @@ add_executable(run_tests
 	../ISUtilities.cpp
 	../protocol/FirmwareUpdate.cpp
 	../protocol_nmea.cpp
-	../time_conversion.c
 	../linked_list.c
 	../util/md5.cpp
 	../ring_buffer.c
