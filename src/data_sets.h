@@ -1691,7 +1691,19 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_INFO      = 13,
     NMEA_MSG_ID_GSV       = 14,
     NMEA_MSG_ID_VTG       = 15,
-    NMEA_MSG_ID_COUNT
+    NMEA_MSG_ID_INTE      = 16,
+    NMEA_MSG_ID_COUNT,
+
+	// IMX Input Commands
+    NMEA_MSG_ID_ASCB,         // "ASCB" - NMEA messages broadcast periods
+    NMEA_MSG_ID_ASCE,         // "ASCE" - NMEA messages broadcast enable
+    NMEA_MSG_ID_BLEN,         // "BLEN" - Enable bootloader on IMX (app firmware update)	
+    NMEA_MSG_ID_EBLE,         // "EBLE" - Enable bootloader on EVB
+    NMEA_MSG_ID_NELB,         // "NELB" - Enable SAM-BA mode	
+    NMEA_MSG_ID_PERS,         // "PERS" - Save perstent messages
+    NMEA_MSG_ID_SRST,         // "SRTS" - Software reset
+    NMEA_MSG_ID_STPB,         // "STPB" - Stop broadcasts on all ports
+    NMEA_MSG_ID_STPC,         // "STPC" - Stop broadcasts on current port
 }; 
 
 #define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)

@@ -699,22 +699,22 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			{	// 4 character commands (i.e. "$STPB*14\r\n")
 				switch (messageIdUInt)
 				{
-				case NMEA_MSG_UINT_BLEN: // Enable bootloader (uINS)
+				case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
 					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
 
 					// Disable EVB broadcasts
 					g_ermc.bits = 0;
 					break;
 							
-				case NMEA_MSG_UINT_EBLE: // Enable bootloader (EVB)
+				case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
 					// Disable uINS bootloader if host enables EVB bootloader
 					g_uInsBootloaderEnableTimeMs = 0;
 					
 					enable_bootloader(PORT_SEL_USB);
 					break;				
 
-				case NMEA_MSG_UINT_STPB:
-				case NMEA_MSG_UINT_STPC:	
+				case NMEA_MSG_ID_STPB:
+				case NMEA_MSG_ID_STPC:	
 					// Disable EVB communications
 					g_ermc.bits = 0;
 					break;
@@ -725,7 +725,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			{	// General NMEA							
 				switch (messageIdUInt)
 				{
-				case NMEA_MSG_UINT_NELB: // SAM bootloader assistant (SAM-BA) enable
+				case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 					if (comm->dataHdr.size == 22 &&
 // 									(pHandle == EVB2_PORT_USB) && 
 						strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
