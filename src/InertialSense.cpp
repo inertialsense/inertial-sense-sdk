@@ -11,7 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "protocol_nmea.h"
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
+#include "protocol_nmea.h"
 #include "InertialSense.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
@@ -865,16 +866,14 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
     is_device_t &device = m_comManagerState.devices[pHandle];
 
-    int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg+1);
-    switch (messageIdUInt)
+    switch (getNmeaMsgId(msg, msgSize))
     {
-        case NMEA_MSG_UINT_INFO:
-            if( memcmp(msg, "$INFO,", 6) == 0)
-            {	// IMX device Info
-                nmea_parse_info(device.devInfo, (const char*)msg, msgSize);
-            }
-            break;
-    }
+	case NMEA_MSG_ID_INFO:
+        {	// IMX device Info
+			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
+		}
+		break;
+	}
 }
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)

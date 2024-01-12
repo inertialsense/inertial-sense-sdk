@@ -677,7 +677,6 @@ namespace dfu {
      */
     dfu_error DFUDevice::close() {
         int ret_libusb;
-        dfu_error ret_dfu;
 
         // Cancel any existing operations
         ret_libusb = abort();
@@ -704,8 +703,8 @@ namespace dfu {
      */
     const char *DFUDevice::getDescription() {
         static char buff[64];
-        if (sn != -1)
-            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != -1 ? sn : 0));
+        if (sn != 0xFFFFFFFF)
+            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
         else
             sprintf(buff, "%s-%d.%d:DFU-%s", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
         return buff;
@@ -891,7 +890,6 @@ namespace dfu {
     int DFUDevice::readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen) {
         int ret_libusb;
         uint8_t stringIdx;
-        dfu_error ret_dfu;
 
         uint32_t waitTime = 0;
         dfu_status status;
