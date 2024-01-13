@@ -280,7 +280,7 @@ int md5_file_details(const char *filename, size_t& filesize, uint32_t md5hash[4]
         ifs.read((char *)buff, sizeof(buff));
         size_t len = ifs.gcount();
 
-        md5_update(&context, (const unsigned char *)buff, len);
+        md5_update(&context, (const unsigned char *)buff, (unsigned int)len);
 
         if (ifs.eof())
         {
