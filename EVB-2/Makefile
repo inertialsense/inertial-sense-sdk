@@ -23,8 +23,10 @@ ifeq ($(OS),Windows_NT) # Windows (any, not just NT)
 mkdir = mkdir $(subst /,\,$(1)) > nul 2>&1 || (exit 0)
 rm = rmdir /Q /S $(subst /,\,$(1)) > nul 2>&1 || (exit 0)
 
-COMPILER_DIR := C:/PROGRA~2/Atmel/Studio/7.0/toolchain/arm/arm-gnu-toolchain/bin
-
+COMPILER_DIR := $(subst \,/,C:/Inertial_Sense/compilers/arm-none-eabi-stm32/tools/bin)
+ifeq ("$(wildcard $(COMPILER_DIR)/*)","")
+COMPILER_DIR := $(subst \,/,C:/PROGRA~2/Atmel/Studio/7.0/toolchain/arm/arm-gnu-toolchain/bin)
+endif
 ifeq ("$(wildcard $(COMPILER_DIR)/*)","")
 $(error Windows: $(wildcard $(COMPILER_DIR)/*) compiler does not exist)	
 endif
