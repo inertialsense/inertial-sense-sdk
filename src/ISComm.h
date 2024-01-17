@@ -154,6 +154,13 @@ typedef enum
 	IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
 
+typedef struct
+{
+    uint32_t 			   baudRate;
+    uint8_t 			   parity;
+    uint8_t 			   stopBits;
+} serial_options_t;
+
 /** List of valid baud rates */
 extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
 
