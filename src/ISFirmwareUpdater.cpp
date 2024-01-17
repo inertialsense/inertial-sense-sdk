@@ -4,6 +4,7 @@
 
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
+#include "util/md5.h"
 
 #ifndef __EMBEDDED__
     #include "yaml-cpp/yaml.h"
@@ -19,7 +20,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
+    if (md5_file_details(filename.c_str(), fileSize, session_md5) != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
@@ -52,7 +53,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
+    if (md5_file_details(filename.c_str(), fileSize, session_md5) != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
@@ -119,6 +120,8 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                 case fwUpdate::REASON_INVALID_SEQID:
                 case fwUpdate::REASON_INVALID_SIZE:
                     session_status = fwUpdate::ERR_INVALID_CHUNK;
+                    break;
+                case fwUpdate::REASON_NONE:
                     break;
             }
             return false;
@@ -384,7 +387,7 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
 
                         filename = image["filename"].as<std::string>();
 
-                        if (getImageFileDetails(filename, file_size, file_hash) != 0)
+                        if (md5_file_details(filename.c_str(), file_size, file_hash) != 0)
                             return -8; // file is invalid or non-existent
 
                         // the following are optional parameters; including them in the manifest image forces us to validate that parameter BEFORE allowing the image to be send to the device
@@ -424,34 +427,3 @@ int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) { return
 
 int ISFirmwareUpdater::cleanupFirmwarePackage() { return 0; }
 
-/**
- * checks the status of the requested file, returning the file size and calculated md5sum of the file
- * @param filename the file to validate/fetch details for
- * @param filesize [OUT] the size of the file, as read from the scan
- * @param md5result [OUT] the MD5 checksum calculated for the file
- * @return 0 on success, errno (negative) if error
- */
-int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesize, uint32_t(&md5hash)[4]) {
-    std::ifstream ifs(filename, std::ios::binary);
-    if (!ifs.good()) return errno;
-
-    // calculate the md5 checksum
-    uint8_t buff[512];
-    resetMd5();
-
-    filesize = 0;
-    while (ifs)
-    {
-        ifs.read((char *)buff, sizeof(buff));
-        size_t len = ifs.gcount();
-        hashMd5(len, buff);
-
-        if (ifs.eof())
-            filesize += len;
-        else
-            filesize = ifs.tellg();
-    }
-    getCurrentMd5(md5hash);
-
-    return 0;
-}

@@ -11,7 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "protocol_nmea.h"
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
+#include "protocol_nmea.h"
 #include "InertialSense.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
@@ -865,16 +866,14 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
     is_device_t &device = m_comManagerState.devices[pHandle];
 
-    int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg+1);
-    switch (messageIdUInt)
+    switch (getNmeaMsgId(msg, msgSize))
     {
-        case NMEA_MSG_UINT_INFO:
-            if( memcmp(msg, "$INFO,", 6) == 0)
-            {	// IMX device Info
-                nmea_parse_info(device.devInfo, (const char*)msg, msgSize);
-            }
-            break;
-    }
+	case NMEA_MSG_ID_INFO:
+        {	// IMX device Info
+			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
+		}
+		break;
+	}
 }
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
@@ -1311,74 +1310,83 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         }
     }
 
-    // [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
-    // serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
-    if (m_cmPorts) { delete [] m_cmPorts; }
-    m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
+	// [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
+	// serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
+	if (m_cmPorts) { delete [] m_cmPorts; }
+	m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
 
-    if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
-    m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
-    m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-    if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
-    {	// Error
-        return false;
-    }
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
+	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
+	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
+	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
+	{	// Error
+		return false;
+	}
 
-    if (m_enableDeviceValidation)
-    {
-        time_t startTime = time(0);
+	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
 
-        // Query devices with 10 second timeout
-        while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
-        {
-            QueryDeviceInfo();
-            for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-            {
-                comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
-                // comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
-                comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
-                comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
-                comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
-            }
-
-            SLEEP_MS(100);
-            comManagerStep();
-        }
-
+	if (m_enableDeviceValidation)
+	{
+		time_t startTime = time(0);
         bool removedSerials = false;
 
-        // remove each failed device where communications were not received
-        for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
-        {
-            if (!HasReceivedResponseFromDevice(i))
-            {
-                RemoveDevice(i);
-                removedSerials = true;
-            }
-        }
+		// Query devices with 10 second timeout
+		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
+		{
+			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+			{
+                if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
+                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0))
+                {
+                    // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+                    RemoveDevice(i);
+                    removedSerials = true, i--;
+                }
+                else
+                {
+                    // comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+                    comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
+                    comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
+                    comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);
+                }
+			}
 
-        // if no devices left, all failed, we return failure
-        if (m_comManagerState.devices.size() == 0)
-        {
-            CloseSerialPorts();
-            return false;
-        }
+			SLEEP_MS(100);
+			comManagerStep();
+		}
 
-        // remove ports if we are over max count
-        while (m_comManagerState.devices.size() > maxCount)
-        {
-            RemoveDevice(m_comManagerState.devices.size()-1);
-            removedSerials = true;
-        }
+		// remove each failed device where communications were not received
+		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
+		{
+			if (!HasReceivedResponseFromDevice(i))
+			{
+				RemoveDevice(i);
+				removedSerials = true, i--;
+			}
+		}
 
-        // setup com manager again if serial ports dropped out with new count of serial ports
-        if (removedSerials)
-        {
-            comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
-        }
-    }
+		// if no devices left, all failed, we return failure
+		if (m_comManagerState.devices.size() == 0)
+		{
+			CloseSerialPorts();
+			return false;
+		}
+
+		// remove ports if we are over max count
+		while (m_comManagerState.devices.size() > maxCount)
+		{
+			RemoveDevice(m_comManagerState.devices.size()-1);
+			removedSerials = true;
+		}
+
+		// setup com manager again if serial ports dropped out with new count of serial ports
+		if (removedSerials)
+		{
+			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+		}
+	}
 
     return m_comManagerState.devices.size() != 0;
 }

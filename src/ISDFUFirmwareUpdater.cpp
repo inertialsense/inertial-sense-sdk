@@ -127,7 +127,7 @@ namespace dfu {
         vid = desc.idVendor;
         pid = desc.idProduct;
         usbDevice = usb_device;
-        md5_reset(fingerprint);
+        md5_init(&fingerprint);
 
         // Get the serial number
         if (libusb_get_string_descriptor_ascii(usbHandle, desc.iSerialNumber, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
@@ -205,18 +205,18 @@ namespace dfu {
         // Calculate a fingerprint from the device info/descriptors (Don't use anything that isn't guaranteed unique per device-type!!)
         // TODO: IF YOU CHANGE THE DATA USED IN THE HASHING BELOW, YOU WILL ALSO HAVE TO CHANGE THE RESPECTIVE FINGERPRINTS in ISBootloaderDFU.h
         // DO NOT MODIFY THESE IF YOU DON'T KNOW WHAT YOU'RE DOING AND WHY
-        md5_hash(fingerprint, sizeof(vid), (uint8_t *) &vid);
-        md5_hash(fingerprint, sizeof(pid), (uint8_t *) &pid);
+        md5_update(&fingerprint, (uint8_t *) &vid, sizeof(vid));
+        md5_update(&fingerprint, (uint8_t *) &pid, sizeof(pid));
         for (auto dfuDesc: dfuDescriptors) {
-            md5_hash(fingerprint, dfuDesc.size(), (uint8_t *) dfuDesc.c_str());
+            md5_update(&fingerprint, (uint8_t *) dfuDesc.c_str(), dfuDesc.size());
         }
 
         // TODO: make this work for both GPX-1 and IMX-5.1
         uint16_t hardwareType = 0;
         processorType = IS_PROCESSOR_UNKNOWN;
 
-        if (md5_matches(fingerprint, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4; // possible IMX
-        else if (md5_matches(fingerprint, DFU_FINGERPRINT_STM32U5)) processorType = IS_PROCESSOR_STM32U5; // possible GPX
+        if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32L4)) processorType = IS_PROCESSOR_STM32L4; // possible IMX
+        else if (md5_matches(fingerprint.state, DFU_FINGERPRINT_STM32U5)) processorType = IS_PROCESSOR_STM32U5; // possible GPX
 
         // try and read the OTP memory
         dfu_memory_t otp = segments[STM32_DFU_INTERFACE_OTP];
@@ -677,7 +677,6 @@ namespace dfu {
      */
     dfu_error DFUDevice::close() {
         int ret_libusb;
-        dfu_error ret_dfu;
 
         // Cancel any existing operations
         ret_libusb = abort();
@@ -704,8 +703,8 @@ namespace dfu {
      */
     const char *DFUDevice::getDescription() {
         static char buff[64];
-        if (sn != -1)
-            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != -1 ? sn : 0));
+        if (sn != 0xFFFFFFFF)
+            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
         else
             sprintf(buff, "%s-%d.%d:DFU-%s", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
         return buff;
@@ -891,7 +890,6 @@ namespace dfu {
     int DFUDevice::readMemory(uint32_t memloc, uint8_t *rxBuf, size_t rxLen) {
         int ret_libusb;
         uint8_t stringIdx;
-        dfu_error ret_dfu;
 
         uint32_t waitTime = 0;
         dfu_status status;

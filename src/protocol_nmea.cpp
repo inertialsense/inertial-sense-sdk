@@ -5,6 +5,7 @@
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
+#include "util/md5.h"
 
 
 static int s_protocol_version = 0;
@@ -255,6 +256,13 @@ char *ASCII_to_vec3d(double vec[], char *ptr)
 	return ptr;
 }
 
+char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
+{
+	md5_from_char_array(*(md5hash_t*)md5hash, ptr);
+	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
 {
 	int degrees;
@@ -401,14 +409,14 @@ void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t t
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS1, tmp.pins1);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS2, tmp.pins2);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PGPSP, tmp.pgpsp);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GGA,   tmp.gga);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GLL,   tmp.gll);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GSA,   tmp.gsa);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_RMC,   tmp.rmc);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_ZDA,   tmp.zda);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGGA, tmp.gga);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGLL, tmp.gll);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSA, tmp.gsa);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxRMC, tmp.rmc);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxZDA, tmp.zda);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PASHR, tmp.pashr);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GSV,   tmp.gsv);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_VTG,   tmp.vtg);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSV, tmp.gsv);
+	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxVTG, tmp.vtg);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -418,32 +426,36 @@ void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t t
 int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 {
 	int n = ssnprintf(a, aSize, "$INFO"
-		",%d"			// 1
-		",%d.%d.%d.%d"	// 2
-		",%d.%d.%d.%d"	// 3
-		",%d"			// 4
-		",%d.%d.%d.%d"	// 5
-		",%d"			// 6
-		",%s"			// 7
-		",%04d-%02d-%02d"		// 8
-		",%02d:%02d:%02d.%02d"	// 9
-		",%s"			// 10
-		",%d"			// 11
-		",%d"			// 12
-		",%c",			// 13
-		(int)info.serialNumber,	// 1
-		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
-		info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3], // 3
-		(int)info.buildNumber,	// 4
-		info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3], // 5
-		(int)info.repoRevision,	// 6
-		info.manufacturer,		// 7
-		info.buildYear+2000, info.buildMonth, info.buildDay, // 8
-		info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond, // 9
-		info.addInfo,			// 10
-		info.hardware,			// 11
-		info.reserved,			// 12
-		(info.buildType ? info.buildType : ' ')); // 13
+		",%d"                   // 1
+		",%d.%d.%d.%d"          // 2
+		",%d.%d.%d.%d"          // 3
+		",%d"                   // 4
+		",%d.%d.%d.%d"          // 5
+		",%d"                   // 6
+		",%s"                   // 7
+		",%04d-%02d-%02d"       // 8
+		",%02d:%02d:%02d.%02d"  // 9
+		",%s"                   // 10
+		",%d"                   // 11
+		",%d"                   // 12
+		",%c"                   // 13
+		// TODO: dev_info_t.firmwareMD5Hash support
+		// ",%08x%08x%08x%08x"     // 14
+		, (int)info.serialNumber // 1
+		, info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3] // 2
+		, info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3] // 3
+		, (int)info.buildNumber  // 4
+		, info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3] // 5
+		, (int)info.repoRevision // 6
+		, info.manufacturer      // 7
+		, info.buildYear+2000, info.buildMonth, info.buildDay // 8
+		, info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond // 9
+		, info.addInfo           // 10
+		, info.hardware          // 11
+		, info.reserved          // 12
+		, (info.buildType ? info.buildType : ' ') // 13
+		// , info.firmwareMD5Hash[0], info.firmwareMD5Hash[1], info.firmwareMD5Hash[2], info.firmwareMD5Hash[3]	// 14
+		);
 
 	return nmea_sprint_footer(a, aSize, n);
 }
@@ -863,7 +875,7 @@ int nmea_zda(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "ZDA");
-	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);										// 1
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);								// 1
 	nmea_GPSDateOfLastFixCSV(a, aSize, n, pos);										// 2,3,4
 	nmea_sprint(a, aSize, n, ",00,00");												// 5,6
 	
@@ -1493,107 +1505,55 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
  * Error -1 for NMEA head not found 
  * 		 -2 for invalid length 
 */
-int getNMEAMsgType(char *msgBuf, int msgSize)
+int getNmeaMsgId(const void *msg, int msgSize)
 {
-	if(msgSize < 5)
+	if(msgSize < 5)     // five characters required (i.e. "$INFO")
 		return -2;
 
-    if(msgBuf[1] == 'A')
-    {
-		if(msgBuf[2] == 'S' && msgBuf[3] == 'C')
-		{
-			if(msgBuf[4] == 'B' )
-				return NMEA_MSG_UINT_ASCB_IDX;      // "ASCB" - NMEA messages broadcast periods
-			
-			if(msgBuf[4] == 'E' )
-				return NMEA_MSG_UINT_ASCE_IDX;      // "ASCE" - NMEA messages broadcast enable
-		}
-	}
-	else if(msgBuf[1] == 'B')
-	{ 
-		if(msgBuf[2] == 'L' && msgBuf[3] == 'E' && msgBuf[4] == 'N' )
-		    return NMEA_MSG_UINT_BLEN_IDX;	 	// "EBLE" - Enable bootloader on IMX (app firmware update)
-	} 
-	else if(msgBuf[1] == 'G')
+    char *cptr = (char*)msg;
+    char *talker = &cptr[1];
+
+    switch(*talker)
 	{
-		if(msgBuf[4] == ',')
-		{
-			if(msgBuf[2] == 'S')
-			{
-				if(msgBuf[3] == 'A')
-					return NMEA_MSG_UINT_GSA_IDX;   	// "GSA,"
-				else if(msgBuf[3] == 'V')
-					return NMEA_MSG_UINT_GSV_IDX;  		// "GSV,"
-			}
-			else if(msgBuf[2] == 'L')
-			{
-				if(msgBuf[3] == 'L')
-					return NMEA_MSG_UINT_GLL_IDX;  		// "GLL,"
-			}
-		}
-	}
-	else if(msgBuf[1] == 'I')
-	{
-		if(msgBuf[2] == 'N')
-		{
-			if(msgBuf[3] == 'F' && msgBuf[4] == 'O' )
-				return NMEA_MSG_UINT_INFO_IDX;    	// "INFO" - IMX device info
-			else if(msgBuf[3] == 'T' && msgBuf[4] == 'E' )
-				return NMEA_MSG_UINT_INTE_IDX;    	// "INTE"
-		}
-	}
-	else if(msgBuf[1] == 'P')
-	{
-		if(msgBuf[2] == 'I')
-		{
-			if(msgBuf[3] == 'M' && msgBuf[4] == 'U' )
-				return NMEA_MSG_UINT_PIMU_IDX;   	// "PIMU"
-			else if(msgBuf[3] == 'N' && msgBuf[4] == 'S' )
-				return NMEA_MSG_UINT_PINS_IDX;    	// "PINS"
-		}
-		else if(msgBuf[4] == 'S' )
-		{
-			if(msgBuf[2] == 'E' && msgBuf[3] == 'R')
-				return NMEA_MSG_UINT_PERS_IDX;  	// "PERS" - Save perstent messages
-			else if(msgBuf[2] == 'G' && msgBuf[3] == 'P')
-				return NMEA_MSG_UINT_PGPS_IDX;    	// "PGPS"
-		}
-		else if(msgBuf[3] == 'I' && msgBuf[4] == 'M' )
-		{
-			if(msgBuf[2] == 'P')
-				return NMEA_MSG_UINT_PPIM_IDX;    	// "PPIM"
-			else if(msgBuf[2] == 'R')
-				return NMEA_MSG_UINT_PRIM_IDX;    	// "PRIM"
-		}
-		else if(msgBuf[2] == 'A' && msgBuf[3] == 'S' && msgBuf[4] == 'H' )
-			return NMEA_MSG_UINT_PASH_IDX;  	// "PASH"
-	}
-	else if(msgBuf[1] == 'R')
-	{
-		if(msgBuf[2] == 'M' && msgBuf[3] == 'C' && msgBuf[4] == ',' )
-	        return NMEA_MSG_UINT_RMC_IDX;   	// "RMC,"
-	}
-	else if(msgBuf[1] == 'S')
-	{
-		if(msgBuf[2] == 'T' && msgBuf[3] == 'P' )
-		{
-			if(msgBuf[4] == 'B' )
-				return NMEA_MSG_UINT_STPB_IDX;    	// "STPB" - Stop broadcasts on all ports
-			else if(msgBuf[4] == 'C' )
-				return NMEA_MSG_UINT_STPC_IDX;   	// "STPC" - Stop broadcasts on current port
-		}
-		else if(msgBuf[2] == 'R' && msgBuf[3] == 'S' && msgBuf[4] == 'T' )
-	        return NMEA_MSG_UINT_SRST_IDX;   	// "SRTS" - Software reset
-	}
-	else if(msgBuf[1] == 'V')
-	{
-		if(msgBuf[2] == 'T' && msgBuf[3] == 'G' && msgBuf[4] == ',' )
-	        return NMEA_MSG_UINT_VTG_IDX;   	// "VTG,"
-	}
-	else if(msgBuf[1] == 'Z')
-	{
-		if(msgBuf[2] == 'D' && msgBuf[3] == 'A' && msgBuf[4] == ',' )
-	        return NMEA_MSG_UINT_ZDA_IDX;  		// "ZDA,"
+	case 'A':
+		if      (UINT32_MATCH(talker,"ASCB"))       { return NMEA_MSG_ID_ASCB; }
+		else if (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
+		break;
+
+	case 'B':
+		if      (UINT32_MATCH(talker,"BLEN"))       { return NMEA_MSG_ID_BLEN; }
+		break;
+
+	case 'G':
+		if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
+		else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }
+		else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GxGSA; }
+		else if (UINT32_MATCH(talker+2,"GSV,"))     { return NMEA_MSG_ID_GxGSV; }
+		else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GxRMC; }
+		else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GxVTG; }
+		else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GxZDA; }
+		break;
+
+	case 'I':
+		if      (UINT32_MATCH(talker,"INFO"))       { return NMEA_MSG_ID_INFO; }
+		else if (UINT32_MATCH(talker,"INTE"))       { return NMEA_MSG_ID_INTEL; }
+		break;
+
+	case 'P':
+		if      (UINT32_MATCH(talker,"PIMU"))       { return NMEA_MSG_ID_PIMU;  }
+		else if (UINT32_MATCH(talker,"PINS"))       { return (cptr[5]=='1' ? NMEA_MSG_ID_PINS1 : NMEA_MSG_ID_PINS2); }
+		else if (UINT32_MATCH(talker,"PERS"))       { return NMEA_MSG_ID_PERS;  }
+		else if (UINT32_MATCH(talker,"PGPS"))       { return NMEA_MSG_ID_PGPSP; }
+		else if (UINT32_MATCH(talker,"PPIM"))       { return NMEA_MSG_ID_PPIMU; }
+		else if (UINT32_MATCH(talker,"PRIM"))       { return NMEA_MSG_ID_PRIMU; }
+		else if (UINT32_MATCH(talker,"PASH"))       { return NMEA_MSG_ID_PASHR; }
+		break;
+
+	case 'S':
+		if      (UINT32_MATCH(talker,"STPB"))       { return NMEA_MSG_ID_STPB; }
+		else if (UINT32_MATCH(talker,"STPC"))       { return NMEA_MSG_ID_STPC; }
+		else if (UINT32_MATCH(talker,"SRST"))       { return NMEA_MSG_ID_SRST; }
+		break;		
 	}
 
 	return -1;
@@ -1659,6 +1619,12 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         build type;
 	info.buildType = (uint8_t)*ptr;
 	if (info.buildType==0) { info.buildType = ' '; }
+
+    // ptr = ASCII_find_next_field(ptr);
+
+	// TODO: dev_info_t.firmwareMD5Hash support
+	// uint32_t         firmwareMD5Hash[4];
+	// ptr = ASCII_to_MD5(info.firmwareMD5Hash, ptr);
 
 	return 0;
 }
@@ -2128,7 +2094,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ tmp.gsv = (uint8_t)atoi(ptr);	}
 		
 	// Copy tmp to corresponding port(s)
-	uint32_t ports = options&RMC_OPTIONS_PORT_MASK;
+	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
 	switch (ports)
 	{
 	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
@@ -2153,7 +2119,6 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	uint32_t options = 0;
 	uint32_t id;
 	uint32_t ports;
-
 	uint8_t period;
 
 	if(pHandle >= NUM_COM_PORTS)
@@ -2212,25 +2177,45 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
-	
+	char *ptr;
+
+	uint32_t options = 0;
+	uint32_t id;
+	uint32_t ports;
+	uint8_t period;
+
 	if(pHandle >= NUM_COM_PORTS)
 	{
 		return 0;
 	}
-	char *ptr = (char *)&msg[6];				// $ASCE
 	
-	uint32_t options = 0;
-	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }
+	ptr = (char *)&msg[6];				// $ASCE
+	
+	// check if next index is ','
+	if(*ptr != ',')
+		options = (uint32_t)atoi(ptr);
+	
+	// get next uint32_t and assign it to options and move pointer
 	ptr = ASCII_to_u32(&options, ptr);
-	uint32_t id;
-	uint8_t period;
-	uint32_t ports = options&RMC_OPTIONS_PORT_MASK;
+
+	// extract port from options
+	ports = options&RMC_OPTIONS_PORT_MASK;
+	
 	for (int i=0; i<20; i++)
 	{
-		if(*ptr=='*'){ break; }
-		id = ((*ptr==',') ? 0 : atoi(ptr));
+		// end of nmea string
+		if(*ptr == '*')
+		 	break;
+		
+		// set id and increament ptr to next field
+		id = ((*ptr == ',') ? 0 : atoi(ptr));
 		ptr = ASCII_find_next_field(ptr);
-		if(*ptr=='*'){ break; }
+
+		// end of nmea string
+		if(*ptr=='*')
+			break;
+		
+		// set period multiple and increament ptr to next field
 		period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
 		ptr = ASCII_find_next_field(ptr);
 

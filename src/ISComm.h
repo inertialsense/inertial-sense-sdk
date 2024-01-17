@@ -258,9 +258,6 @@ typedef enum
 	asciiTypeDouble = 3
 } asciiDataType;
 
-/** create a uint from an NMEA message id that is the same, regardless of CPU architecture */
-#define NMEA_MESSAGEID_TO_UINT(c4) ((uint32_t)(c4)[0] << 24 | ((uint32_t)(c4)[1] << 16) | ((uint32_t)(c4)[2] << 8) | ((uint32_t)(c4)[3]))
-
 /**
 Built in special bytes that will need to be encoded in the binary packet format. This is not an exhaustive list, as other bytes such as ublox and rtcm preambles
 will be encoded as well, but these messages are not parsed and handled in the com manager, rather they are forwarded via the pass through handler.
