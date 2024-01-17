@@ -5,10 +5,6 @@
 #include "ISFirmwareUpdater.h"
 #include "ISUtilities.h"
 
-#ifndef __EMBEDDED__
-    #include "yaml-cpp/yaml.h"
-#endif
-
 bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
     commands = cmds;
     return true;
@@ -19,9 +15,9 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
-        return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
+    if (getImageFileDetails(*srcFile, fileSize, session_md5) != 0)
+        return fwUpdate::ERR_INVALID_IMAGE;
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
     updateStartTime = current_timeMs();
@@ -52,9 +48,9 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    if (getImageFileDetails(filename, fileSize, session_md5) != 0)
-        return fwUpdate::ERR_INVALID_IMAGE;
     srcFile = new std::ifstream(filename, std::ios::binary);
+    if (getImageFileDetails(*srcFile, fileSize, session_md5) != 0)
+        return fwUpdate::ERR_INVALID_IMAGE;
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
     updateStartTime = current_timeMs();
@@ -328,9 +324,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
     }
 }
 
-int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
-    YAML::Node manifest = YAML::LoadFile("manifest.yaml");
-
+int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
     YAML::Node images = manifest["images"];
     if (!images.IsMap())
         return -1; // images must be a map (of maps)
@@ -365,7 +359,6 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
                     auto cmd_arg = cmd.second.as<std::string>();
 
                     if (cmd_name == "image") {
-                        std::string filename;
                         int image_slot = 0;
                         uint32_t image_size = 0;
                         uint32_t image_hash[4] = {};
@@ -382,10 +375,20 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
                         if (!image["filename"].IsDefined() && !image["filename"].IsScalar())
                             return -7; // an image must define AT LEAST a filename
 
-                        filename = image["filename"].as<std::string>();
-
-                        if (getImageFileDetails(filename, file_size, file_hash) != 0)
-                            return -8; // file is invalid or non-existent
+                        std::string filename = image["filename"].as<std::string>();
+                        if (archive) {
+                            uint32_t f_index = 0;
+                            mz_zip_archive_file_stat file_stat;
+                            if (mz_zip_reader_locate_file_v2(archive, filename.c_str(), nullptr, 0, &f_index)) {
+                                mz_zip_reader_file_stat(archive, f_index, &file_stat);
+                                file_size = file_stat.m_uncomp_size;
+                            } else
+                                return -8;
+                        } else {
+                            std::ifstream stream(filename);
+                            if (getImageFileDetails(stream, file_size, file_hash) != 0)
+                                return -8; // file is invalid or non-existent
+                        }
 
                         // the following are optional parameters; including them in the manifest image forces us to validate that parameter BEFORE allowing the image to be send to the device
                         if (image["size"].IsDefined() && image["size"].IsScalar()) {
@@ -395,12 +398,16 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
                                 return -9; // file size doesn't match the manifest image size
                         }
 
-                        if (image["md5sum"].IsDefined() && image["md5sum"].IsScalar()) {
-                            std::string hash_str = image["md5sum"].as<std::string>();
-                            sscanf(hash_str.c_str(), "%08x%08x%08x%08x", &image_hash[0], &image_hash[1], &image_hash[2], &image_hash[3]);
+                        // We only do MD5 validation on non-zipped files...
+                        // TODO: we should do this eventually, but its costly, since we end up decoding multiple times
+                        if (!archive) {
+                            if (image["md5sum"].IsDefined() && image["md5sum"].IsScalar()) {
+                                std::string hash_str = image["md5sum"].as<std::string>();
+                                sscanf(hash_str.c_str(), "%08x%08x%08x%08x", &image_hash[0], &image_hash[1], &image_hash[2], &image_hash[3]);
 
-                            if (memcmp(image_hash, file_hash, sizeof(image_hash)) != 0)
-                                return -10; // file hash doesn't make the manifest image hash
+                                if (memcmp(image_hash, file_hash, sizeof(image_hash)) != 0)
+                                    return -10; // file hash doesn't make the manifest image hash
+                            }
                         }
 
                         if (image["slot"].IsDefined() && image["slot"].IsScalar())
@@ -420,7 +427,34 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
     return 0;
 }
 
-int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) { return 0; }
+int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
+    YAML::Node manifest = YAML::LoadFile("manifest.yaml");
+    return processPackageManifest(manifest);
+}
+
+int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
+    mz_bool status;
+    mz_zip_archive zip_archive;
+    size_t file_size;
+    void *p;
+
+    // initialize the archive struct and open the file
+    mz_zip_zero_struct(&zip_archive);
+    status = mz_zip_reader_init_file(&zip_archive, pkg_file.c_str(), 0);
+    if (status) {
+        p = mz_zip_reader_extract_file_to_heap(&zip_archive, "manifest.yaml", &file_size, 0);
+        if (p && (file_size > 0)) {
+            std::string casted_memory(static_cast<char*>(p), file_size);
+            std::istringstream stream(casted_memory);
+            YAML::Node manifest = YAML::Load(stream);
+            if (manifest.IsMap())
+                processPackageManifest(manifest, &zip_archive);
+            mz_free(p);
+        }
+        mz_zip_reader_end(&zip_archive);
+    }
+    return 0;
+}
 
 int ISFirmwareUpdater::cleanupFirmwarePackage() { return 0; }
 
@@ -431,25 +465,24 @@ int ISFirmwareUpdater::cleanupFirmwarePackage() { return 0; }
  * @param md5result [OUT] the MD5 checksum calculated for the file
  * @return 0 on success, errno (negative) if error
  */
-int ISFirmwareUpdater::getImageFileDetails(std::string filename, size_t& filesize, uint32_t(&md5hash)[4]) {
-    std::ifstream ifs(filename, std::ios::binary);
-    if (!ifs.good()) return errno;
+int ISFirmwareUpdater::getImageFileDetails(std::istream& is, size_t& filesize, uint32_t(&md5hash)[4]) {
+    if (!is.good()) return errno;
 
     // calculate the md5 checksum
     uint8_t buff[512];
     resetMd5();
 
     filesize = 0;
-    while (ifs)
+    while (is)
     {
-        ifs.read((char *)buff, sizeof(buff));
-        size_t len = ifs.gcount();
+        is.read((char *)buff, sizeof(buff));
+        size_t len = is.gcount();
         hashMd5(len, buff);
 
-        if (ifs.eof())
+        if (is.eof())
             filesize += len;
         else
-            filesize = ifs.tellg();
+            filesize = is.tellg();
     }
     getCurrentMd5(md5hash);
 

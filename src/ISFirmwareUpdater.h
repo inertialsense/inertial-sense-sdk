@@ -13,6 +13,12 @@
 
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
+#include "miniz.h"
+
+#ifndef __EMBEDDED__
+    #include "yaml-cpp/yaml.h"
+#endif
+
 
 extern "C"
 {
@@ -58,7 +64,7 @@ private:
 
     dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
 
-    int getImageFileDetails(std::string filename, size_t& filesize, uint32_t(&md5hash)[4]);
+    int getImageFileDetails(std::istream& is, size_t& filesize, uint32_t(&md5hash)[4]);
     void runCommand(std::string cmd);
 
 public:
@@ -138,10 +144,18 @@ public:
 
     int openFirmwarePackage(const std::string& pkg_file);
 
+    /**
+     * Parses a YAML tree containing the manifest of the firmware package
+     * @param manifest YAML::Node of the manifests parsed YAML file/text
+     * @param archive a pointer to the archive which contains this manifest (or null-ptr if parsed from a file).
+     * @return
+     */
+    int processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive);
     int processPackageManifest(const std::string& manifest_file);
+    // int processPackageManifest(const char *data);
+
 
     int parsePackageManifestToCommands();
-
     int cleanupFirmwarePackage();
 
 };
