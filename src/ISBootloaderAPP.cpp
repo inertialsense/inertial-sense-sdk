@@ -127,11 +127,9 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                 break;
 
             case _PTYPE_NMEA:
-                int messageIdUInt = NMEA_MESSAGEID_TO_UINT(comm.rxPkt.data.ptr+1);
-                switch (messageIdUInt)
+                switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.data.size))
                 {
-                case NMEA_MSG_UINT_INFO:
-                    if( memcmp(comm.rxPkt.data.ptr, "$INFO,", 6) == 0)
+                case NMEA_MSG_ID_INFO:
                     {	// IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
@@ -259,11 +257,9 @@ uint32_t cISBootloaderAPP::get_device_info()
                 break;
 
             case _PTYPE_NMEA:
-                int messageIdUInt = NMEA_MESSAGEID_TO_UINT(comm.rxPkt.data.ptr+1);
-                switch (messageIdUInt)
+                switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.data.size))
                 {
-                case NMEA_MSG_UINT_INFO:
-                    if( memcmp(comm.rxPkt.data.ptr, "$INFO,", 6) == 0)
+                case NMEA_MSG_ID_INFO:
                     {	// IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);

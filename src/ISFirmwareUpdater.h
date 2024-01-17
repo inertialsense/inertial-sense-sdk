@@ -64,7 +64,6 @@ private:
 
     dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
 
-    int getImageFileDetails(std::istream& is, size_t& filesize, uint32_t(&md5hash)[4]);
     void runCommand(std::string cmd);
 
 public:
