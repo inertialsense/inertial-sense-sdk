@@ -515,6 +515,9 @@ typedef struct PACKED
 	char            addInfo[DEVINFO_ADDINFO_STRLEN];
 } dev_info_t;
 
+/** Add missing hardware descriptor to dev_info_t. */
+void devInfoPopulateMissingHardware(dev_info_t *devInfo);
+
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
 {

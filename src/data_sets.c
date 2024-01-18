@@ -751,3 +751,22 @@ int satNumCalc(int gnssID, int svID) {
 	int prn = svID + (sys == SYS_QZS ? 192 : 0);
 	return satNo(sys, prn);
 }
+
+/** Populate missing hardware descriptor in dev_info_t */ 
+void devInfoPopulateMissingHardware(dev_info_t *devInfo)
+{
+	if (devInfo->hardware == DEV_INFO_HARDWARE_UNSPECIFIED)
+	{
+        int year = ((int)(devInfo->buildDate[1])) + 2000;
+		if (year <= 2023)
+		{	// Hardware from 2023 and earlier is detectible using hardware version
+			switch (devInfo->hardwareVer[0])	
+			{
+			case 2: devInfo->hardware = DEV_INFO_HARDWARE_EVB;  break;
+			case 3: devInfo->hardware = DEV_INFO_HARDWARE_UINS; break;
+			case 5: devInfo->hardware = DEV_INFO_HARDWARE_IMX;  break;
+			}
+		}
+	}
+}
+

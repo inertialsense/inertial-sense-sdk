@@ -45,9 +45,10 @@ eImageSignature devInfoToValidSignatures(dev_info_t *devInfo)
 {
     uint32_t valid_signatures = 0;
 
-    if (devInfo->hardwareVer[0] == 5 &&
-        ((devInfo->hardware == DEV_INFO_HARDWARE_IMX) || 
-         (devInfo->hardware == DEV_INFO_HARDWARE_UNSPECIFIED && devInfo->firmwareVer[0] == 1)) )
+    // Check if hardware descriptor is missing and set it correctly.
+    devInfoPopulateMissingHardware(devInfo);
+
+    if (devInfo->hardware == DEV_INFO_HARDWARE_IMX && devInfo->hardwareVer[0] == 5)
     {   /** IMX-5 */
         valid_signatures |= IS_IMAGE_SIGN_IMX_5;
         valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
