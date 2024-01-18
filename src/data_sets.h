@@ -468,10 +468,11 @@ typedef struct PACKED
 
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS      = 1,
-	DEV_INFO_HARDWARE_EVB       = 2,
-	DEV_INFO_HARDWARE_IMX       = 3,
-	DEV_INFO_HARDWARE_GPX       = 4,
+	DEV_INFO_HARDWARE_UNSPECIFIED   = 0,
+	DEV_INFO_HARDWARE_UINS          = 1,
+	DEV_INFO_HARDWARE_EVB           = 2,
+	DEV_INFO_HARDWARE_IMX           = 3,
+	DEV_INFO_HARDWARE_GPX           = 4,
 };
 
 /** (DID_DEV_INFO) Device information */

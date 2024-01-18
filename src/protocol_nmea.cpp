@@ -1557,6 +1557,20 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	info.buildDate[0] = (uint8_t)*ptr;
 	if (info.buildDate[0]==0) { info.buildDate[0] = ' '; }
 
+	// Populate missing hardware descriptor
+	if (info.hardware == DEV_INFO_HARDWARE_UNSPECIFIED)
+	{
+		if (year <= 2023)
+		{	// Hardware from 2023 and earlier is detectible using version number
+			switch (info.hardwareVer[0])	
+			{
+			case 2:     info.hardware = DEV_INFO_HARDWARE_EVB;  break;
+			case 3:     info.hardware = DEV_INFO_HARDWARE_UINS; break;
+			case 5:     info.hardware = DEV_INFO_HARDWARE_IMX;  break;
+			}
+		}
+	}
+
 	return 0;
 }
 
