@@ -876,7 +876,7 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 		return;
 	}
 
-	int year = ((int)(devInfo->buildDate[1])) + 2000;
+	int year = ((int)(devInfo->buildYear)) + 2000;
 	if (year <= 2024)
 	{	// Hardware from 2024 and earlier is detectible using hardware version
 		switch (devInfo->hardwareVer[0])	
