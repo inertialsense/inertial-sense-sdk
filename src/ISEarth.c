@@ -404,7 +404,7 @@ void lla2ecef(const double *LLA, double *Pe)
 
     Pe[0] = (Rn + LLA[2]) * Cmu * Cl;
     Pe[1] = (Rn + LLA[2]) * Cmu * Sl;
-    Pe[2] = (Rn * POWB2 / POWA2 + LLA[2]) * Smu;
+    Pe[2] = (ONE_MINUS_E_SQ * Rn + LLA[2]) * Smu; // Same as (Rn*POWB2/POWA2+LLA[2])*Smu but without division
 }
 
 

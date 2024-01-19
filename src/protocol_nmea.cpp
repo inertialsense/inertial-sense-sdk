@@ -1626,6 +1626,9 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint32_t         firmwareMD5Hash[4];
 	// ptr = ASCII_to_MD5(info.firmwareMD5Hash, ptr);
 
+	// Populate missing hardware descriptor
+	devInfoPopulateMissingHardware(&info);
+
 	return 0;
 }
 
