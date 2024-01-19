@@ -1557,6 +1557,9 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	info.buildDate[0] = (uint8_t)*ptr;
 	if (info.buildDate[0]==0) { info.buildDate[0] = ' '; }
 
+	// Populate missing hardware descriptor
+	devInfoPopulateMissingHardware(&info);
+
 	return 0;
 }
 

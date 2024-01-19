@@ -468,10 +468,11 @@ typedef struct PACKED
 
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS      = 1,
-	DEV_INFO_HARDWARE_EVB       = 2,
-	DEV_INFO_HARDWARE_IMX       = 3,
-	DEV_INFO_HARDWARE_GPX       = 4,
+	DEV_INFO_HARDWARE_UNSPECIFIED   = 0,
+	DEV_INFO_HARDWARE_UINS          = 1,
+	DEV_INFO_HARDWARE_EVB           = 2,
+	DEV_INFO_HARDWARE_IMX           = 3,
+	DEV_INFO_HARDWARE_GPX           = 4,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -513,6 +514,9 @@ typedef struct PACKED
 	/** Additional info */
 	char            addInfo[DEVINFO_ADDINFO_STRLEN];
 } dev_info_t;
+
+/** Add missing hardware descriptor to dev_info_t. */
+void devInfoPopulateMissingHardware(dev_info_t *devInfo);
 
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
