@@ -35,6 +35,9 @@ uint32_t flash_update_block(uint32_t address, const void* newData, int dataSize,
 // erase the flash block at the 8K aligned address
 uint32_t flash_erase_block(uint32_t address);
 
+// Reboot into SAM-BA (ROM bootloader) - Since it is a RAM function, it needs 'extern' declaration.
+extern void flash_rom_bootloader(void);
+
 // Erase chip - Since it is a RAM function, it needs 'extern' declaration.
 extern void flash_erase_chip(void);
 
