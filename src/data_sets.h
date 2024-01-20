@@ -1131,12 +1131,12 @@ typedef struct PACKED
 	int						accel_motion;
 	int						rot_motion;
 	int						zero_vel;
-	int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
+	int						ahrs_gps_cnt;		// Counter of sequential valid GPS data (for switching from AHRS to navigation)
 	float					hdg_err;
-	int						hdg_coarse;				// Flag whether initial attitude error converged
-	int						hdg_aligned;			// Flag whether initial attitude error converged
+	int						hdg_coarse;			// Flag whether initial attitude error converged
+	int						hdg_aligned;		// Flag whether initial attitude error converged
 	int						hdg_aligning;
-	int						start_proc_done;		// Cold/hot start procedure completed
+	int						ekf_init_done;	    // Hot EKF initialization completed
 	int						mag_cal_good;
 	int						mag_cal_done;
 	int						stat_magfield;
