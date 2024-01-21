@@ -26,7 +26,6 @@ void write_bootloader_signature_stay_in_bootloader_mode(void);
 void enable_bootloader(int pHandle);
 void enable_bootloader_assistant(void);
 
-
 #ifdef __cplusplus
 }
 #endif
