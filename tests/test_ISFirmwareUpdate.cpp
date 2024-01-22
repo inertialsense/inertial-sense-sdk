@@ -21,8 +21,8 @@
 
 static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_FINISHED" };
 
-static uint32_t fake_md5[4] = { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F };
-static uint32_t real_md5[4] = { 0xff3a9932, 0xb52b501d, 0x802f05e4, 0x5ed33d04 };
+static md5hash_t fake_md5 = { .dwords = { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F } };
+static md5hash_t real_md5 = { .dwords = { 0x13b16c00, 0x427089d8, 0x821f472b, 0xcb102f3c } };
 
 class ExchangeBuffer {
 public:
@@ -97,36 +97,6 @@ private:
     int32_t data_available = 0;
 
 };
-
-#define RAND_RANGE(MIN, MAX) ( MIN + rand() / (RAND_MAX / (MAX - MIN + 1) + 1) )
-
-std::string LoremIpsum(int minWords, int maxWords, int minSentences, int maxSentences, int numLines)
-{
-
-    std::vector<std::string> words= {"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat"};
-
-    int numSentences = RAND_RANGE(minSentences, maxSentences);
-    int numWords = RAND_RANGE(minWords, maxWords);
-
-    std::string sb;
-    for (int p = 0; p < numLines; p++)
-    {
-        for (int s = 0; s < numSentences; s++)
-        {
-            for( int w = 0; w < numWords; w++ )
-            {
-                if( w > 0 ) { sb.append(" "); }
-                int word_idx = RAND_RANGE(0, words.size() - 1);
-                std::string word = words[ word_idx ];
-                if( w == 0 ) { word[0] = toupper(word[0]); }
-                sb.append( word );
-            }
-            sb.append(". ");
-        }
-        if ( p < numLines-1 ) sb.append("\n");
-    }
-    return sb;
-}
 
 /**
  * This class can probably be removed.  Its not used, but there are foreseeable unit-test cases which may benefit from it.
@@ -236,10 +206,8 @@ public:
 
     // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
     fwUpdate::update_status_e  fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) {
-        uint32_t hash[4];
         // check that our md5 matches.  Return >0 is we're error free.
-        getCurrentMd5(hash);
-        if ( (hash[0] == session_md5[0]) && (hash[1] == session_md5[1]) && (hash[2] == session_md5[2]) && (hash[3] == session_md5[3]) )
+        if (memcmp(&md5Context.state, &session_md5, sizeof(md5hash_t)) == 0)
             return fwUpdate::FINISHED;
 
         return fwUpdate::ERR_CHECKSUM_MISMATCH;
@@ -299,7 +267,7 @@ public:
      * @return
      */
     int fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) override {
-        for (int i = 0; i < len; i++)
+        for (uint32_t i = 0; i < len; i++)
             ((uint8_t*)*buffer)[i] = (i + offset) % 0x10;
         return len;
     }
@@ -311,8 +279,8 @@ public:
      * @param hashOut
      * @return
      */
-    void calcChecksumForTest(int image_size, int chunk_size, uint32_t (&hashOut)[4]) {
-        resetMd5();
+    void calcChecksumForTest(int image_size, int chunk_size, md5hash_t& hashOut) {
+        md5_init(md5Context);
         void* buf = malloc(chunk_size);
 
         if (buf) {
@@ -322,11 +290,12 @@ public:
                 uint16_t expected_size = ((i == num_chunks-1) && (mod_size != 0)) ? mod_size : chunk_size;
 
                 fwUpdate_getImageChunk(i * chunk_size, expected_size, &buf);
-                hashMd5(expected_size, (uint8_t *)buf);
+                md5_update(md5Context, (uint8_t *)buf, expected_size);
             }
-            getCurrentMd5(hashOut);
+            // md5_final()
+            hashOut = md5Context.state;
         }
-        resetMd5();
+        md5_final(md5Context, hashOut);
     }
 
     bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t& msg) {
@@ -373,6 +342,7 @@ public:
         return true;
     }
 
+
     /**
      * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
      * This method is primarily used to drive the update process. Unlike the device interface, on the SDK-side, you must call Step,
@@ -403,12 +373,12 @@ public:
             } while ((offset >= 0) && (exchangeBuffer.dataAvailable() > 0)); // keep pulling all data that is meant for us
 
 #ifdef DEBUG_INFO
-            if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK)
+            if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK) {
                 PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
-            else
+            } else {
                 PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], getSessionStatusName());
+            }
 #endif
-
         }
         return out;
     }
@@ -417,22 +387,6 @@ public:
 };
 
 ExchangeBuffer eb(2048); // the exchange buffer used in these tests to simulate back-and-forth data exchanges
-
-TEST(ISFirmwareUpdate, md5_hashing)
-{
-    const char* data = "The quick brown fox jumped over the lazy dogs.\n";
-    uint32_t md5Hash[4];
-    ISFirmwareUpdateTestHost fuSDK(eb);
-
-    fuSDK.resetMd5();
-    fuSDK.hashMd5(strlen(data), (uint8_t *) data);
-    fuSDK.getCurrentMd5(md5Hash);
-
-    EXPECT_EQ(md5Hash[0], 0x096161b2);
-    EXPECT_EQ(md5Hash[1], 0x052c1802);
-    EXPECT_EQ(md5Hash[2], 0xac91c781);
-    EXPECT_EQ(md5Hash[3], 0x8c584f87);
-}
 
 TEST(ISFirmwareUpdate, pack_unpack__req_update)
 {
@@ -451,10 +405,10 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     fuMsg.data.req_update.file_size = 1234567;
     fuMsg.data.req_update.chunk_size = 1024;
     fuMsg.data.req_update.progress_rate = 789;
-    fuMsg.data.req_update.md5_hash[0] = 0x00010203;
-    fuMsg.data.req_update.md5_hash[1] = 0x04050607;
-    fuMsg.data.req_update.md5_hash[2] = 0x08090A0B;
-    fuMsg.data.req_update.md5_hash[3] = 0x0C0D0E0F;
+    fuMsg.data.req_update.md5_hash.dwords[0] = 0x00010203;
+    fuMsg.data.req_update.md5_hash.dwords[1] = 0x04050607;
+    fuMsg.data.req_update.md5_hash.dwords[2] = 0x08090A0B;
+    fuMsg.data.req_update.md5_hash.dwords[3] = 0x0C0D0E0F;
 
     int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), fuMsg);
     EXPECT_EQ(packed_size, 36);
@@ -470,7 +424,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(*(uint32_t*)(buffer+20), 0x00010203);                 // uint32_t (20 + 4)
     EXPECT_EQ(*(uint32_t*)(buffer+24), 0x04050607);                 // uint32_t (24 + 4)
     EXPECT_EQ(*(uint32_t*)(buffer+28), 0x08090A0B);                 // uint32_t (28 + 4)
-    EXPECT_EQ(*(uint32_t*)(buffer+32), 0x0C0D0E0F);                 // uint32_t (36 + 4) = total length is 36
+    EXPECT_EQ(*(uint32_t*)(buffer+32), 0x0C0D0E0F);                 // uint32_t (32 + 4) = total length is 36
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -483,10 +437,10 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(outMsg->data.req_update.image_flags, 0x05);
     EXPECT_EQ(outMsg->data.req_update.file_size, 1234567);
     EXPECT_EQ(outMsg->data.req_update.chunk_size, 1024);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[0], 0x00010203);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[1], 0x04050607);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[2], 0x08090A0B);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[3], 0x0C0D0E0F);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[0], 0x00010203);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[1], 0x04050607);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[2], 0x08090A0B);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[3], 0x0C0D0E0F);
 
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg);
     EXPECT_EQ(unpack_len, 36);
@@ -497,10 +451,10 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(outMsg->data.req_update.image_slot, fuMsg.data.req_update.image_slot);
     EXPECT_EQ(outMsg->data.req_update.chunk_size, fuMsg.data.req_update.chunk_size);
     EXPECT_EQ(outMsg->data.req_update.file_size, fuMsg.data.req_update.file_size);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[0], fuMsg.data.req_update.md5_hash[0]);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[1], fuMsg.data.req_update.md5_hash[1]);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[2], fuMsg.data.req_update.md5_hash[2]);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[3], fuMsg.data.req_update.md5_hash[3]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[0], fuMsg.data.req_update.md5_hash.dwords[0]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[1], fuMsg.data.req_update.md5_hash.dwords[1]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[2], fuMsg.data.req_update.md5_hash.dwords[2]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[3], fuMsg.data.req_update.md5_hash.dwords[3]);
 }
 
 TEST(ISFirmwareUpdate, pack_unpack__update_resp)
@@ -549,7 +503,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
     fwUpdate::payload_t fuMsg;
 
     // initialize chnk_data
-    for (int i = 0; i < sizeof(chnk_data); i++)
+    for (size_t i = 0; i < sizeof(chnk_data); i++)
         chnk_data[i] = (uint8_t)(i % 0x10);
 
     uint16_t session_id = 0x7F7F; // (uint16_t)random();
@@ -563,7 +517,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
     fuMsg.data.chunk.data = chnk_data[0];
 
     int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), fuMsg, chnk_data);
-    EXPECT_EQ(packed_size, 527);
+    EXPECT_EQ(packed_size, 526);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -578,7 +532,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
-    EXPECT_EQ(unpack_len, 527);
+    EXPECT_EQ(unpack_len, 526);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -616,7 +570,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_resend)
     EXPECT_EQ(outMsg->data.req_resend.chunk_id, 1234);
     EXPECT_EQ(outMsg->data.req_resend.reason, fwUpdate::REASON_WRITE_ERROR);
 
-    uint8_t aux_data[1024];
+    //uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg);
     EXPECT_EQ(unpack_len, 14);
 
@@ -647,7 +601,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     fuMsg.data.progress.msg_len = strlen((const char *)progress_msg);
 
     int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), fuMsg, progress_msg);
-    EXPECT_EQ(packed_size, 53);
+    EXPECT_EQ(packed_size, 52);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -667,7 +621,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
-    EXPECT_EQ(unpack_len, 53);
+    EXPECT_EQ(unpack_len, 52);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -703,14 +657,16 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl)
     if (eb.dataAvailable() > 0) {
         // Data is waiting in the exchange buffer; pull and unpack it for analysis.
         int buf_len = eb.readData(buffer, sizeof(buffer));
+        EXPECT_EQ(buf_len, 14);
         int msg_len = fuSDK.fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
         if (msg_len > 0) {
             if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP) {
                 // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
                 EXPECT_EQ(msg->hdr.target_device, fwUpdate::TARGET_HOST);
                 EXPECT_EQ(msg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
-                EXPECT_EQ(msg->data.update_resp.session_id, 17767);
-                EXPECT_EQ(msg->data.update_resp.totl_chunks, 1206);
+                EXPECT_EQ(msg->data.update_resp.session_id, fuSDK.fwUpdate_getSessionID());
+                uint16_t numChunks = ceil(fuSDK.fwUpdate_getImageSize() / (float)fuSDK.fwUpdate_getChunkSize());
+                EXPECT_EQ(msg->data.update_resp.totl_chunks, numChunks);
                 EXPECT_EQ(msg->data.update_resp.status, fwUpdate::READY); // any negative value is an error
             }
         }
@@ -804,8 +760,6 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
 TEST(ISFirmwareUpdate, exchange__invalid_checksum)
 {
     static uint8_t buffer[2048];
-    fwUpdate::payload_t *msg = nullptr;
-    void *aux_data = nullptr;
 
     eb.flush();
     ISFirmwareUpdateTestHost fuSDK(eb);
@@ -857,10 +811,6 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
  */
 TEST(ISFirmwareUpdate, exchange__success)
 {
-    static uint8_t buffer[2048];
-    fwUpdate::payload_t *msg = nullptr;
-    void *aux_data = nullptr;
-
     eb.flush();
     ISFirmwareUpdateTestHost fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
@@ -904,10 +854,6 @@ TEST(ISFirmwareUpdate, exchange__success)
  */
 TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
 {
-    static uint8_t buffer[2048];
-    fwUpdate::payload_t *msg = nullptr;
-    void *aux_data = nullptr;
-
     ISFirmwareUpdateTestHost fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
@@ -943,130 +889,4 @@ TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
 
     // finally, we should have a status FINISHED
     EXPECT_EQ(fuSDK.fwUpdate_getSessionStatus(), fwUpdate::FINISHED);
-}
-
-/**
- * This tests checks to that our zip/archive library for firmware packages works
- */
-// The string to compress.
-static const char *s_pTest_str =
-        "MISSION CONTROL I wouldn't worry too much about the computer. First of all, there is still a chance that he is right, despite your tests, and" \
-    "if it should happen again, we suggest eliminating this possibility by allowing the unit to remain in place and seeing whether or not it" \
-    "actually fails. If the computer should turn out to be wrong, the situation is still not alarming. The type of obsessional error he may be" \
-    "guilty of is not unknown among the latest generation of HAL 9000 computers. It has almost always revolved around a single detail, such as" \
-    "the one you have described, and it has never interfered with the integrity or reliability of the computer's performance in other areas." \
-    "No one is certain of the cause of this kind of malfunctioning. It may be over-programming, but it could also be any number of reasons. In any" \
-    "event, it is somewhat analogous to human neurotic behavior. Does this answer your query?  Zero-five-three-Zero, MC, transmission concluded.";
-
-static const char *s_pComment = "This is a comment";
-
-TEST(ISFirmwareUpdate, packages__assemble_archive) {
-    int i;
-    mz_bool status;
-    const int N = 50;
-    char data[2048];
-    char hash_str[64];
-    char archive_filename[64];
-    md5hash_t md5;
-    static const char *s_Test_archive_filename = "__fwUpdate.pkg";
-
-    assert((strlen(s_pTest_str) + 64) < sizeof(data));
-
-    TEST_COUT << "miniz.c version: " << MZ_VERSION << std::endl;
-    TEST_COUT << "Working from directory: " << getcwd(data, sizeof(data)) << std::endl;
-
-    // Delete the test archive, so it doesn't keep growing as we run this test
-    remove(s_Test_archive_filename);
-
-    // Append a bunch of text files to the test archive
-    for (i = (N - 1); i >= 0; --i) {
-        sprintf(archive_filename, "%u.txt", i);
-        std::string content = LoremIpsum( 5, 35, 0, N - i, i);
-        md5_reset(md5);
-        md5_hash(md5, content.length(), (uint8_t *)content.c_str());
-        sprintf(hash_str, "%08x-%08x-%08x-%08x", md5.dwords[0], md5.dwords[1], md5.dwords[2], md5.dwords[3]);
-
-        // Add a new file to the archive. Note this is an IN-PLACE operation, so if it fails your archive is probably hosed (its central directory may not be complete) but it should be recoverable using zip -F or -FF. So use caution with this guy.
-        // A more robust way to add a file to an archive would be to read it into memory, perform the operation, then write a new archive out to a temp file and then delete/rename the files.
-        // Or, write a new archive to disk to a temp file, then delete/rename the files. For this test this API is fine.
-        status = mz_zip_add_mem_to_archive_file_in_place(s_Test_archive_filename, archive_filename, content.c_str(), content.length(), hash_str, (uint16_t) strlen(hash_str), MZ_BEST_COMPRESSION);
-        ASSERT_TRUE(status) << "mz_zip_add_mem_to_archive_file_in_place failed!\n";
-        //printf("Added file '%s' of %d bytes (with hash %s) to archive '%s')\n", archive_filename, content.length(), hash_str, s_Test_archive_filename);
-    }
-
-    // Add a directory entry for testing
-    status = mz_zip_add_mem_to_archive_file_in_place(s_Test_archive_filename, "directory/", NULL, 0, "no comment", (uint16_t) strlen("no comment"), MZ_BEST_COMPRESSION);
-    ASSERT_TRUE(status) << "mz_zip_add_mem_to_archive_file_in_place failed!\n";
-    //printf("Added directory 'directory/' to archive '%s')\n", archive_filename, s_Test_archive_filename);
-}
-
-TEST(ISFirmwareUpdate, packages__extract_archive) {
-    int i, sort_iter;
-    mz_bool status;
-    size_t uncomp_size;
-    mz_zip_archive zip_archive;
-    void *p;
-    const int N = 50;
-    char data[2048];
-    char hash_str[64];
-    char archive_filename[64];
-    md5hash_t md5;
-    static const char *s_Test_archive_filename = "__fwUpdate.pkg";
-
-    TEST_COUT << "miniz.c version: " << MZ_VERSION << std::endl;
-    TEST_COUT << "Working from directory: " << getcwd(data, sizeof(data)) << std::endl;
-
-    // Now try to open the archive.
-    memset(&zip_archive, 0, sizeof(zip_archive));
-
-    status = mz_zip_reader_init_file(&zip_archive, s_Test_archive_filename, 0);
-    ASSERT_TRUE(status) << "mz_zip_reader_init_file() failed!\n";
-
-    // Get and print information about each file in the archive.
-    for (i = 0; i < (int)mz_zip_reader_get_num_files(&zip_archive); i++)
-    {
-        mz_zip_archive_file_stat file_stat;
-        status = mz_zip_reader_file_stat(&zip_archive, i, &file_stat);
-        if (!status) {
-            mz_zip_reader_end(&zip_archive);
-            ASSERT_TRUE(status) << "mz_zip_reader_file_stat() failed!\n";
-        }
-
-        if (!strcmp(file_stat.m_filename, "directory/"))
-        {
-            status = mz_zip_reader_is_file_a_directory(&zip_archive, i);
-            if (!status) {
-                mz_zip_reader_end(&zip_archive);
-                ASSERT_TRUE(status) << "'" << file_stat.m_filename << "' was expected to indicate 'is_file_a_directory', but was not.\n";
-            }
-        } else {
-            // Try to extract all the files to the heap.
-            p = mz_zip_reader_extract_file_to_heap(&zip_archive, file_stat.m_filename, &uncomp_size, 0);
-            if (!p)
-            {
-                mz_zip_reader_end(&zip_archive);
-                ASSERT_TRUE(p) << "Failed to extra content from archive for file '" << file_stat.m_filename << "'\n";
-            }
-
-            // validate the contents by calculating the MD5 of the data, and compare that with the hash stored in the comment for the file.
-            md5_reset(md5);
-            md5_hash(md5, uncomp_size, (uint8_t*)p);
-            sprintf(hash_str, "%08x-%08x-%08x-%08x", md5.dwords[0], md5.dwords[1], md5.dwords[2], md5.dwords[3]);
-
-            // Make sure the extraction really succeeded.
-            status = memcmp(hash_str, file_stat.m_comment, file_stat.m_comment_size);
-            if (status)
-            {
-                mz_free(p);
-                mz_zip_reader_end(&zip_archive);
-                ASSERT_TRUE(status) << "MD5sum mismatch in file '" << file_stat.m_filename << "': Expected: " << file_stat.m_comment << ", Actual: " << hash_str << "\n";
-            }
-
-            // We're done.
-            mz_free(p);
-        }
-    }
-
-    // Close the archive, freeing any resources it was using
-    mz_zip_reader_end(&zip_archive);
 }

@@ -61,38 +61,41 @@ void Decode(uint32_t *output, const unsigned char *input, unsigned int len);
   }
 
 // MD5 initialization
-void md5_init(md5Context_t *context) {
-    context->count[0] = context->count[1] = 0;
+void md5_init(md5Context_t& context) {
+    context.count[0] = context.count[1] = 0;
 
     // Load magic initialization constants
-    context->state.dwords[0] = 0x67452301;
-    context->state.dwords[1] = 0xefcdab89;
-    context->state.dwords[2] = 0x98badcfe;
-    context->state.dwords[3] = 0x10325476;
+    context.state.dwords[0] = 0x67452301;
+    context.state.dwords[1] = 0xefcdab89;
+    context.state.dwords[2] = 0x98badcfe;
+    context.state.dwords[3] = 0x10325476;
 }
 
 // MD5 block update operation
-void md5_update(md5Context_t *context, const unsigned char *input, unsigned int inputLen) {
+void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen) {
     unsigned int i, index, partLen;
 
+    if (!inputLen)
+        return; // don't do ANY processing if there is no data passed.
+
     // Compute number of bytes mod 64
-    index = (unsigned int)((context->count[0] >> 3) & 0x3F);
+    index = (unsigned int)((context.count[0] >> 3) & 0x3F);
 
     // Update number of bits
-    if ((context->count[0] += ((uint32_t)inputLen << 3)) < ((uint32_t)inputLen << 3)) {
-        context->count[1]++;
+    if ((context.count[0] += ((uint32_t)inputLen << 3)) < ((uint32_t)inputLen << 3)) {
+        context.count[1]++;
     }
-    context->count[1] += ((uint32_t)inputLen >> 29);
+    context.count[1] += ((uint32_t)inputLen >> 29);
 
     partLen = 64 - index;
 
     // Transform as many times as possible
     if (inputLen >= partLen) {
-        memcpy(&context->buffer[index], input, partLen);
-        MD5Transform(context->state.dwords, context->buffer);
+        memcpy(&context.buffer[index], input, partLen);
+        MD5Transform(context.state.dwords, context.buffer);
 
         for (i = partLen; i + 63 < inputLen; i += 64) {
-            MD5Transform(context->state.dwords, &input[i]);
+            MD5Transform(context.state.dwords, &input[i]);
         }
 
         index = 0;
@@ -101,21 +104,21 @@ void md5_update(md5Context_t *context, const unsigned char *input, unsigned int 
     }
 
     // Buffer remaining input
-    memcpy(&context->buffer[index], &input[i], inputLen - i);
+    memcpy(&context.buffer[index], &input[i], inputLen - i);
 }
 
 // MD5 finalization
-void md5_final(unsigned char digest[16], md5Context_t *context) {
+void md5_final(md5Context_t& context, md5hash_t& hash) {
     unsigned char bits[8];
     unsigned int index, padLen;
     unsigned char PADDING[64] = {}; 
     PADDING[0] = 0x80;
 
     // Save number of bits
-    Encode(bits, context->count, 8);
+    Encode(bits, context.count, 8);
 
     // Pad out to 56 mod 64
-    index = (unsigned int)((context->count[0] >> 3) & 0x3f);
+    index = (unsigned int)((context.count[0] >> 3) & 0x3f);
     padLen = (index < 56) ? (56 - index) : (120 - index);
     md5_update(context, PADDING, padLen);
 
@@ -123,8 +126,7 @@ void md5_final(unsigned char digest[16], md5Context_t *context) {
     md5_update(context, bits, 8);
 
     // Store state in digest
-    Encode(digest, context->state.dwords, 16);
-
+    hash = context.state;
     // Zeroize sensitive information
     // memset(context, 0, sizeof(*context));
 }
@@ -248,13 +250,9 @@ void Decode(uint32_t *output, const unsigned char *input, unsigned int len) {
 void md5_hash(md5hash_t& md5, uint32_t data_len, uint8_t* data) 
 {
     md5Context_t context;
-    unsigned char digest[16];
-    md5_init(&context);
-    md5_update(&context, (const unsigned char *)data, data_len);
-    md5_final(digest, &context);
-
-    // Copy output
-    md5 = context.state;
+    md5_init(context);
+    md5_update(context, (const unsigned char *)data, data_len);
+    md5_final(context, md5);
 }
 
 /**
@@ -264,42 +262,36 @@ void md5_hash(md5hash_t& md5, uint32_t data_len, uint8_t* data)
  * @param md5result [OUT] the MD5 checksum calculated for the file
  * @return 0 on success, errno (negative) if error
  */
-int md5_file_details(const char *filename, size_t& filesize, uint32_t md5hash[4]) 
+int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
 {
-    ifstream ifs(filename, ios::binary);
-    if (!ifs.good()) return errno;
+    if (!is) return -EINVAL;
+    if (!is->good()) return -errno;
 
     md5Context_t context;
-    unsigned char digest[16];
-    md5_init(&context);
+    md5_init(context);
 
     filesize = 0;
-    while (ifs)
+    is->seekg(ios_base::beg);
+    while (is)
     {
-        uint8_t buff[64] = {};
-        ifs.read((char *)buff, sizeof(buff));
-        size_t len = ifs.gcount();
+        uint8_t buff[512] = {};
+        is->read((char *)buff, sizeof(buff));
+        size_t len = is->gcount();
 
-        md5_update(&context, (const unsigned char *)buff, (unsigned int)len);
+        md5_update(context, (const unsigned char *)buff, (unsigned int)len);
 
-        if (ifs.eof())
+        if (is->eof()) //  || (len != sizeof(buff)))
         {
             filesize += len;
+            break;
         }
         else
         {
-            filesize = ifs.tellg();
+            filesize = is->tellg();
         }
     }
 
-    md5_final(digest, &context);
-
-    // Copy hash
-    for (int i=0; i<4; i++)
-    {
-        md5hash[i] = context.state.dwords[i];
-    }
-
+    md5_final(context, md5);
     return 0;
 }
 

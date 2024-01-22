@@ -35,7 +35,7 @@ private:
     int pHandle = 0;                    //! a handle to the comm port which we use to talk to the device
     const char *portName = nullptr;     //! the name of the port referenced by pHandle
     const dev_info_t *devInfo;          //! a reference to the root device connected on this port
-    std::ifstream* srcFile;             //! the file that we are currently sending to a remote device, or nullptr if none
+    std::istream *srcFile;             //! the file that we are currently sending to a remote device, or nullptr if none
     uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
     int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
 
@@ -61,6 +61,8 @@ private:
     bool forceUpdate = false;
     std::string filename;
     fwUpdate::target_t target;
+
+    mz_zip_archive* zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
 
     dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
 
@@ -153,9 +155,22 @@ public:
     int processPackageManifest(const std::string& manifest_file);
     // int processPackageManifest(const char *data);
 
-
     int parsePackageManifestToCommands();
     int cleanupFirmwarePackage();
+
+    enum PkgErrors {
+        PKG_SUCCESS = 0,
+        PKG_INVALID_IMAGES = -1,                // the manifest doesn't define any images, or the images are incorrectly formatted
+        PKG_INVALID_STEPS = -2,                 // the manifest doesn't define any steps, or the steps are incorrectly formatted
+        PKG_INVALID_TARGET = -3,                // the active step target is invalid (yaml schema/syntax)
+        PKG_UNSUPPORTED_TARGET = -4,            // the step target specified is valid, but not supported
+        PKG_NO_ACTIONS = -5,                    // the step doesn't describe any actions to perform
+        PKG_IMAGE_INVALID_REFERENCE = -6,       // the step action 'image' references an image which doesn't exist in the manifest
+        PKG_IMAGE_UNKNOWN_PATH = -7,            // the referenced image doesn't include a filename
+        PKG_IMAGE_FILE_NOT_FOUND = -8,          // the file for the referenced image doesn't exist
+        PKG_IMAGE_FILE_SIZE_MISMATCH = -9,      // the image file's actual size doesn't match the manifest's reported size
+        PKG_IMAGE_FILE_MD5_MISMATCH = -10,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
+    };
 
 };
 

@@ -106,7 +106,7 @@ namespace fwUpdate {
             aux_len = payload.data.progress.msg_len;
 
         if ((aux_len > 0) && (aux_data != nullptr)) {
-            memcpy( ((uint8_t*)buffer) + payload_size - 1, (uint8_t*)aux_data, aux_len);
+            memcpy( ((uint8_t*)buffer) + payload_size, (uint8_t*)aux_data, aux_len);
         }
 
         return payload_size + aux_len;
@@ -202,10 +202,10 @@ namespace fwUpdate {
                                     (unsigned int)payload->data.req_update.file_size,
                                     payload->data.req_update.chunk_size);
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]",
-                                    (unsigned int)payload->data.req_update.md5_hash[0],
-                                    (unsigned int)payload->data.req_update.md5_hash[1],
-                                    (unsigned int)payload->data.req_update.md5_hash[2],
-                                    (unsigned int)payload->data.req_update.md5_hash[3]);
+                                    (unsigned int)payload->data.req_update.md5_hash.dwords[0],
+                                    (unsigned int)payload->data.req_update.md5_hash.dwords[1],
+                                    (unsigned int)payload->data.req_update.md5_hash.dwords[2],
+                                    (unsigned int)payload->data.req_update.md5_hash.dwords[3]);
                 break;
             case MSG_UPDATE_RESP:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]",
@@ -268,155 +268,6 @@ namespace fwUpdate {
             default: return "[UNKNOWN]";
         }
     }
-
-    //
-    // MD5 implementation from here: https://gist.github.com/creationix/4710780
-    //
-
-    /**
-     * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
-     */
-    void FirmwareUpdateBase::resetMd5() {
-        // seed the hash
-        md5hash[0] = 0x67452301;
-        md5hash[1] = 0xefcdab89;
-        md5hash[2] = 0x98badcfe;
-        md5hash[3] = 0x10325476;
-    }
-
-    /**
-     * Adds the specified data into the running MD5 hash
-     * @param len the number of bytes to consume into the hash
-     * @param data the bytes to consume into the hash
-     * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
-     *
-     * TODO: This function uses dynamic memory to allocate memory for the data buffer. Since our implementation
-     * will generally be using the fixed size of the session_chunk_size, we can probably do this allocation once and
-     * reuse the buffer, instead of allocating and then freeing with each call.  Likewise, we maybe able to
-     * define a static buffer of MAX_CHUNK_SIZE and go that route as well.
-     */
-    #define MD5_LEFTROTATE(x, c) (((x) << (c)) | ((x) >> (32 - (c))))
-    uint8_t* FirmwareUpdateBase::hashMd5(size_t data_len, uint8_t* data) {
-        // Message (to prepare)
-        uint8_t *msg = NULL;
-
-        // Note: All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
-
-        // r specifies the per-round shift amounts
-
-        static uint32_t r[] = {7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
-                               5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
-                               4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
-                               6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21};
-
-        // Use binary integer part of the sines of integers (in radians) as constants// Initialize variables:
-        static uint32_t k[] = {
-                0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
-                0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
-                0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
-                0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
-                0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
-                0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
-                0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
-                0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
-                0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
-                0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
-                0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
-                0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
-                0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
-                0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
-                0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
-                0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391};
-
-
-        // Pre-processing: adding a single 1 bit
-        //append "1" bit to message
-        /* Notice: the input bytes are considered as bits strings,
-           where the first bit is the most significant bit of the byte.[37] */
-
-        // Pre-processing: padding with zeros
-        //append "0" bit until message length in bit ≡ 448 (mod 512)
-        //append length mod (2 pow 64) to message
-
-        // If data has not length return
-        if (data_len == 0)
-            return (uint8_t*)&md5hash[0];
-
-        int new_len = ((((data_len + 8) / 64) + 1) * 64) - 8;
-
-        msg = static_cast<uint8_t *>(calloc(new_len + 64, 1)); // also appends "0" bits
-        // (we alloc also 64 extra bytes...)
-        memcpy(msg, data, data_len);
-        msg[data_len] = 128; // write the "1" bit
-
-        uint32_t bits_len = 8*data_len; // note, we append the len
-        memcpy(msg + new_len, &bits_len, 4);           // in bits at the end of the buffer
-
-        // Process the message in successive 512-bit chunks:
-        //for each 512-bit chunk of message:
-        int offset;
-        for(offset=0; offset<new_len; offset += (512/8)) {
-
-            // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
-            uint32_t *w = (uint32_t *) (msg + offset);
-
-            // Initialize hash value for this chunk:
-            uint32_t a = md5hash[0];
-            uint32_t b = md5hash[1];
-            uint32_t c = md5hash[2];
-            uint32_t d = md5hash[3];
-
-            // Main loop:
-            uint32_t i;
-            for(i = 0; i<64; i++) {
-                uint32_t f, g;
-
-                if (i < 16) {
-                    f = (b & c) | ((~b) & d);
-                    g = i;
-                } else if (i < 32) {
-                    f = (d & b) | ((~d) & c);
-                    g = (5*i + 1) % 16;
-                } else if (i < 48) {
-                    f = b ^ c ^ d;
-                    g = (3*i + 5) % 16;
-                } else {
-                    f = c ^ (b | (~d));
-                    g = (7*i) % 16;
-                }
-
-                uint32_t temp = d;
-                d = c;
-                c = b;
-                b = b + MD5_LEFTROTATE((a + f + k[i] + w[g]), r[i]);
-                a = temp;
-            }
-
-            // Add this chunk's hash to result so far:
-
-            md5hash[0] += a;
-            md5hash[1] += b;
-            md5hash[2] += c;
-            md5hash[3] += d;
-        }
-
-        // cleanup
-        free(msg);
-
-        return (uint8_t *)&md5hash[0];
-    }
-
-    /**
-     * updates the passed reference to an array, the current running md5 sum.
-     * @param md5sum the reference to an array of uint32_t[4] where the md5 sum will be stored
-     */
-    void FirmwareUpdateBase::getCurrentMd5(uint32_t(&md5sum)[4]) {
-        md5sum[0] = md5hash[0];
-        md5sum[1] = md5hash[1];
-        md5sum[2] = md5hash[2];
-        md5sum[3] = md5hash[3];
-    }
-
 
     /*==================================================================================*
      * Firmware Device base implementation goes here                                           *
@@ -587,7 +438,7 @@ namespace fwUpdate {
         session_id = 0;       // the current session id - all received messages with a session_id must match this value.  O == no session set (invalid)
         last_chunk_id = -1;   // the last received chunk id from a CHUNK message.  -1 == no chunk yet received; the next received chunk must be 0.
         session_status = NOT_STARTED;
-        resetMd5();
+        md5_init(md5Context);
         return true;
     }
 
@@ -617,10 +468,7 @@ namespace fwUpdate {
             session_image_slot = payload.data.req_update.image_slot;
             session_image_flags = payload.data.req_update.image_flags;
             session_total_chunks = (uint16_t) ceil((float)session_image_size / (float)session_chunk_size);
-            session_md5[0] = payload.data.req_update.md5_hash[0];
-            session_md5[1] = payload.data.req_update.md5_hash[1];
-            session_md5[2] = payload.data.req_update.md5_hash[2];
-            session_md5[3] = payload.data.req_update.md5_hash[3];
+            session_md5 = payload.data.req_update.md5_hash;
         }
 
         // prepare the response
@@ -671,13 +519,15 @@ namespace fwUpdate {
         session_status = IN_PROGRESS;
         last_chunk_id = payload.data.chunk.chunk_id;
         // run the chunk data through the md5 hasher
-        hashMd5(payload.data.chunk.data_len, (uint8_t *)&payload.data.chunk.data);
+        md5_update(md5Context, (uint8_t *)&payload.data.chunk.data, payload.data.chunk.data_len);
 
         // if we've received the last message, confirm the checksum and then send a final status to notify the host that we've received everything error-free.
         if (last_chunk_id >= (session_total_chunks-1)) { // remember, chunk_ids are 0-based
             fwUpdate_sendProgress(); // force sending of a final progress message (which should report 100% complete)
 
-            session_status = (memcmp(session_md5, md5hash, sizeof(md5hash)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot, session_image_flags);
+            md5hash_t md5;
+            md5_final(md5Context, md5);
+            session_status = (memcmp(&session_md5, &md5, sizeof(md5hash_t)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot, session_image_flags);
             if (session_status != fwUpdate::FINALIZING)
                 fwUpdate_sendDone(session_status, false, false);
         }
@@ -779,7 +629,7 @@ namespace fwUpdate {
      * @param chunk_size
      * @return
      */
-    bool FirmwareUpdateHost::fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate) {
+    bool FirmwareUpdateHost::fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, md5hash_t image_md5, int32_t progress_rate) {
 
         // FIXME:  Should probably check to see if an update is already in progress, and attempt to finish it first?
         fwUpdate_resetEngine();
@@ -800,10 +650,7 @@ namespace fwUpdate {
         request.data.req_update.chunk_size = session_chunk_size = chunk_size;
         request.data.req_update.file_size = session_image_size = image_size;
         request.data.req_update.progress_rate = progress_rate;
-        request.data.req_update.md5_hash[0] = session_md5[0] = image_md5[0];
-        request.data.req_update.md5_hash[1] = session_md5[1] = image_md5[1];
-        request.data.req_update.md5_hash[2] = session_md5[2] = image_md5[2];
-        request.data.req_update.md5_hash[3] = session_md5[3] = image_md5[3];
+        request.data.req_update.md5_hash = session_md5 = image_md5;
 
         return fwUpdate_sendPayload(request);
     }
@@ -821,10 +668,7 @@ namespace fwUpdate {
         request.data.req_update.image_flags = session_image_flags;
         request.data.req_update.chunk_size = session_chunk_size;
         request.data.req_update.file_size = session_image_size;
-        request.data.req_update.md5_hash[0] = session_md5[0];
-        request.data.req_update.md5_hash[1] = session_md5[1];
-        request.data.req_update.md5_hash[2] = session_md5[2];
-        request.data.req_update.md5_hash[3] = session_md5[3];
+        request.data.req_update.md5_hash = session_md5;
 
         return fwUpdate_sendPayload(request);
     }
@@ -893,7 +737,7 @@ namespace fwUpdate {
         session_image_size = 0;
         session_image_slot = 0;
         next_chunk_id = 0;
-        resetMd5();
+        md5_init(md5Context);
         return true;
     }
 

@@ -23,14 +23,28 @@ typedef struct {
     unsigned char   buffer[64];
 } md5Context_t;
 
-// These functions must be called as a group in sequence to generate the hash (i.e. md5_init, md5_update, md5_update, ..., md5_final)
-void md5_init(md5Context_t *context);
-void md5_update(md5Context_t *context, const unsigned char *input, unsigned int inputLen);
-void md5_final(unsigned char digest[16], md5Context_t *context);
+/**
+ * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
+ */
+void md5_init(md5Context_t& context);
+
+/**
+ * Adds the specified data into the running MD5 hash
+ * @param len the number of bytes to consume into the hash
+ * @param data the bytes to consume into the hash
+ * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
+ */
+void md5_update(md5Context_t& context, const unsigned char *input, unsigned int inputLen);
+
+/**
+ * updates the passed reference to an array, the current running md5 sum.
+ * @param md5sum the reference to an array of uint32_t[4] where the md5 sum will be stored
+ */
+void md5_final(md5Context_t& context, md5hash_t& hash);
 
 // Hash generation functions
 void md5_hash(md5hash_t& md5hash, uint32_t data_len, uint8_t* data);
-int md5_file_details(const char *filename, size_t& filesize, uint32_t md5hash[4]);
+int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5);
 
 // Hash match check
 inline bool md5_matches(const md5hash_t &a, const md5hash_t &b) {

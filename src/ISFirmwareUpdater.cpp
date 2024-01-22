@@ -17,7 +17,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 
     size_t fileSize = 0;
     srcFile = new std::ifstream(filename, std::ios::binary);
-    if (md5_file_details(*srcFile, fileSize, session_md5) != 0)
+    if (md5_file_details(srcFile, fileSize, session_md5) != 0)
         return fwUpdate::ERR_INVALID_IMAGE;
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
@@ -39,7 +39,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 //    }
 
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
-    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
+    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %s\n", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
     return result;
 }
 
@@ -49,20 +49,35 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
     size_t fileSize = 0;
-    srcFile = new std::ifstream(filename, std::ios::binary);
-    if (md5_file_details(*srcFile, fileSize, session_md5) != 0)
-        return fwUpdate::ERR_INVALID_IMAGE;
+    if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
+        // check into the current archive for this file
+        size_t data_len = 0;
+        char *data = (char *)mz_zip_reader_extract_file_to_heap(zip_archive, filename.c_str() + 6 /* "pkg://" */, &data_len, 0);
+        if (data == nullptr) {
+            return fwUpdate::ERR_INVALID_IMAGE;
+        }
+        std::string casted_memory(static_cast<char*>(data), data_len);
+        std::istringstream stream(casted_memory);
+        srcFile = &stream;
+    } else {
+        srcFile = new std::ifstream(filename, std::ios::binary);
+    }
+
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
+
+    // let's get the file's MD5 hash
+    if (md5_file_details(srcFile, fileSize, session_md5) != 0)
+        return fwUpdate::ERR_INVALID_IMAGE;
 
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
-    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %08x-%08x-%08x-%08x\n", fwUpdate_getSessionTargetName(), filename.c_str(), session_md5[0], session_md5[1], session_md5[2], session_md5[3]);
+    printf("Requested Firmware Update to device '%s' with Image '%s', md5: %s\n", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
     return result;
 }
 
 int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
-    if (srcFile && srcFile->is_open()) {
+    if (srcFile) {
         srcFile->seekg((std::streampos)offset, srcFile->beg);
         len = _MIN(len, session_image_size - (uint32_t)srcFile->tellg());
         srcFile->read((char *)*buffer, len);
@@ -79,7 +94,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
 
     switch (session_status) {
         case fwUpdate::ERR_MAX_CHUNK_SIZE:    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
-            return fwUpdate_requestUpdate(session_target, session_image_slot, session_image_flags, session_chunk_size / 2, session_image_size, md5hash);
+            return fwUpdate_requestUpdate(session_target, session_image_slot, session_image_flags, session_chunk_size / 2, session_image_size, session_md5);
         case fwUpdate::ERR_INVALID_SESSION:   // indicates that the requested session ID is invalid.
         case fwUpdate::ERR_INVALID_SLOT:      // indicates that the request slot does not exist. Different targets have different number of slots which can be written to.
         case fwUpdate::ERR_NOT_ALLOWED:       // indicates that writing to the requested slot is not allowed, usually due to security constrains such as a locked firmware, Read-Only FLASH, etc.
@@ -330,12 +345,12 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
 int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
     YAML::Node images = manifest["images"];
     if (!images.IsMap())
-        return -1; // images must be a map (of maps)
+        return PKG_INVALID_IMAGES; // images must be a map (of maps)
 
     YAML::Node steps = manifest["steps"];
 
     if (!steps.IsSequence())
-        return -2; // steps must be a sequence (of maps)
+        return PKG_INVALID_STEPS; // steps must be a sequence (of maps)
 
     for (auto steps_iv : steps) {
         // each step in the list of steps defines a target, which is then also a sequence of commands
@@ -344,16 +359,16 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
             YAML::Node actions = target.second;
 
             if (!key.IsScalar())
-                return -3; // key must identify a target name
+                return PKG_INVALID_TARGET; // key must identify a target name
             std::string target_name = key.as<std::string>();
             if ((target_name != "IMX5") &&
                 (target_name != "GPX1") &&
                 (target_name != "GNSS1") &&
                 (target_name != "GNSS2") )
-                return -4; // target name is invalid/unsupported
+                return PKG_UNSUPPORTED_TARGET; // target name is invalid/unsupported
 
             if (!actions.IsSequence())
-                return -5; // actions must be a sequence (of maps)
+                return PKG_NO_ACTIONS; // actions must be a sequence (of maps)
 
             commands.push_back("target=" + target_name);
             for (auto actions_iv : actions) {
@@ -364,19 +379,19 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
                     if (cmd_name == "image") {
                         int image_slot = 0;
                         uint32_t image_size = 0;
-                        uint32_t image_hash[4] = {};
+                        md5hash_t image_hash = {};
                         // uint8_t image_version[4] = {};
 
                         size_t file_size = 0;
-                        uint32_t file_hash[4] = {};
+                        md5hash_t file_hash = {};
 
                         // this is an "image" command, so lookup the key in the images map
                         YAML::Node image = images[cmd_arg];
                         if (!image.IsDefined() || !image.IsMap())
-                            return -6; // step references invalid or non-existent image in manifest
+                            return PKG_IMAGE_INVALID_REFERENCE; // step references invalid or non-existent image in manifest
 
                         if (!image["filename"].IsDefined() && !image["filename"].IsScalar())
-                            return -7; // an image must define AT LEAST a filename
+                            return PKG_IMAGE_UNKNOWN_PATH; // an image must define AT LEAST a filename
 
                         std::string filename = image["filename"].as<std::string>();
                         if (archive) {
@@ -385,12 +400,13 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
                             if (mz_zip_reader_locate_file_v2(archive, filename.c_str(), nullptr, 0, &f_index)) {
                                 mz_zip_reader_file_stat(archive, f_index, &file_stat);
                                 file_size = file_stat.m_uncomp_size;
+                                filename.insert(0, "pkg://");
                             } else
-                                return -8;
+                                return PKG_IMAGE_FILE_NOT_FOUND;
                         } else {
                             std::ifstream stream(filename);
-                            if (md5_file_details(stream, file_size, file_hash) != 0)
-                                return -8; // file is invalid or non-existent
+                            if (md5_file_details((std::istream*)&stream, file_size, file_hash) != 0)
+                                return PKG_IMAGE_FILE_NOT_FOUND; // file is invalid or non-existent
                         }
 
                         // the following are optional parameters; including them in the manifest image forces us to validate that parameter BEFORE allowing the image to be send to the device
@@ -398,7 +414,7 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
                             image_size = image["size"].as<int>();
 
                             if (image_size != file_size)
-                                return -9; // file size doesn't match the manifest image size
+                                return PKG_IMAGE_FILE_SIZE_MISMATCH; // file size doesn't match the manifest image size
                         }
 
                         // We only do MD5 validation on non-zipped files...
@@ -406,10 +422,10 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
                         if (!archive) {
                             if (image["md5sum"].IsDefined() && image["md5sum"].IsScalar()) {
                                 std::string hash_str = image["md5sum"].as<std::string>();
-                                sscanf(hash_str.c_str(), "%08x%08x%08x%08x", &image_hash[0], &image_hash[1], &image_hash[2], &image_hash[3]);
+                                image_hash = md5_from_string(hash_str);
 
-                                if (memcmp(image_hash, file_hash, sizeof(image_hash)) != 0)
-                                    return -10; // file hash doesn't make the manifest image hash
+                                if (memcmp(&image_hash, &file_hash, sizeof(md5hash_t)) != 0)
+                                    return PKG_IMAGE_FILE_MD5_MISMATCH; // file hash doesn't make the manifest image hash
                             }
                         }
 
@@ -427,7 +443,7 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
         }
     }
 
-    return 0;
+    return PKG_SUCCESS;
 }
 
 int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
@@ -437,26 +453,37 @@ int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) 
 
 int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
     mz_bool status;
-    mz_zip_archive zip_archive;
     size_t file_size;
     void *p;
 
+    if (!zip_archive) {
+        zip_archive = (mz_zip_archive *)malloc(sizeof(mz_zip_archive));
+    }
+
     // initialize the archive struct and open the file
-    mz_zip_zero_struct(&zip_archive);
-    status = mz_zip_reader_init_file(&zip_archive, pkg_file.c_str(), 0);
+    mz_zip_zero_struct(zip_archive);
+    status = mz_zip_reader_init_file(zip_archive, pkg_file.c_str(), 0);
     if (status) {
-        p = mz_zip_reader_extract_file_to_heap(&zip_archive, "manifest.yaml", &file_size, 0);
+        p = mz_zip_reader_extract_file_to_heap(zip_archive, "manifest.yaml", &file_size, 0);
         if (p && (file_size > 0)) {
             std::string casted_memory(static_cast<char*>(p), file_size);
             std::istringstream stream(casted_memory);
             YAML::Node manifest = YAML::Load(stream);
-            if (manifest.IsMap())
-                processPackageManifest(manifest, &zip_archive);
+            if (manifest)
+                processPackageManifest(manifest, zip_archive);
             mz_free(p);
         }
-        mz_zip_reader_end(&zip_archive);
+        // TODO: I can't make up my mind... to keep the zip-reader available for possible future file extractions, or close it and reopen it each time.  We're only talking about a dozen files at max, and most time 2-5 files on average.
+        // mz_zip_reader_end(zip_archive);
     }
-    return 0;
+    return PKG_SUCCESS;
 }
 
-int ISFirmwareUpdater::cleanupFirmwarePackage() { return 0; }
+int ISFirmwareUpdater::cleanupFirmwarePackage() {
+    if (zip_archive) {
+        mz_zip_reader_end(zip_archive);
+        free(zip_archive);
+        zip_archive = nullptr;
+    }
+    return PKG_SUCCESS;
+}

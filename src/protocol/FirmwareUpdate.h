@@ -14,6 +14,8 @@
 
 #ifdef __cplusplus
 #include <string>
+#include <md5.h>
+
 extern "C" {
 #endif
 
@@ -109,7 +111,7 @@ namespace fwUpdate {
         TARGET_MAXNUM,
     };
 
-    enum msg_types_e : int16_t {
+    enum msg_types_e : int32_t {
         MSG_UNKNOWN = 0,            // an unknown or undefined message type.
         MSG_REQ_RESET = 1,          // a host is requesting that the device perform a reset.
         MSG_RESET_RESP = 2,         // response to the requesting host, that a reset was performed (but not guarantee that it was successful).
@@ -180,6 +182,8 @@ namespace fwUpdate {
         image_flags_imageNotEncrypted = 0x01 << image_flags_imageNotEncrypted_pos, // bit mask that informs firmware that sony image is not encrypted
     };
 
+    PUSH_PACK_1
+
     typedef union PACKED {
         struct {
             uint16_t reset_flags;
@@ -195,7 +199,7 @@ namespace fwUpdate {
             uint32_t file_size;     //! the total size of the entire firmware file
             uint16_t chunk_size;    //! the maximum size of each chunk
             uint16_t progress_rate; //! the rate (millis) at which the device should publish progress reports back to the host.
-            uint32_t md5_hash[4];   //! the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
+            md5hash_t md5_hash;     //! the md5 hash for the original firmware file.  If the delivered MD5 hash doesn't match this, after receiving the final chunk, the firmware file will be discarded.
         } req_update;
 
         struct PACKED {
@@ -262,6 +266,8 @@ namespace fwUpdate {
         msg_data_t data;        //! the actual message data
     } payload_t;
 
+    POP_PACK
+
 //    typedef int (*start_update_fn)(uint16_t); // a call-back function that is used to notify the application that an update has been requested.
 //    typedef int (*write_chunk_fn)(uint16_t, uint16_t len, uint8_t* data); // a call-back function that is used to perform the writing of a chunk of data to NVME/Flash.
 //    typedef int (*finish_update_fn)(); // a call-back function that is used to notify the application that the update is finished writing.
@@ -313,25 +319,6 @@ namespace fwUpdate {
         static int fwUpdate_mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data);
 
         /**
-         * Initializes the MD5 hash. Don't forget to call hashMd5() afterwards to actually get your hash
-         */
-        void resetMd5();
-
-        /**
-         * Adds the specified data into the running MD5 hash
-         * @param len the number of bytes to consume into the hash
-         * @param data the bytes to consume into the hash
-         * @return a static buffer of 16 unsigned bytes which represent the 128 total bits of the MD5 hash
-         */
-        uint8_t* hashMd5(size_t len, uint8_t* data);
-
-        /**
-         * updates the passed reference to an array, the current running md5 sum.
-         * @param md5sum the reference to an array of uint32_t[4] where the md5 sum will be stored
-         */
-        void getCurrentMd5(uint32_t(&md5sum)[4]);
-
-        /**
          * Returns the string representation of the passed status
          * @param status
          * @return a constant char * to a string representing the specified status
@@ -356,7 +343,7 @@ namespace fwUpdate {
 
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
-        uint32_t md5hash[4];                                    //! storage for running md5 hash
+        // md5hash_t md5hash;                                      //! storage for running md5 hash
         uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
         uint32_t timeout_duration = 15000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //! the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
@@ -369,7 +356,8 @@ namespace fwUpdate {
         uint32_t session_image_size = 0;                        //! the total size of the image to be sent
         uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
         uint8_t session_image_flags = 0;                        //! the "slot" to which this image will be written in the flash
-        uint32_t session_md5[4] = {0, 0, 0, 0};                 //! the md5 of the firmware image
+        md5hash_t session_md5 = { };                            //! the md5 of the firmware image
+        md5Context_t md5Context = { };                          //! context used internally for building MD5 hashes
 
         /**
          * packages and sends the specified payload, including any auxillary data.
@@ -639,7 +627,7 @@ namespace fwUpdate {
          * @param progress_rate the rate (in millis) which the device should send out progress updates
          * @return
          */
-        bool fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, uint32_t image_md5[4], int32_t progress_rate = 500);
+        bool fwUpdate_requestUpdate(target_t target_id, int image_slot, int image_flags, uint16_t chunk_size, uint32_t image_size, md5hash_t image_md5, int32_t progress_rate = 500);
 
         /**
          * Called by the hsot application to resend a previous "fwUpdate_requestUpdate" with a full parameter set.
@@ -709,7 +697,7 @@ namespace fwUpdate {
         /**
          * @return the size of the firmware image for this session
          */
-        uint16_t fwUpdate_getImageSize() { return session_image_size; }
+        uint32_t fwUpdate_getImageSize() { return session_image_size; }
 
         /**
          * @return the number of chunks that the remote device has specifically requested be resent
