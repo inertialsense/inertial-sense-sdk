@@ -569,8 +569,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             int pollrc = poll(fds, 1, timeoutMilliseconds);
             if (pollrc <= 0 || !(fds[0].revents & POLLIN))
             {
-                if ((pollrc < 0) && (fds[0].revents & POLLERR))
+                if (fds[0].revents & POLLERR) {
                     return -1; // more than a timeout occurred.
+                }
                 break;
             }
         }
@@ -586,6 +587,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         {
             totalRead += n;
         }
+
         if (timeoutMilliseconds > 0 && totalRead < readCount)
         {
             gettimeofday(&curr, NULL);
