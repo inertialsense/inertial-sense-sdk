@@ -899,7 +899,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
         {
             // [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
             // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == 2) {
+            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
                 comManagerGetData(i, dataId, 0, 0, periodMultiple);
             }
         }
