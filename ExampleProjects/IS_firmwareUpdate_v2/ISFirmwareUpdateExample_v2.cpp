@@ -247,9 +247,6 @@ int main(int argc, char* argv[])
     // Create InertialSense object, passing in data callback function pointer.
     InertialSense inertialSenseInterface(NULL);
 
-    // Disable device response requirement to validate open port
-    inertialSenseInterface.EnableDeviceValidation(false);
-
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(COMNum.c_str(), baudRate, true))
     {

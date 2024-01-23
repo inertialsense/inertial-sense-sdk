@@ -564,8 +564,8 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
     void DisableLogging();
-    bool HasReceivedResponseFromDevice(size_t index);
-    bool HasReceivedResponseFromAllDevices();
+    bool HasReceivedDeviceInfo(size_t index);
+    bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
     bool OpenSerialPorts(const char* port, int baudRate);
     void CloseSerialPorts();

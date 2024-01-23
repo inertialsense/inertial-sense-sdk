@@ -173,7 +173,7 @@ void InertialSense::DisableLogging()
     m_logger.CloseAllFiles();
 }
 
-bool InertialSense::HasReceivedResponseFromDevice(size_t index)
+bool InertialSense::HasReceivedDeviceInfo(size_t index)
 {
     if (index >= m_comManagerState.devices.size())
     {
@@ -181,12 +181,11 @@ bool InertialSense::HasReceivedResponseFromDevice(size_t index)
     }
 
     return (
-            m_comManagerState.devices[index].flashCfg.size != 0 &&
             m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
             m_comManagerState.devices[index].devInfo.manufacturer[0] != 0);
 }
 
-bool InertialSense::HasReceivedResponseFromAllDevices()
+bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
 {
     if (m_comManagerState.devices.size() == 0)
     {
@@ -195,7 +194,7 @@ bool InertialSense::HasReceivedResponseFromAllDevices()
 
     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
     {
-        if (!HasReceivedResponseFromDevice(i))
+        if (!HasReceivedDeviceInfo(i))
         {
             return false;
         }
@@ -900,7 +899,9 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
         {
             // [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
             // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            comManagerGetData(i, dataId, 0, 0, periodMultiple);
+            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+                comManagerGetData(i, dataId, 0, 0, periodMultiple);
+            }
         }
     }
     return true;
@@ -1278,6 +1279,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     // handle wildcard, auto-detect serial ports
     if (port[0] == '*')
     {
+        m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.
         cISSerialPort::GetComPorts(ports);
         if (port[1] != '\0')
         {
@@ -1332,7 +1334,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         bool removedSerials = false;
 
 		// Query devices with 10 second timeout
-		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
+		while (!HasReceivedDeviceInfoFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
@@ -1343,13 +1345,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
                     RemoveDevice(i);
                     removedSerials = true, i--;
                 }
-                else
-                {
-                    // comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
-                    comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
-                    comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
-                    comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);
-                }
 			}
 
 			SLEEP_MS(100);
@@ -1359,10 +1354,10 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		// remove each failed device where communications were not received
 		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
 		{
-			if (!HasReceivedResponseFromDevice(i))
+			if (!HasReceivedDeviceInfo(i))
 			{
 				RemoveDevice(i);
-				removedSerials = true, i--;
+				removedSerials = true;
 			}
 		}
 
@@ -1387,6 +1382,16 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
 		}
 	}
+
+    // request extended device info for remaining connected devices...
+    for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--) {
+        // but only if they are of a compatible protocol version
+        if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+            comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
+            comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
+            comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);
+        }
+    }
 
     return m_comManagerState.devices.size() != 0;
 }
