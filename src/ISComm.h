@@ -71,6 +71,8 @@ extern "C" {
 #define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
 #define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
 
+#define ZEPHYR_SUCCESS_CODE     	0
+
 /** Protocol Type */
 typedef enum
 {
