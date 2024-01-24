@@ -632,13 +632,26 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				g_status.evbStatus |= EVB_STATUS_MANF_UNLOCKED;
 				break;
 
-			case SYS_CMD_MANF_CHIP_ERASE:			// chip erase and reboot - do NOT reset calibration!
+			case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:	// reboot into ROM bootloader mode
+				if(manfUnlock)
+				{
+					// Set "stay_in_bootloader" signature to require app firmware update following bootloader update.
+					write_bootloader_signature_stay_in_bootloader_mode();   
+
+					BEGIN_CRITICAL_SECTION
+					flash_rom_bootloader();
+					while(1);
+					END_CRITICAL_SECTION
+				}
+				break;
+
+			case SYS_CMD_MANF_CHIP_ERASE:		            // chip erase and reboot
 				if(manfUnlock)
 				{
 					BEGIN_CRITICAL_SECTION
-					
-					// erase chip
 					flash_erase_chip();
+					while(1);
+					END_CRITICAL_SECTION
 				}
 				break;
 			}
