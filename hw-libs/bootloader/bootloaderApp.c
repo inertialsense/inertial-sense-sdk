@@ -149,7 +149,7 @@ void enable_bootloader(int pHandle)
 }
 
 
-void enable_bootloader_assistant(void)
+void enable_rom_bootloader(void)
 {
     unlockUserFlash();
 
