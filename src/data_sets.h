@@ -1205,12 +1205,12 @@ typedef struct PACKED
 	int						accel_motion;
 	int						rot_motion;
 	int						zero_vel;
-	int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
+	int						ahrs_gps_cnt;		// Counter of sequential valid GPS data (for switching from AHRS to navigation)
 	float					hdg_err;
-	int						hdg_coarse;				// Flag whether initial attitude error converged
-	int						hdg_aligned;			// Flag whether initial attitude error converged
+	int						hdg_coarse;			// Flag whether initial attitude error converged
+	int						hdg_aligned;		// Flag whether initial attitude error converged
 	int						hdg_aligning;
-	int						start_proc_done;		// Cold/hot start procedure completed
+	int						ekf_init_done;	    // Hot EKF initialization completed
 	int						mag_cal_good;
 	int						mag_cal_done;
 	int						stat_magfield;
@@ -1464,8 +1464,9 @@ enum eSystemCommand
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
     SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
     SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
 };
 
 enum eSerialPortBridge
