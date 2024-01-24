@@ -1461,6 +1461,10 @@ int getNmeaMsgId(const void *msg, int msgSize)
 		if      (UINT32_MATCH(talker,"BLEN"))       { return NMEA_MSG_ID_BLEN; }
 		break;
 
+	case 'E':
+		if      (UINT32_MATCH(talker,"EBLE"))       { return NMEA_MSG_ID_EBLE; }
+		break;
+
 	case 'G':
 		if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
 		else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }

@@ -161,4 +161,3 @@ void enable_bootloader_assistant(void)
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
 }
 
-
