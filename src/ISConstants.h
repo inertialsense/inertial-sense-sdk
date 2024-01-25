@@ -239,6 +239,8 @@ extern void vPortFree(void* pv);
 #define PACKED
 #endif
 
+#define NO_FUNC_OPTIMIZATION __attribute__((optimize(0)))       // Place this before the function name, i.e. void NO_FUNC_OPTIMIZATION my_func(){ ... }
+
 // #define PACKED_STRUCT typedef struct PACKED
 // #define PACKED_UNION typedef union PACKED
 
