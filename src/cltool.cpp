@@ -502,12 +502,26 @@ bool cltool_replayDataLog()
 	return true;
 }
 
+string cltool_info()
+{
+	string info = "CLTool -";
+#if defined(IS_SDK_DESCRIBE_TAG)
+	info += string(" ") + IS_SDK_DESCRIBE_TAG;
+#endif
+#if defined(IS_SDK_BUILD_DATE) && defined(IS_SDK_BUILD_TIME)
+	info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
+#endif
+
+	return info;
+}
+
 void cltool_outputUsage()
 {
 	cout << boldOff;
-	cout << "-----------------------------------------------------------------" << endl;
-	cout << endlbOn;
-	cout << "DESCRIPTION" << endlbOff;
+	cout << "-----------------------------------------------------------------" << endlbOn;
+	cout << cltool_info() << boldOff;
+	cout << endl;
+	cout << endl;
 	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
@@ -594,6 +608,8 @@ void cltool_outputUsage()
 	cout << "            -base=TCP::7777                            (IP is optional)" << endl;
 	cout << "            -base=TCP:192.168.1.43:7777" << endl;
 	cout << "            -base=SERIAL:" << EXAMPLE_PORT << ":921600" << endl;
+	cout << endl;	
+	cout << cltool_info() << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
