@@ -1524,6 +1524,10 @@ int getNmeaMsgId(const void *msg, int msgSize)
 		if      (UINT32_MATCH(talker,"BLEN"))       { return NMEA_MSG_ID_BLEN; }
 		break;
 
+	case 'E':
+		if      (UINT32_MATCH(talker,"EBLE"))       { return NMEA_MSG_ID_EBLE; }
+		break;
+
 	case 'G':
 		if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
 		else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }
@@ -1625,6 +1629,9 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// TODO: dev_info_t.firmwareMD5Hash support
 	// uint32_t         firmwareMD5Hash[4];
 	// ptr = ASCII_to_MD5(info.firmwareMD5Hash, ptr);
+
+	// Populate missing hardware descriptor
+	devInfoPopulateMissingHardware(&info);
 
 	return 0;
 }

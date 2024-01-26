@@ -167,7 +167,7 @@ extern "C" {
     #endif
 
     #ifndef STRNCPY
-        #define STRNCPY(dst, src, maxlen) strncpy((char*)dst, (char*)src, maxlen)
+        #define STRNCPY(dst, src, maxlen) strncpy((char*)(dst), (char*)(src), (maxlen))
     #endif
 #endif // defined(_MSC_VER)
 
@@ -192,7 +192,7 @@ extern "C" {
         #include <sys/utime.h>
         #define _MKDIR(dir) _mkdir(dir)
         #define _RMDIR(dir) _rmdir(dir)
-        #define _GETCWD(buf, len) _getcwd(buf, len)
+        #define _GETCWD(buf, len) _getcwd((buf), (len))
         #define _UTIME _utime
         #define _UTIMEBUF struct _utimbuf
     #else // POSIX
@@ -202,9 +202,9 @@ extern "C" {
         #include <utime.h>
         #include <sys/stat.h>
         //#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only
-        #define _MKDIR(dir) mkdir(dir, ACCESSPERMS) // 0777 access for all
-        #define _RMDIR(dir) rmdir(dir)
-        #define _GETCWD(buf, len) getcwd(buf, len)
+        #define _MKDIR(dir) mkdir((dir), ACCESSPERMS) // 0777 access for all
+        #define _RMDIR(dir) rmdir((dir))
+        #define _GETCWD(buf, len) getcwd((buf), (len))
         #define _UTIME utime
         #define _UTIMEBUF struct utimbuf
     #endif
@@ -224,6 +224,8 @@ extern "C" {
     #define POP_PACK _Pragma("pack(pop)")
     #define PACKED
 #endif
+
+#define NO_FUNC_OPTIMIZATION __attribute__((optimize(0)))       // Place this before the function name, i.e. void NO_FUNC_OPTIMIZATION my_func(){ ... }
 
 // #define PACKED_STRUCT typedef struct PACKED
 // #define PACKED_UNION typedef union PACKED
@@ -277,7 +279,7 @@ extern "C" {
 #endif
 
 #ifndef _ABS
-#define _ABS(a) (a < 0 ? -a : a)
+#define _ABS(a) ((a) < 0 ? -(a) : (a))
 #endif
 
 #ifndef _MAX 
@@ -289,11 +291,11 @@ extern "C" {
 #endif
 
 #ifndef _CLAMP
-#define _CLAMP(v, minV, maxV) (v < minV ? minV : (v > maxV ? maxV : v))
+#define _CLAMP(v, minV, maxV) ((v) < (minV) ? (minV) : ((v) > (maxV) ? (maxV) : (v)))
 #endif
 
 #ifndef _SATURATE
-#define _SATURATE(v) _CLAMP(v, 0, 1)
+#define _SATURATE(v) _CLAMP((v), 0, 1)
 #endif
 
 #ifndef _LIMIT
@@ -368,7 +370,7 @@ extern "C" {
 #ifndef RAD2DEGMULT
 #define RAD2DEGMULT  (180.0f/M_PI)
 #endif
-#define ATanH(x)	    (0.5 * log((1 + x) / (1 - x)))
+#define ATanH(x)	    (0.5 * log((1 + (x)) / (1 - (x))))
 
 #if defined(__cplusplus)
 
@@ -385,7 +387,7 @@ extern "C" {
 #define CONST_EXPRESSION constexpr static
 #endif
 #ifndef STATIC_ASSERT
-#define STATIC_ASSERT(exp) static_assert(exp, #exp)
+#define STATIC_ASSERT(exp) static_assert((exp), #exp)
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE override
@@ -435,7 +437,7 @@ extern "C" {
 // diff two times as uint32_t, handling wrap-around
 #define UINT32_TIME_DIFF(current, prev) ((uint32_t)(current) - (uint32_t)(prev))
 
-#define DT_TO_HZ(dt)	(((dt) == (0.0)) ? (0) : (1.0/dt))
+#define DT_TO_HZ(dt)	(((dt) == (0.0)) ? (0) : (1.0/(dt)))
 
 #define C_WEEKS_TO_SECONDS        604800.0      // Seconds per week
 #define C_WEEKS_TO_MILLISECONDS   604800000     // Milliseconds per week

@@ -520,10 +520,11 @@ typedef struct PACKED
 
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS     = 1,
-	DEV_INFO_HARDWARE_EVB      = 2,
-	DEV_INFO_HARDWARE_IMX      = 3,
-	DEV_INFO_HARDWARE_GPX      = 4,
+	DEV_INFO_HARDWARE_UNSPECIFIED   = 0,
+	DEV_INFO_HARDWARE_UINS          = 1,
+	DEV_INFO_HARDWARE_EVB           = 2,
+	DEV_INFO_HARDWARE_IMX           = 3,
+	DEV_INFO_HARDWARE_GPX           = 4,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -582,6 +583,9 @@ typedef struct PACKED
     // uint32_t        firmwareMD5Hash[4];
 
 } dev_info_t;
+
+/** Add missing hardware descriptor to dev_info_t. */
+void devInfoPopulateMissingHardware(dev_info_t *devInfo);
 
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
@@ -1201,12 +1205,12 @@ typedef struct PACKED
 	int						accel_motion;
 	int						rot_motion;
 	int						zero_vel;
-	int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
+	int						ahrs_gps_cnt;		// Counter of sequential valid GPS data (for switching from AHRS to navigation)
 	float					hdg_err;
-	int						hdg_coarse;				// Flag whether initial attitude error converged
-	int						hdg_aligned;			// Flag whether initial attitude error converged
+	int						hdg_coarse;			// Flag whether initial attitude error converged
+	int						hdg_aligned;		// Flag whether initial attitude error converged
 	int						hdg_aligning;
-	int						start_proc_done;		// Cold/hot start procedure completed
+	int						ekf_init_done;	    // Hot EKF initialization completed
 	int						mag_cal_good;
 	int						mag_cal_done;
 	int						stat_magfield;
@@ -1460,8 +1464,9 @@ enum eSystemCommand
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
     SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
     SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
 };
 
 enum eSerialPortBridge
@@ -2557,12 +2562,13 @@ enum eRTKConfigBits
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
-    /** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
+    /** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000, 4000 deg/s */	
     SENSOR_CFG_GYR_FS_250				= (int)0x00000000,
     SENSOR_CFG_GYR_FS_500				= (int)0x00000001,
     SENSOR_CFG_GYR_FS_1000				= (int)0x00000002,
     SENSOR_CFG_GYR_FS_2000				= (int)0x00000003,
-    SENSOR_CFG_GYR_FS_MASK				= (int)0x00000003,
+    SENSOR_CFG_GYR_FS_4000				= (int)0x00000004,
+    SENSOR_CFG_GYR_FS_MASK				= (int)0x00000007,
     SENSOR_CFG_GYR_FS_OFFSET			= (int)0,
     
     /** Accelerometer full-scale sensing range selection: +- 2, 4, 8, 16 m/s^2 */
@@ -2570,8 +2576,8 @@ enum eSensorConfig
     SENSOR_CFG_ACC_FS_4G				= (int)0x00000001,
     SENSOR_CFG_ACC_FS_8G				= (int)0x00000002,
     SENSOR_CFG_ACC_FS_16G				= (int)0x00000003,
-    SENSOR_CFG_ACC_FS_MASK				= (int)0x0000000C,
-    SENSOR_CFG_ACC_FS_OFFSET			= (int)2,
+    SENSOR_CFG_ACC_FS_MASK				= (int)0x00000030,
+    SENSOR_CFG_ACC_FS_OFFSET			= (int)4,
     
     /** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following 
     bit values can be used to override the bandwidth (frequency) to: 250, 184, 92, 41, 20, 10, 5 Hz */
@@ -2582,7 +2588,7 @@ enum eSensorConfig
     SENSOR_CFG_GYR_DLPF_20HZ			= (int)0x00000004,
     SENSOR_CFG_GYR_DLPF_10HZ			= (int)0x00000005,
     SENSOR_CFG_GYR_DLPF_5HZ				= (int)0x00000006,
-     SENSOR_CFG_GYR_DLPF_MASK			= (int)0x00000F00,
+    SENSOR_CFG_GYR_DLPF_MASK			= (int)0x00000F00,
     SENSOR_CFG_GYR_DLPF_OFFSET			= (int)8,
 
     /** Accelerometer digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The 

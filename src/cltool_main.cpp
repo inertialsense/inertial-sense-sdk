@@ -147,6 +147,19 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         return true;
     }
 
+    // check for any compatible (procotol version 2) devices
+    for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
+        if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
+            printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
+            // let's print the dev info for all connected devices (so the user can identify the errant device)
+            for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
+                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
+                printf("%s\n", devInfo.c_str());
+            }
+            return false;
+        }
+    }
+
     // ask for device info every 2 seconds
     inertialSenseInterface.BroadcastBinaryData(DID_DEV_INFO, 2000);
 
@@ -595,9 +608,6 @@ static int inertialSenseMain()
         // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
         // Create InertialSense object, passing in data callback function pointer.
         InertialSense inertialSenseInterface(cltool_dataCallback);
-
-        // Disable device response requirement to validate open port and flash config sync IF flash config is not needed
-        // inertialSenseInterface.EnableDeviceValidation( g_commandLineOptions.flashCfg.size() || g_commandLineOptions.evbFlashCfg.size() );
 
         // [C++ COMM INSTRUCTION] STEP 2: Open serial port
         if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
