@@ -18,6 +18,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "libusb.h"
 #include "ISUtilities.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <string>
 #include <mutex>
 
