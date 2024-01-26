@@ -1098,11 +1098,14 @@ class logPlot:
         dt = None
 
         if accelSensor==0:
+            # I = np.copy(self.getData(device, DID_IMU_RAW, 'I'))  # to plot raw gyro data
+            # imu1 = I['pqr']                                      # to plot raw gyro data
             imu1 = np.copy(self.getData(device, DID_PIMU, 'theta'))
         else:
             imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
 
         if np.shape(imu1)[0] != 0:  # DID_PIMU
+            # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, DID_PIMU, 'time')
             dt = self.getData(device, DID_PIMU, 'dt') 
             # dt = time[1:] - time[:-1]
