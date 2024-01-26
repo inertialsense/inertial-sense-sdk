@@ -25,6 +25,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "libusb.h"
 #include "ISUtilities.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <string>
 #include <mutex>
 
@@ -282,8 +284,19 @@ public:
 
 protected:
     void status_update(const char* info, eLogLevel level) 
-    { 
+    {
         if(m_info_callback) m_info_callback((void*)this, info, level); 
+    }
+    void status_update(void* obj, eLogLevel level, const char *fmt, ...) 
+    { 
+        if(!m_info_callback) return;
+
+        char msg[200] = { 0 };
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(msg, sizeof(msg), fmt, args);
+        va_end(args);
+        m_info_callback(obj, msg, level);
     }
 
     struct
