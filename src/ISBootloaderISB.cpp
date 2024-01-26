@@ -88,6 +88,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
         if (retry*READ_DELAY_MS > 4000)
         {   // No response
+            status_update(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
             return IS_IMAGE_SIGN_NONE;
         }
     }
@@ -102,10 +103,25 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     m_sn = 0;
 
     if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {
+    {   // Valid packet found
         processor = (eProcessorType)buf[5];
         m_isb_props.is_evb = buf[6];
         memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+    }
+    else
+    {   // Error parsing
+        char msg[200] = { 0 };
+        int n = SNPRINTF(msg, sizeof(msg), "    | (ISB Error) (%s) check_is_compatible parse error:\n 0x ", m_port->port);
+        for(int i=0; i<count; i++)
+        {
+            if (i%2 == 0)
+            {   // Add space every other 
+                n += SNPRINTF(&msg[n], sizeof(msg)-n, " ");
+            }
+            n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
+        }
+        status_update(NULL, IS_LOG_LEVEL_ERROR, msg);
+        return (eImageSignature)valid_signatures;
     }
 
     if(m_isb_major >= 6)   
@@ -127,6 +143,11 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
 
+    if (valid_signatures == 0)
+    {
+        status_update(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
+    }
+
     return (eImageSignature)valid_signatures;
 }
 
@@ -137,7 +158,7 @@ is_operation_result cISBootloaderISB::reboot_up()
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
     serialPortFlush(m_port);
-    SLEEP_MS(1000);
+    SLEEP_MS(100);
     serialPortClose(m_port);
     return IS_OP_OK;
 }
@@ -165,7 +186,7 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
 
     SNPRINTF(message+n, sizeof(message)-n, "Update needed...");
     m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-    m_info_callback(this, "(ISB) Rebooting to DFU/SAM-BA mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, "(ISB) Rebooting to ROM bootloader mode...", IS_LOG_LEVEL_INFO);
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.
@@ -200,7 +221,7 @@ is_operation_result cISBootloaderISB::reboot()
         return IS_OP_ERROR;
     }
 
-    m_info_callback(this, "(ISB) Resetting before App update...", IS_LOG_LEVEL_INFO);
+    status_update("(ISB) Resetting before App update...", IS_LOG_LEVEL_INFO);
 
     // restart bootloader command
     if(reboot_force() == IS_OP_OK)
@@ -237,6 +258,8 @@ uint32_t cISBootloaderISB::get_device_info()
         m_isb_props.processor = IS_PROCESSOR_SAMx70;
         m_isb_props.is_evb = false;
         m_sn = 0;
+
+        status_update("(ISB) get_device_info bad read.", IS_LOG_LEVEL_ERROR);
         return 0;
     }
 
@@ -269,6 +292,7 @@ uint32_t cISBootloaderISB::get_device_info()
     }
     else
     {
+        status_update(NULL, IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", m_port->port, m_isb_major);
         return 0;
     }
 
@@ -301,7 +325,7 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
         }
     }
 
-#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
+#if defined(SUPPORT_BOOTLOADER_V5A)     // ONLY NEEDED TO SUPPORT BOOTLOADER v5a.  Delete this and associated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
     static const unsigned char handshaker[] = "INERTIAL_SENSE_SYNC_DFU";
 
     // Attempt handshake using extended string for bootloader v5a
@@ -541,6 +565,7 @@ is_operation_result cISBootloaderISB::upload_hex(unsigned char* hexData, int cha
          
         if (upload_hex_page(hexData, pageByteCount, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
         {
+            status_update("(ISB) Upload hex page error", IS_LOG_LEVEL_ERROR);
             return IS_OP_ERROR;
         }
 
@@ -922,8 +947,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
                 return IS_OP_ERROR;
             }
 
-            outputPtr = output;
-            
+            outputPtr = output;            
         }
 
         if (m_update_callback != 0)
@@ -1011,7 +1035,9 @@ is_operation_result cISBootloaderISB::get_version_from_file(const char* filename
 #endif
 
     if (blfile == 0)
+    {
         return IS_OP_ERROR;
+    }
 
     fseek(blfile, 0x3DFC, SEEK_SET);
     unsigned char ver_info[4];

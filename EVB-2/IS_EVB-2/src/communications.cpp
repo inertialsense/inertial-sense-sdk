@@ -183,13 +183,13 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg)
         // Set baudrate based on USB CDC baudrate
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_UINS0))
         {
-            serSetBaudRate(EVB2_PORT_UINS0, baudrate);
+            serSyncBaudRate(EVB2_PORT_UINS0, &baudrate);
         }
 
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_UINS1) &&
 		  !(g_flashCfg->cbOptions&EVB2_CB_OPTIONS_SPI_ENABLE))
         {
-            serSetBaudRate(EVB2_PORT_UINS1, baudrate);
+            serSyncBaudRate(EVB2_PORT_UINS1, &baudrate);
         }
     }
 
@@ -197,26 +197,25 @@ void callback_cdc_set_config(uint8_t port, usb_cdc_line_coding_t * cfg)
     {
         // 	    if(g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_XBEE))
         // 	    {
-        // 		    serSetBaudRate(EVB2_PORT_XBEE, baudrate);
+        // 		    serSyncBaudRate(EVB2_PORT_XBEE, &baudrate);
         // 	    }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_XRADIO))
         {
-            serSetBaudRate(EVB2_PORT_XRADIO, baudrate);
+            serSyncBaudRate(EVB2_PORT_XRADIO, &baudrate);
         }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_BLE))
         {
-            serSetBaudRate(EVB2_PORT_BLE, baudrate);
+            serSyncBaudRate(EVB2_PORT_BLE, &baudrate);
         }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_SP330))
         {
-            serSetBaudRate(EVB2_PORT_SP330, baudrate);
+            serSyncBaudRate(EVB2_PORT_SP330, &baudrate);
         }
         if (g_flashCfg->cbf[EVB2_PORT_USB] & (1<<EVB2_PORT_GPIO_H8))
         {
-            serSetBaudRate(EVB2_PORT_GPIO_H8, baudrate);
+            serSyncBaudRate(EVB2_PORT_GPIO_H8, &baudrate);
         }
     }
-
 }
 
 void callback_cdc_set_dtr(uint8_t port, bool b_enable)
@@ -633,20 +632,25 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				g_status.evbStatus |= EVB_STATUS_MANF_UNLOCKED;
 				break;
 
-			case SYS_CMD_MANF_CHIP_ERASE:				// full chip erase and reboot - do NOT reset calibration!
+			case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:	// reboot into ROM bootloader mode
 				if(manfUnlock)
 				{
+					// Set "stay_in_bootloader" signature to require app firmware update following bootloader update.
+					write_bootloader_signature_stay_in_bootloader_mode();   
+
 					BEGIN_CRITICAL_SECTION
-					flash_erase_chip();
+					flash_rom_bootloader();
+					while(1);
 					END_CRITICAL_SECTION
 				}
 				break;
 
-			case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:	// reboot into rom bootloader (DFU) mode!
+			case SYS_CMD_MANF_CHIP_ERASE:		            // chip erase and reboot
 				if(manfUnlock)
 				{
-					BEGIN_CRITICAL_SECTION					
-					flash_enable_rom_bootloader();
+					BEGIN_CRITICAL_SECTION
+					flash_erase_chip();
+					while(1);
 					END_CRITICAL_SECTION
 				}
 				break;
@@ -703,27 +707,26 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 	case _PTYPE_NMEA:
 		{
-			uint32_t messageIdUInt = NMEA_MESSAGEID_TO_UINT(&(dataPtr[1]));
 			if(comm->dataHdr.size == 10)
 			{	// 4 character commands (i.e. "$STPB*14\r\n")
-				switch (messageIdUInt)
+				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
 				{
-				case NMEA_MSG_UINT_BLEN: // Enable bootloader (uINS)
+				case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
 					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
 
 					// Disable EVB broadcasts
 					g_ermc.bits = 0;
 					break;
 							
-				case NMEA_MSG_UINT_EBLE: // Enable bootloader (EVB)
+				case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
 					// Disable uINS bootloader if host enables EVB bootloader
 					g_uInsBootloaderEnableTimeMs = 0;
 					
 					enable_bootloader(PORT_SEL_USB);
 					break;				
 
-				case NMEA_MSG_UINT_STPB:
-				case NMEA_MSG_UINT_STPC:	
+				case NMEA_MSG_ID_STPB:
+				case NMEA_MSG_ID_STPC:	
 					// Disable EVB communications
 					g_ermc.bits = 0;
 					break;
@@ -732,14 +735,14 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			}
 			else
 			{	// General NMEA							
-				switch (messageIdUInt)
+				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
 				{
-				case NMEA_MSG_UINT_NELB: // SAM bootloader assistant (SAM-BA) enable
+				case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 					if (comm->dataHdr.size == 22 &&
 // 									(pHandle == EVB2_PORT_USB) && 
 						strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
 					{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-						enable_bootloader_assistant();
+						enable_rom_bootloader();
 					}
 					break;
 					

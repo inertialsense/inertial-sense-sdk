@@ -505,7 +505,7 @@
       </framework-data>
     </AsfFrameworkConfig>
     <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
-    <avrtoolserialnumber>J41800054309</avrtoolserialnumber>
+    <avrtoolserialnumber>J41800098687</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0xA1020C01</avrdeviceexpectedsignature>
     <avrtoolinterface>SWD</avrtoolinterface>
     <com_atmel_avrdbg_tool_edbg>
@@ -540,7 +540,7 @@
         <InterfaceName>SWD</InterfaceName>
       </ToolOptions>
       <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
-      <ToolNumber>J41800054309</ToolNumber>
+      <ToolNumber>J41800098687</ToolNumber>
       <ToolName>Atmel-ICE</ToolName>
     </com_atmel_avrdbg_tool_atmelice>
     <com_atmel_avrdbg_tool_samice>
@@ -1370,6 +1370,14 @@
     <Compile Include="..\..\src\protocol_nmea.h">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\protocol_nmea.h</Link>
+    </Compile>
+    <Compile Include="..\..\src\time_conversion.c">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\time_conversion.c</Link>
+    </Compile>
+    <Compile Include="..\..\src\time_conversion.h">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\time_conversion.h</Link>
     </Compile>
     <Compile Include="src\ASF\sam\drivers\afec\afec.c">
       <SubType>compile</SubType>

@@ -708,7 +708,7 @@ is_operation_result cISBootloaderThread::update(
     m_timeStart = current_timeMs();
 
     ////////////////////////////////////////////////////////////////////////////
-    // Run `mode_thread_serial_isb` to put all ISB devices into DFU/SAM-BA mode
+    // Run `mode_thread_serial_isb` to put all ISB devices into ROM bootloader mode
     ////////////////////////////////////////////////////////////////////////////
 
     while(m_continue_update && !true_if_cancelled())

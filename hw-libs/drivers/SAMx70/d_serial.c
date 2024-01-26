@@ -1006,7 +1006,9 @@ static int spiEnable(int serialNum)
 }
 #endif
 
-// 0 on success, -1 on failure
+/**
+ * \brief Set USART baudrate.  Return value is 0 on success or -1 on failure.
+ */
 int serSetBaudRate( int serialNum, int baudrate )
 {
 	usartDMA_t *ser = (usartDMA_t*)&g_usartDMA[serialNum];
@@ -1026,15 +1028,37 @@ int serSetBaudRate( int serialNum, int baudrate )
 }
 
 /**
+ * \brief Set USART baudrate.  Return value is 0 on success or -1 on failure.  Parameter 'baudRate' returns actual baud rate in hardware if non-standard (>921600).
+ */
+int serSyncBaudRate(int serialNum, uint32_t *baudRate)
+{
+	if (baudRate == NULL)
+		return -1;
+
+	if (serSetBaudRate(serialNum, *baudRate) == 0)
+	{	// Success
+		if (*baudRate > IS_BAUDRATE_STANDARD_MAX) 
+		{ 	// Report back actual non-standard baudrate
+			*baudRate = serBaudRate(serialNum); 
+		}
+
+		return 0;
+	}
+
+	// Failure
+	return -1;
+}
+
+/**
  * \brief Read USART baudrate.  Return value is the baudrate or -1 on failure.
  */
-int serGetBaudRate( int serialNum )
+int serBaudRate( int serialNum )
 {
 	usartDMA_t *ser = (usartDMA_t*)&g_usartDMA[serialNum];
 	if( !ser ) return -1;
 	
 	// Baudrate setting
-	return ser->usart_options.baudrate;
+	return uart_baud_rate((Uart*)ser->peripheral, sysclk_get_peripheral_hz());
 }
 
 /********************************* INITIALIZATION ROUTINES ***************************************************************************************************/
@@ -1672,6 +1696,22 @@ int serInit(int serialNum, uint32_t baudRate, sam_usart_opt_t *options)
 #endif
 
 	return 0;
+}
+
+int serInitSyncBaudrate(int serialNum, uint32_t *baudrate, sam_usart_opt_t *options)
+{
+	if (serInit(serialNum, *baudrate, options) == 0)
+	{
+		if (*baudrate > IS_BAUDRATE_STANDARD_MAX) 
+		{ 	// Report back actual non-standard baud rate
+			*baudrate = serBaudRate(serialNum); 
+		}
+		// Success
+		return 0;
+	}
+
+	// Failure
+	return -1;
 }
 
 //Interrupts get enabled for errors. Clear error in interrupt.

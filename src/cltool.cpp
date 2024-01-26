@@ -61,9 +61,9 @@ static bool matches(const char* str, const char* pre)
 	return lenstr != lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
-#define CL_DEFAULT_BAUD_RATE				IS_COM_BAUDRATE_DEFAULT 
+#define CL_DEFAULT_BAUD_RATE				IS_BAUDRATE_DEFAULT 
 #define CL_DEFAULT_COM_PORT					"*"
-#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_PRETTY 
+#define CL_DEFAULT_DISPLAY_MODE				cInertialSenseDisplay::DMODE_SCROLL
 #define CL_DEFAULT_LOG_TYPE					"dat"
 #define CL_DEFAULT_LOGS_DIRECTORY			DEFAULT_LOGS_DIRECTORY
 #define CL_DEFAULT_ENABLE_LOGGING			false 
@@ -111,6 +111,18 @@ bool read_did_argument(stream_did_t *dataset, string s)
 	return false;
 }
 
+string cltool_version()
+{
+	string info;
+#if defined(IS_SDK_DESCRIBE_TAG)
+	info += string("") + IS_SDK_DESCRIBE_TAG;
+#endif
+#if defined(IS_SDK_BUILD_DATE) && defined(IS_SDK_BUILD_TIME)
+	info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
+#endif
+	return info;
+}
+
 void print_dids()
 {
 #if defined(INCLUDE_LUNA_DATA_SETS)
@@ -122,6 +134,11 @@ void print_dids()
 		printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
 	}
 	cltool_outputHelp();
+}
+
+void enable_display_mode(int mode = cInertialSenseDisplay::DMODE_PRETTY)
+{   
+    g_commandLineOptions.displayMode = mode;
 }
 
 bool cltool_parseCommandLine(int argc, char* argv[])
@@ -170,10 +187,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		if (startsWith(a, "-asciiMessages="))
 		{
 			g_commandLineOptions.asciiMessages = &a[15];
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-base="))
 		{
 			g_commandLineOptions.baseConnection = &a[6];
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-baud="))
 		{
@@ -222,6 +241,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 					}
 				}
 			}			
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-edit"))
 		{
@@ -278,14 +298,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-lms="))
 		{
 			g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-lmf="))
 		{
 			g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
+            enable_display_mode();
 		}
         else if (startsWith(a, "-log-flush-timeout="))
         {
             g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
+            enable_display_mode();
         }
         else if (startsWith(a, "-lts="))
 		{
@@ -320,6 +343,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			g_commandLineOptions.rmcPreset = 0;
 			g_commandLineOptions.magRecal = true;
 			g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-platform"))
 		{
@@ -344,10 +368,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-presetPPD"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-presetINS2"))
 		{
 			g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+            enable_display_mode();
 		}
         else if (startsWith(a, "-persistent"))
         {
@@ -361,6 +387,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.logPath = argv[++i];	// use next argument
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-romBootloadEvb"))
 		{
@@ -374,6 +401,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		{
 			g_commandLineOptions.replayDataLog = true;
 			g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
+            enable_display_mode();
 		}
         else if (startsWith(a, "-resetEvb"))
         {
@@ -382,7 +410,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-reset"))
         {
             g_commandLineOptions.softwareResetImx = true;
-        }
+        }		
+		else if (startsWith(a, "-romBootloader"))
+		{
+			g_commandLineOptions.sysCommand = SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER;
+		}
 		else if (startsWith(a, "-rover="))
 		{
 			g_commandLineOptions.roverConnection = &a[7];
@@ -391,14 +423,17 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 			stream_did_t dataset = {};
 			read_did_argument(&dataset, "DID_GPS1_POS");
 			g_commandLineOptions.datasets.push_back(dataset);
+            enable_display_mode();
 		}
 		else if (startsWith(a, "-r"))
 		{
 			g_commandLineOptions.replayDataLog = true;
+            enable_display_mode();
 		}
         else if (startsWith(a, "-stats"))
 		{
 			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
+            enable_display_mode();
 		}
         else if (startsWith(a, "-survey="))
         {
@@ -409,6 +444,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 g_commandLineOptions.surveyIn.maxDurationSec = maxDurationSec;
             }
+            enable_display_mode();
         }
 		else if (startsWith(a, "-sysCmd="))
 		{
@@ -416,7 +452,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		}		
 		else if (startsWith(a, "-s"))
 		{
-			g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_SCROLL;
+            enable_display_mode(cInertialSenseDisplay::DMODE_SCROLL);
 		}
 		else if (startsWith(a, "-ub") && (i + 1) < argc)
 		{
@@ -429,6 +465,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 		else if (startsWith(a, "-uv"))
 		{
 			g_commandLineOptions.bootloaderVerify = true;
+		}
+		else if (startsWith(a, "-v") || startsWith(a, "--version"))
+		{
+			cout << cltool_version() << endl;
+			return false;
 		}
 		else
 		{
@@ -493,49 +534,51 @@ bool cltool_replayDataLog()
 void cltool_outputUsage()
 {
 	cout << boldOff;
-	cout << "-----------------------------------------------------------------" << endl;
-	cout << endlbOn;
-	cout << "DESCRIPTION" << endlbOff;
+	cout << "-----------------------------------------------------------------" << endlbOn;
+	cout << "CLTool - " << boldOff << cltool_version() << endl;
+	cout << endl;
 	cout << "    Command line utility for communicating, logging, and updating firmware with Inertial Sense product line." << endl;
 	cout << endlbOn;
-	cout << "EXAMPLES" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << boldOff << " # stream same as line above" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << " # Connect to RTK NTRIP base" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOn;
-	cout << "                                                   " << boldOff << " # update application firmware and bootloader" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOn;
+	cout << "EXAMPLES" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did DID_INS_1 DID_GPS1_POS DID_PIMU " << EXAMPLE_SPACE_1 << boldOff << " # stream DID messages" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 4 13 3           " << EXAMPLE_SPACE_1 << boldOff << " # stream same as line above" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << "    # Connect to RTK NTRIP base" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
+	cout << "                                                   " << boldOff << " # update application firmware and bootloader" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
-	cout << "    -h --help" << boldOff << "       Display this help menu" << endlbOn;
+	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
 	cout << "    -c " << boldOff << "COM_PORT     Select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
 	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
-    cout << "    -q" << boldOff << "              Quiet mode, no display" << endlbOn;
-    cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
-    cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB." << endlbOn;
-    cout << "    -s" << boldOff << "              Scroll displayed messages to show history" << endlbOn;
-	cout << "    -stats" << boldOff << "          Display statistics of data received" << endlbOn;
-    cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
+	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
+	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
+	cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB." << endlbOn;
+	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
+	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
+	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
 	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
+	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
 	if (g_internal)
 	{
 	cout << "    -romBootloadIMX " << boldOff << "  Enable ROM bootloader (DFU) mode on IMX." << endlbOn;
 	cout << "    -romBootloadEvb2 " << boldOff << " Enable ROM bootloader (DFU) mode on EVB2." << endlbOn;
 	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
 	}
+	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
@@ -549,7 +592,7 @@ void cltool_outputUsage()
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
 	cout << "    -presetPPD     " << boldOff << " Stream preset post processing datasets (PPD)" << endlbOn;
 	cout << "    -presetINS2    " << boldOff << " Stream preset INS2 datasets" << endlbOn;
-    cout << endlbOn;
+	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
 	cout << "    -lt=" << boldOff << "TYPE        Log type: dat (default), sdat, kml or csv" << endlbOn;
@@ -571,17 +614,19 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << endlbOn;
 	cout << "     " << boldOff << "                             # Set multiple flashCfg values" << endlbOn;
-	cout << "OPTIONS (RTK Rover / Base)" << endl;
+	cout << "OPTIONS (RTK Rover / Base)" << endlbOn;
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
 	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777:mountpoint:username:password   (NTRIP)" << endl;
 	cout << "            -rover=TCP:RTCM3:192.168.1.100:7777" << endl;
 	cout << "            -rover=TCP:UBLOX:192.168.1.100:7777" << endl;
-	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600             (port, baud rate)" << endl;
+	cout << "            -rover=SERIAL:RTCM3:" << EXAMPLE_PORT << ":57600             (port, baud rate)" << endlbOn;
 	cout << "    -base=" << boldOff << "[IP]:[port]   As a Base (sever), send RTK corrections.  Examples:" << endl;
 	cout << "            -base=TCP::7777                            (IP is optional)" << endl;
 	cout << "            -base=TCP:192.168.1.43:7777" << endl;
 	cout << "            -base=SERIAL:" << EXAMPLE_PORT << ":921600" << endl;
+	cout << endlbOn;	
+	cout << "CLTool - " << boldOff << cltool_version() << endl;
 
 	cout << boldOff;   // Last line.  Leave bold text off on exit.
 }
@@ -609,7 +654,6 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 				cout << i->second.name << " = " << stringBuffer << endl;
 			}
 		}
-		return false;
 	}
 	else
 	{
@@ -637,9 +681,9 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 			}
 		}
 		inertialSenseInterface.SetFlashConfig(flashCfg);
-		g_inertialSenseDisplay.Clear();
-		return true;
 	}
+
+    return false;
 }
 
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
@@ -660,7 +704,6 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 				cout << i->second.name << " = " << stringBuffer << endl;
 			}
 		}
-		return false;
 	}
 	else
 	{
@@ -688,7 +731,7 @@ bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flas
 			}
 		}
 		inertialSenseInterface.SetEvbFlashConfig(evbFlashCfg);
-		g_inertialSenseDisplay.Clear();
-		return true;
 	}
+
+    return false;
 }

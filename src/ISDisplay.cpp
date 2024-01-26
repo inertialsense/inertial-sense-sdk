@@ -668,12 +668,13 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 	default:
 	case INS_STATUS_SOLUTION_OFF:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: OFF\n");                 break;
 	case INS_STATUS_SOLUTION_ALIGNING:              ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNING\n");            break;
-	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: ALIGNMENT COMPLETE\n");  break;
 	case INS_STATUS_SOLUTION_NAV:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV\n");                 break;
 	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: NAV HIGH VARIANCE\n");   break;
-	case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS\n");                break;
-	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS HIGH VARIANCE\n");  break;
-	}
+    case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS\n");                break;
+    case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: AHRS HIGH VARIANCE\n");  break;
+    case INS_STATUS_SOLUTION_VRS:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: VRS\n");                 break;
+    case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Solution: VRS HIGH VARIANCE\n");   break;
+    }
 // 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "         Align Good: Att %d, Vel %d, Pos %d\n",
 // 		(insStatus & INS_STATUS_ATT_ALIGN_GOOD) != 0,
 // 		(insStatus & INS_STATUS_VEL_ALIGN_GOOD) != 0,
@@ -693,12 +694,13 @@ char* cInertialSenseDisplay::InsStatusToSolStatusString(char* ptr, char* ptrEnd,
 	default:
 	case INS_STATUS_SOLUTION_OFF:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, ", OFF      ");	break;
 	case INS_STATUS_SOLUTION_ALIGNING:              ptr += SNPRINTF(ptr, ptrEnd - ptr, ", ALIGNING ");	break;
-	case INS_STATUS_SOLUTION_ALIGNMENT_COMPLETE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", COMPLETE ");	break;
 	case INS_STATUS_SOLUTION_NAV:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV      ");	break;
 	case INS_STATUS_SOLUTION_NAV_HIGH_VARIANCE:		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", NAV VARIA");	break;
-	case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS     ");	break;
-	case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS VARI");	break;
-	}
+    case INS_STATUS_SOLUTION_AHRS:                  ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS     ");	break;
+    case INS_STATUS_SOLUTION_AHRS_HIGH_VARIANCE:    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", AHRS VARI");	break;
+    case INS_STATUS_SOLUTION_VRS:                   ptr += SNPRINTF(ptr, ptrEnd - ptr, ", VRS      ");	break;
+    case INS_STATUS_SOLUTION_VRS_HIGH_VARIANCE:     ptr += SNPRINTF(ptr, ptrEnd - ptr, ", VRS VARI ");	break;
+    }
 
 	return ptr;
 }

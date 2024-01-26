@@ -69,7 +69,10 @@ struct serial_port_t
 	// the port name (do not modify directly)
 	char port[MAX_SERIAL_PORT_NAME_LENGTH + 1];
 
-	// optional error buffer to store errors
+    // latest errno that was reported from an operation on this port
+    int errorCode;
+
+    // optional error buffer to store errors
 	char* error;
 
 	// length of error

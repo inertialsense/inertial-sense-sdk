@@ -234,7 +234,7 @@ NMI_API uint8 m2m_checksum(uint8* buf, int sz);
  * @fn           void (*at_sb_printf)(const char *_format, ...);
  * @brief        chooses which function to use in order to output debug
  */
-NMI_API void (*at_sb_printf)(const char *_format, ...);
+// NMI_API void (*at_sb_printf)(const char *_format, ...);
 /**@}*/
 #ifdef __cplusplus
 }

@@ -104,14 +104,12 @@ void set_reset_pin_enabled(int enabled)
 
 }
 
-
-void enable_bootloader(int pHandle)
+void write_bootloader_signature_stay_in_bootloader_mode(void)
 {	
     // update the bootloader header jump signature to indicate we want to go to bootloader
     bootloader_header_t header;
     memcpy(&header, (void*)BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE);
     strncpy(header.data.jumpSignature, BOOTLOADER_JUMP_SIGNATURE_STAY_IN_BOOTLOADER, sizeof(header.data.jumpSignature));
-
 
 #ifndef IMX_5
     // unlock bootloader header 
@@ -125,7 +123,12 @@ void enable_bootloader(int pHandle)
 #else
 	flash_write(BOOTLOADER_FLASH_BOOTLOADER_HEADER_ADDRESS, &header, BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE, 0);
 #endif
-    
+}
+
+void enable_bootloader(int pHandle)
+{	
+    write_bootloader_signature_stay_in_bootloader_mode();
+
 	// Let the bootloader know which port to use for the firmware update.  Set key and port number.
 #ifndef IMX_5
     GPBR->SYS_GPBR[3] = PORT_SEL_KEY_SYS_GPBR_3;
@@ -146,7 +149,7 @@ void enable_bootloader(int pHandle)
 }
 
 
-void enable_bootloader_assistant(void)
+void enable_rom_bootloader(void)
 {
     unlockUserFlash();
 
@@ -157,5 +160,4 @@ void enable_bootloader_assistant(void)
 
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
 }
-
 

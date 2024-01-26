@@ -15,18 +15,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define PKT_PARSER_TIMEOUT_MS               100		// Set to 0 to disable timeout
 
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
-	// Actual on uINS:
-	IS_BAUDRATE_18750000,   // 18750000 (uINS ser1 only)
-	IS_BAUDRATE_9375000,    // 9375000
-	IS_BAUDRATE_3125000,    // 3125000
-	IS_BAUDRATE_921600,     // 937734 (default)
-	IS_BAUDRATE_460800,     // 468600
-	IS_BAUDRATE_230400,     // 232700
-	IS_BAUDRATE_115200,
-	IS_BAUDRATE_57600,
-	IS_BAUDRATE_38400,
-	IS_BAUDRATE_19200,
-	IS_BAUDRATE_9600 
+                            // Actual on IMX-5:
+    IS_BAUDRATE_10000000,  	// 10000000
+    IS_BAUDRATE_921600,    	//   930233 (default baudrate)
+    IS_BAUDRATE_460800,    	//   462428
+    IS_BAUDRATE_230400,    	//   230547
+    IS_BAUDRATE_115200,
+    IS_BAUDRATE_57600,
+    IS_BAUDRATE_38400,
+    IS_BAUDRATE_19200,
+    IS_BAUDRATE_9600 
 };
 
 static int s_packetEncodingEnabled = 1;
@@ -103,14 +101,22 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
 
 int validateBaudRate(unsigned int baudRate)
 {
-	// Valid baudrates for InertialSense hardware
-	for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
+	if (baudRate <= IS_BAUDRATE_STANDARD_MAX)
 	{
-		if (g_validBaudRates[i] == baudRate)
+		// Valid baudrates for InertialSense hardware
+		for (size_t i = 0; i < _ARRAY_ELEMENT_COUNT(g_validBaudRates); i++)
 		{
-			return 0;
+			if (g_validBaudRates[i] == baudRate)
+			{
+				return 0;
+			}
 		}
 	}
+	else if (baudRate <= IS_BAUDRATE_MAX)
+	{	// High speed custom baud rates
+		return 0;
+	}
+
 	return -1;
 }
 

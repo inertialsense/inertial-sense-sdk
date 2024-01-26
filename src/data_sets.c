@@ -80,10 +80,9 @@ void flipEndianess32(uint8_t* data, int dataLength)
 	
 	uint32_t* dataPtr = (void*)data;
 	uint32_t* dataPtrEnd = (void*)(data + dataLength);
-	uint32_t tmp;
 	while (dataPtr < dataPtrEnd)
 	{
-		tmp = *dataPtr;
+		uint32_t tmp = *dataPtr;
 		*dataPtr++ = SWAP32(tmp);
 	}
 }
@@ -91,13 +90,11 @@ void flipEndianess32(uint8_t* data, int dataLength)
 void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength)
 {
 	uint16_t* doubleOffsetsEnd = offsets + offsetsLength;
-	int offsetToDouble;
 	int maxDoubleOffset = dataLength - 8;
-    int isDouble;
 	while (offsets < doubleOffsetsEnd)
 	{
-        offsetToDouble = (*offsets++);
-        isDouble = ((offsetToDouble & 0x8000) == 0);
+        int offsetToDouble = (*offsets++);
+        int isDouble = ((offsetToDouble & 0x8000) == 0);
         offsetToDouble = (offsetToDouble & 0x7FFF) - offset;
 		if (offsetToDouble >= 0 && offsetToDouble <= maxDoubleOffset)
 		{
@@ -117,15 +114,12 @@ void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength)
 {
 	uint16_t* stringOffsetsEnd = offsets + offsetsLength;
-	int offsetToString;
-	int lengthOfString;
-	int maxStringOffset;
 
 	while (offsets < stringOffsetsEnd)
 	{
-		offsetToString = (*offsets++) - offset;
-		lengthOfString = (*offsets++);
-		maxStringOffset = dataLength - lengthOfString;
+		int offsetToString = (*offsets++) - offset;
+		int lengthOfString = (*offsets++);
+		int maxStringOffset = dataLength - lengthOfString;
 		if (offsetToString >= 0 && offsetToString <= maxStringOffset)
 		{
 			flipEndianess32(data + offsetToString, lengthOfString);
@@ -395,8 +389,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
 	if (dataId < DID_COUNT)
 	{
-        uint16_t* offsets;
-        if ((offsets = s_doubleOffsets[dataId]))
+        uint16_t* offsets = s_doubleOffsets[dataId];
+        if (offsets)
         {
             *offsetsLength = (*offsets++);
             return offsets;
@@ -572,8 +566,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 
     if (dataId < DID_COUNT)
 	{
-        uint16_t* offsets;
-        if ((offsets = s_stringOffsets[dataId]))
+        uint16_t* offsets = s_stringOffsets[dataId];
+        if (offsets)
         {
             *offsetsLength = (*offsets++);
             return offsets;
@@ -673,156 +667,18 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS] =
 	[DID_IMU_RAW]               = NMEA_RMC_BITS_PRIMU,
 	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
-	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GSV,
+	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GxGSV,
 	[DID_GPS1_POS]				=
 		NMEA_RMC_BITS_PGPSP |
-		NMEA_RMC_BITS_GGA |
-		NMEA_RMC_BITS_GLL |
-		NMEA_RMC_BITS_GSA |
-		NMEA_RMC_BITS_RMC |
-		NMEA_RMC_BITS_ZDA |
-		NMEA_RMC_BITS_VTG |
+		NMEA_RMC_BITS_GxGGA |
+		NMEA_RMC_BITS_GxGLL |
+		NMEA_RMC_BITS_GxGSA |
+		NMEA_RMC_BITS_GxRMC |
+		NMEA_RMC_BITS_GxZDA |
+		NMEA_RMC_BITS_GxVTG |
 		NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
-
-void julianToDate(double julian, int32_t* year, int32_t* month, int32_t* day, int32_t* hour, int32_t* minute, int32_t* second, int32_t* millisecond)
-{
-	double j1, j2, j3, j4, j5;
-	double intgr = floor(julian);
-	double frac = julian - intgr;
-	double gregjd = 2299161.0;
-	if (intgr >= gregjd)
-	{
-		//Gregorian calendar correction
-		double tmp = floor(((intgr - 1867216.0) - 0.25) / 36524.25);
-		j1 = intgr + 1.0 + tmp - floor(0.25 * tmp);
-	}
-	else
-	{
-		j1 = intgr;
-	}
-
-	//correction for half day offset
-	double dayfrac = frac + 0.5;
-	if (dayfrac >= 1.0)
-	{
-		dayfrac -= 1.0;
-		++j1;
-	}
-
-	j2 = j1 + 1524.0;
-	j3 = floor(6680.0 + ((j2 - 2439870.0) - 122.1) / 365.25);
-	j4 = floor(j3 * 365.25);
-	j5 = floor((j2 - j4) / 30.6001);
-
-	double d = floor(j2 - j4 - floor(j5 * 30.6001));
-	double m = floor(j5 - 1);
-	if (m > 12)
-	{
-		m -= 12;
-	}
-	double y = floor(j3 - 4715.0);
-	if (m > 2)
-	{
-		--y;
-	}
-	if (y <= 0)
-	{
-		--y;
-	}
-
-	//
-	// get time of day from day fraction
-	//
-	double hr = floor(dayfrac * 24.0);
-	double mn = floor((dayfrac * 24.0 - hr) * 60.0);
-	double f = ((dayfrac * 24.0 - hr) * 60.0 - mn) * 60.0;
-	double sc = f;
-	if (f - sc > 0.5)
-	{
-		++sc;
-	}
-
-	if (y < 0)
-	{
-		y = -y;
-	}
-	if (year)
-	{
-		*year = (int32_t)y;
-	}
-	if (month)
-	{
-		*month = (int32_t)m;
-	}
-	if (day)
-	{
-		*day = (int32_t)d;
-	}
-	if (hour)
-	{
-		*hour = (int32_t)hr;
-	}
-	if (minute)
-	{
-		*minute = (int32_t)mn;
-	}
-	if (second)
-	{
-		*second = (int32_t)sc;
-	}
-	if (millisecond)
-	{
-		*millisecond = (int32_t)((sc - floor(sc)) * 1000.0);
-	}
-}
-
-double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMS, uint8_t leapSeconds)
-{
-	double gpsSeconds = gpsWeek * SECONDS_PER_WEEK;
-	gpsSeconds += (gpsTimeofWeekMS / 1000);
-	double unixSeconds = gpsSeconds + GPS_TO_UNIX_OFFSET - leapSeconds;
-
-	return unixSeconds;
-}
-
-double gpsToJulian(int32_t gpsWeek, int32_t gpsMilliseconds, int32_t leapSeconds)
-{
-	double gpsDays = (double)gpsWeek * 7.0;
-	gpsDays += ((((double)gpsMilliseconds / 1000.0) - (double)leapSeconds) / 86400.0);
-	return (2444244.500000) + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
-}
-
-static void appendGPSTimeOfLastFix(const gps_pos_t* gps, char** buffer, int* bufferLength)
-{
-    unsigned int millisecondsToday = gps->timeOfWeekMs % 86400000;
-    unsigned int hours = millisecondsToday / 1000 / 60 / 60;
-    unsigned int minutes = (millisecondsToday / (1000 * 60)) % 60;
-    unsigned int seconds = (millisecondsToday / 1000) % 60;
-    int written = SNPRINTF(*buffer, *bufferLength, ",%02u%02u%02u", hours, minutes, seconds);
-    *bufferLength -= written;
-    *buffer += written;
-}
-
-static void appendGPSCoord(const gps_pos_t* gps, char** buffer, int* bufferLength, double v, const char* degreesFormat, char posC, char negC)
-{
-	(void)gps;
-    int degrees = (int)(v);
-    double minutes = (v - ((double)degrees)) * 60.0;
-
-    int written = SNPRINTF(*buffer, *bufferLength, degreesFormat, abs(degrees));
-    *bufferLength -= written;
-    *buffer += written;
-
-    written = SNPRINTF(*buffer, *bufferLength, "%07.4f,", fabs(minutes));
-    *bufferLength -= written;
-    *buffer += written;
-
-    written = SNPRINTF(*buffer, *bufferLength, "%c", (degrees >= 0 ? posC : negC));
-    *bufferLength -= written;
-    *buffer += written;
-}
 
 /* ubx gnss indicator (ref [2] 25) -------------------------------------------*/
 int ubxSys(int gnssID)
@@ -889,3 +745,24 @@ int satNumCalc(int gnssID, int svID) {
 	int prn = svID + (sys == SYS_QZS ? 192 : 0);
 	return satNo(sys, prn);
 }
+
+/** Populate missing hardware descriptor in dev_info_t */ 
+void devInfoPopulateMissingHardware(dev_info_t *devInfo)
+{
+	if (devInfo->hardware != DEV_INFO_HARDWARE_UNSPECIFIED)
+	{	// Hardware type is not missing
+		return;
+	}
+
+	int year = ((int)(devInfo->buildDate[1])) + 2000;
+	if (year <= 2024)
+	{	// Hardware from 2024 and earlier is detectible using hardware version
+		switch (devInfo->hardwareVer[0])	
+		{
+		case 2: devInfo->hardware = DEV_INFO_HARDWARE_EVB;  break;
+		case 3: devInfo->hardware = DEV_INFO_HARDWARE_UINS; break;
+		case 5: devInfo->hardware = DEV_INFO_HARDWARE_IMX;  break;
+		}
+	}
+}
+

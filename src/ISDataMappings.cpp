@@ -1591,8 +1591,10 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_QY]", can_period_mult[CID_DUAL_QY], 0, DataTypeUInt16, uint16_t&, 0);
     ADD_MAP(m, totalSize, "can_period_mult[CID_DUAL_RZ]", can_period_mult[CID_DUAL_RZ], 0, DataTypeUInt16, uint16_t&, 0);
     ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_POS]", can_period_mult[CID_GPS1_POS], 0, DataTypeUInt16, uint16_t&, 0);
+    ADD_MAP(m, totalSize, "can_period_mult[CID_GPS2_POS]", can_period_mult[CID_GPS2_POS], 0, DataTypeUInt16, uint16_t&, 0);
+    ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_RTK_POS_REL]", can_period_mult[CID_GPS1_RTK_POS_REL], 0, DataTypeUInt16, uint16_t&, 0);
+    ADD_MAP(m, totalSize, "can_period_mult[CID_GPS2_RTK_CMP_REL]", can_period_mult[CID_GPS2_RTK_CMP_REL], 0, DataTypeUInt16, uint16_t&, 0);
     ADD_MAP(m, totalSize, "can_period_mult[CID_ROLL_ROLLRATE]", can_period_mult[CID_ROLL_ROLLRATE], 0, DataTypeUInt16, uint16_t&, 0);
-    ADD_MAP(m, totalSize, "can_period_mult[CID_GPS1_RTK_REL]", can_period_mult[CID_GPS1_RTK_REL], 0, DataTypeUInt16, uint16_t&, 0);
     ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_TIME]", can_transmit_address[CID_INS_TIME], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_STATUS]", can_transmit_address[CID_INS_STATUS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "can_transmit_address[CID_INS_EULER]", can_transmit_address[CID_INS_EULER], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
@@ -1616,8 +1618,11 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_QY]", can_transmit_address[CID_DUAL_QY], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "can_transmit_address[CID_DUAL_RZ]", can_transmit_address[CID_DUAL_RZ], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_POS]", can_transmit_address[CID_GPS1_POS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
-    ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_RTK_REL]", can_transmit_address[CID_GPS1_RTK_REL], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS2_POS]", can_transmit_address[CID_GPS2_POS], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS1_RTK_POS_REL]", can_transmit_address[CID_GPS1_RTK_POS_REL], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "can_transmit_address[CID_GPS2_RTK_CMP_REL]", can_transmit_address[CID_GPS2_RTK_CMP_REL], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
     ADD_MAP(m, totalSize, "can_transmit_address[CID_ROLL_ROLLRATE]", can_transmit_address[CID_ROLL_ROLLRATE], 0, DataTypeUInt32, uint32_t&, DataFlagsDisplayHex);
+
     ADD_MAP(m, totalSize, "can_baudrate_kbps", can_baudrate_kbps, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "can_receive_address", can_receive_address, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
 

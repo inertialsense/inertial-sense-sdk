@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <stdlib.h>
 #include "../com_manager.h"
-#include "../../../SDK/src/data_sets.h"
+#include "../protocol_nmea.h"
 
 static imu_t g_imu;
 static ins_1_t g_ins1;
@@ -93,27 +93,25 @@ static void disableBcastFnc(CMHANDLE cmHandle, int pHandle)
 
 static int asciiMessageHandler(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength)
 {
-	uint32_t messageIdUInt = NMEA_MESSAGEID_TO_UINT(messageId);
-
 	// comWrite(ASCII_COM_USART_NUM, line, lineLength); // echo back
 
-	switch (messageIdUInt)
+	switch (getNmeaMsgId(messageId, lineLength))
 	{
-	case 0x53545042: // "STPB" - stop all broadcasts
+	case NMEA_MSG_ID_STPB: // "STPB" - stop all broadcasts
 		// disableBroadcasts(getGlobalComManager(), 0);
 		break;
 
-	case 0x424c454e: // "BLEN" - boot loader enable
+	case NMEA_MSG_ID_BLEN: // "BLEN" - boot loader enable
 		break;
 
-	case 0x50524F46: // "PROF" - enable profile message
-	{
-		int enableProfiler;
-		if (sscanf((const char*)line, "$PROF,%d*", &enableProfiler) == 1)
-		{
+	// case NMEA_MSG_ID_PROF: // "PROF" - enable profile message
+	// {
+	// 	int enableProfiler;
+	// 	if (sscanf((const char*)line, "$PROF,%d*", &enableProfiler) == 1)
+	// 	{
 
-		}
-	} break;
+	// 	}
+	// } break;
 
 	default:
 		return 0;
