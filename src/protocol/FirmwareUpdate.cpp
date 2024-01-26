@@ -314,6 +314,9 @@ namespace fwUpdate {
             case MSG_REQ_RESET:
                 result = fwUpdate_handleReset(msg_payload);
                 break;
+            case MSG_REQ_VERSION_INFO:
+                result = fwUpdate_handleVersionInfo(msg_payload);
+                break;
             default:
                 result = false;
         }
@@ -527,9 +530,16 @@ namespace fwUpdate {
 
             md5hash_t md5;
             md5_final(md5Context, md5);
-            session_status = (memcmp(&session_md5, &md5, sizeof(md5hash_t)) != 0) ? ERR_CHECKSUM_MISMATCH : fwUpdate_finishUpdate(session_target, session_image_slot, session_image_flags);
-            if (session_status != fwUpdate::FINALIZING)
+            if (memcmp(&session_md5, &md5, sizeof(md5hash_t)) != 0) {
+                session_status = ERR_CHECKSUM_MISMATCH;
+            } else {
+                // This is the final step for validation; note that fwUpdate_finishUpdate() doesn't implicitly send a response/status to the other end(but the implementing class could).
+                session_status = fwUpdate_finishUpdate(session_target, session_image_slot, session_image_flags);
+            }
+
+            if (session_status != fwUpdate::FINALIZING) {
                 fwUpdate_sendDone(session_status, false, false);
+            }
         }
 
         return true;
@@ -551,6 +561,39 @@ namespace fwUpdate {
 
         return fwUpdate_performReset(session_target, payload.data.req_reset.reset_flags);
     }
+
+
+    /**
+     * Internally called by fwUpdate_processMessage() when a REQ_VERSION_INFO message is received, to request version info for the target device.
+     * @param payload the DID message
+     * @return true if the message was received and parsed without error, false otherwise.
+     */
+    bool FirmwareUpdateDevice::fwUpdate_handleVersionInfo(const payload_t& payload) {
+        if (payload.hdr.msg_type != MSG_REQ_VERSION_INFO)
+            return false;
+
+        dev_info_t devInfo = { };
+        if (!fwUpdate_queryVersionInfo(payload.hdr.target_device, devInfo))
+            memset(&devInfo, 0xFF, sizeof(dev_info_t));
+
+        payload_t response;
+        response.hdr.target_device = TARGET_HOST;
+        response.hdr.msg_type = MSG_VERSION_INFO_RESP;
+        response.data.version_resp.hardwareId = devInfo.hardware;
+        memcpy(&response.data.version_resp.hardwareVer[0], &devInfo.hardwareVer[0], 4);
+        memcpy(&response.data.version_resp.firmwareVer[0], &devInfo.firmwareVer[0], 4);
+        response.data.version_resp.buildYear = devInfo.buildYear;
+        response.data.version_resp.buildMonth = devInfo.buildMonth;
+        response.data.version_resp.buildDay = devInfo.buildDay;
+        response.data.version_resp.buildHour = devInfo.buildHour;
+        response.data.version_resp.buildMinute = devInfo.buildMinute;
+        response.data.version_resp.buildSecond = devInfo.buildSecond;
+        response.data.version_resp.buildMillis = devInfo.buildMillisecond;
+        response.data.version_resp.buildType = devInfo.buildType;
+
+        return fwUpdate_sendPayload(response);
+    }
+
 
     /**
      * Sends a REQ_RESEND_CHUNK message in response to receiving an invalid CHUNK message.
@@ -589,27 +632,34 @@ namespace fwUpdate {
         if ((msg_payload.hdr.msg_type != MSG_REQ_UPDATE) && (msg_payload.data.update_resp.session_id != session_id))
             return false; // ignore this message, its not for us
 
+        bool result = false;
         fwUpdate_resetTimeout();
         switch (msg_payload.hdr.msg_type) {
             case MSG_UPDATE_RESP:
-                return fwUpdate_handleUpdateResponse(msg_payload);
+                result = fwUpdate_handleUpdateResponse(msg_payload);
+                break;
             case MSG_UPDATE_PROGRESS:
-                return fwUpdate_handleUpdateProgress(msg_payload);
+                result = fwUpdate_handleUpdateProgress(msg_payload);
+                break;
             case MSG_REQ_RESEND_CHUNK:
                 resend_count += next_chunk_id - msg_payload.data.req_resend.chunk_id ;
                 next_chunk_id = msg_payload.data.req_resend.chunk_id;
-                return fwUpdate_handleResendChunk(msg_payload);
+                result = fwUpdate_handleResendChunk(msg_payload);
+                break;
             case MSG_UPDATE_FINISHED:
                 session_status = msg_payload.data.resp_done.status;
-                return fwUpdate_handleDone(msg_payload);
+                result = fwUpdate_handleDone(msg_payload);
+                break;
             case MSG_VERSION_INFO_RESP:
+                result = fwUpdate_handleVersionResponse(msg_payload);
                 // FIXME: we want to do something with this data...
-                return false;
+                break;
             default:
-                return false;
+                break;
         }
-        return false;
+        return result;
     }
+
     bool FirmwareUpdateHost::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
@@ -673,18 +723,38 @@ namespace fwUpdate {
         return fwUpdate_sendPayload(request);
     }
 
-    bool FirmwareUpdateHost::fwUpdate_requestReset(uint16_t reset_flags) {
+    bool FirmwareUpdateHost::fwUpdate_requestReset(target_t target, uint16_t reset_flags) {
         // We don't care about having a session in order to request a reset (it's session independent)
         // if ((session_status != NOT_STARTED) || (session_id == 0))
         //    return false;
 
         fwUpdate::payload_t request;
-        request.hdr.target_device = session_target;
+        request.hdr.target_device = target;
         request.hdr.msg_type = fwUpdate::MSG_REQ_RESET;
         request.data.req_reset.reset_flags = reset_flags;
 
         return fwUpdate_sendPayload(request);
     }
+
+    /**
+     * Requests hardware/firmware version information from the specified device(s)
+     * Note that you may get multiple responses for matching targets, if more than one device of that target exists,
+     * such as querying the GNSS receivers, without explicitly indicated GNSS1 or GNSS2.
+     * @param target
+     * @return
+     */
+    bool FirmwareUpdateHost::fwUpdate_requestVersionInfo(target_t target) {
+        // We don't care about having a session in order to request version info (it's session independent)
+        // if ((session_status != NOT_STARTED) || (session_id == 0))
+        //    return false;
+
+        fwUpdate::payload_t request;
+        request.hdr.target_device = target;
+        request.hdr.msg_type = fwUpdate::MSG_REQ_VERSION_INFO;
+
+        return fwUpdate_sendPayload(request);
+    }
+
 
     int FirmwareUpdateHost::fwUpdate_sendNextChunk() {
         payload_t* msg = (payload_t*)&build_buffer;

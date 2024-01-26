@@ -9,12 +9,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+
 #include "ISConstants.h"
 #include "ISUtilities.h"
 
 #ifdef __cplusplus
 #include <string>
-#include <md5.h>
+
+#include "util/md5.h"
 
 extern "C" {
 #endif
@@ -174,12 +176,14 @@ namespace fwUpdate {
         RESET_UPSTREAM = 8,         // indicates that this device should reset all of its upstream devices, in addition to itself
     };
 
-    enum image_flagsPos_e : uint8_t{
-        image_flags_imageNotEncrypted_pos = 0,  // position of bit that informs firmware that sony image is not encrypted
+    enum image_flagsPos_e : uint8_t {
+        IMG_FLAG_POS__imageNotEncrypted = 0,  // position of bit that informs firmware that sony image is not encrypted
+        IMG_FLAG_POS__useAlternateMD5 = 7,    // position of bit that informs firmware to use the alternate (obsolete) MD5 algorithm
     };
 
-    enum image_flagsMask_e : uint8_t{
-        image_flags_imageNotEncrypted = 0x01 << image_flags_imageNotEncrypted_pos, // bit mask that informs firmware that sony image is not encrypted
+    enum image_flagsMask_e : uint8_t {
+        IMG_FLAG_imageNotEncrypted = 0x01 << IMG_FLAG_POS__imageNotEncrypted,   // bit mask that informs firmware that sony image is not encrypted
+        IMG_FLAG_useAlternateMD5 = 1 << IMG_FLAG_POS__useAlternateMD5           // bit mask that informs firmware to use the alternate (obsolete) MD5 algo
     };
 
     PUSH_PACK_1
@@ -189,9 +193,13 @@ namespace fwUpdate {
             uint16_t reset_flags;
         } req_reset;
 
-        struct { } rpl_reset;
+        struct {                    //! a response to a reset request (usually this isn't sent, but sometimes, like asking a GNSS receiver to reset, it could send back a reply, since that doesn't originate on the GNSS receiver).
+            target_t target;        //! responding target
+            uint16_t status;        //! response status (0 == success)
+        } rpl_reset;
 
-        struct { } req_version;
+        struct { } req_version;     //! requests the version info for the target device
+
         struct PACKED {
             uint16_t session_id;    //! random 16-bit identifier used to validate the data stream. This should be regenerated for each REQUEST_UPDATE
             uint8_t image_slot;     //! a device-specific "slot" which is used to target specific files/regions of FLASH to update, ie, the Sony GNSS receiver has 4 different firmware files, each needs to be applied in turn. If the 8th (MSB) bit is raised, this is treated as a "FORCE"
@@ -237,6 +245,9 @@ namespace fwUpdate {
         } resp_done;
 
         struct PACKED {
+            target_t resTarget;     //! the target identifier for the responding device
+            uint32_t serialNumber;  //! the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
+            uint16_t hardwareId;    //! hardware identifier
             uint8_t hardwareVer[4]; //! Hardware version
             uint8_t firmwareVer[4]; //! Firmware (software) version
 
@@ -343,7 +354,6 @@ namespace fwUpdate {
 
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
-        // md5hash_t md5hash;                                      //! storage for running md5 hash
         uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
         uint32_t timeout_duration = 15000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //! the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
@@ -355,7 +365,7 @@ namespace fwUpdate {
         uint16_t session_total_chunks = 0;                      //! the total number of chunks for the given image size
         uint32_t session_image_size = 0;                        //! the total size of the image to be sent
         uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
-        uint8_t session_image_flags = 0;                        //! the "slot" to which this image will be written in the flash
+        uint8_t session_image_flags = 0;                        //! additional flags to be communicated to the device for special processing
         md5hash_t session_md5 = { };                            //! the md5 of the firmware image
         md5Context_t md5Context = { };                          //! context used internally for building MD5 hashes
 
@@ -474,6 +484,17 @@ namespace fwUpdate {
         virtual int fwUpdate_performReset(target_t target_id, uint16_t reset_flags) = 0;
 
         /**
+         * Internally called by fwUpdate_processMessage() when a REQ_VERSION_INFO message is received, to request version info for the target device.
+         * This is to be implemented by the concrete class.  If the target/requested device can not provide version info, this should return false.
+         * If this call returns false, the API will respond with a MSG_VERSION_INFO_RESP, with the message filled with 0xFF, indicating not-supported.
+         * NOTE that this call is passed a reference to a const dev_info_t; the base-class provides the instance which is referenced. As the implementer
+         * of this class, it is your responsibility to fill it with the appropriate data.
+         * @param a reference to a dev_info_t struct that contains the necessary version information to be returned back to the querying host.
+         * @return true if the message was received and parsed without error, false otherwise.
+         */
+        virtual bool fwUpdate_queryVersionInfo(target_t target_id, dev_info_t& dev_info) = 0;
+
+        /**
          * Initializes the system to begin receiving firmware image chunks for the target device, image slot and image size.
          * @param msg the message which contains the request data, such as slot, file size, chunk size, md5 checksum, etc.
          * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_startUpdate
@@ -581,6 +602,13 @@ namespace fwUpdate {
         bool fwUpdate_handleReset(const payload_t& payload);
 
         /**
+         * Internally called by fwUpdate_processMessage() when a REQ_VERSION_INFO message is received, to request version info for the target device.
+         * @param payload the DID message
+         * @return true if the message was received and parsed without error, false otherwise.
+         */
+        bool fwUpdate_handleVersionInfo(const payload_t& payload);
+
+        /**
          * Sends a REQ_RESEND_CHUNK message in response to receiving an invalid CHUNK message. This will ALWAYS send with the current session_id, and the last received chunk_id + 1;
          * @param reason for the resend
          * @return return true is a retry was sent, or false if a retry was not sent.  NOTE this is not an error, as a valid message will not send a retry.
@@ -637,10 +665,19 @@ namespace fwUpdate {
 
         /**
          * Requests that the remote device perform a reset. Note that this request does not need a session, or any other pre-negotiated state.
-         * @param hardReset
+         * @param target
+         * @param reset_flags
          * @return true if the request was successfully sent
          */
-        bool fwUpdate_requestReset(uint16_t reset_flags);
+        bool fwUpdate_requestReset(target_t target, uint16_t reset_flags);
+
+        /**
+         * Requests that the remote device respond with the devices current firmware and hardware version information.
+         * @param target
+         * @param dev_info
+         * @return true if the request was successfully sent
+         */
+        bool fwUpdate_requestVersionInfo(target_t target);
 
         /**
          * Sends the next chunk of the firmware image to the remote side.  Internally, this call handles fetching the requested
@@ -735,6 +772,13 @@ namespace fwUpdate {
          * result in an error.  If an error is encountered reading the data, you should return a negative value here.
          */
         virtual int fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) = 0;
+
+        /**
+         * To be implemented by the concrete class, this method provides the response to a VERSION_INFO requests for a target
+         * device. Note that this is not session dependent, and can be received at any time (though usually before an UPDATE_REQ
+         * is made).
+         */
+        virtual bool fwUpdate_handleVersionResponse(const payload_t& msg) = 0;
 
         /**
          * To be implemented by the concrete class, this method is called when the API receives a response to an update request.

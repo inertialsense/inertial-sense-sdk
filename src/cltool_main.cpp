@@ -439,7 +439,41 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         printf("    | SN?:\r");
     }
 
-    printf("\t\t\t\t%s\r\n", buffer);
+    if (buffer[0])
+        printf("\t%s\r\n", buffer);
+
+    print_mutex.unlock();
+}
+
+void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
+{
+    print_mutex.lock();
+    static char buffer[256];
+
+    va_list ap;
+    va_start(ap, str);
+    vsnprintf(buffer, sizeof(buffer) - 1, str, ap);
+    va_end(ap);
+
+    if(obj == NULL)
+    {
+        cout << buffer << endl;
+        print_mutex.unlock();
+        return;
+    }
+
+    ISFirmwareUpdater* fwCtx = (ISFirmwareUpdater*)obj;
+    if (fwCtx->portName[0] ) {
+        // printf("    | %s (SN%d):\r", fwCtx->portName, fwCtx->devInfo->serialNumber);
+        int num = fwCtx->fwUpdate_getNextChunkID();
+        int tot = fwCtx->fwUpdate_getTotalChunks();
+        float percent = num / (float) (tot) * 100.f;
+        sprintf(buffer, "[%5.2f] [%s:%d > %s] :: Progress %d/%d (%0.1f%%) [%s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName(), num, tot, percent, fwCtx->fwUpdate_getSessionStatusName());
+    }
+
+    if (buffer[0])
+        printf("\t%s\r\n", buffer);
+
     print_mutex.unlock();
 }
 
@@ -563,9 +597,7 @@ static int inertialSenseMain()
         InertialSense inertialSenseInterface(cltool_dataCallback);
 
         // Disable device response requirement to validate open port and flash config sync IF flash config is not needed
-        inertialSenseInterface.EnableDeviceValidation(
-            g_commandLineOptions.flashCfg.size() ||
-            g_commandLineOptions.evbFlashCfg.size() );
+        // inertialSenseInterface.EnableDeviceValidation( g_commandLineOptions.flashCfg.size() || g_commandLineOptions.evbFlashCfg.size() );
 
         // [C++ COMM INSTRUCTION] STEP 2: Open serial port
         if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
@@ -595,7 +627,7 @@ static int inertialSenseMain()
                             g_commandLineOptions.fwUpdateCmds,
                             bootloadUpdateCallback,
                             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
-                            cltool_bootloadUpdateInfo,
+                            cltool_firmwareUpdateInfo,
                             cltool_firmwareUpdateWaiter
                     ) != IS_OP_OK) {
                         inertialSenseInterface.Close();

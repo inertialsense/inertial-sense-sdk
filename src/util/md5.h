@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <istream>
 
 #include "ISConstants.h"
 #ifndef ARM
@@ -58,6 +59,24 @@ inline bool md5_matches(const md5hash_t &a, const md5hash_t &b) {
 // Helper functions
 void md5_from_char_array(md5hash_t& md5, const char hashStr[]);
 bool md5_to_char_array(md5hash_t& md5, char hashStr[], int hashStrMaxLen);
+
+#define USE_ALTERNATE_MD5_IMPL
+#ifdef USE_ALTERNATE_MD5_IMPL
+
+/********************** NOTICE **********************************************
+ * The following MD5 implementation is incorrect and needs to be removed, but
+ * is retained for legacy purposes (as there are some pre-production firmware
+ * versions which use it).  We will eventually remove this code, but for now
+ * it needs to stay here.  DO NOT USE IT, unless you are very sure about why
+ * you need to.  You have been warned.
+ ****************************************************************************/
+
+void altMD5_reset();
+md5hash_t* altMD5_hash(size_t data_len, uint8_t* data);
+void altMD5_getHash(md5hash_t &hash);
+int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5);
+#endif // USE_ALTERNATE_MD5_IMPL
+
 #ifndef ARM
 md5hash_t md5_from_string(std::string hashStr);
 std::string md5_to_string(md5hash_t& md5);

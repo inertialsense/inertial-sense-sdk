@@ -181,6 +181,8 @@ public:
 
     int fwUpdate_performReset(fwUpdate::target_t target_id, uint16_t reset_flags) { return 0; };
 
+    bool fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& devInfo) { return false; };
+
     // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
     fwUpdate::update_status_e fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
 
@@ -327,12 +329,8 @@ public:
         if (msg.data.progress.session_id != session_id)
             return false; // ignore this message, it's not for us
 
-        int num = msg.data.progress.num_chunks;
-        int tot = msg.data.progress.totl_chunks;
         int percent = (int)(((msg.data.progress.num_chunks)/(float)(msg.data.progress.totl_chunks)*100) + 0.5f);
-        const char *message = (const char *)&msg.data.progress.message;
-
-        PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d,%d] %s\n", num, tot, percent, msg.data.progress.msg_level, msg.data.progress.msg_len, message);
+        PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d,%d] %s\n", msg.data.progress.num_chunks, msg.data.progress.totl_chunks, percent, msg.data.progress.msg_level, msg.data.progress.msg_len, (const char *)&msg.data.progress.message);
         return true;
     }
 
