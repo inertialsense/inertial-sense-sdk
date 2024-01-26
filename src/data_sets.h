@@ -2562,12 +2562,13 @@ enum eRTKConfigBits
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
-    /** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
+    /** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000, 4000 deg/s */	
     SENSOR_CFG_GYR_FS_250				= (int)0x00000000,
     SENSOR_CFG_GYR_FS_500				= (int)0x00000001,
     SENSOR_CFG_GYR_FS_1000				= (int)0x00000002,
     SENSOR_CFG_GYR_FS_2000				= (int)0x00000003,
-    SENSOR_CFG_GYR_FS_MASK				= (int)0x00000003,
+    SENSOR_CFG_GYR_FS_4000				= (int)0x00000004,
+    SENSOR_CFG_GYR_FS_MASK				= (int)0x00000007,
     SENSOR_CFG_GYR_FS_OFFSET			= (int)0,
     
     /** Accelerometer full-scale sensing range selection: +- 2, 4, 8, 16 m/s^2 */
@@ -2575,8 +2576,8 @@ enum eSensorConfig
     SENSOR_CFG_ACC_FS_4G				= (int)0x00000001,
     SENSOR_CFG_ACC_FS_8G				= (int)0x00000002,
     SENSOR_CFG_ACC_FS_16G				= (int)0x00000003,
-    SENSOR_CFG_ACC_FS_MASK				= (int)0x0000000C,
-    SENSOR_CFG_ACC_FS_OFFSET			= (int)2,
+    SENSOR_CFG_ACC_FS_MASK				= (int)0x00000030,
+    SENSOR_CFG_ACC_FS_OFFSET			= (int)4,
     
     /** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following 
     bit values can be used to override the bandwidth (frequency) to: 250, 184, 92, 41, 20, 10, 5 Hz */
@@ -2587,7 +2588,7 @@ enum eSensorConfig
     SENSOR_CFG_GYR_DLPF_20HZ			= (int)0x00000004,
     SENSOR_CFG_GYR_DLPF_10HZ			= (int)0x00000005,
     SENSOR_CFG_GYR_DLPF_5HZ				= (int)0x00000006,
-     SENSOR_CFG_GYR_DLPF_MASK			= (int)0x00000F00,
+    SENSOR_CFG_GYR_DLPF_MASK			= (int)0x00000F00,
     SENSOR_CFG_GYR_DLPF_OFFSET			= (int)8,
 
     /** Accelerometer digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The 
