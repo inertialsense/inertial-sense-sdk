@@ -372,7 +372,7 @@ class logPlot:
         self.configureSubplot(ax[0], 'GPS Velocity North', 'm/s')
         self.configureSubplot(ax[1], 'GPS Velocity East', 'm/s')
         self.configureSubplot(ax[2], 'GPS Velocity Down', 'm/s')
-        self.configureSubplot(ax[3], 'GPS Velocity Magnitude', 'm/s')
+        self.configureSubplot(ax[3], 'GPS Speed', 'm/s')
         fig.suptitle('GPS Velocity NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
@@ -415,10 +415,11 @@ class logPlot:
     def velNED(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
+        ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
         self.configureSubplot(ax[0,0], 'Vel North', 'm/s')
         self.configureSubplot(ax[1,0], 'Vel East',  'm/s')
         self.configureSubplot(ax[2,0], 'Vel Down',  'm/s')
+        self.configureSubplot(ax[3,0], 'Speed',  'm/s')
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         refTime = None
@@ -427,6 +428,7 @@ class logPlot:
             self.configureSubplot(ax[0,1], 'Residual Vel North', 'm/s')
             self.configureSubplot(ax[1,1], 'Residual Vel East',  'm/s')
             self.configureSubplot(ax[2,1], 'Residual Vel Down',  'm/s')
+            self.configureSubplot(ax[3,1], 'Residual Speed',  'm/s')
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
@@ -446,25 +448,31 @@ class logPlot:
                 refLla = self.getData(d, DID_INS_2, 'lla')[-1]
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
+            insVelNorm = np.linalg.norm(insVelNed, axis=1)
             ax[0,0].plot(time, insVelNed[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, insVelNed[:,1])
             ax[2,0].plot(time, insVelNed[:,2])
+            ax[3,0].plot(time, insVelNorm)
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
                 gpsVelNed = self.getGpsNedVel(d)
+                gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0], label=('%s GPS' % self.log.serials[d]))
                 ax[1,0].plot(timeGPS, gpsVelNed[:, 1])
                 ax[2,0].plot(timeGPS, gpsVelNed[:, 2])
+                ax[3,0].plot(timeGPS, gpsVelNorm)
 
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intVelNed = np.empty_like(refVelNed)
                 for i in range(3):
                     intVelNed[:,i] = np.interp(refTime, time, insVelNed[:,i], right=np.nan, left=np.nan)
                 resNed = intVelNed - refVelNed
+                resVelNorm = np.linalg.norm(resNed, axis=1)
                 ax[0,1].plot(refTime, resNed[:,0], label=self.log.serials[d])
                 ax[1,1].plot(refTime, resNed[:,1])
                 ax[2,1].plot(refTime, resNed[:,2])
+                ax[3,1].plot(refTime, resVelNorm)
 
         ax[0,0].legend(ncol=2)
         if self.residual: 
