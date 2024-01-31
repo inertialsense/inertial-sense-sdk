@@ -43,6 +43,7 @@ class logPlot:
         self.format = format
         self.d = 1
         self.residual = False
+        self.timestamp = False
         if log:
             self.setLog(log)
         else:
@@ -60,6 +61,9 @@ class logPlot:
 
     def enableResidualPlot(self, enable):
         self.residual = enable
+
+    def enableTimestamp(self, enable):
+        self.timestamp = enable
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -177,7 +181,10 @@ class logPlot:
 
         self.saveFig(fig, 'posNED')
 
-    def drawNEDMapArrow(self, ax, ned, heading):
+    def nedAnnotateTimestamp(self, ax, time, east, north, textOffset=(0.0, 0.0)):
+        ax.annotate('%.1f' % time, xy=(east, north), xycoords='data', xytext=textOffset, textcoords='offset points')
+
+    def drawNEDMapArrow(self, ax, time, ned, heading):
         # arrowLen = 0.2
         # arrowWid = arrowLen/2
         # arrows = np.array([arrowLen * 0.7 * np.cos(heading), arrowLen * 0.7 * np.sin(heading)]).T
@@ -187,12 +194,18 @@ class logPlot:
         len = np.shape(heading)[0]
         for i in range(1, len, downsample):
             # ax.arrow(ned[i,1], ned[i,0], arrows[i,1], arrows[i,0], head_width=arrowWid, head_length=arrowLen, length_includes_head=True, fc='k', ec='k')
-            ax.plot(ned[i,1], ned[i,0], marker=(3, 0, -heading[i]*(180.0/np.pi)), color='g', markersize=markersize, linestyle='None')
-            ax.plot(ned[i,1], ned[i,0], marker=(2, 0, -heading[i]*(180.0/np.pi)), color='k', markersize=markersize, linestyle='None')
+            east = ned[i,1]
+            north = ned[i,0]
+            ax.plot(east, north, marker=(3, 0, -heading[i]*(180.0/np.pi)), color='g', markersize=markersize, linestyle='None')
+            ax.plot(east, north, marker=(2, 0, -heading[i]*(180.0/np.pi)), color='k', markersize=markersize, linestyle='None')
+
+            if self.timestamp:
+                self.nedAnnotateTimestamp(ax, time[i], east, north, textOffset=(3.5, 3.5))
 
     def posNEDMap(self, fig=None):
         if fig is None:
             fig = plt.figure()
+        
         ax = fig.subplots(1,1)
         ax.set_xlabel('East (m)')
         ax.set_ylabel('North (m)')
@@ -204,13 +217,14 @@ class logPlot:
                 continue
             if refLla is None:
                 refLla = lla[0]
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 if (np.shape(self.active_devs)[0]==1):
-                    self.drawNEDMapArrow(ax, ned, euler[:, 2])
+                    self.drawNEDMapArrow(ax, time, ned, euler[:, 2])
 
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
@@ -239,8 +253,18 @@ class logPlot:
             if refLla is None:
                 refLla = lla[-1]
 
+            time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
             ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s" % (self.log.serials[d])))
+
+            if self.timestamp:
+                lasttime = 0
+                for time, east, north in zip(time, nedGps[:, 1], nedGps[:, 0]):
+                    if time - lasttime > 5:
+                        lasttime = time
+                        # ax.annotate('%.1f' % time, xy=(east, north), textcoords='data')
+                        self.nedAnnotateTimestamp(ax, time, east, north)
+
 
             if SHOW_GPS2:
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
