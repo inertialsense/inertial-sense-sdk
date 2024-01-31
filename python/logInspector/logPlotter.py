@@ -670,11 +670,16 @@ class logPlot:
     def heading(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('Heading - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'Magnetic Heading', 'deg')
-        self.configureSubplot(ax[1], 'RTK Compassing', 'deg')
-        self.configureSubplot(ax[2], 'INS Heading', 'deg')
+        self.configureSubplot(ax[0,0], 'Magnetic Heading', 'deg')
+        self.configureSubplot(ax[1,0], 'RTK Compassing', 'deg')
+        self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
+
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
+            self.configureSubplot(ax[1,1], 'Heading Residual: RTK - INS', 'deg')
+
         for d in self.active_devs:
             magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'))
             gpsTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
@@ -682,14 +687,30 @@ class logPlot:
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
+            insHdg = euler[:,2]
             if magTime.any():
-                ax[0].plot(magTime, magHdg * RAD2DEG)
+                ax[0,0].plot(magTime, magHdg * RAD2DEG)
             if gpsTime.any():
-                ax[1].plot(gpsTime, gpsHdg*RAD2DEG)
-            ax[2].plot(insTime, euler[:,2]*RAD2DEG, label=self.log.serials[d])
-        ax[2].legend(ncol=2)
+                gpsHdg = self.angle_wrap(gpsHdg)
+                ax[1,0].plot(gpsTime, gpsHdg*RAD2DEG, label='F9P')
+            ax[2,0].plot(insTime, insHdg*RAD2DEG, label=self.log.serials[d])
+
+            if self.residual: 
+                if magTime.any():
+                    unwrapMagHdg = self.angle_unwrap(magHdg)
+                    intMagHdg = np.interp(insTime, magTime, unwrapMagHdg, right=np.nan, left=np.nan)
+                    resMagHdg = self.angle_wrap(intMagHdg - insHdg)
+                    ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
+                if gpsTime.any():
+                    unwrapGpsHdg = self.angle_unwrap(gpsHdg)
+                    intGpsHdg = np.interp(insTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
+                    resGpsHdg = self.angle_wrap(intGpsHdg - insHdg)
+                    ax[1,1].plot(insTime, resGpsHdg*RAD2DEG)
+
+        ax[2,0].legend(ncol=2)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'heading')
 
     def insStatus(self, fig=None):
