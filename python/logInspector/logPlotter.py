@@ -46,6 +46,7 @@ class logPlot:
         self.format = format
         self.d = 1
         self.residual = False
+        self.timestamp = False
         if log:
             self.setLog(log)
         else:
@@ -63,6 +64,9 @@ class logPlot:
 
     def enableResidualPlot(self, enable):
         self.residual = enable
+
+    def enableTimestamp(self, enable):
+        self.timestamp = enable
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -180,7 +184,10 @@ class logPlot:
 
         self.saveFig(fig, 'posNED')
 
-    def drawNEDMapArrow(self, ax, ned, heading):
+    def nedAnnotateTimestamp(self, ax, time, east, north, textOffset=(0.0, 0.0)):
+        ax.annotate('%.1f' % time, xy=(east, north), xycoords='data', xytext=textOffset, textcoords='offset points')
+
+    def drawNEDMapArrow(self, ax, time, ned, heading):
         # arrowLen = 0.2
         # arrowWid = arrowLen/2
         # arrows = np.array([arrowLen * 0.7 * np.cos(heading), arrowLen * 0.7 * np.sin(heading)]).T
@@ -190,12 +197,18 @@ class logPlot:
         len = np.shape(heading)[0]
         for i in range(1, len, downsample):
             # ax.arrow(ned[i,1], ned[i,0], arrows[i,1], arrows[i,0], head_width=arrowWid, head_length=arrowLen, length_includes_head=True, fc='k', ec='k')
-            ax.plot(ned[i,1], ned[i,0], marker=(3, 0, -heading[i]*(180.0/np.pi)), color='g', markersize=markersize, linestyle='None')
-            ax.plot(ned[i,1], ned[i,0], marker=(2, 0, -heading[i]*(180.0/np.pi)), color='k', markersize=markersize, linestyle='None')
+            east = ned[i,1]
+            north = ned[i,0]
+            ax.plot(east, north, marker=(3, 0, -heading[i]*(180.0/np.pi)), color='g', markersize=markersize, linestyle='None')
+            ax.plot(east, north, marker=(2, 0, -heading[i]*(180.0/np.pi)), color='k', markersize=markersize, linestyle='None')
+
+            if self.timestamp:
+                self.nedAnnotateTimestamp(ax, time[i], east, north, textOffset=(3.5, 3.5))
 
     def posNEDMap(self, fig=None):
         if fig is None:
             fig = plt.figure()
+        
         ax = fig.subplots(1,1)
         ax.set_xlabel('East (m)')
         ax.set_ylabel('North (m)')
@@ -206,14 +219,24 @@ class logPlot:
             if len(lla) == 0:
                 continue
             if refLla is None:
+<<<<<<< HEAD
                 refLla = lla[-1]
+=======
+                refLla = lla[0]
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+>>>>>>> origin/development
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
+<<<<<<< HEAD
                 if (SHOW_HEADING_ARROW and np.shape(self.active_devs)[0]==1):
                     self.drawNEDMapArrow(ax, ned, euler[:, 2])
+=======
+                if (np.shape(self.active_devs)[0]==1):
+                    self.drawNEDMapArrow(ax, time, ned, euler[:, 2])
+>>>>>>> origin/development
 
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
@@ -242,8 +265,18 @@ class logPlot:
             if refLla is None:
                 refLla = lla[-1]
 
+            time = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
             ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s" % (self.log.serials[d])))
+
+            if self.timestamp:
+                lasttime = 0
+                for time, east, north in zip(time, nedGps[:, 1], nedGps[:, 0]):
+                    if time - lasttime > 5:
+                        lasttime = time
+                        # ax.annotate('%.1f' % time, xy=(east, north), textcoords='data')
+                        self.nedAnnotateTimestamp(ax, time, east, north)
+
 
             if SHOW_GPS2:
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
@@ -699,11 +732,16 @@ class logPlot:
     def heading(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('Heading - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'Magnetic Heading', 'deg')
-        self.configureSubplot(ax[1], 'RTK Compassing', 'deg')
-        self.configureSubplot(ax[2], 'INS Heading', 'deg')
+        self.configureSubplot(ax[0,0], 'Magnetic Heading', 'deg')
+        self.configureSubplot(ax[1,0], 'RTK Compassing', 'deg')
+        self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
+
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
+            self.configureSubplot(ax[1,1], 'Heading Residual: RTK - INS', 'deg')
+
         for d in self.active_devs:
             magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'))
             gpsTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
@@ -711,31 +749,45 @@ class logPlot:
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
-            # if magTime.any():
-            #     ax[0].plot(magTime, magHdg * RAD2DEG)
+            insHdg = euler[:,2]
+            if magTime.any():
+                ax[0,0].plot(magTime, magHdg * RAD2DEG)
             if gpsTime.any():
                 gpsHdg = self.angle_wrap(gpsHdg)
-                ax[1].plot(gpsTime, gpsHdg*RAD2DEG, label='F9P')
-            ax[2].plot(insTime, euler[:,2]*RAD2DEG, label=self.log.serials[d])
-        ax[2].legend(ncol=2)
+                ax[1,0].plot(gpsTime, gpsHdg*RAD2DEG, label='F9P')
+            ax[2,0].plot(insTime, insHdg*RAD2DEG, label=self.log.serials[d])
 
-        if 0:
-            gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
+            if self.residual: 
+                if magTime.any():
+                    unwrapMagHdg = self.angle_unwrap(magHdg)
+                    intMagHdg = np.interp(insTime, magTime, unwrapMagHdg, right=np.nan, left=np.nan)
+                    resMagHdg = self.angle_wrap(intMagHdg - insHdg)
+                    ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
+                if gpsTime.any():
+                    unwrapGpsHdg = self.angle_unwrap(gpsHdg)
+                    intGpsHdg = np.interp(insTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
+                    resGpsHdg = self.angle_wrap(intGpsHdg - insHdg)
+                    ax[1,1].plot(insTime, resGpsHdg*RAD2DEG)
 
-            gpsHdg_unwrap = self.angle_unwrap(gpsHdg)
-            gpxHdg_unwrap = self.angle_unwrap(gpxHeading)
-            gpxHeadingTruth = np.interp(gpxTime, gpsTime, gpsHdg_unwrap, right=np.nan, left=np.nan)
-            gpsHeadingErrDeg = self.angle_wrap(gpxHdg_unwrap - gpxHeadingTruth)*RAD2DEG
-            gpxRms = np.sqrt(np.mean(np.square(gpsHeadingErrDeg)))
-            self.configureSubplot(ax[0], 'RTK Compassing Error: ' + f'{gpxRms:.3}' + ' deg RMS', 'deg')
+        # if 0:
+        #     gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
 
-            ax[1].plot(gpxTime, gpxHeading*RAD2DEG, label='GPX')
-            ax[1].legend(ncol=2)
-            ax[0].plot(gpxTime, gpsHeadingErrDeg, label='GPX - F9P')
-            ax[0].legend(ncol=2)
+        #     gpsHdg_unwrap = self.angle_unwrap(gpsHdg)
+        #     gpxHdg_unwrap = self.angle_unwrap(gpxHeading)
+        #     gpxHeadingTruth = np.interp(gpxTime, gpsTime, gpsHdg_unwrap, right=np.nan, left=np.nan)
+        #     gpsHeadingErrDeg = self.angle_wrap(gpxHdg_unwrap - gpxHeadingTruth)*RAD2DEG
+        #     gpxRms = np.sqrt(np.mean(np.square(gpsHeadingErrDeg)))
+        #     self.configureSubplot(ax[0], 'RTK Compassing Error: ' + f'{gpxRms:.3}' + ' deg RMS', 'deg')
 
+        #     ax[1].plot(gpxTime, gpxHeading*RAD2DEG, label='GPX')
+        #     ax[1].legend(ncol=2)
+        #     ax[0].plot(gpxTime, gpsHeadingErrDeg, label='GPX - F9P')
+        #     ax[0].legend(ncol=2)
+
+        ax[2,0].legend(ncol=2)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'heading')
 
     def insStatus(self, fig=None):

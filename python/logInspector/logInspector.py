@@ -439,10 +439,16 @@ class LogInspectorWindow(QMainWindow):
         self.createListGps()
         self.createListSystem()
         self.createListGeneral()
-        self.checkboxResiduals = QCheckBox("Residuals", self)
-        self.checkboxResiduals.stateChanged.connect(self.changeResidualsCheckbox)
+        self.checkboxResidual = QCheckBox("Residual", self)
+        self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
+        self.checkboxTime = QCheckBox("Timestamp", self)
+        self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
+        self.LayoutOptions = QVBoxLayout()
+        self.LayoutOptions.addWidget(self.checkboxResidual)
+        self.LayoutOptions.addWidget(self.checkboxTime)
+        self.LayoutOptions.setSpacing(0)
         self.LayoutBelowPlotSelection = QHBoxLayout()
-        self.LayoutBelowPlotSelection.addWidget(self.checkboxResiduals)
+        self.LayoutBelowPlotSelection.addLayout(self.LayoutOptions)
 
         self.saveAllPushButton = QPushButton(" Save All Plots ")
         self.saveAllPushButton.clicked.connect(self.saveAllPlotsToFile)
@@ -521,9 +527,14 @@ class LogInspectorWindow(QMainWindow):
         self.toolLayout.addWidget(self.downSampleInput)
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
-    def changeResidualsCheckbox(self, state):
+    def changeResidualCheckbox(self, state):
         if self.plotter:
             self.plotter.enableResidualPlot(state)
+            self.updatePlot()
+
+    def changeTimeCheckbox(self, state):
+        if self.plotter:
+            self.plotter.enableTimestamp(state)
             self.updatePlot()
 
     def saveAllPlotsToFile(self):
