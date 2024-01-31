@@ -45,7 +45,10 @@ eImageSignature devInfoToValidSignatures(dev_info_t *devInfo)
 {
     uint32_t valid_signatures = 0;
 
-    if(devInfo->hardware == DEV_INFO_HARDWARE_IMX || devInfo->hardwareVer[0] == 5)
+    // Check if hardware descriptor is missing and set it correctly.
+    devInfoPopulateMissingHardware(devInfo);
+
+    if (devInfo->hardware == DEV_INFO_HARDWARE_IMX && devInfo->hardwareVer[0] == 5)
     {   /** IMX-5 */
         valid_signatures |= IS_IMAGE_SIGN_IMX_5;
         valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
@@ -134,11 +137,9 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                 break;
 
             case _PTYPE_NMEA:
-                int messageIdUInt = NMEA_MESSAGEID_TO_UINT(comm.dataPtr+1);
-                switch (messageIdUInt)
+                switch (getNmeaMsgId(comm.dataPtr, comm.dataHdr.size))
                 {
-                case NMEA_MSG_UINT_INFO:
-                    if( memcmp(comm.dataPtr, "$INFO,", 6) == 0)
+                case NMEA_MSG_ID_INFO:
                     {	// IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.dataPtr, comm.dataHdr.size);
@@ -266,11 +267,9 @@ uint32_t cISBootloaderAPP::get_device_info()
                 break;
 
             case _PTYPE_NMEA:
-                int messageIdUInt = NMEA_MESSAGEID_TO_UINT(comm.dataPtr+1);
-                switch (messageIdUInt)
+                switch (getNmeaMsgId(comm.dataPtr, comm.dataHdr.size))
                 {
-                case NMEA_MSG_UINT_INFO:
-                    if( memcmp(comm.dataPtr, "$INFO,", 6) == 0)
+                case NMEA_MSG_ID_INFO:
                     {	// IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.dataPtr, comm.dataHdr.size);

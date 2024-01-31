@@ -106,7 +106,7 @@ uint32_t flash_erase_block(uint32_t address)
 #endif
 
 extern uint32_t efc_perform_fcr(Efc *p_efc, uint32_t ul_fcr); 
-__no_inline RAMFUNC void flash_erase_chip(void)
+__no_inline RAMFUNC void flash_reboot_down(int chip_erase)
 {
 	LED_COLOR_RED();
 
@@ -116,10 +116,12 @@ __no_inline RAMFUNC void flash_erase_chip(void)
 	// Make sure all blocks are unlocked
 	flash_unlock(IFLASH_ADDR, IFLASH_ADDR + IFLASH_SIZE, NULL, NULL);
 	
-	// Issue erase - After this we cannot access any functions in flash as it will be gone.
-	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FCMD(EFC_FCMD_EA);
-	while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
-		UPDATE_WATCHDOG();
+	if (chip_erase)
+	{	// Issue erase - After this we cannot access any functions in flash as it will be gone.
+		EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FCMD(EFC_FCMD_EA);
+		while ((EFC->EEFC_FSR & EEFC_FSR_FRDY) != EEFC_FSR_FRDY)
+			UPDATE_WATCHDOG();
+	}
 
 	//Clear GPNVM Bits
 	EFC->EEFC_FCR = EEFC_FCR_FKEY_PASSWD | EEFC_FCR_FARG(0) | EEFC_FCR_FCMD(EFC_FCMD_CGPB);		//Protect bit
@@ -143,6 +145,20 @@ __no_inline RAMFUNC void flash_erase_chip(void)
 	//Reset Device
 	RSTC->RSTC_CR = RSTC_CR_KEY_PASSWD | RSTC_CR_PROCRST;
 	while(1);
+}
+
+extern uint32_t efc_perform_fcr(Efc *p_efc, uint32_t ul_fcr); 
+__no_inline RAMFUNC void flash_rom_bootloader(void)
+{
+	// Reboot into ROM bootloader mode
+	flash_reboot_down(0);	
+}
+
+extern uint32_t efc_perform_fcr(Efc *p_efc, uint32_t ul_fcr); 
+__no_inline RAMFUNC void flash_erase_chip(void)
+{
+	// chip erase and reboot into ROM bootloader mode
+	flash_reboot_down(1);	
 }
 
 uint32_t flash_get_user_signature(volatile void* ptr, uint32_t size)

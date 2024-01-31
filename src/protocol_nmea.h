@@ -11,41 +11,13 @@
 #define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
 #define NMEA_CMD_SIZE                                   10
 
-enum eNmeaMsgIdUint
-{
-	NMEA_MSG_UINT_ASCB = 0x41534342,		// "ASCB" - NMEA messages broadcast periods
-	NMEA_MSG_UINT_ASCE = 0x41534345,		// "ASCE" - NMEA messages broadcast enable
-	NMEA_MSG_UINT_STPB = 0x53545042,		// "STPB" - Stop broadcasts on all ports
-	NMEA_MSG_UINT_STPC = 0x53545043,		// "STPC" - Stop broadcasts on current port
-	NMEA_MSG_UINT_BLEN = 0x424c454e,		// "EBLE" - Enable bootloader on IMX (app firmware update)
-	NMEA_MSG_UINT_EBLE = 0x45424c45,		// "EBLE" - Enable bootloader on EVB
-	NMEA_MSG_UINT_NELB = 0x4e454c42,		// "NELB" - Enable SAM-BA mode
-	NMEA_MSG_UINT_SRST = 0x53525354,		// "SRTS" - Software reset
-	NMEA_MSG_UINT_INFO = 0x494e464f,		// "INFO" - IMX device info
-	NMEA_MSG_UINT_PERS = 0x50455253,		// "PERS" - Save perstent messages
-
-	NMEA_MSG_UINT_PIMU = 0x50494d55,		// "PIMU"
-	NMEA_MSG_UINT_PPIM = 0x5050494d,		// "PPIM"
-	NMEA_MSG_UINT_PRIM = 0x5052494d,		// "PRIM"
-	NMEA_MSG_UINT_PINS = 0x50494e53,		// "PINS"
-	NMEA_MSG_UINT_PGPS = 0x50475053,		// "PGPS"
-	NMEA_MSG_UINT_PASH = 0x50415348,		// "PASH"
-	
-	NMEA_MSG_UINT_GGA = 0x4747412c,			// "GGA,"
-	NMEA_MSG_UINT_GLL = 0x474c4c2c,			// "GLL,"
-	NMEA_MSG_UINT_GSA = 0x4753412c,			// "GSA,"
-	NMEA_MSG_UINT_GSV = 0x4753562c,			// "GSV,"
-	NMEA_MSG_UINT_RMC = 0x524d432c, 		// "RMC,"
-	NMEA_MSG_UINT_VTG = 0x5654472c, 		// "VTG,"
-	NMEA_MSG_UINT_ZDA = 0x5a44412c, 		// "ZDA,"
-};
+#define UINT32_MATCH(u1,u2)	((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
 
 enum eNmeaProtocolVersion
 {
 	NMEA_PROTOCOL_2P3 		= 0,	// <4.10
 	NMEA_PROTOCOL_4P10 		= 410,	// 4.10
 };
-
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
@@ -67,6 +39,8 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t tmp);
+int getNmeaMsgId(const void* msg, int msgSize);
+int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA
@@ -115,7 +89,6 @@ int nmea_parse_gga(const char a[], int aSize, gps_pos_t *gpsPos, double datetime
 int nmea_parse_rmc(const char a[], int aSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags=0);
 int nmea_parse_gsa(const char a[], int aSize, gps_pos_t *gpsPos, int *navMode);
 char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount);
-
 
 
 #endif /* PROTOCOL_NMEA_H_ */

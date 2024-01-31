@@ -641,7 +641,7 @@ int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, i
 		return -1;
 	}
 
-	return sendCallback(cmInstance, pHandle, dataPtr, dataSize);
+	return (sendCallback(cmInstance, pHandle, dataPtr, dataSize) ? 0: -1);
 }
 
 int comManagerDisableData(int pHandle, uint32_t dataId)

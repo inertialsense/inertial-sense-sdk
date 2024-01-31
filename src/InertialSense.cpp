@@ -11,7 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "protocol_nmea.h"
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
+#include "protocol_nmea.h"
 #include "InertialSense.h"
 #ifndef EXCLUDE_BOOTLOADER
 #include "ISBootloaderThread.h"
@@ -822,12 +823,10 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
 	is_device_t &device = m_comManagerState.devices[pHandle];
 
-	int messageIdUInt = NMEA_MESSAGEID_TO_UINT(msg+1);
-	switch (messageIdUInt)
-	{
-	case NMEA_MSG_UINT_INFO:
-		if( memcmp(msg, "$INFO,", 6) == 0)
-		{	// IMX device Info
+    switch (getNmeaMsgId(msg, msgSize))
+    {
+	case NMEA_MSG_ID_INFO:
+        {	// IMX device Info
 			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
 		}
 		break;
@@ -1088,24 +1087,32 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	if (m_enableDeviceValidation)
 	{
 		time_t startTime = time(0);
+        bool removedSerials = false;
 
 		// Query devices with 10 second timeout
 		while (!HasReceivedResponseFromAllDevices() && (time(0) - startTime < 10))
 		{
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
-				comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
-				// comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
-				comManagerGetData((int)i, DID_SYS_CMD,          0, 0, 0);
-				comManagerGetData((int)i, DID_FLASH_CONFIG,     0, 0, 0);
-				comManagerGetData((int)i, DID_EVB_FLASH_CFG,    0, 0, 0);
+                if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
+                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0))
+                {
+                    // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+                    RemoveDevice(i);
+                    removedSerials = true, i--;
+                }
+                else
+                {
+                    // comManagerGetData((int)i, DID_DEV_INFO,         0, 0, 0);
+                    comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
+                    comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
+                    comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);
+                }
 			}
 
 			SLEEP_MS(100);
 			comManagerStep();
 		}
-
-		bool removedSerials = false;
 
 		// remove each failed device where communications were not received
 		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
@@ -1113,7 +1120,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 			if (!HasReceivedResponseFromDevice(i))
 			{
 				RemoveDevice(i);
-				removedSerials = true;
+				removedSerials = true, i--;
 			}
 		}
 

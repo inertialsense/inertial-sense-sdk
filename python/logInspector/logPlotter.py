@@ -396,7 +396,7 @@ class logPlot:
         self.configureSubplot(ax[0], 'GPS Velocity North', 'm/s')
         self.configureSubplot(ax[1], 'GPS Velocity East', 'm/s')
         self.configureSubplot(ax[2], 'GPS Velocity Down', 'm/s')
-        self.configureSubplot(ax[3], 'GPS Velocity Magnitude', 'm/s')
+        self.configureSubplot(ax[3], 'GPS Speed', 'm/s')
         fig.suptitle('GPS Velocity NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
@@ -439,10 +439,11 @@ class logPlot:
     def velNED(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
+        ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
         self.configureSubplot(ax[0,0], 'Vel North', 'm/s')
         self.configureSubplot(ax[1,0], 'Vel East',  'm/s')
         self.configureSubplot(ax[2,0], 'Vel Down',  'm/s')
+        self.configureSubplot(ax[3,0], 'Speed',  'm/s')
         fig.suptitle('NED Vel - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         refTime = None
@@ -451,6 +452,7 @@ class logPlot:
             self.configureSubplot(ax[0,1], 'Residual Vel North', 'm/s')
             self.configureSubplot(ax[1,1], 'Residual Vel East',  'm/s')
             self.configureSubplot(ax[2,1], 'Residual Vel Down',  'm/s')
+            self.configureSubplot(ax[3,1], 'Residual Speed',  'm/s')
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
@@ -470,25 +472,31 @@ class logPlot:
                 refLla = self.getData(d, DID_INS_2, 'lla')[-1]
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
+            insVelNorm = np.linalg.norm(insVelNed, axis=1)
             ax[0,0].plot(time, insVelNed[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, insVelNed[:,1])
             ax[2,0].plot(time, insVelNed[:,2])
+            ax[3,0].plot(time, insVelNorm)
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
                 gpsVelNed = self.getGpsNedVel(d)
+                gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0], label=('%s GPS' % self.log.serials[d]))
                 ax[1,0].plot(timeGPS, gpsVelNed[:, 1])
                 ax[2,0].plot(timeGPS, gpsVelNed[:, 2])
+                ax[3,0].plot(timeGPS, gpsVelNorm)
 
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intVelNed = np.empty_like(refVelNed)
                 for i in range(3):
                     intVelNed[:,i] = np.interp(refTime, time, insVelNed[:,i], right=np.nan, left=np.nan)
                 resNed = intVelNed - refVelNed
+                resVelNorm = np.linalg.norm(resNed, axis=1)
                 ax[0,1].plot(refTime, resNed[:,0], label=self.log.serials[d])
                 ax[1,1].plot(refTime, resNed[:,1])
                 ax[2,1].plot(refTime, resNed[:,2])
+                ax[3,1].plot(refTime, resVelNorm)
 
         ax[0,0].legend(ncol=2)
         if self.residual: 
@@ -686,11 +694,16 @@ class logPlot:
     def heading(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(3, (2 if self.residual else 1), sharex=True, squeeze=False)
         fig.suptitle('Heading - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        self.configureSubplot(ax[0], 'Magnetic Heading', 'deg')
-        self.configureSubplot(ax[1], 'RTK Compassing', 'deg')
-        self.configureSubplot(ax[2], 'INS Heading', 'deg')
+        self.configureSubplot(ax[0,0], 'Magnetic Heading', 'deg')
+        self.configureSubplot(ax[1,0], 'RTK Compassing', 'deg')
+        self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
+
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
+            self.configureSubplot(ax[1,1], 'Heading Residual: RTK - INS', 'deg')
+
         for d in self.active_devs:
             magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'))
             gpsTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
@@ -698,14 +711,30 @@ class logPlot:
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
+            insHdg = euler[:,2]
             if magTime.any():
-                ax[0].plot(magTime, magHdg * RAD2DEG)
+                ax[0,0].plot(magTime, magHdg * RAD2DEG)
             if gpsTime.any():
-                ax[1].plot(gpsTime, gpsHdg*RAD2DEG)
-            ax[2].plot(insTime, euler[:,2]*RAD2DEG, label=self.log.serials[d])
-        ax[2].legend(ncol=2)
+                gpsHdg = self.angle_wrap(gpsHdg)
+                ax[1,0].plot(gpsTime, gpsHdg*RAD2DEG, label='F9P')
+            ax[2,0].plot(insTime, insHdg*RAD2DEG, label=self.log.serials[d])
+
+            if self.residual: 
+                if magTime.any():
+                    unwrapMagHdg = self.angle_unwrap(magHdg)
+                    intMagHdg = np.interp(insTime, magTime, unwrapMagHdg, right=np.nan, left=np.nan)
+                    resMagHdg = self.angle_wrap(intMagHdg - insHdg)
+                    ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
+                if gpsTime.any():
+                    unwrapGpsHdg = self.angle_unwrap(gpsHdg)
+                    intGpsHdg = np.interp(insTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
+                    resGpsHdg = self.angle_wrap(intGpsHdg - insHdg)
+                    ax[1,1].plot(insTime, resGpsHdg*RAD2DEG)
+
+        ax[2,0].legend(ncol=2)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'heading')
 
     def insStatus(self, fig=None):
@@ -1122,11 +1151,14 @@ class logPlot:
         dt = None
 
         if accelSensor==0:
+            # I = np.copy(self.getData(device, DID_IMU_RAW, 'I'))  # to plot raw gyro data
+            # imu1 = I['pqr']                                      # to plot raw gyro data
             imu1 = np.copy(self.getData(device, DID_PIMU, 'theta'))
         else:
             imu1 = np.copy(self.getData(device, DID_PIMU, 'vel'))
 
         if np.shape(imu1)[0] != 0:  # DID_PIMU
+            # time = self.getData(device, DID_IMU_RAW, 'time')     # to plot raw gyro data
             time = self.getData(device, DID_PIMU, 'time')
             dt = self.getData(device, DID_PIMU, 'dt') 
             # dt = time[1:] - time[:-1]

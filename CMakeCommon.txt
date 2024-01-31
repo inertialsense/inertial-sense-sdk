@@ -155,3 +155,23 @@ else()
 	target_link_libraries(${PROJECT_NAME} udev m)
 endif()
 
+# Create version definition from git describe tag, i.e. #define IS_SDK_DESCRIBE_TAG 2.0.1
+find_package(Git)
+if(GIT_FOUND)
+    message("Git found: ${GIT_EXECUTABLE}")
+
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE IS_SDK_DESCRIBE_TAG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    add_definitions(-DIS_SDK_DESCRIBE_TAG="${IS_SDK_DESCRIBE_TAG}")
+endif()
+
+# Create build data and build time definitions 
+string(TIMESTAMP IS_SDK_BUILD_DATE "%Y-%m-%d")
+string(TIMESTAMP IS_SDK_BUILD_TIME "%H:%M:%S")
+add_definitions(-DIS_SDK_BUILD_DATE=\"${IS_SDK_BUILD_DATE}\")
+add_definitions(-DIS_SDK_BUILD_TIME=\"${IS_SDK_BUILD_TIME}\")

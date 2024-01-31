@@ -22,9 +22,9 @@ void unlockUserFlash(void);
 void soft_reset_no_backup_register(void); // soft reset without setting backup register
 void soft_reset_backup_register(uint32_t key); // soft reset and set backup register to a value
 void set_reset_pin_enabled(int enabled); // enabled is 0 or 1
+void write_bootloader_signature_stay_in_bootloader_mode(void);
 void enable_bootloader(int pHandle);
-void enable_bootloader_assistant(void);
-
+void enable_rom_bootloader(void);
 
 #ifdef __cplusplus
 }

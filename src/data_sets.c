@@ -80,10 +80,9 @@ void flipEndianess32(uint8_t* data, int dataLength)
 	
 	uint32_t* dataPtr = (void*)data;
 	uint32_t* dataPtrEnd = (void*)(data + dataLength);
-	uint32_t tmp;
 	while (dataPtr < dataPtrEnd)
 	{
-		tmp = *dataPtr;
+		uint32_t tmp = *dataPtr;
 		*dataPtr++ = SWAP32(tmp);
 	}
 }
@@ -91,13 +90,11 @@ void flipEndianess32(uint8_t* data, int dataLength)
 void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength)
 {
 	uint16_t* doubleOffsetsEnd = offsets + offsetsLength;
-	int offsetToDouble;
 	int maxDoubleOffset = dataLength - 8;
-    int isDouble;
 	while (offsets < doubleOffsetsEnd)
 	{
-        offsetToDouble = (*offsets++);
-        isDouble = ((offsetToDouble & 0x8000) == 0);
+        int offsetToDouble = (*offsets++);
+        int isDouble = ((offsetToDouble & 0x8000) == 0);
         offsetToDouble = (offsetToDouble & 0x7FFF) - offset;
 		if (offsetToDouble >= 0 && offsetToDouble <= maxDoubleOffset)
 		{
@@ -117,15 +114,12 @@ void flipDoubles(uint8_t* data, int dataLength, int offset, uint16_t* offsets, u
 void flipStrings(uint8_t* data, int dataLength, int offset, uint16_t* offsets, uint16_t offsetsLength)
 {
 	uint16_t* stringOffsetsEnd = offsets + offsetsLength;
-	int offsetToString;
-	int lengthOfString;
-	int maxStringOffset;
 
 	while (offsets < stringOffsetsEnd)
 	{
-		offsetToString = (*offsets++) - offset;
-		lengthOfString = (*offsets++);
-		maxStringOffset = dataLength - lengthOfString;
+		int offsetToString = (*offsets++) - offset;
+		int lengthOfString = (*offsets++);
+		int maxStringOffset = dataLength - lengthOfString;
 		if (offsetToString >= 0 && offsetToString <= maxStringOffset)
 		{
 			flipEndianess32(data + offsetToString, lengthOfString);
@@ -395,8 +389,8 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 
 	if (dataId < DID_COUNT)
 	{
-        uint16_t* offsets;
-        if ((offsets = s_doubleOffsets[dataId]))
+        uint16_t* offsets = s_doubleOffsets[dataId];
+        if (offsets)
         {
             *offsetsLength = (*offsets++);
             return offsets;
@@ -572,8 +566,8 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 
     if (dataId < DID_COUNT)
 	{
-        uint16_t* offsets;
-        if ((offsets = s_stringOffsets[dataId]))
+        uint16_t* offsets = s_stringOffsets[dataId];
+        if (offsets)
         {
             *offsetsLength = (*offsets++);
             return offsets;
@@ -673,15 +667,15 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT_UINS] =
 	[DID_IMU_RAW]               = NMEA_RMC_BITS_PRIMU,
 	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
-	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GSV,
+	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GxGSV,
 	[DID_GPS1_POS]				=
 		NMEA_RMC_BITS_PGPSP |
-		NMEA_RMC_BITS_GGA |
-		NMEA_RMC_BITS_GLL |
-		NMEA_RMC_BITS_GSA |
-		NMEA_RMC_BITS_RMC |
-		NMEA_RMC_BITS_ZDA |
-		NMEA_RMC_BITS_VTG |
+		NMEA_RMC_BITS_GxGGA |
+		NMEA_RMC_BITS_GxGLL |
+		NMEA_RMC_BITS_GxGSA |
+		NMEA_RMC_BITS_GxRMC |
+		NMEA_RMC_BITS_GxZDA |
+		NMEA_RMC_BITS_GxVTG |
 		NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
@@ -751,3 +745,24 @@ int satNumCalc(int gnssID, int svID) {
 	int prn = svID + (sys == SYS_QZS ? 192 : 0);
 	return satNo(sys, prn);
 }
+
+/** Populate missing hardware descriptor in dev_info_t */ 
+void devInfoPopulateMissingHardware(dev_info_t *devInfo)
+{
+	if (devInfo->hardware != DEV_INFO_HARDWARE_UNSPECIFIED)
+	{	// Hardware type is not missing
+		return;
+	}
+
+	int year = ((int)(devInfo->buildDate[1])) + 2000;
+	if (year <= 2024)
+	{	// Hardware from 2024 and earlier is detectible using hardware version
+		switch (devInfo->hardwareVer[0])	
+		{
+		case 2: devInfo->hardware = DEV_INFO_HARDWARE_EVB;  break;
+		case 3: devInfo->hardware = DEV_INFO_HARDWARE_UINS; break;
+		case 5: devInfo->hardware = DEV_INFO_HARDWARE_IMX;  break;
+		}
+	}
+}
+

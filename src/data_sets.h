@@ -222,7 +222,7 @@ enum eInsStatusFlags
     /** INS/AHRS Solution Status */
     INS_STATUS_SOLUTION_MASK                    = (int)0x000F0000,
     INS_STATUS_SOLUTION_OFFSET                  = 16,
-#define INS_STATUS_SOLUTION(insStatus)          ((insStatus&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
+#define INS_STATUS_SOLUTION(insStatus)          (((insStatus)&INS_STATUS_SOLUTION_MASK)>>INS_STATUS_SOLUTION_OFFSET)
 
     INS_STATUS_SOLUTION_OFF                     = 0,    // System is off 
     INS_STATUS_SOLUTION_ALIGNING                = 1,    // System is in alignment mode
@@ -247,7 +247,7 @@ enum eInsStatusFlags
     /** GPS navigation fix type (see eGpsNavFixStatus) */
     INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
     INS_STATUS_GPS_NAV_FIX_OFFSET               = 24,
-#define INS_STATUS_NAV_FIX_STATUS(insStatus)    ((insStatus&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
+#define INS_STATUS_NAV_FIX_STATUS(insStatus)    (((insStatus)&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
 
     /** RTK compassing heading is accurate.  (RTK fix and hold status) */
     INS_STATUS_RTK_COMPASSING_VALID             = (int)0x04000000,
@@ -468,10 +468,11 @@ typedef struct PACKED
 
 enum eDevInfoHardware
 {
-	DEV_INFO_HARDWARE_UINS      = 1,
-	DEV_INFO_HARDWARE_EVB       = 2,
-	DEV_INFO_HARDWARE_IMX       = 3,
-	DEV_INFO_HARDWARE_GPX       = 4,
+	DEV_INFO_HARDWARE_UNSPECIFIED   = 0,
+	DEV_INFO_HARDWARE_UINS          = 1,
+	DEV_INFO_HARDWARE_EVB           = 2,
+	DEV_INFO_HARDWARE_IMX           = 3,
+	DEV_INFO_HARDWARE_GPX           = 4,
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -513,6 +514,9 @@ typedef struct PACKED
 	/** Additional info */
 	char            addInfo[DEVINFO_ADDINFO_STRLEN];
 } dev_info_t;
+
+/** Add missing hardware descriptor to dev_info_t. */
+void devInfoPopulateMissingHardware(dev_info_t *devInfo);
 
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
@@ -1127,12 +1131,12 @@ typedef struct PACKED
 	int						accel_motion;
 	int						rot_motion;
 	int						zero_vel;
-	int						ahrs_gps_cnt;			// Counter of sequential valid GPS data (for switching from AHRS to navigation)
+	int						ahrs_gps_cnt;		// Counter of sequential valid GPS data (for switching from AHRS to navigation)
 	float					hdg_err;
-	int						hdg_coarse;				// Flag whether initial attitude error converged
-	int						hdg_aligned;			// Flag whether initial attitude error converged
+	int						hdg_coarse;			// Flag whether initial attitude error converged
+	int						hdg_aligned;		// Flag whether initial attitude error converged
 	int						hdg_aligning;
-	int						start_proc_done;		// Cold/hot start procedure completed
+	int						ekf_init_done;	    // Hot EKF initialization completed
 	int						mag_cal_good;
 	int						mag_cal_done;
 	int						stat_magfield;
@@ -1378,8 +1382,9 @@ enum eSystemCommand
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
     SYS_CMD_MANF_UNLOCK                                 = 1122334455,   // (uint32 inv: 3172632840)
     SYS_CMD_MANF_FACTORY_RESET                          = 1357924680,   // (uint32 inv: 2937042615) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
-    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_CHIP_ERASE                             = 1357924681,   // (uint32 inv: 2937042614) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
     SYS_CMD_MANF_DOWNGRADE_CALIBRATION                  = 1357924682,   // (uint32 inv: 2937042613) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.
+    SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER                  = 1357924683,   // (uint32 inv: 2937042612) SYS_CMD_MANF_RESET_UNLOCK must be sent prior to this command.  A device power cycle may be necessary to complete this command.
 };
 
 enum eSerialPortBridge
@@ -1681,35 +1686,48 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_PINS1     = 3,
     NMEA_MSG_ID_PINS2     = 4,
     NMEA_MSG_ID_PGPSP     = 5,
-    NMEA_MSG_ID_GGA       = 6,
-    NMEA_MSG_ID_GLL       = 7,
-    NMEA_MSG_ID_GSA       = 8,
-    NMEA_MSG_ID_RMC       = 9,
-    NMEA_MSG_ID_ZDA       = 10,
+    NMEA_MSG_ID_GxGGA     = 6,
+    NMEA_MSG_ID_GxGLL     = 7,
+    NMEA_MSG_ID_GxGSA     = 8,
+    NMEA_MSG_ID_GxRMC     = 9,
+    NMEA_MSG_ID_GxZDA     = 10,
     NMEA_MSG_ID_PASHR     = 11, 
     NMEA_MSG_ID_PSTRB     = 12,
     NMEA_MSG_ID_INFO      = 13,
-    NMEA_MSG_ID_GSV       = 14,
-    NMEA_MSG_ID_VTG       = 15,
-    NMEA_MSG_ID_COUNT
+    NMEA_MSG_ID_GxGSV     = 14,
+    NMEA_MSG_ID_GxVTG     = 15,
+    NMEA_MSG_ID_INTEL     = 16,
+    NMEA_MSG_ID_COUNT,
+
+	// IMX/GPX Input Commands
+    NMEA_MSG_ID_ASCB,         // "ASCB" - NMEA messages broadcast periods
+    NMEA_MSG_ID_ASCE,         // "ASCE" - NMEA messages broadcast enable
+    NMEA_MSG_ID_BLEN,         // "BLEN" - Enable bootloader on IMX (app firmware update)	
+    NMEA_MSG_ID_EBLE,         // "EBLE" - Enable bootloader on EVB
+    NMEA_MSG_ID_NELB,         // "NELB" - Enable SAM-BA mode	
+    NMEA_MSG_ID_PERS,         // "PERS" - Save perstent messages
+    NMEA_MSG_ID_SRST,         // "SRTS" - Software reset
+    NMEA_MSG_ID_STPB,         // "STPB" - Stop broadcasts on all ports
+    NMEA_MSG_ID_STPC,         // "STPC" - Stop broadcasts on current port
 }; 
 
-#define NMEA_RMC_BITS_PIMU    		(1<<NMEA_MSG_ID_PIMU)
-#define NMEA_RMC_BITS_PPIMU   		(1<<NMEA_MSG_ID_PPIMU)
-#define NMEA_RMC_BITS_PRIMU   		(1<<NMEA_MSG_ID_PRIMU)
-#define NMEA_RMC_BITS_PINS1   		(1<<NMEA_MSG_ID_PINS1)
-#define NMEA_RMC_BITS_PINS2   		(1<<NMEA_MSG_ID_PINS2)
-#define NMEA_RMC_BITS_PGPSP   		(1<<NMEA_MSG_ID_PGPSP)
-#define NMEA_RMC_BITS_GGA     		(1<<NMEA_MSG_ID_GGA)
-#define NMEA_RMC_BITS_GLL     		(1<<NMEA_MSG_ID_GLL)
-#define NMEA_RMC_BITS_GSA     		(1<<NMEA_MSG_ID_GSA)
-#define NMEA_RMC_BITS_RMC     		(1<<NMEA_MSG_ID_RMC)
-#define NMEA_RMC_BITS_ZDA     		(1<<NMEA_MSG_ID_ZDA)
-#define NMEA_RMC_BITS_PASHR   		(1<<NMEA_MSG_ID_PASHR)
-#define NMEA_RMC_BITS_PSTRB   		(1<<NMEA_MSG_ID_PSTRB)
-#define NMEA_RMC_BITS_INFO    		(1<<NMEA_MSG_ID_INFO)
-#define NMEA_RMC_BITS_GSV     		(1<<NMEA_MSG_ID_GSV)
-#define NMEA_RMC_BITS_VTG     		(1<<NMEA_MSG_ID_VTG)
+#define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
+#define NMEA_RMC_BITS_PPIMU         (1<<NMEA_MSG_ID_PPIMU)
+#define NMEA_RMC_BITS_PRIMU         (1<<NMEA_MSG_ID_PRIMU)
+#define NMEA_RMC_BITS_PINS1         (1<<NMEA_MSG_ID_PINS1)
+#define NMEA_RMC_BITS_PINS2         (1<<NMEA_MSG_ID_PINS2)
+#define NMEA_RMC_BITS_PGPSP         (1<<NMEA_MSG_ID_PGPSP)
+#define NMEA_RMC_BITS_GxGGA         (1<<NMEA_MSG_ID_GxGGA)
+#define NMEA_RMC_BITS_GxGLL         (1<<NMEA_MSG_ID_GxGLL)
+#define NMEA_RMC_BITS_GxGSA         (1<<NMEA_MSG_ID_GxGSA)
+#define NMEA_RMC_BITS_GxRMC         (1<<NMEA_MSG_ID_GxRMC)
+#define NMEA_RMC_BITS_GxZDA         (1<<NMEA_MSG_ID_GxZDA)
+#define NMEA_RMC_BITS_PASHR         (1<<NMEA_MSG_ID_PASHR)
+#define NMEA_RMC_BITS_PSTRB         (1<<NMEA_MSG_ID_PSTRB)
+#define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
+#define NMEA_RMC_BITS_GxGSV         (1<<NMEA_MSG_ID_GxGSV)
+#define NMEA_RMC_BITS_GxVTG         (1<<NMEA_MSG_ID_GxVTG)
+#define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
 typedef struct PACKED
 {
@@ -1857,7 +1875,7 @@ enum eHdwBitStatusFlags
     HDW_BIT_PASSED_NO_GPS           = (int)0x00000002,    // Passed w/o valid GPS signal
     HDW_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
     HDW_BIT_MODE_OFFSET             = (int)4,
-#define HDW_BIT_MODE(hdwBitStatus) ((hdwBitStatus&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
+#define HDW_BIT_MODE(hdwBitStatus) (((hdwBitStatus)&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
     HDW_BIT_FAILED_MASK             = (int)0xFFFFFF00,
     HDW_BIT_FAILED_AHRS_MASK        = (int)0xFFFF0F00,
     HDW_BIT_FAULT_NOISE_PQR         = (int)0x00000100,
@@ -1877,7 +1895,7 @@ enum eCalBitStatusFlags
     CAL_BIT_PASSED_ALL              = (int)0x00000001,
     CAL_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
     CAL_BIT_MODE_OFFSET             = (int)4,
-#define CAL_BIT_MODE(calBitStatus) ((calBitStatus&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
+#define CAL_BIT_MODE(calBitStatus) (((calBitStatus)&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
     CAL_BIT_FAILED_MASK             = (int)0x00FFFF00,
     CAL_BIT_FAULT_TCAL_EMPTY        = (int)0x00000100,    // Temperature calibration not present
     CAL_BIT_FAULT_TCAL_TSPAN        = (int)0x00000200,    // Temperature calibration temperature range is inadequate
@@ -2283,12 +2301,13 @@ enum eRTKConfigBits
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
-	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000 deg/s */	
+	/** Gyro full-scale sensing range selection: +- 250, 500, 1000, 2000, 4000 deg/s */	
 	SENSOR_CFG_GYR_FS_250				= (int)0x00000000,
 	SENSOR_CFG_GYR_FS_500				= (int)0x00000001,
 	SENSOR_CFG_GYR_FS_1000				= (int)0x00000002,
 	SENSOR_CFG_GYR_FS_2000				= (int)0x00000003,
-	SENSOR_CFG_GYR_FS_MASK				= (int)0x00000003,
+	SENSOR_CFG_GYR_FS_4000				= (int)0x00000004,
+	SENSOR_CFG_GYR_FS_MASK				= (int)0x00000007,
 	SENSOR_CFG_GYR_FS_OFFSET			= (int)0,
 	
 	/** Accelerometer full-scale sensing range selection: +- 2, 4, 8, 16 m/s^2 */
@@ -2296,8 +2315,8 @@ enum eSensorConfig
 	SENSOR_CFG_ACC_FS_4G				= (int)0x00000001,
 	SENSOR_CFG_ACC_FS_8G				= (int)0x00000002,
 	SENSOR_CFG_ACC_FS_16G				= (int)0x00000003,
-	SENSOR_CFG_ACC_FS_MASK				= (int)0x0000000C,
-	SENSOR_CFG_ACC_FS_OFFSET			= (int)2,
+	SENSOR_CFG_ACC_FS_MASK				= (int)0x00000030,
+	SENSOR_CFG_ACC_FS_OFFSET			= (int)4,
 	
 	/** Gyro digital low-pass filter (DLPF) is set automatically based on the IMU sample rate.  The following 
 	bit values can be used to override the bandwidth (frequency) to: 250, 184, 92, 41, 20, 10, 5 Hz */
@@ -2435,7 +2454,7 @@ enum eIoConfig
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G8_PIN12	= (int)5,
 	IO_CFG_GPS_TIMEPUSE_SOURCE_STROBE_G9_PIN13	= (int)6,
 #define SET_STATUS_OFFSET_MASK(result,val,offset,mask)	{ (result) &= ~((mask)<<(offset)); (result) |= ((val)<<(offset)); }	
-#define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) ((ioConfig>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
+#define IO_CFG_GPS_TIMEPUSE_SOURCE(ioConfig) (((ioConfig)>>IO_CFG_GPS_TIMEPUSE_SOURCE_OFFSET)&IO_CFG_GPS_TIMEPUSE_SOURCE_MASK)
 	
 	/** GPS 1 source OFFSET */
 	IO_CONFIG_GPS1_SOURCE_OFFSET				= (int)16,
@@ -3915,10 +3934,10 @@ typedef enum
 } eEvbFlashCfgBits;
 
 #define NUM_WIFI_PRESETS     3
-#define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {bits&=EVB_CFG_BITS_WIFI_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
-#define EVB_CFG_BITS_SET_IDX_SERVER(bits,idx)   {bits&=EVB_CFG_BITS_SERVER_SELECT_MASK; bits|=((idx<<EVB_CFG_BITS_SERVER_SELECT_OFFSET)&EVB_CFG_BITS_SERVER_SELECT_MASK);}
-#define EVB_CFG_BITS_IDX_WIFI(bits)             ((bits&EVB_CFG_BITS_WIFI_SELECT_MASK)>>EVB_CFG_BITS_WIFI_SELECT_OFFSET)
-#define EVB_CFG_BITS_IDX_SERVER(bits)           ((bits&EVB_CFG_BITS_SERVER_SELECT_MASK)>>EVB_CFG_BITS_SERVER_SELECT_OFFSET)
+#define EVB_CFG_BITS_SET_IDX_WIFI(bits,idx)     {(bits)&=EVB_CFG_BITS_WIFI_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_WIFI_SELECT_OFFSET)&EVB_CFG_BITS_WIFI_SELECT_MASK);}
+#define EVB_CFG_BITS_SET_IDX_SERVER(bits,idx)   {(bits)&=EVB_CFG_BITS_SERVER_SELECT_MASK; (bits)|=(((idx)<<EVB_CFG_BITS_SERVER_SELECT_OFFSET)&EVB_CFG_BITS_SERVER_SELECT_MASK);}
+#define EVB_CFG_BITS_IDX_WIFI(bits)             (((bits)&EVB_CFG_BITS_WIFI_SELECT_MASK)>>EVB_CFG_BITS_WIFI_SELECT_OFFSET)
+#define EVB_CFG_BITS_IDX_SERVER(bits)           (((bits)&EVB_CFG_BITS_SERVER_SELECT_MASK)>>EVB_CFG_BITS_SERVER_SELECT_OFFSET)
 
 /**
 * (DID_EVB_FLASH_CFG) EVB-2 flash config for monitor, config, and logger control interface
