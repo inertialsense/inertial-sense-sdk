@@ -302,6 +302,19 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
     return 0;
 }
 
+/**
+ * Gets the file size and calculated md5sum of the specified file.
+ * @param filename the file to validate/fetch details for
+ * @param filesize [OUT] the size of the file, as read from the scan
+ * @param md5result [OUT] the MD5 checksum calculated for the file
+ * @return 0 on success, errno (negative) if error
+ */
+int md5_file_details(const std::string& filename, size_t& filesize, md5hash_t& md5) {
+    ifstream file(filename);
+    return md5_file_details(&file, filesize, md5);
+}
+
+
 // Converts md5 hexadecimal char array to binary integer 
 void md5_from_char_array(md5hash_t& md5, const char hashStr[])
 {
