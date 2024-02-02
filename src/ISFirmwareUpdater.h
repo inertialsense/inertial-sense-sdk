@@ -13,6 +13,12 @@
 
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
+#include "miniz.h"
+
+#ifndef __EMBEDDED__
+    #include "yaml-cpp/yaml.h"
+#endif
+
 
 extern "C"
 {
@@ -26,10 +32,7 @@ extern "C"
 
 class ISFirmwareUpdater final : public fwUpdate::FirmwareUpdateHost {
 private:
-    int pHandle = 0;                    //! a handle to the comm port which we use to talk to the device
-    const char *portName = nullptr;     //! the name of the port referenced by pHandle
-    const dev_info_t *devInfo;          //! a reference to the root device connected on this port
-    std::ifstream* srcFile;             //! the file that we are currently sending to a remote device, or nullptr if none
+    std::istream *srcFile = nullptr;    //! the file that we are currently sending to a remote device, or nullptr if none
     uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
     int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
 
@@ -53,14 +56,25 @@ private:
     bool requestPending = false; // true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
+    uint32_t pingInterval = 1000;       //! delay between attempts to communicate with a target device
+    uint32_t pingNextRetry = 0;         //! time for next ping
+    uint32_t pingTimeout = 0;           //! time when the ping operation will timeout if no response before then
+    uint32_t pauseUntil = 0;            //! delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
     std::string filename;
     fwUpdate::target_t target;
 
+    mz_zip_archive* zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
+
     dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
+    dev_info_t remoteDevInfo;
 
     void runCommand(std::string cmd);
 
 public:
+    int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
+    const char *portName = nullptr;         //! the name of the port referenced by pHandle
+    const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
+    dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
@@ -105,6 +119,8 @@ public:
      * @param msg
      * @return
      */
+    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg);
+
     bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg);
 
     bool fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg);
@@ -125,7 +141,8 @@ public:
      * device triggering a timeout and aborting the upgrade process.
      * @return the message type, if any that was most recently processed.
      */
-    virtual fwUpdate::msg_types_e fwUpdate_step() override;
+    // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
+    bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
 
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
@@ -137,11 +154,35 @@ public:
 
     int openFirmwarePackage(const std::string& pkg_file);
 
+    /**
+     * Parses a YAML tree containing the manifest of the firmware package
+     * @param manifest YAML::Node of the manifests parsed YAML file/text
+     * @param archive a pointer to the archive which contains this manifest (or null-ptr if parsed from a file).
+     * @return
+     */
+    int processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive);
     int processPackageManifest(const std::string& manifest_file);
 
-    int parsePackageManifestToCommands();
-
+    /**
+     * Performs any necessary cleanup of memory, file handles, or temporary files after all tasks associated with a firmware package have finished (or from an unrecoverable error).
+     * @return
+     */
     int cleanupFirmwarePackage();
+
+    enum PkgErrors {
+        PKG_SUCCESS = 0,
+        PKG_ERR_PACKAGE_FILE_ERROR = -1,            // the package file couldn't be opened/accessed (invalid, or not found)
+        PKG_ERR_INVALID_IMAGES = -2,                // the manifest doesn't define any images, or the images are incorrectly formatted
+        PKG_ERR_INVALID_STEPS = -3,                 // the manifest doesn't define any steps, or the steps are incorrectly formatted
+        PKG_ERR_INVALID_TARGET = -4,                // the active step target is invalid (yaml schema/syntax)
+        PKG_ERR_UNSUPPORTED_TARGET = -5,            // the step target specified is valid, but not supported
+        PKG_ERR_NO_ACTIONS = -6,                    // the step doesn't describe any actions to perform
+        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       // the step action 'image' references an image which doesn't exist in the manifest
+        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            // the referenced image doesn't include a filename
+        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          // the file for the referenced image doesn't exist
+        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,      // the image file's actual size doesn't match the manifest's reported size
+        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
+    };
 
 };
 

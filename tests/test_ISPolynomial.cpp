@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "../ISMatrix.h"
-#include "../ISPolynomial.h"
+#include "ISMatrix.h"
+#include "ISPolynomial.h"
 
 
 #define REQUIRE_SUPER_CLOSE(x, y) EXPECT_TRUE(std::fabs(x - y) < 1e-6)

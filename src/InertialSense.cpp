@@ -84,6 +84,7 @@ static void staticProcessRxData(int port, p_data_t* data)
                     *s_cm_state->clientBytesToSend = nmea_gga(s_cm_state->clientBuffer, s_cm_state->clientBufferSize, gps);
                 }
             }
+            break;
     }
 }
 
@@ -394,8 +395,8 @@ bool InertialSense::Update()
                     ISFirmwareUpdater* fwUpdater = m_comManagerState.devices[devIdx].fwUpdater;
                     fwUpdater->fwUpdate_step();
 
-                    fwUpdate::update_status_e status = fwUpdater->fwUpdate_getSessionStatus();
                     if (fwUpdater->fwUpdate_isDone()) {
+                        fwUpdate::update_status_e status = fwUpdater->fwUpdate_getSessionStatus();
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
@@ -927,6 +928,9 @@ is_operation_result InertialSense::updateFirmware(
         void (*waitAction)()
 )
 {
+
+/* FIXME -- All this code *should* go away, but needs to be tested first.
+ * -- we shouldn't need to do any of this for an updateFirmware() as it should have been done already...
     vector<string> comPorts;
 
     if (comPort == "*")
@@ -995,18 +999,20 @@ is_operation_result InertialSense::updateFirmware(
             all_ports.begin(), all_ports.end(),
             ports_user_ignore.begin(), ports_user_ignore.end(),
             back_inserter(update_ports));
+*/
+    EnableDeviceValidation(true);
+    if (OpenSerialPorts(comPort.c_str(), baudRate)) {
+        for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
+            m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
+            m_comManagerState.devices[i].fwUpdater->setDefaultTarget(targetDevice);
 
-    for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
-        m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
+            // TODO: Implement maybe
+            m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
+            m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
+            m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
 
-        m_comManagerState.devices[i].fwUpdater->setDefaultTarget(targetDevice);
-
-        // TODO: Implement maybe
-        // m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
-        // m_comManagerState.devices[i].fwUpdater->setVerifyProgressCb(verifyProgress);
-        // m_comManagerState.devices[i].fwUpdater->setInfoProgressCb(infoProgress);
-
-        m_comManagerState.devices[i].fwUpdater->setCommands(cmds);
+            m_comManagerState.devices[i].fwUpdater->setCommands(cmds);
+        }
     }
 
     printf("\n\r");

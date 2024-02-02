@@ -21,7 +21,8 @@ void check_md5_file(const char *filename)
     // Compute md5 hash using our library
     size_t filesize = 0;
     md5hash_t hash;
-    EXPECT_EQ( md5_file_details(filename, filesize, hash.dwords), 0 );
+    std::ifstream s(filename);
+    EXPECT_EQ( md5_file_details(&s, filesize, hash), 0 );
 
     // Compare md5 hash using Linux md5sum app
     string hashStr = md5_to_string(hash); 
@@ -31,7 +32,7 @@ void check_md5_file(const char *filename)
     char path[PATH_MAX];
     while (fgets(path, PATH_MAX, fp) != NULL)
     path[32] = 0;   // Null terminate to omit filename
-    int status = pclose(fp);
+    pclose(fp);
 
     // Compare two hash strings
     EXPECT_EQ(hashStr, string(path));
@@ -75,7 +76,6 @@ TEST(md5, hash_to_string_to_hash)
 TEST(md5, hash_from_file)
 {
     // GTEST_SKIP();
-#if 1   // Repeat string with index count
     const char *filename = "md5_test.txt";
     // Create test file
     ofstream myfile(filename);
@@ -85,9 +85,6 @@ TEST(md5, hash_from_file)
         myfile << "Hope Kyle doesn't see this! " << i << "\n";
     }
     myfile.close();
-#else
-    string filename = "IS_IMX-5.bin";
-#endif
 
     check_md5_file(filename);
 }
