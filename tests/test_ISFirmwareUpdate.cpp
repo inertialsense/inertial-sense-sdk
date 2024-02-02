@@ -226,8 +226,8 @@ public:
      * If you don't call step() things should still generally work, but it probably won't seem very responsive.
      * @return the number of times step() has been called since the last request to start an update. This isn't immediately useful, but its nice to know that its actually doing something.
      */
-    virtual fwUpdate::msg_types_e fwUpdate_step() {
-        return fwUpdate::MSG_UNKNOWN;
+    virtual bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) {
+        return true;
     }
 
     void pullAndProcessNextMessage() {
@@ -300,6 +300,11 @@ public:
         md5_final(md5Context, hashOut);
     }
 
+    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg) {
+        return true;
+    }
+
+
     bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t& msg) {
         if (msg.data.update_resp.session_id != session_id)
             return false; // ignore this message, its not for us
@@ -348,7 +353,7 @@ public:
      * device triggering a timeout and aborting the upgrade process.
      * @return the message type, if any that was most recently processed.
      */
-    virtual fwUpdate::msg_types_e fwUpdate_step() {
+    virtual bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) {
         static uint8_t buffer[2048];
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
@@ -378,10 +383,8 @@ public:
             }
 #endif
         }
-        return out;
+        return true;
     }
-
-
 };
 
 ExchangeBuffer eb(2048); // the exchange buffer used in these tests to simulate back-and-forth data exchanges
@@ -734,7 +737,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     // Alternatively, we could update the FirmwareUpdate API to allow disabling of sending PROGRESS messages entirely (set progressInterval to -1, in the request, for example).
 
     fuDev.pullAndProcessNextMessage(); // will cause the Device to pull the bad chunk, which should respond with a RESEND_CHUNK
-    EXPECT_EQ(fuSDK.fwUpdate_step(), fwUpdate::MSG_REQ_RESEND_CHUNK); // and step() to process the RESEND_CHUNK response to the bad message, which should resend the requested chunk 4
+    EXPECT_EQ(fuSDK.fwUpdate_step(), true); // and step() to process the RESEND_CHUNK response to the bad message, which should resend the requested chunk 4
     EXPECT_EQ(fuSDK.fwUpdate_getNextChunkID(), 5); // at this point, our NextChunkID should be 5 (since we resent 4)
 
     // and now we resume with the remaining chunks

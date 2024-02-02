@@ -137,6 +137,9 @@ TEST(ISFirmwarePackage, packages__extract_archive) {
     mz_zip_reader_end(&zip_archive);
 }
 
+#ifdef ZIP_PACKAGE_TEST
+// this is a good test, but it requires a valid firmware package to run.  I should probably create a test to build a "test case" manifest and assemble in into a
+// temporary package, but that's not going to happen today.
 TEST(ISFirmwarePackage, parse_package) {
     dev_info_t devInfo = {};
     ISFirmwareUpdater* updater = new ISFirmwareUpdater(0, "/dev/ttyACM0", &devInfo);
@@ -148,7 +151,11 @@ TEST(ISFirmwarePackage, parse_package) {
     updater->cleanupFirmwarePackage();
     delete updater;
 }
+#endif
 
+#ifdef MD5_PACKAGE_TEST
+// this test is really more for my own sanity, and to ensure that we get matching MD5 checksums from the zips and we do from the actual files.
+// It has a lot of specific dependencies (files, etc) so, its actually a REALLY BAD test.  Don't use it unless you are having problems with MD5 and Zips.
 TEST(ISFirmwarePackage, package_file_md5) {
     mz_bool status;
     size_t uncomp_size;
@@ -170,13 +177,14 @@ TEST(ISFirmwarePackage, package_file_md5) {
     size_t fileSize;
 
     FILE *file = fopen(source_filename, "rb");
+    ASSERT_NE(file, nullptr) << "Could not open file: " << source_filename << std::endl;
+
     fseek(file, 0, 2);
     fileSize = ftell(file);
     fseek(file, 0, 0);
     char* buff = (char*)malloc(fileSize);
     fread(buff, fileSize, 1, file);
     fclose(file);
-
 
     md5_hash(md5, fileSize, (uint8_t*)buff);
     printf("Original MD5 (raw-byte md5_hash): %s\n", md5_to_string(md5).c_str());
@@ -288,3 +296,4 @@ TEST(ISFirmwarePackage, package_file_md5) {
 
     ASSERT_TRUE(status) << "MD5sum mismatch in file '" << file_stat.m_filename << "': Expected: " << file_stat.m_comment << ", Actual: " << md5sum.c_str() << "\n";
 }
+#endif
