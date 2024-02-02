@@ -19,7 +19,7 @@
 
 #define DEBUG_INFO
 
-static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_FINISHED" };
+static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_DONE" };
 
 static md5hash_t fake_md5 = { .dwords = { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F } };
 static md5hash_t real_md5 = { .dwords = { 0x13b16c00, 0x427089d8, 0x821f472b, 0xcb102f3c } };

@@ -18,6 +18,17 @@
 
 #include "util/md5.h"
 
+#define DEBUG_LOGGING
+#ifdef DEBUG_LOGGING
+    #ifdef __ZEPHYR__
+        #include <zephyr/logging/log.h>
+    #else
+        #define LOG_DBG(...)
+    #endif
+#else
+    #define DEBUG_LOG(...)
+#endif
+
 extern "C" {
 #endif
 
@@ -127,7 +138,7 @@ namespace fwUpdate {
         // either in a checksum error, invalid/missing chunk id, etc.  When this message is received by the host, the host MUST resend the requested chunk, and all subsequent chunks that follow it, regardless
         // if they were previously sent.  Likewise, on the device, as soon as a received chunk is deemed invalid, forcing this message to be sent back to the host, all subsequent payload chunks received which
         // are NOT this requested chunk MUST BE ignored.
-        MSG_UPDATE_FINISHED = 8,    // this message is sent when the device-side has completed receiving file chunks, regardless of the status of those chunks, or the reception of all available chunks.  In essense, this is a notice
+        MSG_UPDATE_DONE = 8,        // this message is sent when the device-side has completed receiving file chunks, regardless of the status of those chunks, or the reception of all available chunks.  In essense, this is a notice
         // to the host that no more chunks of data will be accepted, regardless of state. Included in this message is a status indicating whether the image transfer was successful, of not. When this message
         // is sent, the associated session_id is invalidated ensuring that no further messages can be processed. If there is an error, a new session will need to be started.
         MSG_REQ_VERSION_INFO = 9,   // this message is sent by the host to request information about the current target's firmware
@@ -245,7 +256,7 @@ namespace fwUpdate {
         } resp_done;
 
         struct PACKED {
-            target_t resTarget;     //! the target identifier for the responding device
+            target_t resTarget;     //! the target identifier of the responding device (for which this data represents)
             uint32_t serialNumber;  //! the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
             uint16_t hardwareId;    //! hardware identifier
             uint8_t hardwareVer[4]; //! Hardware version
@@ -343,7 +354,6 @@ namespace fwUpdate {
          */
         static const char *fwUpdate_getNiceStatusName(update_status_e status);
 
-
         /**
          * Returns the string representation of the passed target
          * @param target
@@ -351,11 +361,25 @@ namespace fwUpdate {
          */
         static const char *fwUpdate_getTargetName(target_t target);
 
+        /**
+         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
+         * Called with each messages that is received/processed.  Can optionally be called manually, typically at a regular interval. If you don't call
+         * fwUpdate_step() things should still generally work, but state advancement may stall if there is no received message (for example, after all
+         * messages have been sent by the remote).
+         * @param msg_type the last received msg_type that was received.  If you are calling this method manually (from a timer, etc) pass in MSG_UNKNOWN.
+         * @param processed indicates whether the received message was successfully processed after being received (this is usually the return value from
+         *  fwUpdate_handleXXXX() functions).
+         * @return false _suggests_ that the step couldn't complete in some way or another, perhaps because there was no processed messages, or that the
+         *  is in an invalid state, etc.  Otherwise, return true. This result is primarily informational, and should not effect any downstream functionality
+         *  or prevent (or indicate) a failure of the firmware update engine.
+         */
+        virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
+
 
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
         uint32_t last_message = 0;                              //! the time (millis) since we last received a payload targeted for us.
-        uint32_t timeout_duration = 15000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
+        uint32_t timeout_duration = 20000;                      //! the number of millis without any messages, by which we determine a timeout has occurred.  TODO: Should we prod the device (with a required response) at regular multiples of this to effect a keep-alive?
         uint32_t resend_count = 0;                              //! the number of times a request was sent/received to resend a chunk. This provides an error rate mechanism; Ideal is < 1% of total packets.
 
         target_t session_target = TARGET_HOST;
@@ -404,7 +428,7 @@ namespace fwUpdate {
          */
         void fwUpdate_resetTimeout() { last_message = current_timeMs(); }
 
-        char* fwUpdate_payloadToString(fwUpdate::payload_t* payload);
+        static char* fwUpdate_payloadToString(const payload_t* payload);
 
     private:
         /**
@@ -452,14 +476,6 @@ namespace fwUpdate {
 
 
         //===========  Functions which MUST be implemented ===========//
-
-        /**
-         * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
-         * This method is primarily used to perform routine maintenance, like checking if the init process is complete, or to give out status update, etc.
-         * If you don't call fwUpdate_step() things should still generally work, but it probably won't seem very responsive.
-         * @return the message type for the most recently received/processed message
-         */
-        virtual msg_types_e fwUpdate_step() = 0;
 
         /**
          * Writes the requested data (usually a packed payload_t) out to the specified device
@@ -629,15 +645,6 @@ namespace fwUpdate {
         virtual ~FirmwareUpdateHost() {};
 
         /**
-         * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
-         * This method is primarily used to drive the update process. Unlike the device interface, on the SDK-side, you must call Step,
-         * in order to advance the update engine, and transfer image data. Failure to call Step at a regular interval could lead to the
-         * device triggering a timeout and aborting the upgrade process.
-         * @return the message type for the most recently received/processed message
-         */
-        virtual msg_types_e fwUpdate_step() = 0;
-
-        /**
          * Call this any time a DID_FIRMWARE_UPDATE is received by the comms system, to parse and process the message.
          * @param msg_payload the contents of the DID_FIRMWARE_UPDATE payload
          * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
@@ -700,6 +707,11 @@ namespace fwUpdate {
          * @return a human-readable name for the current session target device
          */
         const char *fwUpdate_getSessionTargetName();
+
+        /**
+         * @return the current session target device
+         */
+        target_t fwUpdate_getSessionTarget() { return session_target; }
 
         /**
          * @return the current session status

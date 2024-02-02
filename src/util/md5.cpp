@@ -110,7 +110,7 @@ void md5_update(md5Context_t& context, const unsigned char *input, unsigned int 
 void md5_final(md5Context_t& context, md5hash_t& hash) {
     unsigned char bits[8];
     unsigned int index, padLen;
-    unsigned char PADDING[64] = {}; 
+    static unsigned char PADDING[64] = {}; 
     PADDING[0] = 0x80;
 
     // Save number of bits
@@ -317,7 +317,7 @@ void md5_from_char_array(md5hash_t& md5, const char hashStr[])
 }
 
 // Converts md5 binary integer to char array hexadecimal 
-bool md5_to_char_array(md5hash_t& md5, char hashStr[], int hashStrMaxLen)
+bool md5_to_char_array(const md5hash_t& md5, char hashStr[], int hashStrMaxLen)
 {
     if (hashStrMaxLen <= 32)
     {
@@ -535,7 +535,6 @@ int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
 #endif // USE_ALTERNATE_MD5_IMPL
 
 
-#ifndef ARM
 // Converts md5 hexadecimal string to binary integer
 md5hash_t md5_from_string(string hashStr)
 {
@@ -548,7 +547,7 @@ md5hash_t md5_from_string(string hashStr)
 }
 
 // Converts md5 binary integer to char string hexadecimal 
-string md5_to_string(md5hash_t& md5hash)
+string md5_to_string(const md5hash_t& md5hash)
 {
     char array[33]; // Include extra byte for null termination
     md5_to_char_array(md5hash, array, sizeof(array));
@@ -563,6 +562,7 @@ string md5_to_string_u32(uint32_t hash[4])
     return md5_to_string(*(md5hash_t*)hash); 
 }
 
+#ifndef ARM
 void md5_print(md5hash_t& md5)
 {
 #if 1

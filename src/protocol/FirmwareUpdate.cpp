@@ -6,11 +6,12 @@
 
 #ifdef __ZEPHYR__
 #include <zephyr/random/rand32.h>
+LOG_MODULE_REGISTER(FirmwareUpdater, LOG_LEVEL_DBG);
 #endif
 
 namespace fwUpdate {
 
-    static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_FINISHED", "REQ_VERSION", "VERSION_RESP"};
+    static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_DONE", "REQ_VERSION", "VERSION_RESP"};
     static const char* status_names[] = { "ERR_UNKNOWN", "ERR_INVALID_IMAGE", "ERR_UPDATER_CLOSED", "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
                                           "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
     static const char* status_names_nice[] = {
@@ -46,8 +47,6 @@ namespace fwUpdate {
 
     FirmwareUpdateBase::FirmwareUpdateBase() { };
 
-    //int Md5Cnt = 0;
-
     size_t FirmwareUpdateBase::fwUpdate_getPayloadSize(const payload_t* payload, bool include_aux) {
         switch (payload->hdr.msg_type) {
             case MSG_REQ_RESET:
@@ -64,7 +63,7 @@ namespace fwUpdate {
                 return sizeof(payload->hdr) + sizeof(payload->data.req_resend);
             case MSG_UPDATE_PROGRESS:
                 return sizeof(payload->hdr) + sizeof(payload->data.progress) + (include_aux ? payload->data.progress.msg_len - 1 : -1);
-            case MSG_UPDATE_FINISHED:
+            case MSG_UPDATE_DONE:
                 return sizeof(payload->hdr) + sizeof(payload->data.resp_done);
             case MSG_REQ_VERSION_INFO:
                 return sizeof(payload->hdr) + sizeof(payload->data.req_version);
@@ -91,11 +90,6 @@ namespace fwUpdate {
         int payload_size = (int) fwUpdate_getPayloadSize(&payload, false);
         if (payload_size > max_len) return -1; // Not enough buffer space
         if (payload_size == 0) return -2; // Unknown/invalid message
-
-#ifdef DEBUG_LOG
-        DEBUG_LOG("fwTX: %s\n", payloadToString((payload_t *)&payload));
-        DEBUG_LOG("fwTX: %s\n", payloadToString((payload_t *)&payload));
-#endif
 
         memcpy(buffer, (void *) &payload, payload_size);
 
@@ -166,15 +160,6 @@ namespace fwUpdate {
         }
 
         *payload = (payload_t*)buffer;
-
-#ifdef DEBUG_CONSOLE_LOGGING
-        #ifdef __ZEPHYR__
-        printk("fwRX: %s\n", payloadToString((payload_t*)buffer));
-#elif !(PLATFORM_IS_EMBEDDED)
-        // printf("fwRX: %s\n", payloadToString((payload_t*)buffer));
-#endif
-#endif
-
         return payload_size + aux_len;
     }
 
@@ -187,10 +172,15 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateBase::fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data) {
         int payload_len = fwUpdate_packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
+        #ifdef DEBUG_LOGGING
+        LOG_DBG("Sent :: %s", fwUpdate_payloadToString(&payload));
+        #endif
+
         return fwUpdate_writeToWire((fwUpdate::target_t) payload.hdr.target_device, build_buffer, payload_len);
     }
 
-    char* FirmwareUpdateBase::fwUpdate_payloadToString(fwUpdate::payload_t* payload) {
+    char* FirmwareUpdateBase::fwUpdate_payloadToString(const payload_t* payload) {
+        #ifdef DEBUG_LOGGING
         static char tmp[256];
         int cur_len = 0;
 
@@ -201,11 +191,7 @@ namespace fwUpdate {
                                     payload->data.req_update.session_id,
                                     (unsigned int)payload->data.req_update.file_size,
                                     payload->data.req_update.chunk_size);
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%08x%08x%08x%08x]",
-                                    (unsigned int)payload->data.req_update.md5_hash.dwords[0],
-                                    (unsigned int)payload->data.req_update.md5_hash.dwords[1],
-                                    (unsigned int)payload->data.req_update.md5_hash.dwords[2],
-                                    (unsigned int)payload->data.req_update.md5_hash.dwords[3]);
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%s]", md5_to_string(payload->data.req_update.md5_hash).c_str());
                 break;
             case MSG_UPDATE_RESP:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]",
@@ -225,10 +211,17 @@ namespace fwUpdate {
                 if (payload->data.progress.msg_len > 0)
                     cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, " %s", &payload->data.progress.message);
                 break;
+            case MSG_UPDATE_DONE:
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s']",
+                                    payload->data.resp_done.session_id, fwUpdate_getStatusName(payload->data.resp_done.status));
+                break;
             default:
                 break;
         }
         return tmp;
+        #else
+        return nullptr;
+        #endif
     }
 
     /**
@@ -295,27 +288,31 @@ namespace fwUpdate {
      *
      * Note: Internally, this method calls fwUpdate_step(), so even if you don't call fwUpdate_step(), it can still operate with just inbound messages, but interval updates/etc won't run.
      */
-    bool FirmwareUpdateDevice::fwUpdate_processMessage(const payload_t& msg_payload) {
+    bool FirmwareUpdateDevice::fwUpdate_processMessage(const payload_t& payload) {
         bool result = false;
 
         //target_t target_masked = (target_t)((uint32_t)msg_payload.hdr.target_device & 0xFFFF0);
-        target_t target_masked = msg_payload.hdr.target_device;
+        target_t target_masked = payload.hdr.target_device;
         if (target_masked != session_target)
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
+        #ifdef DEBUG_LOGGING
+        LOG_DBG("Received :: %s", fwUpdate_payloadToString(&payload));
+        #endif
+
         fwUpdate_resetTimeout();
-        switch (msg_payload.hdr.msg_type) {
+        switch (payload.hdr.msg_type) {
             case MSG_REQ_UPDATE:
-                result = fwUpdate_handleInitialize(msg_payload);
+                result = fwUpdate_handleInitialize(payload);
                 break;
             case MSG_UPDATE_CHUNK:
-                result = fwUpdate_handleChunk(msg_payload);
+                result = fwUpdate_handleChunk(payload);
                 break;
             case MSG_REQ_RESET:
-                result = fwUpdate_handleReset(msg_payload);
+                result = fwUpdate_handleReset(payload);
                 break;
             case MSG_REQ_VERSION_INFO:
-                result = fwUpdate_handleVersionInfo(msg_payload);
+                result = fwUpdate_handleVersionInfo(payload);
                 break;
             default:
                 result = false;
@@ -326,7 +323,7 @@ namespace fwUpdate {
             fwUpdate_sendProgress();
         }
 
-        fwUpdate_step(); // TODO: we should probably do something with the step() result, but not sure what just yet
+        fwUpdate_step(payload.hdr.msg_type, result); // TODO: we should probably do something with the step() result, but not sure what just yet
         return result;
     }
     bool FirmwareUpdateDevice::fwUpdate_processMessage(const uint8_t* buffer, int buf_len) {
@@ -346,6 +343,7 @@ namespace fwUpdate {
      * @return true if the message was sent, false if there was an error
      */
     bool FirmwareUpdateDevice::fwUpdate_sendProgress() {
+        nextProgressReport = current_timeMs() + progress_interval;
         return fwUpdate_sendProgressFormatted(99, nullptr);
     }
 
@@ -417,7 +415,7 @@ namespace fwUpdate {
     bool FirmwareUpdateDevice::fwUpdate_sendDone(update_status_e reason, bool clear_session, bool reset_device) {
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
-        response.hdr.msg_type = MSG_UPDATE_FINISHED;
+        response.hdr.msg_type = MSG_UPDATE_DONE;
         response.data.resp_done.session_id = session_id;
         response.data.resp_done.status = session_status = reason;
         fwUpdate_sendPayload(response);
@@ -518,6 +516,10 @@ namespace fwUpdate {
             return false;
         }
 
+        #ifdef __ZEPHYR__
+        //printk("[FwUpdate::%d] Received valid chunk %d of %d\n", session_id, last_chunk_id, session_total_chunks);
+        #endif
+
         // if we're here, all our validations have passed, and we've successfully written our data to flash...
         session_status = IN_PROGRESS;
         last_chunk_id = payload.data.chunk.chunk_id;
@@ -531,6 +533,9 @@ namespace fwUpdate {
             md5hash_t md5;
             md5_final(md5Context, md5);
             if (memcmp(&session_md5, &md5, sizeof(md5hash_t)) != 0) {
+                #ifdef __ZEPHYR__
+                printk("Expecting %s md5, but received %s\n", md5_to_string(session_md5).c_str(), md5_to_string(md5).c_str());
+                #endif
                 session_status = ERR_CHECKSUM_MISMATCH;
             } else {
                 // This is the final step for validation; note that fwUpdate_finishUpdate() doesn't implicitly send a response/status to the other end(but the implementing class could).
@@ -579,6 +584,8 @@ namespace fwUpdate {
         payload_t response;
         response.hdr.target_device = TARGET_HOST;
         response.hdr.msg_type = MSG_VERSION_INFO_RESP;
+        response.data.version_resp.resTarget = payload.hdr.target_device;
+        response.data.version_resp.serialNumber = devInfo.serialNumber;
         response.data.version_resp.hardwareId = devInfo.hardware;
         memcpy(&response.data.version_resp.hardwareVer[0], &devInfo.hardwareVer[0], 4);
         memcpy(&response.data.version_resp.firmwareVer[0], &devInfo.firmwareVer[0], 4);
@@ -590,6 +597,7 @@ namespace fwUpdate {
         response.data.version_resp.buildSecond = devInfo.buildSecond;
         response.data.version_resp.buildMillis = devInfo.buildMillisecond;
         response.data.version_resp.buildType = devInfo.buildType;
+        response.data.version_resp.buildNumber = devInfo.buildNumber;
 
         return fwUpdate_sendPayload(response);
     }
@@ -625,33 +633,42 @@ namespace fwUpdate {
      * @param msg_payload the contents of the DID_FIRMWARE_UPDATE payload
      * @return true if this message was consumed by this interface, or false if the message was not intended for us, and should be passed along to other ports/interfaces.
      */
-    bool FirmwareUpdateHost::fwUpdate_processMessage(const payload_t& msg_payload) {
-        if (msg_payload.hdr.target_device != TARGET_HOST)
-            return false;
+    bool FirmwareUpdateHost::fwUpdate_processMessage(const payload_t& payload) {
+        #ifdef DEBUG_LOGGING
+            LOG_DBG("Received: %s", fwUpdate_payloadToString(&payload));
+        #endif
 
-        if ((msg_payload.hdr.msg_type != MSG_REQ_UPDATE) && (msg_payload.data.update_resp.session_id != session_id))
-            return false; // ignore this message, its not for us
+        if (payload.hdr.target_device != TARGET_HOST)
+            return false;
 
         bool result = false;
         fwUpdate_resetTimeout();
-        switch (msg_payload.hdr.msg_type) {
+        switch (payload.hdr.msg_type) {
             case MSG_UPDATE_RESP:
-                result = fwUpdate_handleUpdateResponse(msg_payload);
+                if (payload.data.update_resp.session_id == session_id)
+                    result = fwUpdate_handleUpdateResponse(payload);
                 break;
             case MSG_UPDATE_PROGRESS:
-                result = fwUpdate_handleUpdateProgress(msg_payload);
+                if (payload.data.progress.session_id == session_id)
+                    result = fwUpdate_handleUpdateProgress(payload);
                 break;
             case MSG_REQ_RESEND_CHUNK:
-                resend_count += next_chunk_id - msg_payload.data.req_resend.chunk_id ;
-                next_chunk_id = msg_payload.data.req_resend.chunk_id;
-                result = fwUpdate_handleResendChunk(msg_payload);
+                if (payload.data.req_resend.session_id == session_id) {
+                    resend_count += next_chunk_id - payload.data.req_resend.chunk_id;
+                    next_chunk_id = payload.data.req_resend.chunk_id;
+                    result = fwUpdate_handleResendChunk(payload);
+                }
                 break;
-            case MSG_UPDATE_FINISHED:
-                session_status = msg_payload.data.resp_done.status;
-                result = fwUpdate_handleDone(msg_payload);
+            case MSG_UPDATE_DONE:
+                if (payload.data.resp_done.session_id == session_id) {
+                    session_status = payload.data.resp_done.status;
+                    result = fwUpdate_handleDone(payload);
+                }
+                break;
+            case MSG_RESET_RESP:
                 break;
             case MSG_VERSION_INFO_RESP:
-                result = fwUpdate_handleVersionResponse(msg_payload);
+                result = fwUpdate_handleVersionResponse(payload);
                 // FIXME: we want to do something with this data...
                 break;
             default:

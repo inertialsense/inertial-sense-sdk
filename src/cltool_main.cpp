@@ -476,16 +476,18 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     }
 
     ISFirmwareUpdater* fwCtx = (ISFirmwareUpdater*)obj;
-    if (fwCtx->portName[0] ) {
-        // printf("    | %s (SN%d):\r", fwCtx->portName, fwCtx->devInfo->serialNumber);
-        int num = fwCtx->fwUpdate_getNextChunkID();
-        int tot = fwCtx->fwUpdate_getTotalChunks();
-        float percent = num / (float) (tot) * 100.f;
-        sprintf(buffer, "[%5.2f] [%s:%d > %s] :: Progress %d/%d (%0.1f%%) [%s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName(), num, tot, percent, fwCtx->fwUpdate_getSessionStatusName());
+    if (buffer[0] || (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) {
+        printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
+        if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
+            int tot = fwCtx->fwUpdate_getTotalChunks();
+            int num = fwCtx->fwUpdate_getNextChunkID();
+            float percent = num / (float) (tot) * 100.f;
+            printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
+        }
+        if (buffer[0])
+            printf(" :: %s", buffer);
+        printf("\n");
     }
-
-    if (buffer[0])
-        printf("\t%s\r\n", buffer);
 
     print_mutex.unlock();
 }

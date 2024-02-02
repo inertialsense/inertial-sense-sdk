@@ -56,12 +56,17 @@ private:
     bool requestPending = false; // true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
+    uint32_t pingInterval = 1000;       //! delay between attempts to communicate with a target device
+    uint32_t pingNextRetry = 0;         //! time for next ping
+    uint32_t pingTimeout = 0;           //! time when the ping operation will timeout if no response before then
+    uint32_t pauseUntil = 0;            //! delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
     std::string filename;
     fwUpdate::target_t target;
 
     mz_zip_archive* zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
 
     dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
+    dev_info_t remoteDevInfo;
 
     void runCommand(std::string cmd);
 
@@ -136,7 +141,8 @@ public:
      * device triggering a timeout and aborting the upgrade process.
      * @return the message type, if any that was most recently processed.
      */
-    virtual fwUpdate::msg_types_e fwUpdate_step() override;
+    // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
+    bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
 
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 

@@ -6,9 +6,7 @@
 #include <istream>
 
 #include "ISConstants.h"
-#ifndef ARM
 #include <string>
-#endif
 
 typedef union {
     uint8_t         bytes[16];
@@ -77,10 +75,10 @@ void altMD5_getHash(md5hash_t &hash);
 int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5);
 #endif // USE_ALTERNATE_MD5_IMPL
 
-#ifndef ARM
 md5hash_t md5_from_string(std::string hashStr);
-std::string md5_to_string(md5hash_t& md5);
+std::string md5_to_string(const md5hash_t& md5);
 std::string md5_to_string_u32(uint32_t hash[4]);
+#ifndef ARM
 void md5_print(md5hash_t& md5);
 #endif
 
