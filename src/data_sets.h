@@ -4122,6 +4122,11 @@ enum eGpxStatus
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
+    /** Communications Tx buffer limited */
+    GPX_STATUS_ERR_COM_TX_LIMITED               = (int)0x00000010,
+    /** Communications Rx buffer overrun */
+    GPX_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00000020,
+
     /** Fault reset cause */
     GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
