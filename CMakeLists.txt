@@ -34,7 +34,6 @@ if(NOT IGNORE_EXAMPLE_PROJECTS)
 	set(BUILD_INERTIAL_SENSE_SDK 1)
 
 	# Build the other projects
-	add_subdirectory(tests)
 	add_subdirectory(cltool)
 	add_subdirectory(ExampleProjects)
 
