@@ -1444,7 +1444,6 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0  = 21,           // (uint32 inv: 4294967274)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1  = 22,           // (uint32 inv: 4294967273)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2  = 23,           // (uint32 inv: 4294967272)
-
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK      = 24,           // (uint32 inv: 4294967271)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK     = 25,           // (uint32 inv: 4294967270)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)
@@ -1456,6 +1455,7 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_GNSS2_CHIPSET_BOOTLOADER         = 32,           // (uint32 inv: 4294967263)
     SYS_CMD_GPX_ENABLE_GNSS1_PASS_THROUGH               = 33,           // (uint32 inv: 4294967262)
     SYS_CMD_GPX_ENABLE_GNSS2_PASS_THROUGH               = 34,           // (uint32 inv: 4294967261)
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 35,           // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX.
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
 
@@ -4121,6 +4121,11 @@ enum eGpxStatus
     GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,
     GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+
+    /** Communications Tx buffer limited */
+    GPX_STATUS_ERR_COM_TX_LIMITED               = (int)0x00000010,
+    /** Communications Rx buffer overrun */
+    GPX_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00000020,
 
     /** Fault reset cause */
     GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    

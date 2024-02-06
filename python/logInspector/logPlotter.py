@@ -219,24 +219,15 @@ class logPlot:
             if len(lla) == 0:
                 continue
             if refLla is None:
-<<<<<<< HEAD
                 refLla = lla[-1]
-=======
-                refLla = lla[0]
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
->>>>>>> origin/development
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
-<<<<<<< HEAD
-                if (SHOW_HEADING_ARROW and np.shape(self.active_devs)[0]==1):
-                    self.drawNEDMapArrow(ax, ned, euler[:, 2])
-=======
                 if (np.shape(self.active_devs)[0]==1):
                     self.drawNEDMapArrow(ax, time, ned, euler[:, 2])
->>>>>>> origin/development
 
                 nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
