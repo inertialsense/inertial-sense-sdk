@@ -131,7 +131,7 @@ extern "C" {
 
 #if __ZEPHYR__
     // #define SNPRINTF snprintfcb
-    #define SNPRINTF snprintf_
+    #define SNPRINTF snprintf
     #define VSNPRINTF vsnprintf
 #elif PLATFORM_IS_EMBEDDED
     #include "printf.h"		// Use embedded-safe SNPRINTF
