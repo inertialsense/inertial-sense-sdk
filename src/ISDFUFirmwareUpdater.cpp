@@ -127,7 +127,7 @@ namespace dfu {
         vid = desc.idVendor;
         pid = desc.idProduct;
         usbDevice = usb_device;
-        md5_init(&fingerprint);
+        md5_init(fingerprint);
 
         // Get the serial number
         if (libusb_get_string_descriptor_ascii(usbHandle, desc.iSerialNumber, str_buff, sizeof(str_buff)) > LIBUSB_SUCCESS)
@@ -205,10 +205,10 @@ namespace dfu {
         // Calculate a fingerprint from the device info/descriptors (Don't use anything that isn't guaranteed unique per device-type!!)
         // TODO: IF YOU CHANGE THE DATA USED IN THE HASHING BELOW, YOU WILL ALSO HAVE TO CHANGE THE RESPECTIVE FINGERPRINTS in ISBootloaderDFU.h
         // DO NOT MODIFY THESE IF YOU DON'T KNOW WHAT YOU'RE DOING AND WHY
-        md5_update(&fingerprint, (uint8_t *) &vid, sizeof(vid));
-        md5_update(&fingerprint, (uint8_t *) &pid, sizeof(pid));
+        md5_update(fingerprint, (uint8_t *) &vid, sizeof(vid));
+        md5_update(fingerprint, (uint8_t *) &pid, sizeof(pid));
         for (auto dfuDesc: dfuDescriptors) {
-            md5_update(&fingerprint, (uint8_t *) dfuDesc.c_str(), dfuDesc.size());
+            md5_update(fingerprint, (uint8_t *) dfuDesc.c_str(), dfuDesc.size());
         }
 
         // TODO: make this work for both GPX-1 and IMX-5.1

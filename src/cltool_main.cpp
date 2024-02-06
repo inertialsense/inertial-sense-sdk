@@ -452,7 +452,43 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         printf("    | SN?:\r");
     }
 
-    printf("\t\t\t\t%s\r\n", buffer);
+    if (buffer[0])
+        printf("\t%s\r\n", buffer);
+
+    print_mutex.unlock();
+}
+
+void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
+{
+    print_mutex.lock();
+    static char buffer[256];
+
+    va_list ap;
+    va_start(ap, str);
+    vsnprintf(buffer, sizeof(buffer) - 1, str, ap);
+    va_end(ap);
+
+    if(obj == NULL)
+    {
+        cout << buffer << endl;
+        print_mutex.unlock();
+        return;
+    }
+
+    ISFirmwareUpdater* fwCtx = (ISFirmwareUpdater*)obj;
+    if (buffer[0] || (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) {
+        printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
+        if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
+            int tot = fwCtx->fwUpdate_getTotalChunks();
+            int num = fwCtx->fwUpdate_getNextChunkID();
+            float percent = num / (float) (tot) * 100.f;
+            printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
+        }
+        if (buffer[0])
+            printf(" :: %s", buffer);
+        printf("\n");
+    }
+
     print_mutex.unlock();
 }
 
@@ -603,7 +639,7 @@ static int inertialSenseMain()
                             g_commandLineOptions.fwUpdateCmds,
                             bootloadUpdateCallback,
                             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
-                            cltool_bootloadUpdateInfo,
+                            cltool_firmwareUpdateInfo,
                             cltool_firmwareUpdateWaiter
                     ) != IS_OP_OK) {
                         inertialSenseInterface.Close();

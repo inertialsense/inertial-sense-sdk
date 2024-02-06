@@ -1,4 +1,5 @@
 ExampleProjects/Arduino/ReadIS/src/
+cmake-build-*/
 build/
 obj/
 x64

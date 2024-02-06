@@ -7,6 +7,8 @@
 
 #include <stdio.h>
 #include "../protocol/FirmwareUpdate.h"
+#include "miniz.h"
+#include "md5.h"
 
 /**
  * This is a really basic FIFO buffer implementation.  It is NOT a ring buffer.
@@ -17,10 +19,10 @@
 
 #define DEBUG_INFO
 
-static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_FINISHED" };
+static const char* MSG_TYPES[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND", "UPDATE_DONE" };
 
-static uint32_t fake_md5[4] = { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F };
-static uint32_t real_md5[4] = { 0xff3a9932, 0xb52b501d, 0x802f05e4, 0x5ed33d04 };
+static md5hash_t fake_md5 = { .dwords = { 0x00010203, 0x04050607, 0x08090A0B, 0x0C0D0E0F } };
+static md5hash_t real_md5 = { .dwords = { 0x13b16c00, 0x427089d8, 0x821f472b, 0xcb102f3c } };
 
 class ExchangeBuffer {
 public:
@@ -95,7 +97,6 @@ private:
     int32_t data_available = 0;
 
 };
-
 
 /**
  * This class can probably be removed.  Its not used, but there are foreseeable unit-test cases which may benefit from it.
@@ -180,6 +181,8 @@ public:
 
     int fwUpdate_performReset(fwUpdate::target_t target_id, uint16_t reset_flags) { return 0; };
 
+    bool fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& devInfo) { return false; };
+
     // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
     fwUpdate::update_status_e fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
 
@@ -205,10 +208,8 @@ public:
 
     // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
     fwUpdate::update_status_e  fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) {
-        uint32_t hash[4];
         // check that our md5 matches.  Return >0 is we're error free.
-        getCurrentMd5(hash);
-        if ( (hash[0] == session_md5[0]) && (hash[1] == session_md5[1]) && (hash[2] == session_md5[2]) && (hash[3] == session_md5[3]) )
+        if (memcmp(&md5Context.state, &session_md5, sizeof(md5hash_t)) == 0)
             return fwUpdate::FINISHED;
 
         return fwUpdate::ERR_CHECKSUM_MISMATCH;
@@ -225,8 +226,8 @@ public:
      * If you don't call step() things should still generally work, but it probably won't seem very responsive.
      * @return the number of times step() has been called since the last request to start an update. This isn't immediately useful, but its nice to know that its actually doing something.
      */
-    virtual fwUpdate::msg_types_e fwUpdate_step() {
-        return fwUpdate::MSG_UNKNOWN;
+    virtual bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) {
+        return true;
     }
 
     void pullAndProcessNextMessage() {
@@ -268,7 +269,7 @@ public:
      * @return
      */
     int fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) override {
-        for (int i = 0; i < len; i++)
+        for (uint32_t i = 0; i < len; i++)
             ((uint8_t*)*buffer)[i] = (i + offset) % 0x10;
         return len;
     }
@@ -280,8 +281,8 @@ public:
      * @param hashOut
      * @return
      */
-    void calcChecksumForTest(int image_size, int chunk_size, uint32_t (&hashOut)[4]) {
-        resetMd5();
+    void calcChecksumForTest(int image_size, int chunk_size, md5hash_t& hashOut) {
+        md5_init(md5Context);
         void* buf = malloc(chunk_size);
 
         if (buf) {
@@ -291,12 +292,18 @@ public:
                 uint16_t expected_size = ((i == num_chunks-1) && (mod_size != 0)) ? mod_size : chunk_size;
 
                 fwUpdate_getImageChunk(i * chunk_size, expected_size, &buf);
-                hashMd5(expected_size, (uint8_t *)buf);
+                md5_update(md5Context, (uint8_t *)buf, expected_size);
             }
-            getCurrentMd5(hashOut);
+            // md5_final()
+            hashOut = md5Context.state;
         }
-        resetMd5();
+        md5_final(md5Context, hashOut);
     }
+
+    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg) {
+        return true;
+    }
+
 
     bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t& msg) {
         if (msg.data.update_resp.session_id != session_id)
@@ -327,12 +334,8 @@ public:
         if (msg.data.progress.session_id != session_id)
             return false; // ignore this message, it's not for us
 
-        int num = msg.data.progress.num_chunks;
-        int tot = msg.data.progress.totl_chunks;
         int percent = (int)(((msg.data.progress.num_chunks)/(float)(msg.data.progress.totl_chunks)*100) + 0.5f);
-        const char *message = (const char *)&msg.data.progress.message;
-
-        PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d,%d] %s\n", num, tot, percent, msg.data.progress.msg_level, msg.data.progress.msg_len, message);
+        PRINTF("SDK :: Progress %d/%d (%d%%) :: [%d,%d] %s\n", msg.data.progress.num_chunks, msg.data.progress.totl_chunks, percent, msg.data.progress.msg_level, msg.data.progress.msg_len, (const char *)&msg.data.progress.message);
         return true;
     }
 
@@ -342,6 +345,7 @@ public:
         return true;
     }
 
+
     /**
      * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
      * This method is primarily used to drive the update process. Unlike the device interface, on the SDK-side, you must call Step,
@@ -349,7 +353,7 @@ public:
      * device triggering a timeout and aborting the upgrade process.
      * @return the message type, if any that was most recently processed.
      */
-    virtual fwUpdate::msg_types_e fwUpdate_step() {
+    virtual bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) {
         static uint8_t buffer[2048];
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
@@ -372,36 +376,18 @@ public:
             } while ((offset >= 0) && (exchangeBuffer.dataAvailable() > 0)); // keep pulling all data that is meant for us
 
 #ifdef DEBUG_INFO
-            if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK)
+            if (msg->hdr.msg_type == fwUpdate::MSG_REQ_RESEND_CHUNK) {
                 PRINTF("SDK :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.req_resend.chunk_id);
-            else
+            } else {
                 PRINTF("SDK :: Received MSG %s (%s)...\n", MSG_TYPES[msg->hdr.msg_type], getSessionStatusName());
+            }
 #endif
-
         }
-        return out;
+        return true;
     }
-
-
 };
 
 ExchangeBuffer eb(2048); // the exchange buffer used in these tests to simulate back-and-forth data exchanges
-
-TEST(ISFirmwareUpdate, md5_hashing)
-{
-    const char* data = "The quick brown fox jumped over the lazy dogs.\n";
-    uint32_t md5Hash[4];
-    ISFirmwareUpdateTestHost fuSDK(eb);
-
-    fuSDK.resetMd5();
-    fuSDK.hashMd5(strlen(data), (uint8_t *) data);
-    fuSDK.getCurrentMd5(md5Hash);
-
-    EXPECT_EQ(md5Hash[0], 0x096161b2);
-    EXPECT_EQ(md5Hash[1], 0x052c1802);
-    EXPECT_EQ(md5Hash[2], 0xac91c781);
-    EXPECT_EQ(md5Hash[3], 0x8c584f87);
-}
 
 TEST(ISFirmwareUpdate, pack_unpack__req_update)
 {
@@ -420,10 +406,10 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     fuMsg.data.req_update.file_size = 1234567;
     fuMsg.data.req_update.chunk_size = 1024;
     fuMsg.data.req_update.progress_rate = 789;
-    fuMsg.data.req_update.md5_hash[0] = 0x00010203;
-    fuMsg.data.req_update.md5_hash[1] = 0x04050607;
-    fuMsg.data.req_update.md5_hash[2] = 0x08090A0B;
-    fuMsg.data.req_update.md5_hash[3] = 0x0C0D0E0F;
+    fuMsg.data.req_update.md5_hash.dwords[0] = 0x00010203;
+    fuMsg.data.req_update.md5_hash.dwords[1] = 0x04050607;
+    fuMsg.data.req_update.md5_hash.dwords[2] = 0x08090A0B;
+    fuMsg.data.req_update.md5_hash.dwords[3] = 0x0C0D0E0F;
 
     int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), fuMsg);
     EXPECT_EQ(packed_size, 36);
@@ -439,7 +425,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(*(uint32_t*)(buffer+20), 0x00010203);                 // uint32_t (20 + 4)
     EXPECT_EQ(*(uint32_t*)(buffer+24), 0x04050607);                 // uint32_t (24 + 4)
     EXPECT_EQ(*(uint32_t*)(buffer+28), 0x08090A0B);                 // uint32_t (28 + 4)
-    EXPECT_EQ(*(uint32_t*)(buffer+32), 0x0C0D0E0F);                 // uint32_t (36 + 4) = total length is 36
+    EXPECT_EQ(*(uint32_t*)(buffer+32), 0x0C0D0E0F);                 // uint32_t (32 + 4) = total length is 36
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -452,10 +438,10 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(outMsg->data.req_update.image_flags, 0x05);
     EXPECT_EQ(outMsg->data.req_update.file_size, 1234567);
     EXPECT_EQ(outMsg->data.req_update.chunk_size, 1024);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[0], 0x00010203);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[1], 0x04050607);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[2], 0x08090A0B);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[3], 0x0C0D0E0F);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[0], 0x00010203);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[1], 0x04050607);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[2], 0x08090A0B);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[3], 0x0C0D0E0F);
 
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg);
     EXPECT_EQ(unpack_len, 36);
@@ -466,10 +452,10 @@ TEST(ISFirmwareUpdate, pack_unpack__req_update)
     EXPECT_EQ(outMsg->data.req_update.image_slot, fuMsg.data.req_update.image_slot);
     EXPECT_EQ(outMsg->data.req_update.chunk_size, fuMsg.data.req_update.chunk_size);
     EXPECT_EQ(outMsg->data.req_update.file_size, fuMsg.data.req_update.file_size);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[0], fuMsg.data.req_update.md5_hash[0]);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[1], fuMsg.data.req_update.md5_hash[1]);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[2], fuMsg.data.req_update.md5_hash[2]);
-    EXPECT_EQ(outMsg->data.req_update.md5_hash[3], fuMsg.data.req_update.md5_hash[3]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[0], fuMsg.data.req_update.md5_hash.dwords[0]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[1], fuMsg.data.req_update.md5_hash.dwords[1]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[2], fuMsg.data.req_update.md5_hash.dwords[2]);
+    EXPECT_EQ(outMsg->data.req_update.md5_hash.dwords[3], fuMsg.data.req_update.md5_hash.dwords[3]);
 }
 
 TEST(ISFirmwareUpdate, pack_unpack__update_resp)
@@ -518,7 +504,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
     fwUpdate::payload_t fuMsg;
 
     // initialize chnk_data
-    for (int i = 0; i < sizeof(chnk_data); i++)
+    for (size_t i = 0; i < sizeof(chnk_data); i++)
         chnk_data[i] = (uint8_t)(i % 0x10);
 
     uint16_t session_id = 0x7F7F; // (uint16_t)random();
@@ -532,7 +518,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
     fuMsg.data.chunk.data = chnk_data[0];
 
     int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), fuMsg, chnk_data);
-    EXPECT_EQ(packed_size, 527);
+    EXPECT_EQ(packed_size, 526);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -547,7 +533,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
-    EXPECT_EQ(unpack_len, 527);
+    EXPECT_EQ(unpack_len, 526);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -585,7 +571,7 @@ TEST(ISFirmwareUpdate, pack_unpack__req_resend)
     EXPECT_EQ(outMsg->data.req_resend.chunk_id, 1234);
     EXPECT_EQ(outMsg->data.req_resend.reason, fwUpdate::REASON_WRITE_ERROR);
 
-    uint8_t aux_data[1024];
+    //uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg);
     EXPECT_EQ(unpack_len, 14);
 
@@ -616,7 +602,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     fuMsg.data.progress.msg_len = strlen((const char *)progress_msg);
 
     int packed_size = fuSDK.fwUpdate_packPayload(buffer, sizeof(buffer), fuMsg, progress_msg);
-    EXPECT_EQ(packed_size, 53);
+    EXPECT_EQ(packed_size, 52);
 
     // If we've done our jobs right, we should be able to cast the payload buffer, back to a payload_t*, and access all the same data
 
@@ -636,7 +622,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
-    EXPECT_EQ(unpack_len, 53);
+    EXPECT_EQ(unpack_len, 52);
 
     EXPECT_EQ(outMsg->hdr.target_device, fuMsg.hdr.target_device);
     EXPECT_EQ(outMsg->hdr.msg_type, fuMsg.hdr.msg_type);
@@ -672,14 +658,16 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl)
     if (eb.dataAvailable() > 0) {
         // Data is waiting in the exchange buffer; pull and unpack it for analysis.
         int buf_len = eb.readData(buffer, sizeof(buffer));
+        EXPECT_EQ(buf_len, 14);
         int msg_len = fuSDK.fwUpdate_mapBufferToPayload(buffer, &msg, &aux_data);
         if (msg_len > 0) {
             if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_RESP) {
                 // FIXME: Currently, we expect an error -- we need to implement the device-side checks for initialization
                 EXPECT_EQ(msg->hdr.target_device, fwUpdate::TARGET_HOST);
                 EXPECT_EQ(msg->hdr.msg_type, fwUpdate::MSG_UPDATE_RESP);
-                EXPECT_EQ(msg->data.update_resp.session_id, 17767);
-                EXPECT_EQ(msg->data.update_resp.totl_chunks, 1206);
+                EXPECT_EQ(msg->data.update_resp.session_id, fuSDK.fwUpdate_getSessionID());
+                uint16_t numChunks = ceil(fuSDK.fwUpdate_getImageSize() / (float)fuSDK.fwUpdate_getChunkSize());
+                EXPECT_EQ(msg->data.update_resp.totl_chunks, numChunks);
                 EXPECT_EQ(msg->data.update_resp.status, fwUpdate::READY); // any negative value is an error
             }
         }
@@ -749,7 +737,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     // Alternatively, we could update the FirmwareUpdate API to allow disabling of sending PROGRESS messages entirely (set progressInterval to -1, in the request, for example).
 
     fuDev.pullAndProcessNextMessage(); // will cause the Device to pull the bad chunk, which should respond with a RESEND_CHUNK
-    EXPECT_EQ(fuSDK.fwUpdate_step(), fwUpdate::MSG_REQ_RESEND_CHUNK); // and step() to process the RESEND_CHUNK response to the bad message, which should resend the requested chunk 4
+    EXPECT_EQ(fuSDK.fwUpdate_step(), true); // and step() to process the RESEND_CHUNK response to the bad message, which should resend the requested chunk 4
     EXPECT_EQ(fuSDK.fwUpdate_getNextChunkID(), 5); // at this point, our NextChunkID should be 5 (since we resent 4)
 
     // and now we resume with the remaining chunks
@@ -773,8 +761,6 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
 TEST(ISFirmwareUpdate, exchange__invalid_checksum)
 {
     static uint8_t buffer[2048];
-    fwUpdate::payload_t *msg = nullptr;
-    void *aux_data = nullptr;
 
     eb.flush();
     ISFirmwareUpdateTestHost fuSDK(eb);
@@ -826,10 +812,6 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
  */
 TEST(ISFirmwareUpdate, exchange__success)
 {
-    static uint8_t buffer[2048];
-    fwUpdate::payload_t *msg = nullptr;
-    void *aux_data = nullptr;
-
     eb.flush();
     ISFirmwareUpdateTestHost fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
@@ -873,10 +855,6 @@ TEST(ISFirmwareUpdate, exchange__success)
  */
 TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
 {
-    static uint8_t buffer[2048];
-    fwUpdate::payload_t *msg = nullptr;
-    void *aux_data = nullptr;
-
     ISFirmwareUpdateTestHost fuSDK(eb);
     ISFirmwareUpdateTestDev fuDev(eb);
 
@@ -913,4 +891,3 @@ TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
     // finally, we should have a status FINISHED
     EXPECT_EQ(fuSDK.fwUpdate_getSessionStatus(), fwUpdate::FINISHED);
 }
-

@@ -128,6 +128,8 @@ endif()
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC
 	${CMAKE_CURRENT_LIST_DIR}/src
+	${CMAKE_CURRENT_LIST_DIR}/src/util
+	${CMAKE_CURRENT_LIST_DIR}/src/protocol
 	${CMAKE_CURRENT_LIST_DIR}/src/libusb
 	${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb
 	${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp

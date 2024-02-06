@@ -61,12 +61,12 @@ function test_cmake() {
 }
 
 function build_test_cmake() {
-  build_cmake "$1" "$2" && test_cmake "$1" "$2"
+  build_cmake "$1" "$2" "$3" && test_cmake "$1" "$2" "$3"
 }
 
 # Options were shifted out earlier, so use $1 and $2
 if [ ${BUILD} == 'true' ]; then
-  if build_cmake "$1" "$2"; then
+  if build_cmake "$1" "$2" "$3"; then
     : # success
   else
     popd > /dev/null
@@ -74,7 +74,7 @@ if [ ${BUILD} == 'true' ]; then
   fi
 fi
 if [ ${TEST} == 'true' ]; then
-  if test_cmake "$1" "$2"; then
+  if test_cmake "$1" "$2" "$3"; then
     : # success
   else
     popd > /dev/null

@@ -51,7 +51,7 @@ jobs:
           rm -rf ../cltool/build ../ExampleProjects/build
 
       - name: SDK Unit Tests
-        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../src/test
+        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
 
       - name: Build cltool
         run: ./build_test_cmake.sh --build "cltool" ../cltool
@@ -79,6 +79,9 @@ jobs:
 
       - name: Clean all
         run: ./clean_all.bat
+
+#      - name: SDK Unit Tests
+#        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
 
       - name: Build SDK Examples
         run: ./build_sdk_examples.bat
