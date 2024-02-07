@@ -156,17 +156,6 @@ int validateBaudRate(unsigned int baudRate)
 	return -1;
 }
 
-static int dataIdShouldSwap(uint32_t dataId)
-{
-	switch (dataId)
-	{
-	case DID_GPS1_VERSION:
-	case DID_GPS2_VERSION:
-		return 0;
-	}
-	return 1;
-}
-
 void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
 	memset(c, 0, sizeof(is_comm_instance_t));
