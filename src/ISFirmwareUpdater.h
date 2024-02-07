@@ -53,7 +53,8 @@ private:
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
     std::vector<std::string> commands;
-    bool requestPending = false; // true is an update has been requested, but we're still waiting on a response.
+    std::string failLabel;              //! a label to jump to, when an error occurs
+    bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
     bool forceUpdate = false;
     uint32_t pingInterval = 1000;       //! delay between attempts to communicate with a target device
@@ -71,6 +72,22 @@ private:
     void runCommand(std::string cmd);
 
 public:
+
+    enum pkg_error_e {
+        PKG_SUCCESS = 0,
+        PKG_ERR_PACKAGE_FILE_ERROR = -1,            // the package file couldn't be opened/accessed (invalid, or not found)
+        PKG_ERR_INVALID_IMAGES = -2,                // the manifest doesn't define any images, or the images are incorrectly formatted
+        PKG_ERR_INVALID_STEPS = -3,                 // the manifest doesn't define any steps, or the steps are incorrectly formatted
+        PKG_ERR_INVALID_TARGET = -4,                // the active step target is invalid (yaml schema/syntax)
+        PKG_ERR_UNSUPPORTED_TARGET = -5,            // the step target specified is valid, but not supported
+        PKG_ERR_NO_ACTIONS = -6,                    // the step doesn't describe any actions to perform
+        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       // the step action 'image' references an image which doesn't exist in the manifest
+        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            // the referenced image doesn't include a filename
+        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          // the file for the referenced image doesn't exist
+        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,      // the image file's actual size doesn't match the manifest's reported size
+        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
+    };
+
     int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
     const char *portName = nullptr;         //! the name of the port referenced by pHandle
     const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
@@ -84,12 +101,20 @@ public:
     ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
     ~ISFirmwareUpdater() override {};
 
-    void setDefaultTarget(fwUpdate::target_t _target) { target = _target; }
-
+    void setTarget(fwUpdate::target_t _target);
     bool setCommands(std::vector<std::string> cmds);
     bool addCommands(std::vector<std::string> cmds);
     bool hasPendingCommands() { return !commands.empty(); }
     void clearAllCommands() { commands.clear(); }
+
+    /**
+     * Called when an error occurs while processing a command, to perform corrective actions (if possible).
+     * Primarily, this checks if there is a failLabel defined and looks for the corresponding command label.
+     * Otherwise it logs the message/errorcode, and clears the command stack.
+     * @param errCode
+     * @param errMsg
+     */
+    void handleCommandError(const std::string& cmd, int errCode, const char *errMmsg, ...);
 
     /**
      * Initializes a DFU-based firmware update targeting the specified USB device.
@@ -151,8 +176,7 @@ public:
      * together.  This allows for a user to update a number of connected devices (IMX, GPX, and GNSS Receiver Firmware) using a single file, and without any coordination of which files are
      * necessary for which devices, etc.
      */
-
-    int openFirmwarePackage(const std::string& pkg_file);
+    pkg_error_e openFirmwarePackage(const std::string& pkg_file);
 
     /**
      * Parses a YAML tree containing the manifest of the firmware package
@@ -160,29 +184,15 @@ public:
      * @param archive a pointer to the archive which contains this manifest (or null-ptr if parsed from a file).
      * @return
      */
-    int processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive);
-    int processPackageManifest(const std::string& manifest_file);
+    pkg_error_e processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive);
+    pkg_error_e processPackageManifest(const std::string& manifest_file);
 
     /**
      * Performs any necessary cleanup of memory, file handles, or temporary files after all tasks associated with a firmware package have finished (or from an unrecoverable error).
      * @return
      */
-    int cleanupFirmwarePackage();
+    pkg_error_e cleanupFirmwarePackage();
 
-    enum PkgErrors {
-        PKG_SUCCESS = 0,
-        PKG_ERR_PACKAGE_FILE_ERROR = -1,            // the package file couldn't be opened/accessed (invalid, or not found)
-        PKG_ERR_INVALID_IMAGES = -2,                // the manifest doesn't define any images, or the images are incorrectly formatted
-        PKG_ERR_INVALID_STEPS = -3,                 // the manifest doesn't define any steps, or the steps are incorrectly formatted
-        PKG_ERR_INVALID_TARGET = -4,                // the active step target is invalid (yaml schema/syntax)
-        PKG_ERR_UNSUPPORTED_TARGET = -5,            // the step target specified is valid, but not supported
-        PKG_ERR_NO_ACTIONS = -6,                    // the step doesn't describe any actions to perform
-        PKG_ERR_IMAGE_INVALID_REFERENCE = -7,       // the step action 'image' references an image which doesn't exist in the manifest
-        PKG_ERR_IMAGE_UNKNOWN_PATH = -8,            // the referenced image doesn't include a filename
-        PKG_ERR_IMAGE_FILE_NOT_FOUND = -9,          // the file for the referenced image doesn't exist
-        PKG_ERR_IMAGE_FILE_SIZE_MISMATCH = -10,      // the image file's actual size doesn't match the manifest's reported size
-        PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
-    };
 
 };
 
