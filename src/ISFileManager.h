@@ -54,10 +54,39 @@ namespace ISFileManager
     // get just the file name from a path
     std::string GetFileName(const std::string& path);
 
+    // get just the parent/base path from a path
+    std::string GetParentDirectory(const std::string& path);
+
+
+    /**
+     * Returns true if the specified path is consider an absolute path
+     * @param path
+     * @return true if absolute, false if relative
+     */
+    bool isPathAbsolute(const std::string& path);
+
+    /**
+     * returns an absolute path to the parent directory of the specified path
+     * If 'path' is a relative path, it is applied to the current working directory
+     * @param path a complete path
+     * @param parent a string representing the path to the parent directory
+     * @return true on success, otherwise false
+     */
+    bool getParentDirectory(const std::string& path, std::string& parent);
+
+    /**
+     * breaks down the specified path into its component parts [base path, filename, file extension]
+     * @param path the full path to parse
+     * @param base the resulting base path
+     * @param filename the resulting filename
+     * @param ext the resulting file extension
+     * @return 0 if success, -1 on error
+     */
+    int getPathComponents(const std::string& path, std::string& base, std::string& filename, std::string& ext);
+
     bool TouchFile(const std::string& path);
 
     bool makePath(const std::string& path);
-
 }
 
 #endif //IS_SDK_IS_FILE_MANAGER_H_

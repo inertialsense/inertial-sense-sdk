@@ -1004,7 +1004,7 @@ is_operation_result InertialSense::updateFirmware(
     if (OpenSerialPorts(comPort.c_str(), baudRate)) {
         for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
             m_comManagerState.devices[i].fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
-            m_comManagerState.devices[i].fwUpdater->setDefaultTarget(targetDevice);
+            m_comManagerState.devices[i].fwUpdater->setTarget(targetDevice);
 
             // TODO: Implement maybe
             m_comManagerState.devices[i].fwUpdater->setUploadProgressCb(uploadProgress);
@@ -1065,6 +1065,22 @@ fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
         return m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionStatus();
     else
         return fwUpdate::ERR_UPDATER_CLOSED;
+}
+
+/**
+* Gets current update target, slot, and filename for the selected device index
+* @param deviceIndex
+* @param target a reference to a target_t which will be set with the value of the active target
+* @param slotNo a reference to an int which will be set with the value of the active slot
+* @return returns a char * to the name of the active target, or nullptr if no action fwUpdater
+*/
+const char * InertialSense::getUpdateTargetInfo(uint32_t deviceIndex, fwUpdate::target_t& target, int& slotNo) {
+    if (m_comManagerState.devices[deviceIndex].fwUpdater == NULL)
+        return nullptr;
+
+    target = m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionTarget();
+    slotNo = m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionImageSlot();
+    return m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionTargetName();
 }
 
 /**
