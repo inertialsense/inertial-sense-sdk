@@ -32,7 +32,7 @@ namespace ISFileManager {
     #if PLATFORM_IS_LINUX
     const char* path_seperator = "/";
     #elif PLATFORM_IS_WINDOWS
-    const char* path_seperator = "\\"
+    const char* path_seperator = "\\";
     #else
     const char* path_seperator = nullptr;
     #endif
