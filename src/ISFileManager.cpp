@@ -503,7 +503,7 @@ namespace ISFileManager {
      * @return 0 if success, -1 on error
      */
     int getPathComponents(const std::string& path, std::string& base, std::string& filename, std::string& ext) {
-
+        return 0;
     }
 
     bool TouchFile(const std::string& path)
