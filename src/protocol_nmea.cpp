@@ -393,7 +393,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 		bits &= ~(nmeaBits);
 }
 
-void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t tmp)
+void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_ASCB_t tmp)
 {
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PIMU,  tmp.pimu);
 	nmea_enable_stream(bits, period, NMEA_MSG_ID_PPIMU, tmp.ppimu);
@@ -1961,7 +1961,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 		return 0;
 	}
 	
-	nmea_msgs_t tmp {};
+	nmea_msgs_ASCB_t tmp {};
 	uint32_t options = 0;	
 	char *ptr = (char *)&msg[6];				// $ASCB
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }		
