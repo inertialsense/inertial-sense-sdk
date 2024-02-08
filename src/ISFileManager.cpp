@@ -494,18 +494,6 @@ namespace ISFileManager {
         return true;
     }
 
-    /**
-     * breaks down the specified path into its component parts [base path, filename, file extension]
-     * @param path the full path to parse
-     * @param base the resulting base path
-     * @param filename the resulting filename
-     * @param ext the resulting file extension
-     * @return 0 if success, -1 on error
-     */
-    int getPathComponents(const std::string& path, std::string& base, std::string& filename, std::string& ext) {
-
-    }
-
     bool TouchFile(const std::string& path)
     {
     #if PLATFORM_IS_EVB_2
