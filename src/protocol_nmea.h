@@ -38,7 +38,7 @@ char *ASCII_to_vec4f(float vec[], char *ptr);
 char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
-void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t tmp);
+void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_ASCB_t tmp);
 int getNmeaMsgId(const void* msg, int msgSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 

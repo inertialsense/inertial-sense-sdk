@@ -1498,7 +1498,7 @@ enum eSerialPortBridge
 
 #define NMEA_BUFFER_SIZE 256
 
-/** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
+/** Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts (DEPRICATED) */
 typedef struct PACKED
 {
     /** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
@@ -1545,6 +1545,39 @@ typedef struct PACKED
 
 	/** Broadcast period multiple - NMEA track made good and speed over ground. */
 	uint8_t			    	vtg;
+
+} nmea_msgs_ASCB_t;
+
+typedef struct nmeaBroadcastMsgPair
+{
+    /** Message ID to be set up to 20 at a time using msgCount to indicate which indexes are valid. 
+     *  See eNmeaAsciiMsgId for msg IDs
+    */
+    uint8_t msgID;
+    uint8_t msgPeriod;
+}nmeaBroadcastMsgPair_t;
+
+#define MAX_nmeaBroadcastMsgPairs 20
+
+/** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
+typedef struct PACKED
+{
+    /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistant] (see RMC_OPTIONS_...) */
+    uint32_t				options;
+
+    /** The number of messages being set in this message */
+    uint8_t                 msgCount;
+    
+    /** NMEA message to be set. (up to 20 at a time using msgCount to indicate which indexes are valid). 
+     *  See eNmeaAsciiMsgId for msg IDs
+    */
+    nmeaBroadcastMsgPair_t nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
+
+    /*  Example usage:
+     *  If you are setting message GGA (0x06) at 1Hz and GGL (0x07) at 5Hz. 
+     *  msgCount = 2
+     *  nmeaBroadcastMsgs[0].msgID = 0x06, nmeaBroadcastMsgs[1].msgID = 0x07 
+     *  nmeaBroadcastMsgs[0].msgPeriod = 0x05, nmeaBroadcastMsgs[1].msgPeriod = 0x01 */           
 
 } nmea_msgs_t;
 
