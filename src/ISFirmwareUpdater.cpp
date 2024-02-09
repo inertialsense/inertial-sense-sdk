@@ -362,7 +362,7 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     char buffer[256];
     va_list args;
     va_start(args, errMsg);
-    int l = VSNPRINTF(buffer, sizeof(buffer), errMsg, args);
+    VSNPRINTF(buffer, sizeof(buffer), errMsg, args);
     va_end(args);
 
     if(pfnInfoProgress_cb != nullptr)
@@ -641,7 +641,9 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const s
     // always process the manifest from the manifest's path
     std::string parentDir;
     if (ISFileManager::getParentDirectory(manifest_file, parentDir)) {
-        chdir(parentDir.c_str());
+        if( chdir(parentDir.c_str()) )
+        {   // Handle error
+        }
     }
 
     return processPackageManifest(manifest);
