@@ -1498,56 +1498,6 @@ enum eSerialPortBridge
 
 #define NMEA_BUFFER_SIZE 256
 
-/** Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts (DEPRICATED) */
-typedef struct PACKED
-{
-    /** Options: Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB] (see RMC_OPTIONS_...) */
-    uint32_t				options;
-
-	/** Broadcast period multiple - NMEA IMU data. 0 to disable. */
-	uint8_t				    pimu;
-
-	/** Broadcast period multiple - NMEA preintegrated IMU: delta theta (rad) and delta velocity (m/s). 0 to disable. */
-	uint8_t			    	ppimu;
-	
-	/** Broadcast period multiple - NMEA INS output: euler rotation w/ respect to NED, NED position from reference LLA. 0 to disable. */
-	uint8_t			    	pins1;
-
-	/** Broadcast period multiple - NMEA INS output: quaternion rotation w/ respect to NED, ellipsoid altitude. 0 to disable. */
-	uint8_t				    pins2;
-	
-	/** Broadcast period multiple - NMEA GPS position data. 0 to disable. */
-	uint8_t			    	pgpsp;
-
-	/** Broadcast period multiple - NMEA Raw IMU data (up to 1KHz).  Use this IMU data for output data rates faster than DID_FLASH_CONFIG.startupNavDtMs.  Otherwise we recommend use of pimu or ppimu as they are oversampled and contain less noise. 0 to disable. */
-	uint8_t			    	primu;
-
-	/** Broadcast period multiple - NMEA standard GGA GNSS 3D location, fix, and accuracy. 0 to disable. */
-	uint8_t				    gga;
-
-	/** Broadcast period multiple - NMEA standard GLL GNSS 2D location and time. 0 to disable. */
-	uint8_t			    	gll;
-
-	/** Broadcast period multiple - NMEA standard GSA GNSS DOP and active satellites. 0 to disable. */
-	uint8_t			    	gsa;
-
-	/** Broadcast period multiple - NMEA standard recommended minimum specific GPS/Transit data. 0 to disable. */
-	uint8_t			    	rmc;
-	
-	/** Broadcast period multiple - NMEA standard Data and Time. 0 to disable. */
-	uint8_t			    	zda;
-
-	/** Broadcast period multiple - NMEA standard Inertial Attitude Data. 0 to disable. */
-	uint8_t			    	pashr;
-
-	/** Broadcast period multiple - NMEA standard satelliate information. */
-	uint8_t			    	gsv;
-
-	/** Broadcast period multiple - NMEA track made good and speed over ground. */
-	uint8_t			    	vtg;
-
-} nmea_msgs_ASCB_t;
-
 typedef struct nmeaBroadcastMsgPair
 {
     /** Message ID to be set up to 20 at a time using msgCount to indicate which indexes are valid. 
