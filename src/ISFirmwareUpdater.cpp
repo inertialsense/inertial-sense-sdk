@@ -3,8 +3,18 @@
 //
 
 #include "ISFirmwareUpdater.h"
+#include "ISFileManager.h"
 #include "ISUtilities.h"
 #include "util/md5.h"
+
+void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
+    session_target = target = _target;
+
+    // request version info from the target
+    target_devInfo = nullptr;
+    fwUpdate_requestVersionInfo(target);
+    pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
+}
 
 bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
     commands = cmds;
@@ -195,9 +205,6 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
 std::mutex progress_mutex;
 bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg) {
     progress_mutex.lock();
-    if (msg.data.progress.status < fwUpdate::NOT_STARTED) {
-        printf("%s\n", fwUpdate_getSessionStatusName());
-    }
 
     if (session_status >= fwUpdate::NOT_STARTED)
         session_status = msg.data.progress.status; // don't overwrite an error status in the event of racing messages.
@@ -302,15 +309,14 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
             }
             break;
         case fwUpdate::ERR_TIMEOUT:
-            if(pfnInfoProgress_cb != nullptr)
-                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "No Response from device.");
-            clearAllCommands();
+            if (session_status < fwUpdate::NOT_STARTED) {
+                handleCommandError("upload", -1, "No Response from device.");
+            }
             break;
         default:
-            if (session_status < fwUpdate::NOT_STARTED)
-                clearAllCommands();  // effectively a fatal error, so clear all remaining commands.
-            if(pfnInfoProgress_cb != nullptr)
-                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Unexpected response from device : %s", fwUpdate_getSessionStatusName());
+            if (session_status < fwUpdate::NOT_STARTED) {
+                handleCommandError("upload", -session_status, "Unexpected response from device : %s", fwUpdate_getSessionStatusName());
+            }
             break;
     }
 
@@ -338,36 +344,110 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     return (result == 0);
 }
 
-void ISFirmwareUpdater::runCommand(std::string cmd) {
+/**
+ * Called when an error occurs while processing a command, to perform corrective actions (if possible).
+ * Primarily, this checks if there is a failLabel defined and looks for the corresponding command label.
+ * Otherwise it logs the message/errorcode, and clears the command stack.
+ * @param cmd the current command being executed when this error occurred
+ * @param errCode a numerical error code
+ * @param errMsg a corresponding human-readable error message to the numerical error code
+ */
+void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, const char *errMsg, ...) {
 
+    if (!commands.empty()) {
+        requestPending = false;
+        fwUpdate_resetEngine();
+    }
+
+    char buffer[256];
+    va_list args;
+    va_start(args, errMsg);
+    VSNPRINTF(buffer, sizeof(buffer), errMsg, args);
+    va_end(args);
+
+    if(pfnInfoProgress_cb != nullptr)
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, buffer);
+
+    if (failLabel.empty()) {
+        // if no label has been specified, clear all commands and reset
+        commands.clear();
+        target = fwUpdate::TARGET_HOST;
+        return;
+    }
+
+    // else, we have a failLabel defined.. let's skip all messages until its found
+    while (!commands.empty() && (commands[0] != failLabel)) {
+        commands.erase(commands.begin());
+    }
+    if (!commands.empty() && (commands[0] == failLabel)) {
+        // consume the label before proceeding.
+        commands.erase(commands.begin());
+    }
+}
+
+void ISFirmwareUpdater::runCommand(std::string cmd) {
     std::vector<std::string> args;
     splitString(cmd, '=', args);
     if (!args.empty()) {
         if ((args[0] == "package") && (args.size() == 2)) {
             bool isManifest = (args[1].length() >= 5) && (0 == args[1].compare (args[1].length() - 5, 5, ".yaml"));
-            int err_result = isManifest ? processPackageManifest(args[1]) : openFirmwarePackage(args[1]);
+            pkg_error_e err_result = isManifest ? processPackageManifest(args[1]) : openFirmwarePackage(args[1]);
             if (err_result != PKG_SUCCESS) {
-                if(pfnInfoProgress_cb != nullptr)
-                    pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Error processing firmware package [%s] :: %d\n", args[1].c_str(), err_result);
-                commands.clear();
-                target = fwUpdate::TARGET_HOST;
+                const char *err_msg = nullptr;
+                switch (err_result) {
+                    case PKG_SUCCESS:
+                        break;
+                    case PKG_ERR_PACKAGE_FILE_ERROR:
+                        err_msg = "Unable to open package.";
+                        break;
+                    case PKG_ERR_INVALID_IMAGES:
+                        err_msg = "Manifest has no images defined, or is malformed.";
+                        break;
+                    case PKG_ERR_INVALID_STEPS:
+                        err_msg = "Manifest has no steps defined, or is malformed.";
+                        break;
+                    case PKG_ERR_INVALID_TARGET:
+                        err_msg = "Manifest references an invalid target, or no target defined for image.";
+                        break;
+                    case PKG_ERR_UNSUPPORTED_TARGET:
+                        err_msg = "Image references an invalid or unsupported target device.";
+                        break;
+                    case PKG_ERR_NO_ACTIONS:
+                        err_msg = "Manifest has no valid actions.";
+                        break;
+                    case PKG_ERR_IMAGE_INVALID_REFERENCE:
+                        err_msg = "Manifest references an invalid or non-existent image entry.";
+                        break;
+                    case PKG_ERR_IMAGE_UNKNOWN_PATH:
+                        err_msg = "Manifest image path is missing or invalid.";
+                        break;
+                    case PKG_ERR_IMAGE_FILE_NOT_FOUND:
+                        err_msg = "Manifest image reference is valid, but the the backing datafile is missing.";
+                        break;
+                    case PKG_ERR_IMAGE_FILE_SIZE_MISMATCH:
+                        err_msg = "Manifest's reported image size does not match the actual data file size.";
+                        break;
+                    case PKG_ERR_IMAGE_FILE_MD5_MISMATCH:
+                        err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
+                        break;
+                }
+                handleCommandError(args[0], err_result, "Error processing firmware package [%s]: %d :: %s\n", args[1].c_str(), err_result, err_msg);
+
             }
         } else if ((args[0] == "target") && (args.size() == 2)) {
-            if (args[1] == "IMX5") target = fwUpdate::TARGET_IMX5;
-            else if (args[1] == "GPX1") target = fwUpdate::TARGET_GPX1;
-            else if (args[1] == "GNSS1") target = fwUpdate::TARGET_SONY_CXD5610__1;
-            else if (args[1] == "GNSS2") target = fwUpdate::TARGET_SONY_CXD5610__2;
+            if (args[1] == "IMX5") setTarget(fwUpdate::TARGET_IMX5);
+            else if (args[1] == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
+            else if (args[1] == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
+            else if (args[1] == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
             else {
-                if(pfnInfoProgress_cb != nullptr)
-                    pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Firmware Update Error :: Invalid Target: %s    (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)\n", args[1].c_str());
-                commands.clear();
-                target = fwUpdate::TARGET_HOST;
+                handleCommandError(args[0], -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)\n", args[1].c_str());
             }
-            if (target != fwUpdate::TARGET_HOST) {
-                target_devInfo = nullptr;
-                session_target = target;
-                fwUpdate_requestVersionInfo(target);
-                pauseUntil = current_timeMs() + 2000;
+        } else if ((args[0] == "on-error") && (args.size() == 2)) {
+            failLabel = args[1].c_str();
+            // all labels must start with a colon (:)
+            if (failLabel[0] != ':') {
+                failLabel.clear();
+                handleCommandError(args[0], -1, "Invalid label. Labels must start with a colon (:).");
             }
         } else if ((args[0] == "slot") && (args.size() == 2)) {
             slotNum = strtol(args[1].c_str(), nullptr, 10);
@@ -392,10 +472,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                 }
                 if (pingTimeout < current_timeMs()) {
                     pingTimeout = pingNextRetry = 0;
-                    if (pfnInfoProgress_cb != nullptr)
-                        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Timeout waiting for response from target device.");
-                    commands.clear();
-                    target = fwUpdate::TARGET_HOST;
+                    handleCommandError(args[0], -1, "Timeout waiting for response from target device.");
                 } else if (pingNextRetry < current_timeMs()) {
                     pingNextRetry = current_timeMs() + pingInterval;
                     target_devInfo = nullptr;
@@ -405,6 +482,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             }
         } else if ((args[0] == "upload") && (args.size() == 2)) {
             filename = args[1];
+            fwUpdate_resetEngine();
 
             // TODO move this to it's own function before we expand this any father
 
@@ -422,9 +500,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
 
             if (status < fwUpdate::NOT_STARTED) {
                 // there was an error -- probably should flush the command queue
-                if(pfnInfoProgress_cb != nullptr)
-                    pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Error initiating Firmware upload: [%s] %s\n", filename.c_str(), fwUpdate_getStatusName(status));
-                commands.clear();
+                handleCommandError(args[0], -1, "Error initiating Firmware upload: [%s] %s\n", filename.c_str(), fwUpdate_getStatusName(status));
             } else {
                 requestPending = true;
                 nextStartAttempt = current_timeMs() + attemptInterval;
@@ -443,7 +519,14 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
         commands.erase(commands.begin()); // pop the command off the front
 }
 
-int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
+/**
+ * Injects a series of commands into the command queue, based on the contents of the manifest, which defines
+ * the steps/commands necessary to perform a package update.
+ * @param manifest YAML tree the defines the manifest to parse
+ * @param archive a pointer to the mz_zip_archive associated with this manifest, if any (otherwise nullptr).
+ * @return 0 on success, otherwise PKG_ERR_*.
+ */
+ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
     YAML::Node images = manifest["images"];
     if (!images.IsMap())
         return PKG_ERR_INVALID_IMAGES; // images must be a map (of maps)
@@ -459,8 +542,13 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
             YAML::Node key = target.first;
             YAML::Node actions = target.second;
 
-            if (!key.IsScalar())
+            if (!key.IsScalar()) {
                 return PKG_ERR_INVALID_TARGET; // key must identify a target name
+            }
+
+            if (!actions.IsSequence())
+                return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
+
             std::string target_name = key.as<std::string>();
             if ((target_name != "IMX5") &&
                 (target_name != "GPX1") &&
@@ -468,11 +556,8 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
                 (target_name != "GNSS2") )
                 return PKG_ERR_UNSUPPORTED_TARGET; // target name is invalid/unsupported
 
-            if (!actions.IsSequence())
-                return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
-
+            commands.push_back(":" + target_name);
             commands.push_back("target=" + target_name);
-            commands.push_back("waitfor=15000");
             for (auto actions_iv : actions) {
                 for (auto cmd : actions_iv) {
                     auto cmd_name = cmd.first.as<std::string>();
@@ -548,15 +633,27 @@ int ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archi
     return PKG_SUCCESS;
 }
 
-int ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
+ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
     YAML::Node manifest = YAML::LoadFile(manifest_file);
+    if (manifest.IsNull())
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+
+    // always process the manifest from the manifest's path
+    std::string parentDir;
+    if (ISFileManager::getParentDirectory(manifest_file, parentDir)) {
+        if( chdir(parentDir.c_str()) )
+        {   // Handle error
+        }
+    }
+
     return processPackageManifest(manifest);
 }
 
-int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
+ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
     mz_bool status;
     size_t file_size;
     void *p;
+    pkg_error_e result = PKG_SUCCESS;
 
     if (!zip_archive) {
         zip_archive = (mz_zip_archive *)malloc(sizeof(mz_zip_archive));
@@ -565,24 +662,26 @@ int ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
     // initialize the archive struct and open the file
     mz_zip_zero_struct(zip_archive);
     status = mz_zip_reader_init_file(zip_archive, pkg_file.c_str(), 0);
-    if (status) {
-        p = mz_zip_reader_extract_file_to_heap(zip_archive, "manifest.yaml", &file_size, 0);
-        if (p && (file_size > 0)) {
-            std::string casted_memory(static_cast<char*>(p), file_size);
-            std::istringstream stream(casted_memory);
-            YAML::Node manifest = YAML::Load(stream);
-            if (manifest)
-                processPackageManifest(manifest, zip_archive);
-            mz_free(p);
-        }
-        // TODO: I can't make up my mind... to keep the zip-reader available for possible future file extractions, or close it and reopen it each time.  We're only talking about a dozen files at max, and most time 2-5 files on average.
-        // mz_zip_reader_end(zip_archive);
-        return PKG_SUCCESS;
+    if (!status) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
     }
-    return PKG_ERR_PACKAGE_FILE_ERROR;
+
+    p = mz_zip_reader_extract_file_to_heap(zip_archive, "manifest.yaml", &file_size, 0);
+    if (p && (file_size > 0)) {
+        std::string casted_memory(static_cast<char*>(p), file_size);
+        std::istringstream stream(casted_memory);
+        YAML::Node manifest = YAML::Load(stream);
+        if (manifest)
+            result = processPackageManifest(manifest, zip_archive);
+        mz_free(p);
+    }
+
+    // TODO: I can't make up my mind... to keep the zip-reader available for possible future file extractions, or close it and reopen it each time.  We're only talking about a dozen files at max, and most time 2-5 files on average.
+    // mz_zip_reader_end(zip_archive);
+    return result;
 }
 
-int ISFirmwareUpdater::cleanupFirmwarePackage() {
+ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::cleanupFirmwarePackage() {
     if (srcFile) {
         delete srcFile;
         srcFile = nullptr;

@@ -471,6 +471,15 @@ public:
     fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
 
     /**
+    * Gets current update target, slot, and filename for the selected device index
+    * @param deviceIndex
+    * @param target a reference to a target_t which will be set with the value of the active target
+    * @param slotNo a reference to an int which will be set with the value of the active slot
+    * @return returns a char * to the name of the active target, or nullptr if no session is active
+    */
+    const char * getUpdateTargetInfo(uint32_t deviceIndex, fwUpdate::target_t& target, int& slotNo);
+
+    /**
     * Gets reason device was closed for selected device index
     * @param deviceIndex
     */

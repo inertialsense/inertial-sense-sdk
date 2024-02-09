@@ -6,6 +6,7 @@ x64
 Release/
 Debug/
 IS_logs/
+CMakeFiles/
 
 *.autosave
 *.elf
@@ -21,5 +22,9 @@ IS_logs/
 .vs
 .vscode
 
-cmake-build-debug
 .idea
+cmake-build-debug
+Makefile
+CMakeCache.txt
+cmake_install.cmake
+libInertialSenseSDK.a

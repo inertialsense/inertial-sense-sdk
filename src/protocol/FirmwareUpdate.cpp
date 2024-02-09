@@ -257,7 +257,13 @@ namespace fwUpdate {
             case TARGET_GPX1: return "GPX-1";
             case TARGET_VPX: return "VPX-1";
             case TARGET_UBLOX_F9P: return "uBlox F9P";
-            case TARGET_SONY_CXD5610: return "CDX5610";
+            case TARGET_SONY_CXD5610:
+                switch (target & 0x0F) {
+                    case 1: return "CXD5610.1";
+                    case 2: return "CXD5610.2";
+                    default: return "CXD5610";
+                }
+                break;
             default: return "[UNKNOWN]";
         }
     }
