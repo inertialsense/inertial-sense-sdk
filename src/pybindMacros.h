@@ -18,6 +18,7 @@ PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_vehicle_t, velCmd_f, velCmd_w, velCmdMnl_f, velCmdMnl_w, velCmdSlew_f, velCmdSlew_w, vel_f, vel_w, err_f, err_w, eff_f, eff_w);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd, velCmdSlew, vel, err, ff_eff, fb_eff, fb_eff_integral, eff, effInt, effDuty);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_t, timeMs, dt, current_mode, status, vehicle, wheel_l, wheel_r, potV_l, potV_r);
+PYBIND11_NUMPY_DTYPE(nmeaBroadcastMsgPair_t, msgID, msgPeriod);
 
 // Public Types
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
