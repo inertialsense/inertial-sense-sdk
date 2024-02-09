@@ -16,6 +16,8 @@ include_directories(
     ${IS_SDK_DIR}/src/libusb/libusb
 )
 
+find_package(Threads)
+
 # Link the InertialSenseSDK static library 
 link_directories(${IS_SDK_DIR})
 
@@ -23,4 +25,5 @@ link_directories(${IS_SDK_DIR})
 add_executable(${PROJECT_NAME} main.cpp)
 
 # Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
+target_link_libraries(${PROJECT_NAME} InertialSenseSDK pthread)
+
