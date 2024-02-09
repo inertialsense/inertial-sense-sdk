@@ -4,8 +4,9 @@ project(IS_NMEAProtocolCheckSum)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 
-if(NOT USE_PREBUILT_SDK)
-    # Add InertialSenseSDK static library subdirectory to build SDK with this project 
+find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+if(NOT SDK_LIBRARY_PATH)
+    # InertialSenseSDK static library not built.  Build SDK along with this project. 
     add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
 endif()
 

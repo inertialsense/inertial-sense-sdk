@@ -10,11 +10,14 @@ if (MSVC_VERSION GREATER_EQUAL "1900")
     endif()
 endif()
 
-set(USE_PREBUILT_SDK 1)
-
 # Add InertialSenseSDK static library subdirectory
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+
+find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+if(NOT SDK_LIBRARY_PATH)
+    # InertialSenseSDK static library not built.  Build SDK along with this project. 
+    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+endif()
 
 # Add all the other sub projects
 add_subdirectory(Ascii)
