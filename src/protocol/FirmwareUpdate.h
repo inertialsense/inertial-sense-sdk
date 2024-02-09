@@ -724,6 +724,11 @@ namespace fwUpdate {
         uint16_t fwUpdate_getSessionID() { return session_id; }
 
         /**
+         * @return the currently target slot number for this session, or -1 if no session has been started
+         */
+        uint16_t fwUpdate_getSessionImageSlot() { return session_id != 0 ? session_image_slot : -1; }
+
+        /**
          * @return the ID of the next chunk to be sent
          */
         uint16_t fwUpdate_getNextChunkID() { return next_chunk_id; }
