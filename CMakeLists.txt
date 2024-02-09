@@ -57,6 +57,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 # Other settings
 if(WIN32)
+	# yamlcpp needs to know it's a static lib
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
+
 	# Windows specific include dir
 	target_include_directories(${PROJECT_NAME} PUBLIC
 		${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
