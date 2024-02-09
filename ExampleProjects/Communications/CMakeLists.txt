@@ -23,4 +23,8 @@ link_directories(${IS_SDK_DIR})
 add_executable(${PROJECT_NAME} ISCommunicationsExample.c)
 
 # Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} InertialSenseSDK m)
+target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
+
+if(NOT WIN32)
+    target_link_libraries(${PROJECT_NAME} m)
+endif()

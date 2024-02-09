@@ -19,6 +19,11 @@ if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
     add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
 endif()
 
+if(WIN32)
+    # yamlcpp needs to know it's a static lib
+    add_definitions(-DYAML_CPP_STATIC_DEFINE)
+endif()
+
 # Add all the other sub projects
 add_subdirectory(Ascii)
 add_subdirectory(Bootloader)
