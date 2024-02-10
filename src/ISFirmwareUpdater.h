@@ -67,7 +67,7 @@ private:
     mz_zip_archive* zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
 
     dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
-    dev_info_t remoteDevInfo;
+    dev_info_t remoteDevInfo = {};
 
     void runCommand(std::string cmd);
 

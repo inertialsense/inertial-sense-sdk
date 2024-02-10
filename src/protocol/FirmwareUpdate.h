@@ -18,15 +18,15 @@
 
 #include "util/md5.h"
 
-#define DEBUG_LOGGING
-#ifdef DEBUG_LOGGING
-    #ifdef __ZEPHYR__
-        #include <zephyr/logging/log.h>
+// #define DEBUG_LOGGING
+#ifdef __ZEPHYR__
+    #include <zephyr/logging/log.h>
+#else
+    #ifdef DEBUG_LOGGING
+        #define LOG_DBG(...)    printf(__VA_ARGS__); printf("\n");
     #else
         #define LOG_DBG(...)
     #endif
-#else
-    #define DEBUG_LOG(...)
 #endif
 
 extern "C" {
@@ -101,7 +101,7 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_CHUNK_SIZE   512
+#define FWUPDATE__MAX_CHUNK_SIZE   4096
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
     static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
@@ -124,7 +124,7 @@ namespace fwUpdate {
         TARGET_MAXNUM,
     };
 
-    enum msg_types_e : int32_t {
+    enum msg_types_e : uint32_t {
         MSG_UNKNOWN = 0,            // an unknown or undefined message type.
         MSG_REQ_RESET = 1,          // a host is requesting that the device perform a reset.
         MSG_RESET_RESP = 2,         // response to the requesting host, that a reset was performed (but not guarantee that it was successful).

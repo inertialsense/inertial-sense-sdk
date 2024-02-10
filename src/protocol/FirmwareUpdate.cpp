@@ -147,6 +147,13 @@ namespace fwUpdate {
      * @return returns the total number of bytes in the packet, including aux data if any
      */
     int FirmwareUpdateBase::fwUpdate_mapBufferToPayload(const uint8_t *buffer, payload_t** payload, void** aux_data) {
+        // TODO: Remove after 2.1.0 release
+        // >=2.0.0.11  versions, the type was changes from a uint16_t to a uint32_t (but had the same packing)
+        // this would result in later version not interpreting the msg_type correctly (having non-zero high-order bits).
+        uint32_t msg_type = (int)(((payload_t*)buffer)->hdr.msg_type) & 0xFFFF;
+        ((payload_t*)buffer)->hdr.msg_type =  (msg_types_e)msg_type;
+        // TODO: End
+
         int payload_size = fwUpdate_getPayloadSize((payload_t *) buffer);
         int aux_len = 0;
 
@@ -173,7 +180,7 @@ namespace fwUpdate {
     bool FirmwareUpdateBase::fwUpdate_sendPayload(fwUpdate::payload_t& payload, void *aux_data) {
         int payload_len = fwUpdate_packPayload(build_buffer, FWUPDATE__MAX_PAYLOAD_SIZE, payload, aux_data);
         #ifdef DEBUG_LOGGING
-        LOG_DBG("Sent :: %s", fwUpdate_payloadToString(&payload));
+        LOG_DBG("Sending to %s", fwUpdate_payloadToString(&payload));
         #endif
 
         return fwUpdate_writeToWire((fwUpdate::target_t) payload.hdr.target_device, build_buffer, payload_len);
@@ -187,11 +194,14 @@ namespace fwUpdate {
         cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "%s : %s ", fwUpdate_getTargetName(payload->hdr.target_device), type_names[payload->hdr.msg_type]);
         switch (payload->hdr.msg_type) {
             case MSG_REQ_UPDATE:
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, image_size=%u, chunk_size=%u, ",
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, slot=%d, image_size=%u, chunk_size=%u, flags=%04X, progress_rate=%ums, md5=%s]",
                                     payload->data.req_update.session_id,
+                                    payload->data.req_update.image_slot,
                                     (unsigned int)payload->data.req_update.file_size,
-                                    payload->data.req_update.chunk_size);
-                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "md5=%s]", md5_to_string(payload->data.req_update.md5_hash).c_str());
+                                    payload->data.req_update.chunk_size,
+                                    payload->data.req_update.image_flags,
+                                    payload->data.req_update.progress_rate,
+                                    md5_to_string(payload->data.req_update.md5_hash).c_str());
                 break;
             case MSG_UPDATE_RESP:
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s', chunks=%d]",
@@ -215,9 +225,16 @@ namespace fwUpdate {
                 cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[session=%d, status='%s']",
                                     payload->data.resp_done.session_id, fwUpdate_getStatusName(payload->data.resp_done.status));
                 break;
+            case MSG_VERSION_INFO_RESP:
+                cur_len += snprintf(tmp + cur_len, sizeof(tmp) - cur_len, "[%s : %d.%d.%d.%d (%d), %04d-%02d-%02d]",
+                                    fwUpdate_getTargetName(payload->data.version_resp.resTarget), payload->data.version_resp.firmwareVer[0],
+                                    payload->data.version_resp.firmwareVer[1], payload->data.version_resp.firmwareVer[2], payload->data.version_resp.firmwareVer[3], payload->data.version_resp.buildNumber,
+                                    2000 + payload->data.version_resp.buildYear, payload->data.version_resp.buildMonth, payload->data.version_resp.buildDay);
+                break;
             default:
                 break;
         }
+        if (cur_len) { }
         return tmp;
         #else
         return nullptr;
@@ -303,7 +320,7 @@ namespace fwUpdate {
             return false; // if this message isn't for us, then we return false which will forward this message on to other connected devices
 
         #ifdef DEBUG_LOGGING
-        LOG_DBG("Received :: %s", fwUpdate_payloadToString(&payload));
+        LOG_DBG("Received by %s", fwUpdate_payloadToString(&payload));
         #endif
 
         fwUpdate_resetTimeout();
@@ -353,7 +370,6 @@ namespace fwUpdate {
         return fwUpdate_sendProgressFormatted(99, nullptr);
     }
 
-
     /**
      * This is an internal method used to send an update message to the host system regarding the status of the update process
      * @param level the criticality/severity of this message (0 = Critical, 1 = Error, 2 = Warning, 3 = Info, 4 = Debug, etc)
@@ -375,6 +391,9 @@ namespace fwUpdate {
     bool FirmwareUpdateDevice::fwUpdate_sendProgressFormatted(int level, const char* message, ...) {
         static char buffer[256];
         size_t msg_len = 0;
+
+        if ((session_id == 0) || (session_status == NOT_STARTED))
+            return false;
 
         if (message) {
             va_list ap;
@@ -641,7 +660,7 @@ namespace fwUpdate {
      */
     bool FirmwareUpdateHost::fwUpdate_processMessage(const payload_t& payload) {
         #ifdef DEBUG_LOGGING
-            LOG_DBG("Received: %s", fwUpdate_payloadToString(&payload));
+            LOG_DBG("Received by %s", fwUpdate_payloadToString(&payload));
         #endif
 
         if (payload.hdr.target_device != TARGET_HOST)
@@ -675,7 +694,6 @@ namespace fwUpdate {
                 break;
             case MSG_VERSION_INFO_RESP:
                 result = fwUpdate_handleVersionResponse(payload);
-                // FIXME: we want to do something with this data...
                 break;
             default:
                 break;
@@ -713,7 +731,7 @@ namespace fwUpdate {
 #else
         session_id = (uint16_t)rand();
 #endif
-        session_status = fwUpdate::INITIALIZING;
+        session_status = fwUpdate::NOT_STARTED;
 
         request.hdr.target_device = session_target = target_id;
         request.hdr.msg_type = fwUpdate::MSG_REQ_UPDATE;
@@ -730,7 +748,7 @@ namespace fwUpdate {
 
     bool FirmwareUpdateHost::fwUpdate_requestUpdate() {
 
-        if ((session_status != INITIALIZING) || (session_id == 0))
+        if ((session_status > NOT_STARTED) || (session_id == 0))
             return false;
 
         fwUpdate::payload_t request;
@@ -802,6 +820,12 @@ namespace fwUpdate {
         int chunk_len = fwUpdate_getImageChunk(offset, msg->data.chunk.data_len, &chunk_data);
         if (chunk_len == msg->data.chunk.data_len) {
             chunks_sent++; // we track the total number of chunks that we've tried to send, regardless of whether we sent it successfully or not
+
+            #ifdef DEBUG_LOGGING
+            // we don't call sendPayload from here (we just send our build_buffer direct to the writer.
+            LOG_DBG("Sending to %s", fwUpdate_payloadToString(msg));
+            #endif
+
             if (fwUpdate_writeToWire((fwUpdate::target_t) msg->hdr.target_device, build_buffer, msg_len))
                 next_chunk_id = msg->data.chunk.chunk_id + 1; // increment to the next chuck, if we're successful
         }

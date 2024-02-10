@@ -496,6 +496,29 @@ namespace ISFileManager {
         return true;
     }
 
+    /**
+     * Extracts and stores the base, filename, and ext(ension) components from the specified path
+     * @param path the path to parse
+     * @param parent the base or parent directory which contains the file. This is always an absolute path.
+     * @param file the filename which the path references. This is just the filename with the extension, and does not include any directory/path information.
+     * @param ext the filename extension of the filename. This is the same as the last matching characters of the filename, and is included for convenience.
+     * @return true if there was sufficient path information to extract the parent of the path, otherwise false.  This is NOT an error condition,
+     * but instead indicates (if true) that parent contains meaningful data.
+     */
+    bool getPathComponents(const std::string& path, std::string& parent, std::string& file, std::string& ext) {
+        bool hasParent = getParentDirectory(path, parent);
+
+        auto filePos = path.rfind(path_seperator);
+        if (filePos == std::string::npos) filePos = 0;
+        file = std::string(path, filePos + 1, path.length() - filePos);
+
+        auto extPos = path.rfind('.');
+        if (extPos == std::string::npos) extPos = 0;
+        ext = std::string(path, extPos, path.length() - extPos);
+
+        return hasParent;
+    }
+
     bool TouchFile(const std::string& path)
     {
     #if PLATFORM_IS_EVB_2
