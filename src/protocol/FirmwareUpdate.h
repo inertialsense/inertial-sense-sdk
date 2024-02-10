@@ -101,7 +101,7 @@ namespace fwUpdate {
  *
  */
 
-#define FWUPDATE__MAX_CHUNK_SIZE   4096
+#define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
     static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
