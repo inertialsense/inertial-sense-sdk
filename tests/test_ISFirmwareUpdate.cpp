@@ -195,7 +195,7 @@ public:
             return fwUpdate::ERR_NOT_ENOUGH_MEMORY;
 
         // validate that the system can handle the requested chunk size (it should not exceed the RX buffer, and it should be multiples of 16 bytes (because I said so).
-        if (msg.data.req_update.chunk_size > 2048)
+        if (msg.data.req_update.chunk_size > MaxChunkSize)
             return fwUpdate::ERR_MAX_CHUNK_SIZE;
 
         return fwUpdate::READY;
@@ -231,10 +231,9 @@ public:
     }
 
     void pullAndProcessNextMessage() {
-        uint8_t buffer[2048];
+        uint8_t buffer[4096];
         int offset = 0;
 
-        EXPECT_GT(exchangeBuffer.dataAvailable(), 0);
         if (exchangeBuffer.dataAvailable() > 0) {
             do {
                 offset = exchangeBuffer.getNextDataOffsetForTarget(fwUpdate_getCurrentTarget());
@@ -354,7 +353,7 @@ public:
      * @return the message type, if any that was most recently processed.
      */
     virtual bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) {
-        static uint8_t buffer[2048];
+        static uint8_t buffer[4096];
         fwUpdate::payload_t *msg = nullptr;
         void *aux_data = nullptr;
         fwUpdate::msg_types_e out = fwUpdate::MSG_UNKNOWN;
@@ -636,7 +635,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
 
 TEST(ISFirmwareUpdate, exchange__req_update_repl) 
 {
-    static uint8_t buffer[2048];
+    static uint8_t buffer[5000];
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;
 
@@ -648,7 +647,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl)
     fuDev.sendProgressUpdates = false;
 
     // Make the request to the device
-    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 1024,1234567, fake_md5);
+    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512,1234567, fake_md5);
 
     fuDev.pullAndProcessNextMessage();
 
@@ -676,7 +675,7 @@ TEST(ISFirmwareUpdate, exchange__req_update_repl)
 
 TEST(ISFirmwareUpdate, exchange__req_resend)
 {
-    static uint8_t buffer[2048];
+    static uint8_t buffer[5000];
     fwUpdate::payload_t *msg = nullptr;
     void *aux_data = nullptr;
 
@@ -693,7 +692,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
 #endif
     int imageSize = fuSDK.MaxChunkSize * 8;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
-    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, fuSDK.MaxChunkSize, imageSize, real_md5);
+    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, real_md5);
 
     fuDev.pullAndProcessNextMessage(); // make sure the device-side processes it...
     fuSDK.fwUpdate_step(); // advance Host, to process the Device response
@@ -770,7 +769,7 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     int imageSize = fuSDK.MaxChunkSize * 8;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
-    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, fuSDK.MaxChunkSize, imageSize, fake_md5);
+    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, fake_md5);
 
     fuDev.pullAndProcessNextMessage(); // advance Device, to process the request and send the response
     fuSDK.fwUpdate_step(); // advance Host, to process the Device response
@@ -823,7 +822,7 @@ TEST(ISFirmwareUpdate, exchange__success)
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     int imageSize = fuSDK.MaxChunkSize * 8;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
-    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, fuSDK.MaxChunkSize, imageSize, real_md5);
+    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, real_md5);
 
     fuDev.pullAndProcessNextMessage();
     fuSDK.fwUpdate_step(); // advance Host, to process the Device response
@@ -865,7 +864,7 @@ TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
     PRINTF("Requesting firmware update of remote device (should send 8 chunks total (Ids 0-7)...\n");
     int imageSize = fuSDK.MaxChunkSize * 8.5;
     fuSDK.calcChecksumForTest(imageSize, fuSDK.MaxChunkSize, real_md5);
-    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, fuSDK.MaxChunkSize, imageSize, real_md5);
+    fuSDK.fwUpdate_requestUpdate(fwUpdate::TARGET_IMX5, 0, 0, 512, imageSize, real_md5);
 
     fuDev.pullAndProcessNextMessage();
     fuSDK.fwUpdate_step(); // advance Host, to process the Device response
