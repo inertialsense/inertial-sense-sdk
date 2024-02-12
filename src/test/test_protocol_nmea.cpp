@@ -50,7 +50,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
 
     uint32_t outOptions = nmea_parse_ascb(port, a, n, outRmci);
 
-    cout << "rmci" << rmci[0].rmc.bits << " out: " <<  outRmci[0].rmc.bits << "\n"; 
+    cout << "rmci" << rmci[1].rmc.bits << " out: " <<  outRmci[1].rmc.bits << "\n"; 
 
     ASSERT_EQ( options, outOptions );
     for (int i=0; i<NUM_COM_PORTS; i++)
