@@ -5,11 +5,6 @@
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
-#include <iostream>
-
-using namespace std;
-
-
 
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
@@ -400,25 +395,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp)
 {
 	for(int i = 0; i < NMEA_MSG_ID_COUNT; i++)
-	{
-		
 		nmea_enable_stream(bits, period, i,  tmp[i]);
-		cout << "i: " << i << " tmp inside " << tmp[i] << "\r\n";
-	}
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PIMU,  tmp[NMEA_MSG_ID_PIMU]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PPIMU, tmp[NMEA_MSG_ID_PPIMU]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PRIMU, tmp[NMEA_MSG_ID_PRIMU]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS1, tmp[NMEA_MSG_ID_PINS1]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS2, tmp[NMEA_MSG_ID_PINS2]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PGPSP, tmp[NMEA_MSG_ID_PGPSP]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGGA, tmp[NMEA_MSG_ID_GxGGA]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGLL, tmp[NMEA_MSG_ID_GxGLL]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSA, tmp[NMEA_MSG_ID_GxGSA]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxRMC, tmp[NMEA_MSG_ID_GxRMC]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxZDA, tmp[NMEA_MSG_ID_GxZDA]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PASHR, tmp[NMEA_MSG_ID_PASHR]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSV,	tmp[NMEA_MSG_ID_GxGSV]);
-	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxVTG, tmp[NMEA_MSG_ID_GxVTG]);
 }
 
 //////////////////////////////////////////////////////////////////////////
