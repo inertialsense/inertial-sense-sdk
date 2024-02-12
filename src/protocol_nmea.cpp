@@ -7,6 +7,9 @@
 #include "data_sets.h"
 
 
+using namespace std;
+
+
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
@@ -1951,9 +1954,6 @@ int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 
 	return 0;
 }
-#include <vector>
-
-using namespace std;
 
 // Returns RMC options
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
