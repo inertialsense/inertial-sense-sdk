@@ -400,12 +400,6 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 		bits &= ~(nmeaBits);
 }
 
-void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp)
-{
-	for(int i = 0; i < NMEA_MSG_ID_COUNT; i++)
-		nmea_enable_stream(bits, period, i,  tmp[i]);
-}
-
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA
 //////////////////////////////////////////////////////////////////////////
@@ -2045,67 +2039,6 @@ int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	// 5,6 - 00,00
 
 	return 0;
-}
-
-// Returns RMC options
-uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
-{
-	(void)msgSize;
-	if(pHandle >= NUM_COM_PORTS)
-	{
-		return 0;
-	}
-	
-	uint16_t tmp[NMEA_MSG_ID_COUNT] = {};
-	uint32_t options = 0;	
-	char *ptr = (char *)&msg[6];				// $ASCB
-	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }	
-
-	ptr = ASCII_find_next_field(ptr);	// PIMU
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PIMU] = (uint16_t)atoi(ptr);}	
-	ptr = ASCII_find_next_field(ptr);	// PPIMU
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PPIMU] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PINS1
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PINS1] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PINS2
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PINS2] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PGPSP
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PGPSP] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PRIMU
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PRIMU] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gga
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGGA] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gll
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGLL] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gsa
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGSA] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// rmc
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxRMC]= (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// zda
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxZDA] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// pashr
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PASHR] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gsv
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGSV] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// vtg
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxVTG] = (uint16_t)atoi(ptr);}
-
-	// Copy tmp to corresponding port(s)
-	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
-	switch (ports)
-	{
-		case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
-		case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, tmp); } break;
-			
-		default:	// Current port
-			if (ports & RMC_OPTIONS_PORT_SER0)	{ nmea_set_rmc_period_multiple(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, tmp); }
-			if (ports & RMC_OPTIONS_PORT_SER1)	{ nmea_set_rmc_period_multiple(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, tmp); }
-			if (ports & RMC_OPTIONS_PORT_SER2)	{ nmea_set_rmc_period_multiple(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, tmp); }
-			if (ports & RMC_OPTIONS_PORT_USB)	{ nmea_set_rmc_period_multiple(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, tmp); }
-			break;
-	}
-		
-	return options;
 }
 
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
