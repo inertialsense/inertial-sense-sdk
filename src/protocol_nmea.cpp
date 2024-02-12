@@ -1951,6 +1951,9 @@ int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 
 	return 0;
 }
+#include <vector>
+
+using namespace std;
 
 // Returns RMC options
 uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
@@ -1994,6 +1997,11 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGSV] = (uint16_t)atoi(ptr);}
 	ptr = ASCII_find_next_field(ptr);	// vtg
 	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxVTG] = (uint16_t)atoi(ptr);}
+
+for(int ii = 0; ii < NMEA_MSG_ID_COUNT; ii++)
+{
+	cout << "I: " << ii << " tmp: " << tmp[ii] << "\r\n";
+}
 
 	// Copy tmp to corresponding port(s)
 	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
