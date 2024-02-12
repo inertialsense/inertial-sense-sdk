@@ -18,6 +18,7 @@ PYBIND11_NUMPY_DTYPE(ground_vehicle_t, timeOfWeekMs, status, mode, wheelConfig);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_vehicle_t, velCmd_f, velCmd_w, velCmdMnl_f, velCmdMnl_w, velCmdSlew_f, velCmdSlew_w, vel_f, vel_w, err_f, err_w, eff_f, eff_w);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_wheel_t, velCmd, velCmdSlew, vel, err, ff_eff, fb_eff, fb_eff_integral, eff, effInt, effDuty);
 PYBIND11_NUMPY_DTYPE(evb_luna_velocity_control_t, timeMs, dt, current_mode, status, vehicle, wheel_l, wheel_r, potV_l, potV_r);
+PYBIND11_NUMPY_DTYPE(nmeaBroadcastMsgPair_t, msgID, msgPeriod);
 
 // Public Types
 PYBIND11_NUMPY_DTYPE(dev_info_t, reserved, serialNumber, hardwareVer, firmwareVer, buildNumber, protocolVer, repoRevision, manufacturer, buildDate, buildTime, addInfo);
@@ -28,7 +29,7 @@ PYBIND11_NUMPY_DTYPE(ins_2_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw,
 PYBIND11_NUMPY_DTYPE(ins_3_t, week, timeOfWeek, insStatus, hdwStatus, qn2b, uvw, lla, msl);
 PYBIND11_NUMPY_DTYPE(ins_4_t, week, timeOfWeek, insStatus, hdwStatus, qe2b, ve, ecef);
 PYBIND11_NUMPY_DTYPE(system_command_t, command, invCommand);
-PYBIND11_NUMPY_DTYPE(nmea_msgs_t, options, pimu, ppimu, pins1, pins2, pgpsp, primu, gga, gll, gsa, rmc, zda, pashr, gsv, vtg);
+PYBIND11_NUMPY_DTYPE(nmea_msgs_t, options, msgCount, nmeaBroadcastMsgs);
 PYBIND11_NUMPY_DTYPE(rmc_t, bits, options);
 PYBIND11_NUMPY_DTYPE(sys_params_t, timeOfWeekMs, insStatus, hdwStatus, imuTemp, baroTemp, mcuTemp, sysStatus, imuSamplePeriodMs, navOutputPeriodMs, sensorTruePeriod, flashCfgChecksum, navUpdatePeriodMs, genFaultCode);
 PYBIND11_NUMPY_DTYPE(sys_sensors_t, time, temp, pqr, acc, mag, bar, barTemp, mslBar, humidity, vin, ana1, ana3, ana4);
