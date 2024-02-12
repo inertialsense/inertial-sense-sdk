@@ -404,7 +404,7 @@ void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp
 		
 		nmea_enable_stream(bits, period, i,  tmp[i]);
 		cout << "i: " << i << " tmp inside " << tmp[i] << "\r\n";
-	// }
+	}
 	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PIMU,  tmp[NMEA_MSG_ID_PIMU]);
 	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PPIMU, tmp[NMEA_MSG_ID_PPIMU]);
 	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PRIMU, tmp[NMEA_MSG_ID_PRIMU]);
