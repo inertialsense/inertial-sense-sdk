@@ -399,20 +399,26 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 
 void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp)
 {
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PIMU,  tmp[NMEA_MSG_ID_PIMU]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PPIMU, tmp[NMEA_MSG_ID_PPIMU]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PRIMU, tmp[NMEA_MSG_ID_PRIMU]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS1, tmp[NMEA_MSG_ID_PINS1]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS2, tmp[NMEA_MSG_ID_PINS2]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PGPSP, tmp[NMEA_MSG_ID_PGPSP]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGGA, tmp[NMEA_MSG_ID_GxGGA]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGLL, tmp[NMEA_MSG_ID_GxGLL]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSA, tmp[NMEA_MSG_ID_GxGSA]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxRMC, tmp[NMEA_MSG_ID_GxRMC]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxZDA, tmp[NMEA_MSG_ID_GxZDA]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_PASHR, tmp[NMEA_MSG_ID_PASHR]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSV,	tmp[NMEA_MSG_ID_GxGSV]);
-	nmea_enable_stream(bits, period, NMEA_MSG_ID_GxVTG, tmp[NMEA_MSG_ID_GxVTG]);
+	for(int i = 0; i < NMEA_MSG_ID_COUNT; i++)
+	{
+		
+		nmea_enable_stream(bits, period, i,  tmp[i]);
+		cout << "i: " << i << " tmp inside " << tmp[i] << "\r\n";
+	// }
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PIMU,  tmp[NMEA_MSG_ID_PIMU]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PPIMU, tmp[NMEA_MSG_ID_PPIMU]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PRIMU, tmp[NMEA_MSG_ID_PRIMU]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS1, tmp[NMEA_MSG_ID_PINS1]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PINS2, tmp[NMEA_MSG_ID_PINS2]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PGPSP, tmp[NMEA_MSG_ID_PGPSP]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGGA, tmp[NMEA_MSG_ID_GxGGA]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGLL, tmp[NMEA_MSG_ID_GxGLL]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSA, tmp[NMEA_MSG_ID_GxGSA]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxRMC, tmp[NMEA_MSG_ID_GxRMC]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxZDA, tmp[NMEA_MSG_ID_GxZDA]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_PASHR, tmp[NMEA_MSG_ID_PASHR]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxGSV,	tmp[NMEA_MSG_ID_GxGSV]);
+	// nmea_enable_stream(bits, period, NMEA_MSG_ID_GxVTG, tmp[NMEA_MSG_ID_GxVTG]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1965,7 +1971,7 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 		return 0;
 	}
 	
-	uint16_t tmp[NMEA_MSG_ID_COUNT];
+	uint16_t tmp[NMEA_MSG_ID_COUNT] = {};
 	uint32_t options = 0;	
 	char *ptr = (char *)&msg[6];				// $ASCB
 	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }	
@@ -2008,7 +2014,9 @@ for(int ii = 0; ii < NMEA_MSG_ID_COUNT; ii++)
 	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
 	switch (ports)
 	{
-	case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
+	case RMC_OPTIONS_PORT_CURRENT:	
+		cout << "here current\r\n";
+	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
 	case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, tmp); } break;
 		
 	default:	// Current port
