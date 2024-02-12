@@ -46,11 +46,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
 
     rmci_t outRmci[NUM_COM_PORTS] = {};
 
-    cout << "a: " << a << "\n"; 
-
     uint32_t outOptions = nmea_parse_ascb(port, a, n, outRmci);
-
-    cout << "rmci " << rmci[1].rmc.bits << " out: " <<  outRmci[1].rmc.bits << "\n"; 
 
     ASSERT_EQ( options, outOptions );
     for (int i=0; i<NUM_COM_PORTS; i++)
@@ -59,10 +55,11 @@ TEST(protocol_nmea, nmea_parse_ascb)
         rmci_t &b = outRmci[i];
         ASSERT_EQ( a.rmc.bits, b.rmc.bits );
         ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
-        cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
+        
+        //cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
         for (int j=0; j<NMEA_MSG_ID_COUNT; j++)
         {
-            cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n"; 
+            //cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n"; 
             ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );
         }    
     }

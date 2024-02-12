@@ -2005,26 +2005,19 @@ uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	ptr = ASCII_find_next_field(ptr);	// vtg
 	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxVTG] = (uint16_t)atoi(ptr);}
 
-for(int ii = 0; ii < NMEA_MSG_ID_COUNT; ii++)
-{
-	cout << "I: " << ii << " tmp: " << tmp[ii] << "\r\n";
-}
-
 	// Copy tmp to corresponding port(s)
 	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
 	switch (ports)
 	{
-	case RMC_OPTIONS_PORT_CURRENT:	
-		cout << "here current\r\n";
-	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
-	case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, tmp); } break;
-		
-	default:	// Current port
-		if (ports & RMC_OPTIONS_PORT_SER0)	{ nmea_set_rmc_period_multiple(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, tmp); }
-		if (ports & RMC_OPTIONS_PORT_SER1)	{ nmea_set_rmc_period_multiple(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, tmp); }
-		if (ports & RMC_OPTIONS_PORT_SER2)	{ nmea_set_rmc_period_multiple(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, tmp); }
-		if (ports & RMC_OPTIONS_PORT_USB)	{ nmea_set_rmc_period_multiple(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, tmp); }
-		break;
+		case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
+		case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, tmp); } break;
+			
+		default:	// Current port
+			if (ports & RMC_OPTIONS_PORT_SER0)	{ nmea_set_rmc_period_multiple(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, tmp); }
+			if (ports & RMC_OPTIONS_PORT_SER1)	{ nmea_set_rmc_period_multiple(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, tmp); }
+			if (ports & RMC_OPTIONS_PORT_SER2)	{ nmea_set_rmc_period_multiple(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, tmp); }
+			if (ports & RMC_OPTIONS_PORT_USB)	{ nmea_set_rmc_period_multiple(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, tmp); }
+			break;
 	}
 		
 	return options;
