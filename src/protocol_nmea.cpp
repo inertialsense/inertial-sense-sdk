@@ -5,9 +5,10 @@
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
-
+#include <iostream>
 
 using namespace std;
+
 
 
 static int s_protocol_version = 0;
