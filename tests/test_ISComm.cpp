@@ -101,7 +101,7 @@ int msgHandlerNmea2(int pHandle, const uint8_t* msg, int msgSize)
 	{	// 4 character commands (i.e. "$STPB*14\r\n")
 		switch (getNmeaMsgId(msg, msgSize))
 		{
-		case NMEA_MSG_ID_ASCB:	// query NMEA message broadcast rates
+		case NMEA_MSG_ID_ASCE:	// query NMEA message broadcast rates
 		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
 			break;
 

@@ -1771,7 +1771,6 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_COUNT,
 
 	// IMX/GPX Input Commands
-    NMEA_MSG_ID_ASCB,         // "ASCB" - NMEA messages broadcast periods
     NMEA_MSG_ID_ASCE,         // "ASCE" - NMEA messages broadcast enable
     NMEA_MSG_ID_BLEN,         // "BLEN" - Enable bootloader on IMX (app firmware update)	
     NMEA_MSG_ID_EBLE,         // "EBLE" - Enable bootloader on EVB
