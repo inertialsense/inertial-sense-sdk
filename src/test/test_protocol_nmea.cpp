@@ -45,9 +45,12 @@ TEST(protocol_nmea, nmea_parse_ascb)
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
     rmci_t outRmci[NUM_COM_PORTS] = {};
+
+    cout << "a: " << a << "\n"; 
+
     uint32_t outOptions = nmea_parse_ascb(port, a, n, outRmci);
 
-    cout << "I: 0 in: " << rmci[0].rmc.bits << " out: " <<  outRmci[0].rmc.bits << "\n"; 
+    cout << "rmci" << rmci[0].rmc.bits << " out: " <<  outRmci[0].rmc.bits << "\n"; 
 
     ASSERT_EQ( options, outOptions );
     for (int i=0; i<NUM_COM_PORTS; i++)
