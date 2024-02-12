@@ -449,7 +449,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_SONY_CXD5610__1; // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
                 splitString(std::string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
                 //g_commandLineOptions.fwUpdateCmds = argv[++i];    // use next argument
             }

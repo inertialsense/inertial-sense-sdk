@@ -17,8 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-#include <stdbool.h>
-
 #include "ISMatrix.h"
 #include "ISConstants.h"
 #include "ISPose.h"
@@ -225,7 +223,7 @@ void gndSpeedToVelEcef(const float gndSpeed, const float hdg, const float vertVe
  * @param sec                   time of week in gps time (s)
  * @return                      gtime_t struct
  */
-gtime_t gpst2time(int week, double sec);
+gtime_t ISgpst2time(int week, double sec);
 
 /**
  * @brief Convert gtime_t struct to week and tow in gps time
@@ -233,7 +231,7 @@ gtime_t gpst2time(int week, double sec);
  * @param week                  number in gps time (NULL: no output)
  * @return                      time of week in gps time (s)
  */
-double time2gpst(gtime_t t, int *week);
+double IStime2gpst(gtime_t t, int *week);
 
 /**
  * @brief Add time to gtime_t struct
@@ -241,28 +239,28 @@ double time2gpst(gtime_t t, int *week);
  * @param sec                   time to add (s)
  * @return                      gtime_t struct (t+sec)
  */
-gtime_t timeadd(gtime_t t, double sec);
+gtime_t IStimeadd(gtime_t t, double sec);
 
 /**
  * @brief Difference between gtime_t structs
  * @param t1, t2                gtime_t structs
  * @return                      time difference (t1-t2) (s)
  */
-double timediff(gtime_t t1, gtime_t t2);
+double IStimediff(gtime_t t1, gtime_t t2);
 
 /** 
  * @brief Convert calendar day/time to gtime_t struct
  * @param ep                    Pointer to day/time {year,month,day,hour,min,sec}
  * @return                      gtime_t struct
  */
-gtime_t epoch2time(const double *ep);
+gtime_t ISepoch2time(const double *ep);
 
 /**
  * @brief convert utc to gpstime considering leap seconds
  * @param args                  time expressed in utc
  * @return                      time expressed in gpstime
  */
-gtime_t utc2gpst(gtime_t t);
+gtime_t ISutc2gpst(gtime_t t);
 #endif
 
 #ifdef __cplusplus

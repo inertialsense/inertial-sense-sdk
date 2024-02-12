@@ -1,37 +1,30 @@
-# This example project does not use the CMakeCommon.txt file in the SDK/src folder
-# If you don't want to follow that pattern, you can create your own cmake file
-# The one define BUILD_INERTIAL_SENSE_SDK needs to be checked, and if on,
-#  link the InertialSense library only
-
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
 project(ISCommunicationsExample)
 
-if(NOT WIN32)
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
+
+find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
+    # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
+    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
 endif()
 
-if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
-
-add_executable(ISCommunicationsExample ISCommunicationsExample.c)
-target_link_libraries(ISCommunicationsExample InertialSense)
-
-else()	# Build only this project
-
-add_executable(ISCommunicationsExample
-    ISCommunicationsExample.c
-    ../../src/data_sets.c
-    ../../src/ISComm.c
-    ../../src/ISMatrix.c
-    ../../src/ISPose.c
-    ../../src/serialPort.c
-    ../../src/serialPortPlatform.c
+# Include InertialSenseSDK header files
+include_directories(
+    ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/libusb/libusb
 )
 
-if(NOT WIN32)
-	# Link in Linux specific packages
-	target_link_libraries(ISCommunicationsExample udev m)
-endif()
+# Link the InertialSenseSDK static library 
+link_directories(${IS_SDK_DIR})
 
+# Define the executable
+add_executable(${PROJECT_NAME} ISCommunicationsExample.c)
+
+# Link InertialSenseSDK static library to the executable
+target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
+
+if(NOT WIN32)
+    target_link_libraries(${PROJECT_NAME} m)
 endif()

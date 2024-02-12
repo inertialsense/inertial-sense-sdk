@@ -854,7 +854,7 @@ static double leaps[MAXLEAPS + 1][7] = { /* leap seconds (y,m,d,h,m,s,utc-gpst) 
     {0}
 };
 
-gtime_t epoch2time(const double *ep)
+gtime_t ISepoch2time(const double *ep)
 {
     const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
     gtime_t time = { 0 };
@@ -871,7 +871,7 @@ gtime_t epoch2time(const double *ep)
     return time;
 }
 
-gtime_t timeadd(gtime_t t, double sec)
+gtime_t IStimeadd(gtime_t t, double sec)
 {
     double tt;
     t.sec += sec; 
@@ -881,26 +881,26 @@ gtime_t timeadd(gtime_t t, double sec)
     return t;
 }
 
-double timediff(gtime_t t1, gtime_t t2)
+double IStimediff(gtime_t t1, gtime_t t2)
 {
     return ((double)(t1.time - t2.time)) + (t1.sec - t2.sec);
 }
 
-gtime_t utc2gpst(gtime_t t)
+gtime_t ISutc2gpst(gtime_t t)
 {
     int i;
 
     for (i = 0; leaps[i][0] > 0; i++) {
-        if (timediff(t, epoch2time(leaps[i])) >= 0.0) {
-            return timeadd(t, -leaps[i][6]);
+        if (IStimediff(t, ISepoch2time(leaps[i])) >= 0.0) {
+            return IStimeadd(t, -leaps[i][6]);
         }
     }
     return t;
 }
 
-gtime_t gpst2time(int week, double sec)
+gtime_t ISgpst2time(int week, double sec)
 {
-    gtime_t t = epoch2time(gpst0);
+    gtime_t t = ISepoch2time(gpst0);
 
     if (sec < -1E9 || 1E9 < sec) 
         sec = 0.0;
@@ -909,9 +909,9 @@ gtime_t gpst2time(int week, double sec)
     return t;
 }
 
-double time2gpst(gtime_t t, int *week)
+double IStime2gpst(gtime_t t, int *week)
 {
-    gtime_t t0 = epoch2time(gpst0);
+    gtime_t t0 = ISepoch2time(gpst0);
     time_t sec = t.time - t0.time;
     time_t w = (time_t)(sec / (86400 * 7));
 

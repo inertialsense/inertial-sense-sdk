@@ -1,45 +1,33 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-# Required: set the project
 project(IS-SDK_unit-tests)
 
-# Optional: add any libraries this project needs
-#set(PROJECT_LIBS "")
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+
+find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
+    # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
+    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+endif()
+
+# Include InertialSenseSDK header files
+include_directories(
+    ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/protocol
+    ${IS_SDK_DIR}/src/libusb/libusb
+    ${IS_SDK_DIR}/src/util
+)
 
 find_package(GTest REQUIRED)
 
-file(GLOB TESTS_SRC "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
-list(FILTER TESTS_SRC EXCLUDE REGEX "test_com_manager_2.cpp")
+# Link the InertialSenseSDK static library 
+link_directories(${IS_SDK_DIR})
 
-# Required: set SOURCES_PROJECT to the code in this project, the files must go on their own lines
-set(SOURCES_PROJECT ${TESTS_SRC})
+file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
+list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 
-include_directories(${GTEST_INCLUDE_DIRS}
-		${PROJECT_DIR}/src
-		${PROJECT_DIR}/src/libusb
-		${PROJECT_DIR}/src/libusb/linux
-		${PROJECT_DIR}/src/libusb/libusb
-		${PROJECT_DIR}/src/yaml-cpp
-		${PROJECT_DIR}/external
-		)
+# Define the executable
+add_executable(${PROJECT_NAME} ${TESTS_SOURCES})
 
-# Everything is setup, use common template to build
-include(../CMakeCommon.txt)
-
-#add_library(${PROJECT_NAME}
-#		${TESTS_SRC}
-#		${SOURCES_SDK}
-#		)
-
-# add_executable(${PROJECT_NAME} ${SOURCES_PROJECT})
-# add_executable(${PROJECT_NAME} ${TESTS_SRC})
-
-# add_executable(${PROJECT_NAME} ${SOURCES_PROJECT})
-target_link_libraries(${PROJECT_NAME} gtest_main ${GTEST_LIBRARIES} udev pthread m)
-
-#    target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-#    add_test(NAME ${PROJECT_NAME}
-#             COMMAND ${PROJECT_NAME} --gtest_color=true)
-
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -fms-extensions")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fms-extensions")
+# Link InertialSenseSDK static library to the executable
+target_link_libraries(${PROJECT_NAME} gtest_main InertialSenseSDK ${GTEST_LIBRARIES} udev pthread m)

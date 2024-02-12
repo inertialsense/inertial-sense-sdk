@@ -42,7 +42,7 @@ if(BUILD_INERTIAL_SENSE_SDK AND NOT BUILD_LIB)
 	add_executable(${PROJECT_NAME} ${SOURCES_PROJECT})
 	
 	# Link the sdk lib
-	target_link_libraries(${PROJECT_NAME} InertialSense)
+	target_link_libraries(${PROJECT_NAME} InertialSenseSDK)
 	
 	if(PROJECT_LIBS)
 		target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBS})

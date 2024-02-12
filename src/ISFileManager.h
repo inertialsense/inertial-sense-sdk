@@ -75,14 +75,15 @@ namespace ISFileManager
     bool getParentDirectory(const std::string& path, std::string& parent);
 
     /**
-     * breaks down the specified path into its component parts [base path, filename, file extension]
-     * @param path the full path to parse
-     * @param base the resulting base path
-     * @param filename the resulting filename
-     * @param ext the resulting file extension
-     * @return 0 if success, -1 on error
+     * Extracts and stores the base, filename, and ext(ension) components from the specified path
+     * @param path the path to parse
+     * @param parent the base or parent directory which contains the file. This is always an absolute path.
+     * @param file the filename which the path references. This is just the filename with the extension, and does not include any directory/path information
+     * @param ext the filename extension of the filename. This is the same as the last matching characters of the filename, and is included for convenience.
+     * @return true if there was sufficient path information to extract the parent of the path, otherwise false.  This is NOT an error condition,
+     * but instead indicates (if true) that parent contains meaningful data.
      */
-    int getPathComponents(const std::string& path, std::string& base, std::string& filename, std::string& ext);
+    bool getPathComponents(const std::string& path, std::string& parent, std::string& file, std::string& ext);
 
     bool TouchFile(const std::string& path);
 

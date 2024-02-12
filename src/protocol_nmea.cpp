@@ -7,7 +7,6 @@
 #include "data_sets.h"
 #include "util/md5.h"
 
-
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
 
