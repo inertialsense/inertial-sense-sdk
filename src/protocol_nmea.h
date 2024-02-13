@@ -4,7 +4,6 @@
 #include "data_sets.h"
 
 #define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
-#define NMEA_CMD_QUERY_ASCB_BROADCAST_RATES             "$ASCB*13\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT           "$STPC*14\r\n"
 #define NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH      "$PERS*14\r\n"
@@ -38,7 +37,6 @@ char *ASCII_to_vec4f(float vec[], char *ptr);
 char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
-void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, nmea_msgs_t tmp);
 int getNmeaMsgId(const void* msg, int msgSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
@@ -83,7 +81,6 @@ int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int a
 int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3]);
 int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS);
 
-uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS]);
 int nmea_parse_zda(const char msgBuf[], int msgSize, double &day, double &month, double &year);
