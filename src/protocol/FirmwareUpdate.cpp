@@ -11,7 +11,9 @@ LOG_MODULE_REGISTER(FirmwareUpdater, LOG_LEVEL_DBG);
 
 namespace fwUpdate {
 
+#ifdef DEBUG_LOGGING
     static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_DONE", "REQ_VERSION", "VERSION_RESP"};
+#endif
     static const char* status_names[] = { "ERR_UNKNOWN", "ERR_INVALID_IMAGE", "ERR_UPDATER_CLOSED", "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
                                           "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
     static const char* status_names_nice[] = {
@@ -39,7 +41,9 @@ namespace fwUpdate {
             "Finished"                         // FINISHED
     };
 
+#ifdef DEBUG_LOGGING
     static const char* reason_names[] = { "NONE", "INVALID_SEQID", "WRITE_ERROR", "INVALID_SIZE" };
+#endif
 
     /*==================================================================================*
      * Firmware Base Implementation goes here                                           *
