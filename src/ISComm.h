@@ -71,6 +71,8 @@ extern "C" {
 #define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
 #define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
 
+#define ZEPHYR_SUCCESS_CODE     	0
+
 /** Protocol Type */
 typedef enum
 {
@@ -149,9 +151,17 @@ typedef enum
     IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
     IS_BAUDRATE_COUNT           = 9,
 	IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
+	IS_BAUDRATE_STANDARD_MIN    = IS_BAUDRATE_9600,
 	IS_BAUDRATE_STANDARD_MAX    = IS_BAUDRATE_921600,
 	IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
+
+typedef struct
+{
+    uint32_t 			   baudRate;
+    uint8_t 			   parity;
+    uint8_t 			   stopBits;
+} serial_options_t;
 
 /** List of valid baud rates */
 extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
