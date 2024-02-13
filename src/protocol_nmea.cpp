@@ -1497,8 +1497,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
     switch(*talker)
 	{
 	case 'A':
-		if      (UINT32_MATCH(talker,"ASCB"))       { return NMEA_MSG_ID_ASCB; }
-		else if (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
+		if (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
 		break;
 
 	case 'B':
