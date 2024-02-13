@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <deque>
-#include "../ISComm.h"
-#include "../ring_buffer.h"
-#include "../protocol_nmea.h"
+#include "ISComm.h"
+#include "ring_buffer.h"
+#include "protocol_nmea.h"
 
 #if 0
 extern "C"

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <stdlib.h>
 #include <cmath>
-#include "../ISConstants.h"
-#include "../ISMatrix.h"
+#include "ISConstants.h"
+#include "ISMatrix.h"
 
 // #include "Eigen/Core"
 // #include "Eigen/Dense"

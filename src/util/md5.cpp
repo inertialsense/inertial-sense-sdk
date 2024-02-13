@@ -275,7 +275,7 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
     {
         uint8_t buff[MD5_BUFF_SIZE] = {};
         is->read((char *)buff, sizeof(buff));
-        int len = is->gcount();
+        int len = (int)is->gcount();
 
         md5_update(context, (const unsigned char *)buff, (unsigned int)len);
 
@@ -286,7 +286,7 @@ int md5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
         }
         else
         {
-            int32_t tell = is->tellg();
+            int32_t tell = (int32_t)is->tellg();
             if (tell != -1) {
                 filesize = tell;
             }
@@ -425,14 +425,14 @@ md5hash_t* altMD5_hash(size_t data_len, uint8_t* data) {
     if (data_len == 0)
         return &g_md5hash;
 
-    int new_len = ((((data_len + 8) / 64) + 1) * 64) - 8;
+    int new_len = (int)(((((data_len + 8) / 64) + 1) * 64) - 8);
 
     msg = static_cast<uint8_t *>(calloc(new_len + 64, 1)); // also appends "0" bits
     // (we alloc also 64 extra bytes...)
     memcpy(msg, data, data_len);
     msg[data_len] = 128; // write the "1" bit
 
-    uint32_t bits_len = 8*data_len; // note, we append the len
+    uint32_t bits_len = (uint32_t)(8*data_len); // note, we append the len
     memcpy(msg + new_len, &bits_len, 4);           // in bits at the end of the buffer
 
     // Process the message in successive 512-bit chunks:
@@ -517,7 +517,7 @@ int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
     {
         uint8_t buff[MD5_BUFF_SIZE] = {};
         is->read((char *)buff, sizeof(buff));
-        int len = is->gcount();
+        int len = (int)(is->gcount());
 
         altMD5_hash(len, (uint8_t *)buff);
 
@@ -528,7 +528,7 @@ int altMD5_file_details(std::istream* is, size_t& filesize, md5hash_t& md5)
         }
         else
         {
-            int32_t tell = is->tellg();
+            int32_t tell = (int32_t)(is->tellg());
             if (tell != -1) {
                 filesize = tell;
             }

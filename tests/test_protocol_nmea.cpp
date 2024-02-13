@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
-#include "../protocol_nmea.h"
-#include "../ISEarth.h"
+#include "protocol_nmea.h"
+#include "ISEarth.h"
 using namespace std;
 
 #define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }

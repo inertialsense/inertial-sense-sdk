@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <deque>
-#include "../ring_buffer.h"
-#include "../ISComm.h"
+#include "ring_buffer.h"
+#include "ISComm.h"
 
 #define BUFFER_SIZE	1024
 
