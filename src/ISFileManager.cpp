@@ -482,7 +482,7 @@ namespace ISFileManager {
         // first check if path is absolute
         if (!isPathAbsolute(path)) {
             char curdir[256];
-            if (getcwd(curdir, sizeof(curdir)))
+            if (_GETCWD(curdir, sizeof(curdir)))
             {   // Handle error
             }
             realPath = std::string(curdir) + path_seperator + path;
