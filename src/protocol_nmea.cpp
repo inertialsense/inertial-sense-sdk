@@ -441,39 +441,30 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 	return nmea_sprint_footer(a, aSize, n);
 }
 
+/**
+ * Genterates NMEA ASCE request response
+*/
 int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
 {
-	int n = ssnprintf(a, aSize, "$INFO"
-		",%d"                   // 1
-		",%d.%d.%d.%d"          // 2
-		",%d.%d.%d.%d"          // 3
-		",%d"                   // 4
-		",%d.%d.%d.%d"          // 5
-		",%d"                   // 6
-		",%s"                   // 7
-		",%04d-%02d-%02d"       // 8
-		",%02d:%02d:%02d.%02d"  // 9
-		",%s"                   // 10
-		",%d"                   // 11
-		",%d"                   // 12
-		",%c"                   // 13
-		// TODO: dev_info_t.firmwareMD5Hash support
-		// ",%08x%08x%08x%08x"     // 14
-		, (int)info.serialNumber // 1
-		, info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3] // 2
-		, info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3] // 3
-		, (int)info.buildNumber  // 4
-		, info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3] // 5
-		, (int)info.repoRevision // 6
-		, info.manufacturer      // 7
-		, info.buildYear+2000, info.buildMonth, info.buildDay // 8
-		, info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond // 9
-		, info.addInfo           // 10
-		, info.hardware          // 11
-		, info.reserved          // 12
-		, (info.buildType ? info.buildType : ' ') // 13
-		// , info.firmwareMD5Hash[0], info.firmwareMD5Hash[1], info.firmwareMD5Hash[2], info.firmwareMD5Hash[3]	// 14
-		);
+	nmeaBroadcastMsgPair_t pairs[MAX_nmeaBroadcastMsgPairs];
+	int activeRMC = 0;
+
+	for(int i = 0; (i < NMEA_MSG_ID_COUNT) && (activeRMC < MAX_nmeaBroadcastMsgPairs); i++)
+	{
+		if(((nRMC->nmeaBits & (0x01 << i)) != 0) && (nRMC->nmeaPeriod[i] > 0))
+		{
+			pairs[activeRMC].msgID = i;
+			pairs[activeRMC].msgPeriod = nRMC->nmeaPeriod[i];
+			activeRMC++;
+		}
+	}
+
+	// Base msg with current port set
+	int n = ssnprintf(a, aSize, "$ASCE,0");
+
+	// finish populating msg
+	for(int i = 0; (i < activeRMC) && (i < MAX_nmeaBroadcastMsgPairs); i++)
+		n += ssnprintf(a+n, aSize-n, ",%d,%d", pairs[i].msgID, pairs[i].msgPeriod);
 
 	return nmea_sprint_footer(a, aSize, n);
 }
