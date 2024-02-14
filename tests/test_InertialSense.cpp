@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <deque>
-#include "../InertialSense.h"
+#include "InertialSense.h"
 
 
 TEST(InertialSense, General)

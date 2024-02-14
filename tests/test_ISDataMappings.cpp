@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <deque>
-#include "../ISDataMappings.h"
+#include "ISDataMappings.h"
 
 using namespace std;
 

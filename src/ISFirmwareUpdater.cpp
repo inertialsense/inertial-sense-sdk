@@ -7,6 +7,13 @@
 #include "ISUtilities.h"
 #include "util/md5.h"
 
+
+/**
+ * Specifies the target device that you wish to update. This will attempt an initial REQ_VERSION request of that device
+ * to determine if the device is available, and what firmware it is currently running.  This is a non-blocking call,
+ * and will return immediately.
+ * @param _target
+ */
 void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
     session_target = target = _target;
 
@@ -16,11 +23,25 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
     pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
 }
 
+/**
+ * Specifies a series of commands to perform, in sequence, in order to perform a "complex" update.
+ * @param cmds a vector of strings, one command (and arguments) per entry.
+ * @return true
+ */
 bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
     commands = cmds;
     return true;
 }
 
+/**
+ * Initiates an update of a local USB-DFU device. The target
+ * @param usbDevice
+ * @param target
+ * @param deviceId
+ * @param filename
+ * @param progressRate
+ * @return
+ */
 fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int progressRate)
 {
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
@@ -320,7 +341,8 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
             break;
     }
 
-    if ((session_status > fwUpdate::NOT_STARTED) && (session_status < fwUpdate::FINISHED) && (fwUpdate_getLastMessageAge() > timeout_duration))
+    uint32_t lastMsg = fwUpdate_getLastMessageAge();
+    if ((lastMsg > timeout_duration) && (requestPending || ((session_status > fwUpdate::NOT_STARTED) && (session_status < fwUpdate::FINISHED))))
         session_status = fwUpdate::ERR_TIMEOUT;
 
     if (fwUpdate_isDone()) {
@@ -338,6 +360,15 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     if ((dfuUpdater != nullptr) && ((target & fwUpdate::TARGET_DFU_FLAG) == fwUpdate::TARGET_DFU_FLAG)) {
         return dfuUpdater->fwUpdate_processMessage(buffer, buff_len);
     }
+
+    // TODO: This can be removed after 2.1.0 release
+    if ((remoteDevInfo.firmwareVer[0] == 2) && (remoteDevInfo.firmwareVer[1] == 0) && (remoteDevInfo.firmwareVer[2] == 0) && (remoteDevInfo.firmwareVer[3] <= 10)) {
+        if (((fwUpdate::payload_t*)buffer)->hdr.msg_type == fwUpdate::MSG_REQ_UPDATE) {
+            // these versions didn't support 'flags' to zero it out.
+            ((fwUpdate::payload_t*)buffer)->data.req_update.image_flags = 0;
+        }
+    }
+    // TODO: end
 
     nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
     int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
@@ -493,7 +524,28 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
 
             // any target which doesn't report version info will also expect the old MD5 digest
             if (!target_devInfo) {
-                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+                // TODO: We should be able to remove most of this after 2.1.0 has been released
+                if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardware == HDW_TYPE__IMX)) ||
+                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardware == HDW_TYPE__GPX)) ) {
+                    // just copy the in the current "main" device's dev info, since they are the same device as the target
+                    remoteDevInfo = *devInfo;
+                    target_devInfo = &remoteDevInfo;
+                } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardware == HDW_TYPE__IMX)) {
+                    // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
+                    const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
+                    if (gpxVInfo) {
+                        int v1, v2, v3, v4, bn;
+                        if (sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) {
+                            remoteDevInfo.hardware = HDW_TYPE__GPX;
+                            remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
+                            remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
+                            target_devInfo = &remoteDevInfo;
+                            if ((v1 == 2) && (v2 == 0) && (v3 == 0) && (v4 <= 10))
+                                flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
+                        }
+                    }
+                } else
+                    flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
             }
 
             fwUpdate::update_status_e status = initializeUpdate(target, filename, slotNum, flags, forceUpdate, chunkSize, progressRate);

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
-#include "../protocol_nmea.h"
-#include "../ISEarth.h"
+#include "protocol_nmea.h"
+#include "ISEarth.h"
 using namespace std;
 
 #define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }
@@ -17,51 +17,6 @@ using namespace std;
 #else
 #define DEBUG_PRINTF	
 #endif
-
-TEST(protocol_nmea, nmea_parse_ascb)
-{
-	PRINT_TEST_DESCRIPTION("Tests the $ASCB parser function nmea_parse_ascb().");
-
-    rmci_t rmci[NUM_COM_PORTS] = {};
-    int port = 1;
-    rmci_t &r = rmci[port];
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = '1';
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU] = '2';
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA] = '3';
-    r.rmcNmea.nmeaBits = 
-        NMEA_RMC_BITS_PINS2 |
-        NMEA_RMC_BITS_PIMU |
-        NMEA_RMC_BITS_GxGGA;
-    uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
-
-    char a[ASCII_BUF_LEN] = {};
-    int n=0;
-    nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCB,%u,%u,,,%u,,,%u,", 
-        options, 
-        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU],
-        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2],
-        r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA]
-        );
-	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
-
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    uint32_t outOptions = nmea_parse_ascb(port, a, n, outRmci);
-
-    ASSERT_EQ( options, outOptions );
-    for (int i=0; i<NUM_COM_PORTS; i++)
-    {
-        rmci_t &a = rmci[i];
-        rmci_t &b = outRmci[i];
-        ASSERT_EQ( a.rmc.bits, b.rmc.bits );
-        ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
-        //cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
-        for (int j=0; j<NMEA_MSG_ID_COUNT; j++)
-        {
-            // cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n"; 
-            ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );
-        }    
-    }
-}
 
 TEST(protocol_nmea, nmea_parse_asce)
 {

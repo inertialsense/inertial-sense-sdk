@@ -63,17 +63,39 @@ This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/r
 	// ASCII protocol is based on NMEA protocol https://en.wikipedia.org/wiki/NMEA_0183
 	// turn on the INS message at a period of 100 milliseconds (10 hz)
 	// serialPortWriteAscii takes care of the leading $ character, checksum and ending \r\n newline
-	// ASCB message enables ASCII broadcasts
-	// ASCB fields: 1:options, 2:PIMU, 3:PPIMU, 4:PINS1, 5:PINS2, 6:PGPSP, 7:reserved, 8:GPGGA, 9:GPGLL, 10:GPGSA, 11:GPRMC
+	// ASCE message enables ASCII broadcasts
+	// ASCE fields: 1:options, ID0, Period0, ID1, Period1, ........ ID19, Period19
+	// IDs:
+	// NMEA_MSG_ID_PIMU      = 0,
+    // NMEA_MSG_ID_PPIMU     = 1,
+    // NMEA_MSG_ID_PRIMU     = 2,
+    // NMEA_MSG_ID_PINS1     = 3,
+    // NMEA_MSG_ID_PINS2     = 4,
+    // NMEA_MSG_ID_PGPSP     = 5,
+    // NMEA_MSG_ID_GxGGA     = 6,
+    // NMEA_MSG_ID_GxGLL     = 7,
+    // NMEA_MSG_ID_GxGSA     = 8,
+    // NMEA_MSG_ID_GxRMC     = 9,
+    // NMEA_MSG_ID_GxZDA     = 10,
+    // NMEA_MSG_ID_PASHR     = 11, 
+    // NMEA_MSG_ID_PSTRB     = 12,
+    // NMEA_MSG_ID_INFO      = 13,
+    // NMEA_MSG_ID_GxGSV     = 14,
+    // NMEA_MSG_ID_GxVTG     = 15,
+    // NMEA_MSG_ID_INTEL     = 16,
+
 	// options can be 0 for current serial port, 1 for serial 0, 2 for serial 1 or 3 for both serial ports
 	// Instead of a 0 for a message, it can be left blank (,,) to not modify the period for that message
 	// please see the user manual for additional updates and notes
 
-	// Get PINS1 @ 10Hz on the connected serial port, leave all other broadcasts the same
-	const char* asciiMessage = "ASCB,0,,,100,,,,,,,";
+    // Get PINS1 @ 5Hz on the connected serial port, leave all other broadcasts the same, and save persistent messages.
+	const char* asciiMessage = "ASCE,0,3,1";
 
-	// Get PIMU @ 50Hz, GPGGA @ 5Hz, both serial ports, set all other periods to 0
-	// const char* asciiMessage = "ASCB,3,20,0,0,0,0,0,100,0,0,0";
+    // Get PINS1 @ 1Hz and PGPSP @ 1Hz on the connected serial port, leave all other broadcasts the same
+	// const char* asciiMessage = "ASCE,0,5,5";
+
+	// Get PIMU @ 50Hz, GGA @ 5Hz, serial0 and serial1 ports, set all other periods to 0
+    //  const char* asciiMessage = "ASCE,3,6,1";
 
 	// Stop all messages / broadcasts
 	// const char* asciiMessage = "STPB";

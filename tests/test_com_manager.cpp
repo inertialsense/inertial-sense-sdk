@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include <deque>
-#include "../com_manager.h"
-#include "../ring_buffer.h"
-#include "../protocol_nmea.h"
+#include "com_manager.h"
+#include "ring_buffer.h"
+#include "protocol_nmea.h"
 
 #if 0
 extern "C"
 {
-#include "../../../libs-int/rtklib/src/rtklib.h"
+#include "../../libs-int/rtklib/src/rtklib.h"
 	extern gtime_t g_gps_latest_time;
 	extern int decode_rtcm3(rtcm_t *rtcm);
 	extern int decode_ubx(raw_t* raw, int doChecksum);
@@ -117,7 +117,7 @@ static int msgHandlerNmea(int port, const uint8_t* msg, int msgSize)
 	{	// 4 character commands (i.e. "$STPB*14\r\n")
 		switch (getNmeaMsgId(msg, msgSize))
 		{
-		case NMEA_MSG_ID_ASCB:	// query NMEA message broadcast rates
+		case NMEA_MSG_ID_ASCE:	// query NMEA message broadcast rates
 		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
 			break;
 
