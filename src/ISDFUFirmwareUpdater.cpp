@@ -625,6 +625,19 @@ namespace dfu {
             return DFU_ERROR_NONE;
 
         } else if (processorType == IS_PROCESSOR_STM32U5) {
+
+            // TODO: Fix the following option bytes for the STM32U5 and then uncomment the code below.
+            // Option bytes
+            // This hard-coded array sets mostly defaults, but without PH3 enabled and
+            // with DFU mode disabled. Application will enable DFU mode if needed.
+            // uint8_t bytes[] = {
+            //         0xaa, 0xf8, 0xff, 0xfb, 0x55, 0x07, 0x00, 0x04,
+            //         0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+            //         0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00,
+            //         0xff, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0x00,
+            //         0xff, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0x00
+            // };
+
             if ((getState(&state) == LIBUSB_SUCCESS) && (state != DFU_STATE_DNLOAD_IDLE)) {            // Cancel any existing operations
                 ret_libusb = abort();
                 if (ret_libusb < LIBUSB_SUCCESS)
@@ -635,6 +648,16 @@ namespace dfu {
                 if (ret_libusb < LIBUSB_SUCCESS)
                     return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
             }
+
+            // TODO: Uncomment these two blocks and test when the option bytes are fixed above.
+            // ret_libusb = setAddress(dlBlockNum, segments[STM32_DFU_INTERFACE_OPTIONS].address);
+            // if (ret_libusb < LIBUSB_SUCCESS)
+            //     return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+
+            // // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
+            // ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
+            // if (ret_libusb < LIBUSB_SUCCESS)
+            //     return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
 
             // Send the final download, to reflect that all data is sent.
             ret_libusb = download(dlBlockNum, nullptr, 0);
