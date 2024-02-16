@@ -441,6 +441,35 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 	return nmea_sprint_footer(a, aSize, n);
 }
 
+/**
+ * Genterates NMEA ASCE request response
+*/
+int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
+{
+	nmeaBroadcastMsgPair_t pairs[MAX_nmeaBroadcastMsgPairs];
+	int activeRMC = 0;
+
+	for(int i = 0; (i < NMEA_MSG_ID_COUNT) && (activeRMC < MAX_nmeaBroadcastMsgPairs); i++)
+	{
+		if(((nRMC->nmeaBits & (0x01 << i)) != 0) && (nRMC->nmeaPeriod[i] > 0))
+		{
+			pairs[activeRMC].msgID = i;
+			pairs[activeRMC].msgPeriod = nRMC->nmeaPeriod[i];
+			activeRMC++;
+		}
+	}
+
+	// Base msg with current port set
+	int n = ssnprintf(a, aSize, "$ASCE,0");
+
+	// finish populating msg
+	for(int i = 0; (i < activeRMC) && (i < MAX_nmeaBroadcastMsgPairs); i++)
+		n += ssnprintf(a+n, aSize-n, ",%d,%d", pairs[i].msgID, pairs[i].msgPeriod);
+
+	return nmea_sprint_footer(a, aSize, n);
+}
+
+
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)
 {
 	int n = ssnprintf(a, aSize, "$PTOW");
