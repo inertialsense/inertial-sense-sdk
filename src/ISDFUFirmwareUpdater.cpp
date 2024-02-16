@@ -596,11 +596,9 @@ namespace dfu {
             // This hard-coded array sets mostly defaults, but without PH3 enabled and
             // with DFU mode disabled. Application will enable DFU mode if needed.
             uint8_t bytes[] = {
-                    0xaa, 0xf8, 0xff, 0xfb, 0x55, 0x07, 0x00, 0x04,
-                    0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00,
-                    0xff, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0x00,
-                    0xff, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0x00
+                    0xaa, 0xf8, 0xff, 0xfb,  0x55, 0x07, 0x00, 0x04,  0xff, 0xff, 0xff, 0xff,  0x00, 0x00, 0x00, 0x00,  
+                    0x00, 0x00, 0xff, 0xff,  0xff, 0xff, 0x00, 0x00,  0xff, 0xff, 0x00, 0xff,  0x00, 0x00, 0xff, 0x00,  
+                    0xff, 0xff, 0x00, 0xff,  0x00, 0x00, 0xff, 0x00
             };
 
             // return writeFlash(segments[STM32_DFU_INTERFACE_OPTIONS], 0, bytes, sizeof(bytes));
@@ -626,17 +624,14 @@ namespace dfu {
 
         } else if (processorType == IS_PROCESSOR_STM32U5) {
 
-            // TODO: Fix the following option bytes for the STM32U5 and then uncomment the code below.
-            // Option bytes
+            // Option bytes - Address: 0x40022040
             // This hard-coded array sets mostly defaults, but without PH3 enabled and
             // with DFU mode disabled. Application will enable DFU mode if needed.
-            // uint8_t bytes[] = {
-            //         0xaa, 0xf8, 0xff, 0xfb, 0x55, 0x07, 0x00, 0x04,
-            //         0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
-            //         0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00,
-            //         0xff, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0x00,
-            //         0xff, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0x00
-            // };
+            uint8_t bytes[] = {
+                    0xaa, 0xf8, 0xef, 0x1B,  0x7f, 0x00, 0x00, 0x08,  0x7f, 0x00, 0xf9, 0x0B,  0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0xff, 0xff, 0x80, 0xff,  0xff, 0xff, 0x80, 0xff,
+                    0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00
+            };            
 
             if ((getState(&state) == LIBUSB_SUCCESS) && (state != DFU_STATE_DNLOAD_IDLE)) {            // Cancel any existing operations
                 ret_libusb = abort();
@@ -649,21 +644,17 @@ namespace dfu {
                     return (dfu_error) (DFU_ERROR_LIBUSB | (ret_libusb << 16));
             }
 
-            // TODO: Uncomment these two blocks and test when the option bytes are fixed above.
-            // ret_libusb = setAddress(dlBlockNum, segments[STM32_DFU_INTERFACE_OPTIONS].address);
-            // if (ret_libusb < LIBUSB_SUCCESS)
-            //     return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
-
-            // // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
-            // ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
-            // if (ret_libusb < LIBUSB_SUCCESS)
-            //     return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
-
-            // Send the final download, to reflect that all data is sent.
-            ret_libusb = download(dlBlockNum, nullptr, 0);
-            if (ret_libusb < LIBUSB_SUCCESS) {
+            ret_libusb = setAddress(dlBlockNum, segments[STM32_DFU_INTERFACE_OPTIONS].address);
+            if (ret_libusb < LIBUSB_SUCCESS)
                 return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
-            }
+
+            // STM32 DFU specs will reset the device immediately after writing to the Option Bytes
+            ret_libusb = download(dlBlockNum, bytes, sizeof(bytes));
+            if (ret_libusb < LIBUSB_SUCCESS)
+                return (dfu_error)(DFU_ERROR_LIBUSB | (ret_libusb << 16));
+
+            // if there wasn't an error, the device just restarted, and we have no indication of an error, so it must be OK!
+            return DFU_ERROR_NONE;
         }
 
         // Wait for the drop to the MANIFEST-SYNC state
