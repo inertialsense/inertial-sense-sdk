@@ -44,6 +44,7 @@ int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 // Binary to NMEA
 //////////////////////////////////////////////////////////////////////////
 int nmea_dev_info(char a[], const int aSize, dev_info_t &info);
+int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC);
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek);
 int nmea_pimu(char a[], const int aSize, imu_t &imu, const char name[]);
 int nmea_ppimu(char a[], const int aSize, pimu_t &pimu);
