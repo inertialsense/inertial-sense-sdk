@@ -104,6 +104,7 @@ namespace fwUpdate {
 #define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
+    static constexpr uint32_t TARGET_TYPE_MASK = 0xFFF0;
     static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
 
     enum target_t : uint32_t {
@@ -122,6 +123,7 @@ namespace fwUpdate {
         TARGET_SONY_CXD5610__2 = 0x122,
         TARGET_SONY_CXD5610__ALL = 0x12F,
         TARGET_MAXNUM,
+        TARGET_UNKNOWN = 0xFFFFFFFF,
     };
 
     enum msg_types_e : uint32_t {
@@ -167,8 +169,9 @@ namespace fwUpdate {
         ERR_FLASH_INVALID = -13,    // indicates that the image, after writing to flash failed to validate.
         ERR_UPDATER_CLOSED = -14,   //
         ERR_INVALID_IMAGE = -15,    // indicates that the specified image file is invalid; this can also be reported directly by the host if the image file is not found.
-        ERR_INVALID_CHUNK = 16,     // indicates a repeated failure to deliver the correct chunk id or size
-        ERR_UNKNOWN = -16,
+        ERR_INVALID_CHUNK = -16,    // indicates a repeated failure to deliver the correct chunk id or size
+        ERR_INVALID_TARGET = -17,   // indicates that the target is invalid - this could mean that the target 'index' doesn't exist, or that the target + target_flags are unsupported, etc.
+        ERR_UNKNOWN = -18,          // indicates an unknown error, this should *always* be the last (lower) value
         // TODO: IF YOU ADD NEW ERROR MESSAGES, don't forget to update fwUpdate::status_names, and getSessionStatusName()
     };
 
@@ -375,6 +378,13 @@ namespace fwUpdate {
          */
         virtual bool fwUpdate_step(msg_types_e msg_type = MSG_UNKNOWN, bool processed = false) = 0;
 
+        /**
+         * Returns the "Type" portion of the specified target_t, stripping out target flags, and index identifiers.
+         * ie, passing TARGET_DFU_IMX5 would return TARGET_IMX5; passing TARGET_SONY_CXD5610__ALL returns TARGET_SONY_CXD5610.
+         * @param target the original target type
+         * @return the base target type
+         */
+        target_t fwUpdate_getTargetType(target_t target) { return (target_t)((uint32_t)target & TARGET_TYPE_MASK); };
 
     protected:
         uint8_t build_buffer[FWUPDATE__MAX_PAYLOAD_SIZE];       //! workspace for packing/unpacking payload messages
