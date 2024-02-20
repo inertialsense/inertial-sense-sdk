@@ -55,7 +55,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	external
 )
 
-# Build using C17 and CXX20
+# Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 

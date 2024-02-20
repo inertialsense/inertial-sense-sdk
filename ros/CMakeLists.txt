@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(Threads)
 
-# Build using C17 and CXX20
+# Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
