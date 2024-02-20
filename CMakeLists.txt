@@ -55,8 +55,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	external
 )
 
-set_property(TARGET InertialSenseSDK PROPERTY C_STANDARD 17)
-set_property(TARGET InertialSenseSDK PROPERTY CXX_STANDARD 20)
+# Build using C17 and CXX20
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
 # Other settings
 if(WIN32)
