@@ -55,6 +55,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	external
 )
 
+set_property(TARGET InertialSenseSDK PROPERTY C_STANDARD 17)
+set_property(TARGET InertialSenseSDK PROPERTY CXX_STANDARD 20)
+
 # Other settings
 if(WIN32)
 	# yamlcpp needs to know it's a static lib
@@ -74,8 +77,8 @@ else()
 	)
 	
 	# Linux compiler flags
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
 		
 	# Set Linux compiler linker flag
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
