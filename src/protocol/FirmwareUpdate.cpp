@@ -14,31 +14,36 @@ namespace fwUpdate {
 #ifdef DEBUG_LOGGING
     static const char* type_names[] = { "UNKNOWN", "REQ_RESET", "RESET_RESP", "REQ_UPDATE", "UPDATE_RESP", "UPDATE_CHUNK", "UPDATE_PROGRESS", "REQ_RESEND_CHUNK", "UPDATE_DONE", "REQ_VERSION", "VERSION_RESP"};
 #endif
-    static const char* status_names[] = { "ERR_UNKNOWN", "ERR_INVALID_TARGET", "ERR_INVALID_CHUNK", "ERR_INVALID_IMAGE", "ERR_UPDATER_CLOSED", "ERR_FLASH_INVALID", "ERR_FLASH_OPEN_FAILURE", "ERR_FLASH_WRITE_FAILURE", "ERR_NOT_SUPPORTED", "ERR_COMMS", "ERR_CHECKSUM_MISMATCH", "ERR_TIMEOUT", "ERR_MAX_CHUNK_SIZE", "ERR_OLDER_FIRMWARE", "ERR_NOT_ENOUGH_MEMORY", "ERR_NOT_ALLOWED", "ERR_INVALID_SLOT", "ERR_INVALID_SESSION",
-                                          "NOT_STARTED", "INITIALIZING", "READY", "IN_PROGRESS", "FINALIZING", "FINISHED"};
-    static const char* status_names_nice[] = {
-            "Error: Unknown Error",             // ERR_UNKNOWN
-            "Error: Invalid Image",             // ERR_INVALID_IMAGE
-            "Error: Updater Closed",            // ERR_UPDATER_CLOSED
-            "Error: Flash Invalid",             // ERR_FLASH_INVALID
-            "Error: Flash Open Failure",        // ERR_FLASH_OPEN_FAILURE
-            "Error: Flash Write Failure",       // ERR_FLASH_WRITE_FAILURE
-            "Error: Not Supported",             // ERR_NOT_SUPPORTED
-            "Error: Communications Error",      // ERR_COMMS
-            "Error: Checksum Mismatch",         // ERR_CHECKSUM_MISMATCH
-            "Error: Communications Timeout",    // ERR_TIMEOUT
-            "Error: Max Chunk Size Exceeded",  // ERR_MAX_CHUNK_SIZE
-            "Error: Older Firmware",           // ERR_OLDER_FIRMWARE
-            "Error: Not Enough Memory",        // ERR_NOT_ENOUGH_MEMORY
-            "Error: Operation Not Allowed",    // ERR_NOT_ALLOWED
-            "Error: Invalid Device Slot",      // ERR_INVALID_SLOT
-            "Error: Invalid Session",          // ERR_INVALID_SESSION
-            "Not Started",                     // NOT_STARTED
-            "Initializing",                    // INITIALIZING
-            "Ready",                           // READY
-            "In Progress",                     // IN_PROGRESS
-            "Finalizing",                      // FINALIZING
-            "Finished"                         // FINISHED
+    struct status_strings_t {
+        const char* name;
+        const char* nice;
+    };
+
+    static const status_strings_t status_names [] = {
+            { .name = "ERR_UNKNOWN", .nice = "Unknown Error" },
+            { .name = "ERR_INVALID_TARGET", .nice = "Invalid Target" },
+            { .name = "ERR_INVALID_CHUNK", .nice = "Invalid or Out of Sequence Chunk" },
+            { .name = "ERR_INVALID_IMAGE", .nice = "Invalid Image" },
+            { .name = "ERR_UPDATER_CLOSED", .nice = "Updater Closed" },
+            { .name = "ERR_FLASH_INVALID", .nice = "Flash Invalid" },
+            { .name = "ERR_FLASH_OPEN_FAILURE", .nice = "Flash Open Failure" },
+            { .name = "ERR_FLASH_WRITE_FAILURE", .nice = "Flash Write Failure" },
+            { .name = "ERR_NOT_SUPPORTED", .nice = "Request Not Supported" },
+            { .name = "ERR_COMMS", .nice = "Communications Error" },
+            { .name = "ERR_CHECKSUM_MISMATCH", .nice = "Checksum Mismatch" },
+            { .name = "ERR_TIMEOUT", .nice = "Communications Timeout" },
+            { .name = "ERR_MAX_CHUNK_SIZE", .nice = "Max Chunk Size Exceeded" },
+            { .name = "ERR_OLDER_FIRMWARE", .nice = "Older Firmware - Downgrade not allowed" },
+            { .name = "ERR_NOT_ENOUGH_MEMORY", .nice = "Not Enough Memory" },
+            { .name = "ERR_NOT_ALLOWED", .nice = "Operation Not Allowed" },
+            { .name = "ERR_INVALID_SLOT", .nice = "Invalid Device Slot" },
+            { .name = "ERR_INVALID_SESSION", .nice = "Invalid Session" },
+            { .name = "NOT_STARTED", .nice = "Not Started" },
+            { .name = "INITIALIZING", .nice = "Initializing" },
+            { .name = "READY", .nice = "Ready" },
+            { .name = "IN_PROGRESS", .nice = "In Progress" },
+            { .name = "FINALIZING", .nice = "Finalizing" },
+            { .name = "FINISHED", .nice = "Finished" },
     };
 
 #ifdef DEBUG_LOGGING
@@ -250,9 +255,9 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateBase::fwUpdate_getStatusName(update_status_e status) {
         if (status >= 0)
-            return fwUpdate::status_names[status + abs(fwUpdate::ERR_UNKNOWN)];
+            return fwUpdate::status_names[status + abs(fwUpdate::ERR_UNKNOWN)].name;
         else
-            return fwUpdate::status_names[status - (fwUpdate::ERR_UNKNOWN)];
+            return fwUpdate::status_names[status - (fwUpdate::ERR_UNKNOWN)].name;
     }
 
     /**
@@ -262,9 +267,9 @@ namespace fwUpdate {
      */
     const char *FirmwareUpdateBase::fwUpdate_getNiceStatusName(update_status_e status) {
         if (status >= 0)
-            return fwUpdate::status_names_nice[status + abs(fwUpdate::ERR_UNKNOWN)];
+            return fwUpdate::status_names[status + abs(fwUpdate::ERR_UNKNOWN)].nice;
         else
-            return fwUpdate::status_names_nice[status - (fwUpdate::ERR_UNKNOWN)];
+            return fwUpdate::status_names[status - (fwUpdate::ERR_UNKNOWN)].nice;
     }
 
     /**
