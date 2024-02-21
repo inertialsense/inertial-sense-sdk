@@ -16,7 +16,8 @@
  */
 void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
     session_target = target = _target;
-
+    session_image_slot = 0;
+    
     // request version info from the target
     target_devInfo = nullptr;
     fwUpdate_requestVersionInfo(target);
@@ -231,7 +232,7 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
         session_status = msg.data.progress.status; // don't overwrite an error status in the event of racing messages.
 
     float percent = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
-    const char *message = msg.data.progress.msg_len ? (const char *)&msg.data.progress.message : nullptr;
+    const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
 
     if(pfnUploadProgress_cb != nullptr)
         pfnUploadProgress_cb(this, percent);
