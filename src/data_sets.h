@@ -4109,6 +4109,9 @@ enum eGpxStatus
     /** Communications Rx buffer overrun */
     GPX_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00000020,
 
+    /** Reserved */
+    GPX_STATUS_RESERVED_1                       = (int)0x01000000,    
+
     /** Fault reset cause */
     GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
@@ -4173,8 +4176,8 @@ typedef struct
     uint32_t                rtkMode;
 
     /** GNSS status (see RunState) **/
-    uint32_t                 gnss1RunState;
-    uint32_t                 gnss2RunState;
+    uint32_t                gnss1RunState;
+    uint32_t                gnss2RunState;
 } gpx_status_t;
 
 
