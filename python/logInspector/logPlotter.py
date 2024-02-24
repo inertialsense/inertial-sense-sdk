@@ -729,9 +729,36 @@ class logPlot:
         self.configureSubplot(ax[1,0], 'RTK Compassing', 'deg')
         self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
 
+        refTime = None
+        sumDelta = None
+        sumCount = 1
+        
         if self.residual:
             self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
             self.configureSubplot(ax[1,1], 'Heading Residual: RTK - INS', 'deg')
+            self.configureSubplot(ax[2,1], 'Heading Residual: INS - Mean', 'deg')
+
+            # Reference INS does not exist.  Compute reference from average INS.
+            if refTime is None:
+                for d in self.active_devs:
+                    time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    # Adjust data for attitude bias
+                    quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
+                    euler = quat2euler(quat)
+
+                    if refTime is None:
+                        refTime = time
+                        refEuler = np.copy(euler)
+                        sumDelta = np.zeros_like(euler)
+                    else:
+                        unwrapEuler = self.vec3_unwrap(euler)
+                        intEuler = np.empty_like(refEuler)
+                        for i in range(3):
+                            intEuler[:,i] = np.interp(refTime, time, unwrapEuler[:,i])
+                        delta = self.vec3_wrap(intEuler - refEuler)
+                        sumDelta += delta
+                        sumCount += 1
+                refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
             magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'))
@@ -756,9 +783,16 @@ class logPlot:
                     ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
                 if gpsTime.any():
                     unwrapGpsHdg = self.angle_unwrap(gpsHdg)
-                    intGpsHdg = np.interp(insTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
-                    resGpsHdg = self.angle_wrap(intGpsHdg - insHdg)
-                    ax[1,1].plot(insTime, resGpsHdg*RAD2DEG)
+                    intInsHdg = np.interp(insTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
+                    resInsHdg = self.angle_wrap(intInsHdg - insHdg)
+                    ax[1,1].plot(insTime, resInsHdg*RAD2DEG)
+                if not (refTime is None) and self.log.serials[d] != 'Ref INS': 
+                    unwrapEuler = self.vec3_unwrap(euler)
+                    intEuler = np.empty_like(refEuler)
+                    for i in range(3):
+                        intEuler[:,i] = np.interp(refTime, insTime, unwrapEuler[:,i], right=np.nan, left=np.nan)
+                    resEuler = self.vec3_wrap(intEuler - refEuler)
+                    ax[2,1].plot(refTime, resEuler[:,2]*RAD2DEG)
 
         # if 0:
         #     gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
