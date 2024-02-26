@@ -598,7 +598,7 @@ namespace fwUpdate {
         response.hdr.msg_type = MSG_RESET_RESP;
         fwUpdate_sendPayload(response); // make sure this goes out before the reset happens. We might need to schedule the reset, so the send can happen, if the underlying call doesn't block.
 
-        return fwUpdate_performReset(session_target, payload.data.req_reset.reset_flags);
+        return fwUpdate_performReset(session_target, (reset_flags_e)payload.data.req_reset.reset_flags);
     }
 
 

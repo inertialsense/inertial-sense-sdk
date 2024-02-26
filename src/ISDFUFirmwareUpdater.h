@@ -18,6 +18,8 @@
 
 #include "libusb.h"
 
+#include <mutex>
+
 namespace dfu {
 
 #ifdef _MSC_VER
@@ -150,7 +152,6 @@ typedef enum : uint16_t {
     STM32_DFU_INTERFACE_FEATURES = 3  // @Device Feature
 } dfu_interface_alternatives;
 
-
 typedef enum    // Internal only, can change as needed
 {
     DFU_ERROR_NONE = 0,
@@ -203,16 +204,16 @@ public:
      * @return
      */
     dfu_error open();
-
     dfu_error updateFirmware(std::string filename, uint64_t baseAddress = 0);
-
+    dfu_error updateFirmware(std::istream& stream, uint64_t baseAddress = 0);
     dfu_error finalizeFirmware();
-
     dfu_error close();
 
     const char *getDescription();
 
     md5hash_t getFingerprint() { return fingerprint.state; }
+
+    fwUpdate::target_t get_fwUpdateTargetType();
 
     void setProgressCb(pfnFwUpdateProgress cbProgress){progressFn = cbProgress;}
     void setStatusCb(pfnFwUpdateStatus cbStatus) {statusFn = cbStatus;}
@@ -310,10 +311,13 @@ public:
 
     static int filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
 
+    static int filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target);
+
     static bool isDFUDevice(libusb_device *usbDevice, uint16_t vid, uint16_t pid);
 
 
 private:
+    static std::mutex dfuMutex;
     DFUDevice *curDevice;
     typedef void (*pfnFwUpdateStatus)(void* obj, int logLevel, const char* msg, ...);
     typedef void (*pfnFwUpdateProgress)(void* obj, int stepNo, int totalSteps, float percent);
