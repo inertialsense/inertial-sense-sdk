@@ -213,7 +213,7 @@ public:
 
     md5hash_t getFingerprint() { return fingerprint.state; }
 
-    fwUpdate::target_t get_fwUpdateTargetType();
+    fwUpdate::target_t getTargetType();
 
     void setProgressCb(pfnFwUpdateProgress cbProgress){progressFn = cbProgress;}
     void setStatusCb(pfnFwUpdateStatus cbStatus) {statusFn = cbStatus;}

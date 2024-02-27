@@ -80,7 +80,7 @@ namespace dfu {
      * @return the number of devices remaining in the vector (devices.size())
      */
     int ISDFUFirmwareUpdater::filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target) {
-        auto removed = std::remove_if(std::begin(devices), std::end(devices), [&target](DFUDevice *d) { return d->get_fwUpdateTargetType() != target; });
+        auto removed = std::remove_if(std::begin(devices), std::end(devices), [&target](DFUDevice *d) { return d->getTargetType() != target; });
         devices.erase(removed, devices.end());
         return devices.size();
     }
@@ -121,7 +121,12 @@ namespace dfu {
         return success;
     }
 
-    fwUpdate::target_t DFUDevice::get_fwUpdateTargetType() {
+    /**
+     * Returns a fwUpdate-compatible target type (fwUpdate::target_t) appropriate for this DFU device,
+     * given the parsed hardware id, where available.
+     * @return determined fwUpdate::target_t is detectable, otherwise TARGET_UNKNOWN
+     */
+    fwUpdate::target_t DFUDevice::getTargetType() {
         switch (DECODE_HDW_TYPE(hardwareId)) {
             case HDW_TYPE__IMX:
                 if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_IMX5;
