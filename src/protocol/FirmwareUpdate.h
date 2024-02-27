@@ -112,6 +112,7 @@ namespace fwUpdate {
         TARGET_HOST = 0x00,
         TARGET_IMX5 = 0x10,
         TARGET_DFU_IMX5 = (TARGET_DFU_FLAG | TARGET_IMX5),
+        TARGET_ISB_IMX5 = (TARGET_ISB_FLAG | TARGET_IMX5), // note that the IMX5 ONLY support ISB mode (it doesn't directly support ISv2)
         TARGET_GPX1 = 0x20,
         TARGET_DFU_GPX1 = (TARGET_DFU_FLAG | TARGET_GPX1),
         TARGET_VPX = 0x30, // RESERVED FOR VPX

@@ -21,6 +21,8 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
     
     // request version info from the target
     target_devInfo = nullptr;
+    memset((void *)&remoteDevInfo, 0, sizeof(remoteDevInfo));
+
     fwUpdate_requestVersionInfo(target);
     if(pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Waiting for response from device");
@@ -395,10 +397,6 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     while (!commands.empty() && (commands[0] != failLabel)) {
         commands.erase(commands.begin());
     }
-    if (!commands.empty() && (commands[0] == failLabel)) {
-        // consume the label before proceeding.
-        commands.erase(commands.begin());
-    }
 }
 
 void ISFirmwareUpdater::runCommand(std::string cmd) {
@@ -436,6 +434,9 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             cmd_Upload(args);
         } else if (args[0] == "reset") {
             cmd_Reset(args);
+        } else {
+            if (args[0][0] != ':')
+                printf("Unknown command: %s\n", args[0].c_str());
         }
     }
 
