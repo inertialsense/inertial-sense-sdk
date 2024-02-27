@@ -24,8 +24,9 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
     memset((void *)&remoteDevInfo, 0, sizeof(remoteDevInfo));
 
     fwUpdate_requestVersionInfo(target);
-    if(pfnInfoProgress_cb != nullptr)
+    if(pfnInfoProgress_cb != nullptr) {
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Waiting for response from device");
+    }
     pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
 }
 
@@ -44,17 +45,17 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     size_t fileSize = 0;
     fwUpdate::update_status_e result = fwUpdate::NOT_STARTED;
 
-    srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
+    srand(time(nullptr)); // get *some kind* of seed/appearance of a random number.
 
-    if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
+    if ((zip_archive != nullptr) && (filename.rfind("pkg://", 0) == 0)) {
         // check into the current archive for this file
         size_t data_len = 0;
-        char *data = (char *)mz_zip_reader_extract_file_to_heap(zip_archive, filename.c_str() + 6 /* "pkg://" */, &data_len, 0);
+        char *data = static_cast<char *>(mz_zip_reader_extract_file_to_heap(zip_archive, &filename.c_str()[6] /* "pkg://" */, &data_len, 0));
         if (data == nullptr) {
             return fwUpdate::ERR_INVALID_IMAGE;
         }
         std::string casted_memory(static_cast<char*>(data), data_len);
-        srcFile = (std::istream*)new std::istringstream(casted_memory);
+        srcFile = static_cast<std::istream*>(new std::istringstream(casted_memory));
     } else {
         srcFile = new std::ifstream(filename, std::ios::binary);
     }
@@ -62,9 +63,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
     // let's get the file's MD5 hash
-    int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5)
-                    ? altMD5_file_details(srcFile, fileSize, session_md5)
-                    : md5_file_details(srcFile, fileSize, session_md5);
+    int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5 ? altMD5_file_details(srcFile, fileSize, session_md5) : md5_file_details(srcFile, fileSize, session_md5) );
     if ( hashError != 0 )
         return fwUpdate::ERR_INVALID_IMAGE;
 
