@@ -2351,6 +2351,37 @@ enum eSysConfigBits
     SYS_CFG_EKF_REF_POINT_STATIONARY_ON_STROBE_INPUT    = (int)0x02000000,
 };
 
+/** GPX GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
+enum eGpxGnssSatSigConst
+{
+    /*! GPS  */
+    GPX_GNSS_SAT_SIG_CONST_GPS_L1                       = (uint16_t)0x0001,
+    GPX_GNSS_SAT_SIG_CONST_GPS_L5                       = (uint16_t)0x0002,
+    GPX_GNSS_SAT_SIG_CONST_GPS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GPS_L1 | GPX_GNSS_SAT_SIG_CONST_GPS_L5),
+    /*! QZSS  */
+    GPX_GNSS_SAT_SIG_CONST_QZS_L1                       = (uint16_t)0x0004,
+    GPX_GNSS_SAT_SIG_CONST_QZS_L5                       = (uint16_t)0x0008,
+    GPX_GNSS_SAT_SIG_CONST_QZS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_QZS_L1 | GPX_GNSS_SAT_SIG_CONST_QZS_L5),
+    /*! Galileo  */
+    GPX_GNSS_SAT_SIG_CONST_GAL_E1                       = (uint16_t)0x0010,
+    GPX_GNSS_SAT_SIG_CONST_GAL_E5                       = (uint16_t)0x0020,
+    GPX_GNSS_SAT_SIG_CONST_GAL                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GAL_E1 | GPX_GNSS_SAT_SIG_CONST_GAL_E5),
+    /*! BeiDou  */
+    GPX_GNSS_SAT_SIG_CONST_BDS_B1                       = (uint16_t)0x0040,
+    GPX_GNSS_SAT_SIG_CONST_BDS_B2                       = (uint16_t)0x0080,
+    GPX_GNSS_SAT_SIG_CONST_BDS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_BDS_B1 | GPX_GNSS_SAT_SIG_CONST_BDS_B2),
+    /*! GLONASS  */
+    GPX_GNSS_SAT_SIG_CONST_GLO_L1                       = (uint16_t)0x0300,
+    GPX_GNSS_SAT_SIG_CONST_GLO                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_GLO_L1),
+    /*! SBAS  */
+    GPX_GNSS_SAT_SIG_CONST_SBS_L1                       = (uint16_t)0x1000,
+    GPX_GNSS_SAT_SIG_CONST_SBS                          = (uint16_t)(GPX_GNSS_SAT_SIG_CONST_SBS_L1),
+    /*! IRNSS / NavIC  */
+    GPX_GNSS_SAT_SIG_CONST_IRN                          = (uint16_t)0x2000,
+    /*! IMES  */
+    GPX_GNSS_SAT_SIG_CONST_IME                          = (uint16_t)0x4000,
+};
+
 /** GNSS satellite system signal constellation (used with nvm_flash_cfg_t.gnssSatSigConst) */
 enum eGnssSatSigConst
 {
@@ -2371,7 +2402,7 @@ enum eGnssSatSigConst
     /*! IMES  */
     GNSS_SAT_SIG_CONST_IME                              = (uint16_t)0x4000,
 
-    /*! GNSS default */
+    /*! GNSS ALL */
     GNSS_SAT_SIG_CONST_ALL = \
         GNSS_SAT_SIG_CONST_GPS | \
         GNSS_SAT_SIG_CONST_QZS | \
