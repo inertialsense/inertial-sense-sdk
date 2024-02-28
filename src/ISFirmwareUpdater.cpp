@@ -40,6 +40,17 @@ bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
     return true;
 }
 
+/**
+ * Initiates a firmware update of the specified target & slot with the requested file, files, etc.
+ * @param _target the fwUpdate::target_t being targets for this image
+ * @param filename the filename of the firmware image to upload to the target
+ * @param slot the "slot" on the target device for this image (this is target specific)
+ * @param flags additional flags that can direct specific behavior for this update
+ * @param forceUpdate if true, will force the device/file to update, regardless of the previous version, otherwise will only update if the new firmware is newer
+ * @param chunkSize the preferred chunk-size to request when sending firmware image data; note that this maybe negotiated at a lower size if necessary.
+ * @param progressRate the interval that the target device should report back to the host, the progress status of the update
+ * @return the status of the firmware update; if there are no errors this should be >= fwUpdate::NOT_STARTED.
+ */
 fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot, int flags, bool forceUpdate, int chunkSize, int progressRate)
 {
     size_t fileSize = 0;
@@ -97,6 +108,11 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     return result;
 }
 
+/**
+ * Parses and copies the version information response from a target device into a local variable for version validation, and target availability.
+ * @param msg
+ * @return true if the message was valid and successfully parsed, otherwise false.
+ */
 bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg) {
     memset(&remoteDevInfo, 0, sizeof(dev_info_t));
     if ((msg.data.version_resp.resTarget > fwUpdate::TARGET_HOST) && (msg.data.version_resp.resTarget <= fwUpdate::TARGET_MAXNUM) && (msg.data.version_resp.resTarget != target)) {
@@ -133,6 +149,13 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     return true;
 }
 
+/**
+ * Called internally to request a chunk of image data from the backing input stream, to be sent over the wire to the target device
+ * @param offset the position within the image to read and copy into the passed buffer
+ * @param len the number of bytes requested (and the size of the backing buffer). DO NOT copy more data than this number of bytes into **buffer
+ * @param buffer a pointer to a buffer where the data requested should be copied
+ * @return return the number of bytes actually copied, or < 0 on error.
+ */
 int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, void **buffer) {
     if (srcFile && (srcFile->rdstate() == 0)) {
         srcFile->seekg((std::streampos)offset);
@@ -143,6 +166,14 @@ int ISFirmwareUpdater::fwUpdate_getImageChunk(uint32_t offset, uint32_t len, voi
     return -1;
 }
 
+/**
+ * Called internally when a response is received to the initial Update request.  This maybe received more than once, but is only guaranteed to be
+ * sent in direct response to the Update request.  This message must be parsed to update status (errors, etc) negotiated chunk-size, and number of chunks
+ * expected for the update.  NOTE that this is also responsible for negotiating the chunk-size, as a "ERR_MAX_CHUNK_SIZE" will re-request the update with
+ * a smaller chunksize, until the response is valid.
+ * @param msg
+ * @return true if the response is successfully parsed and meant for us, otherwise false
+ */
 bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg) {
     if (session_id != msg.data.update_resp.session_id)
         return false; // this message isn't for us...
@@ -178,6 +209,11 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
     }
 }
 
+/**
+ * Called internally when the remote device has requested that we (the host) resend a previously sent chunk
+ * @param msg
+ * @return true if we are able to parse and respond affirmatively to the request, otherwise false
+ */
 bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &msg) {
     // TODO: LOG msg.data.req_resend.reason
     uint32_t current_ms = current_timeMs();
@@ -210,6 +246,13 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
 }
 
 std::mutex progress_mutex;
+/**
+ * Called internally when we have received a progress status message from the target device. This should call back
+ * into higher-level, implementation-specific callback routines to process/display progress information about the
+ * status of the update.
+ * @param msg
+ * @return return true if we have parsed/processed the message, otherwise false
+ */
 bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg) {
     progress_mutex.lock();
 
@@ -232,16 +275,36 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     return true;
 }
 
+/**
+ * Called internally when the firmware update has completed, and indicates the final status of the update (error
+ * or otherwise).
+ * @param msg
+ * @return true
+ */
 bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
     session_status = msg.data.resp_done.status;
     return true;
 }
 
+/**
+ * Convenience/Helper function indicating if the current update has _successfully_ finished, and there are no more
+ * pending commands to perform, and no active, pending requests for which we are waiting a reply.
+ * @return true if we are finished, otherwise false
+ */
 bool ISFirmwareUpdater::fwUpdate_isDone()
 {
     return !(hasPendingCommands() || requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)));
 }
 
+/**
+ * Called to advance the firmware update process, manage retries, error handling, timeout, etc.  This is usually,
+ * but not guaranteed, to be called when a message is received from the target. It can also be called at any time
+ * by an outside task/process.  NOTE that since the underlying FirmwareUpdater is not an active task/thread, this
+ * is the preferred mechanism to determine and respond to a timeout condition from the remote device.
+ * @param msg_type the type of message most recently received, or MSG_UNKNOWN if none or not known (ie, called by a timer)
+ * @param processed a flag indicating whether that most recently received message was properly processed
+ * @return false if the firmware process has not yet started (NOT_STARTED) otherwise true
+ */
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)
 {
     uint32_t lastMsgAge = 0;
@@ -254,6 +317,8 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                         return fwUpdate::MSG_UNKNOWN; // means to delay execution of next command for some period of time..
                     pauseUntil = 0;
                     runCommand(commands[0]);
+                    if (!commands.empty())
+                        commands.erase(commands.begin()); // pop the command off the front
                 }
             } else {
                 lastMsgAge = fwUpdate_getLastMessageAge();
@@ -342,6 +407,15 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
     return (session_status != fwUpdate::NOT_STARTED);
 }
 
+/**
+ * Called internally by the FirmwareUpdate API when data needs to be send to the target device.  This
+ * implementation is responsible for ensuring that the correct port/connection is used to send the
+ * passed data to the specified target
+ * @param target the target device which this data should be sent to
+ * @param buffer the data to be sent
+ * @param buff_len the number of bytes of data to send
+ * @return return if successfully sent, otherwise false
+ */
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     if ((dfuUpdater != nullptr) && ((target & fwUpdate::TARGET_DFU_FLAG) == fwUpdate::TARGET_DFU_FLAG)) {
         return dfuUpdater->fwUpdate_processMessage(buffer, buff_len);
@@ -398,6 +472,12 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     }
 }
 
+/**
+ * Executes a single command action for the ISFirmwareUpdater.  This is a host-specific
+ * mechanism for determining how to perform an update step (as defined by the package manifest).
+ * Commands are in the format of "<command>[=arg1[,arg2,...,argn]]".
+ * @param cmd a string containing the command, with optional arguments.
+ */
 void ISFirmwareUpdater::runCommand(std::string cmd) {
     std::vector<std::string> args;
     splitString(cmd, '=', args);
@@ -439,9 +519,6 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
         }
     }
 
-    // If we are here, we've successfully executed our command, and it can be removed from the command queue.
-    if (!commands.empty())
-        commands.erase(commands.begin()); // pop the command off the front
 }
 
 /**
@@ -449,7 +526,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
  * the steps/commands necessary to perform a package update.
  * @param manifest YAML tree the defines the manifest to parse
  * @param archive a pointer to the mz_zip_archive associated with this manifest, if any (otherwise nullptr).
- * @return 0 on success, otherwise PKG_ERR_*.
+ * @return PKG_SUCCESS on success, otherwise PKG_ERR_*.
  */
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive = nullptr) {
     YAML::Node images = manifest["images"];
@@ -562,6 +639,11 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
     return PKG_SUCCESS;
 }
 
+/**
+ * Helper function to parse a manifest file (yaml), and then calls processPackageManifest with the parsed YAML tree.
+ * @param manifest_file a string representing a path and filename the YAML file to parse
+ * @return PKG_SUCCESS on success, otherwise PKG_ERR_*.
+ */
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
     YAML::Node manifest = YAML::LoadFile(manifest_file);
     if (manifest.IsNull())
@@ -578,6 +660,11 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const s
     return processPackageManifest(manifest);
 }
 
+/**
+ * Opens the Firmware package (zip) file, extracts and parses the manifest.yaml
+ * @param pkg_file a string representing a path and filename to the zip file to extract/parse
+ * @return PKG_SUCCESS on success, otherwise PKG_ERR_* on error.
+ */
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {
     mz_bool status;
     size_t file_size;
@@ -610,6 +697,10 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std:
     return result;
 }
 
+/**
+ * Close and cleanup files/buffers/resources associated with a currently opened Firmware image and Zip archive.
+ * @return always returns PRK_SUCCESS
+ */
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::cleanupFirmwarePackage() {
     if (srcFile) {
         delete srcFile;
@@ -623,6 +714,12 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::cleanupFirmwarePackage() {
     return PKG_SUCCESS;
 }
 
+/**
+ * 'package=' command, which opens/extracts and firmware package, and parses its manifest.yaml.
+ * This command accepts a single argument, a path/filename to a package (zip) or a manifest (yaml).
+ * @param args the comma-seperated list arguments for this command
+ * @return PKG_SUCCESS on success, otherwise PKG_ERR_* on error
+ */
 int ISFirmwareUpdater::cmd_processPackage(std::vector<std::string>& args) {
     bool isManifest = (args[1].length() >= 5) && (0 == args[1].compare (args[1].length() - 5, 5, ".yaml"));
     pkg_error_e err_result = isManifest ? processPackageManifest(args[1]) : openFirmwarePackage(args[1]);
@@ -670,6 +767,11 @@ int ISFirmwareUpdater::cmd_processPackage(std::vector<std::string>& args) {
     return err_result;
 }
 
+/**
+ * 'target=' command used to instruct the ISFirmwareUpdater engine which device is currently being targeted for subsequent commands
+ * @param args
+ * @return return 0 on success, or -1 on error
+ */
 int ISFirmwareUpdater::cmd_setTarget(std::vector<std::string>& args) {
     if (args[1] == "IMX5") setTarget(fwUpdate::TARGET_IMX5);
     else if (args[1] == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
@@ -682,6 +784,12 @@ int ISFirmwareUpdater::cmd_setTarget(std::vector<std::string>& args) {
     return 0;
 }
 
+/**
+ * 'method=' command used to instruct the ISFirmwareUpdater engine which method/protocol to use for subsequent firmware updates.
+ * This method is reset back to 'ISv2' with each change of target (effectively making ISv2 the default method).
+ * @param args
+ * @return return 0 on success, or -1 on error
+ */
 int ISFirmwareUpdater::cmd_setMethod(std::vector<std::string>& args) {
     if (args[1] == "DFU") {
         setTarget((fwUpdate::target_t)(session_target | fwUpdate::TARGET_DFU_FLAG));
@@ -695,6 +803,12 @@ int ISFirmwareUpdater::cmd_setMethod(std::vector<std::string>& args) {
     return 0;
 }
 
+/**
+ * 'waitFor=' command; initiates a Version request with the current target, and waits for 'millis' milliseconds for a response.
+ * If a response is received in time, this action completes successfully, otherwise it will indicate an error
+ * @param args
+ * @return
+ */
 int ISFirmwareUpdater::cmd_WaitFor(std::vector<std::string>& args) {
     if (!target_devInfo) {
         if (!pingTimeout) {
