@@ -369,6 +369,9 @@ extern void vPortFree(void* pv);
 #ifndef M_PI
 #define M_PI (3.14159265358979323846f)
 #endif
+#ifndef EPS
+#define EPS (1.0E-10f)
+#endif
 
 #ifndef RAD2DEG
 #define RAD2DEG(rad)    ((rad)*(180.0f/M_PI))
