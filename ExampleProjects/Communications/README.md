@@ -76,7 +76,7 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 ```C++
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int messageSize = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
+	int messageSize = is_comm_set_data(comm, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write set INS rotation\r\n");
@@ -96,7 +96,7 @@ rmc.bits = RMC_BITS_INS1 | RMC_BITS_GPS_NAV;
 rmc.insPeriodMs = 50;	// INS @ 20Hz
 rmc.options = 0;		// current port
 
-int messageSize = is_comm_set_data(comm, _DID_RMC, 0, sizeof(rmc_t), &rmc);
+int messageSize = is_comm_set_data(comm, DID_RMC, 0, 0, &rmc);
 if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 {
 	printf("Failed to encode and write RMC message\r\n");
@@ -106,7 +106,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 
 ```C++
 	// Ask for INS message 20 times a second (period of 50 milliseconds).  Max rate is 500 times a second (2ms period).
-	int messageSize = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 50);
+	int messageSize = is_comm_get_data(comm, DID_INS_1, 0, 0, 50);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{
 		printf("Failed to encode and write get INS message\r\n");
@@ -136,7 +136,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 		{
 			switch (is_comm_parse(&comm, inByte))
 			{
-			case _DID_INS_LLA_EULER_NED:
+			case DID_INS_1:
 				handleInsMessage((ins_1_t*)buffer);
 				break;
 
@@ -144,7 +144,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 				handleGpsMessage((gps_nav_t*)buffer);
 				break;
 
-			case _DID_IMU:
+			case DID_IMU:
 				handleImuMessage((imu_t*)buffer);
 				break;
 

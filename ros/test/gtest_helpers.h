@@ -1,6 +1,4 @@
 #include <gtest/gtest.h>
-#include <ros/ros.h>
-#include <ros/common.h>
 
 #if 1 // ((ROS_VERSION_MAJOR == 1) && (ROS_VERSION_MINOR <= 13))
 namespace testing

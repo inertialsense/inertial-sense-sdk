@@ -5,6 +5,7 @@
 #include "ISPose.h"
 #include "ISEarth.h"
 #include "data_sets.h"
+#include "util/md5.h"
 
 static int s_protocol_version = 0;
 static uint8_t s_gnssId = SAT_SV_GNSS_ID_GNSS;
@@ -254,6 +255,13 @@ char *ASCII_to_vec3d(double vec[], char *ptr)
 	return ptr;
 }
 
+char *ASCII_to_MD5(uint32_t md5hash[4], char *ptr)
+{
+	md5_from_char_array(*(md5hash_t*)md5hash, ptr);
+	ptr = ASCII_find_next_field(ptr);
+	return ptr;
+}
+
 char *ASCII_DegMin_to_Lat(double *vec, char *ptr)
 {
 	int degrees;
@@ -392,12 +400,6 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 		bits &= ~(nmeaBits);
 }
 
-void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp)
-{
-	for(int i = 0; i < NMEA_MSG_ID_COUNT; i++)
-		nmea_enable_stream(bits, period, i,  tmp[i]);
-}
-
 //////////////////////////////////////////////////////////////////////////
 // Binary to NMEA
 //////////////////////////////////////////////////////////////////////////
@@ -405,35 +407,68 @@ void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp
 int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 {
 	int n = ssnprintf(a, aSize, "$INFO"
-		",%d"			// 1
-		",%d.%d.%d.%d"	// 2
-		",%d.%d.%d.%d"	// 3
-		",%d"			// 4
-		",%d.%d.%d.%d"	// 5
-		",%d"			// 6
-		",%s"			// 7
-		",%04d-%02d-%02d"		// 8
-		",%02d:%02d:%02d.%02d"	// 9
-		",%s"			// 10
-		",%d"			// 11
-		",%d"			// 12
-		",%c",			// 13
-		(int)info.serialNumber,	// 1
-		info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3], // 2
-		info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3], // 3
-		(int)info.buildNumber,	// 4
-		info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3], // 5
-		(int)info.repoRevision,	// 6
-		info.manufacturer,		// 7
-		info.buildDate[1]+2000, info.buildDate[2], info.buildDate[3], // 8
-		info.buildTime[0], info.buildTime[1], info.buildTime[2], info.buildTime[3], // 9
-		info.addInfo,			// 10
-		info.hardware,			// 11
-		info.reserved,			// 12
-		(info.buildDate[0] ? info.buildDate[0] : ' ')); // 13
+		",%d"                   // 1
+		",%d.%d.%d.%d"          // 2
+		",%d.%d.%d.%d"          // 3
+		",%d"                   // 4
+		",%d.%d.%d.%d"          // 5
+		",%d"                   // 6
+		",%s"                   // 7
+		",%04d-%02d-%02d"       // 8
+		",%02d:%02d:%02d.%02d"  // 9
+		",%s"                   // 10
+		",%d"                   // 11
+		",%d"                   // 12
+		",%c"                   // 13
+		// TODO: dev_info_t.firmwareMD5Hash support
+		// ",%08x%08x%08x%08x"     // 14
+		, (int)info.serialNumber // 1
+		, info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2], info.hardwareVer[3] // 2
+		, info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2], info.firmwareVer[3] // 3
+		, (int)info.buildNumber  // 4
+		, info.protocolVer[0], info.protocolVer[1], info.protocolVer[2], info.protocolVer[3] // 5
+		, (int)info.repoRevision // 6
+		, info.manufacturer      // 7
+		, info.buildYear+2000, info.buildMonth, info.buildDay // 8
+		, info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond // 9
+		, info.addInfo           // 10
+		, info.hardware          // 11
+		, info.reserved          // 12
+		, (info.buildType ? info.buildType : ' ') // 13
+		// , info.firmwareMD5Hash[0], info.firmwareMD5Hash[1], info.firmwareMD5Hash[2], info.firmwareMD5Hash[3]	// 14
+		);
 
 	return nmea_sprint_footer(a, aSize, n);
 }
+
+/**
+ * Genterates NMEA ASCE request response
+*/
+int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
+{
+	nmeaBroadcastMsgPair_t pairs[MAX_nmeaBroadcastMsgPairs];
+	int activeRMC = 0;
+
+	for(int i = 0; (i < NMEA_MSG_ID_COUNT) && (activeRMC < MAX_nmeaBroadcastMsgPairs); i++)
+	{
+		if(((nRMC->nmeaBits & (0x01 << i)) != 0) && (nRMC->nmeaPeriod[i] > 0))
+		{
+			pairs[activeRMC].msgID = i;
+			pairs[activeRMC].msgPeriod = nRMC->nmeaPeriod[i];
+			activeRMC++;
+		}
+	}
+
+	// Base msg with current port set
+	int n = ssnprintf(a, aSize, "$ASCE,0");
+
+	// finish populating msg
+	for(int i = 0; (i < activeRMC) && (i < MAX_nmeaBroadcastMsgPairs); i++)
+		n += ssnprintf(a+n, aSize-n, ",%d,%d", pairs[i].msgID, pairs[i].msgPeriod);
+
+	return nmea_sprint_footer(a, aSize, n);
+}
+
 
 int tow_to_nmea_ptow(char a[], const int aSize, double imuTow, double insTow, unsigned int gpsWeek)
 {
@@ -969,6 +1004,57 @@ int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float h
 	return nmea_sprint_footer(a, aSize, n);
 }
 
+int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel)
+{
+	/*  $INTEL prorietary NMEA message
+		0	Message ID $INTEL
+		1	Message ID KIM
+		2	Fimrware version of KIM
+		3	GPS Time of Week (ms)
+		4	GPS week number
+		5	GPS leap seconds
+		6	1PPS phase 1 (ns)
+		7	1PPS phase 2 (ns)
+		8	Quantization error of time pulse (ns)
+		9	ECEF X velocity (m/s)
+		10	ECEF Y velocity (m/s)
+		11	ECEF Z velocity (m/s)
+		12	North veocity (m/s)
+		13	East velocity (m/s)
+		14	Down velocity (m/s)
+		15	Checksum, begins with *
+
+		Example: $INTEL, *05
+	*/
+	update_nmea_speed(pos, vel);
+
+	int n = ssnprintf(a, aSize, "$INTEL,KIM");										// 0,1
+
+	nmea_sprint(a, aSize, n, ",%d.%d.%d.%d", 
+		info.firmwareVer[0], 
+		info.firmwareVer[1], 
+		info.firmwareVer[2], 
+		info.firmwareVer[3]);														// 2
+	nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs);								// 3
+	nmea_sprint(a, aSize, n, ",%d", pos.week);										// 4
+	nmea_sprint(a, aSize, n, ",%d", pos.leapS);										// 5
+
+	nmea_sprint(a, aSize, n, ",%.3f", 0);											// 6
+	nmea_sprint(a, aSize, n, ",%.3f", 0);											// 7
+	nmea_sprint(a, aSize, n, ",0"); 												// 8
+
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[0]);									// 9
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[1]);									// 10
+	nmea_sprint(a, aSize, n, ",%.3f", vel.vel[2]);									// 11
+
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[0]);						// 12
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[1]);						// 13
+	nmea_sprint(a, aSize, n, ",%.3f", s_dataSpeed.velNed[2]);						// 14
+
+	return nmea_sprint_footer(a, aSize, n);
+}
+
+
 void print_string_n(char a[], int n)
 {
 	a[n] = '\0'; 
@@ -1440,8 +1526,7 @@ int getNmeaMsgId(const void *msg, int msgSize)
     switch(*talker)
 	{
 	case 'A':
-		if      (UINT32_MATCH(talker,"ASCB"))       { return NMEA_MSG_ID_ASCB; }
-		else if (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
+		if (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
 		break;
 
 	case 'B':
@@ -1520,19 +1605,19 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	// uint8_t         buildDate[4];	YYYY-MM-DD
 	unsigned int year, month, day;
 	SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
-	info.buildDate[0] = ' ';
-	info.buildDate[1] = (uint8_t)(year - 2000);
-	info.buildDate[2] = (uint8_t)(month);
-	info.buildDate[3] = (uint8_t)(day);
+	info.buildType = ' ';
+	info.buildYear = (uint8_t)(year - 2000);
+	info.buildMonth = (uint8_t)(month);
+	info.buildDay = (uint8_t)(day);
 	ptr = ASCII_find_next_field(ptr);
 	
 	// uint8_t         buildTime[4];	hh:mm:ss.ms
 	unsigned int hour, minute, second, ms;
 	SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
-	info.buildTime[0] = (uint8_t)hour;
-	info.buildTime[1] = (uint8_t)minute;
-	info.buildTime[2] = (uint8_t)second;
-	info.buildTime[3] = (uint8_t)ms;
+	info.buildHour = (uint8_t)hour;
+	info.buildMinute = (uint8_t)minute;
+	info.buildSecond = (uint8_t)second;
+	info.buildMillisecond = (uint8_t)ms;
 	ptr = ASCII_find_next_field(ptr);
 	
 	// char            addInfo[DEVINFO_ADDINFO_STRLEN];
@@ -1545,8 +1630,14 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_u16(&info.reserved, ptr);
 
 	// uint8_t         build type;
-	info.buildDate[0] = (uint8_t)*ptr;
-	if (info.buildDate[0]==0) { info.buildDate[0] = ' '; }
+	info.buildType = (uint8_t)*ptr;
+	if (info.buildType==0) { info.buildType = ' '; }
+
+    // ptr = ASCII_find_next_field(ptr);
+
+	// TODO: dev_info_t.firmwareMD5Hash support
+	// uint32_t         firmwareMD5Hash[4];
+	// ptr = ASCII_to_MD5(info.firmwareMD5Hash, ptr);
 
 	// Populate missing hardware descriptor
 	devInfoPopulateMissingHardware(&info);
@@ -1686,6 +1777,45 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 	// Time of Week offset, leapS
 	ptr = ASCII_to_f64(&(gpsPos.towOffset), ptr);
 	ptr = ASCII_to_u8(&(gpsPos.leapS), ptr);
+
+	return 0;
+}
+
+int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1], const char a[], const int aSize)
+{
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $INTEL,
+	
+	// 1 - Message ID KIM
+	ptr = ASCII_find_next_field(ptr);
+
+	// 2 -	Fimrware version of KIM
+	ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
+	
+	// 3 -	GPS Time of Week (ms)
+	ptr = ASCII_to_u32(&(pos.timeOfWeekMs), ptr);
+	
+	// 4 -	GPS week number
+	ptr = ASCII_to_u32(&(pos.week), ptr);
+	
+	// 5 -	GPS leap seconds
+	ptr = ASCII_to_u8(&(pos.leapS), ptr);
+	
+	// 6 -	1PPS phase 1 (ns)
+	ptr = ASCII_to_f32(&(ppsPhase[0]), ptr);
+	
+	// 7 -	1PPS phase 2 (ns)
+	ptr = ASCII_to_f32(&(ppsPhase[1]), ptr);
+	
+	// 8 -	Quantization error of time pulse (ns)
+	ptr = ASCII_to_u32(&(ppsNoiseNs[0]), ptr);
+	
+	// 9-11 - ECEF X,Y,Z velocity (m/s)
+	ptr = ASCII_to_vec3f(vel.vel, ptr);
+		
+	// 12-14 - NED veocity (m/s)
+	// float velNed[3];
+	// ptr = ASCII_to_vec3f(velNed, ptr);
 
 	return 0;
 }
@@ -1939,67 +2069,6 @@ int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	return 0;
 }
 
-// Returns RMC options
-uint32_t nmea_parse_ascb(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
-{
-	(void)msgSize;
-	if(pHandle >= NUM_COM_PORTS)
-	{
-		return 0;
-	}
-	
-	uint16_t tmp[NMEA_MSG_ID_COUNT] = {};
-	uint32_t options = 0;	
-	char *ptr = (char *)&msg[6];				// $ASCB
-	if(*ptr!=','){ options = (uint32_t)atoi(ptr); }	
-
-	ptr = ASCII_find_next_field(ptr);	// PIMU
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PIMU] = (uint16_t)atoi(ptr);}	
-	ptr = ASCII_find_next_field(ptr);	// PPIMU
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PPIMU] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PINS1
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PINS1] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PINS2
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PINS2] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PGPSP
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PGPSP] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// PRIMU
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PRIMU] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gga
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGGA] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gll
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGLL] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gsa
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGSA] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// rmc
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxRMC]= (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// zda
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxZDA] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// pashr
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_PASHR] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// gsv
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxGSV] = (uint16_t)atoi(ptr);}
-	ptr = ASCII_find_next_field(ptr);	// vtg
-	if(*ptr!=','){ tmp[NMEA_MSG_ID_GxVTG] = (uint16_t)atoi(ptr);}
-
-	// Copy tmp to corresponding port(s)
-	uint32_t ports = options & RMC_OPTIONS_PORT_MASK;
-	switch (ports)
-	{
-		case RMC_OPTIONS_PORT_CURRENT:	nmea_set_rmc_period_multiple(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, tmp); break;
-		case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_set_rmc_period_multiple(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, tmp); } break;
-			
-		default:	// Current port
-			if (ports & RMC_OPTIONS_PORT_SER0)	{ nmea_set_rmc_period_multiple(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, tmp); }
-			if (ports & RMC_OPTIONS_PORT_SER1)	{ nmea_set_rmc_period_multiple(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, tmp); }
-			if (ports & RMC_OPTIONS_PORT_SER2)	{ nmea_set_rmc_period_multiple(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, tmp); }
-			if (ports & RMC_OPTIONS_PORT_USB)	{ nmea_set_rmc_period_multiple(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, tmp); }
-			break;
-	}
-		
-	return options;
-}
-
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
@@ -2056,6 +2125,95 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 			if (ports & RMC_OPTIONS_PORT_SER1)     { nmea_enable_stream(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, id, period); }
 			if (ports & RMC_OPTIONS_PORT_SER2)     { nmea_enable_stream(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, id, period); }
 			if (ports & RMC_OPTIONS_PORT_USB)      { nmea_enable_stream(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, id, period); }
+			break;
+		}
+	}
+		
+	return options;
+}
+
+uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS])
+{
+	(void)msgSize;
+	char *ptr;
+
+	uint32_t options = 0;
+	uint32_t id;
+	uint32_t ports;
+	uint8_t period;
+
+	if(pHandle >= NUM_COM_PORTS)
+	{
+		return 0;
+	}
+	
+	ptr = (char *)&msg[6];				// $ASCE
+	
+	// check if next index is ','
+	if(*ptr != ',')
+		options = (uint32_t)atoi(ptr);
+	
+	// get next uint32_t and assign it to options and move pointer
+	ptr = ASCII_to_u32(&options, ptr);
+
+	// extract port from options
+	ports = options&RMC_OPTIONS_PORT_MASK;
+	
+	for (int i=0; i<20; i++)
+	{
+		// end of nmea string
+		if(*ptr == '*')
+		 	break;
+		
+		// set id and increament ptr to next field
+		id = ((*ptr == ',') ? 0 : atoi(ptr));
+		ptr = ASCII_find_next_field(ptr);
+
+		// end of nmea string
+		if(*ptr=='*')
+			break;
+		
+		// set period multiple and increament ptr to next field
+		period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
+		ptr = ASCII_find_next_field(ptr);
+
+		// Copy tmp to corresponding port(s)
+		switch (ports)
+		{	
+		case RMC_OPTIONS_PORT_CURRENT:	
+			nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period);
+			rmci[pHandle].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+			break;
+		
+		case RMC_OPTIONS_PORT_ALL:		
+			for(int i=0; i<NUM_COM_PORTS; i++) 
+			{ 
+				nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); 
+				rmci[i].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+			} 
+			break;
+			
+		default:	// Current port
+			if (ports & RMC_OPTIONS_PORT_SER0)     
+			{ 
+				nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period);
+				rmci[0].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+			}
+			if (ports & RMC_OPTIONS_PORT_SER1)    
+			{ 
+				nmea_enable_stream(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, id, period);
+				rmci[1].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+			}
+			if (ports & RMC_OPTIONS_PORT_SER2)     
+			{ 
+				nmea_enable_stream(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, id, period);
+				rmci[2].rmc.options |= (options & RMC_OPTIONS_PERSISTENT); 
+			}
+			if (ports & RMC_OPTIONS_PORT_USB)      
+			{ 
+				nmea_enable_stream(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, id, period);
+				rmci[3].rmc.options |= (options & RMC_OPTIONS_PERSISTENT); 
+			}
 			break;
 		}
 	}
@@ -2505,7 +2663,7 @@ char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gp
 					dst.azim = azim;
 					dst.cno = cno;
 					dst.status = 
-						SAT_SIG_QUALITY_CODE_CARRIER_TIME_SYNC_3 |
+						SAT_SV_STATUS_SIGNAL_QUALITY_MASK |
 						SAT_SV_STATUS_USED_IN_SOLUTION | 
 						SAT_SV_STATUS_HEALTH_GOOD;
 				}

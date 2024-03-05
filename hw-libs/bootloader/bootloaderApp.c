@@ -10,16 +10,16 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT, IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef IMX_5
+#if defined(uINS_3) || defined(EVB_2)
 #include <asf.h>
-#else
-#include "stm32l4xx.h"
-#include "d_flash.h"
+#elif defined(IMX_5)
+#include "CMSIS/stm32l4xx.h"
+#include "drivers/d_flash.h"
 #endif
 
 #include <string.h>
-#include "../../src/data_sets.h"
-#include "../../hw-libs/misc/rtos.h"
+#include "data_sets.h"
+#include "rtos.h"
 #include "bootloaderApp.h"
 
 
@@ -147,7 +147,6 @@ void enable_bootloader(int pHandle)
     // reset processor
     soft_reset_backup_register(SYS_FAULT_STATUS_ENABLE_BOOTLOADER);
 }
-
 
 void enable_rom_bootloader(void)
 {

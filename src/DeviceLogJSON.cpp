@@ -127,7 +127,7 @@ bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 }
 
 
-p_data_t* cDeviceLogJSON::ReadData()
+p_data_buf_t* cDeviceLogJSON::ReadData()
 {
 	if (m_pFile == NULLPTR)
 	{
@@ -136,13 +136,13 @@ p_data_t* cDeviceLogJSON::ReadData()
             return NULLPTR;
         }
 	}
-	p_data_t* data = ReadDataFromFile();
+	p_data_buf_t* data = ReadDataFromFile();
     cDeviceLog::OnReadData(data);
 	return data;
 }
 
 
-p_data_t* cDeviceLogJSON::ReadDataFromFile()
+p_data_buf_t* cDeviceLogJSON::ReadDataFromFile()
 {
 	if (m_pFile == NULLPTR)
 	{
@@ -150,13 +150,13 @@ p_data_t* cDeviceLogJSON::ReadDataFromFile()
 		return NULLPTR;
 	}
     while (!GetNextItemForFile() && OpenNextReadFile()) {}
-	if (m_json.StringJSONToData(m_jsonString, m_dataBuffer.hdr, m_dataBuffer.buf, _ARRAY_BYTE_COUNT(m_dataBuffer.buf)))
+	if (m_json.StringJSONToData(m_jsonString, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf)))
 	{
-		if (m_dataBuffer.hdr.id == DID_DEV_INFO)
+		if (m_data.hdr.id == DID_DEV_INFO)
 		{
-			memcpy(&m_devInfo, m_dataBuffer.buf, sizeof(dev_info_t));
+			memcpy(&m_devInfo, m_data.buf, sizeof(dev_info_t));
 		}
-		return &m_dataBuffer;
+		return &m_data;
 	}
     return NULLPTR;
 }

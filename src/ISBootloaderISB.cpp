@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderISB.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating application images 
  *  using ISB (Inertial Sense Bootloader) protocol
  *  
@@ -88,12 +88,12 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
         if (retry*READ_DELAY_MS > 4000)
         {   // No response
-            status_update(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
+            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
             return IS_IMAGE_SIGN_NONE;
         }
     }
 
-    uint32_t valid_signatures = 0;
+    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
     
     m_isb_major = buf[2];
     m_isb_minor = (char)buf[3];
@@ -120,7 +120,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
             }
             n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
         }
-        status_update(NULL, IS_LOG_LEVEL_ERROR, msg);
+        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, msg);
         return (eImageSignature)valid_signatures;
     }
 
@@ -133,7 +133,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
         }
         else if(processor == IS_PROCESSOR_STM32L4)
         {
-            valid_signatures |= IS_IMAGE_SIGN_IMX_5;
+            valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
             if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
         }
     }
@@ -145,7 +145,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     if (valid_signatures == 0)
     {
-        status_update(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
+        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
     }
 
     return (eImageSignature)valid_signatures;
@@ -153,7 +153,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
 is_operation_result cISBootloaderISB::reboot_up()
 {
-    m_info_callback(this, "(ISB) Rebooting to APP mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
 
     // send the "reboot to program mode" command and the device should start in program mode
     serialPortWrite(m_port, (unsigned char*)":020000040300F7", 15);
@@ -179,14 +179,14 @@ is_operation_result cISBootloaderISB::reboot_down(uint8_t major, char minor, boo
           (major == m_isb_major && minor <= m_isb_minor))
         {
             SNPRINTF(message+n, sizeof(message)-n, "No update.");
-            m_info_callback(this, message, IS_LOG_LEVEL_INFO);
+            m_info_callback(this, IS_LOG_LEVEL_INFO, message);
             return IS_OP_OK;
         }
     }
 
     SNPRINTF(message+n, sizeof(message)-n, "Update needed...");
-    m_info_callback(this, message, IS_LOG_LEVEL_INFO);
-    m_info_callback(this, "(ISB) Rebooting to ROM bootloader mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, message);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to ROM-bootloader mode...");
 
     // USE WITH CAUTION! This will put in bootloader ROM mode allowing a new bootloader to be put on
     // In some cases, the device may become unrecoverable because of interference on its ports.
@@ -292,7 +292,7 @@ uint32_t cISBootloaderISB::get_device_info()
     }
     else
     {
-        status_update(NULL, IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", m_port->port, m_isb_major);
+        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "(ISB) (%s) (ISB) get_device_info invalid m_isb_major: %d", m_port->port, m_isb_major);
         return 0;
     }
 

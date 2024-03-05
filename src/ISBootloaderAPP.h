@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderAPP.h
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense routines for putting APP mode devices in ISB mode
- * 
- */
-
 /*
 MIT LICENSE
 

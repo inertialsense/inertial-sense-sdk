@@ -57,7 +57,7 @@ int cComDataBuffer::PushData(int pHandle, const p_data_t* data)
     cMutexLocker lock(&m_mutex);
 
     EnsureBuffers(pHandle);
-    float timestamp = (float)cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+    float timestamp = (float)cISDataMappings::GetTimestamp(&data->hdr, data->ptr);
     if (timestamp != 0.0f)
     {
         m_lastTimestamp = timestamp;
@@ -85,7 +85,7 @@ int cComDataBuffer::PushData(int pHandle, const p_data_t* data)
         // add the actual data bytes
         for (size_t i = 0; i < data->hdr.size; i++)
         {
-            dataBuffer.push_back(data->buf[i]);
+            dataBuffer.push_back(data->ptr[i]);
         }
         // add 0 for every byte after offset + size but before total size
         for (size_t i = 0; i < structSize - data->hdr.size; i++)

@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderISB.h
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense routines for updating application images using the ISB
  *  (Inertial Sense Bootloader) protocol.
  * 

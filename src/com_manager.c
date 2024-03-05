@@ -14,6 +14,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef IMX_5
+#include "globals.h"
+#endif
+
 
 // enable filtering of duplicate packets
 #define ENABLE_FILTER_DUPLICATE_PACKETS 1
@@ -25,486 +29,423 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define PARSE_FLOAT(str) strtof(str, 0)
 
 #define MIN_REQUEST_PERIOD_MS       1               // (ms) 1 KHz
-#define MAX_REQUEST_PERIOD_MS       100000          // (ms)
+#define MAX_REQUEST_PERIOD_MS       65000           // (ms)
 #define MSG_PERIOD_SEND_ONCE		-1
 #define MSG_PERIOD_DISABLED			0
 
-static com_manager_t g_cm;
+static com_manager_t s_cm = {0};
 
 int initComManagerInstanceInternal
 (
-	com_manager_t* cmInstance,
-	int numHandles,
-	int maxEnsuredPackets,
-	int stepPeriodMilliseconds,
-	int retryCount,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
-	pfnComManagerSendBufferAvailableBytes txFreeFnc,
-	pfnComManagerPostRead pstRxFnc,
-	pfnComManagerPostAck pstAckFnc,
-	pfnComManagerDisableBroadcasts disableBcastFnc,
-	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
+    com_manager_t* cmInstance,
+    int numPorts,
+    int stepPeriodMilliseconds,
+    pfnComManagerRead portReadFnc,
+    pfnIsCommPortWrite portWriteFnc,
+    pfnComManagerSendBufferAvailableBytes txFreeFnc,
+    pfnComManagerPostRead pstRxFnc,
+    pfnComManagerPostAck pstAckFnc,
+    pfnComManagerDisableBroadcasts disableBcastFnc,
+    com_manager_init_t *buffers,
+    com_manager_port_t *cmPorts
 );
 // int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 // void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt);
 void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int periodMultiple);
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg);
-void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t *disable);
-int sendPacket(com_manager_t* cmInstance, int pHandle, packet_t *dPkt, uint8_t additionalPktFlags);
-int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t *msg);
-void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned char pid_ack);
+void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did);
+int sendDataPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt);
+void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags);
 int findAsciiMessage(const void * a, const void * b);
-
-//  Packet processing
-// com manager only...
-int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, packet_t *dPkt, uint8_t additionalPktFlags);
-// 1 if valid
 int asciiMessageCompare(const void* elem1, const void* elem2);
-
-//  Packet Retry
-void stepPacketRetry(com_manager_t* cmInstance);
-packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pid, unsigned char data[], unsigned int dataSize);
-void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt);
-void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt);
-
 void stepComManagerSendMessages(void);
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
 
-CMHANDLE comManagerGetGlobal(void) { return &g_cm; }
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype);
+
+CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int comManagerInit
-(
-	int numHandles,
-	int maxEnsuredPackets,
-	int stepPeriodMilliseconds,
-	int retryCount,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
-	pfnComManagerSendBufferAvailableBytes txFreeFnc,
-	pfnComManagerPostRead pstRxFnc,
-	pfnComManagerPostAck pstAckFnc,
-	pfnComManagerDisableBroadcasts disableBcastFnc,
-	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
-)
+(	int numPorts,
+    int stepPeriodMilliseconds,
+    pfnComManagerRead portReadFnc,
+    pfnIsCommPortWrite portWriteFnc,
+    pfnComManagerSendBufferAvailableBytes txFreeFnc,
+    pfnComManagerPostRead pstRxFnc,
+    pfnComManagerPostAck pstAckFnc,
+    pfnComManagerDisableBroadcasts disableBcastFnc,
+    com_manager_init_t *buffers,
+    com_manager_port_t *cmPorts)
 {
-	return initComManagerInstanceInternal(
-		&g_cm, 
-		numHandles, 
-		maxEnsuredPackets, 
-		stepPeriodMilliseconds, 
-		retryCount, 
-		readFnc, 
-		sendFnc, 
-		txFreeFnc, 
-		pstRxFnc, 
-		pstAckFnc, 
-		disableBcastFnc, 
-		buffers,
-		cmPorts);
+    return initComManagerInstanceInternal(
+        &s_cm, 
+        numPorts, 
+        stepPeriodMilliseconds, 
+        portReadFnc, 
+        portWriteFnc, 
+        txFreeFnc, 
+        pstRxFnc, 
+        pstAckFnc, 
+        disableBcastFnc, 
+        buffers,
+        cmPorts);
 }
 
 int comManagerInitInstance
-(
-	CMHANDLE cmHandle,
-	int numHandles,
-	int maxEnsuredPackets,
-	int stepPeriodMilliseconds,
-	int retryCount,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
-	pfnComManagerSendBufferAvailableBytes txFreeFnc,
-	pfnComManagerPostRead pstRxFnc,
-	pfnComManagerPostAck pstAckFnc,
-	pfnComManagerDisableBroadcasts disableBcastFnc,
-	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
-)
+(	CMHANDLE cmHandle,
+    int numPorts,
+    int stepPeriodMilliseconds,
+    pfnComManagerRead portReadFnc,
+    pfnIsCommPortWrite portWriteFnc,
+    pfnComManagerSendBufferAvailableBytes txFreeFnc,
+    pfnComManagerPostRead pstRxFnc,
+    pfnComManagerPostAck pstAckFnc,
+    pfnComManagerDisableBroadcasts disableBcastFnc,
+    com_manager_init_t *buffers,
+    com_manager_port_t *cmPorts)
 {
-	int result = 0;
+    int result = 0;
 
-	com_manager_t* cmInstance = (com_manager_t*)cmHandle;
-	if (cmInstance != 0)
-	{
-		memset(cmInstance, 0, sizeof(com_manager_t));
-		result = initComManagerInstanceInternal(
-			cmInstance, 
-			numHandles, 
-			maxEnsuredPackets, 
-			stepPeriodMilliseconds, 
-			retryCount, 
-			readFnc, 
-			sendFnc, 
-			txFreeFnc, 
-			pstRxFnc, 
-			pstAckFnc, 
-			disableBcastFnc,
-			buffers, 
-			cmPorts);
-	}
-	return result;
+    com_manager_t* cmInstance = (com_manager_t*)cmHandle;
+    if (cmInstance != 0)
+    {
+        memset(cmInstance, 0, sizeof(com_manager_t));
+        result = initComManagerInstanceInternal(
+            cmInstance, 
+            numPorts, 
+            stepPeriodMilliseconds, 
+            portReadFnc, 
+            portWriteFnc, 
+            txFreeFnc, 
+            pstRxFnc, 
+            pstAckFnc, 
+            disableBcastFnc,
+            buffers, 
+            cmPorts);
+    }
+    return result;
 }
 
 int initComManagerInstanceInternal
-(
-	com_manager_t* cmInstance,
-	int numHandles,
-	int maxEnsuredPackets,
-	int stepPeriodMilliseconds,
-	int retryCount,
-	pfnComManagerRead readFnc,
-	pfnComManagerSend sendFnc,
-	pfnComManagerSendBufferAvailableBytes txFreeFnc,
-	pfnComManagerPostRead pstRxFnc,
-	pfnComManagerPostAck pstAckFnc,
-	pfnComManagerDisableBroadcasts disableBcastFnc,
-	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts
-)
+(	com_manager_t* cmInstance,
+    int numPorts,
+    int stepPeriodMilliseconds,
+    pfnComManagerRead portReadFnc,
+    pfnIsCommPortWrite portWriteFnc,
+    pfnComManagerSendBufferAvailableBytes txFreeFnc,
+    pfnComManagerPostRead pstRxFnc,
+    pfnComManagerPostAck pstAckFnc,
+    pfnComManagerDisableBroadcasts disableBcastFnc,
+    com_manager_init_t *buffers,
+    com_manager_port_t *cmPorts)
 {
-	int32_t i;
+    int32_t i;
 
-	if (numHandles <= 0)
-	{
-		return -1;
-	}
-	numHandles = _CLAMP(numHandles, 1, 1024);
+    if (numPorts <= 0)
+    {
+        return -1;
+    }
+    numPorts = _CLAMP(numPorts, 1, 1024);
 
-	// assign new variables
-	cmInstance->maxEnsuredPackets = maxEnsuredPackets;
-	cmInstance->readCallback = readFnc;
-	cmInstance->sendPacketCallback = sendFnc;
-	cmInstance->txFreeCallback = txFreeFnc;
-	cmInstance->pstRxFnc = pstRxFnc;
-	cmInstance->pstAckFnc = pstAckFnc;
-	cmInstance->disableBcastFnc = disableBcastFnc;
-	cmInstance->numHandles = numHandles;
-	cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
-	cmInstance->ensureRetryCount = retryCount;
-	cmInstance->cmMsgHandlerAscii = NULL;
-	cmInstance->cmMsgHandlerUblox = NULL;
-	cmInstance->cmMsgHandlerRtcm3 = NULL;
+    // assign new variables
+    cmInstance->portRead = portReadFnc;
+    cmInstance->portWrite = portWriteFnc;
+    cmInstance->txFree = txFreeFnc;
+    cmInstance->pstRxFnc = pstRxFnc;
+    cmInstance->pstAckFnc = pstAckFnc;
+    cmInstance->disableBcastFnc = disableBcastFnc;
+    cmInstance->numPorts = numPorts;
+    cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
+    cmInstance->cmMsgHandlerNmea = NULL;
+    cmInstance->cmMsgHandlerUblox = NULL;
+    cmInstance->cmMsgHandlerRtcm3 = NULL;
 
-	if (buffers == NULL)
-	{
-		return -1;
-	}
-	
-	// Buffer: message broadcasts
-	if (buffers->broadcastMsg == NULL || buffers->broadcastMsgSize < COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS))
-	{
-		return -1;
-	}
-	cmInstance->broadcastMessages = (broadcast_msg_t*)buffers->broadcastMsg;
-	memset(cmInstance->broadcastMessages, 0, buffers->broadcastMsgSize);
-		
-	// Port specific info
-	cmInstance->ports = cmPorts;
-	for (i = 0; i < numHandles; i++)
-	{	// Initialize IScomm instance, for serial reads / writes
-		com_manager_port_t *port = &(cmInstance->ports[i]);
-		is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
-		
-		// Port status
-		memset(&(port->status), 0, MEMBERSIZE(com_manager_port_t,status));	
-			
+    if (buffers == NULL || cmPorts == NULL)
+    {
+        return -1;
+    }
+    
+    // Buffer: message broadcasts
+    if (buffers->broadcastMsg == NULL || buffers->broadcastMsgSize < COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS))
+    {
+        return -1;
+    }
+    cmInstance->broadcastMessages = (broadcast_msg_t*)buffers->broadcastMsg;
+    memset(cmInstance->broadcastMessages, 0, buffers->broadcastMsgSize);
+        
+    // Port specific info
+    cmInstance->ports = cmPorts;
+        for (i = 0; i < numPorts; i++)
+    {	// Initialize IScomm instance, for serial reads / writes
+        com_manager_port_t *port = &(cmInstance->ports[i]);
+        is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
+                    
 #if ENABLE_PACKET_CONTINUATION			
-		// Packet data continuation
-		memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
+        // Packet data continuation
+        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
 #endif
-	}
+    }
 
-	// Buffer: ensured packets
-	if (cmInstance->maxEnsuredPackets > 0)
-	{
-		if (buffers->ensuredPackets == NULL || buffers->ensuredPacketsSize < COM_MANAGER_BUF_SIZE_ENSURED_PKTS(cmInstance->maxEnsuredPackets))
-		{
-			return -1;
-		}
-		cmInstance->ensuredPackets = (ensured_pkt_t*)buffers->ensuredPackets;
-		memset(cmInstance->ensuredPackets, 0, buffers->ensuredPacketsSize);
-		for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
-		{
-			cmInstance->ensuredPackets[i].counter = -2; // indicates no retries are enabled
-			cmInstance->ensuredPackets[i].pkt.body.ptr = cmInstance->ensuredPackets[i].pktBody;
-		}
-	}
-
-	return 0;
+    return 0;
 }
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
 {
-	asciiMessageMap_t* e1 = (asciiMessageMap_t*)elem1;
-	asciiMessageMap_t* e2 = (asciiMessageMap_t*)elem2;
+    asciiMessageMap_t* e1 = (asciiMessageMap_t*)elem1;
+    asciiMessageMap_t* e2 = (asciiMessageMap_t*)elem2;
 
-	return memcmp(e1->messageId, e2->messageId, 4);
+    return memcmp(e1->messageId, e2->messageId, 4);
 }
 
-void comManagerRegister(uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
+void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags)
 {
-	comManagerRegisterInstance(&g_cm, dataId, txFnc, pstRxFnc, txDataPtr, rxDataPtr, dataSize, pktFlags);
+    comManagerRegisterInstance(&s_cm, did, txFnc, pstRxFnc, txDataPtr, rxDataPtr, size, pktFlags);
 }
 
-void comManagerRegisterInstance(CMHANDLE cmInstance_, uint32_t dataId, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, int dataSize, uint8_t pktFlags)
+void comManagerRegisterInstance(CMHANDLE cmInstance_, uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags)
 {
-	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
+    com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
 
-	// Validate ID and data pointer
-	if (dataId >= DID_COUNT_UINS)
-	{
-		return;
-	}
+    // Validate ID and data pointer
+    if (did >= DID_COUNT)
+    {
+        return;
+    }
 
-	// Function called to update struct before data is sent
-	cmInstance->regData[dataId].preTxFnc = txFnc;
+    // Function called to update struct before data is sent
+    cmInstance->regData[did].preTxFnc = txFnc;
 
-	// Function called after data is received and struct is updated
-	cmInstance->regData[dataId].pstRxFnc = pstRxFnc;
+    // Function called after data is received and struct is updated
+    cmInstance->regData[did].pstRxFnc = pstRxFnc;
 
-	// Pointer to data struct for Tx
-	cmInstance->regData[dataId].dataSet.txPtr = (unsigned char*)txDataPtr;
+    // Pointer to data struct for Tx
+    cmInstance->regData[did].dataSet.txPtr = (unsigned char*)txDataPtr;
 
-	// Pointer to data struct for Rx
-	cmInstance->regData[dataId].dataSet.rxPtr = (unsigned char*)rxDataPtr;
+    // Pointer to data struct for Rx
+    cmInstance->regData[did].dataSet.rxPtr = (unsigned char*)rxDataPtr;
 
-	// Size of data struct
-	cmInstance->regData[dataId].dataSet.size = dataSize;
-	
-	// Packet flags
-	cmInstance->regData[dataId].pktFlags = pktFlags;
+    // Size of data struct
+    cmInstance->regData[did].dataSet.size = size;
+    
+    // Packet flags
+    cmInstance->regData[did].pktFlags = pktFlags;
 }
 
-void comManagerStep(void)
+void comManagerStep()
 {
-	comManagerStepRxInstance(&g_cm, 0);
-	comManagerStepTxInstance(&g_cm);
+    comManagerStepRxInstance(&s_cm, 0);
+    comManagerStepTxInstance(&s_cm);
 }
 
 void comManagerStepTimeout(uint32_t timeMs)
 {
-	comManagerStepRxInstance(&g_cm, timeMs);
-	comManagerStepTxInstance(&g_cm);
+    comManagerStepRxInstance(&s_cm, timeMs);
+    comManagerStepTxInstance(&s_cm);
 }
 
 void comManagerStepInstance(CMHANDLE cmInstance_)
 {
-	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	comManagerStepRxInstance(cmInstance, 0);
-	comManagerStepTxInstance(cmInstance);
+    com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
+    comManagerStepRxInstance(cmInstance, 0);
+    comManagerStepTxInstance(cmInstance);
 }
-
-// pfnISCommRead 
-// static int commRead(int pHandle, uint8_t *buffer, int numberOfBytes)
-// {
-// 	
-// } 
 
 void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
 {
-	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	int32_t pHandle;
-	
-	if (!cmInstance->readCallback)
-	{
-		return;
-	}
-		
-		
-	for (pHandle = 0; pHandle < cmInstance->numHandles; pHandle++)
-	{
-		com_manager_port_t *port = &(cmInstance->ports[pHandle]);
-		is_comm_instance_t *comm = &(port->comm);
-		protocol_type_t ptype;
+    com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
+    int32_t port;
+    
+    if (!cmInstance->portRead)
+    {
+        return;
+    }
+        
+    for (port = 0; port < cmInstance->numPorts; port++)
+    {
+        com_manager_port_t *cmPort = &(cmInstance->ports[port]);
+        is_comm_instance_t *comm = &(cmPort->comm);
+        protocol_type_t ptype;
 
-#if 0	// Read one byte (simple method)
-		uint8_t c;
+        // Get available size of comm buffer
+        int n = is_comm_free(comm);
 
-		// Read from serial buffer until empty
-		while (cmInstance->readCallback(cmInstance, pHandle, &c, 1))
-		{
-			if ((ptype = is_comm_parse_byte_timeout(comm, c, timeMs)) != _PTYPE_NONE)
-			{
+        // Read data directly into comm buffer
+        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, n)))
+        {
+            // Update comm buffer tail pointer
+            comm->rxBuf.tail += n;
 
-#else	// Read a set of bytes (fast method)
+            // Search comm buffer for valid packets
+            while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
+            {	
+                int error = comManagerStepRxInstanceHandler(cmInstance, cmPort, comm, port, ptype);		
+                if(error == CM_ERROR_FORWARD_OVERRUN) 
+                {
+                    break;	// Stop parsing and continue in outer loop
+                }
+            }
+        }			
+    }
+}
 
-		// Get available size of comm buffer
-		int n = is_comm_free(comm);
+static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
+{
+    int error = 0;
+    uint8_t *data = comm->rxPkt.data.ptr + comm->rxPkt.offset;
+    uint16_t size = comm->rxPkt.data.size;
 
-		// Read data directly into comm buffer
-		if ((n = cmInstance->readCallback(cmInstance, pHandle, comm->buf.tail, n)))
-		{
-			// Update comm buffer tail pointer
-			comm->buf.tail += n;
+    switch (ptype)
+    {
+    case _PTYPE_PARSE_ERROR:
+        error = 1;
+        break;
 
-			// Search comm buffer for valid packets
-			while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
-			{
-#endif					
-				uint8_t error = 0;
-				uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
-				uint32_t dataSize = comm->dataHdr.size;
+    case _PTYPE_INERTIAL_SENSE_DATA:
+    case _PTYPE_INERTIAL_SENSE_CMD:
+        error = processBinaryRxPacket(cmInstance, port, &(comm->rxPkt));
+        break;
 
-				switch (ptype)
-				{
-				case _PTYPE_PARSE_ERROR:
-					error = 1;
-					break;
+    case _PTYPE_UBLOX:
+        if (cmInstance->cmMsgHandlerUblox)
+        {
+            error = cmInstance->cmMsgHandlerUblox(port, data, size);
+        }
+        break;
 
-				case _PTYPE_INERTIAL_SENSE_DATA:
-				case _PTYPE_INERTIAL_SENSE_CMD:
-					error = (uint8_t)processBinaryRxPacket(cmInstance, pHandle, &(comm->pkt));
-					break;
+    case _PTYPE_RTCM3:
+        if (cmInstance->cmMsgHandlerRtcm3)
+        {
+            error = cmInstance->cmMsgHandlerRtcm3(port, data, size);
+        }
+        break;
 
-				case _PTYPE_UBLOX:
-					if (cmInstance->cmMsgHandlerUblox)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerUblox(cmInstance, pHandle, dataPtr, dataSize);
-					}
-					break;
+    case _PTYPE_NMEA:
+        if (cmInstance->cmMsgHandlerNmea)
+        {
+            error = cmInstance->cmMsgHandlerNmea(port, data, size);
+        }
+        break;
 
-				case _PTYPE_RTCM3:
-					if (cmInstance->cmMsgHandlerRtcm3)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerRtcm3(cmInstance, pHandle, dataPtr, dataSize);
-					}
-					break;
+    case _PTYPE_SPARTN:
+        if (cmInstance->cmMsgHandlerSpartn)
+        {
+            error = cmInstance->cmMsgHandlerSpartn(port, data, size);
+        }
+        break;
 
-				case _PTYPE_NMEA:
-					if (cmInstance->cmMsgHandlerAscii)
-					{
-						error = (uint8_t)cmInstance->cmMsgHandlerAscii(cmInstance, pHandle, dataPtr, dataSize);
-					}
-					break;
-					
-				default:
-					break;
-				}
+    default:
+        break;
+    }
 
-				if (error)
-				{	// Error parsing packet
-					port->status.readCounter += 32;
-					port->status.rxError = (uint32_t)-1;
-					port->status.communicationErrorCount++;
-				}
-			}
-		}
-			
-		if ((port->status.flags & CM_PKT_FLAGS_RX_VALID_DATA) && port->status.readCounter > 128)
-		{	// communication problem, clear communication received bit
-			port->status.flags &= (~CM_PKT_FLAGS_RX_VALID_DATA);
-		}
-	}
+    return error;
 }
 
 void comManagerStepTxInstance(CMHANDLE cmInstance_)
 {
-	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	stepComManagerSendMessagesInstance(cmInstance);
+    com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
+    stepComManagerSendMessagesInstance(cmInstance);
 }
 
 void stepComManagerSendMessages(void)
 {
-	stepComManagerSendMessagesInstance(&g_cm);
+    stepComManagerSendMessagesInstance(&s_cm);
 }
 
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 {
-	com_manager_t* cmInstance = cmInstance_;
-	
-	// Send data (if necessary)
-	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
-	{
-		// If send buffer does not have space, exit out
-		if (cmInstance->txFreeCallback && (bcPtr->pkt.txData.size > (uint32_t)cmInstance->txFreeCallback(cmInstance, bcPtr->pHandle)))
-		{
-			break;
-		}
-		// Send once and remove from message queue
-		else if (bcPtr->period == MSG_PERIOD_SEND_ONCE)
-		{
-			sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
-			disableBroadcastMsg(cmInstance, bcPtr);
-		}
-		// Broadcast messages
-		else if (bcPtr->period > 0)
-		{
-			// Check if counter has expired
-			if (++bcPtr->counter >= bcPtr->period)
-			{
-				bcPtr->counter = 0;    // reset counter
+    com_manager_t* cmInstance = cmInstance_;
+    
+    // Send data (if necessary)
+    for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
+    {
+        // If send buffer does not have space, exit out
+        if (cmInstance->txFree && (bcPtr->pkt.size > (uint32_t)cmInstance->txFree(bcPtr->pHandle)))
+        {
+            break;
+        }
+        // Send once and remove from message queue
+        else if (bcPtr->period == MSG_PERIOD_SEND_ONCE)
+        {
+            sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
+            disableBroadcastMsg(cmInstance, bcPtr);
+        }
+        // Broadcast messages
+        else if (bcPtr->period > 0)
+        {
+            // Check if counter has expired
+            if (++bcPtr->counter >= bcPtr->period)
+            {
+                bcPtr->counter = 0;    // reset counter
 
-				// Prep data if callback exists
-				unsigned int id = bcPtr->dataHdr.id;
-				int sendData = 1;
-				if (id<DID_COUNT_UINS && cmInstance->regData[id].preTxFnc)
-				{
-					sendData = cmInstance->regData[id].preTxFnc(cmInstance, bcPtr->pHandle, &bcPtr->dataHdr);
-				}
-				if (sendData)
-				{
-					sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
-				}
-			}
-		}
-	}
-
-	// Resend data (if necessary)
-	stepPacketRetry(cmInstance);
+                // Prep data if callback exists
+                unsigned int id = bcPtr->pkt.hdr.id;
+                int sendData = 1;
+                if (id<DID_COUNT && cmInstance->regData[id].preTxFnc)
+                {					
+                    sendData = cmInstance->regData[id].preTxFnc(bcPtr->pHandle, &bcPtr->pkt.dataHdr);
+                }
+                if (sendData)
+                {
+                    sendDataPacket(cmInstance, bcPtr->pHandle, &(bcPtr->pkt));
+                }
+            }
+        }
+    }
 }
 
 void comManagerSetCallbacks(
-	pfnComManagerAsapMsg handlerRmc,
-	pfnComManagerGenMsgHandler handlerAscii,
-	pfnComManagerGenMsgHandler handlerUblox, 
-	pfnComManagerGenMsgHandler handlerRtcm3)
+    pfnComManagerAsapMsg handlerRmc,
+    pfnComManagerGenMsgHandler handlerAscii,
+    pfnComManagerGenMsgHandler handlerUblox, 
+    pfnComManagerGenMsgHandler handlerRtcm3,
+    pfnComManagerGenMsgHandler handlerSpartn)
 {
-	comManagerSetCallbacksInstance(&g_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3);
+    comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-	pfnComManagerAsapMsg handlerRmc,
-	pfnComManagerGenMsgHandler handlerAscii,
-	pfnComManagerGenMsgHandler handlerUblox,
-	pfnComManagerGenMsgHandler handlerRtcm3)
+    pfnComManagerAsapMsg handlerRmc,
+    pfnComManagerGenMsgHandler handlerAscii,
+    pfnComManagerGenMsgHandler handlerUblox,
+    pfnComManagerGenMsgHandler handlerRtcm3,
+    pfnComManagerGenMsgHandler handlerSpartn)
 {
-	if (cmInstance != 0)
-	{
-		((com_manager_t*)cmInstance)->cmMsgHandlerRmc = handlerRmc;
-		((com_manager_t*)cmInstance)->cmMsgHandlerAscii = handlerAscii;
-		((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
-		((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
-	}
+    if (cmInstance != 0)
+    {
+        ((com_manager_t*)cmInstance)->cmMsgHandlerRmc = handlerRmc;
+        ((com_manager_t*)cmInstance)->cmMsgHandlerNmea = handlerAscii;
+        ((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
+        ((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
+        ((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
+    }
 }
 
 void comManagerAssignUserPointer(CMHANDLE cmInstance, void* userPointer)
 {
-	((com_manager_t*)cmInstance)->userPointer = userPointer;
+    ((com_manager_t*)cmInstance)->userPointer = userPointer;
 }
 
 void* comManagerGetUserPointer(CMHANDLE cmInstance)
 {
-	return ((com_manager_t*)cmInstance)->userPointer;
+    return ((com_manager_t*)cmInstance)->userPointer;
 }
 
-com_manager_status_t* comManagerGetStatus(int pHandle)
+is_comm_instance_t* comManagerGetIsComm(int pHandle)
 {
-	return comManagerGetStatusInstance(&g_cm, pHandle);
+    return comManagerGetIsCommInstance(&s_cm, pHandle);
 }
 
-com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHandle)
+is_comm_instance_t* comManagerGetIsCommInstance(CMHANDLE cmInstance, int pHandle)
 {
-	com_manager_t *cm = (com_manager_t*)cmInstance;
-	
-	if(cm->numHandles <= 0 || pHandle < 0 || pHandle >= cm->numHandles)
-	{
-		return NULL;
-	}
-	
-	return &(cm->ports[pHandle].status);
+    com_manager_t *cm = (com_manager_t*)cmInstance;
+    
+    if(cm->numPorts <= 0 || pHandle < 0 || pHandle >= cm->numPorts)
+    {
+        return NULL;
+    }
+    
+    return &(cm->ports[pHandle].comm);
 }
 
 /**
@@ -519,201 +460,108 @@ com_manager_status_t* comManagerGetStatusInstance(CMHANDLE cmInstance, int pHand
 *
 *	@return 0 on successful request.  -1 on failure.
 */
-void comManagerGetData(int pHandle, uint32_t dataId, int offset, int size, int periodMultiple)
+void comManagerGetData(int pHandle, uint16_t did, uint16_t size, uint16_t offset, uint16_t period)
 {
-	comManagerGetDataInstance(&g_cm, pHandle, dataId, offset, size, periodMultiple);
+    comManagerGetDataInstance(&s_cm, pHandle, did, size, offset, period);
 }
 
-void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, int offset, int size, int periodMultiple)
+void comManagerGetDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did, uint16_t size, uint16_t offset, uint16_t period)
 {
-	p_data_get_t request;
-	bufPtr_t data;
+    // Create and Send request packet
+    p_data_get_t get;
+    get.id = did;
+    get.offset = offset;
+    get.size = size;
+    get.period = period;
 
-	// Create and Send request packet
-	request.id = dataId;
-	request.offset = offset;
-	request.size = size;
-	request.bc_period_multiple = periodMultiple;
-
-	data.ptr = (uint8_t*)&request;
-	data.size = sizeof(request);
-	comManagerSendInstance(cmInstance, pHandle, PID_GET_DATA, 0, &data, 0);
-
-	// comManagerSendEnsured(pHandle, PID_GET_DATA, (unsigned char*)&request, sizeof(request));
+    comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0);
 }
 
 void comManagerGetDataRmc(int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
 {
-	comManagerGetDataRmcInstance(&g_cm, pHandle, rmcBits, rmcOptions);
+    comManagerGetDataRmcInstance(&s_cm, pHandle, rmcBits, rmcOptions);
 }
 
 void comManagerGetDataRmcInstance(CMHANDLE cmInstance, int pHandle, uint64_t rmcBits, uint32_t rmcOptions)
 {
-	rmc_t rmc;
-	rmc.bits = rmcBits;
-	rmc.options = rmcOptions;
+    rmc_t rmc;
+    rmc.bits = rmcBits;
+    rmc.options = rmcOptions;
 
-	comManagerSendDataInstance(cmInstance, pHandle, DID_RMC, &rmc, sizeof(rmc_t), 0);
+    comManagerSendDataInstance(cmInstance, pHandle, &rmc, DID_RMC, sizeof(rmc_t), 0);
 }
 
-int comManagerSendData(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
-{
-	return comManagerSendDataInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
+int comManagerSendData(int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
+{	
+    return comManagerSendDataInstance(&s_cm, pHandle, data, did, size, offset);
 }
 
-int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
+int comManagerSendDataInstance(CMHANDLE cmInstance, int pHandle, void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	p_data_hdr_t hdr;
-	bufPtr_t bodyHdr, data;
-
-	// Data Header
-	hdr.id = dataId;
-	hdr.size = dataSize;
-	hdr.offset = dataOffset;
-
-	// Packet Body
-	bodyHdr.ptr = (uint8_t*)&hdr;
-	bodyHdr.size = sizeof(hdr);
-	data.ptr = (uint8_t*)dataPtr;
-	data.size = dataSize;
-
-	return comManagerSendInstance(cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, 0);
+    return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_SET_DATA, data, did, size, offset);
 }
 
-int comManagerSendDataNoAck(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
+int comManagerSendDataNoAck(int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	return comManagerSendDataNoAckInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
+    return comManagerSendDataNoAckInstance(&s_cm, pHandle, data, did, size, offset);
 }
 
-int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
+int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	p_data_hdr_t hdr;
-	bufPtr_t bodyHdr, data;
-
-	// Data Header
-	hdr.id = dataId;
-	hdr.size = dataSize;
-	hdr.offset = dataOffset;
-
-	// Packet Body
-	bodyHdr.ptr = (uint8_t*)&hdr;
-	bodyHdr.size = sizeof(hdr);
-	data.ptr = (uint8_t*)dataPtr;
-	data.size = dataSize;
-
-	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_DATA, &bodyHdr, &data, 0);
+    return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PKT_TYPE_DATA, data, did, size, offset);
 }
 
-int comManagerSendRawData(int pHandle, uint32_t dataId, void *dataPtr, int dataSize, int dataOffset)
+int comManagerSendRawData(int pHandle, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	return comManagerSendRawDataInstance(&g_cm, pHandle, dataId, dataPtr, dataSize, dataOffset);
+    return comManagerSendRawDataInstance(&s_cm, pHandle, data, did, size, offset);
 }
 
-int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId, void* dataPtr, int dataSize, int dataOffset)
+int comManagerSendRawDataInstance(CMHANDLE cmInstance, int pHandle, void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	p_data_hdr_t hdr;
-	bufPtr_t bodyHdr, data;
-
-	// Data Header
-	hdr.id = dataId;
-	hdr.size = dataSize;
-	hdr.offset = dataOffset;
-
-	// Packet Body
-	bodyHdr.ptr = (uint8_t*)&hdr;
-	bodyHdr.size = sizeof(hdr);
-	data.ptr = (uint8_t*)dataPtr;
-	data.size = dataSize;
-
-	return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PID_SET_DATA, &bodyHdr, &data, CM_PKT_FLAGS_RAW_DATA_NO_SWAP);
+    return comManagerSendInstance((com_manager_t*)cmInstance, pHandle, PKT_TYPE_SET_DATA, data, did, size, offset);
 }
 
 int comManagerSendRaw(int pHandle, void *dataPtr, int dataSize)
 {
-	return comManagerSendRawInstance(&g_cm, pHandle, dataPtr, dataSize);
+    return comManagerSendRawInstance(&s_cm, pHandle, dataPtr, dataSize);
 }
 
+// Returns 0 on success, -1 on failure.
 int comManagerSendRawInstance(CMHANDLE cmInstance, int pHandle, void* dataPtr, int dataSize)
 {
-	pfnComManagerSend sendCallback = ((com_manager_t*)cmInstance)->sendPacketCallback;
-	if (sendCallback == 0)
-	{
-		return -1;
-	}
-
-	return (sendCallback(cmInstance, pHandle, dataPtr, dataSize) ? 0: -1);
+    pfnIsCommPortWrite writeCallback = ((com_manager_t*)cmInstance)->portWrite;
+    if (writeCallback == 0){ return 0; }
+    return (writeCallback(pHandle, dataPtr, dataSize) ? 0: -1);
 }
 
-int comManagerDisableData(int pHandle, uint32_t dataId)
+int comManagerDisableData(int pHandle, uint16_t did)
 {
-	return comManagerDisableDataInstance(&g_cm, pHandle, dataId);
+    return comManagerDisableDataInstance(&s_cm, pHandle, did);
 }
 
-int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint32_t dataId)
+int comManagerDisableDataInstance(CMHANDLE cmInstance, int pHandle, uint16_t did)
 {
-	bufPtr_t data;
-	data.ptr  = (uint8_t*)&dataId;
-	data.size = 4;
-
-	return comManagerSendInstance(cmInstance, pHandle, PID_STOP_DID_BROADCAST, 0, &data, 0);
+    return comManagerSendInstance(cmInstance, pHandle, PKT_TYPE_STOP_DID_BROADCAST, NULL, did, 0, 0);
 }
 
-int comManagerSend(int pHandle, uint8_t pktInfo, bufPtr_t *bodyHdr, bufPtr_t *txData, uint8_t pFlags)
+int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	return comManagerSendInstance(&g_cm, pHandle, pktInfo, bodyHdr, txData, pFlags);
+    return comManagerSendInstance(&s_cm, pHandle, pFlags, data, did, size, offset);
 }
 
-int comManagerSendInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, bufPtr_t* bodyHdr, bufPtr_t* txData, uint8_t pktFlags)
+// Returns 0 on success, -1 on failure.
+int comManagerSendInstance(CMHANDLE cmInstance, int port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
-	pkt_info_t pkt = { 0 };
-
-	// Create Packet String (start to end byte)
-	pkt.hdr.startByte = PSC_START_BYTE;
-	pkt.hdr.pid = pktInfo;
-	pkt.hdr.flags = pktFlags;
-
-	if (bodyHdr)
-	{
-		pkt.bodyHdr = *bodyHdr;
-	}
-	if (txData)
-	{
-		pkt.txData = *txData;
-	}
-
-	return sendDataPacket(cmInstance, pHandle, &pkt);
-}
-
-int comManagerSendEnsured(int pHandle, uint8_t pktInfo, unsigned char* data, unsigned int dataSize)
-{
-	return comManagerSendEnsuredInstance(&g_cm, pHandle, pktInfo, data, dataSize);
-}
-
-int comManagerSendEnsuredInstance(CMHANDLE cmInstance, int pHandle, uint8_t pktInfo, unsigned char *data, unsigned int dataSize)
-{
-	packet_t *pkt;
-
-	// Change retry "Ensured" packets to so that we encode packets first (including pkt counter)
-	// and then ensure they are delivered.  Include packet checksum in ACK/NACK to validate delivery.
-	// Then, if all the ensured slots are occupied because of bad comm, either allow
-	// to clear ensured packets or just block until they are delivered.  We must
-	// ensure NACKs are used to clear blocking ensured packets.
-
-	// Create Packet String (start to end byte)
-	if ((pkt = registerPacketRetry((com_manager_t*)cmInstance, pHandle, pktInfo, data, dataSize)) == 0)
-	{
-		return -1;
-	}
-
-	return sendPacket((com_manager_t*)cmInstance, pHandle, pkt, 0);
+    com_manager_t *cm = (com_manager_t*)cmInstance;
+    return (is_comm_write(cm->portWrite, port, &(cm->ports[port].comm), pFlags, did, size, offset, data) ? 0 : -1);
 }
 
 int findAsciiMessage(const void * a, const void * b)
 {
-	unsigned char* a1 = (unsigned char*)a;
-	asciiMessageMap_t* a2 = (asciiMessageMap_t*)b;
+    unsigned char* a1 = (unsigned char*)a;
+    asciiMessageMap_t* a2 = (asciiMessageMap_t*)b;
 
-	return memcmp(a1, a2->messageId, 4);
+    return memcmp(a1, a2->messageId, 4);
 }
 
 /**
@@ -723,903 +571,436 @@ int findAsciiMessage(const void * a, const void * b)
 */
 int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
 {
-	p_data_t			*data = (p_data_t*)(pkt->body.ptr);
-	p_data_hdr_t		*dataHdr;
-	registered_data_t	*regd = NULL;
-	uint8_t		pid = (uint8_t)(pkt->hdr.pid);
+    packet_hdr_t        *hdr = &(pkt->hdr);
+    registered_data_t   *regData = NULL;
+    uint8_t             ptype = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
 
-	com_manager_port_t *port = &(cmInstance->ports[pHandle]);
-	port->status.flags |= CM_PKT_FLAGS_RX_VALID_DATA; // communication received
-	port->status.readCounter = 0;
+    switch (ptype)
+    {
+    default:    // Data ID Unknown
+        return -1;
 
-	// Packet read success
-	port->status.rxPktCount++;
+    case PKT_TYPE_SET_DATA:
+    case PKT_TYPE_DATA:
+    {		
+        // Validate Data
+        if (hdr->id >= DID_COUNT || hdr->payloadSize == 0)
+        {
+            return -1;
+        }
 
-	switch (pid)
-	{
-	default:    // Data ID Unknown
-		return -1;
+        regData = &(cmInstance->regData[hdr->id]);
 
-	case PID_SET_DATA:
-	case PID_DATA:
-		dataHdr = &(data->hdr);
+        p_data_t data;
+        data.hdr.id = pkt->dataHdr.id;
+        data.hdr.offset = pkt->offset;
+        data.hdr.size = pkt->data.size;
+        data.ptr = pkt->data.ptr;
 
-		// Validate Data
-		if (dataHdr->id < DID_COUNT_UINS)
-		{
-			regd = &(cmInstance->regData[dataHdr->id]);
+        // Validate and constrain Rx data size to fit within local data struct
+        if (regData->dataSet.size && (uint32_t)(data.hdr.offset + data.hdr.size) > regData->dataSet.size)
+        {
+            // trim the size down so it fits
+            uint16_t size = (int)(regData->dataSet.size - data.hdr.offset);
+            if (size < 4)
+            {
+                // we are completely out of bounds, we cannot process this message at all
+                // the minimum data struct size is 4 bytes
+                return -1;
+            }
 
-			// Validate and constrain Rx data size to fit within local data struct
-			if (regd->dataSet.size && (dataHdr->offset + dataHdr->size) > regd->dataSet.size)
-			{
-				// trim the size down so it fits
-				int size = (int)(regd->dataSet.size - dataHdr->offset);
-				if (size < 4)
-				{
-					// we are completely out of bounds, we cannot process this message at all
-					// the minimum data struct size is 4 bytes
-					return -1;
-				}
-
-				// Update Rx data size
-				dataHdr->size = _MIN(dataHdr->size, (uint8_t)size);
-			}
-		}
+            // Update Rx data size
+            data.hdr.size = _MIN(data.hdr.size, (uint8_t)size);
+        }
 
 #if ENABLE_PACKET_CONTINUATION
 
-		// Consolidate datasets that were broken-up across multiple packets
-		p_data_t* con = &cmInstance->ports[pHandle].con;
-		if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
-		{
-			// New dataset
-			if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
-			{
-				// Reset data consolidation
-				con->hdr.id = dataHdr->id;
-				con->hdr.offset = dataHdr->offset;
-				con->hdr.size = 0;
-			}
+        // Consolidate datasets that were broken-up across multiple packets
+        p_data_t* con = &cmInstance->ports[pHandle].con;
+        if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
+        {
+            // New dataset
+            if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
+            {
+                // Reset data consolidation
+                con->hdr.id = dataHdr->id;
+                con->hdr.offset = dataHdr->offset;
+                con->hdr.size = 0;
+            }
 
-			// Ensure data will fit in buffer
-			if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
-			{
-				// Add data to buffer
-				memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
-				con->hdr.size += dataHdr->size;
-			}
-			else
-			{
-				// buffer overflow
-			}
+            // Ensure data will fit in buffer
+            if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
+            {
+                // Add data to buffer
+                memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
+                con->hdr.size += dataHdr->size;
+            }
+            else
+            {
+                // buffer overflow
+            }
 
-			// Wait for end of data
-			if (additionalDataAvailable)
-			{
-				return 0;
-			}
+            // Wait for end of data
+            if (additionalDataAvailable)
+            {
+                return 0;
+            }
 
-			// Use consolidated data
-			data = con;
-		}
-		
+            // Use consolidated data
+            data = con;
+        }
+        
 #else
-	
+    
 // 		unsigned char additionalDataAvailable // function parameter removed 
 // 		(void)additionalDataAvailable;
 
 #endif
 
-		if (regd)
-		{
-			// Write to data structure if it was registered
-			if (regd->dataSet.rxPtr)
-			{
-				copyDataPToStructP(regd->dataSet.rxPtr, data, regd->dataSet.size);
-			}
+        if (regData)
+        {
+            // Write to data structure if it was registered
+            if (regData->dataSet.rxPtr)
+            {
+                copyDataPToStructP(regData->dataSet.rxPtr, &data, regData->dataSet.size);
+            }
 
-			// Call data specific callback after data has been written to
-			if (regd->pstRxFnc)
-			{
-				regd->pstRxFnc(cmInstance, pHandle, data);
-			}
-		}
+            // Call data specific callback after data has been received
+            if (regData->pstRxFnc)
+            {
+                regData->pstRxFnc(pHandle, &data);
+            }
+        }
 
-		// Call general/global callback
-		if (cmInstance->pstRxFnc)
-		{
-			cmInstance->pstRxFnc(cmInstance, pHandle, data);
-		}
-
-		// Remove retry from linked list if necessary
-		updatePacketRetryData(cmInstance, pkt);
+        // Call general/global callback
+        if (cmInstance->pstRxFnc)
+        {
+            cmInstance->pstRxFnc(pHandle, &data);
+        }
 
 #if ENABLE_PACKET_CONTINUATION
 
-		// Clear dataset consolidation
-		con->hdr.id = con->hdr.size = con->hdr.offset = 0;
+        // Clear dataset consolidation
+        con->hdr.id = con->hdr.size = con->hdr.offset = 0;
 
 #endif
 
-		// Reply w/ ACK for PID_SET_DATA
-		if (pid == PID_SET_DATA)
-		{
-			sendAck(cmInstance, pHandle, pkt, PID_ACK);
-		}
-		break;
+        // Reply w/ ACK for PKT_TYPE_SET_DATA
+        if (ptype == PKT_TYPE_SET_DATA)
+        {
+            sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
+        }
+    }
+        break;
 
-	case PID_GET_DATA:
-		if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t *)(data)))
-		{
-			sendAck(cmInstance, pHandle, pkt, PID_NACK);
-		}
-		break;
+    case PKT_TYPE_GET_DATA:
+        #ifdef IMX_5
+        // Forward to gpx
+        if(IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
+            (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
+            (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))
+        {
+            comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
+        }
+        else
+        #endif
+        if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t*)(pkt->data.ptr)))
+        {
+            sendAck(cmInstance, pHandle, pkt, PKT_TYPE_NACK);
+        }
+        break;
 
-	case PID_STOP_BROADCASTS_ALL_PORTS:
-		comManagerDisableBroadcastsInstance(cmInstance, -1);
+    case PKT_TYPE_STOP_BROADCASTS_ALL_PORTS:
+        comManagerDisableBroadcastsInstance(cmInstance, -1);
 
-		// Call disable broadcasts callback if exists
-		if (cmInstance->disableBcastFnc)
-		{
-			cmInstance->disableBcastFnc(cmInstance, -1);
-		}
-		sendAck(cmInstance, pHandle, pkt, PID_ACK);
-		break;
+        // Call disable broadcasts callback if exists
+        if (cmInstance->disableBcastFnc)
+        {
+            cmInstance->disableBcastFnc(-1);
+        }
+        sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
+        break;
 
-	case PID_STOP_BROADCASTS_CURRENT_PORT:
-		comManagerDisableBroadcastsInstance(cmInstance, pHandle);
+    case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
+        comManagerDisableBroadcastsInstance(cmInstance, pHandle);
 
-		// Call disable broadcasts callback if exists
-		if (cmInstance->disableBcastFnc)
-		{
-			cmInstance->disableBcastFnc(cmInstance, pHandle);
-		}
-		sendAck(cmInstance, pHandle, pkt, PID_ACK);
-		break;
+        // Call disable broadcasts callback if exists
+        if (cmInstance->disableBcastFnc)
+        {
+            cmInstance->disableBcastFnc(pHandle);
+        }
+        sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
+        break;
 
-	case PID_STOP_DID_BROADCAST:
-		disableDidBroadcast(cmInstance, pHandle, (p_data_disable_t *)(data));
-		break;
+    case PKT_TYPE_STOP_DID_BROADCAST:
+        disableDidBroadcast(cmInstance, pHandle, pkt->hdr.id);
+        break;
 
-	case PID_NACK:
-	case PID_ACK:
-		// Remove retry from linked list if necessary
-		updatePacketRetryAck(cmInstance, pkt);
+    case PKT_TYPE_NACK:
+    case PKT_TYPE_ACK:
+        // Call general ack callback
+        if (cmInstance->pstAckFnc)
+        {
+            cmInstance->pstAckFnc(pHandle, (p_ack_t*)(pkt->data.ptr), ptype);
+        }
+        break;
+    }
 
-		// Call general ack callback
-		if (cmInstance->pstAckFnc)
-		{
-			cmInstance->pstAckFnc(cmInstance, pHandle, (p_ack_t*)(pkt->body.ptr), pid);
-		}
-		break;
-	}
-
-	return 0;
+    // Success
+    return 0;
 }
 
-bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint32_t dataId)
+bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did)
 {
-	return comManagerGetRegisteredDataInfoInstance(&g_cm, dataId);
+    return comManagerGetRegisteredDataInfoInstance(&s_cm, did);
 }
 
-bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint32_t dataId)
+bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE _cmInstance, uint16_t did)
 {
-	if (dataId < DID_COUNT_UINS)
-	{
-		com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
-		return &cmInstance->regData[dataId].dataSet;
-	}
+    if (did < DID_COUNT)
+    {
+        com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
+        return &cmInstance->regData[did].dataSet;
+    }
 
-	return 0;
+    return 0;
 }
 
 // 0 on success. -1 on failure.
-int comManagerGetDataRequest(int pHandle, p_data_get_t* req)
+int comManagerGetDataRequest(int port, p_data_get_t* req)
 {
-	return comManagerGetDataRequestInstance(&g_cm, pHandle, req);
+    return comManagerGetDataRequestInstance(&s_cm, port, req);
 }
 
 int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_get_t* req)
 {
-	com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
-	broadcast_msg_t* msg = 0;
+    com_manager_t* cmInstance = (com_manager_t*)_cmInstance;
+    broadcast_msg_t* msg = 0;
 
-	// Validate the request
-	if (req->id >= DID_COUNT_UINS)
-	{
-		// invalid data id
-		return -1;
-	}
-	// Call RealtimeMessageController (RMC) handler
-	else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, req) == 0))
-	{
-		// Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
-		return 0;
-	}
-	// if size is 0 and offset is 0, set size to full data struct size
-	else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT_UINS)
-	{
-		req->size = cmInstance->regData[req->id].dataSet.size;
-	}
-	
-	// Copy reference to source data
-	bufTxRxPtr_t* dataSetPtr = &cmInstance->regData[req->id].dataSet;
+    // Validate the request
+    if (req->id >= DID_COUNT)
+    {
+        // invalid data id
+        return -1;
+    }
+    // Call RealtimeMessageController (RMC) handler
+    else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(pHandle, req) == 0))
+    {
+        // Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
+        return 0;
+    }
+    // if size is 0 and offset is 0, set size to full data struct size
+    else if (req->size == 0 && req->offset == 0 && req->id < DID_COUNT)
+    {
+        req->size = cmInstance->regData[req->id].dataSet.size;
+    }
+    
+    if (req->size == 0)
+    {	// Don't respond if data size is zero. Return zero to prevent sending NACK.
+        return 0;
+    }
 
-	if (req->offset + req->size > dataSetPtr->size)
-	{
-		req->offset = 0;
-		req->size = dataSetPtr->size;
-	}
+    // Copy reference to source data
+    bufTxRxPtr_t* dataSetPtr = &cmInstance->regData[req->id].dataSet;
 
-	// Search for matching message (i.e. matches pHandle, id, size, and offset)...
-	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
-	{
-		if (bcPtr->pHandle == pHandle && bcPtr->dataHdr.id == req->id && bcPtr->dataHdr.size == req->size && bcPtr->dataHdr.offset == req->offset)
-		{
-			msg = bcPtr;
-			break;
-		}
-	}
+    if ((uint32_t)(req->offset + req->size) > dataSetPtr->size)
+    {
+        req->offset = 0;
+        req->size = dataSetPtr->size;
+    }
 
-	// otherwise use the first available (period=0) message.
-	if (msg == 0)
-	{
-		for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
-		{
-			if (bcPtr->period <= MSG_PERIOD_DISABLED)
-			{
-				msg = bcPtr;
-				break;
-			}
-		}
+    // Search for matching message (i.e. matches pHandle, id, size, and offset)...
+    for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
+    {
+        if (bcPtr->pHandle == pHandle && bcPtr->pkt.hdr.id == req->id && bcPtr->pkt.hdr.payloadSize == req->size && bcPtr->pkt.offset == req->offset)
+        {
+            msg = bcPtr;
+            break;
+        }
+    }
 
-		if (msg == 0)
-		{
-			// use last slot, force overwrite
-			msg = cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS - 1;
-		}
-	}
+    // otherwise use the first available (period=0) message.
+    if (msg == 0)
+    {
+        for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
+        {
+            if (bcPtr->period <= MSG_PERIOD_DISABLED)
+            {
+                msg = bcPtr;
+                break;
+            }
+        }
 
-	// Port handle
-	msg->pHandle = pHandle;
+        if (msg == 0)
+        {
+            // use last slot, force overwrite
+            msg = cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS - 1;
+        }
+    }
 
-	// Packet parameters
-	msg->pkt.hdr.startByte = PSC_START_BYTE;
-	msg->pkt.hdr.pid = PID_DATA;
+    msg->pHandle = pHandle;
+    packet_t *pkt = &(msg->pkt);
+    uint8_t *dataPtr;
+    if (dataSetPtr->txPtr)
+    {
+        dataPtr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
+    }
+    else
+    {
+        dataPtr = NULL;
+    }
+    is_comm_encode_hdr(pkt, PKT_TYPE_DATA, req->id, req->size, req->offset, dataPtr);
 
-	// Data Header
-	msg->dataHdr.id = req->id;
-	msg->dataHdr.size = req->size;
-	msg->dataHdr.offset = req->offset;
-	msg->pkt.hdr.flags = cmInstance->regData[req->id].pktFlags;
-	msg->pkt.bodyHdr.ptr = (uint8_t *)&msg->dataHdr;
-	msg->pkt.bodyHdr.size = sizeof(msg->dataHdr);
-	msg->pkt.txData.size = req->size;
-	if (dataSetPtr->txPtr)
-	{
-		msg->pkt.txData.ptr = cmInstance->regData[req->id].dataSet.txPtr + req->offset;
-	}
-	else
-	{
-		msg->pkt.txData.ptr = NULL;
-	}
+    // Prep data if callback exists
+    int sendData = 1;
+    if (req->id < DID_COUNT)
+    {
+        if (cmInstance->regData[req->id].preTxFnc)
+        {
+            sendData = cmInstance->regData[req->id].preTxFnc(pHandle, &(pkt->dataHdr));
+        }
+    }
 
-	// Prep data if callback exists
-	int sendData = 1;
-	if (cmInstance->regData[req->id].preTxFnc)
-	{
-		sendData = cmInstance->regData[req->id].preTxFnc(cmInstance, pHandle, &msg->dataHdr);
-	}
+    if (req->id == DID_REFERENCE_IMU)
+    {
+        return -1;
+    }
+    
+    // Constrain request broadcast period if necessary
+    if (req->period != 0)
+    {
+        _LIMIT2(req->period, MIN_REQUEST_PERIOD_MS, MAX_REQUEST_PERIOD_MS);
+    }
 
-	if (req->id == DID_REFERENCE_IMU)
-	{
-		return -1;
-	}
-	
-	// Constrain request broadcast period if necessary
-	if (req->bc_period_multiple != 0)
-	{
-		_LIMIT2(req->bc_period_multiple, MIN_REQUEST_PERIOD_MS, MAX_REQUEST_PERIOD_MS);
-	}
+    // Send data
+    if (req->period > 0)
+    {
+        // ***  Request Broadcast  ***
+        // Send data immediately if possible
+        if (cmInstance->txFree == 0 || pkt->size <= (uint32_t)cmInstance->txFree(pHandle))
+        {
+            if (sendData)
+            {
+                sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+            }
+        }
 
-	// Send data
-	if (req->bc_period_multiple > 0)
-	{
-		// ***  Request Broadcast  ***
-		// Send data immediately if possible
-		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
-		{
-			if (sendData)
-			{
-				sendDataPacket(cmInstance, pHandle, &(msg->pkt));
-			}
-		}
+        // Enable broadcast message
+        enableBroadcastMsg(cmInstance, msg, req->period);
+    }
+    else
+    {
+        // ***  Request Single  ***
+        // Send data immediately if possible
+        if (cmInstance->txFree == 0 || pkt->size <= (uint32_t)cmInstance->txFree(pHandle))
+        {
+            if (sendData)
+            {
+                sendDataPacket(cmInstance, pHandle, &(msg->pkt));
+            }
+            disableBroadcastMsg(cmInstance, msg);
+        }
+        else
+        {
+            // Won't fit in queue, so send it later
+            enableBroadcastMsg(cmInstance, msg, req->period);
+        }
+    }
 
-		// Enable broadcast message
-		enableBroadcastMsg(cmInstance, msg, req->bc_period_multiple);
-	}
-	else
-	{
-		// ***  Request Single  ***
-		// Send data immediately if possible
-		if (cmInstance->txFreeCallback == 0 || msg->pkt.txData.size <= (uint32_t)cmInstance->txFreeCallback(cmInstance, pHandle))
-		{
-			if (sendData)
-			{
-				sendDataPacket(cmInstance, pHandle, &(msg->pkt));
-			}
-			disableBroadcastMsg(cmInstance, msg);
-		}
-		else
-		{
-			// Won't fit in queue, so send it later
-			enableBroadcastMsg(cmInstance, msg, req->bc_period_multiple);
-		}
-	}
-
-	return 0;
+    return 0;
 }
 
 void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t* msg, int periodMultiple)
 {
-	// Update broadcast period
-	if (periodMultiple > 0)
-	{
-		msg->period = periodMultiple / cmInstance->stepPeriodMilliseconds;
-	}
-	else
-	{
-		msg->period = MSG_PERIOD_SEND_ONCE;
-	}
-	msg->counter = -1;   // Keeps broadcast from sending for at least one period
+    // Update broadcast period
+    if (periodMultiple > 0)
+    {
+        msg->period = periodMultiple / cmInstance->stepPeriodMilliseconds;
+    }
+    else
+    {
+        msg->period = MSG_PERIOD_SEND_ONCE;
+    }
+    msg->counter = -1;   // Keeps broadcast from sending for at least one period
 }
 
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg)
 {
-	(void)cmInstance;
+    (void)cmInstance;
 
-	// Remove item from linked list
-	msg->period = MSG_PERIOD_DISABLED;
+    // Remove item from linked list
+    msg->period = MSG_PERIOD_DISABLED;
 }
 
 void comManagerDisableBroadcasts(int pHandle)
 {
-	comManagerDisableBroadcastsInstance(&g_cm, pHandle);
+    comManagerDisableBroadcastsInstance(&s_cm, pHandle);
 }
 
 void comManagerDisableBroadcastsInstance(CMHANDLE cmInstance_, int pHandle)
 {
-	com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
-	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
-	{
-		if (pHandle < 0 || bcPtr->pHandle == pHandle)
-		{
-			bcPtr->period = MSG_PERIOD_DISABLED;
-		}
-	}
+    com_manager_t* cmInstance = (com_manager_t*)cmInstance_;
+    for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
+    {
+        if (pHandle < 0 || bcPtr->pHandle == pHandle)
+        {
+            bcPtr->period = MSG_PERIOD_DISABLED;
+        }
+    }
 }
 
-void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, p_data_disable_t* disable)
+void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did)
 {
-	for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
-	{
-		if ((pHandle < 0 || pHandle == bcPtr->pHandle) && bcPtr->dataHdr.id == disable->id)
-		{
-			bcPtr->period = MSG_PERIOD_DISABLED;
-		}
-	}
-	
-	// Call global broadcast handler to disable message control
-	if (cmInstance->cmMsgHandlerRmc)
-	{
-		p_data_get_t req;
-		req.id = disable->id;
-		req.size = 0;
-		req.offset = 0;
-		req.bc_period_multiple = 0;
-		cmInstance->cmMsgHandlerRmc(cmInstance, pHandle, &req);
-	}
-}
-
-/**
-*   @brief Encode and send out serial port the referenced packet structure.
-*
-*	@param[in/out] dPkt Packet structure containing packet info.
-*
-*	@return 0 on success.  -1 on failure.
-*/
-int sendPacket(com_manager_t* cmInstance, int pHandle, packet_t *dPkt, uint8_t additionalPktFlags)
-{
-	buffer_t buffer;
-
-	if (encodeBinaryPacket(cmInstance, pHandle, &buffer, dPkt, additionalPktFlags))
-	{
-		return -1;
-	}
-
-	// Send Packet
-	else if (cmInstance->sendPacketCallback)
-	{
-		cmInstance->sendPacketCallback(cmInstance, pHandle, buffer.buf, buffer.size);
-	}
-
-	return 0;
+    for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
+    {
+        if ((pHandle < 0 || pHandle == bcPtr->pHandle) && bcPtr->pkt.hdr.id == did)
+        {
+            bcPtr->period = MSG_PERIOD_DISABLED;
+        }
+    }
+    
+    // Call global broadcast handler to disable message control
+    if (cmInstance->cmMsgHandlerRmc)
+    {
+        p_data_get_t req;
+        req.id = did;
+        req.size = 0;
+        req.offset = 0;
+        req.period = 0;
+        cmInstance->cmMsgHandlerRmc(pHandle, &req);
+    }
 }
 
 // Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.  Returns 0 on success, -1 on failure.
-int sendDataPacket(com_manager_t* cmInstance, int pHandle, pkt_info_t* msg)
+int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 {
-	pfnComManagerSend sendCallback = cmInstance->sendPacketCallback;
-	if (sendCallback == 0)
-	{
-		return -1;
-	}
-
-	buffer_t bufToSend;
-	packet_t pkt;
-	pkt.hdr = msg->hdr;
-
-	switch (pkt.hdr.pid)
-	{
-		// Large data support - breaks data up into separate packets for Tx
-		case PID_DATA:
-		case PID_SET_DATA:
-		{
-			if (msg->bodyHdr.size == 0)
-			{	// No data
-				return -1;
-			}
-			
-			// Setup packet and encoding state
-			buffer_t bufToEncode;
-			p_data_hdr_t hdr = *(p_data_hdr_t*)msg->bodyHdr.ptr;
-			p_data_hdr_t* hdrToSend = (p_data_hdr_t*)bufToEncode.buf;
-			uint32_t size = hdr.size;
-			uint32_t offset = 0;
-			uint32_t id = hdr.id;
-			pkt.body.ptr = bufToEncode.buf;
-
-#if ENABLE_PACKET_CONTINUATION
-
-			while (size > 0)
-			{
-				
-#endif
-				
-				// Assign data header values
-				hdrToSend->size = _MIN(size, MAX_P_DATA_BODY_SIZE);
-				hdrToSend->offset = hdr.offset + offset;
-				hdrToSend->id = id;
-
-				// copy the data to send to bufToEncode, skipping the data header - since we had to create that data header, we now have to append the actual data
-				memcpy(bufToEncode.buf + sizeof(p_data_hdr_t), msg->txData.ptr + offset, hdrToSend->size);
-				
-				// reduce size by the amount sent - if packet continuation is off, this must become 0 otherwise we fail
-				size -= hdrToSend->size;
-				
-#if ENABLE_PACKET_CONTINUATION
-
-				// increment offset for the next packet
-				offset += hdrToSend->size;
-				
-#else
-
-				if (size > 0)
-				{
-					// data was too large to fit in one packet, fail
-					return -1;
-				}
-				
-#endif
-
-				// Set data body size
-				pkt.body.size = sizeof(p_data_hdr_t) + hdrToSend->size;
-
-				// Encode the packet, handling special characters, etc.
-				if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, CM_PKT_FLAGS_MORE_DATA_AVAILABLE * (size != 0)))
-				{
-					return -1;
-				}
-
-				// Send the packet using the specified callback
-				sendCallback(cmInstance, pHandle, bufToSend.buf, bufToSend.size);
-				
-#if ENABLE_PACKET_CONTINUATION
-
-			}
-			
-#endif
-
-		} break;
-
-		// Single packet commands/data sets. No data header, just body.
-		default:
-		{
-			// Assign packet pointer and encode data as is
-			pkt.body = msg->txData;
-			if (encodeBinaryPacket(cmInstance, pHandle, &bufToSend, &pkt, 0))
-			{
-				return -1;
-			}
-
-			// Send the packet using the specified callback
-			sendCallback(cmInstance, pHandle, bufToSend.buf, bufToSend.size);
-		} break;
-	}
-
-	return 0;
+    return (is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt) ? 0 : -1);
 }
 
-void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, unsigned char pid_ack)
+void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)
 {
-	int ackSize;
-	bufPtr_t data;
+    int ackSize;
 
-	// Create and Send request packet
-	p_ack_t ack = { 0 };
-	ack.hdr.pktInfo = pkt->hdr.pid;
-	ack.hdr.pktCounter = pkt->hdr.counter;
-	ackSize = sizeof(p_ack_hdr_t);
+    // Create and Send request packet
+    p_ack_t ack = { 0 };
+    ack.hdr.pktInfo = pkt->hdr.flags;
+    ackSize = sizeof(p_ack_hdr_t);
 
-	// Set ack body
-	switch (pkt->hdr.pid)
-	{
-	case PID_SET_DATA:
-// 		memcpy(ack.body.buf, (p_data_hdr_t*)(pkt->body.ptr), sizeof(p_data_hdr_t));
-		ack.body.dataHdr = *((p_data_hdr_t*)(pkt->body.ptr));
-		ackSize += sizeof(p_data_hdr_t);
-		break;
-	}
+    // Set ack body
+    switch (pkt->hdr.flags & PKT_TYPE_MASK)
+    {
+    case PKT_TYPE_SET_DATA:
+        ack.body.dataHdr = *((p_data_hdr_t*)(pkt->data.ptr));
+        ackSize += sizeof(p_data_hdr_t);
+        break;
+    }
 
-	data.ptr = (unsigned char*)&ack;
-	data.size = ackSize;
-
-	comManagerSendInstance(cmInstance, pHandle, (uint8_t)pid_ack, 0, &data, 0);
-}
-
-//////////////////////////////////////////////////////////////////////////
-//  Packet Composition
-//////////////////////////////////////////////////////////////////////////
-/**
-*  @brief Adds data to a packet: adds start, info, data length, data, checksum, and stop bytes.
-*  All data is communicated in the endianess of the sender, each packet has a bit that determines big or little endian.
-*  Process for Creating Tx Packet:
-*  1.) Add to packet
-*      - pkt start byte
-*      - pkt ID
-*      - pkt counter
-*      - pkt flags
-*      - data length
-*      - data ID
-*      - data start...
-*      - ...data end
-*      - pkt reserved
-*      - computed cksum (2 bytes)
-*      - pkt end byte
-*  2.) Tx encode extraneous special characters to remove them from packet
-*
-*	@return 0 on success, -1 on failure.
-*/
-int encodeBinaryPacket(com_manager_t* cmInstance, int pHandle, buffer_t *pkt, packet_t *dPkt, uint8_t additionalPktFlags)
-{
-	com_manager_port_t *port = &(cmInstance->ports[pHandle]);
-	
-	void* srcBuffer = dPkt->body.ptr;
-	int srcBufferLength = dPkt->body.size;
-	void* encodedPacket = pkt->buf;
-	int encodedPacketLength = PKT_BUF_SIZE - 1;
-	packet_hdr_t* hdr = &dPkt->hdr;
-	hdr->counter = (uint8_t)(port->comm.txPktCount++);
-
-	pkt->size = is_encode_binary_packet(srcBuffer, srcBufferLength, hdr, additionalPktFlags | port->status.flags, encodedPacket, encodedPacketLength);
-	return (-1 * ((int)pkt->size < 8));
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-//  Packet Retry
-//////////////////////////////////////////////////////////////////////////
-
-/**
-*   @brief stepPacketRetry - Resend the ensured packets after the ENSURE_RETRY_COUNT
-*   period if the expected response was not received.
-*/
-void stepPacketRetry(com_manager_t* cmInstance)
-{
-	int32_t i;
-	ensured_pkt_t* ePkt;
-
-	for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
-	{
-		ePkt = &(cmInstance->ensuredPackets[i]);
-
-		// No more retries in list
-		if (ePkt->counter == -2)
-		{
-			return;
-		}
-
-		// Check that retry is enabled
-		if (ePkt->counter >= 0)
-		{
-			// Check if counter has expired
-			if (--(ePkt->counter) == 0)
-			{
-				// Reset counter
-				ePkt->counter = cmInstance->ensureRetryCount;
-
-				// Reset packet
-				sendPacket(cmInstance, ePkt->pHandle, &(ePkt->pkt), 0);
-			}
-		}
-	}
-}
-
-/**
-*   @brief registerPacketRetry - Saves data and packet header info
-*   to a retry list that will be resent if the corresponding response
-*   is not received (data or ack) within the given period.  The packet
-*   header info must be populated following a call to this function.
-*
-*	@param[in] data[]   Pointer to data buffer.
-*	@param[in] dataSize Size of the data buffer.
-*
-*	@return Pointer to retry packet.  The header info must be populated.
-*/
-packet_t* registerPacketRetry(com_manager_t* cmInstance, int pHandle, uint8_t pid, unsigned char data[], unsigned int dataSize)
-{
-	int32_t i;
-	ensured_pkt_t *ePkt = 0;
-	unsigned char searching = 1;
-
-	#if ENABLE_FILTER_DUPLICATE_PACKETS
-
-	#if ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
-
-	int32_t j;
-
-	#endif
-
-	// Filter out redundant retries (replace same type packets and pHandle with latest)
-	p_data_get_t *getData1, *getData2;
-
-	// Validate Data Size
-	if (dataSize > MAX_P_DATA_BODY_SIZE)
-	{
-		return 0;
-	}
-
-	// Check for existing retry
-	for (i = 0; searching && i < cmInstance->maxEnsuredPackets; i++)
-	{
-		ePkt = &(cmInstance->ensuredPackets[i]);
-
-		// No more retries to search over.  Abort and look for first disabled slot.
-		if (ePkt->counter == -2)
-		{
-			break;
-		}
-
-		// Found enabled retry w/ matching packet ID and data size
-		if (ePkt->counter >= 0 &&
-		ePkt->pkt.hdr.pid == pid		&&
-		ePkt->pkt.body.size == dataSize &&
-		ePkt->pHandle == pHandle)
-		{
-			switch (pid)
-			{
-			case PID_GET_DATA:
-				getData1 = (p_data_get_t*)data;
-				getData2 = (p_data_get_t*)ePkt->pktBody;
-
-				// Match: all Get Data parameters
-				if (getData1->id == getData2->id     &&
-				getData1->size == getData2->size   &&
-				getData1->offset == getData2->offset)
-				searching = 0;
-				break;
-
-			case PID_STOP_BROADCASTS_ALL_PORTS:
-				searching = 0;
-				break;
-
-			default:
-
-#if !ENABLE_FILTER_DUPLICATE_PACKETS_MATCH_ALL_CHARACTERS
-
-				// Match: first character
-				if (ePkt->pkt.body.ptr[0] == data[0])
-				{
-					searching = 0;
-				}
-
-#else
-
-				// Match: All character
-				for (j = 0; j < dataSize; j++)
-				{
-					if (ePkt->pkt.body.ptr[j] == data[j])
-					{
-						searching = 0;
-						break;
-					}
-				}
-
-#endif
-
-				break;
-			}
-		}
-	}
-
-	#endif
-
-	// Find Empty Slot - either first available or tail if all used.
-	for (i = 0; searching && i < cmInstance->maxEnsuredPackets; i++)
-	{
-		ePkt = &(cmInstance->ensuredPackets[i]);
-
-		// Found empty slot
-		if (ePkt->counter < 0)
-		{
-			searching = 0;
-			break;
-		}
-	}
-
-	// All slots enabled, so take the oldest (one after last used)
-	if (searching && cmInstance->ensuredPackets != 0)
-	{
-		if (++cmInstance->lastEnsuredPacketIndex >= cmInstance->maxEnsuredPackets)
-		{
-			cmInstance->lastEnsuredPacketIndex = 0;
-		}
-		ePkt = &(cmInstance->ensuredPackets[cmInstance->lastEnsuredPacketIndex]);
-	}
-	else
-	{
-		cmInstance->lastEnsuredPacketIndex = i;
-	}
-	if (ePkt == 0)
-	{
-		return 0;
-	}
-
-	// Backup packet contents for retry if not already registered
-	ePkt->counter = cmInstance->ensureRetryCount;
-	memcpy(ePkt->pktBody, data, dataSize);
-
-	// Update ePkt pkt header and body info
-	ePkt->pkt.hdr.startByte = PSC_START_BYTE;
-	ePkt->pkt.hdr.pid = pid;
-	ePkt->pkt.body.ptr = ePkt->pktBody; // point to ePkt buffer "pktBody"
-	ePkt->pkt.body.size = dataSize;
-	ePkt->pHandle = pHandle;
-
-	return &(ePkt->pkt);
-}
-
-/**
-*   @brief Update packet retry.  If the specific data requested or acknowledge
-*   is received, the retry list is updated as to no continue to resend the
-*   corresponding message.
-*
-*	@param[in] *pkt        Pointer to pkt buffer.
-*/
-void updatePacketRetryData(com_manager_t* cmInstance, packet_t *pkt)
-{
-	int32_t i;
-	ensured_pkt_t *ePkt;
-
-	// Search for retries that match packet received.  If found, removed it from the retry list.
-	for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
-	{
-		ePkt = &(cmInstance->ensuredPackets[i]);
-
-		if (ePkt->counter == -2)
-		{
-			// No more retries to search for
-			return;
-		}
-
-		if (ePkt->counter < 0)
-		{
-			// This retry is disabled.  Skip it.
-			continue;
-		}
-
-		// Found packet response expected.  Remove from retry list.
-		if (ePkt->pktBody[0] == pkt->body.ptr[0])
-		{
-			// Indicate disabled retry
-			ePkt->counter = -1;
-		}
-	}
-
-	// Update last retry indicator
-	for (i = cmInstance->maxEnsuredPackets - 1; i >= 0; i--)
-	{
-		// Current is enabled so stop
-		if (cmInstance->ensuredPackets[i].counter >= 0)
-		{
-			break;
-		}
-
-		// Indicate no more retries in list
-		cmInstance->ensuredPackets[i].counter = -2;
-	}
-}
-
-void updatePacketRetryAck(com_manager_t* cmInstance, packet_t *pkt)
-{
-	int32_t i;
-	ensured_pkt_t *ePkt;
-	p_ack_t *ack;
-	uint8_t ackInfo;
-
-	ack = (p_ack_t*)(pkt->body.ptr);
-	ackInfo = (uint8_t)(ack->hdr.pktInfo);
-
-	// Search for retries that match packet received.  If found, removed it from the retry list.
-	for (i = 0; i < cmInstance->maxEnsuredPackets; i++)
-	{
-		ePkt = &(cmInstance->ensuredPackets[i]);
-
-		if (ePkt->counter == -2)
-		{
-			// No more retries to search for
-			return;
-		}
-
-		if (ePkt->counter == -1)
-		{
-			// This retry is disabled.  Skip it.
-			continue;
-		}
-
-		// Check packet info matches
-		if (ack->hdr.pktInfo == ePkt->pkt.hdr.pid)
-		{
-			p_data_hdr_t *dHdr, *eHdr;
-
-			switch (ackInfo)
-			{
-				default:
-				// Custom/Specific Packets
-				case PID_STOP_BROADCASTS_ALL_PORTS: // No body ID available
-				ePkt->counter = -1;                 // indicate disabled retry
-				break;
-
-				case PID_SET_DATA:
-				dHdr = &(ack->body.dataHdr);
-				eHdr = (p_data_hdr_t*)(ePkt->pktBody);
-
-				if (dHdr->id == eHdr->id &&
-				dHdr->size == eHdr->size &&
-				dHdr->offset == eHdr->offset)
-				{
-					ePkt->counter = -1;             // indicate disabled retry
-				}
-				break;
-			}
-		}
-	}
-
-	// Update last retry indicator
-	for (i = cmInstance->maxEnsuredPackets - 1; i >= 0; i--)
-	{
-		// Current is enabled so stop
-		if (cmInstance->ensuredPackets[i].counter >= 0)
-		{
-			break;
-		}
-		cmInstance->ensuredPackets[i].counter = -2;         // Indicate no more retries in list
-	}
+    comManagerSendInstance(cmInstance, pHandle, pTypeFlags, &ack, 0, sizeof(ack), 0);
 }
 
 int comManagerValidateBaudRate(unsigned int baudRate)
 {
-	// Valid baudrates for InertialSense hardware
-	return validateBaudRate(baudRate);
+    // Valid baudrates for InertialSense hardware
+    return validateBaudRate(baudRate);
 }
 

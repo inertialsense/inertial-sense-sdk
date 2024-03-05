@@ -136,11 +136,12 @@ class logInspectorInternal(LogInspectorWindow):
 
     def RMS(self):
         if self.log is not None:
+            self.setStatus("Calculating RMS...")
             self.log.calculateRMS()
             self.log.printRMSReport()
             self.log.openRMSReport()
-        # self.stopLoadingIndicator()
             self.updatePlot()
+            self.setStatus("RMS done.")
 
     def createPlotSelection(self):
         super(logInspectorInternal, self).createPlotSelection()

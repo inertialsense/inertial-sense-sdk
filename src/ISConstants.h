@@ -30,132 +30,121 @@ extern "C" {
 
 #define ECEF2LLA_METHOD 5  // Method to compute LLA from ECEF position (0 through 5)
 
+#define ENABLE_RTK_PROCESSING       1
+#define RTK_ENGINE_NFREQ            NFREQ   // Set to 1 to disable L5 in RTK without changing NFREQ and data size
+#define CONVERT_RAW_GPS_V2_TO_V1    0       // Allow conversion of raw GPS format from v1 to v2 used for RTK
+
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
+    #define PLATFORM_IS_WINDOWS 1
+    #define PLATFORM_IS_EMBEDDED 0
+    #ifndef _CRT_SECURE_NO_DEPRECATE
+    #define _CRT_SECURE_NO_DEPRECATE
+    #endif
 
-#define PLATFORM_IS_WINDOWS 1
-#define PLATFORM_IS_EMBEDDED 0
-#ifndef _CRT_SECURE_NO_DEPRECATE
-#define _CRT_SECURE_NO_DEPRECATE
-#endif
+    // If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
+    #define _WINSOCKAPI_
+    #include <winsock2.h>
+    #include <WS2tcpip.h>
+    #include <windows.h>
+    #define socket_t SOCKET
 
-// If you are getting winsock compile errors, make sure to include ISConstants.h as the first file in your header or c/cpp file
-#define _WINSOCKAPI_
-#include <winsock2.h> 
-#include <WS2tcpip.h>
-#include <windows.h>
-#define socket_t SOCKET
-
-#define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
-#define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
-#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
-
+    #define CPU_IS_LITTLE_ENDIAN (REG_DWORD == REG_DWORD_LITTLE_ENDIAN)
+    #define CPU_IS_BIG_ENDIAN (REG_DWORD == REG_DWORD_BIG_ENDIAN)
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #elif defined(__APPLE__)
+    #define socket_t int
 
-#define socket_t int
+    #define PLATFORM_IS_APPLE 1
+    #define PLATFORM_IS_EMBEDDED 0
 
-#define PLATFORM_IS_APPLE 1
-#define PLATFORM_IS_EMBEDDED 0
-
-#if defined(__LITTLE_ENDIAN__)
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-#elif defined(__BIG_ENDIAN__)
-#define CPU_IS_LITTLE_ENDIAN 0
-#define CPU_IS_BIG_ENDIAN 1
-#endif
-
+    #if defined(__LITTLE_ENDIAN__)
+        #define CPU_IS_LITTLE_ENDIAN 1
+        #define CPU_IS_BIG_ENDIAN 0
+    #elif defined(__BIG_ENDIAN__)
+        #define CPU_IS_LITTLE_ENDIAN 0
+        #define CPU_IS_BIG_ENDIAN 1
+    #endif
 #elif defined(__linux__) || defined(__unix__) || defined(__CYGWIN__)
+    #include <endian.h>
 
-#include <endian.h>
+    #ifndef __BYTE_ORDER
+        #error __BYTE_ORDER not defined, must be __LITTLE_ENDIAN or __BIG_ENDIAN
+    #endif
 
-#ifndef __BYTE_ORDER
-#error __BYTE_ORDER not defined, must be __LITTLE_ENDIAN or __BIG_ENDIAN
-#endif
-
-#define PLATFORM_IS_LINUX 1
-#define PLATFORM_IS_EMBEDDED 0
-#define socket_t int
-#define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
-#define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
-
+    #define PLATFORM_IS_LINUX 1
+    #define PLATFORM_IS_EMBEDDED 0
+    #define socket_t int
+    #define CPU_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
+    #define CPU_IS_BIG_ENDIAN (__BYTE_ORDER == __BIG_ENDIAN)
 #elif defined(__INERTIAL_SENSE_EVB_2__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 1
-#define PLATFORM_IS_EVB_2 1
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 1
+    #define PLATFORM_IS_EVB_2 1
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #elif defined(ARM) || defined(__SAM3X8E__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 1
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 1
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega168__) ||defined(__AVR_ATmega168P__) ||defined(__AVR_ATmega328P__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 0
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 0
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #elif defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
-#define PLATFORM_IS_EMBEDDED 1
-#define PLATFORM_IS_ARM 1
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #define PLATFORM_IS_EMBEDDED 1
+    #define PLATFORM_IS_ARM 1
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #else
-
-#error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
-#define PLATFORM_IS_EMBEDDED 0
-#define PLATFORM_IS_ARM 0
-#define CPU_IS_LITTLE_ENDIAN 1
-#define CPU_IS_BIG_ENDIAN 0
-
+    #error Unknown platform not supported, be sure to set it up here, defining CPU_IS_LITTLE_ENDIAN and CPU_IS_BIG_ENDIAN
+    #define PLATFORM_IS_EMBEDDED 0
+    #define PLATFORM_IS_ARM 0
+    #define CPU_IS_LITTLE_ENDIAN 1
+    #define CPU_IS_BIG_ENDIAN 0
 #endif // platform defines
 
 #if !defined(CPU_IS_LITTLE_ENDIAN) || !defined(CPU_IS_BIG_ENDIAN) || CPU_IS_LITTLE_ENDIAN == CPU_IS_BIG_ENDIAN
-
-#error Unsupported / unknown CPU architecture
-
+    #error Unsupported / unknown CPU architecture
 #endif // Invalid CPU endianess
 
 
 // "PLATFORM_IS_EMBEDDED" must be defined
 #if !defined(PLATFORM_IS_EMBEDDED) 
-#error "Missing PLATFORM_IS_EMBEDDED macro!!!"
+    #error "Missing PLATFORM_IS_EMBEDDED macro!!!"
 #endif
 
 
 #if PLATFORM_IS_EMBEDDED
-
-extern void* pvPortMalloc(size_t xWantedSize);
-extern void vPortFree(void* pv);
-#define MALLOC(m) pvPortMalloc(m)
-#define REALLOC(m, size) 0 // not supported
-#define FREE(m) vPortFree(m)
-
+    extern void* pvPortMalloc(size_t xWantedSize);
+    extern void vPortFree(void* pv);
+    #define MALLOC(m) pvPortMalloc(m)
+    #define REALLOC(m, size) 0 // not supported
+    #define FREE(m) vPortFree(m)
 #else
-
-#define MALLOC(m) malloc(m)
-#define REALLOC(m, size) realloc(m, size)
-#define FREE(m) free(m)
-
+    #define MALLOC(m) malloc(m)
+    #define REALLOC(m, size) realloc(m, size)
+    #define FREE(m) free(m)
 #endif 
 
-#if PLATFORM_IS_EMBEDDED
-#include "../hw-libs/printf/printf.h"	// Use embedded-safe SNPRINTF
-#define SNPRINTF snprintf_
-#define VSNPRINTF vsnprintf_
+#if __ZEPHYR__
+    // #define SNPRINTF snprintfcb
+    #define SNPRINTF snprintf
+    #define VSNPRINTF vsnprintf
+#elif PLATFORM_IS_EMBEDDED
+    #include "printf.h"		// Use embedded-safe SNPRINTF
+    #define SNPRINTF snprintf_
+    #define VSNPRINTF vsnprintf_
 #else
-#define SNPRINTF snprintf
-#define VSNPRINTF vsnprintf
+    #define SNPRINTF snprintf
+    #define VSNPRINTF vsnprintf
 #endif
 
 
 #if defined(_MSC_VER)
-
-#ifndef INLINE
+    #ifndef INLINE
 #define INLINE __inline 
 #endif
 
@@ -168,75 +157,72 @@ extern void vPortFree(void* pv);
 #endif
 
 #define strncasecmp _strnicmp 
-
 #else
+    #ifndef INLINE
+        #define INLINE inline
+    #endif
 
-#ifndef INLINE
-#define INLINE inline
-#endif
+    #ifndef SSCANF
+        #define SSCANF sscanf
+    #endif
 
-#ifndef SSCANF
-#define SSCANF sscanf
-#endif
-
-#ifndef STRNCPY
-#define STRNCPY(dst, src, maxlen) strncpy((char*)(dst), (char*)(src), (maxlen))
-#endif
-
+    #ifndef STRNCPY
+        #define STRNCPY(dst, src, maxlen) strncpy((char*)(dst), (char*)(src), (maxlen))
+    #endif
 #endif // defined(_MSC_VER)
 
-#if defined(PLATFORM_IS_EVB_2)
-#define _MKDIR(dir) f_mkdir(dir)
-#define _RMDIR(dir) f_unlink(dir)
-#define _GETCWD(buf, len) f_getcwd(buf, len)
-
+#if __ZEPHYR__
+    #include <zephyr/irq.h>
+    #define BEGIN_CRITICAL_SECTION irq_lock();
+    #define END_CRITICAL_SECTION irq_unlock(0);
 #elif !PLATFORM_IS_EMBEDDED
-#define BEGIN_CRITICAL_SECTION
-#define END_CRITICAL_SECTION
-#define DBGPIO_ENABLE(pin)
-#define DBGPIO_TOGGLE(pin)
-
-#if PLATFORM_IS_WINDOWS
-
-#include <direct.h>
-#include <sys/utime.h>
-#define _MKDIR(dir) _mkdir(dir)
-#define _RMDIR(dir) _rmdir(dir)
-#define _GETCWD(buf, len) _getcwd(buf, len)
-#define _UTIME _utime
-#define _UTIMEBUF struct _utimbuf
-
-#else // POSIX
-
-#include <unistd.h>
-#include <dirent.h>
-#include <errno.h>
-#include <utime.h>
-#include <sys/stat.h>
-//#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only 
-#define _MKDIR(dir) mkdir((dir), ACCESSPERMS) // 0777 access for all
-#define _RMDIR(dir) rmdir((dir))
-#define _GETCWD(buf, len) getcwd((buf), (len))
-#define _UTIME utime
-#define _UTIMEBUF struct utimbuf
-
+    #define BEGIN_CRITICAL_SECTION
+    #define END_CRITICAL_SECTION
+    #define DBGPIO_ENABLE(pin)
+    #define DBGPIO_TOGGLE(pin)
 #endif
 
+#if defined(PLATFORM_IS_EVB_2)
+    #define _MKDIR(dir) f_mkdir(dir)
+    #define _RMDIR(dir) f_unlink(dir)
+    #define _GETCWD(buf, len) f_getcwd(buf, len)
+#elif !PLATFORM_IS_EMBEDDED
+    #if PLATFORM_IS_WINDOWS
+        #include <direct.h>
+        #include <sys/utime.h>
+        #define _MKDIR(dir) _mkdir(dir)
+        #define _RMDIR(dir) _rmdir(dir)
+        #define _GETCWD(buf, len) _getcwd((buf), (len))
+        #define _UTIME _utime
+        #define _UTIMEBUF struct _utimbuf
+    #else // POSIX
+        #include <unistd.h>
+        #include <dirent.h>
+        #include <errno.h>
+        #include <utime.h>
+        #include <sys/stat.h>
+        //#define _MKDIR(dir) mkdir(dir, S_IRWXU) // 777 owner access only
+        #define _MKDIR(dir) mkdir((dir), ACCESSPERMS) // 0777 access for all
+        #define _RMDIR(dir) rmdir((dir))
+        #define _GETCWD(buf, len) getcwd((buf), (len))
+        #define _UTIME utime
+        #define _UTIMEBUF struct utimbuf
+    #endif
 #endif
 
 // with this you can tell the compiler not to insert padding
 #if defined(_MSC_VER)
-#define PUSH_PACK_1 __pragma(pack(push, 1))
-#define PUSH_PACK_4 __pragma(pack(push, 4))
-#define PUSH_PACK_8 __pragma(pack(push, 8))
-#define POP_PACK __pragma(pack(pop))
-#define PACKED
+    #define PUSH_PACK_1 __pragma(pack(push, 1))
+    #define PUSH_PACK_4 __pragma(pack(push, 4))
+    #define PUSH_PACK_8 __pragma(pack(push, 8))
+    #define POP_PACK __pragma(pack(pop))
+    #define PACKED
 #else
-#define PUSH_PACK_1 _Pragma("pack(push, 1)")
-#define PUSH_PACK_4 _Pragma("pack(push, 4)")
-#define PUSH_PACK_8 _Pragma("pack(push, 8)")
-#define POP_PACK _Pragma("pack(pop)")
-#define PACKED
+    #define PUSH_PACK_1 _Pragma("pack(push, 1)")
+    #define PUSH_PACK_4 _Pragma("pack(push, 4)")
+    #define PUSH_PACK_8 _Pragma("pack(push, 8)")
+    #define POP_PACK _Pragma("pack(pop)")
+    #define PACKED
 #endif
 
 #define NO_FUNC_OPTIMIZATION __attribute__((optimize(0)))       // Place this before the function name, i.e. void NO_FUNC_OPTIMIZATION my_func(){ ... }
@@ -362,8 +348,10 @@ extern void vPortFree(void* pv);
 #define OFFSET_OF_MEMBER_INDEX_SUBMEMBER(type, member, i, submember) (offsetof(type, member[0].submember) + (i) * MEMBER_ITEM_SIZE(type, member))
 #endif
 
+#ifndef __ZEPHYR__
 #ifndef STRINGIFY
 #define STRINGIFY(x) #x
+#endif
 #endif
 
 #ifndef M_PI
@@ -427,7 +415,11 @@ extern void vPortFree(void* pv);
 #define PRE_PROC_COMBINE(X, Y) X##Y
 #ifndef STATIC_ASSERT
 // #define STATIC_ASSERT_MSG(exp, msg) typedef char PRE_PROC_COMBINE(msg, __LINE__)[(exp) ? 1 : -1]
+#ifdef __cplusplus
 #define STATIC_ASSERT(exp) static_assert(exp, #exp)
+#else
+#define STATIC_ASSERT(exp) _Static_assert(exp, #exp)
+#endif
 #endif
 #ifndef OVERRIDE
 #define OVERRIDE

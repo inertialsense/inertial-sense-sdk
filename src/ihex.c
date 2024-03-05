@@ -1,6 +1,6 @@
 /**
  * @file ihex.c
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @author Paul Stoffregen (paul@ece.orst.edu)
  * @brief Intel HEX file read routines for embedded firmware
  * @note based on https://www.pjrc.com/tech/8051/ihex.c
@@ -121,7 +121,8 @@ static int ihex_load_section(FILE** ihex_file, ihex_image_section_t* section)
         }
         else
         {
-            printf("   Error line: %d\n", lineno);
+            // printf("   Error line: %d\n", lineno);
+            return -2; // there was a parse error
         }
 
         lineno++;

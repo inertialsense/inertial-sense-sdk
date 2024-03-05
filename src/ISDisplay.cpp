@@ -607,6 +607,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	switch (data->hdr.id)
 	{
 	case DID_EVB_DEV_INFO:
+	case DID_GPX_DEV_INFO:
 	case DID_DEV_INFO:          str = DataToStringDevInfo(d.devInfo, data->hdr);        break;
 	case DID_IMU:               str = DataToStringIMU(d.imu, data->hdr);                break;
 	case DID_PIMU:              str = DataToStringPreintegratedImu(d.pImu, data->hdr);  break;
@@ -617,17 +618,17 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
 	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
-	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);			break;
-	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);			break;
-	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);			break;
-	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);		break;
-	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break;
-	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);		break;
-	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);		break;
+	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
+	case DID_GPS2_RTK_CMP_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
+	case DID_GPS2_RTK_CMP_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
 	case DID_GPS1_RAW:
 	case DID_GPS2_RAW:
 	case DID_GPS_BASE_RAW:      str = DataToStringRawGPS(d.gpsRaw, data->hdr);          break;
-    case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);      break;
+	case DID_SURVEY_IN:         str = DataToStringSurveyIn(d.surveyIn, data->hdr);      break;
 	case DID_SYS_PARAMS:        str = DataToStringSysParams(d.sysParams, data->hdr);    break;
 	case DID_SYS_SENSORS:       str = DataToStringSysSensors(d.sysSensors, data->hdr);  break;
 	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
@@ -1420,18 +1421,18 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 		info.firmwareVer[2],
 		info.firmwareVer[3],
 		info.buildNumber,
-		(info.buildDate[0] ? info.buildDate[0] : ' '),
-		info.buildDate[1] + 2000,
-		info.buildDate[2],
-		info.buildDate[3]
+        (info.buildType ? info.buildType : ' '),
+		info.buildYear + 2000,
+		info.buildMonth,
+		info.buildDay
 	);
 
 	if (full)
 	{	// Spacious format
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d, Proto %d.%d.%d.%d",
-			info.buildTime[0],
-			info.buildTime[1],
-			info.buildTime[2],
+			info.buildHour,
+			info.buildMinute,
+			info.buildSecond,
 			info.protocolVer[0],
 			info.protocolVer[1],
 			info.protocolVer[2],
@@ -1561,7 +1562,7 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
-	if (m_editData.mapInfo == NULL)
+	if (m_editData.mapInfo == NULL || data->ptr == NULL)
 	{
 		return "";
 	}
@@ -1653,7 +1654,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			if (m_editData.pData.hdr.id == m_editData.did &&
 				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData.buf + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
 			}
 		}
 		StopEditing();

@@ -1,6 +1,6 @@
 /**
  * @file ihex.h
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Intel HEX file read routines for embedded firmware
  * 
  */

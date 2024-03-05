@@ -263,7 +263,7 @@ void cDeviceLog::SetDeviceInfo(const dev_info_t *info)
 }
 
 
-void cDeviceLog::OnReadData(p_data_t* data)
+void cDeviceLog::OnReadData(p_data_buf_t* data)
 {
     if (data != NULL)
     {

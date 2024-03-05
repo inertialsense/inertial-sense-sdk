@@ -54,10 +54,40 @@ namespace ISFileManager
     // get just the file name from a path
     std::string GetFileName(const std::string& path);
 
+    // get just the parent/base path from a path
+    std::string GetParentDirectory(const std::string& path);
+
+
+    /**
+     * Returns true if the specified path is consider an absolute path
+     * @param path
+     * @return true if absolute, false if relative
+     */
+    bool isPathAbsolute(const std::string& path);
+
+    /**
+     * returns an absolute path to the parent directory of the specified path
+     * If 'path' is a relative path, it is applied to the current working directory
+     * @param path a complete path
+     * @param parent a string representing the path to the parent directory
+     * @return true on success, otherwise false
+     */
+    bool getParentDirectory(const std::string& path, std::string& parent);
+
+    /**
+     * Extracts and stores the base, filename, and ext(ension) components from the specified path
+     * @param path the path to parse
+     * @param parent the base or parent directory which contains the file. This is always an absolute path.
+     * @param file the filename which the path references. This is just the filename with the extension, and does not include any directory/path information
+     * @param ext the filename extension of the filename. This is the same as the last matching characters of the filename, and is included for convenience.
+     * @return true if there was sufficient path information to extract the parent of the path, otherwise false.  This is NOT an error condition,
+     * but instead indicates (if true) that parent contains meaningful data.
+     */
+    bool getPathComponents(const std::string& path, std::string& parent, std::string& file, std::string& ext);
+
     bool TouchFile(const std::string& path);
 
     bool makePath(const std::string& path);
-
 }
 
 #endif //IS_SDK_IS_FILE_MANAGER_H_

@@ -90,12 +90,12 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
             cout << "Unable to load files" << endl;
     }
 
-    cout << "found " << logger_.GetDeviceCount() << " devices\n";
+    cout << "found " << logger_.DeviceCount() << " devices\n";
     vector<int> serialNumbers;
-    for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
+    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
     {
-        cout << (i==0 ? "  " : ", ") << logger_.GetDeviceInfo(i)->serialNumber;
-        serialNumbers.push_back(logger_.GetDeviceInfo(i)->serialNumber);
+        cout << (i==0 ? "  " : ", ") << logger_.DeviceInfo(i)->serialNumber;
+        serialNumbers.push_back(logger_.DeviceInfo(i)->serialNumber);
     }
     cout << endl;
     serialNumbers_ = py::cast(serialNumbers);
@@ -107,7 +107,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
 void LogReader::organizeData(int device_id)
 {
-    p_data_t* data = NULL;
+    p_data_buf_t* data = NULL;
     while ((data = logger_.ReadData(device_id)))
     {
         // if (data->hdr.id == DID_DEV_INFO)
@@ -133,7 +133,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_SYS_FAULT, dev_log_->sysFault );
         HANDLE_MSG( DID_INS_1, dev_log_->ins1 );
         HANDLE_MSG( DID_INS_2, dev_log_->ins2 );
-        HANDLE_MSG( DID_GPS1_UBX_POS, dev_log_->gps1UbxPos );
+        HANDLE_MSG( DID_GPS1_RCVR_POS, dev_log_->gps1UbxPos );
         HANDLE_MSG( DID_SYS_CMD, dev_log_->sysCmd );
         // HANDLE_MSG( DID_NMEA_BCAST_PERIOD, dev_log_->nmeaBcastPeriod );
         // HANDLE_MSG( DID_RMC, dev_log_->rmc );
@@ -211,6 +211,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
         HANDLE_MSG( DID_RTK_DEBUG, dev_log_->rtkDebug);
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
+        HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
 
         default:
             //            printf("Unhandled IS message DID: %d\n", message_type);
@@ -225,7 +226,7 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_SYS_FAULT, dev_log_->sysFault, device_id );
     forward_message( DID_INS_1, dev_log_->ins1, device_id );
     forward_message( DID_INS_2, dev_log_->ins2, device_id );
-    forward_message( DID_GPS1_UBX_POS, dev_log_->gps1UbxPos, device_id );
+    forward_message( DID_GPS1_RCVR_POS, dev_log_->gps1UbxPos, device_id );
     forward_message( DID_SYS_CMD, dev_log_->sysCmd, device_id );
     // forward_message( DID_NMEA_BCAST_PERIOD, dev_log_->nmeaBcastPeriod, device_id );
     // forward_message( DID_RMC, dev_log_->rmc, device_id );
@@ -304,11 +305,12 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
     forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
     // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
+    forward_message( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id );
 }
 
 bool LogReader::load()
 {
-    for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
+    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
     {
         if (dev_log_ != nullptr)
         {

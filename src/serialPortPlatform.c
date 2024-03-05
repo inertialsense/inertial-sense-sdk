@@ -226,8 +226,8 @@ static int set_interface_attribs(int fd, int speed, int parity)
     // no Ctrl-D suppression, no fill characters, no case mapping,
     // no local output processing
     //
-    // config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
-    // config.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
+    // tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
+    // tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | OFILL | OLCUC | OPOST);
     tty.c_oflag = 0;
 
     // No line processing
@@ -300,7 +300,21 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         serialParams.BaudRate = baudRate;
         serialParams.ByteSize = DATABITS_8;
         serialParams.StopBits = ONESTOPBIT;
-        serialParams.Parity = NOPARITY;
+
+        switch(serialPort->options & OPT_PARITY_MASK)
+        {
+        case OPT_PARITY_EVEN:
+            serialParams.Parity = EVENPARITY;
+            break;
+        case OPT_PARITY_ODD:    
+            serialParams.Parity = ODDPARITY;
+            break;
+        case OPT_PARITY_NONE:
+        default:
+            serialParams.Parity = NOPARITY;
+            break;
+        }
+
         serialParams.fBinary = 1;
         serialParams.fInX = 0;
         serialParams.fOutX = 0;
@@ -555,8 +569,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             int pollrc = poll(fds, 1, timeoutMilliseconds);
             if (pollrc <= 0 || !(fds[0].revents & POLLIN))
             {
-                if ((pollrc < 0) && (fds[0].revents & POLLERR))
+                if (fds[0].revents & POLLERR) {
                     return -1; // more than a timeout occurred.
+                }
                 break;
             }
         }
@@ -572,6 +587,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         {
             totalRead += n;
         }
+
         if (timeoutMilliseconds > 0 && totalRead < readCount)
         {
             gettimeofday(&curr, NULL);

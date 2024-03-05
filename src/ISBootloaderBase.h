@@ -1,10 +1,3 @@
-/**
- * @file ISBootloaderBase.h
- * @author Dave Cutting (davidcutting42@gmail.com)
- * @brief Inertial Sense base class for bootloader actions
- * 
- */
-
 /*
 MIT LICENSE
 
@@ -53,8 +46,10 @@ typedef enum {
 } eDeviceType;
 
 typedef enum {
-    IS_PROCESSOR_SAMx70 = 0,        // IMX-5
-    IS_PROCESSOR_STM32L4,           // uINS-3/4, EVB-2
+    IS_PROCESSOR_UNKNOWN = -1,
+    IS_PROCESSOR_SAMx70 = 0,        // uINS-3/4, EVB-2
+    IS_PROCESSOR_STM32L4,           // IMX-5
+    IS_PROCESSOR_STM32U5,           // GPX-1, IMX-5.1
 
     IS_PROCESSOR_NUM,               // Must be last
 } eProcessorType;
@@ -69,12 +64,13 @@ typedef enum {
     IS_IMAGE_SIGN_UINS_3_24K = 0x00000010,
     IS_IMAGE_SIGN_EVB_2_16K = 0x00000020,
     IS_IMAGE_SIGN_EVB_2_24K = 0x00000040,
-    IS_IMAGE_SIGN_IMX_5 = 0x00000080,
+    IS_IMAGE_SIGN_IMX_5p0 = 0x00000080,
     
     IS_IMAGE_SIGN_NUM_BITS_USED = 8,
 
-    IS_IMAGE_SIGN_APP = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_IMX_5 | IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4,
-    IS_IMAGE_SIGN_ISB = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_IMX_5 | IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4,
+    IS_IMAGE_SIGN_APP = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_IMX_5p0 | IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4,
+    IS_IMAGE_SIGN_ISB = IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K | IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K | IS_IMAGE_SIGN_IMX_5p0 | IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K | IS_IMAGE_SIGN_ISB_STM32L4,
+    
     IS_IMAGE_SIGN_SAMBA = IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K,
     IS_IMAGE_SIGN_DFU = IS_IMAGE_SIGN_ISB_STM32L4,
 
@@ -100,11 +96,11 @@ typedef struct
 } firmwares_t;
 
 typedef is_operation_result (*pfnBootloadProgress)(void* obj, float percent);
-typedef void (*pfnBootloadStatus)(void* obj, const char* infoString, eLogLevel level);
+typedef void (*pfnBootloadStatus)(void* obj, eLogLevel level, const char* infoString, ...);
 
 is_operation_result dummy_update_callback(void* obj, float percent);
 is_operation_result dummy_verify_callback(void* obj, float percent);
-static inline void dummy_info_callback(void* obj, const char* infoString, eLogLevel level)
+static inline void dummy_info_callback(void* obj, eLogLevel level, const char* infoString, ...)
 {
     (void)obj;
     (void)infoString;
@@ -219,8 +215,9 @@ public:
     int m_baud;
 
     uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
-    uint8_t m_isb_major;                  // ISB Major revision on device
-    char m_isb_minor;                     // ISB Minor revision on device
+    uint16_t m_hdw;                     // Inertial Sense Hardware Type (IMX, GPX, etc)
+    uint8_t m_isb_major;                // ISB Major revision on device
+    char m_isb_minor;                   // ISB Minor revision on device
     bool isb_mightUpdate;               // true if device will be updated if bootloader continues
 
     static is_operation_result mode_device_app(
@@ -284,19 +281,8 @@ public:
 
 protected:
     void status_update(const char* info, eLogLevel level) 
-    {
-        if(m_info_callback) m_info_callback((void*)this, info, level); 
-    }
-    void status_update(void* obj, eLogLevel level, const char *fmt, ...) 
     { 
-        if(!m_info_callback) return;
-
-        char msg[200] = { 0 };
-        va_list args;
-        va_start(args, fmt);
-        vsnprintf(msg, sizeof(msg), fmt, args);
-        va_end(args);
-        m_info_callback(obj, msg, level);
+        if(m_info_callback) m_info_callback((void*)this, level, info);
     }
 
     struct

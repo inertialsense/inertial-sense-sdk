@@ -10,8 +10,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef IS_SIMPLE_INTERFACE_H
-#define IS_SIMPLE_INTERFACE_H
+#ifndef IS_COMM_H
+#define IS_COMM_H
 
 #include "data_sets.h"
 #include "stddef.h"
@@ -71,6 +71,8 @@ extern "C" {
 #define _DID_FLASH_CONFIG			DID_FLASH_CONFIG 		/** (see nvm_flash_cfg_t) Flash memory configuration */
 #define _DID_RMC					DID_RMC					/** (see rmc_t) Realtime message controller */
 
+#define ZEPHYR_SUCCESS_CODE     	0
+
 /** Protocol Type */
 typedef enum
 {
@@ -82,6 +84,8 @@ typedef enum
 	_PTYPE_NMEA                 = 0xBFFFFFFF,				/** Protocol Type: NMEA (National Marine Electronics Association) */
 	_PTYPE_UBLOX                = 0xAFFFFFFF,				/** Protocol Type: uBlox binary */
 	_PTYPE_RTCM3                = 0x9FFFFFFF,				/** Protocol Type: RTCM3 binary (Radio Technical Commission for Maritime Services) */
+	_PTYPE_SPARTN               = 0x8FFFFFFF,				/** Protocol Type: SPARTN binary */
+	_PTYPE_SONY                 = 0x7FFFFFFF,				/** Protocol Type: Sony binary */
 } protocol_type_t;
 
 /** The maximum allowable dataset size */
@@ -94,6 +98,9 @@ typedef enum
 #ifndef PKT_BUF_SIZE
 #define PKT_BUF_SIZE            2048
 #endif
+
+/** The maximum time between received data that will reset in the parser */
+#define MAX_PARSER_GAP_TIME_MS  100
 
 /** The maximum encoded overhead size in sending a packet (7 bytes for header, 7 bytes for footer). The packet start and end bytes are never encoded. */
 #define MAX_PKT_OVERHEAD_SIZE   (PKT_OVERHEAD_SIZE + PKT_OVERHEAD_SIZE - 2)  // worst case for packet encoding header / footer
@@ -113,12 +120,8 @@ typedef enum
 /** Defines the 4 parts to the communications version. Major changes involve changes to the com manager. Minor changes involve additions to data structures */
 
 // Major (in com_manager.h)
-#define PROTOCOL_VERSION_CHAR0			(1)
-
-// version 1: initial release
-// version 2: 24 bit checksum support
-// version 3: ioConfig change
-#define PROTOCOL_VERSION_CHAR1			(4)
+#define PROTOCOL_VERSION_CHAR0			(2)
+#define PROTOCOL_VERSION_CHAR1			(0)
 
 // Minor (in data_sets.h)
 // #define PROTOCOL_VERSION_CHAR2		0
@@ -127,6 +130,9 @@ typedef enum
 #define UBLOX_HEADER_SIZE 6
 #define RTCM3_HEADER_SIZE 3
 #define MAX_MSG_LENGTH_NMEA					200
+
+/** Send data to the serial port.  Returns number of bytes written. */ 
+typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1
@@ -145,9 +151,17 @@ typedef enum
     IS_BAUDRATE_10000000        = 10000000,     // 10000000  ( IMX-5 only)
     IS_BAUDRATE_COUNT           = 9,
 	IS_BAUDRATE_DEFAULT         = IS_BAUDRATE_921600,
+	IS_BAUDRATE_STANDARD_MIN    = IS_BAUDRATE_9600,
 	IS_BAUDRATE_STANDARD_MAX    = IS_BAUDRATE_921600,
 	IS_BAUDRATE_MAX             = IS_BAUDRATE_10000000,
 } baud_rate_t;
+
+typedef struct
+{
+    uint32_t 			   baudRate;
+    uint8_t 			   parity;
+    uint8_t 			   stopBits;
+} serial_options_t;
 
 /** List of valid baud rates */
 extern const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT];
@@ -175,20 +189,27 @@ n-2			Checksum low byte
 n-1			Packet end byte
 */
 
-// Packet IDs	
-typedef uint32_t ePacketIDs;
+// Packet IDs
+// typedef uint32_t ePacketIDs;
 
-#define PID_INVALID                         (ePacketIDs)0   /** Invalid packet id */
-#define PID_ACK                             (ePacketIDs)1   /** (ACK) received valid packet */
-#define PID_NACK                            (ePacketIDs)2   /** (NACK) received invalid packet */
-#define PID_GET_DATA                        (ePacketIDs)3   /** Request for data to be broadcast, response is PID_DATA. See data structures for list of possible broadcast data. */
-#define PID_DATA                            (ePacketIDs)4   /** Data sent in response to PID_GET_DATA (no PID_ACK is sent) */
-#define PID_SET_DATA                        (ePacketIDs)5   /** Data sent, such as configuration options.  PID_ACK is sent in response. */
-#define PID_STOP_BROADCASTS_ALL_PORTS       (ePacketIDs)6   /** Stop all data broadcasts on all ports. Responds with an ACK */
-#define PID_STOP_DID_BROADCAST              (ePacketIDs)7   /** Stop a specific broadcast */
-#define PID_STOP_BROADCASTS_CURRENT_PORT    (ePacketIDs)8   /** Stop all data broadcasts on current port. Responds with an ACK */
-#define PID_COUNT                           (ePacketIDs)9   /** The number of packet identifiers, keep this at the end! */
-#define PID_MAX_COUNT                       (ePacketIDs)32  /** The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK) */
+typedef enum
+{
+	PKT_TYPE_INVALID                        = 0,    // Invalid packet id
+	PKT_TYPE_ACK                            = 1,    // (ACK) received valid packet
+	PKT_TYPE_NACK                           = 2,    // (NACK) received invalid packet
+	PKT_TYPE_GET_DATA                       = 3,    // Request for data to be broadcast, response is PKT_TYPE_DATA. See data structures for list of possible broadcast data.
+	PKT_TYPE_DATA                           = 4,    // Data sent in response to PKT_TYPE_GET_DATA (no PKT_TYPE_ACK is sent)
+	PKT_TYPE_SET_DATA                       = 5,    // Data sent, such as configuration options.  PKT_TYPE_ACK is sent in response.
+	PKT_TYPE_STOP_BROADCASTS_ALL_PORTS      = 6,    // Stop all data broadcasts on all ports. Responds with an ACK
+	PKT_TYPE_STOP_DID_BROADCAST             = 7,    // Stop a specific broadcast
+	PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT   = 8,    // Stop all data broadcasts on current port. Responds with an ACK
+	PKT_TYPE_COUNT                          = 9,    // The number of packet identifiers, keep this at the end!
+	PKT_TYPE_MAX_COUNT                      = 16,   // The maximum count of packet identifiers, 0x1F (PACKET_INFO_ID_MASK)
+	PKT_TYPE_MASK                           = 0x0F, // Packet type bitmask
+	ISB_FLAGS_MASK                          = 0xF0, // (5 bits) Packet flags mask
+	ISB_FLAGS_EXTENDED_PAYLOAD              = 0x10, // Payload is larger than 2048 bytes and extends into next packet.
+	ISB_FLAGS_PAYLOAD_W_OFFSET              = 0x20, // The first two bytes of the payload are the byte offset of the payload data into the data set.
+} eISBPacketFlags;
 
 /** Represents size number of bytes in memory, up to a maximum of PKT_BUF_SIZE */
 typedef struct
@@ -239,26 +260,6 @@ typedef enum
 	asciiTypeDouble = 3
 } asciiDataType;
 
-/** create a uint from an NMEA message id that is the same, regardless of CPU architecture */
-enum ePktHdrFlags
-{
-	// bit set for little endian, bit cleared for big endian
-	CM_PKT_FLAGS_LITTLE_ENDIAN = 0x01,
-	CM_PKT_FLAGS_ENDIANNESS_MASK = 0x01,
-
-	// has any valid packet been received
-	CM_PKT_FLAGS_RX_VALID_DATA = 0x02,
-
-	// multi-packet data set
-	CM_PKT_FLAGS_MORE_DATA_AVAILABLE = 0x04,
-
-	// Allow for arbitrary length in bytes of data, not necessarily multiple of 4. Don't auto-swap bytes for endianness
-	CM_PKT_FLAGS_RAW_DATA_NO_SWAP = 0x08,
-
-	// Checksum is the new 24 bit algorithm instead of the old 16 bit algorithm
-	CM_PKT_FLAGS_CHECKSUM_24_BIT = 0x10
-};
-
 /**
 Built in special bytes that will need to be encoded in the binary packet format. This is not an exhaustive list, as other bytes such as ublox and rtcm preambles
 will be encoded as well, but these messages are not parsed and handled in the com manager, rather they are forwarded via the pass through handler.
@@ -269,19 +270,22 @@ is performed).
 enum ePktSpecialChars
 {
 	/** Dollar sign ($), used by NMEA protocol to signify start of message (36) */
-	PSC_ASCII_START_BYTE = 0x24,
+	PSC_NMEA_START_BYTE = 0x24,
+
+	/** Carriage return (\r), used by NMEA protocol to signify one byte before end of message (10) */
+	PSC_NMEA_PRE_END_BYTE = 0x0D,
 
 	/** New line (\n), used by NMEA protocol to signify end of message (10) */
-	PSC_ASCII_END_BYTE = 0x0A,
+	PSC_NMEA_END_BYTE = 0x0A,
 
-	/** Binary packet start byte, must only exist at the very start of a binary packet and no where else (255) */
-	PSC_START_BYTE = 0xFF,
+	/** Inertial Sense Binary packet preamble (start) byte 1 (239) */
+	PSC_ISB_PREAMBLE_BYTE1 = 0xEF,
 
-	/** Binary packet end byte, must only exist at the end of a binary packet and no where else (254) */
-	PSC_END_BYTE = 0xFE,
+	/** Inertial Sense Binary packet preamble (start) byte 2 (73) */
+	PSC_ISB_PREAMBLE_BYTE2 = 0x49,
 
-	/** Encoded byte marker, must only be used to prefix encoded bytes (253) */
-	PSC_RESERVED_KEY = 0xFD,
+	/** Inertial Sense Binary packet start preamble (239, 74) */
+	PSC_ISB_PREAMBLE = PSC_ISB_PREAMBLE_BYTE2<<8 | PSC_ISB_PREAMBLE_BYTE1,
 
 	/** Ublox start byte 1 (181) */
 	UBLOX_START_BYTE1 = 0xB5,
@@ -290,7 +294,13 @@ enum ePktSpecialChars
 	UBLOX_START_BYTE2 = 0x62,
 
 	/** Rtcm3 start byte (211) */
-	RTCM3_START_BYTE = 0xD3
+	RTCM3_START_BYTE = 0xD3,
+
+	/** SPARTN start byte */
+	SPARTN_START_BYTE = 0x73,
+
+	/** Sony GNSS start byte */
+	SONY_START_BYTE = 0x7F,
 };
 
 /** Represents an NMEA message and how it is mapped to a structure in memory */
@@ -315,40 +325,74 @@ typedef struct
 /** Represents the 4 bytes that begin each binary packet */
 typedef struct
 {
-	/** Packet start byte, always 0xFF */
-	uint8_t             startByte;
+	/** Packet start bytes, always 0x49EF */
+	uint16_t            preamble;
 
-	/** Packet identifier (see ePacketIDs) */
-	uint8_t             pid;
-
-	/** Packet counter, for ACK and retry */
-	uint8_t             counter;
-
-	/**
-	Packet flags (see ePktHdrFlags)
-	Bit 0 : unset means big endian, set means little endian format
-	Bit 1 : unset means no valid communication received yet, set means valid communication received
-	Bit 2 : unset means no more related packets available, set means additional packet(s) available related to this packet
-	Bit 3 : unset means perform swap, set means do not swap
-	*/
+	/** Packet identifier (see eISBPacketFlags) */
 	uint8_t             flags;
+
+	/** Data ID */
+	uint8_t             id;
+
+	/** Payload size */
+	uint16_t            payloadSize;
+
 } packet_hdr_t;
 
-/** Represents the 4 bytes that end each binary packet */
+/** Specifies the data id, size and offset of a PKT_TYPE_DATA and PKT_TYPE_DATA_SET packet */
 typedef struct
 {
-	/** Checksum byte 3 */
-	uint8_t             cksum3;
+	/** Data identifier (see eDataIDs) */
+	uint8_t             id;
 
-	/** Checksum byte 2 */
-	uint8_t             cksum2;
+	/** Size of data, for partial requests this will be less than the size of the data structure */
+	uint16_t            size;
 
-	/** Checksum byte 1 */
-	uint8_t             cksum1;
+	/** Offset into data structure */
+	uint16_t            offset;
+} p_data_hdr_t;
 
-	/** Packet end byte, always 0xFE */
-	uint8_t             stopByte;
-} packet_ftr_t;
+#define MIN_PACKET_SIZE (sizeof(packet_hdr_t) + 2)		// Packet header + checksum, no payload
+
+/** Represents a packet header and body */
+typedef struct
+{
+	union 
+	{
+		struct 
+		{
+			/** Packet header */
+			packet_hdr_t    hdr;
+
+			/** Data offset (optional) */
+			uint16_t        offset;
+		};
+
+		struct 
+		{
+			/** Packet start bytes, always 0x49EF */
+			uint16_t        preamble;
+
+			/** Packet identifier (see eISBPacketFlags) */
+			uint8_t         flags;
+
+			/** Data offset (optional) */
+			p_data_hdr_t 	dataHdr;
+		};
+	};
+
+	/** Packet data location and size.  For ISB packets this is the payload.  For non-ISB packets (NMEA, UBX, RTCM, etc.) this points to the entire packet. */
+	bufPtr_t            data;
+
+	/** Packet header checksum, including offset in payload if it exists */
+	uint16_t            hdrCksum;
+
+	/** Packet checksum */
+	uint16_t            checksum;
+
+	/** Packet size including header and checksum */
+	uint16_t            size;
+} packet_t;
 
 /** Represents a packet header and body */
 typedef struct
@@ -357,74 +401,55 @@ typedef struct
 	packet_hdr_t        hdr;
 
 	/** Packet body */
-	bufPtr_t            body;
-} packet_t;
+	union
+	{
+		uint8_t         data;
+		uint16_t        offset;
+	}                   payload;
+} packet_buf_t;
 
-/** Represents a packet header, packet body and a buffer with data to send */
-typedef struct
-{
-	packet_hdr_t        hdr;                    // Packet header
-	bufPtr_t            bodyHdr;                // Body header
-	bufPtr_t            txData;                 // Pointer and size of data to send
-} pkt_info_t;
-
-/** Specifies the data id, size and offset of a PID_DATA and PID_DATA_SET packet */
-typedef struct
-{
-	/** Data identifier (see eDataIDs) */
-	uint32_t            id;
-
-	/** Size of data, for partial requests this will be less than the size of the data structure */
-	uint32_t            size;
-
-	/** Offset into data structure */
-	uint32_t            offset;
-} p_data_hdr_t;
-
-/** Represents the complete packet body of a PID_DATA and PID_DATA_SET packet */
 typedef struct
 {
 	/** Header with id, size and offset */
 	p_data_hdr_t        hdr;
 
-	/** Data */
+	/** Data pointer */
+	uint8_t             *ptr;
+} p_data_t;
+
+typedef struct
+{
+	/** Header with id, size and offset */
+	p_data_hdr_t        hdr;
+
+	/** Data buffer */
 	uint8_t             buf[MAX_DATASET_SIZE];
-} p_data_t, p_data_set_t;
+} p_data_buf_t;
 
-/** Represents the complete body of a PID_DATA_GET packet */
+/** Represents the complete body of a PKT_TYPE_GET_DATA packet */
 typedef struct
 {
-	/** ID of data being requested */
-	uint32_t            id;
+    /** Data ID being requested */
+    uint16_t            id;
 
-	/** Byte length of data from offset */
-	uint32_t            size;
+    /** Byte length of data from offset */
+    uint16_t            size;
 
-	/** Byte offset into data */
-	uint32_t            offset;
+    /** Byte offset into data */
+    uint16_t            offset;
 
-	/**
-	The broadcast source period multiples, or 0 for a one-time broadcast. Depending on data size and baud/transfer rates,
-	some data may be dropped if this period is too short.
-	*/
-	uint32_t            bc_period_multiple;
+    /**	The broadcast source period multiple.  0 for a one-time broadcast.  */
+	uint16_t            period;
 } p_data_get_t;
-
-/** Represents the body of a disable broadcast for data id packet */
-typedef struct
-{
-	/** The packet identifier to disable broadcasts for */
-	uint32_t            id;
-} p_data_disable_t;
 
 /** Represents the body header of an ACK or NACK packet */
 typedef struct
 {
 	/** Packet info of the received packet */
-	uint32_t            pktInfo;
+	uint16_t            pktInfo;
 
 	/** Packet counter of the received packet */
-	uint32_t            pktCounter;
+	uint16_t            pktCounter;
 } p_ack_hdr_t;
 
 /** Represents the entire body of an ACK or NACK packet */
@@ -441,6 +466,40 @@ typedef struct
 	}					body;
 } p_ack_t, p_nack_t;
 
+/** Ublox binary packet header */
+typedef struct
+{
+	/** Packet start bytes, always 0x62b5 */
+	uint16_t            preamble;
+
+	/** Message class */
+	uint8_t             classId;
+
+	/** Message ID */
+	uint8_t             id;
+
+	/** Payload size */
+	uint16_t            payloadSize;
+
+} ubx_pkt_hdr_t;
+
+/** Sony binary packet header */
+typedef struct
+{
+	/** Packet start bytes, always 0x7F */
+	uint8_t             preamble;
+
+	/** Data size */
+	uint16_t            dataSize;
+
+	/** Opcode */
+	uint8_t             opc;
+
+	/** Header checksum */
+	uint8_t             fcsh;
+
+} sony_pkt_hdr_t;
+
 typedef struct
 {
 	/** Start of available buffer */
@@ -452,10 +511,10 @@ typedef struct
 	/** Size of buffer */
 	uint32_t size;
 
-	/** Start of data in buffer */
-	uint8_t* head;
+	/** Start of data in buffer. Data is read from here. */
+	uint8_t* head;	// TODO remove this once we have all of the separate parser points in place. WHJ
 
-	/** End of data in buffer */
+	/** End of data in buffer. New data is written here. */
 	uint8_t* tail;
 
 	/** Search pointer in data (head <= scan <= tail) */
@@ -463,65 +522,63 @@ typedef struct
 
 } is_comm_buffer_t;
 
+typedef enum
+{
+	ENABLE_PROTOCOL_ISB         = 0x00000001,
+	ENABLE_PROTOCOL_NMEA  	    = 0x00000002,
+	ENABLE_PROTOCOL_UBLOX       = 0x00000004,
+	ENABLE_PROTOCOL_RTCM3       = 0x00000008,
+	ENABLE_PROTOCOL_SPARTN      = 0x00000010,
+	ENABLE_PROTOCOL_SONY        = 0x00000020,
+} eProtocolMask;
+
 typedef struct  
 {
-	/** Enable protocol parsing: Inertial Sense binary */
-	uint8_t enableISB;
-
-	/** Enable protocol parsing: NMEA */
-	uint8_t enableASCII;
-
-	/** Enable protocol parsing: ublox */
-	uint8_t enableUblox;
-
-	/** Enable protocol parsing: RTCM3 */
-	uint8_t enableRTCM3;
+	/** See eProtocolMask */
+	uint32_t enabledMask;
 } is_comm_config_t;
+
+typedef struct  
+{
+	int16_t     state;
+	uint16_t    size;
+	uint32_t    timeMs;		// Time of last parse
+} is_comm_parser_t;
+
+typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
 {
-	/**
-	The buffer to use for communications send and receive - this buffer should be large enough to handle the largest data structure you expect * 2 + 32 for worst case packet encoding
-	A minimum of 128 is recommended. Set once before calling init.
-	*/		
-	is_comm_buffer_t buf;
+	/** Receive data buffer. Data received is aggregate into this buffer until an entire packet is read. */		
+	is_comm_buffer_t rxBuf;
 	
 	/** Enable/disable protocol parsing */
 	is_comm_config_t config;
 
-	/** Number of packets written */
+	/** Number of packets sent */
 	uint32_t txPktCount;
+
+	/** Number of valid packets received */
+	uint32_t rxPktCount;
 
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Start byte */
-	uint32_t hasStartByte;
+	/** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
+	pFnProcessPkt processPkt;
 
-	/** Used to validate ublox, RTCM, and NMEA packets */
-	int32_t parseState;
-
-	/** Time of last parse */
-	uint32_t parseTimeMs;
-
-	/** Data identifier (DID), size and offset */
-	p_data_hdr_t dataHdr;
-
-	/** Data pointer to start of valid data set */
-	uint8_t* dataPtr;
-
-	/** Packet pointer to start of valid packet */
-	uint8_t* pktPtr;
-	
-	/** Alternate buffer location to decode packets.  This buffer must be PKT_BUF_SIZE in size.  NULL value will caused packet decode to occurr at head of is_comm_instance_t.buf.  Using an alternate buffer will preserve the original packet (as used in EVB-2 com_bridge).  */
-	uint8_t* altDecodeBuf;
+	/** Protocol parser state */
+	is_comm_parser_t parser;
 
 	/** Acknowledge packet needed in response to the last packet received */
 	uint32_t ackNeeded;
 
-	/** IS binary packet */
-	packet_t pkt;
+	/** Receive packet */
+	packet_t rxPkt;
+
+	/** Used to prevent counting more than one error count between valid packets */
+	uint8_t rxErrorState;
 
 } is_comm_instance_t;
 
@@ -650,58 +707,108 @@ int is_comm_free(is_comm_instance_t* instance);
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to request the entire data structure
 */
-int is_comm_get_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
 
-/**
-* Encode a binary packet to get predefined list of data sets from the device - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
-* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
-* @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
-* @remarks pass an offset and length of 0 to request the entire data structure
-*/
-int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
+// /**
+// * Encode a binary packet to get predefined list of data sets from the device - puts the data ready to send into the buffer passed into is_comm_init
+// * @param comm the comm instance passed to is_comm_init
+// * @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
+// * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
+// * @remarks pass an offset and length of 0 to request the entire data structure
+// */
+// int is_comm_get_data_rmc(is_comm_instance_t* instance, uint64_t rmcBits);
 
 /**
 * Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
-* @param instance the comm instance passed to is_comm_init
-* @param dataId the data id to set on the device (see DID_* at top of this file)
-* @param offset the offset to start setting data at on the data structure on the device
+* @param comm the comm instance passed to is_comm_init
+* @param did the data id to set on the device (see DID_* at top of this file)
 * @param size the number of bytes to set on the data structure on the device
+* @param offset the offset to start setting data at on the data structure on the device
 * @param data the actual data to change on the data structure on the device - this should have at least size bytes available
 * @return the number of bytes written to the comm buffer (from is_comm_init), will be less than 1 if error
 * @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
 */
-int is_comm_set_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
+int is_comm_set_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
 * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
 */
-int is_comm_data(is_comm_instance_t* instance, uint32_t dataId, uint32_t offset, uint32_t size, void* data);
+int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
+int is_comm_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
-* Encode a binary packet to stop all messages being broadcast on the device on all ports - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
+* Encode a binary packet to stop all messages being broadcast on the device on all ports
+* @param comm the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_all_ports(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm);
 
 /**
-* Encode a binary packet to stop all messages being broadcast on the device on this port - puts the data ready to send into the buffer passed into is_comm_init
-* @param instance the comm instance passed to is_comm_init
+* Encode a binary packet to stop all messages being broadcast on the device on this port
+* @param comm the comm instance passed to is_comm_init
 * @return 0 if success, otherwise an error code
 */
-int is_comm_stop_broadcasts_current_port(is_comm_instance_t* instance);
+int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm);
+
+/**
+ * @brief Compute the fletcher 16 bit checksum for the given data array.
+ * 
+ * @param cksum_init initial value for the checksum.
+ * @param data data array used for checksum.
+ * @param size size of data arary.
+ * @return uint16_t 
+ */
+uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size);
+
+/**
+ * @brief Compute the xor 16 bit checksum for the given data array.
+ * 
+ * @param cksum_init initial value for the checksum.
+ * @param data data array used for checksum.
+ * @param size size of data arary.
+ * @return uint16_t 
+ */
+uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
+#define is_comm_isb_checksum16  is_comm_fletcher16
+// #define is_comm_isb_checksum16  is_comm_xor16
 
 
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
-// common encode / decode for com manager and simple interface
-int is_encode_binary_packet(void* srcBuffer, unsigned int srcBufferLength, packet_hdr_t* hdr, uint8_t additionalPktFlags, void* encodedPacket, int encodedPacketLength);
-int is_decode_binary_packet(packet_t *pkt, unsigned char* pbuf, int pbufSize);
-int is_decode_binary_packet_byte(uint8_t** _ptrSrc, uint8_t** _ptrDest, uint32_t* checksum, uint32_t shift);
-void is_decode_binary_packet_footer(packet_ftr_t* ftr, uint8_t* ptrSrc, uint8_t** ptrSrcEnd, uint32_t* checksum);
-void is_enable_packet_encoding(int enabled); // default is enabled
+
+/**
+ * @brief Encode ISB InertialSense binary (ISB) packet header.
+ * 
+ * @param pkt Packet storage location.
+ * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
+ * @param did ISB data ID
+ * @param data_size Size in bytes of the payload data.
+ * @param offset Offset of the payload data into the data set structure.
+ * @param data Pointer to payload data.
+ */
+void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+// Returns number of bytes written
+int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt);
+
+
+/**
+ * @brief Generate InertialSense binary (ISB) packet.
+ * 
+ * @param buf Buffer to write to.
+ * @param buf_size Available size of buffer.
+ * @param comm ISComm instance.
+ * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
+ * @param did ISB data ID
+ * @param data_size Size in bytes of the payload data.
+ * @param offset Offset of the payload data into the data set structure.
+ * @param data Pointer to payload data.
+ * @return number of bytes written 
+ */
+int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
@@ -713,22 +820,23 @@ char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int max
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
+char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);
 
-// Indicates whether there is overlap in the data received and the backing data structure
+/** Indicates whether there is overlap in the data received and the backing data structure */
 static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_t* src)
 {
-	return _MAX(dstOffset, src->hdr.offset) < _MIN(dstOffset + dstSize, src->hdr.offset + src->hdr.size);
+	return _MAX(dstOffset, (uint32_t)(src->hdr.offset)) < _MIN(dstOffset + dstSize, (uint32_t)(src->hdr.offset + src->hdr.size));
 }
 
 /** Reset parser state */
 static inline void is_comm_reset_parser(is_comm_instance_t* c)
 {
-	c->parseState = 0;
-	c->buf.scan = c->buf.head;
-	c->hasStartByte = 0;
+	c->parser.state = 0;
+	c->rxBuf.scan = c->rxBuf.head;
+	c->processPkt = NULL;
 }
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
@@ -741,4 +849,4 @@ int validateBaudRate(unsigned int baudRate);
 }
 #endif
 
-#endif // IS_SIMPLE_INTERFACE_H
+#endif // IS_COMM_H

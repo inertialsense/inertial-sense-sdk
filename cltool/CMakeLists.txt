@@ -1,13 +1,38 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-# Required: set the project
 project(cltool)
 
-# Required: set SOURCES_PROJECT to the code in this project, the files must go on their own lines
-set(SOURCES_PROJECT "${CMAKE_CURRENT_LIST_DIR}/main.cpp")
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 
-# Optional: add any libraries this project needs
-#set(PROJECT_LIBS "")
+# find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR} ${IS_SDK_DIR}/build ${IS_SDK_DIR}/build/Release)
+find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
+    # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
+    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+# else()
+#     link_directories(${IS_SDK_DIR}/Build/Release)
+endif()
 
-# Everything is setup, use common template to build
-include(../CMakeCommon.txt)
+# Include InertialSenseSDK header files
+include_directories(
+    ${IS_SDK_DIR}/src
+    ${IS_SDK_DIR}/src/libusb/libusb
+)
+
+# Link the InertialSenseSDK static library 
+link_directories(${IS_SDK_DIR})
+
+if(WIN32)
+    # yamlcpp needs to know it's a static lib
+    add_definitions(-DYAML_CPP_STATIC_DEFINE)
+endif()
+
+# Define the executable
+add_executable(${PROJECT_NAME} main.cpp)
+
+# Find pthread package
+find_package(Threads REQUIRED)
+
+# Link InertialSenseSDK static library to the executable
+target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
+

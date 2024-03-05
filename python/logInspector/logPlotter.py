@@ -6,7 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from os.path import expanduser
 from inertialsense_math.pose import *
-from datetime import date
+from datetime import date, datetime
+import pandas as pd
+
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -24,7 +26,8 @@ DEG2RAD = 3.14159 / 180.0
 RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 
 SHOW_GPS2 = 0
-SHOW_GPS_W_INS = 0
+SHOW_GPS_W_INS = 1
+SHOW_HEADING_ARROW = 0
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
@@ -140,7 +143,7 @@ class logPlot:
 
         for d in self.active_devs:
             if refLla is None:
-                refLla = self.getData(d, DID_INS_2, 'lla')[0]
+                refLla = self.getData(d, DID_INS_2, 'lla')[-1]
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
@@ -216,7 +219,7 @@ class logPlot:
             if len(lla) == 0:
                 continue
             if refLla is None:
-                refLla = lla[0]
+                refLla = lla[-1]
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
@@ -392,34 +395,87 @@ class logPlot:
     def gpsVelNED(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(4,1, sharex=True)
-        self.configureSubplot(ax[0], 'GPS Velocity North', 'm/s')
-        self.configureSubplot(ax[1], 'GPS Velocity East', 'm/s')
-        self.configureSubplot(ax[2], 'GPS Velocity Down', 'm/s')
-        self.configureSubplot(ax[3], 'GPS Speed', 'm/s')
+        ax = fig.subplots(4, (2 if self.residual else 1), sharex=True, squeeze=False)
+        self.configureSubplot(ax[0,0], 'GPS Velocity North', 'm/s')
+        self.configureSubplot(ax[1,0], 'GPS Velocity East', 'm/s')
+        self.configureSubplot(ax[2,0], 'GPS Velocity Down', 'm/s')
+        self.configureSubplot(ax[3,0], 'GPS Speed', 'm/s')
         fig.suptitle('GPS Velocity NED - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
+        refTime = None
+        refVelNed = None
+        sumDelta = None
+        sumCount = 1
+
+        if self.residual:
+            self.configureSubplot(ax[0,1], 'Vel North Residual (GPS - Mean)', 'm/s')
+            self.configureSubplot(ax[1,1], 'Vel East Residual (GPS - Mean)',  'm/s')
+            self.configureSubplot(ax[2,1], 'Vel Down Residual (GPS - Mean)',  'm/s')
+            self.configureSubplot(ax[3,1], 'Speed Residual (GPS - Mean)',  'm/s')
+            # Use 'Ref INS' if available
+            for d in self.active_devs:
+               if self.log.serials[d] == 'Ref INS':
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    refVelNed = self.getData(d, DID_INS_2, 'lla')[0]
+                    continue
+            # 'Ref INS' is not available. Compute reference from average GPS.
+            if refTime is None:
+                for d in self.active_devs:
+                    refLla = self.getData(d, DID_GPS1_POS, 'lla')[-1]
+                    continue
+
+                for d in self.active_devs:
+                    [gpsTime, gpsVelNed] = self.getGpsVelNed(d, DID_GPS1_VEL, refLla)
+                    if refTime is None:
+                        refTime = gpsTime
+                        refVelNed = np.copy(gpsVelNed)
+                        sumDelta = np.zeros_like(gpsVelNed)
+                    else:
+                        intVelNed = np.empty_like(refVelNed)
+                        for i in range(3):
+                            intVelNed[:,i] = np.interp(refTime, gpsTime, gpsVelNed[:,i])
+                        delta = intVelNed - refVelNed
+                        sumDelta += delta
+                        sumCount += 1
+                refVelNed += sumDelta / sumCount
+        
         for d in self.active_devs:
             if refLla is None:
                 refLla = self.getData(d, DID_GPS1_POS, 'lla')[-1]
             [gpsTime, gpsVelNed] = self.getGpsVelNed(d, DID_GPS1_VEL, refLla)
             gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
-            ax[0].plot(gpsTime, gpsVelNed[:, 0], label=self.log.serials[d])
-            ax[1].plot(gpsTime, gpsVelNed[:, 1])
-            ax[2].plot(gpsTime, gpsVelNed[:, 2])
-            ax[3].plot(gpsTime, gpsVelNorm)
+            ax[0,0].plot(gpsTime, gpsVelNed[:, 0])
+            ax[1,0].plot(gpsTime, gpsVelNed[:, 1])
+            ax[2,0].plot(gpsTime, gpsVelNed[:, 2])
+            ax[3,0].plot(gpsTime, gpsVelNorm, label=self.log.serials[d])
 
             if SHOW_GPS2:
                 [gps2Time, gps2VelNed] = self.getGpsVelNed(d, DID_GPS2_VEL, refLla)
                 gps2VelNorm = np.linalg.norm(gps2VelNed, axis=1)
-                ax[0].plot(gps2Time, gps2VelNed[:, 0], label=("%s GPS2" % (self.log.serials[d])))
-                ax[1].plot(gps2Time, gps2VelNed[:, 1])
-                ax[2].plot(gps2Time, gps2VelNed[:, 2])
-                ax[3].plot(gps2Time, gps2VelNorm)
+                ax[0,0].plot(gps2Time, gps2VelNed[:, 0])
+                ax[1,0].plot(gps2Time, gps2VelNed[:, 1])
+                ax[2,0].plot(gps2Time, gps2VelNed[:, 2])
+                ax[3,0].plot(gps2Time, gps2VelNorm, label=("%s GPS2" % (self.log.serials[d])))
 
-        ax[0].legend(ncol=2)
+            if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
+                intVelNed = np.empty_like(refVelNed)
+                for i in range(3):
+                    intVelNed[:,i] = np.interp(refTime, gpsTime, gpsVelNed[:,i], right=np.nan, left=np.nan)
+                resNed = intVelNed - refVelNed
+                resVelNorm = np.linalg.norm(resNed, axis=1)
+                ax[0,1].plot(refTime, resNed[:,0])
+                ax[1,1].plot(refTime, resNed[:,1])
+                ax[2,1].plot(refTime, resNed[:,2])
+                ax[3,1].plot(refTime, resVelNorm, label=self.log.serials[d])
+
+        ax[3,0].legend(ncol=2)
+        if self.residual: 
+            ax[0,1].legend(ncol=2)
+            for i in range(3):
+                self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
-            a.grid(True)
+            for b in a:
+                b.grid(True)
         self.saveFig(fig, 'gpsVelNED')
         
     def getGpsNedVel(self, d):
@@ -473,19 +529,19 @@ class logPlot:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
             insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
             insVelNorm = np.linalg.norm(insVelNed, axis=1)
-            ax[0,0].plot(time, insVelNed[:,0], label=self.log.serials[d])
+            ax[0,0].plot(time, insVelNed[:,0])
             ax[1,0].plot(time, insVelNed[:,1])
             ax[2,0].plot(time, insVelNed[:,2])
-            ax[3,0].plot(time, insVelNorm)
+            ax[3,0].plot(time, insVelNorm, label=self.log.serials[d])
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
                 gpsVelNed = self.getGpsNedVel(d)
                 gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
-                ax[0,0].plot(timeGPS, gpsVelNed[:, 0], label=('%s GPS' % self.log.serials[d]))
+                ax[0,0].plot(timeGPS, gpsVelNed[:, 0])
                 ax[1,0].plot(timeGPS, gpsVelNed[:, 1])
                 ax[2,0].plot(timeGPS, gpsVelNed[:, 2])
-                ax[3,0].plot(timeGPS, gpsVelNorm)
+                ax[3,0].plot(timeGPS, gpsVelNorm, label=('%s GPS' % self.log.serials[d]))
 
             if self.residual and not (refTime is None) and self.log.serials[d] != 'Ref INS': 
                 intVelNed = np.empty_like(refVelNed)
@@ -493,12 +549,12 @@ class logPlot:
                     intVelNed[:,i] = np.interp(refTime, time, insVelNed[:,i], right=np.nan, left=np.nan)
                 resNed = intVelNed - refVelNed
                 resVelNorm = np.linalg.norm(resNed, axis=1)
-                ax[0,1].plot(refTime, resNed[:,0], label=self.log.serials[d])
+                ax[0,1].plot(refTime, resNed[:,0])
                 ax[1,1].plot(refTime, resNed[:,1])
                 ax[2,1].plot(refTime, resNed[:,2])
-                ax[3,1].plot(refTime, resVelNorm)
+                ax[3,1].plot(refTime, resVelNorm, label=self.log.serials[d])
 
-        ax[0,0].legend(ncol=2)
+        ax[3,0].legend(ncol=2)
         if self.residual: 
             ax[0,1].legend(ncol=2)
             for i in range(3):
@@ -691,6 +747,32 @@ class logPlot:
                 b.grid(True)
         self.saveFig(fig, 'attINS')
 
+    def gpx1Heading(self):
+        filepath = self.log.directory + "/enu.out"
+        df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+
+        df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+        df['datetime'] = pd.to_datetime(df['datetime'] , format = '%Y/%m/%d %H:%M:%S.%f')
+
+        baselineE = df['e-baseline'].values
+        baselineN = df['n-baseline'].values
+        baselineU = df['u-baseline'].values
+        baselineNED = np.array([baselineN, baselineE, -baselineU]).T
+
+        gpxTime = np.zeros_like(baselineNED[:,1])
+        for index, elem in np.ndenumerate(gpxTime):
+            i = index[0]
+            gpxTime[i] = (df['datetime'][i] - datetime.datetime(1980,1,6)).total_seconds() % 604800.0
+
+        # Throw away first sample
+        n = 20
+        gpxTime = gpxTime[n:]
+        baselineNED = baselineNED[n:,:]
+
+        gpxHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+        return gpxTime, baselineNED, gpxHeading, 
+
+
     def heading(self, fig=None):
         if fig is None:
             fig = plt.figure()
@@ -700,9 +782,56 @@ class logPlot:
         self.configureSubplot(ax[1,0], 'RTK Compassing', 'deg')
         self.configureSubplot(ax[2,0], 'INS Heading', 'deg')
 
+        refRtkTime = None
+        refInsTime = None
+        
         if self.residual:
             self.configureSubplot(ax[0,1], 'Heading Residual: Magnetic - INS', 'deg')
-            self.configureSubplot(ax[1,1], 'Heading Residual: RTK - INS', 'deg')
+            self.configureSubplot(ax[1,1], 'Heading Residual: RTK - Mean', 'deg')
+            self.configureSubplot(ax[2,1], 'Heading Residual: INS - Mean', 'deg')
+
+            # Reference RTK heading does not exist.  Compute reference from average RTK heading.
+            if refRtkTime is None:
+                sumDelta = None
+                sumCount = 1
+
+                for d in self.active_devs:
+                    gpsTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
+                    gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
+                    if refRtkTime is None:
+                        refRtkTime = gpsTime
+                        refRtkHdg = np.copy(gpsHdg)
+                        sumDelta = np.zeros_like(gpsHdg)
+                    else:
+                        unwrapRtkHdg = self.angle_unwrap(gpsHdg)
+                        intRtkHdg = np.interp(refRtkTime, gpsTime, unwrapRtkHdg)
+                        delta = self.angle_wrap(intRtkHdg - refRtkHdg)
+                        sumDelta += delta
+                        sumCount += 1
+                refRtkHdg += sumDelta / sumCount
+
+            # Reference INS does not exist.  Compute reference from average INS.
+            if refInsTime is None:
+                sumDelta = None
+                sumCount = 1
+                for d in self.active_devs:
+                    time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    # Adjust data for attitude bias
+                    quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
+                    euler = quat2euler(quat)
+                    if refInsTime is None:
+                        refInsTime = time
+                        refEuler = np.copy(euler)
+                        sumDelta = np.zeros_like(euler)
+                    else:
+                        unwrapEuler = self.vec3_unwrap(euler)
+                        intEuler = np.empty_like(refEuler)
+                        for i in range(3):
+                            intEuler[:,i] = np.interp(refInsTime, time, unwrapEuler[:,i])
+                        delta = self.vec3_wrap(intEuler - refEuler)
+                        sumDelta += delta
+                        sumCount += 1
+                refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
             magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'))
@@ -727,9 +856,31 @@ class logPlot:
                     ax[0,1].plot(insTime, resMagHdg*RAD2DEG)
                 if gpsTime.any():
                     unwrapGpsHdg = self.angle_unwrap(gpsHdg)
-                    intGpsHdg = np.interp(insTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
-                    resGpsHdg = self.angle_wrap(intGpsHdg - insHdg)
-                    ax[1,1].plot(insTime, resGpsHdg*RAD2DEG)
+                    intInsHdg = np.interp(refRtkTime, gpsTime, unwrapGpsHdg, right=np.nan, left=np.nan)
+                    resInsHdg = self.angle_wrap(intInsHdg - refRtkHdg)
+                    ax[1,1].plot(refRtkTime, resInsHdg*RAD2DEG)
+                if not (refInsTime is None) and self.log.serials[d] != 'Ref INS': 
+                    unwrapEuler = self.vec3_unwrap(euler)
+                    intEuler = np.empty_like(refEuler)
+                    for i in range(3):
+                        intEuler[:,i] = np.interp(refInsTime, insTime, unwrapEuler[:,i], right=np.nan, left=np.nan)
+                    resEuler = self.vec3_wrap(intEuler - refEuler)
+                    ax[2,1].plot(refInsTime, resEuler[:,2]*RAD2DEG)
+
+        # if 0:
+        #     gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
+
+        #     gpsHdg_unwrap = self.angle_unwrap(gpsHdg)
+        #     gpxHdg_unwrap = self.angle_unwrap(gpxHeading)
+        #     gpxHeadingTruth = np.interp(gpxTime, gpsTime, gpsHdg_unwrap, right=np.nan, left=np.nan)
+        #     gpsHeadingErrDeg = self.angle_wrap(gpxHdg_unwrap - gpxHeadingTruth)*RAD2DEG
+        #     gpxRms = np.sqrt(np.mean(np.square(gpsHeadingErrDeg)))
+        #     self.configureSubplot(ax[0], 'RTK Compassing Error: ' + f'{gpxRms:.3}' + ' deg RMS', 'deg')
+
+        #     ax[1].plot(gpxTime, gpxHeading*RAD2DEG, label='GPX')
+        #     ax[1].legend(ncol=2)
+        #     ax[0].plot(gpxTime, gpsHeadingErrDeg, label='GPX - F9P')
+        #     ax[0].legend(ncol=2)
 
         ax[2,0].legend(ncol=2)
         for a in ax:
@@ -1058,6 +1209,274 @@ class logPlot:
         self.saveFig(fig, 'rtk'+name+'Stats')
         # except:
             # print(RED + "problem plotting rtkStats: " + sys.exc_info()[0] + RESET)
+
+    def rtkBaselineVector(self, fig=None):
+        name = "Compassing"
+        relDid = DID_GPS1_RTK_CMP_REL
+
+        # try:
+        n_plots = 2
+        if fig is None:
+            fig = plt.figure()
+
+        ax = fig.subplots(n_plots, 1, sharex=True)
+        fig.suptitle('RTK ' + name + ' Stats - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        self.configureSubplot(ax[0], 'Base to Rover N', 'm')
+        self.configureSubplot(ax[1], 'Base to Rover E', 'm')
+
+        for i, d in enumerate(self.active_devs):
+            rtkRelTime = getTimeFromTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
+            gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+            gpsLla = self.getData(d, DID_GPS1_POS, 'lla')
+            baseToRoverECEF = self.getData(d, relDid, 'baseToRoverVector')
+
+            qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
+            baselineNED = quatConjRot(qe2n, baseToRoverECEF)
+            # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+
+            ax[0].plot(rtkRelTime, baselineNED[:,0])
+            ax[1].plot(rtkRelTime, baselineNED[:,1])
+
+            gpxTime, gpxBaselineNED, gpxHeading = self.gpx1Heading()
+
+            ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
+            ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
+
+            ax[0].legend(ncol=2)
+
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'rtk'+name+'BaseToRoverVector')
+
+    def rtkObsGPS1(self, fig=None):
+        self.rtkObs("Compassing", DID_GPS1_RAW, fig=fig)
+
+    def rtkObsGPS2(self, fig=None):
+        self.rtkObs("Compassing", DID_GPS2_RAW, fig=fig)
+
+    def rtkObs(self, name, relDid, fig=None):
+        Nf = 2
+        n_plots = 8
+        if fig is None:
+            fig = plt.figure()
+
+        ax = fig.subplots(n_plots, 1, sharex=True)
+        fig.suptitle('GNSS Receiver Observations')
+        self.configureSubplot(ax[0], 'L1 Pseudorange', 'm')
+        self.configureSubplot(ax[1], 'L5 Pseudorange', 'm')
+        self.configureSubplot(ax[2], 'L1 Carier Phase', 'cycles')
+        self.configureSubplot(ax[3], 'L5 Carier Phase', 'cycles')
+        self.configureSubplot(ax[4], 'L1 Doppler')
+        self.configureSubplot(ax[5], 'L5 Doppler')
+        self.configureSubplot(ax[6], 'L1 LLI')
+        self.configureSubplot(ax[7], 'L5 LLI')
+
+        for i, d in enumerate(self.active_devs):
+            gps_data = self.log.data[d, relDid][0]
+            N = len(gps_data)
+
+            # Build satellite array
+            sat = np.empty(0, dtype=int)
+            for j in range(N):
+                obs = gps_data[j]
+                M = len(obs)
+                for k in range(M):
+                    sat_k = obs['sat'][k]
+                    # add satellite if not in the list and if L1 observations are valid
+                    if ( sat_k != 0 and (sat_k not in sat) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                        sat = np.append(sat, sat_k)
+
+            Nsat = len(sat)
+            tgps = np.zeros([N, Nsat])
+            P = np.empty([Nf, N, Nsat])
+            L = np.empty([Nf, N, Nsat])
+            D = np.empty([Nf, N, Nsat])
+            LLI  = np.empty([Nf, N, Nsat])
+            P[:] = np.nan
+            L[:] = np.nan
+            D[:] = np.nan
+            LLI[:]  = np.nan
+
+            # Fill observation arrays
+            for j in range(N):
+                obs = gps_data[j]
+                M = len(obs)
+                for k in range(M):
+                    sat_k = obs['sat'][k]
+                    if sat_k == 0:
+                        continue
+                    indo = np.where(obs['sat'] == sat_k)
+                    inds = np.where(sat == sat_k)
+                    if np.size(indo) == 0 or np.size(inds) == 0:
+                        continue
+                    indo = indo[0][0]
+                    inds = inds[0][0]
+                    tgps[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
+                    # Use only non-zero pseudorange and phase
+                    indP = np.where(obs['P'][indo] != 0)
+                    indL = np.where(obs['L'][indo] != 0)
+                    indD = np.where(obs['D'][indo] != 0)
+                    if np.size(indP) > 0 and np.size(indL) > 0:
+                        P[indP,j,inds] = obs['P'][indo][indP]
+                        L[indL,j,inds] = obs['L'][indo][indL]
+                        D[indD,j,inds] = obs['D'][indo][indD]
+                        LLI[:,j,inds]  = obs['LLI'][indo]
+
+            for k in range(len(sat)):
+                ind = np.where(tgps[:,k] != 0.0)
+                # Do not plot satellites with invalid L1 pseudorange
+                if np.isnan(P[0,ind,k]).all():
+                    continue
+                # Do not plot satellites with invalid L1 phase
+                if np.isnan(L[0,ind,k]).all():
+                    continue
+                t = np.squeeze(tgps[ind, k])
+                ax[0].plot(t, np.squeeze(P[0,ind,k]), label=('Sat %s' % sat[k]))
+                ax[1].plot(t, np.squeeze(P[1,ind,k]))
+                ax[2].plot(t, np.squeeze(L[0,ind,k]))
+                ax[3].plot(t, np.squeeze(L[1,ind,k]))
+                ax[4].plot(t, np.squeeze(D[0,ind,k]))
+                ax[5].plot(t, np.squeeze(D[1,ind,k]))
+                ax[6].plot(t, np.squeeze(LLI[0,ind,k]))
+                ax[7].plot(t, np.squeeze(LLI[1,ind,k]))
+                ax[0].legend(ncol=2)
+
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'rtk'+name+'obs_sd')
+
+    def rtkObsSingleDiff(self, fig=None):
+        name = "Compassing"
+        Nf = len(self.log.data[0, DID_GPS1_RAW][0][0]['P'][0])
+        n_plots = 4
+        if fig is None:
+            fig = plt.figure()
+
+        ax = fig.subplots(n_plots, 1, sharex=True)
+        fig.suptitle('RTK Rover-Base Single Differences')
+        self.configureSubplot(ax[0], 'L1 Pseudorange difference', 'm')
+        self.configureSubplot(ax[1], 'L5 Pseudorange difference', 'm')
+        self.configureSubplot(ax[2], 'L1 Carier phase difference', 'cycles')
+        self.configureSubplot(ax[3], 'L5 Carier phase difference', 'cycles')
+
+        for id_, d in enumerate(self.active_devs):
+
+            gps1_data = self.log.data[d, DID_GPS1_RAW][0]
+            gps2_data = self.log.data[d, DID_GPS2_RAW][0]
+
+            # Reassemble multiple chunks of data by timestamp
+            t1 = np.empty(0)
+            del_ind = np.empty(0)
+            for j in range(len(gps1_data)):
+                ind = np.where(gps1_data[j]['time']['time'] != 0)[0][0]
+                if np.size(ind) == 0:
+                    del_ind = np.append(del_ind, j)
+                    continue
+                t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
+                if j > 0 and t_ == t1[-1]:
+                    # add chunk to the previous data and mark for deletion
+                    gps1_data[j-1] = np.append(gps1_data[j-1], gps1_data[j])
+                    del_ind = np.append(del_ind, j)
+                    continue
+                else:
+                    # new data
+                    t1 = np.append(t1, t_)
+            gps1_data = np.delete(gps1_data, del_ind)
+
+            t2 = np.empty(0)
+            del_ind = np.empty(0)
+            for j in range(len(gps2_data)):
+                ind = np.where(gps2_data[j]['time']['time'] != 0)[0][0]
+                if np.size(ind) == 0:
+                    del_ind = np.append(del_ind, j)
+                    continue
+                t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
+                if j > 0 and t_ == t2[-1]:
+                    # add chunk to the previous data and mark for deletion
+                    gps2_data[j-1] = np.append(gps2_data[j-1], gps2_data[j])
+                    del_ind = np.append(del_ind, j)
+                    continue
+                else:
+                    # new data
+                    t2 = np.append(t2, t_)
+            gps2_data = np.delete(gps2_data, del_ind)
+
+            N1 = len(gps1_data)
+            N2 = len(gps2_data)
+            if (N1 != N2): continue
+
+            # Build common satellite array for gps1 and gps2
+            sat = np.empty(0, dtype=int)
+            for j in range(N1):
+                obs = gps1_data[j]
+                M = len(obs)
+                for k in range(M):
+                    sat_k = obs['sat'][k]
+                    # add satellite if not in the list and if L1 observations are valid
+                    if ( sat_k != 0 and (sat_k not in sat) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                        sat = np.append(sat, sat_k)
+            sat2 = np.empty(0, dtype=int)
+            for j in range(N2):
+                obs = gps2_data[j]
+                M = len(obs)
+                for k in range(M):
+                    sat_k = obs['sat'][k]
+                    # add satellite if not in the list and if L1 observations are valid
+                    if ( sat_k != 0 and (sat_k not in sat2) and 
+                         obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
+                        sat2 = np.append(sat2, sat_k)
+            del_ind = np.empty(0)
+            for is_, j in enumerate(sat):
+                if j not in sat2:
+                    del_ind = np.append(del_ind, is_)
+            sat = np.delete(sat, del_ind)
+
+            Nsat = len(sat)
+            delta_P = np.empty([Nf, N1, Nsat])
+            delta_L = np.empty([Nf, N1, Nsat])
+            delta_P[:] = np.nan
+            delta_L[:] = np.nan
+
+            # Compute single differences
+            for j in range(N1):
+                obs1 = gps1_data[j]
+                obs2 = gps2_data[j]
+                if (t2[j] != t1[j]): 
+                    continue
+                for k in range(Nsat):
+                    sat_k = sat[k]
+                    # is this satellite present in both gps1 and gps2 data?
+                    ind1 = np.where(obs1['sat'] == sat_k)
+                    ind2 = np.where(obs2['sat'] == sat_k)
+                    if np.size(ind1) == 0 or np.size(ind2) == 0:
+                        continue
+                    ind1 = ind1[0][0]
+                    ind2 = ind2[0][0]
+
+                    # Use only non-zero pseudorange and phase
+                    indval1 = np.where(obs1['P'][ind1] != 0)
+                    indval2 = np.where(obs2['P'][ind2] != 0)
+                    if np.size(indval1) > 0 and np.size(indval2) > 0:
+                        delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
+                        delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
+
+            for k in range(Nsat):
+                # Do not plot satellites that appeared only for a short time
+                ind = np.where(delta_P[0,:,k] > 0)
+                if (np.size(ind) / N1) < 0.1 and len(ind) < 100:
+                    continue
+                ax[0].plot(t1, delta_P[0,:,k], label=('Sat %s' % sat[k]))
+                ax[1].plot(t1, delta_P[1,:,k])
+                ax[2].plot(t1, delta_L[0,:,k])
+                ax[3].plot(t1, delta_L[1,:,k])
+
+                ax[0].legend(ncol=2)
+
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'rtk'+name+'obs_sd')
 
     def rtkPosMisc(self, fig=None):
         self.rtkMisc("Position", DID_GPS1_RTK_POS_MISC, fig=fig)

@@ -10,8 +10,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <ctime>
+#include <inttypes.h>
+#include <math.h>
+#include <stdio.h>
 #include <time.h>
+#include <ctime>
 #include <string>
 #include <sstream>
 #include <sys/types.h>
@@ -19,7 +22,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <iomanip>
 #include <iostream>
 #include <fstream>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 
@@ -32,9 +34,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 
 #ifdef USE_IS_INTERNAL
-#	include "../../cpp/libs/IS_internal.h"
+#	include "../../cpp/libs/families/imx/IS_internal.h"
 #endif
-
 
 cDataKML::cDataKML()
 {
@@ -55,12 +56,6 @@ std::string cDataKML::GetDatasetName(int kid)
     case KID_RTK:               return "rtk";
 	}
 }
-
-
-#include <inttypes.h>
-#include <math.h>
-#include <stdio.h>
-#include <time.h>
 
 int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
@@ -94,7 +89,7 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
         data = sKmlLogData(d.ins3.timeOfWeek, d.ins3.lla, theta, deadreckoning);
 		break;
 	case DID_GPS1_POS:
-	case DID_GPS1_UBX_POS:
+	case DID_GPS1_RCVR_POS:
 	case DID_GPS2_POS:
         data = sKmlLogData(d.gpsPos.timeOfWeekMs, d.gpsPos.lla);
 		break;
@@ -107,5 +102,3 @@ int cDataKML::WriteDataToFile(std::vector<sKmlLogData>& list, const p_data_hdr_t
 
     return 0;
 }
-
-

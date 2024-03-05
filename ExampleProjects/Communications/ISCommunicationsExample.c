@@ -17,7 +17,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISPose.h"
+#include "../../src/ISUtilities.h"
 
+static serial_port_t s_serialPort;
 static int running = 1;
 
 static void handleIns1Message(ins_1_t* ins)
@@ -52,13 +54,21 @@ static void handleImuMessage(imu_t* imu)
 		imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
+static int portWrite(int port, const unsigned char* buf, int len)
+{
+	return serialPortWrite(&s_serialPort, buf, len);
+}
+
+static int portRead(int port, unsigned char* buf, int len)
+{
+	return serialPortRead(&s_serialPort, buf, len);
+}
 
 int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	int n = is_comm_set_data(comm, _DID_FLASH_CONFIG, offsetof(nvm_flash_cfg_t, insRotation), sizeof(float) * 3, rotation);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (!is_comm_set_data(portWrite, 0, comm, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation))
 	{
 		printf("Failed to encode and write set INS rotation\r\n");
 		return -3;
@@ -71,8 +81,7 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Stop all broadcasts on the device
-	int n = is_comm_stop_broadcasts_all_ports(comm);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (!is_comm_stop_broadcasts_all_ports(portWrite, 0, comm))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -87,8 +96,7 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 	cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
 	cfg.invCommand = ~cfg.command;
 
-	int n = is_comm_set_data(comm, DID_SYS_CMD, 0, sizeof(system_command_t), &cfg);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (!is_comm_set_data(portWrite, 0, comm, DID_SYS_CMD, 0, 0, &cfg))
 	{
 		printf("Failed to write save persistent message\r\n");
 		return -3;
@@ -100,9 +108,7 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-	int n;
-	n = is_comm_get_data(comm, _DID_INS_LLA_EULER_NED, 0, 0, 10);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (!is_comm_get_data(portWrite, 0, comm, DID_INS_1, 0, 0, 10))
 	{
 		printf("Failed to encode and write get INS message\r\n");
 		return -4;
@@ -110,8 +116,7 @@ int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *c
 
 #if 1
 	// Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-	n = is_comm_get_data(comm, _DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (!is_comm_get_data(portWrite, 0, comm, DID_GPS1_POS, 0, 0, 1))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -120,8 +125,7 @@ int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *c
 
 #if 0
 	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-	n = is_comm_get_data(comm, _DID_IMU, 0, 0, 100);
-	if (n != serialPortWrite(serialPort, comm->buf.start, n))
+	if (!is_comm_get_data(portWrite, 0, comm, DID_IMU, 0, 0, 100))
 	{
 		printf("Failed to encode and write get IMU message\r\n");
 		return -6;
@@ -140,7 +144,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
@@ -148,19 +151,17 @@ int main(int argc, char* argv[])
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
 	is_comm_init(&comm, buffer, sizeof(buffer));
 
-
 	// STEP 3: Initialize and open serial port
-	serial_port_t serialPort;
 
 	// Initialize the serial port (Windows, MAC or Linux) - if using an embedded system like Arduino,
 	//  you will need to handle the serial port creation, open and reads yourself. In this
 	//  case, you do not need to include serialPort.h/.c and serialPortPlatform.h/.c in your project.
-	serialPortPlatformInit(&serialPort);
+	serialPortPlatformInit(&s_serialPort);
 
 	// Open serial, last parameter is a 1 which means a blocking read, you can set as 0 for non-blocking
 	// you can change the baudrate to a supported baud rate (IS_BAUDRATE_*), make sure to reboot the uINS
 	//  if you are changing baud rates, you only need to do this when you are changing baud rates.
-	if (!serialPortOpen(&serialPort, argv[1], IS_BAUDRATE_921600, 1))
+	if (!serialPortOpen(&s_serialPort, argv[1], IS_BAUDRATE_921600, 1))
 	{
 		printf("Failed to open serial port on com port %s\r\n", argv[1]);
 		return -2;
@@ -170,7 +171,7 @@ int main(int argc, char* argv[])
 	int error;
 
 	// STEP 4: Stop any message broadcasting
-	if ((error = stop_message_broadcasting(&serialPort, &comm)))
+	if ((error = stop_message_broadcasting(&s_serialPort, &comm)))
 	{
 		return error;
 	}
@@ -185,7 +186,7 @@ int main(int argc, char* argv[])
 
 
 	// STEP 6: Enable message broadcasting
-	if ((error = enable_message_broadcasting(&serialPort, &comm)))
+	if ((error = enable_message_broadcasting(&s_serialPort, &comm)))
 	{
 		return error;
 	}
@@ -204,27 +205,28 @@ int main(int argc, char* argv[])
 	while (running)
 	{
 		// Read one byte with a 20 millisecond timeout
-		while ((count = serialPortReadCharTimeout(&serialPort, &inByte, 20)) > 0)
+		while ((count = serialPortReadCharTimeout(&s_serialPort, &inByte, 20)) > 0)
 		{
+			// timeMs = current_timeMs();
 			switch (is_comm_parse_byte(&comm, inByte))
 			{
 			case _PTYPE_INERTIAL_SENSE_DATA:
-				switch (comm.dataHdr.id)
+				switch (comm.rxPkt.hdr.id)
 				{
-				case _DID_INS_LLA_EULER_NED:
-					handleIns1Message((ins_1_t*)comm.dataPtr);
+				case DID_INS_1:
+					handleIns1Message((ins_1_t*)comm.rxPkt.data.ptr);
 					break;
 
 				case DID_INS_2:
-					handleIns2Message((ins_2_t*)comm.dataPtr);
+					handleIns2Message((ins_2_t*)comm.rxPkt.data.ptr);
 					break;
 
-				case _DID_GPS1_POS:
-					handleGpsMessage((gps_pos_t*)comm.dataPtr);
+				case DID_GPS1_POS:
+					handleGpsMessage((gps_pos_t*)comm.rxPkt.data.ptr);
 					break;
 
-				case _DID_IMU:
-					handleImuMessage((imu_t*)comm.dataPtr);
+				case DID_IMU:
+					handleImuMessage((imu_t*)comm.rxPkt.data.ptr);
 					break;
 
 					// TODO: add other cases for other data ids that you care about

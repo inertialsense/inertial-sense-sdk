@@ -1,40 +1,89 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.13)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-# Required: set the project
-project(InertialSense)
+project(InertialSenseSDK)
 
-# Required: set PROJECT_NAME to the same name as project in case of a multi-file build
-set(PROJECT_NAME "InertialSense")
+file(GLOB SOURCES_SDK
+	"src/*.c"
+	"src/*.cpp"
+	"src/*.h"
+    "src/protocol/*.cpp"
+    "src/protocol/*.h"
+    "src/util/*.cpp"
+    "src/util/*.h"
+	"hw-libs/bootloader/bootloaderShared.c"
+	"src/yaml-cpp/*.cpp"
+	"src/yaml-cpp/*.h"
+	"src/yaml-cpp/contrib/*.cpp"
+	"src/yaml-cpp/contrib/*.h"
+	"src/yaml-cpp/node/*.cpp"
+	"src/yaml-cpp/node/*.h"
+)
 
-# Required: set the PROJECT_DIR to let the common cmake file know where this project lives
-set(PROJECT_DIR "${CMAKE_CURRENT_LIST_DIR}")
+# Compile libusb from source
+if(WIN32)
+	file(GLOB SOURCES_LIB_USB
+		"src/libusb/libusb/*.h"
+		"src/libusb/libusb/*.c"
+		"src/libusb/libusb/os/*windows*"
+	)
+else()
+	file(GLOB SOURCES_LIB_USB
+		"src/libusb/libusb/*.h"
+		"src/libusb/libusb/*.c"
+		"src/libusb/libusb/os/*linux*"
+		"src/libusb/libusb/os/*posix*"
+	)
+endif()
 
-# We will be building the SDK as a static library
-set(BUILD_LIB 1)
+# Ignore bootloader files
+# list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloader.*")
+list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSony.*")
+list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 
-# Custom definitions
-add_definitions(-DRTK_EMBEDDED)
+list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
-# Required: set SOURCES_PROJECT, since we are the SDK, we don't need any files, but we add one to keep cmake happy
-set(SOURCES_PROJECT "${PROJECT_DIR}/src/InertialSense.h")
+add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
-# Optional: add any libraries this project needs
-#set(PROJECT_LIBS "")
+# Include paths
+target_include_directories(${PROJECT_NAME} PUBLIC
+	src
+	src/util
+	src/protocol
+	src/libusb
+	src/libusb/libusb
+	src/yaml-cpp
+	external
+)
 
-# Get this project built (the static lib of the sdk)
-include(${PROJECT_DIR}/CMakeCommon.txt)
+# Build using C11 and CXX20
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 
-# Go back to building executables
-set(BUILD_LIB 0)
+# Other settings
+if(WIN32)
+	# yamlcpp needs to know it's a static lib
+	add_definitions(-DYAML_CPP_STATIC_DEFINE)
 
-# Build example projects if not ignored
-if(NOT IGNORE_EXAMPLE_PROJECTS)
-
-	# Denote that all executables will be linking the sdk static library and not the sources directly
-	set(BUILD_INERTIAL_SENSE_SDK 1)
-
-	# Build the other projects
-	add_subdirectory(cltool)
-	add_subdirectory(ExampleProjects)
-
+	# Windows specific include dir
+	target_include_directories(${PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+	)	
+	
+	# We need to ensure windows static libs are found
+	target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
+else()
+	# Linux specific include dir 
+	target_include_directories(${PROJECT_NAME} PUBLIC
+		${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+	)
+	
+	# Linux compiler flags
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")
+		
+	# Set Linux compiler linker flag
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+	
+	# Link in Linux specific packages
+	target_link_libraries(${PROJECT_NAME} udev m)
 endif()

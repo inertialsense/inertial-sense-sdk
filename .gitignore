@@ -1,13 +1,12 @@
 ExampleProjects/Arduino/ReadIS/src/
-EVB-2/IS_EVB-2.elf
-EVB-2/Debug/
-EVB-2/Release/
+cmake-build-*/
 build/
 obj/
 x64
 Release/
 Debug/
 IS_logs/
+CMakeFiles/
 
 *.autosave
 *.elf
@@ -22,3 +21,10 @@ IS_logs/
 *.user
 .vs
 .vscode
+
+.idea
+cmake-build-debug
+Makefile
+CMakeCache.txt
+cmake_install.cmake
+libInertialSenseSDK.a

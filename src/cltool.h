@@ -50,11 +50,12 @@ typedef struct
 	int			periodMultiple;
 } stream_did_t;
 
-typedef struct
+typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
 	std::string comPort; 					// -c com_port
 	std::string updateAppFirmwareFilename; 	// -uf file_name
 	std::string updateBootloaderFilename; 	// -ub file_name
+    std::vector<std::string> fwUpdateCmds;  // commands for firmware updates
 	bool forceBootloaderUpdate;				// -fb
 	bool bootloaderVerify; 					// -bv
 	bool replayDataLog;
@@ -92,6 +93,8 @@ typedef struct
 	uint32_t sysCommand;
 	int32_t platformType;
 	bool chipEraseEvb2;
+    fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
+    uint32_t updateFirmwareSlot = 0;
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
@@ -109,7 +112,8 @@ bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, const char* str, ISBootloader::eLogLevel level);
+void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
+void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, std::string evbFlashCfg); // true if should continue
 

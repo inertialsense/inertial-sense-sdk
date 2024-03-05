@@ -20,6 +20,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
@@ -45,6 +46,16 @@ extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 #define BAUDRATE_1500000		1500000		//  667 ns	(FTDI 1520, AFR 1500)
 #define BAUDRATE_2000000		2000000		//  500 ns	(FTDI 2080, AVR/ARM 2016)
 #define BAUDRATE_3000000		3000000		//  333 ns	(FTDI 3150, AVR/ARM 3030)
+
+enum eSerialPortOptions
+{
+	OPT_PARITY_NONE = 0x0,	
+	OPT_PARITY_ODD = 0x1,
+	OPT_PARITY_EVEN = 0x2,	
+	OPT_PARITY_MASK = 0x3,
+
+	SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
+};
 
 typedef struct serial_port_t serial_port_t;
 
@@ -77,6 +88,9 @@ struct serial_port_t
 
 	// length of error
 	int errorLength;
+
+	// Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
+    uint32_t options;
 
 	// open the serial port
 	pfnSerialPortOpen pfnOpen;
@@ -204,6 +218,9 @@ int serialPortGetByteCountAvailableToWrite(serial_port_t* serialPort);
 
 // sleep for the specified number of milliseconds if supported, returns 1 if success, 0 if failed to sleep
 int serialPortSleep(serial_port_t* serialPort, int sleepMilliseconds);
+
+// Set the port options
+void serialPortSetOptions(serial_port_t* serialPort, uint32_t options);
 
 #ifdef __cplusplus
 }

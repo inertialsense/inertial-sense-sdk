@@ -1,6 +1,6 @@
 /**
  * @file ISBootloaderDFU.cpp
- * @author Dave Cutting (davidcutting42@gmail.com)
+ * @author Dave Cutting
  * @brief Inertial Sense bootloader routines for DFU devices
  * 
  */
@@ -45,11 +45,22 @@ typedef struct
 	uint32_t		serialNumber;
 
 	/** Inertial Sense lot number */
-	uint32_t		lotNumber;
+	uint16_t		lotNumber;
+
+    /** Inertial Sense Hardware/Product ID (UINS, IMX, GPX, VPX, etc) */
+    uint16_t        hardwareId;
 
 	/** Inertial Sense manufacturing date (YYYYMMDDHHMMSS) */
     char			date[16];
+
+    /** Platform / carrier board (ePlatformCfg::PLATFORM_CFG_TYPE_MASK).  Only valid if greater than zero. */
+    int32_t		    platformType;
+
+    /** Disabled Feature Bits - a bit mask which (when set to 1) will disable certain product-specific features. */
+    // NOTE: feature bits are cummulative, in that once a bit is set, IT CAN NOT EVER BE UNSET
+    int32_t         reservedBits;
 } is_dfu_otp_id_t;
+
 static constexpr uint32_t OTP_SECTION_SIZE = 64;		// 64 bytes. DO NOT CHANGE.
 static constexpr uint32_t OTP_NUM_SECTIONS = 16;        // 16 attempts. DO NOT CHANGE.
 static constexpr uint64_t OTP_KEY = 0xBAADBEEFB0BABABE;	// DO NOT CHANGE
@@ -207,6 +218,8 @@ is_operation_result cISBootloaderDFU::get_serial_number_libusb(libusb_device_han
     if(ret_libusb < LIBUSB_SUCCESS) uid[0] = '\0'; // Set the serial number as none
 
     uidstr = std::string((const char*)uid);
+
+    // TODO make this IMX/GPX aware (OTP location maybe processor and/or product/device dependent)
 
     // Get the 1K OTP section from the chip
     // 0x1FFF7000 is the address. Little endian.
@@ -431,7 +444,7 @@ is_operation_result cISBootloaderDFU::reboot_up()
     int ret_libusb;
     dfu_error ret_dfu;
 
-    m_info_callback(this, "(DFU) Rebooting to ISB mode...", IS_LOG_LEVEL_INFO);
+    m_info_callback(this, IS_LOG_LEVEL_INFO, "(DFU) Rebooting to IS-bootloader mode...");
 
     // Option bytes
     // This hard-coded array sets mostly defaults, but without PH3 enabled and
