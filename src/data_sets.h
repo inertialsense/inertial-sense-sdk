@@ -770,7 +770,7 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;
     
-    /** Magnetometers in Gauss */
+    /** Magnetometers */
     float                   mag[3];
 } magnetometer_t;
 
@@ -1274,7 +1274,7 @@ typedef struct PACKED
     /** Accelerometers in meters / second squared */
     float                   acc[3];
 
-    /** Magnetometers in Gauss */
+    /** Magnetometers */
     float                   mag[3];
 
     /** Barometric pressure in kilopascals */
