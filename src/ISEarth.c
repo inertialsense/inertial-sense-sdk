@@ -195,7 +195,7 @@ void ecef2lla(const double *Pe, double *LLA)
     }
 
 #elif ECEF2LLA_METHOD == 5
-    double sinmu, v, val, err = 1.0e6, z_i;
+    double sinmu, v = 0.0, val, err = 1.0e6, z_i;
 
     z_i = Pe[2];
     while (fabs(err) > 1e-4 && iter < 10)
@@ -352,7 +352,7 @@ void ecef2lla_f(const float *Pe, float *LLA)
     }
 
 #elif ECEF2LLA_METHOD == 5
-    float sinmu, v, val, err = 1.0e6f, z_i;
+    float sinmu, v = 0.0f, val, err = 1.0e6f, z_i;
 
     z_i = Pe[2];
     while (fabsf(err) > 1e-4f && iter < 10)
