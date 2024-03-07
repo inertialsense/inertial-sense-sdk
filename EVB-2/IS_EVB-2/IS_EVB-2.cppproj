@@ -1412,6 +1412,10 @@
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\data_sets.h</Link>
     </Compile>
+    <Compile Include="..\..\src\DeviceLogRaw.cpp">
+      <SubType>compile</SubType>
+      <Link>src\inertial-sense-sdk\src\DeviceLogRaw.cpp</Link>
+    </Compile>
     <Compile Include="..\..\src\DeviceLogSerial.cpp">
       <SubType>compile</SubType>
       <Link>src\inertial-sense-sdk\src\DeviceLogSerial.cpp</Link>

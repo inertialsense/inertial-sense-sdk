@@ -103,6 +103,7 @@ C_SRCS += \
 	$(SDK_DIR)/src/convert_ins.cpp                                                                 \
 	$(SDK_DIR)/src/data_sets.c                                                                     \
 	$(SDK_DIR)/src/DeviceLog.cpp                                                                   \
+	$(SDK_DIR)/src/DeviceLogRaw.cpp                                                                \
 	$(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
 	$(SDK_DIR)/src/DataChunk.cpp                                                                   \
 	$(SDK_DIR)/src/filters.cpp                                                                     \

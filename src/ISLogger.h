@@ -50,8 +50,8 @@ class cISLogger
 public:
 	enum eLogType
 	{
-		LOGTYPE_DAT = 0,
-		LOGTYPE_SDAT,
+		LOGTYPE_DAT = 0,	// serial
+		LOGTYPE_SDAT,		// sorted
 		LOGTYPE_CSV,
 		LOGTYPE_KML,
 		LOGTYPE_JSON
