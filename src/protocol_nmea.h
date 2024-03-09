@@ -40,6 +40,7 @@ double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp);
 int getNmeaMsgId(const void* msg, int msgSize);
+int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////

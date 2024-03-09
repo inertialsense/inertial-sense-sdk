@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogFileFactory.h"
 #include "ISDataMappings.h"
 #include "ISLogStats.h"
+#include "protocol_nmea.h"
 
 using namespace std;
 
@@ -96,22 +97,22 @@ void cLogStats::LogError(const p_data_hdr_t* hdr)
     }
 }
 
-cLogStatDataId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t dataId)
+cLogStatDataId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
 {
     switch (ptype)
     {
     default: return NULL;
     case _PTYPE_INERTIAL_SENSE_DATA:
-    case _PTYPE_INERTIAL_SENSE_CMD:     return &isbStats[dataId];
-    case _PTYPE_NMEA:                   return &nmeaStats[dataId];
-    case _PTYPE_UBLOX:                  return &ubloxStats[dataId];
-    case _PTYPE_RTCM3:                  return &rtcm3Stats[dataId];
+    case _PTYPE_INERTIAL_SENSE_CMD:     return &isbStats[id];
+    case _PTYPE_NMEA:                   return &nmeaStats[id];
+    case _PTYPE_UBLOX:                  return &ubloxStats[id];
+    case _PTYPE_RTCM3:                  return &rtcm3Stats[id];
     }
 }
 
-void cLogStats::LogData(uint32_t dataId, protocol_type_t ptype)
+void cLogStats::LogData(uint32_t id, protocol_type_t ptype)
 {
-    cLogStatDataId *d = MsgStats(ptype, dataId);
+    cLogStatDataId *d = MsgStats(ptype, id);
     if (d)
     {
         d->count++;
@@ -119,9 +120,9 @@ void cLogStats::LogData(uint32_t dataId, protocol_type_t ptype)
     count++;
 }
 
-void cLogStats::LogDataAndTimestamp(uint32_t dataId, double timestamp, protocol_type_t ptype)
+void cLogStats::LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype)
 {
-    cLogStatDataId *d = MsgStats(ptype, dataId);
+    cLogStatDataId *d = MsgStats(ptype, id);
     if (d)
     {
         d->count++;
@@ -161,7 +162,7 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
 {
     for (auto it = msgStats.begin(); it != msgStats.end(); ++it) 
     {
-        int id = it->first;
+        uint32_t id = it->first;
         cLogStatDataId& stat = it->second;
         if (stat.count == 0 && stat.errorCount == 0)
         {   // Exclude zero count stats
@@ -169,12 +170,22 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
         }
 
         // Don't print using stringstream as it causes the system to hang on the EVB.
-        statsFile->lprintf("%s ID: %d", msgName, id);
-        if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
+        switch (ptype)
         {
-            statsFile->lprintf(" (%s)", cISDataMappings::GetDataSetName(id));
+        case _PTYPE_INERTIAL_SENSE_CMD:
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            statsFile->lprintf("%s ID: %d (%s)\r\n", msgName, id, cISDataMappings::GetDataSetName(id));
+            break;
+        case _PTYPE_NMEA: {
+            char talker[10] = {0};
+            nmeaMsgIdToTalker(id, talker, sizeof(talker));
+            statsFile->lprintf("%s: %s\r\n", msgName, talker);
         }
-        statsFile->lprintf("\r\n");
+            break;
+        default:
+            statsFile->lprintf("%s ID: %d\r\n", msgName, id);
+            break;
+        }
         statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
         statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
         statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);

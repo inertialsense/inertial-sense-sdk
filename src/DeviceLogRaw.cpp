@@ -25,6 +25,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
+#include "protocol_nmea.h"
 
 using namespace std;
 
@@ -81,6 +82,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 	for (int dSize = dataSize; dSize > 0; dSize--, dPtr++)
 	{
 		protocol_type_t ptype;
+		double timestamp;
 		if ((ptype = is_comm_parse_byte(&m_comm, *dPtr)) != _PTYPE_NONE)
 		{
 			switch (ptype)
@@ -88,8 +90,13 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 			default:
 			// case _PTYPE_RTCM3:
 			// case _PTYPE_UBLOX:
-			// case _PTYPE_NMEA:
-				// Do nothing
+				globalLogStats.LogData(0, ptype);
+				// cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);
+				break;
+
+			case _PTYPE_NMEA:
+				globalLogStats.LogData(getNmeaMsgId(dataBuf, dataSize), ptype);
+				// cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);
 				break;
 
 			case _PTYPE_PARSE_ERROR:
@@ -100,7 +107,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 			case _PTYPE_INERTIAL_SENSE_CMD: {
 				uint8_t *dataPtr = m_comm.dataPtr + m_comm.dataHdr.offset;
 
-				double timestamp = cISDataMappings::GetTimestamp(&m_comm.dataHdr, dataPtr);
+				timestamp = cISDataMappings::GetTimestamp(&m_comm.dataHdr, dataPtr);
 				globalLogStats.LogDataAndTimestamp(m_comm.dataHdr.id, timestamp);			
 
 				cDeviceLog::SaveData(&m_comm.dataHdr, dataPtr);

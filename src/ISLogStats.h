@@ -56,9 +56,9 @@ public:
 	cLogStats();
 	void Clear();
 	void LogError(const p_data_hdr_t* hdr);
-	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t dataId);
-	void LogData(uint32_t dataId, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogDataAndTimestamp(uint32_t dataId, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t id);
+	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
 	void Printf();
 	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
 	void WriteToFile(const std::string& fileName);
