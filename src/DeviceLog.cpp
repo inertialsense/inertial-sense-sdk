@@ -112,6 +112,16 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
     return true;
 }
 
+bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataId dataIdStats[])
+{
+    // if (dataHdr != NULL)
+    // {
+    //     double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+    //     m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
+	// }
+    return true;
+}
+
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
 {
 	m_directory = directory;

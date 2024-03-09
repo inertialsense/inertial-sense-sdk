@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <memory>
 
 #include "DeviceLogSerial.h"
+#include "DeviceLogRaw.h"
  
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 #include "DeviceLogSorted.h"
@@ -51,6 +52,7 @@ public:
 	enum eLogType
 	{
 		LOGTYPE_DAT = 0,	// serial
+		LOGTYPE_RAW,		// packetized serial
 		LOGTYPE_SDAT,		// sorted
 		LOGTYPE_CSV,
 		LOGTYPE_KML,
@@ -72,6 +74,7 @@ public:
 	// update internal state, handle timeouts, etc.
 	void Update();
 	bool LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
+	bool LogData(unsigned int device, int dataSize, const uint8_t* dataBuf);
 	p_data_t* ReadData(unsigned int device = 0);
 	p_data_t* ReadNextData(unsigned int& device);
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
@@ -161,6 +164,10 @@ public:
 		{
 			return cISLogger::eLogType::LOGTYPE_JSON;
 		}
+		else if (logTypeString == "raw")
+		{
+			return cISLogger::eLogType::LOGTYPE_RAW;
+		}
 		return cISLogger::eLogType::LOGTYPE_DAT;
 	}
 
@@ -174,6 +181,7 @@ private:
 	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(int numDevices = 1);
 	void Cleanup();
+	void PrintProgress();
 
 	static time_t GetTime()
     {
@@ -207,6 +215,7 @@ private:
 	double					m_iconUpdatePeriodSec;
 	time_t					m_lastCommTime;
 	time_t					m_timeoutFlushSeconds;
+	int						m_progress;
 
 };
 

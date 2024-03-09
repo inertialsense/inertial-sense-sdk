@@ -85,9 +85,13 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     // first try DAT files, if that doesn't work, then try SDAT files
     if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials))
     {
-        cout << "unable to find DAT files, trying SDATS";
-        if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials))
-            cout << "Unable to load files" << endl;
+        cout << "unable to find DAT files, trying RAW";
+        if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials))
+        {
+            cout << "unable to find RAW files, trying SDATS";
+            if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials))
+                cout << "Unable to load files" << endl;
+        }
     }
 
     cout << "found " << logger_.GetDeviceCount() << " devices\n";

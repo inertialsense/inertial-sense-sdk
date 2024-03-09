@@ -243,6 +243,7 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
 			{
 			default:
 			case LOGTYPE_DAT:	m_devices.push_back(make_shared<cDeviceLogSerial>());	break;
+			case LOGTYPE_RAW:	m_devices.push_back(make_shared<cDeviceLogRaw>());		break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 			case LOGTYPE_SDAT:	m_devices.push_back(make_shared<cDeviceLogSorted>());	break;
 			case LOGTYPE_CSV:	m_devices.push_back(make_shared<cDeviceLogCSV>());		break;
@@ -273,6 +274,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 	{
 	default:
 	case cISLogger::LOGTYPE_DAT: fileExtensionRegex = "\\.dat$"; break;
+	case cISLogger::LOGTYPE_RAW: fileExtensionRegex = "\\.raw$"; break;
 	case cISLogger::LOGTYPE_SDAT: fileExtensionRegex = "\\.sdat$"; break;
 	case cISLogger::LOGTYPE_CSV: fileExtensionRegex = "\\.csv$"; break;
 	case cISLogger::LOGTYPE_JSON: fileExtensionRegex = "\\.json$"; break;
@@ -333,6 +335,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 							{
 							default:
 							case cISLogger::LOGTYPE_DAT:    m_devices.push_back(make_shared<cDeviceLogSerial>()); break;
+							case cISLogger::LOGTYPE_RAW:    m_devices.push_back(make_shared<cDeviceLogRaw>()); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
 							case cISLogger::LOGTYPE_SDAT:   m_devices.push_back(make_shared<cDeviceLogSorted>()); break;
 							case cISLogger::LOGTYPE_CSV:    m_devices.push_back(make_shared<cDeviceLogCSV>()); break;
@@ -343,7 +346,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
                         m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
 
 #if (LOG_DEBUG_GEN == 2)
-						advance_cursor();
+						PrintProgress();
 #elif LOG_DEBUG_GEN
 						printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
 #endif
@@ -387,7 +390,7 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
     }
 #if 1
     else
-    {
+    {	// Success
         double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
         m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
@@ -411,6 +414,32 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
         }
     }
 #endif
+	return true;
+}
+
+bool cISLogger::LogData(unsigned int device, int dataSize, const uint8_t* dataBuf)
+{
+	m_lastCommTime = GetTime();
+
+	if (!m_enabled)
+	{
+        m_errorFile.lprintf("Logger is not enabled\r\n");
+		return false;
+	}
+	else if (device >= m_devices.size() || dataSize <= 0 || dataBuf == NULL)
+	{
+        m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
+		return false;
+	}
+    else if (!m_devices[device]->SaveData(dataSize, dataBuf, m_logStats.dataIdStats))
+    {
+        m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
+        m_logStats.LogError(NULL);
+    }
+    else
+    {	// Success
+
+    }
 	return true;
 }
 
@@ -587,6 +616,11 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 	{
 		return false;
 	}
+
+	is_comm_instance_t comm;
+	uint8_t commBuf[PKT_BUF_SIZE];
+	is_comm_init(&comm, commBuf, sizeof(commBuf));
+
 	EnableLogging(true);
 	p_data_t* data = NULL;
 	for (unsigned int dev = 0; dev < log.GetDeviceCount(); dev++)
@@ -615,7 +649,7 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 #endif
 
 #if LOG_DEBUG_GEN == 2
-			advance_cursor();
+			PrintProgress();
 #endif
 
 			// CSV special cases 
@@ -638,7 +672,15 @@ bool cISLogger::CopyLog(cISLogger& log, const string& timestamp, const string &o
 			}
 
 			// Save data
-            LogData(dev, &data->hdr, data->buf);
+			if (logType == LOGTYPE_RAW)
+			{	// Encode data into to ISB packet
+		        int pktSize = is_comm_data(&comm, data->hdr.id, data->hdr.offset, data->hdr.size, data->buf);
+                LogData(dev, pktSize, comm.dataPtr);
+			}
+			else
+			{	
+				LogData(dev, &data->hdr, data->buf);
+			}
 		}
 	}
 	CloseAllFiles();
@@ -691,5 +733,20 @@ bool cISLogger::ReadAllLogDataIntoMemory(const string& directory, map<uint32_t, 
     return true;
 }
 
+void cISLogger::PrintProgress()
+{
+#if (LOG_DEBUG_GEN == 2)
+#if 0
+	advance_cursor();
+#else
+	if (++m_progress > 50000)
+	{
+		m_progress = 0;
+		printf("."); 
+		fflush(stdout);
+	}
+#endif
+#endif
+}
 
 

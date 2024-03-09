@@ -22,10 +22,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 
 #include "DeviceLogRaw.h"
+#include "ISDataMappings.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 
 using namespace std;
+
+
+cDeviceLogRaw::cDeviceLogRaw()
+{
+	is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+}
+
 
 void cDeviceLogRaw::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
@@ -66,27 +74,64 @@ bool cDeviceLogRaw::FlushToFile()
 }
 
 
-bool cDeviceLogRaw::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataId dataIdStats[])
 {
-    cDeviceLog::SaveData(dataHdr, dataBuf);
-
-	// Add serial number if available
-	if (dataHdr->id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))
+	// Parse out messages for statistics and DID_DEV_INFO
+	const uint8_t *dPtr = dataBuf;
+	for (int dSize = dataSize; dSize > 0; dSize--, dPtr++)
 	{
-		int start = dataHdr->offset;
-		int end = dataHdr->offset + dataHdr->size;
-		int snOffset = offsetof(dev_info_t, serialNumber);
-
-		// Did we really get the serial number?
-		if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
+		protocol_type_t ptype;
+		if ((ptype = is_comm_parse_byte(&m_comm, *dPtr)) != _PTYPE_NONE)
 		{
-			m_chunk.m_hdr.devSerialNum = m_devInfo.serialNumber;
+			switch (ptype)
+			{
+			default:
+			// case _PTYPE_RTCM3:
+			// case _PTYPE_UBLOX:
+			// case _PTYPE_NMEA:
+				// Do nothing
+				break;
+
+			case _PTYPE_PARSE_ERROR:
+				printf("Parse error in cDeviceLogRaw::SaveData()!!!\n");
+				break;
+
+			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD: {
+				m_comm.dataHdr = m_comm.dataHdr;
+				uint8_t *dataPtr = m_comm.dataPtr + m_comm.dataHdr.offset;
+
+				if (m_comm.dataHdr.id < DID_COUNT)
+				{
+					cLogStatDataId& d = dataIdStats[m_comm.dataHdr.id];
+					d.count++;
+			        double timestamp = cISDataMappings::GetTimestamp(&m_comm.dataHdr, dataPtr);
+					d.LogTimestamp(timestamp);
+				}
+
+				cDeviceLog::SaveData(&m_comm.dataHdr, dataPtr);
+
+				// Add serial number if available
+				if (m_comm.dataHdr.id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, &m_comm.dataHdr, dataPtr, sizeof(dev_info_t)))
+				{
+					int start = m_comm.dataHdr.offset;
+					int end = m_comm.dataHdr.offset + m_comm.dataHdr.size;
+					int snOffset = offsetof(dev_info_t, serialNumber);
+
+					// Did we really get the serial number?
+					if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
+					{
+						m_chunk.m_hdr.devSerialNum = m_devInfo.serialNumber;
+					}
+				}
+				}
+				break;
+			}
 		}
 	}
 
 	// Ensure data will fit in chunk.  If not, create new chunk
-	int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
-	if (dataBytes > m_chunk.GetBuffFree())
+	if (dataSize > m_chunk.GetBuffFree())
 	{
         // Save chunk to file and clear
 		if (!WriteChunkToFile())
@@ -100,7 +145,7 @@ bool cDeviceLogRaw::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 		}
 	}
 	// Add data header and data buffer to chunk
-	if (!m_chunk.PushBack((unsigned char*)dataHdr, sizeof(p_data_hdr_t), (unsigned char*)dataBuf, dataHdr->size))
+	if (!m_chunk.PushBack((unsigned char*)dataBuf, dataSize))
 	{
 		return false;
 	}
@@ -166,22 +211,53 @@ p_data_t* cDeviceLogRaw::ReadData()
 
 p_data_t* cDeviceLogRaw::ReadDataFromChunk()
 {
+	int chunkSize = m_chunk.GetDataSize();
+
 	// Ensure chunk has data
-	if (m_chunk.GetDataSize() <= 0)
+	if (chunkSize <= 0)
 	{
 		return NULL;
 	}
 
-	p_data_t* data = (p_data_t*)m_chunk.GetDataPtr();
-	int size = data->hdr.size + sizeof(p_data_hdr_t);
-	if (m_chunk.PopFront(size))
+	while (m_chunk.GetDataSize())
 	{
-		return data;
+		uint8_t *dataPtr = m_chunk.GetDataPtr();
+
+		if (dataPtr == NULL)
+		{	// No more data
+			return NULL;
+		}
+
+		// Read one byte at a time
+		uint8_t data = *dataPtr;
+		m_chunk.PopFront(1);
+
+		protocol_type_t ptype;
+		if ((ptype = is_comm_parse_byte(&m_comm, data)) != _PTYPE_NONE)
+		{
+			switch (ptype)
+			{
+			default:
+			// case _PTYPE_RTCM3:
+			// case _PTYPE_UBLOX:
+			// case _PTYPE_NMEA:
+				// Do nothing
+				break;
+
+			case _PTYPE_PARSE_ERROR:
+				printf("Parse error in cDeviceLogRaw::ReadDataFromChunk()!!!\n");
+				break;
+
+			case _PTYPE_INERTIAL_SENSE_DATA:
+			case _PTYPE_INERTIAL_SENSE_CMD:
+				m_pData.hdr = m_comm.dataHdr;
+				memcpy(m_pData.buf, m_comm.dataPtr + m_comm.dataHdr.offset, m_comm.dataHdr.size);
+				return &m_pData;
+			}
+		}
 	}
-	else
-	{
-		return NULL;
-	}
+
+	return NULL;
 }
 
 

@@ -41,6 +41,7 @@ public:
 	virtual bool FlushToFile() { return true; };
 	virtual bool OpenWithSystemApp();
     virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf);
+	virtual bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataId dataIdStats[]);
     virtual p_data_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 	virtual std::string LogFileExtention() = 0;
