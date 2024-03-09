@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <string>
 #include <cstdint>
+#include <map>
 
 #include "data_sets.h"
 #include "ISComm.h"
@@ -44,16 +45,22 @@ public:
 class cLogStats
 {
 public:
-	cLogStatDataId dataIdStats[DID_COUNT];
+	std::map<int, cLogStatDataId> isbStats;
+	std::map<int, cLogStatDataId> nmeaStats;
+	std::map<int, cLogStatDataId> rtcm3Stats;
+	std::map<int, cLogStatDataId> ubloxStats;
 	uint64_t count; // count of all data ids
 	uint64_t errorCount; // total error count
+	cISLogFileBase* statsFile;
 
 	cLogStats();
 	void Clear();
 	void LogError(const p_data_hdr_t* hdr);
-	void LogData(uint32_t dataId);
-	void LogDataAndTimestamp(uint32_t dataId, double timestamp);
+	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t dataId);
+	void LogData(uint32_t dataId, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	void LogDataAndTimestamp(uint32_t dataId, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
 	void Printf();
+	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
 	void WriteToFile(const std::string& fileName);
 };
 

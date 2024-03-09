@@ -112,7 +112,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
     return true;
 }
 
-bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataId dataIdStats[])
+bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
     // if (dataHdr != NULL)
     // {

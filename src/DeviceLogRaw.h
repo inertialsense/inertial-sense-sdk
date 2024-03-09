@@ -20,8 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DataChunk.h"
 #include "DeviceLog.h"
 #include "com_manager.h"
-
-
+#include "ISLogStats.h"
 
 
 class cDeviceLogRaw : public cDeviceLog
@@ -32,7 +31,7 @@ public:
 	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool FlushToFile() OVERRIDE;
-	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataId dataIdStats[]) OVERRIDE;
+	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
     std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }

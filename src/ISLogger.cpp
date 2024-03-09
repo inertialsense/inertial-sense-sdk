@@ -431,7 +431,7 @@ bool cISLogger::LogData(unsigned int device, int dataSize, const uint8_t* dataBu
         m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
 		return false;
 	}
-    else if (!m_devices[device]->SaveData(dataSize, dataBuf, m_logStats.dataIdStats))
+    else if (!m_devices[device]->SaveData(dataSize, dataBuf, m_logStats))
     {
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
         m_logStats.LogError(NULL);

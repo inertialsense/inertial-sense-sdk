@@ -74,7 +74,7 @@ bool cDeviceLogRaw::FlushToFile()
 }
 
 
-bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataId dataIdStats[])
+bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
 	// Parse out messages for statistics and DID_DEV_INFO
 	const uint8_t *dPtr = dataBuf;
@@ -98,16 +98,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStatDataI
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
 			case _PTYPE_INERTIAL_SENSE_CMD: {
-				m_comm.dataHdr = m_comm.dataHdr;
 				uint8_t *dataPtr = m_comm.dataPtr + m_comm.dataHdr.offset;
 
-				if (m_comm.dataHdr.id < DID_COUNT)
-				{
-					cLogStatDataId& d = dataIdStats[m_comm.dataHdr.id];
-					d.count++;
-			        double timestamp = cISDataMappings::GetTimestamp(&m_comm.dataHdr, dataPtr);
-					d.LogTimestamp(timestamp);
-				}
+				double timestamp = cISDataMappings::GetTimestamp(&m_comm.dataHdr, dataPtr);
+				globalLogStats.LogDataAndTimestamp(m_comm.dataHdr.id, timestamp);			
 
 				cDeviceLog::SaveData(&m_comm.dataHdr, dataPtr);
 
