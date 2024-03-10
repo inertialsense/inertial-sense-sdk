@@ -174,16 +174,27 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
         {
         case _PTYPE_INERTIAL_SENSE_CMD:
         case _PTYPE_INERTIAL_SENSE_DATA:
-            statsFile->lprintf("%s ID: %d (%s)\r\n", msgName, id, cISDataMappings::GetDataSetName(id));
+            statsFile->lprintf("%s - ID: %d (%s)\r\n", msgName, id, cISDataMappings::GetDataSetName(id));
             break;
-        case _PTYPE_NMEA: {
-            char talker[10] = {0};
-            nmeaMsgIdToTalker(id, talker, sizeof(talker));
-            statsFile->lprintf("%s: %s\r\n", msgName, talker);
-        }
+
+        case _PTYPE_NMEA: 
+            {
+                char talker[10] = {0};
+                nmeaMsgIdToTalker(id, talker, sizeof(talker));
+                statsFile->lprintf("%s - %s\r\n", msgName, talker);
+            }
             break;
+
+        case _PTYPE_UBLOX: 
+            {
+                uint8_t msgClass = 0xFF & (id>>0);
+                uint8_t msgID    = 0xFF & (id>>8);
+                statsFile->lprintf("%s - Class ID (0x%02x 0x%02x)\r\n", msgName, msgClass, msgID);
+            }
+            break;
+
         default:
-            statsFile->lprintf("%s ID: %d\r\n", msgName, id);
+            statsFile->lprintf("%s - ID: %d\r\n", msgName, id);
             break;
         }
         statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
@@ -191,7 +202,6 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
         statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
         statsFile->lprintf("\r\n");
     }
-
 }
 
 void cLogStats::WriteToFile(const string& file_name)

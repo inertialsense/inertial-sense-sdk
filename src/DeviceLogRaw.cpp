@@ -25,6 +25,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDataMappings.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
+#include "message_stats.h"
 #include "protocol_nmea.h"
 
 using namespace std;
@@ -77,7 +78,7 @@ bool cDeviceLogRaw::FlushToFile()
 
 bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
-	// Parse out messages for statistics and DID_DEV_INFO
+	// Parse messages for statistics and DID_DEV_INFO
 	const uint8_t *dPtr = dataBuf;
 	for (int dSize = dataSize; dSize > 0; dSize--, dPtr++)
 	{
@@ -88,15 +89,28 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 			switch (ptype)
 			{
 			default:
-			// case _PTYPE_RTCM3:
-			// case _PTYPE_UBLOX:
 				globalLogStats.LogData(0, ptype);
-				// cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);
+				break;
+
+			case _PTYPE_RTCM3:
+				{
+					int id = messageStatsGetbitu((const unsigned char*)m_comm.dataPtr, 24, 12);
+					globalLogStats.LogData(id, ptype);
+					// cDeviceLog::SaveData(m_comm.dataHdr.size, m_comm.dataPtr, globalLogStats);
+				}
+				break;
+
+			case _PTYPE_UBLOX:
+				{	// Read Class and ID as uint16
+					uint16_t id = *(uint16_t*)(m_comm.dataPtr+2);
+					globalLogStats.LogData(id, ptype);
+					cDeviceLog::SaveData(m_comm.dataHdr.size, m_comm.dataPtr, globalLogStats);
+				}
 				break;
 
 			case _PTYPE_NMEA:
-				globalLogStats.LogData(getNmeaMsgId(dataBuf, dataSize), ptype);
-				// cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);
+				globalLogStats.LogData(getNmeaMsgId(m_comm.dataPtr, m_comm.dataHdr.size), ptype);
+				// cDeviceLog::SaveData(m_comm.dataHdr.size, m_comm.dataPtr, globalLogStats);
 				break;
 
 			case _PTYPE_PARSE_ERROR:
@@ -110,10 +124,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				timestamp = cISDataMappings::GetTimestamp(&m_comm.dataHdr, dataPtr);
 				globalLogStats.LogDataAndTimestamp(m_comm.dataHdr.id, timestamp);			
 
-				cDeviceLog::SaveData(&m_comm.dataHdr, dataPtr);
+				cDeviceLog::SaveData(&m_comm.dataHdr, m_comm.dataPtr);
 
 				// Add serial number if available
-				if (m_comm.dataHdr.id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, &m_comm.dataHdr, dataPtr, sizeof(dev_info_t)))
+				if (m_comm.dataHdr.id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, &m_comm.dataHdr, m_comm.dataPtr, sizeof(dev_info_t)))
 				{
 					int start = m_comm.dataHdr.offset;
 					int end = m_comm.dataHdr.offset + m_comm.dataHdr.size;
