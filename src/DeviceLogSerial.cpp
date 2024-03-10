@@ -66,9 +66,9 @@ bool cDeviceLogSerial::FlushToFile()
 }
 
 
-bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-    cDeviceLog::SaveData(dataHdr, dataBuf);
+    cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
 	// Add serial number if available
 	if (dataHdr->id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))

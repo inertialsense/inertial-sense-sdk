@@ -102,12 +102,12 @@ bool cDeviceLog::OpenWithSystemApp()
 }
 
 
-bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
+bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
     if (dataHdr != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
+		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::GetTimestamp(dataHdr, dataBuf) : 0.0);
+        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp, ptype);
 	}
     return true;
 }

@@ -79,8 +79,7 @@ bool cDeviceLogRaw::FlushToFile()
 bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
 	// Parse messages for statistics and DID_DEV_INFO
-	const uint8_t *dPtr = dataBuf;
-	for (int dSize = dataSize; dSize > 0; dSize--, dPtr++)
+	for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
 	{
 		protocol_type_t ptype;
 		double timestamp;
@@ -93,24 +92,21 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				break;
 
 			case _PTYPE_RTCM3:
-				{
-					int id = messageStatsGetbitu((const unsigned char*)m_comm.dataPtr, 24, 12);
-					globalLogStats.LogData(id, ptype);
-					// cDeviceLog::SaveData(m_comm.dataHdr.size, m_comm.dataPtr, globalLogStats);
-				}
+				m_comm.dataHdr.id = messageStatsGetbitu((const unsigned char*)m_comm.dataPtr, 24, 12);
+				globalLogStats.LogData(m_comm.dataHdr.id, ptype);
+				cDeviceLog::SaveData(&m_comm.dataHdr, m_comm.dataPtr, ptype);
 				break;
 
 			case _PTYPE_UBLOX:
-				{	// Read Class and ID as uint16
-					uint16_t id = *(uint16_t*)(m_comm.dataPtr+2);
-					globalLogStats.LogData(id, ptype);
-					cDeviceLog::SaveData(m_comm.dataHdr.size, m_comm.dataPtr, globalLogStats);
-				}
+				m_comm.dataHdr.id = *(uint16_t*)(m_comm.dataPtr+2);		// Read Class and ID as uint16
+				globalLogStats.LogData(m_comm.dataHdr.id, ptype);
+				cDeviceLog::SaveData(&m_comm.dataHdr, m_comm.dataPtr, ptype);
 				break;
 
 			case _PTYPE_NMEA:
-				globalLogStats.LogData(getNmeaMsgId(m_comm.dataPtr, m_comm.dataHdr.size), ptype);
-				// cDeviceLog::SaveData(m_comm.dataHdr.size, m_comm.dataPtr, globalLogStats);
+				m_comm.dataHdr.id = getNmeaMsgId(m_comm.dataPtr, m_comm.dataHdr.size);
+				globalLogStats.LogData(m_comm.dataHdr.id, ptype);
+				cDeviceLog::SaveData(&m_comm.dataHdr, m_comm.dataPtr, ptype);
 				break;
 
 			case _PTYPE_PARSE_ERROR:
