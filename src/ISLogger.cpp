@@ -369,6 +369,11 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
 bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
+	if (m_logType == LOGTYPE_RAW)
+	{	// Use other LogData() method
+		return false;
+	}
+
 	m_lastCommTime = GetTime();
 
 	if (!m_enabled)
@@ -422,6 +427,11 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 
 bool cISLogger::LogData(unsigned int device, int dataSize, const uint8_t* dataBuf)
 {
+	if (m_logType != LOGTYPE_RAW)
+	{	// Use other LogData() method
+		return false;
+	}
+
 	m_lastCommTime = GetTime();
 
 	if (!m_enabled)
