@@ -73,12 +73,13 @@ bool cISLogger::LogHeaderIsCorrupt(const p_data_hdr_t* hdr)
 
 bool cISLogger::LogDataIsCorrupt(const p_data_t* data)
 {
-    return (data != NULL && LogHeaderIsCorrupt(&data->hdr));
+	return m_useChunkHeader && data != NULL && LogHeaderIsCorrupt(&data->hdr);
 }
 
 cISLogger::cISLogger()
 {
 	m_enabled = false;
+	m_useChunkHeader = true;
 	m_logStats.Clear();
 	m_lastCommTime = 0;
 	m_timeoutFlushSeconds = 0;
@@ -267,6 +268,7 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 	// Delete and clear prior devices
 	Cleanup();
 	m_logType = logType;
+	m_useChunkHeader = logType != cISLogger::LOGTYPE_RAW;
 	string fileExtensionRegex;
 	set<string> serialNumbers;
 

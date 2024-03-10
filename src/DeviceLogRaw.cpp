@@ -186,7 +186,7 @@ bool cDeviceLogRaw::WriteChunkToFile()
 	}
 
 	// Write chunk to file
-	int fileBytes = m_chunk.WriteToFile(m_pFile, 0);
+	int fileBytes = m_chunk.WriteToFile(m_pFile, 0, false);
 	if (!m_pFile->good())
 	{
 		return false;
@@ -223,6 +223,12 @@ p_data_t* cDeviceLogRaw::ReadData()
 p_data_t* cDeviceLogRaw::ReadDataFromChunk()
 {
 	int chunkSize = m_chunk.GetDataSize();
+
+	if (chunkSize <= 200)
+	{
+		int j=0;
+		j++;
+	}
 
 	// Ensure chunk has data
 	if (chunkSize <= 0)
@@ -275,7 +281,7 @@ p_data_t* cDeviceLogRaw::ReadDataFromChunk()
 bool cDeviceLogRaw::ReadChunkFromFile()
 {
 	// Read next chunk from file
-	while (m_chunk.ReadFromFile(m_pFile) < 0)
+	while (m_chunk.ReadFromFile(m_pFile, false) < 0)
 	{
 		if (!OpenNextReadFile())
 		{

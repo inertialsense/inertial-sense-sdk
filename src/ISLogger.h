@@ -125,7 +125,7 @@ public:
 	static std::string CreateCurrentTimestamp();
 
     // check if a data packet is corrupt, NULL data is OK
-    static bool LogDataIsCorrupt(const p_data_t* data);
+    bool LogDataIsCorrupt(const p_data_t* data);
 
     // read all log data into memory - if the log is over 1.5 GB this will fail on 32 bit processes
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
@@ -193,6 +193,7 @@ private:
     }
 
 	eLogType				m_logType;
+	bool					m_useChunkHeader;
 	bool					m_enabled;
 	std::string				m_directory;
 	std::string				m_timeStamp;
