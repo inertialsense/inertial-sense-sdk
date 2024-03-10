@@ -83,6 +83,7 @@ cISLogger::cISLogger()
 	m_logStats.Clear();
 	m_lastCommTime = 0;
 	m_timeoutFlushSeconds = 0;
+	m_showParseErrors = true;
 }
 
 
@@ -516,6 +517,14 @@ void cISLogger::OpenWithSystemApp()
 	}
 }
 
+void cISLogger::ShowParseErrors(bool show)
+{
+	for (unsigned int i = 0; i < m_devices.size(); i++)
+	{
+		m_devices[i]->ShowParseErrors(show);
+	}
+	m_showParseErrors = show;
+}
 
 uint64_t cISLogger::LogSizeAll()
 {

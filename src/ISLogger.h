@@ -82,6 +82,7 @@ public:
 	void CloseAllFiles();
 	void FlushToFile();
 	void OpenWithSystemApp();
+	void ShowParseErrors(bool show);
 	std::string TimeStamp() { return m_timeStamp; }
 	std::string LogDirectory() { return m_directory; }
 	uint64_t LogSizeAll();
@@ -217,7 +218,7 @@ private:
 	time_t					m_lastCommTime;
 	time_t					m_timeoutFlushSeconds;
 	int						m_progress;
-
+	bool					m_showParseErrors;
 };
 
 

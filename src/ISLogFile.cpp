@@ -154,8 +154,7 @@ std::size_t cISLogFile::read(void* bytes, std::size_t len)
 {
     if (m_file)
     {
-        int n = fread(bytes, 1, len, m_file);
-        return n;
+        return fread(bytes, 1, len, m_file);
     }
     else
     {

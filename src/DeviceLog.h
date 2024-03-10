@@ -62,6 +62,7 @@ public:
 		m_pointUpdatePeriodSec = pointUpdatePeriodSec;
 		m_altClampToGround = altClampToGround; 
 	}
+	void ShowParseErrors(bool show){ m_showParseErrors = show; }
 
 protected:
 	bool OpenNewSaveFile();
@@ -73,7 +74,8 @@ protected:
 	std::string             m_directory;
 	std::string             m_timeStamp;
 	std::string             m_fileName;
-	bool                    m_writeMode;	// Logger initialized for writting
+	bool                    m_writeMode;	// Logger initialized for writing
+	bool					m_showParseErrors;
 	dev_info_t              m_devInfo;
 	int                     m_pHandle;
 	uint64_t                m_fileSize;

@@ -110,7 +110,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				printf("Parse error in cDeviceLogRaw::SaveData()!!!\n");
+				if (m_showParseErrors){ printf("Parse error in cDeviceLogRaw::SaveData()!!!\n"); }
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
@@ -224,12 +224,6 @@ p_data_t* cDeviceLogRaw::ReadDataFromChunk()
 {
 	int chunkSize = m_chunk.GetDataSize();
 
-	if (chunkSize <= 200)
-	{
-		int j=0;
-		j++;
-	}
-
 	// Ensure chunk has data
 	if (chunkSize <= 0)
 	{
@@ -262,7 +256,7 @@ p_data_t* cDeviceLogRaw::ReadDataFromChunk()
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				printf("Parse error in cDeviceLogRaw::ReadDataFromChunk()!!!\n");
+				if (m_showParseErrors){ printf("Parse error in cDeviceLogRaw::ReadDataFromChunk()!!!\n"); }
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
