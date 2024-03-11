@@ -44,6 +44,7 @@ ext_modules = [
          '../../src/DeviceLogCSV.cpp',
          '../../src/DeviceLogJSON.cpp',
          '../../src/DeviceLogKML.cpp',
+         '../../src/DeviceLogRaw.cpp',
          '../../src/DeviceLogSerial.cpp',
          '../../src/DeviceLogSorted.cpp',
          '../../src/ihex.c',

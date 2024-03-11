@@ -40,6 +40,7 @@ cDeviceLog::cDeviceLog()
     memset(&m_devInfo, 0, sizeof(dev_info_t));
 	m_altClampToGround = true;
 	m_enableGpsLogging = true;
+	m_showParseErrors = true;
 	m_showTracks = true;
 	m_showPointTimestamps = true;
 	m_pointUpdatePeriodSec = 1.0f;
@@ -101,15 +102,19 @@ bool cDeviceLog::OpenWithSystemApp()
 	return true;
 }
 
-
-bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf)
+bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
     if (dataHdr != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
+		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::GetTimestamp(dataHdr, dataBuf) : 0.0);
+        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp, ptype);
 	}
     return true;
+}
+
+bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
+{
+   return true;
 }
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
