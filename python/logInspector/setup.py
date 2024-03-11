@@ -30,8 +30,6 @@ class get_pybind_include(object):
 ext_modules = [
     Extension('log_reader',
         ['src/log_reader.cpp',
-        #  '../../src/cltool.cpp',
-        #  '../../src/cltool_main.cpp',
          '../../src/convert_ins.cpp',
          '../../src/com_manager.c',
          '../../src/data_sets.c',
@@ -44,6 +42,7 @@ ext_modules = [
          '../../src/DeviceLogCSV.cpp',
          '../../src/DeviceLogJSON.cpp',
          '../../src/DeviceLogKML.cpp',
+         '../../src/DeviceLogRaw.cpp',
          '../../src/DeviceLogSerial.cpp',
          '../../src/DeviceLogSorted.cpp',
          '../../src/ihex.c',

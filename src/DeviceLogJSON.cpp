@@ -84,9 +84,9 @@ bool cDeviceLogJSON::GetNextItemForFile()
 }
 
 
-bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-    cDeviceLog::SaveData(dataHdr, dataBuf);
+    cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
     bool needsComma = true;
 

@@ -103,6 +103,7 @@ C_SRCS += \
 	$(SDK_DIR)/src/convert_ins.cpp                                                                 \
 	$(SDK_DIR)/src/data_sets.c                                                                     \
 	$(SDK_DIR)/src/DeviceLog.cpp                                                                   \
+	$(SDK_DIR)/src/DeviceLogRaw.cpp                                                                \
 	$(SDK_DIR)/src/DeviceLogSerial.cpp                                                             \
 	$(SDK_DIR)/src/DataChunk.cpp                                                                   \
 	$(SDK_DIR)/src/filters.cpp                                                                     \
@@ -115,6 +116,7 @@ C_SRCS += \
 	$(SDK_DIR)/src/ISMatrix.c                                                                      \
 	$(SDK_DIR)/src/ISPose.cpp                                                                      \
 	$(SDK_DIR)/src/ISUtilities.cpp                                                                 \
+	$(SDK_DIR)/src/message_stats.cpp                                                               \
 	$(SDK_DIR)/src/protocol_nmea.cpp                                                               \
 	$(ASF_DIR)/sam/utils/syscalls/gcc/syscalls.c                                                   \
 	$(ASF_DIR)/common/components/memory/sd_mmc/sd_mmc.c                                            \

@@ -28,6 +28,7 @@ add_library(SDK_test
 	../DeviceLogCSV.cpp
 	../DeviceLogJSON.cpp
 	../DeviceLogKML.cpp
+	../DeviceLogRaw.cpp
 	../DeviceLogSerial.cpp
 	../DeviceLogSorted.cpp
 	../ISComm.c

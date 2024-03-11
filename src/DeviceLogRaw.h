@@ -10,56 +10,43 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef DEVICE_LOG_CSV_H
-#define DEVICE_LOG_CSV_H
+#ifndef DEVICE_LOG_RAW_H
+#define DEVICE_LOG_RAW_H
 
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include <map>
 
-#include "DataCSV.h"
+#include "DataChunk.h"
 #include "DeviceLog.h"
 #include "com_manager.h"
+#include "ISLogStats.h"
 
-class cCsvLog
+
+class cDeviceLogRaw : public cDeviceLog
 {
 public:
-	cCsvLog() : pFile(NULL), fileCount(0), fileSize(0), dataId(0), orderId(0) { }
+    cDeviceLogRaw();
 
-	FILE* pFile;
-	uint32_t fileCount;
-	uint64_t fileSize;
-	uint32_t dataId;
-	uint32_t dataSize;
-	uint64_t orderId;
-	std::string nextLine;
-	std::vector<data_info_t> columnHeaders;
-};
-
-
-class cDeviceLogCSV : public cDeviceLog
-{
-public:
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
-	void InitDeviceForReading() OVERRIDE;
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
-    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
+	bool FlushToFile() OVERRIDE;
+	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-	std::string LogFileExtention() OVERRIDE { return std::string(".csv"); }
+    std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }
+	void Flush() OVERRIDE;
+
+	cDataChunk m_chunk;
 
 private:
-	bool OpenNewFile(cCsvLog& log, bool readOnly);
-	bool GetNextLineForFile(cCsvLog& log);
+	p_data_t* ReadDataFromChunk();
+	bool ReadChunkFromFile();
+	bool WriteChunkToFile();
 
-	p_data_t* ReadDataFromFile(cCsvLog& log);
-	std::map<uint32_t, cCsvLog> m_logs;
-	cDataCSV m_csv;
-	std::map<uint32_t, std::vector<std::string> > m_currentFiles; // all files for each data set
-	std::map<uint32_t, uint32_t> m_currentFileIndex; // contains the current csv file index for each data set
-	p_data_t m_dataBuffer;
-	uint64_t m_nextId; // for writing the log, column 0 of csv is an incrementing id. This lets us read the log back in order.
+	uint8_t m_commBuf[PKT_BUF_SIZE];
+	p_data_t m_pData;
+	is_comm_instance_t m_comm;
 };
 
-#endif // DEVICE_LOG_CSV_H
+#endif // DEVICE_LOG_RAW_H

@@ -77,20 +77,31 @@ void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& ve
 bool LogReader::init(py::object python_class, std::string log_directory, py::list serials)
 {
     vector<string> stl_serials = serials.cast<vector<string>>();
-    cout << "loading DAT file from " << log_directory << endl;
-    cout << "reading serial numbers ";
+    cout << "Loading from: " << log_directory << endl;
+    cout << "Reading serial numbers: ";
     for (int i = 0; i < (int)stl_serials.size(); i++)
         cout << stl_serials[i] << "\n";
 
     // first try DAT files, if that doesn't work, then try SDAT files
-    if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials))
+    if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials))
     {
-        cout << "unable to find DAT files, trying SDATS";
-        if (!logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials))
-            cout << "Unable to load files" << endl;
+        cout << "Found *.dat log with ";
+    } 
+    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials))
+    {
+        cout << "Found *.raw log with ";
+    }
+    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials))
+    {
+        cout << "Found *.sdat log with ";
+    }
+    else
+    {
+        cout << "Unable to load files" << endl;
+        return false;
     }
 
-    cout << "found " << logger_.GetDeviceCount() << " devices\n";
+    cout << logger_.GetDeviceCount() << " device(s):\n";
     vector<int> serialNumbers;
     for (int i = 0; i < (int)logger_.GetDeviceCount(); i++)
     {

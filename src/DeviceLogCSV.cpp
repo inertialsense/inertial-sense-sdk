@@ -211,9 +211,9 @@ bool cDeviceLogCSV::GetNextLineForFile(cCsvLog& log)
 }
 
 
-bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-    cDeviceLog::SaveData(dataHdr, dataBuf);
+    cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
 	// Reference current log
 	cCsvLog& log = m_logs[dataHdr->id];

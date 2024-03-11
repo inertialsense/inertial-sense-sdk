@@ -45,7 +45,7 @@ public:
 	bool CloseAllFiles() OVERRIDE;
 	bool CloseWriteFile(int kid, sKmlLog& log);
 	bool OpenWithSystemApp(void) OVERRIDE;
-    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf) OVERRIDE;
+    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
 	p_data_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
 	std::string LogFileExtention() OVERRIDE { return std::string(".kml"); }

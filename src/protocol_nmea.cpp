@@ -1487,6 +1487,51 @@ int getNmeaMsgId(const void *msg, int msgSize)
 	return -1;
 }
 
+/**
+ * Converts NMEA message ID (eNmeaMsgIdInx) to talker string.
+ * Returns 0 on success, -1 on error if NMEA msg id not found 
+*/
+int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
+{
+	if (strSize < 5)
+	{
+		return -1;
+	}
+
+    switch(msgId)
+	{
+	case NMEA_MSG_ID_PIMU:	memcpy(str, "PIMU", 4);		return 0;
+	case NMEA_MSG_ID_PPIMU:	memcpy(str, "PPIMU", 5);	return 0;
+	case NMEA_MSG_ID_PRIMU:	memcpy(str, "PRIMU", 5);	return 0;
+	case NMEA_MSG_ID_PINS1:	memcpy(str, "PINS1", 5);	return 0;
+	case NMEA_MSG_ID_PINS2:	memcpy(str, "PINS2", 5);	return 0;
+	case NMEA_MSG_ID_PGPSP:	memcpy(str, "PGPSP", 5);	return 0;
+	case NMEA_MSG_ID_GxGGA:	memcpy(str, "GxGGA", 5);	return 0;
+	case NMEA_MSG_ID_GxGLL:	memcpy(str, "GxGLL", 5);	return 0;
+	case NMEA_MSG_ID_GxGSA:	memcpy(str, "GxGSA", 5);	return 0;
+	case NMEA_MSG_ID_GxRMC:	memcpy(str, "GxRMC", 5);	return 0;
+	case NMEA_MSG_ID_GxZDA:	memcpy(str, "GxZDA", 5);	return 0;
+	case NMEA_MSG_ID_PASHR:	memcpy(str, "PASHR", 5);	return 0;
+	case NMEA_MSG_ID_PSTRB:	memcpy(str, "PSTRB", 5);	return 0;
+	case NMEA_MSG_ID_INFO:	memcpy(str, "INFO", 4);		return 0;
+	case NMEA_MSG_ID_GxGSV:	memcpy(str, "GxGSV", 5);	return 0;
+	case NMEA_MSG_ID_GxVTG:	memcpy(str, "GxVTG", 5);	return 0;
+	case NMEA_MSG_ID_INTEL:	memcpy(str, "INTEL", 5);	return 0;
+	case NMEA_MSG_ID_COUNT:	memcpy(str, "COUNT", 5);	return 0;
+	case NMEA_MSG_ID_ASCB:	memcpy(str, "ASCB", 4);		return 0;
+	case NMEA_MSG_ID_ASCE:	memcpy(str, "ASCE", 4);		return 0;
+	case NMEA_MSG_ID_BLEN:	memcpy(str, "BLEN", 4);		return 0;
+	case NMEA_MSG_ID_EBLE:	memcpy(str, "EBLE", 4);		return 0;
+	case NMEA_MSG_ID_NELB:	memcpy(str, "NELB", 4);		return 0;
+	case NMEA_MSG_ID_PERS:	memcpy(str, "PERS", 4);		return 0;
+	case NMEA_MSG_ID_SRST:	memcpy(str, "SRST", 4);		return 0;
+	case NMEA_MSG_ID_STPB:	memcpy(str, "STPB", 4);		return 0;
+	case NMEA_MSG_ID_STPC:	memcpy(str, "STPC", 4);		return 0;
+	}
+
+	return -1;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////

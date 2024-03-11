@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogFileFactory.h"
 #include "ISDataMappings.h"
 #include "ISLogStats.h"
+#include "protocol_nmea.h"
 
 using namespace std;
 
@@ -79,8 +80,8 @@ void cLogStats::Clear()
 {
     for (uint32_t id = 0; id < DID_COUNT; id++)
     {
-        dataIdStats[id] = {};
-        dataIdStats[id].minTimestampDelta = 1.0E6;
+        isbStats[id] = {};
+        isbStats[id].minTimestampDelta = 1.0E6;
     }
     errorCount = 0;
     count = 0;
@@ -91,33 +92,46 @@ void cLogStats::LogError(const p_data_hdr_t* hdr)
     errorCount++;
     if (hdr != NULL && hdr->id < DID_COUNT)
     {
-        cLogStatDataId& d = dataIdStats[hdr->id];
+        cLogStatDataId& d = isbStats[hdr->id];
         d.errorCount++;
     }
 }
 
-void cLogStats::LogData(uint32_t dataId)
+cLogStatDataId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
 {
-    if (dataId < DID_COUNT)
+    switch (ptype)
     {
-        cLogStatDataId& d = dataIdStats[dataId];
-        d.count++;
-        count++;
+    default: return NULL;
+    case _PTYPE_INERTIAL_SENSE_DATA:
+    case _PTYPE_INERTIAL_SENSE_CMD:     return &isbStats[id];
+    case _PTYPE_NMEA:                   return &nmeaStats[id];
+    case _PTYPE_UBLOX:                  return &ubloxStats[id];
+    case _PTYPE_RTCM3:                  return &rtcm3Stats[id];
     }
 }
 
-void cLogStats::LogDataAndTimestamp(uint32_t dataId, double timestamp)
+void cLogStats::LogData(uint32_t id, protocol_type_t ptype)
 {
-    if (dataId < DID_COUNT)
+    cLogStatDataId *d = MsgStats(ptype, id);
+    if (d)
     {
-        cLogStatDataId& d = dataIdStats[dataId];
-        d.count++;
-        count++;
+        d->count++;
+    }
+    count++;
+}
+
+void cLogStats::LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype)
+{
+    cLogStatDataId *d = MsgStats(ptype, id);
+    if (d)
+    {
+        d->count++;
         if (timestamp != 0.0)
         {
-            d.LogTimestamp(timestamp);
+            d->LogTimestamp(timestamp);
         }
     }
+    count++;
 }
 
 void cLogStats::Printf()
@@ -128,12 +142,14 @@ void cLogStats::Printf()
     printf("LOG STATS\r\n");
     printf("----------");
     printf("Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
-    for (uint32_t id = 0; id < DID_COUNT; id++)
+    for (auto it = isbStats.begin(); it != isbStats.end(); ++it) 
     {
-        if (dataIdStats[id].count != 0)
+        int id = it->first;
+        cLogStatDataId &d = it->second;
+        if (d.count != 0)
         {
-            printf(" DID: %d\r\n", id);
-            dataIdStats[id].Printf();
+            printf(" ISB: %d\r\n", id);
+            d.Printf();
             printf("\r\n");
         }
     }
@@ -142,52 +158,65 @@ void cLogStats::Printf()
 
 }
 
+void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype)
+{
+    for (auto it = msgStats.begin(); it != msgStats.end(); ++it) 
+    {
+        uint32_t id = it->first;
+        cLogStatDataId& stat = it->second;
+        if (stat.count == 0 && stat.errorCount == 0)
+        {   // Exclude zero count stats
+            continue;
+        }
+
+        // Don't print using stringstream as it causes the system to hang on the EVB.
+        switch (ptype)
+        {
+        case _PTYPE_INERTIAL_SENSE_CMD:
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            statsFile->lprintf("%s - ID: %d (%s)\r\n", msgName, id, cISDataMappings::GetDataSetName(id));
+            break;
+
+        case _PTYPE_NMEA: 
+            {
+                char talker[10] = {0};
+                nmeaMsgIdToTalker(id, talker, sizeof(talker));
+                statsFile->lprintf("%s - %s\r\n", msgName, talker);
+            }
+            break;
+
+        case _PTYPE_UBLOX: 
+            {
+                uint8_t msgClass = 0xFF & (id>>0);
+                uint8_t msgID    = 0xFF & (id>>8);
+                statsFile->lprintf("%s - Class ID (0x%02x 0x%02x)\r\n", msgName, msgClass, msgID);
+            }
+            break;
+
+        default:
+            statsFile->lprintf("%s - ID: %d\r\n", msgName, id);
+            break;
+        }
+        statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
+        statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
+        statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
+        statsFile->lprintf("\r\n");
+    }
+}
+
 void cLogStats::WriteToFile(const string& file_name)
 {
     if (count != 0)
     {
         // flush log stats to disk
-#if 1
-        cISLogFileBase* statsFile = CreateISLogFile(file_name, "wb");
-        statsFile->lprintf("Total count: %d,   Total errors: \r\n\r\n", count, errorCount);
-        for (uint32_t id = 0; id < DID_COUNT; id++)
-        {
-            cLogStatDataId& stat = dataIdStats[id];
-            if (stat.count == 0 && stat.errorCount == 0)
-            {   // Exclude zero count stats
-                continue;
-            }
+        statsFile = CreateISLogFile(file_name, "wb");
+        statsFile->lprintf("Total msg count: %d,   Total errors: %d\r\n\r\n", count, errorCount);
 
-            statsFile->lprintf("Data Id: %d (%s)\r\n", id, cISDataMappings::GetDataSetName(id));
-            statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
-            statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
-            statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
-            statsFile->lprintf("\r\n");
-        }
-        CloseISLogFile(statsFile);
-#else
-        // The following code doesn't work on the EVB-2.  Converting stringstream to a string causes the system to hang.
-        CONST_EXPRESSION char CRLF[] = "\r\n";
-        stringstream stats;
-        stats << fixed << setprecision(6);
-        stats << "Total count: " << count << ",   Total errors: " << errorCount << CRLF << CRLF;
-        for (uint32_t id = 0; id < DID_COUNT; id++)
-        {
-            cLogStatDataId& stat = dataIdStats[id];
-            if (stat.count == 0 && stat.errorCount == 0)
-            {   // Exclude zero count stats
-                continue;
-            }
+        WriteMsgStats(isbStats,   "ISB",   _PTYPE_INERTIAL_SENSE_DATA);
+        WriteMsgStats(nmeaStats,  "NMEA" , _PTYPE_NMEA);
+        WriteMsgStats(ubloxStats, "UBLOX", _PTYPE_UBLOX);
+        WriteMsgStats(rtcm3Stats, "RTCM3", _PTYPE_RTCM3);
 
-            stats << "Data Id: " << id << " (" << cISDataMappings::GetDataSetName(id) << ")" << CRLF;
-            stats << "Count: " << stat.count << ",   Errors: " << stat.errorCount << CRLF;
-            stats << "Timestamp Delta (ave, min, max): " << stat.averageTimeDelta << ", " << stat.minTimestampDelta << ", " << stat.maxTimestampDelta << CRLF;
-            stats << "Timestamp Drops: " << stat.timestampDropCount << CRLF;
-            stats << CRLF;
-        }
-        cISLogFileBase* statsFile = CreateISLogFile(file_name, "wb");
-        statsFile->puts(stats.str().c_str());
         CloseISLogFile(statsFile);
-#endif
     }
 }
