@@ -102,7 +102,6 @@ bool cDeviceLog::OpenWithSystemApp()
 	return true;
 }
 
-
 bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
     if (dataHdr != NULL)
@@ -115,12 +114,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
 
 bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
-    // if (dataHdr != NULL)
-    // {
-    //     double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-    //     m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
-	// }
-    return true;
+   return true;
 }
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
