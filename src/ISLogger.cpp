@@ -369,24 +369,25 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 
 bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
 {
+	if (!m_enabled)
+	{
+		return false;
+	}
+
 	if (m_logType == LOGTYPE_RAW)
 	{	// Use other LogData() method
 		return false;
 	}
 
 	m_lastCommTime = GetTime();
-
-	if (!m_enabled)
-	{
-        m_errorFile.lprintf("Logger is not enabled\r\n");
-		return false;
-	}
-	else if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
+	
+	if (device >= m_devices.size() || dataHdr == NULL || dataBuf == NULL)
 	{
         m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
 		return false;
 	}
-	else if (LogHeaderIsCorrupt(dataHdr))
+	
+	if (LogHeaderIsCorrupt(dataHdr))
 	{
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
 		m_logStats.LogError(dataHdr);
@@ -427,25 +428,26 @@ bool cISLogger::LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_
 
 bool cISLogger::LogData(unsigned int device, int dataSize, const uint8_t* dataBuf)
 {
+	if (!m_enabled)
+	{
+		return false;
+	}
+
 	if (m_logType != LOGTYPE_RAW)
 	{	// Use other LogData() method
 		return false;
 	}
 
 	m_lastCommTime = GetTime();
-
-	if (!m_enabled)
-	{
-        m_errorFile.lprintf("Logger is not enabled\r\n");
-		return false;
-	}
-	else if (device >= m_devices.size() || dataSize <= 0 || dataBuf == NULL)
+	
+	if (device >= m_devices.size() || dataSize <= 0 || dataBuf == NULL)
 	{
         m_errorFile.lprintf("Invalid device handle or NULL data\r\n");
 		return false;
 	}
-    else if (!m_devices[device]->SaveData(dataSize, dataBuf, m_logStats))
-    {
+    
+	if (!m_devices[device]->SaveData(dataSize, dataBuf, m_logStats))
+    {	// Save Error
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
         m_logStats.LogError(NULL);
     }
