@@ -30,8 +30,6 @@ class get_pybind_include(object):
 ext_modules = [
     Extension('log_reader',
         ['src/log_reader.cpp',
-        #  '../../src/cltool.cpp',
-        #  '../../src/cltool_main.cpp',
          '../../src/convert_ins.cpp',
          '../../src/com_manager.c',
          '../../src/data_sets.c',
