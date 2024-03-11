@@ -79,8 +79,8 @@ public:
     void SetName(const char name[4]);
 	uint8_t* GetDataPtr();
 	bool PopFront(int32_t size);
-    int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0); // Returns number of bytes written to file and clears the chunk
-	int32_t ReadFromFile(cISLogFileBase* pFile);
+    int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0, bool writeHeader = true); // Returns number of bytes written to file and clears the chunk
+	int32_t ReadFromFile(cISLogFileBase* pFile, bool readHeader = true);
 	int32_t PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2 = NULL, int32_t d2Size = 0);
 
 	virtual void Clear();

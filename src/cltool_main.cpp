@@ -116,6 +116,22 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
     }
 }
 
+static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
+{
+	if (!i || !refreshDisplay)
+	{
+		return;
+	}
+
+	cISLogger &logger = *(i->Logger());
+
+	if (!logger.Enabled())
+	{
+		return;
+	}
+
+	printf("\nLogging %.1f KB to: %s\n", logger.LogSize() * 0.001f, logger.LogDirectory().c_str());
+}
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
@@ -537,6 +553,7 @@ static int cltool_createHost()
         }
         g_inertialSenseDisplay.Home();
         cout << g_inertialSenseDisplay.Hello();
+		display_logger_status(&inertialSenseInterface, refresh);
         display_server_client_status(&inertialSenseInterface, true, true, refresh);
     }
     cout << "Shutting down..." << endl;
@@ -685,6 +702,7 @@ static int inertialSenseMain()
                         bool refreshDisplay = g_inertialSenseDisplay.PrintData();
 
                         // Collect and print summary list of client messages received
+    					display_logger_status(&inertialSenseInterface, refreshDisplay);
                         display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                     }
                 }
