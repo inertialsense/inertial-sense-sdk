@@ -8,7 +8,6 @@
 #include <fstream>
 #include <algorithm>
 
-#include "ISDevice.h"
 #include "InertialSense.h"
 #include <protocol/FirmwareUpdate.h>
 

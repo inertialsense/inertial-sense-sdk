@@ -42,6 +42,9 @@ list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
+# find_package(udev)
+find_library( UDEV_LIB udev )
+
 add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
 # Include paths

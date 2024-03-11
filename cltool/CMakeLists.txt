@@ -3,7 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 project(cltool)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-
 # find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR} ${IS_SDK_DIR}/build ${IS_SDK_DIR}/build/Release)
 find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
 if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
