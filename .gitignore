@@ -29,3 +29,6 @@ cmake-build-debug
 Makefile
 CMakeCache.txt
 cmake_install.cmake
+libInertialSenseSDK.a
+
+
