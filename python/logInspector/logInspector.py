@@ -615,7 +615,10 @@ class LogInspectorWindow(QMainWindow):
         file.close()
 
         for fname in os.listdir(self.config['directory']):
-            if fname.endswith('.dat') or fname.endswith('.raw') or fname.endswith('.sdat'):
+            fname = fname.lower()
+            if fname.endswith('.dat') or \
+               fname.endswith('.raw') or \
+               fname.endswith('.sdat'):
                 try:
                     self.load(self.config['directory'])
                 except Exception as e:
