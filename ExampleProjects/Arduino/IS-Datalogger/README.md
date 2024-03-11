@@ -28,6 +28,10 @@ start automatically.
 
 This is a standard Arduino INO project, and can be opened directly by the Arduino IDE (> 2.x).
 
+**NOTE: Before you do anything else, please be sure to run the `ImportSdkFiles.bat`_(Windows)_ or `ImportSdkFiles.sh`_(Mac/Linux)_ from this directory.
+This will copy the necessary header/source files from the parent SDK directory into this directory, so the Arduino IDE
+can properly load this as a sketch.**
+
 This project requires on a pair of standard Arduino Libraries, which are both available from
 the Arduino IDE's "Library Manager".
 
