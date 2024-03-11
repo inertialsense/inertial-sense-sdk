@@ -200,22 +200,6 @@ public:
 	void LogRawData(int device, int dataSize, const uint8_t* data);
 
 	/**
-	 * @brief Get pointer to ISLogger
-	 * 
-	 * @return cISLogger* ISLogger pointer
-	 */
-	cISLogger* Logger() { return &m_logger; }
-
-	/**
-	 * @brief Log raw data directly to ISLogger
-	 * 
-	 * @param device Index of device (pHandle) for raw data.
-	 * @param dataSize Number of bytes of raw data.
-	 * @param data Pointer to raw data.
-	 */
-	void LogRawData(int device, int dataSize, const uint8_t* data);
-
-	/**
 	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure

@@ -133,26 +133,6 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 	printf("\nLogging %.1f KB to: %s\n", logger.LogSize() * 0.001f, logger.LogDirectory().c_str());
 }
 
-<<<<<<< HEAD
-=======
-static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
-{
-	if (!i || !refreshDisplay)
-	{
-		return;
-	}
-
-	cISLogger &logger = *(i->Logger());
-
-	if (!logger.Enabled())
-	{
-		return;
-	}
-
-	printf("\nLogging %.1f KB to: %s\n", logger.LogSize() * 0.001f, logger.LogDirectory().c_str());
-}
-
->>>>>>> origin/develop_1.12.0
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
@@ -559,7 +539,6 @@ static int cltool_createHost()
 
     inertialSenseInterface.StopBroadcasts();
 
-<<<<<<< HEAD
     unsigned int timeSinceClearMs = 0, curTimeMs;
     while (!g_inertialSenseDisplay.ExitProgram())
     {
@@ -578,26 +557,6 @@ static int cltool_createHost()
         display_server_client_status(&inertialSenseInterface, true, true, refresh);
     }
     cout << "Shutting down..." << endl;
-=======
-	unsigned int timeSinceClearMs = 0, curTimeMs;
-	while (!g_inertialSenseDisplay.ExitProgram())
-	{
-		inertialSenseInterface.Update();
-		curTimeMs = current_timeMs();
-		bool refresh = false;
-		if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs)
-		{	// Clear terminal
-			g_inertialSenseDisplay.Clear();
-			timeSinceClearMs = curTimeMs;
-			refresh = true;
-		}
-		g_inertialSenseDisplay.Home();
-		cout << g_inertialSenseDisplay.Hello();
-		display_logger_status(&inertialSenseInterface, refresh);
-		display_server_client_status(&inertialSenseInterface, true, true, refresh);
-	}
-	cout << "Shutting down..." << endl;
->>>>>>> origin/develop_1.12.0
 
     // close the interface cleanly, this ensures serial port and any logging are shutdown properly
     inertialSenseInterface.Close();
