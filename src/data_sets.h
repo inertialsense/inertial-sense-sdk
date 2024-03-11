@@ -1598,6 +1598,7 @@ typedef struct PACKED
     f_t                     dtTemp;			// (°C) Temperature from last calibration point
 } sensor_comp_unit_t;
 
+/** (DID_SCOMP) INTERNAL USE ONLY */
 typedef struct PACKED
 {                                       // Sensor temperature compensation
     uint32_t                timeMs;         // (ms) Time since boot up.
