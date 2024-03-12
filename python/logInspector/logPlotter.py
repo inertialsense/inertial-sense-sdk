@@ -2965,7 +2965,10 @@ class logPlot:
             ax[0, i].set_title('X %s %d' % (name, i))
             ax[1, i].set_title('Y %s %d' % (name, i))
             ax[2, i].set_title('Z %s %d' % (name, i))
-            ax[3, i].set_title('Magnitude %s %d' % (name, i))
+            if useTemp:
+                ax[3, i].set_title('Temperature %s %d' % (name, i))
+            else:
+                ax[3, i].set_title('Magnitude %s %d' % (name, i))            
             for d in range(3):
                 if useTemp:
                     ax[d,i].set_xlabel("Temperature (C)")
@@ -3019,8 +3022,11 @@ class logPlot:
                     ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
                     ax[1,i].plot(x, sensor[:,1]*scalar)
                     ax[2,i].plot(x, sensor[:,2]*scalar)
-                    if name=='acc':
-                        ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
+                    if not useTemp:
+                        ax[3,i].plot(x, temp)
+                    else:
+                        if name=='acc':
+                            ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
 
                     # Print mean and last value
                     xstr = "IMU" + str(i) + ", Mean: ["
