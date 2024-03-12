@@ -4,12 +4,6 @@
 #include "ISFileManager.h"
 #include "test_data_utils.h"
 
-#if defined(_WIN32)
-#define DATA_DIR "../logger_test_data/"
-#elif defined(__GNUC__)
-#define DATA_DIR "../logger_test_data/"
-#endif
-
 #if defined(DEBUG)
 #define DELETE_DIRECTORY(d)		// Leave test data in place for inspection
 #else
