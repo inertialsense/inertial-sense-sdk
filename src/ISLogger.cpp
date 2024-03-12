@@ -264,6 +264,67 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
     return ISFileManager::PathIsDir(m_directory);
 }
 
+
+bool nextStreamDigit(stringstream &ss, string &str)
+{
+	char c;
+	if (!(ss >> c))	// Read delimiter
+	{
+		return false;
+	}
+
+	if (isdigit(c))
+	{	// If not delimeter, put first char/digit back
+		ss.unget();  	
+	}
+
+	if (!getline(ss, str, '_')) 
+	{ 
+		return false;	// No more data 
+	}
+
+	return true;
+}
+
+
+bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
+{
+    serialNum = -1;
+    date.clear();
+	time.clear();
+    index = -1;
+
+	// Remove file extension
+	size_t n = filename.rfind('.');
+	if (n == string::npos)
+	{	// No file extension
+		return false;
+	}
+	string content = filename.substr(0, n);
+
+	n = content.find(IS_LOG_FILE_PREFIX);
+	string str;
+	if (n != string::npos)
+	{	// Has prefix - get serial number
+		content = content.substr(n+sizeof(IS_LOG_FILE_PREFIX)-1);
+		stringstream ss(content);
+
+		// Read serial number, date, time, index
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	serialNum = stoi(str); 
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	date = str;  
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	time = str;  
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	index = stoi(str);
+	}
+	else
+	{	// No prefix - only index number
+		stringstream ss(content);
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	index = stoi(str);
+	}
+
+	return true;
+}
+
+
 bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vector<string> serials)
 {
 	// Delete and clear prior devices
@@ -292,69 +353,58 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 		return false;
 	}
 
+    int serialNum, index;
+	string date, time;
+
 	for (size_t i = 0; i < files.size(); i++)
 	{
-		string name = ISFileManager::GetFileName(files[i].name);
+        string name = ISFileManager::GetFileName(files[i].name);
+        ParseFilename(name, serialNum, date, time, index);
 
-		// check for log file prefix
-		size_t endOfLogPrefixIndex = name.find(IS_LOG_FILE_PREFIX);
-		if (endOfLogPrefixIndex != string::npos)
+		if (serialNum >= 0)
 		{
-			endOfLogPrefixIndex += IS_LOG_FILE_PREFIX_LENGTH;
-			size_t serialNumberEndIndex = name.find('_', endOfLogPrefixIndex);
-			if (serialNumberEndIndex != string::npos)
+			string serialNumber = to_string(serialNum);
+
+			// if we don't have a timestamp yet, see if we can parse it from the filename, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
+			if (m_timeStamp.length() == 0)
 			{
-				string serialNumber = name.substr(endOfLogPrefixIndex, serialNumberEndIndex - endOfLogPrefixIndex);
+				m_timeStamp = date;
+				m_timeStamp += (m_timeStamp.size() ? "_" : "") + time;
+			}
 
-				// if we don't have a timestamp yet, see if we can parse it from the filename, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
-				if (m_timeStamp.length() == 0)
+			// check for unique serial numbers
+			if (serialNumbers.find(serialNumber) == serialNumbers.end())
+			{
+				if (serials.size() == 0 || ((find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end() ||
+					find(serials.begin(), serials.end(), "ALL") != serials.end()))) // and that it is a serial number we want to use
 				{
-					// find _ at end of timestamp
-					size_t timestampIndex = name.find_last_of('_');
-					if (timestampIndex == string::npos)
-					{
-						timestampIndex = name.find_last_of('.');
-					}
-					if (timestampIndex != string::npos && timestampIndex - ++serialNumberEndIndex == IS_LOG_TIMESTAMP_LENGTH)
-					{
-						m_timeStamp = name.substr(timestampIndex - IS_LOG_TIMESTAMP_LENGTH, IS_LOG_TIMESTAMP_LENGTH);
-					}
-				}
+					serialNumbers.insert(serialNumber);
 
-				// check for unique serial numbers
-                if (serialNumbers.find(serialNumber) == serialNumbers.end())
-                {
-                    if (serials.size() == 0 || ((find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end() ||
-                        find(serials.begin(), serials.end(), "ALL") != serials.end()))) // and that it is a serial number we want to use
-                    {
-                        serialNumbers.insert(serialNumber);
-
-                        // Add devices
-						{
+					// Add devices
+					{
 #if !PLATFORM_IS_EMBEDDED
-							const std::lock_guard<std::mutex> lock(g_devices_mutex);
+						const std::lock_guard<std::mutex> lock(g_devices_mutex);
 #endif
-							switch (logType)
-							{
-							default:
-							case cISLogger::LOGTYPE_DAT:    m_devices.push_back(make_shared<cDeviceLogSerial>()); break;
-							case cISLogger::LOGTYPE_RAW:    m_devices.push_back(make_shared<cDeviceLogRaw>()); break;
+						switch (logType)
+						{
+						default:
+						case cISLogger::LOGTYPE_DAT:    m_devices.push_back(make_shared<cDeviceLogSerial>()); break;
+						case cISLogger::LOGTYPE_RAW:    m_devices.push_back(make_shared<cDeviceLogRaw>()); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-							case cISLogger::LOGTYPE_SDAT:   m_devices.push_back(make_shared<cDeviceLogSorted>()); break;
-							case cISLogger::LOGTYPE_CSV:    m_devices.push_back(make_shared<cDeviceLogCSV>()); break;
-							case cISLogger::LOGTYPE_JSON:   m_devices.push_back(make_shared<cDeviceLogJSON>()); break;
+						case cISLogger::LOGTYPE_SDAT:   m_devices.push_back(make_shared<cDeviceLogSorted>()); break;
+						case cISLogger::LOGTYPE_CSV:    m_devices.push_back(make_shared<cDeviceLogCSV>()); break;
+						case cISLogger::LOGTYPE_JSON:   m_devices.push_back(make_shared<cDeviceLogJSON>()); break;
 #endif
-							}
-                        }
-                        m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
+						}
+					}
+					m_devices.back()->SetupReadInfo(directory, serialNumber, m_timeStamp);
 
 #if (LOG_DEBUG_GEN == 2)
-						PrintProgress();
+					PrintProgress();
 #elif LOG_DEBUG_GEN
-						printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
+					printf("cISLogger::LoadFromDirectory SN%s %s (file %d of %d)\n", serialNumber.c_str(), m_timeStamp.c_str(), (int)i + 1, (int)files.size());
 #endif
-					}
-                }
+				}
 			}
 		}
 	}

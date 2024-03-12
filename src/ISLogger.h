@@ -172,6 +172,8 @@ public:
 		return cISLogger::eLogType::LOGTYPE_DAT;
 	}
 
+	static bool ParseFilename(std::string filename, int &serialNum, std::string &date, std::string &time, int &index);
+
 private:
 #if CPP11_IS_ENABLED
     cISLogger(const cISLogger& copy) = delete;
