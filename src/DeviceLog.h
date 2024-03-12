@@ -26,7 +26,6 @@ extern "C"
 
 // never change these!
 #define IS_LOG_FILE_PREFIX "LOG_SN"
-#define IS_LOG_FILE_PREFIX_LENGTH 6
 #define IS_LOG_TIMESTAMP_LENGTH 15
 
 
