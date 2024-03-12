@@ -57,7 +57,7 @@ TEST(protocol_nmea, nmea_parse_ascb)
         ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
         
         //cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
-        for (int j=0; j<NMEA_MSG_ID_COUNT; j++)
+        for (int j=1; j<NMEA_MSG_ID_COUNT; j++)
         {
             //cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n"; 
             ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );
@@ -101,7 +101,7 @@ TEST(protocol_nmea, nmea_parse_asce)
          
         // cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
         ASSERT_EQ( a.rmcNmea.nmeaBits, b.rmcNmea.nmeaBits );
-        for (int j=0; j < NMEA_MSG_ID_COUNT; j++)
+        for (int j=1; j < NMEA_MSG_ID_COUNT; j++)
         {
             // cout << "J: " << j << " a: " << a.rmcNmea.nmeaPeriod[j] << " b: " <<  b.rmcNmea.nmeaPeriod[j] << "\n";  
             ASSERT_EQ( a.rmcNmea.nmeaPeriod[j], b.rmcNmea.nmeaPeriod[j] );

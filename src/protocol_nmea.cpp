@@ -394,7 +394,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 
 void nmea_set_rmc_period_multiple(uint32_t& bits, uint8_t* period, uint16_t* tmp)
 {
-	for(int i = 0; i < NMEA_MSG_ID_COUNT; i++)
+	for(int i = 1; i < NMEA_MSG_ID_COUNT; i++)
 		nmea_enable_stream(bits, period, i,  tmp[i]);
 }
 
@@ -1517,7 +1517,6 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
 	case NMEA_MSG_ID_GxGSV:	memcpy(str, "GxGSV", 5);	return 0;
 	case NMEA_MSG_ID_GxVTG:	memcpy(str, "GxVTG", 5);	return 0;
 	case NMEA_MSG_ID_INTEL:	memcpy(str, "INTEL", 5);	return 0;
-	case NMEA_MSG_ID_COUNT:	memcpy(str, "COUNT", 5);	return 0;
 	case NMEA_MSG_ID_ASCB:	memcpy(str, "ASCB", 4);		return 0;
 	case NMEA_MSG_ID_ASCE:	memcpy(str, "ASCE", 4);		return 0;
 	case NMEA_MSG_ID_BLEN:	memcpy(str, "BLEN", 4);		return 0;
