@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "../../../SDK/src/ISLogger.h"
-#include "../../../SDK/src/ISDataMappings.h"
-#include "../../../SDK/src/ISFileManager.h"
+#include "ISLogger.h"
+#include "ISDataMappings.h"
+#include "ISFileManager.h"
 #include "test_data_utils.h"
 
 #if defined(_WIN32)
@@ -10,7 +10,11 @@
 #define DATA_DIR "../logger_test_data/"
 #endif
 
-#define CLEANUP_TEST_FILES 	1
+#if defined(DEBUG)
+#define DELETE_DIRECTORY(d)		// Leave test data in place for inspection
+#else
+#define DELETE_DIRECTORY(d)		ISFileManager::DeleteDirectory(d)
+#endif
 
 using namespace std;
 
@@ -160,66 +164,84 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	finalLogger1.CloseAllFiles();
 	finalLogger2.CloseAllFiles();
 
-#if CLEANUP_TEST_FILES==1
 	// Cleanup test files
-	ISFileManager::DeleteDirectory(outputPath1);
-	ISFileManager::DeleteDirectory(outputPath2);
-#endif
+	DELETE_DIRECTORY(outputPath1);
+	DELETE_DIRECTORY(outputPath2);
 
 	// Print newline to print test results at start of line
 	printf("\n");
 }
 
+void TestParseFileName(string filename, int rSerialNum, string rDate, string rTime, int rIndex)
+{
+	int serialNum, index; 
+	string date, time;
+	cISLogger::ParseFilename(filename, serialNum, date, time, index);
+	EXPECT_EQ(serialNum, rSerialNum);
+	EXPECT_EQ(date, rDate);
+	EXPECT_EQ(time, rTime);
+	EXPECT_EQ(index, rIndex);
+}
+
 
 #if 1	// Enabled
 
-TEST(Logger, dat_conversion)
+TEST(ISLogger, parse_filename)
+{
+	TestParseFileName("LOG_SN60339_20240311_132545_0000.RAW", 60339, "20240311", "132545", 0);
+	TestParseFileName("LOG_SN60339_20240311_132545_0001.RAW", 60339, "20240311", "132545", 1);
+	TestParseFileName("LOG_SN60339_20240311_132545_0002.raw", 60339, "20240311", "132545", 2);
+	TestParseFileName("LOG_SN60339123_20240311_132545_0992.raw", 60339123, "20240311", "132545", 992);
+	TestParseFileName("LOG_SN60339_20240311_214365.raw", 60339, "20240311", "214365", -1);
+	TestParseFileName("LOG_SN60339_20240311_0007.raw", 60339, "20240311", "0007", -1);
+	TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1);
+	TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1);
+	TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1);
+	TestParseFileName("00000000.RAW", -1, "", "", 0);
+	TestParseFileName("00000001.RAW", -1, "", "", 1);
+	TestParseFileName("00000002.raw", -1, "", "", 2);
+	TestParseFileName("12345678.RAW", -1, "", "", 12345678);
+}
+
+TEST(ISLogger, dat_conversion)
 {
 	string logPath = "test_log";
 	GenerateLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
-#if CLEANUP_TEST_FILES==1
-	ISFileManager::DeleteDirectory(logPath);
-#endif
+	DELETE_DIRECTORY(logPath);
 }
 
-TEST(Logger, sdat_conversion)
+TEST(ISLogger, sdat_conversion)
 {
 	string logPath = "test_log";
 	GenerateLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_CSV);
-#if CLEANUP_TEST_FILES==1
-	ISFileManager::DeleteDirectory(logPath);
-#endif
+	DELETE_DIRECTORY(logPath);
 }
 
-TEST(Logger, raw_conversion)
+TEST(ISLogger, raw_conversion)
 {
 	string logPath = "test_log";
 	GenerateLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_RAW);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_CSV);
-#if CLEANUP_TEST_FILES==1
-	ISFileManager::DeleteDirectory(logPath);
-#endif
+	DELETE_DIRECTORY(logPath);
 }
 
-TEST(Logger, raw_conversion_with_garbage)
+TEST(ISLogger, raw_conversion_with_garbage)
 {
 	string logPath = "test_log";
 	GenerateLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_RAW, 20, GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT, false);
-#if CLEANUP_TEST_FILES==1
-	ISFileManager::DeleteDirectory(logPath);
-#endif
+	DELETE_DIRECTORY(logPath);
 }
 
-// TEST(Logger, dat_conversion_with_multiple_files_issue_Aug_2017)
+// TEST(ISLogger, dat_conversion_with_multiple_files_issue_Aug_2017)
 // {
 // 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
 // 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
@@ -229,7 +251,7 @@ TEST(Logger, raw_conversion_with_garbage)
 #else	// Disabled
 
 #pragma message("-------------------------------------------------------------------------------------------")
-#pragma message("WARNING!!! test_logger.cpp tests have been temporarily disabled.  Please re-enable them!!!")
+#pragma message("WARNING!!! test_ISLogger.cpp tests have been temporarily disabled.  Please re-enable them!!!")
 #pragma message("-------------------------------------------------------------------------------------------")
 
 #endif
