@@ -110,7 +110,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors){ printf("Parse error in cDeviceLogRaw::SaveData()!!!\n"); }
+				if (m_showParseErrors){ printf("SaveData() parse errors: %d\n", m_comm.rxErrorCount); }
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
@@ -256,7 +256,7 @@ p_data_t* cDeviceLogRaw::ReadDataFromChunk()
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors){ printf("Parse error in cDeviceLogRaw::ReadDataFromChunk()!!!\n"); }
+				if (m_showParseErrors){ printf("ReadDataFromChunk() parse errors: %d\n", m_comm.rxErrorCount); }
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
