@@ -264,26 +264,66 @@ bool cISLogger::InitDevicesForWriting(int numDevices)
     return ISFileManager::PathIsDir(m_directory);
 }
 
-bool parseFilename(string filename, int &serialNum, string &dateTime, int &index)
-{
-	size_t n = filename.find(IS_LOG_FILE_PREFIX);
 
+bool nextStreamDigit(stringstream &ss, string &str)
+{
+	char c;
+	if (!(ss >> c))	// Read delimiter
+	{
+		return false;
+	}
+
+	if (isdigit(c))
+	{	// If not delimeter, put first char/digit back
+		ss.unget();  	
+	}
+
+	if (!getline(ss, str, '_')) 
+	{ 
+		return false;	// No more data 
+	}
+
+	return true;
+}
+
+
+bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
+{
+    serialNum = -1;
+    date.clear();
+	time.clear();
+    index = -1;
+
+	// Remove file extension
+	size_t n = filename.rfind('.');
+	if (n == string::npos)
+	{	// No file extension
+		return false;
+	}
+	string content = filename.substr(0, n);
+
+	n = content.find(IS_LOG_FILE_PREFIX);
+	string str;
 	if (n != string::npos)
 	{	// Has prefix - get serial number
-        string serialStr = filename.substr(sizeof(IS_LOG_FILE_PREFIX)-1);
-        serialNum = stoi(serialStr);
+		content = content.substr(n+sizeof(IS_LOG_FILE_PREFIX)-1);
+		stringstream ss(content);
 
-		// endOfLogPrefixIndex += sizeof(IS_LOG_FILE_PREFIX);
-		// size_t serialNumberEndIndex = filename.find('_', endOfLogPrefixIndex);
-
+		// Read serial number, date, time, index
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	serialNum = stoi(str); 
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	date = str;  
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	time = str;  
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	index = stoi(str);
 	}
 	else
-	{	// No serial number
-		serialNum = -1;
+	{	// No prefix - only index number
+		stringstream ss(content);
+		if (!nextStreamDigit(ss, str) && str.size()){ return false; } 	index = stoi(str);
 	}
 
-
+	return true;
 }
+
 
 bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vector<string> serials)
 {
@@ -313,60 +353,23 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 		return false;
 	}
 
-	int serialNum; string dateTime; int index;
-	size_t endOfLogPrefixIndex;
-	bool hasPrefix = false;
-	bool hasSerial = false;
-	bool hasDateTime = false;
-    for (size_t i = 0; i < files.size(); i++)
-    {
-        parseFilename(ISFileManager::GetFileName(files[i].name), serialNum, dateTime, index);
-
-		// // check for log file prefix
-		// if (name.find(IS_LOG_FILE_PREFIX) != string::npos)
-		// {
-		// 	hasPrefix = true;
-		// 	break;
-		// }
-    }
+    int serialNum, index;
+	string date, time;
 
 	for (size_t i = 0; i < files.size(); i++)
 	{
         string name = ISFileManager::GetFileName(files[i].name);
+        ParseFilename(name, serialNum, date, time, index);
 
-		if (hasPrefix)
-		{	// check for log file prefix
-			endOfLogPrefixIndex = name.find(IS_LOG_FILE_PREFIX);
-		}
-
-		if (hasPrefix)
+		if (serialNum >= 0)
 		{
-			if (endOfLogPrefixIndex == string::npos)
-			{	// Missing prefix
-				continue;
-			}
-			endOfLogPrefixIndex += sizeof(IS_LOG_FILE_PREFIX);
-			size_t serialNumberEndIndex = name.find('_', endOfLogPrefixIndex);
-		}
-
-		size_t serialNumberEndIndex = string::npos;
-		if (serialNumberEndIndex != string::npos)
-		{
-			string serialNumber = name.substr(endOfLogPrefixIndex, serialNumberEndIndex - endOfLogPrefixIndex);
+			string serialNumber = to_string(serialNum);
 
 			// if we don't have a timestamp yet, see if we can parse it from the filename, i.e. IS_LOG_FILE_PREFIX 30013_20170103_151023_001
 			if (m_timeStamp.length() == 0)
 			{
-				// find _ at end of timestamp
-				size_t timestampIndex = name.find_last_of('_');
-				if (timestampIndex == string::npos)
-				{
-					timestampIndex = name.find_last_of('.');
-				}
-				if (timestampIndex != string::npos && timestampIndex - ++serialNumberEndIndex == IS_LOG_TIMESTAMP_LENGTH)
-				{
-					m_timeStamp = name.substr(timestampIndex - IS_LOG_TIMESTAMP_LENGTH, IS_LOG_TIMESTAMP_LENGTH);
-				}
+				m_timeStamp = date;
+				m_timeStamp += (m_timeStamp.size() ? "_" : "") + time;
 			}
 
 			// check for unique serial numbers
