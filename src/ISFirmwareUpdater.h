@@ -8,7 +8,7 @@
 #include <fstream>
 #include <algorithm>
 
-#include "InertialSense.h"
+// #include "InertialSense.h"
 #include <protocol/FirmwareUpdate.h>
 
 #include "ISDFUFirmwareUpdater.h"
@@ -128,10 +128,11 @@ public:
      * @param _target the fwUpdate target device (passed for device/firmware validation and protocol compatibility)
      * @param deviceId the device's unique id/serial number from the manufacturing/dev info used to ensure we are targeting a specific device - if 0, this is ignored
      * @param filename  the filename of the firmware image to upload.  This MUST be a .hex file
+     * @param flags additional flags used to configure options for the firmware update process
      * @param progressRate the period (ms) in which progress updates are sent back to this class to report back to the UI, etc.
      * @return return true if the ISDFUFirmwareUpdater was instantiated and validations passed indicating that the device is ready to start receiving image data.
      */
-    fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t _target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
+    fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
 
     fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
 
