@@ -144,8 +144,6 @@ bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum,
 		m_fileName = fileInfos[0].name;
 		for (size_t i = 0; i < fileInfos.size(); i++)
 		{
-			cout << fileInfos[i].name << endl;
-
 			m_fileNames.push_back(fileInfos[i].name);
 		}
 	}
