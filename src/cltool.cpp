@@ -162,6 +162,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.outputOnceDid = 0;
     g_commandLineOptions.platformType = -1;
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
+    g_commandLineOptions.runDuration = 0; // run until interrupted, by default
 
     if(argc <= 1)
     {   // Display usage menu if no options are provided
@@ -209,6 +210,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-dboc"))
         {
             g_commandLineOptions.disableBroadcastsOnClose = true;
+        }
+        else if (startsWith(a, "-dur="))
+        {
+            g_commandLineOptions.runDuration = (uint32_t)(atof(&a[5])*1000.0);
         }
         else if (startsWith(a, "-dids"))
         {

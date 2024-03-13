@@ -580,7 +580,7 @@ static int inertialSenseMain()
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
 
     // if replay data log specified on command line, do that now and return
-    if (g_commandLineOptions.replayDataLog)
+        if (g_commandLineOptions.replayDataLog)
     {
         // [REPLAY INSTRUCTION] 1.) Replay data log
         return !cltool_replayDataLog();
@@ -666,6 +666,7 @@ static int inertialSenseMain()
                 }
 
                 // Main loop. Could be in separate thread if desired.
+                uint32_t startTime = current_timeMs();
                 while (!g_inertialSenseDisplay.ExitProgram())
                 {
                     g_inertialSenseDisplay.GetKeyboardInput();
@@ -705,6 +706,9 @@ static int inertialSenseMain()
     					display_logger_status(&inertialSenseInterface, refreshDisplay);
                         display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                     }
+
+                    if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration))
+                        break;
                 }
             }
             catch (...)
