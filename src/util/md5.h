@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <istream>
 
-#include "ISConstants.h"
+#include "..\ISConstants.h"
 #include <string>
 
 typedef union {
