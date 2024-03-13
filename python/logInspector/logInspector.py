@@ -317,7 +317,7 @@ class LogInspectorWindow(QMainWindow):
                 msg.exec()
 
     def load(self, directory):
-        print("loading files from " + directory)
+        print("\nLoading files from " + directory)
         self.setStatus("Loading...")
         # if self.log is None:
         self.log = Log()
@@ -622,7 +622,10 @@ class LogInspectorWindow(QMainWindow):
         file.close()
 
         for fname in os.listdir(self.config['directory']):
-            if fname.endswith('.dat'):
+            fname = fname.lower()
+            if fname.endswith('.dat') or \
+               fname.endswith('.raw') or \
+               fname.endswith('.sdat'):
                 try:
                     self.load(self.config['directory'])
                 except Exception as e:

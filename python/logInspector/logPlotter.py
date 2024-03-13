@@ -48,11 +48,21 @@ class logPlot:
         self.d = 1
         self.residual = False
         self.timestamp = False
-        self.legends = InteractiveLegend()
+        self.enableLegends = False  # Enable interactive legends
+        if self.enableLegends:
+            self.legends = InteractiveLegend()
         if log:
             self.setLog(log)
         else:
             self.log = None
+            
+    def setup_and_wire_legend(self):
+        if self.enableLegends:
+            self.legends.setup_and_wire()
+        
+    def legends_add(self, l):
+        if self.enableLegends:
+            self.legends.add(l)
 
     def setLog(self, log):
         self.log = log
@@ -176,16 +186,16 @@ class logPlot:
                 ax[1,1].plot(refTime, resNed[:,1])
                 ax[2,1].plot(refTime, resNed[:,2])
 
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         if self.residual: 
-            self.legends.add(ax[0,1].legend(ncol=2))
+            self.legends_add(ax[0,1].legend(ncol=2))
             for i in range(3):
                 self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'posNED')
 
     def nedAnnotateTimestamp(self, ax, time, east, north, textOffset=(0.0, 0.0)):
@@ -241,10 +251,10 @@ class logPlot:
                     ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
-        self.legends.add(ax.legend(ncol=2))
+        self.legends_add(ax.legend(ncol=2))
         ax.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'posNEDMap')
 
     def gpsPosNEDMap(self, fig=None):
@@ -280,10 +290,10 @@ class logPlot:
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
-        self.legends.add(ax.legend(ncol=2))
+        self.legends_add(ax.legend(ncol=2))
         ax.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'gpsPosNEDMap')
 
     def posLLA(self, fig=None):
@@ -314,12 +324,12 @@ class logPlot:
                 timeBaro = getTimeFromTow(self.getData(d, DID_BAROMETER, 'time')+ self.getData(d, DID_GPS1_POS, 'towOffset')[-1])
                 ax[2].plot(timeBaro, self.getData(d, DID_BAROMETER, 'mslBar'), label='Baro')
 
-        self.legends.add(ax[0].legend(ncol=2))
-        self.legends.add(ax[2].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
+        self.legends_add(ax[2].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'insLLA')
 
     def gpsLLA(self, fig=None):
@@ -345,11 +355,11 @@ class logPlot:
                         ax[1].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,1])
                         ax[2].plot(time, self.getData(d, DID_GPS2_POS, 'lla')[:,2])
 
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'gpsLLA')
 
     def getGpsPosNED(self, device, did, refLla):
@@ -386,11 +396,11 @@ class logPlot:
                 ax[2].plot(gps2Time, gps2Ned[:, 2])
                 ax[3].plot(gps2Time, gps2NedNorm)
 
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'gpsPosNED')
 
     def getGpsVelNed(self, device, did, refLla):
@@ -482,16 +492,16 @@ class logPlot:
                 ax[2,1].plot(refTime, resNed[:,2])
                 ax[3,1].plot(refTime, resVelNorm, label=self.log.serials[d])
 
-        self.legends.add(ax[3,0].legend(ncol=2))
+        self.legends_add(ax[3,0].legend(ncol=2))
         if self.residual:
-            self.legends.add(ax[0,1].legend(ncol=2))
+            self.legends_add(ax[0,1].legend(ncol=2))
             for i in range(3):
                 self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'gpsVelNED')
         
     def getGpsNedVel(self, d):
@@ -570,16 +580,16 @@ class logPlot:
                 ax[2,1].plot(refTime, resNed[:,2])
                 ax[3,1].plot(refTime, resVelNorm, label=self.log.serials[d])
 
-        self.legends.add(ax[3,0].legend(ncol=2))
+        self.legends_add(ax[3,0].legend(ncol=2))
         if self.residual:
-            self.legends.add(ax[0,1].legend(ncol=2))
+            self.legends_add(ax[0,1].legend(ncol=2))
             for i in range(3):
                 self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'velNED')
 
     def angle_wrap(self, angle):
@@ -682,16 +692,16 @@ class logPlot:
                 ax[1,1].plot(refTime, resUvw[:,1])
                 ax[2,1].plot(refTime, resUvw[:,2])
 
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         if self.residual:
-            self.legends.add(ax[0,1].legend(ncol=2))
+            self.legends_add(ax[0,1].legend(ncol=2))
             for i in range(3):
                 self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'velUVW')
 
     def attitude(self, fig=None):
@@ -757,16 +767,16 @@ class logPlot:
                 ax[1,1].plot(refTime, resEuler[:,1]*RAD2DEG)
                 ax[2,1].plot(refTime, resEuler[:,2]*RAD2DEG)
 
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         if self.residual:
-            self.legends.add(ax[0,1].legend(ncol=2))
+            self.legends_add(ax[0,1].legend(ncol=2))
             for i in range(3):
                 self.setPlotYSpanMin(ax[i,1], 3.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'attINS')
 
     def gpx1Heading(self):
@@ -900,16 +910,16 @@ class logPlot:
         #     self.configureSubplot(ax[0], 'RTK Compassing Error: ' + f'{gpxRms:.3}' + ' deg RMS', 'deg')
 
         #     ax[1].plot(gpxTime, gpxHeading*RAD2DEG, label='GPX')
-        #     self.legends.add(ax[1].legend(ncol=2))
+        #     self.legends_add(ax[1].legend(ncol=2))
         #     ax[0].plot(gpxTime, gpsHeadingErrDeg, label='GPX - F9P')
-        #     self.legends.add(ax[0].legend(ncol=2))
+        #     self.legends_add(ax[0].legend(ncol=2))
 
-        self.legends.add(ax[2,0].legend(ncol=2))
+        self.legends_add(ax[2,0].legend(ncol=2))
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'heading')
 
     def insStatus(self, fig=None):
@@ -1012,7 +1022,7 @@ class logPlot:
 
             ax.grid(True)
 
-            self.legends.setup_and_wire()
+            self.setup_and_wire_legend()
             self.saveFig(fig, 'iStatus')
         except:
             print(RED + "problem plotting insStatus: " + sys.exc_info()[0] + RESET)
@@ -1113,7 +1123,7 @@ class logPlot:
                 
             ax.grid(True)
 
-            self.legends.setup_and_wire()
+            self.setup_and_wire_legend()
             self.saveFig(fig, 'Hardware Status')
         except:
             print(RED + "problem plotting hdwStatus: " + sys.exc_info()[0] + RESET)
@@ -1155,7 +1165,7 @@ class logPlot:
 
             if plot_legend:
                 plot_legend = 0
-                self.legends.add(ax[2].legend(ncol=2))
+                self.legends_add(ax[2].legend(ncol=2))
 
             cnt = 0
             ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x04000000) != 0))
@@ -1174,11 +1184,11 @@ class logPlot:
 
         self.setPlotYSpanMin(ax[1], 5)
 
-        self.legends.add(ax[1].legend(ncol=2))
+        self.legends_add(ax[1].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'Gps Stats')
         # except:
         #     print(RED + "problem plotting gpsStats: " + sys.exc_info()[0] + RESET)
@@ -1229,7 +1239,7 @@ class logPlot:
             ax[3].plot(rtkRelTime, dist2base)
             ax[4].plot(rtkRelTime, self.getData(d, relDid, 'baseToRoverHeading')*180.0/np.pi)
             ax[5].plot(rtkRelTime, self.getData(d, relDid, 'baseToRoverHeadingAcc')*180.0/np.pi)
-            self.legends.add(ax[0].legend(ncol=2))
+            self.legends_add(ax[0].legend(ncol=2))
 
         self.setPlotYSpanMin(ax[1], 0.5)    # Differential age
         self.setPlotYSpanMin(ax[3], 1.0)    # Distance to base
@@ -1237,7 +1247,7 @@ class logPlot:
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'rtk'+name+'Stats')
         # except:
             # print(RED + "problem plotting rtkStats: " + sys.exc_info()[0] + RESET)
@@ -1274,12 +1284,12 @@ class logPlot:
             ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
             ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
 
-            self.legends.add(ax[0].legend(ncol=2))
+            self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'rtk'+name+'BaseToRoverVector')
 
     def rtkObsGPS1(self, fig=None):
@@ -1374,12 +1384,12 @@ class logPlot:
                 ax[5].plot(t, np.squeeze(D[1,ind,k]))
                 ax[6].plot(t, np.squeeze(LLI[0,ind,k]))
                 ax[7].plot(t, np.squeeze(LLI[1,ind,k]))
-                self.legends.add(ax[0].legend(ncol=2))
+                self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'rtk'+name+'obs_sd')
 
     def rtkObsSingleDiff(self, fig=None):
@@ -1508,12 +1518,12 @@ class logPlot:
                 ax[2].plot(t1, delta_L[0,:,k])
                 ax[3].plot(t1, delta_L[1,:,k])
 
-                self.legends.add(ax[0].legend(ncol=2))
+                self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'rtk'+name+'obs_sd')
 
     def rtkPosMisc(self, fig=None):
@@ -1563,13 +1573,13 @@ class logPlot:
             # dist2base[dist2base > 1e5] = np.nan
             # ax[3].plot(rtkRelTime, dist2base)
             # ax[4].plot(rtkMiscTime, self.getData(d, miscDid, 'cycleSlipCount'))
-            # self.legends.add(ax[0].legend(ncol=2))
+            # self.legends_add(ax[0].legend(ncol=2))
             for a in ax:
                 for b in a:
                     b.grid(True)
 
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'rtk'+name+'Misc')
         # except:
             # print(RED + "problem plotting rtkStats: " + sys.exc_info()[0] + RESET)
@@ -1594,7 +1604,7 @@ class logPlot:
                 a.grid(True)
 
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'rtkRel')
 
     def loadGyros(self, device):
@@ -1763,16 +1773,16 @@ class logPlot:
                         ax[i, 0].plot(refTime[d], refPqr[d][:, i] * 180.0/np.pi, color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(pqrCount):
-            self.legends.add(ax[0][i].legend(ncol=2))
+            self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
-                self.legends.add(ax[0,1].legend(ncol=2))
+                self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'pqrIMU')
 
     def imuAcc(self, fig=None):
@@ -1838,16 +1848,16 @@ class logPlot:
                         ax[i, 0].plot(refTime[d], refAcc[d][:, i], color='black', linestyle = 'dashed', label = plabel)
 
         for i in range(accCount):
-            self.legends.add(ax[0][i].legend(ncol=2))
+            self.legends_add(ax[0][i].legend(ncol=2))
             if plotResidual:
-                self.legends.add(ax[0,1].legend(ncol=2))
+                self.legends_add(ax[0,1].legend(ncol=2))
                 for i in range(3):
                     self.setPlotYSpanMin(ax[i,1], 1.0)
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'accIMU')
 
     def allanVariancePQR(self, fig=None):
@@ -1923,9 +1933,9 @@ class logPlot:
         for i in range(pqrCount):
             for d in range(3):
                 ax[d][i].grid(True, which='both')
-                self.legends.add(ax[d][i].legend(ncol=2))
+                self.legends_add(ax[d][i].legend(ncol=2))
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'pqrIMU')
 
         with open(self.log.directory + '/allan_variance_pqr.csv', 'w') as f:
@@ -2003,9 +2013,9 @@ class logPlot:
         for i in range(accCount):
             for d in range(3):
                 ax[d][i].grid(True, which='both')
-                self.legends.add(ax[d][i].legend(ncol=2))
+                self.legends_add(ax[d][i].legend(ncol=2))
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'accIMU')
 
         with open(self.log.directory + '/allan_variance_acc.csv', 'w') as f:
@@ -2068,11 +2078,11 @@ class logPlot:
                         ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
 
         for i in range(accCount):
-            self.legends.add(ax[0][i].legend(ncol=2))
+            self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
                 ax[d][i].grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'accelPSD')
 
     def gyroPSD(self, fig=None):
@@ -2121,11 +2131,11 @@ class logPlot:
                         ax[i][n].plot(f, 10*np.log10(psd[:, i]), label=self.log.serials[d])
 
         for i in range(pqrCount):
-            self.legends.add(ax[0][i].legend(ncol=2))
+            self.legends_add(ax[0][i].legend(ncol=2))
             for d in range(3):
                 ax[d][i].grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'gyroPSD')
 
     def altitude(self, fig=None):
@@ -2151,12 +2161,12 @@ class logPlot:
             ax[2].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
             ax[2].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
 
-        self.legends.add(ax[0].legend(ncol=2))
-        self.legends.add(ax[2].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
+        self.legends_add(ax[2].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'altitude')
 
     def magnetometer(self, fig=None):
@@ -2195,11 +2205,11 @@ class logPlot:
                 for i in range(3):
                     ax[2*i].plot(refTime, refMag[:, i], color='red', label="reference")
 
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'magnetometer')
 
 
@@ -2226,7 +2236,7 @@ class logPlot:
             for a in ax:
                 a.grid(True)
 
-            self.legends.setup_and_wire()
+            self.setup_and_wire_legend()
             self.saveFig(fig, 'Temp')
         except:
             print(RED + "problem plotting temp: " + sys.exc_info()[0] + RESET)
@@ -2241,7 +2251,7 @@ class logPlot:
             for i in range(9):
                 ax[i%5, i//5].set_ylabel('f[' + str(i) +']')
                 ax[i%5, i//5].plot(debug_f[:,i], label=self.log.serials[d])
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
             for a in b:
                 a.grid(True)
@@ -2256,7 +2266,7 @@ class logPlot:
             for i in range(9):
                 ax[i%5, i//5].set_ylabel('i[' + str(i) +']')
                 ax[i%5, i//5].plot(debug_i[:,i], label=self.log.serials[d])
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
             for a in b:
                 a.grid(True)
@@ -2271,7 +2281,7 @@ class logPlot:
             for i in range(3):
                 ax[i].set_ylabel('lf[' + str(i) +']')
                 ax[i].plot(debug_lf[:,i], label=self.log.serials[d])
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
@@ -2285,7 +2295,7 @@ class logPlot:
             for i in range(9):
                 ax[i%5, i//5].set_ylabel('f[' + str(i) +']')
                 ax[i%5, i//5].plot(debug_f[:,i], label=self.log.serials[d])
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
             for a in b:
                 a.grid(True)
@@ -2305,12 +2315,12 @@ class logPlot:
             mag_inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
             ax[0].plot(time, mag_declination, label=self.log.serials[d])
             ax[1].plot(time, mag_inclination)
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
 
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'magDec')
 
     def deltatime(self, fig=None):
@@ -2401,11 +2411,11 @@ class logPlot:
             self.setPlotYSpanMin(ax[4], 0.005)
             self.setPlotYSpanMin(ax[5], 0.005)
 
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'deltatime')
 
     def gpsRawTime(self, fig=None):
@@ -2493,11 +2503,11 @@ class logPlot:
         self.setPlotYSpanMin(ax[4], 25)
         self.setPlotYSpanMin(ax[5], 25)
 
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
         for a in ax:
             a.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'gpsRawTime')
 
     def ekfBiases(self, fig=None):
@@ -2524,12 +2534,12 @@ class logPlot:
             ax[1,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 1])
             ax[2,1].plot(time, self.getData(d, DID_INL2_STATES, 'biasAcc')[:, 2])
 
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
         for a in ax:
             for b in a:
                 b.grid(True)
 
-        self.legends.setup_and_wire()
+        self.setup_and_wire_legend()
         self.saveFig(fig, 'ekfBiases')
 
     def rtkResiduals(self, type, page, fig=None):
@@ -2558,7 +2568,7 @@ class logPlot:
                 residuals = self.getData(d, did, 'v')[time_idx, sat_state_idx]
                 residuals[np.abs(residuals) > 1e6] = np.nan
                 ax[i].plot(time, residuals, label=self.log.serials[d])
-        self.legends.add(ax[0].legend(ncol=2))
+        self.legends_add(ax[0].legend(ncol=2))
 
     def rtkDebug(self, fig=None):
         if fig is None:
@@ -2607,7 +2617,7 @@ class logPlot:
                         # item.set_fontsize(8)
                     ax[i % rows, i // rows].plot(time[valid], data, label=self.log.serials[d])
                     i += 1
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
 
     def rtkDebug2(self, fig=None):
         if fig is None:
@@ -2636,7 +2646,7 @@ class logPlot:
                     ib = ib + 1
 
         # Show serial numbers
-        self.legends.add(ax[r1,c1].legend(ncol=2))
+        self.legends_add(ax[r1,c1].legend(ncol=2))
 
         for a in ax:
             for b in a:
@@ -2669,7 +2679,7 @@ class logPlot:
                     ib = ib + 1
 
         # Show serial numbers
-        self.legends.add(ax[r1,c1].legend(ncol=2))
+        self.legends_add(ax[r1,c1].legend(ncol=2))
 
         for a in ax:
             for b in a:
@@ -2702,7 +2712,7 @@ class logPlot:
                     ib = ib + 1
 
         # Show serial numbers
-        self.legends.add(ax[r1,c1].legend(ncol=2))
+        self.legends_add(ax[r1,c1].legend(ncol=2))
 
         for a in ax:
             for b in a:
@@ -2735,7 +2745,7 @@ class logPlot:
                     ib = ib + 1
 
         # Show serial numbers
-        self.legends.add(ax[r1,c1].legend(ncol=2))
+        self.legends_add(ax[r1,c1].legend(ncol=2))
 
         for a in ax:
             for b in a:
@@ -2755,7 +2765,7 @@ class logPlot:
             for i, a in enumerate(ax):
                 a.plot(time, self.getData(d, DID_WHEEL_ENCODER, fields[i]), label=self.log.serials[d])
                 if i == 0:
-                    self.legends.add(a.legend(ncol=2))
+                    self.legends_add(a.legend(ncol=2))
 
         for i, a in enumerate(ax):
             a.set_ylabel(fields[i])
@@ -2802,7 +2812,7 @@ class logPlot:
             ax[7,1].plot(time, wheelConfig['track_width'])
 
         # Show serial numbers
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
 
         for a in ax:
             for b in a:
@@ -2955,7 +2965,10 @@ class logPlot:
             ax[0, i].set_title('X %s %d' % (name, i))
             ax[1, i].set_title('Y %s %d' % (name, i))
             ax[2, i].set_title('Z %s %d' % (name, i))
-            ax[3, i].set_title('Magnitude %s %d' % (name, i))
+            if useTemp:
+                ax[3, i].set_title('Temperature %s %d' % (name, i))
+            else:
+                ax[3, i].set_title('Magnitude %s %d' % (name, i))            
             for d in range(3):
                 if useTemp:
                     ax[d,i].set_xlabel("Temperature (C)")
@@ -3009,8 +3022,11 @@ class logPlot:
                     ax[0,i].plot(x, sensor[:,0]*scalar, label=self.log.serials[d] )
                     ax[1,i].plot(x, sensor[:,1]*scalar)
                     ax[2,i].plot(x, sensor[:,2]*scalar)
-                    if name=='acc':
-                        ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
+                    if not useTemp:
+                        ax[3,i].plot(x, temp)
+                    else:
+                        if name=='acc':
+                            ax[3,i].plot(x, np.linalg.norm(sensor, axis=1)*scalar)
 
                     # Print mean and last value
                     xstr = "IMU" + str(i) + ", Mean: ["
@@ -3045,7 +3061,7 @@ class logPlot:
             return
 
         # Show serial numbers
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
 
         for a in ax:
             for b in a:
@@ -3106,7 +3122,7 @@ class logPlot:
 
 
         # Show serial numbers
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
 
         yspan = 0.5 # m/s^2 
 
@@ -3169,7 +3185,7 @@ class logPlot:
 
 
         # Show serial numbers
-        self.legends.add(ax[0,0].legend(ncol=2))
+        self.legends_add(ax[0,0].legend(ncol=2))
 
         yspan = 0.5 # m/s^2 
 

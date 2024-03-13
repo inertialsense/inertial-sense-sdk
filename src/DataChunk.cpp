@@ -121,7 +121,7 @@ void cDataChunk::Clear()
 }
 
 // Returns number of bytes written, or -1 for error
-int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
+int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber, bool writeHeader)
 {
 	if (pFile == NULLPTR)
 	{
@@ -132,11 +132,15 @@ int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
 
 	m_hdr.grpNum = groupNumber;
 
-	// Write chunk header to file
-	int32_t nBytes = static_cast<int32_t>(pFile->write(&m_hdr, sizeof(sChunkHeader)));
+	int32_t nBytes = 0;
+	if (writeHeader)
+	{
+		// Write chunk header to file
+		nBytes += static_cast<int32_t>(pFile->write(&m_hdr, sizeof(sChunkHeader)));
 
-	// Write any additional chunk header
-	nBytes += WriteAdditionalChunkHeader(pFile);
+		// Write any additional chunk header
+		nBytes += WriteAdditionalChunkHeader(pFile);
+	}
 
 	// Write chunk data to file
 	nBytes += static_cast<int32_t>(pFile->write(m_dataHead, m_hdr.dataSize));
@@ -151,7 +155,7 @@ int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
 #endif
 
 	// Error writing to file
-	if (nBytes != GetHeaderSize() + (int)m_hdr.dataSize)
+	if (writeHeader && (nBytes != GetHeaderSize() + (int)m_hdr.dataSize))
 	{
 		return -1;
 	}
@@ -164,7 +168,7 @@ int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber)
 
 
 // Returns number of bytes read, or -1 for error
-int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
+int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 {
 	if (pFile == NULLPTR)
 	{
@@ -174,23 +178,32 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
 	// reset state, prepare to read from file
 	Clear();
 
-	// Read chunk header
-	int32_t nBytes = static_cast<int32_t>(pFile->read(&m_hdr, sizeof(sChunkHeader)));
+	int32_t nBytes = 0;
 
-	// Error checking
-	if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
+	if (readHeader)
 	{
-		return -1;
-	}
+		// Read chunk header
+		nBytes += static_cast<int32_t>(pFile->read(&m_hdr, sizeof(sChunkHeader)));
 
-	// Read additional chunk header
-	nBytes += ReadAdditionalChunkHeader(pFile);
+		// Error checking
+		if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
+		{
+			return -1;
+		}
+
+		// Read additional chunk header
+		nBytes += ReadAdditionalChunkHeader(pFile);
 
 //     // Error check data size
 //     if (m_hdr.dataSize > MAX_DATASET_SIZE)
 //     {
 //         return -1;
 //     }
+	}
+	else
+	{
+		m_hdr.dataSize = GetBuffFree();
+	}
 
 	// Read chunk data
 	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
@@ -207,51 +220,59 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile)
 	printf("\n");
 #endif
 
-	if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == static_cast<int>(GetHeaderSize() + m_hdr.dataSize))
-	{
-
-#if LOG_CHUNK_STATS
-		static bool start = true;
-		int totalBytes = 0;
-		for (int id = 0; id < DID_COUNT; id++)
-			if (m_stats[id].total)
-			{
-				if (start)
-				{
-					start = false;
-					logStats("------------------------------------------------\n");
-					logStats("Chunk Data Summary\n");
-					logStats("   ID:  Count:  Sizeof:  Total:\n");
-				}
-				logStats(" %4d%8d    %5d %7d\n", id, m_stats[id].count, m_stats[id].size, m_stats[id].total);
-				totalBytes += m_stats[id].total;
-			}
-		start = true;
-		if (totalBytes)
-		{
-			logStats("------------------------------------------------\n");
-			logStats("                      %8d Total bytes\n", totalBytes);
-		}
-		logStats("\n");
-		logStats("================================================\n");
-		logStats("            *.dat Data Log File\n");
-		logStats("================================================\n");
-		m_Hdr.print();
-#if LOG_CHUNK_STATS==2
-		logStats("------------------------------------------------\n");
-		logStats("Chunk Data\n");
-#endif
-		memset(m_stats, 0, sizeof(m_stats));
-#endif
-
-		return nBytes;
+	if (!readHeader)
+	{	// No chunk header
+		m_hdr.dataSize = nBytes;
+		return (m_hdr.dataSize > 0 ? m_hdr.dataSize : -1);	// Return -1 when empty 
 	}
 	else
-	{
-        Clear();
+	{	// Use chunk header
+		if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == static_cast<int>(GetHeaderSize() + m_hdr.dataSize))
+		{
 
-		// Error reading from file
-		return -1;
+	#if LOG_CHUNK_STATS
+			static bool start = true;
+			int totalBytes = 0;
+			for (int id = 0; id < DID_COUNT; id++)
+				if (m_stats[id].total)
+				{
+					if (start)
+					{
+						start = false;
+						logStats("------------------------------------------------\n");
+						logStats("Chunk Data Summary\n");
+						logStats("   ID:  Count:  Sizeof:  Total:\n");
+					}
+					logStats(" %4d%8d    %5d %7d\n", id, m_stats[id].count, m_stats[id].size, m_stats[id].total);
+					totalBytes += m_stats[id].total;
+				}
+			start = true;
+			if (totalBytes)
+			{
+				logStats("------------------------------------------------\n");
+				logStats("                      %8d Total bytes\n", totalBytes);
+			}
+			logStats("\n");
+			logStats("================================================\n");
+			logStats("            *.dat Data Log File\n");
+			logStats("================================================\n");
+			m_Hdr.print();
+	#if LOG_CHUNK_STATS==2
+			logStats("------------------------------------------------\n");
+			logStats("Chunk Data\n");
+	#endif
+			memset(m_stats, 0, sizeof(m_stats));
+	#endif
+
+			return nBytes;
+		}
+		else
+		{
+			Clear();
+
+			// Error reading from file
+			return -1;
+		}
 	}
 }
 

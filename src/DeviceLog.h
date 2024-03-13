@@ -26,7 +26,6 @@ extern "C"
 
 // never change these!
 #define IS_LOG_FILE_PREFIX "LOG_SN"
-#define IS_LOG_FILE_PREFIX_LENGTH 6
 #define IS_LOG_TIMESTAMP_LENGTH 15
 
 
@@ -40,7 +39,8 @@ public:
     virtual bool CloseAllFiles();
 	virtual bool FlushToFile() { return true; };
 	virtual bool OpenWithSystemApp();
-    virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf);
+    virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	virtual bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats);
     virtual p_data_buf_t* ReadData() = 0;
 	virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 	virtual std::string LogFileExtention() = 0;
@@ -61,6 +61,7 @@ public:
 		m_pointUpdatePeriodSec = pointUpdatePeriodSec;
 		m_altClampToGround = altClampToGround; 
 	}
+	void ShowParseErrors(bool show){ m_showParseErrors = show; }
 
 protected:
 	bool OpenNewSaveFile();
@@ -72,7 +73,8 @@ protected:
 	std::string             m_directory;
 	std::string             m_timeStamp;
 	std::string             m_fileName;
-	bool                    m_writeMode;	// Logger initialized for writting
+	bool                    m_writeMode;	// Logger initialized for writing
+	bool					m_showParseErrors;
 	dev_info_t              m_devInfo;
 	int                     m_pHandle;
 	uint64_t                m_fileSize;

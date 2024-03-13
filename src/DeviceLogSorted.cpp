@@ -155,9 +155,9 @@ bool cDeviceLogSorted::FlushToFile()
 }
 
 
-bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf)
+bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-    cDeviceLog::SaveData(dataHdr, dataBuf);
+    cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
 	uint32_t id = dataHdr->id;
 

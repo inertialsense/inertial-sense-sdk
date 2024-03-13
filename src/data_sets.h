@@ -2673,7 +2673,7 @@ enum eIoConfig
     /** G1,G2 - MASK.  Note: This G1,G2 setting is overriden when GPS1 or GPS2 is configured to use Ser2. */
     IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
     /** G1,G2 - Default */
-    IO_CONFIG_G1G2_DEFAULT                      = IO_CONFIG_G1G2_CAN_BUS,
+    IO_CONFIG_G1G2_DEFAULT                      = IO_CONFIG_G1G2_COM2,
 
     // G9 - STROBE, QDEC0 (future) (ioConfig[5-4])
     /** G9 - Strobe input */

@@ -378,7 +378,7 @@ namespace ISFileManager {
         }
 
     #if (LOG_DEBUG_GEN == 2)
-        advance_cursor();
+        // advance_cursor();
     #elif LOG_DEBUG_GEN
         printf("GetDirectorySpaceAvailable %s %d\n", directory.c_str(), created);
     #endif
