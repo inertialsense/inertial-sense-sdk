@@ -4939,6 +4939,7 @@ typedef union PACKED
     gps_pos_t				gpsPos;
     gps_vel_t				gpsVel;
     gps_sat_t				gpsSat;
+    gps_version_t			gpsVer;
     gps_rtk_rel_t			gpsRtkRel;
     gps_rtk_misc_t			gpsRtkMisc;
     inl2_states_t			inl2States;

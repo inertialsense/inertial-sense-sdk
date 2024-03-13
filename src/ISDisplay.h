@@ -103,6 +103,7 @@ public:
 	std::string DataToStringBarometer(const barometer_t& baro, const p_data_hdr_t& hdr);
 	std::string DataToStringMagnetometer(const magnetometer_t &mag, const p_data_hdr_t& hdr);
 	std::string DataToStringMagCal(const mag_cal_t &mag, const p_data_hdr_t& hdr);
+	std::string DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr);
 	std::string DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr);
 	static std::string DataToStringGpsPos(const gps_pos_t &gps, bool full=false);
 	std::string DataToStringRtkRel(const gps_rtk_rel_t &gps, const p_data_hdr_t& hdr);
