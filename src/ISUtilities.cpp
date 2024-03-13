@@ -453,8 +453,11 @@ void threadJoinAndFree(void* handle)
 
 #elif CPP11_IS_ENABLED
 
-	((thread*)handle)->join();
-	delete (thread*)handle;
+	if (((thread*)handle)->joinable()) 
+	{
+		((thread*)handle)->join();
+		delete (thread*)handle;
+	}
 
 #elif PLATFORM_IS_WINDOWS
 

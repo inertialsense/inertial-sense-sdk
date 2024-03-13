@@ -10,48 +10,43 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef DEVICE_LOG_SORTED_H
-#define DEVICE_LOG_SORTED_H
+#ifndef DEVICE_LOG_RAW_H
+#define DEVICE_LOG_RAW_H
 
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include <list>
 
+#include "DataChunk.h"
 #include "DeviceLog.h"
-#include "DataChunkSorted.h"
+#include "com_manager.h"
+#include "ISLogStats.h"
 
 
-class cDeviceLogSorted : public cDeviceLog
+class cDeviceLogRaw : public cDeviceLog
 {
 public:
-    cDeviceLogSorted();
+    cDeviceLogRaw();
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
-	void InitDeviceForReading() OVERRIDE;
-	bool OpenAllReadFiles();
+	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool FlushToFile() OVERRIDE;
-    bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
+	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
 	p_data_buf_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
-	std::string LogFileExtention() OVERRIDE { return std::string(".sdat"); }
+    std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }
+	void Flush() OVERRIDE;
 
-    cSortedDataChunk *m_chunks[DID_COUNT];
-	bool m_chunksAvailable[DID_COUNT];
+	cDataChunk m_chunk;
 
-	p_data_buf_t* SerializeDataFromChunks();
-	bool ReadNextChunkFromFiles(uint32_t id);
-	bool ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id);
-	bool WriteChunkToFile(uint32_t id);
+private:
+	p_data_buf_t* ReadDataFromChunk();
+	bool ReadChunkFromFile();
+	bool WriteChunkToFile();
 
-	uint32_t m_dataSerNum;
-	uint32_t m_lastSerNum;
-	p_data_buf_t m_data;
-	cSortedDataChunk m_readChunk;
-
-	std::vector<cISLogFileBase*> m_pFiles;
-
+	uint8_t m_commBuf[PKT_BUF_SIZE];
+	p_data_buf_t m_pData;
+	is_comm_instance_t m_comm;
 };
 
-#endif // DEVICE_LOG_SORTED_H
+#endif // DEVICE_LOG_RAW_H

@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-static InertialSense *g_is;
+static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
 static int staticSendData(int port, const unsigned char* buf, int len)
@@ -38,7 +38,14 @@ static int staticReadData(int port, unsigned char* buf, int len)
     {
         return 0;
     }
-    return serialPortReadTimeout(&s_cm_state->devices[port].serialPort, buf, len, 1);
+    int bytesRead = serialPortReadTimeout(&s_cm_state->devices[port].serialPort, buf, len, 1);
+
+	if (s_is)
+	{	// Save raw data to ISlogger
+		s_is->LogRawData(port, bytesRead, buf);
+	}
+
+    return bytesRead;
 }
 
 static void staticProcessRxData(int port, p_data_t* data)
@@ -109,7 +116,7 @@ InertialSense::InertialSense(
         pfnComManagerGenMsgHandler handlerRtcm3,
         pfnComManagerGenMsgHandler handlerSpartn ) : m_tcpServer(this)
 {
-    g_is = this;
+    s_is = this;
     s_cm_state = &m_comManagerState;
     m_logThread = NULLPTR;
     m_lastLogReInit = time(0);
@@ -142,8 +149,9 @@ InertialSense::InertialSense(
 
 InertialSense::~InertialSense()
 {
-    Close();
-    CloseServerConnection();
+	Close();
+	CloseServerConnection();
+	DisableLogging();
 }
 
 bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
@@ -167,11 +175,22 @@ bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logTyp
 
 void InertialSense::DisableLogging()
 {
-    // just sets a bool no need to lock
-    m_logger.EnableLogging(false);
-    threadJoinAndFree(m_logThread);
-    m_logThread = NULLPTR;
-    m_logger.CloseAllFiles();
+	if (m_logger.Enabled() || m_logThread != NULLPTR)
+	{
+		m_logger.EnableLogging(false);
+		printf("Disabling logger...");
+		fflush(stdout);
+
+		// just sets a bool no need to lock
+		threadJoinAndFree(m_logThread);
+		m_logThread = NULLPTR;
+		m_logger.CloseAllFiles();
+	}
+}
+
+void InertialSense::LogRawData(int device, int dataSize, const uint8_t* data)
+{
+    m_logger.LogData(device, dataSize, data);
 }
 
 bool InertialSense::HasReceivedDeviceInfo(size_t index)
@@ -263,7 +282,7 @@ void InertialSense::LoggerThread(void* info)
         inertialSense->m_logger.Update();
     }
 
-    printf("\n...Logger thread terminated...\n");
+	printf("...logger thread terminated.\n");
 }
 
 void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHandle)
