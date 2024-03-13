@@ -95,6 +95,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool chipEraseEvb2;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
+	uint32_t runDuration = 0;				// Run for this many millis before exiting (0 = indefinitely)
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
