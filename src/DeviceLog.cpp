@@ -125,12 +125,27 @@ bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum,
 	m_fileNames.clear();
 	vector<ISFileManager::file_info_t> fileInfos;
 	SetSerialNumber((uint32_t)strtoul(serialNum.c_str(), NULL, 10));
-	ISFileManager::GetDirectorySpaceUsed(directory, string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_", fileInfos, false, false);
+
+	string regExp;
+	if (serialNum == "0" && timeStamp == "")
+	{	// Simple filename regular expression: [\/\\][0-9]+\.dat
+		regExp = string("[\\/\\\\][0-9]+\\") + LogFileExtention();
+	}
+	else
+	{	// Default filename regular expression: [\/\\]LOG_SN60339_.*\.dat
+		regExp = string("[\\/\\\\]" IS_LOG_FILE_PREFIX) + serialNum + "_.*\\" + LogFileExtention();
+	}
+	// Search is case insensitive, finds both upper and lower case file extensions.
+
+	ISFileManager::GetDirectorySpaceUsed(directory, regExp, fileInfos, false, false);
+
 	if (fileInfos.size() != 0)
 	{
 		m_fileName = fileInfos[0].name;
 		for (size_t i = 0; i < fileInfos.size(); i++)
 		{
+			cout << fileInfos[i].name << endl;
+
 			m_fileNames.push_back(fileInfos[i].name);
 		}
 	}

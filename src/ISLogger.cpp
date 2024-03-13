@@ -289,7 +289,7 @@ bool nextStreamDigit(stringstream &ss, string &str)
 
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
-    serialNum = -1;
+    serialNum = 0;
     date.clear();
 	time.clear();
     index = -1;
