@@ -618,8 +618,10 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_BAROMETER:         str = DataToStringBarometer(d.baro, data->hdr);         break;
 	case DID_MAGNETOMETER:      str = DataToStringMagnetometer(d.mag, data->hdr);       break;
 	case DID_MAG_CAL:           str = DataToStringMagCal(d.magCal, data->hdr);          break;
-	case DID_GPS1_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
-	case DID_GPS2_POS:          str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
+	case DID_GPS1_VERSION:
+	case DID_GPS2_VERSION:      str = DataToStringGpsVersion(d.gpsVer, data->hdr);      break;
+	case DID_GPS1_POS:
+	case DID_GPS2_POS:
 	case DID_GPS1_RTK_POS:      str = DataToStringGpsPos(d.gpsPos, data->hdr);          break;
 	case DID_GPS1_RTK_POS_REL:  str = DataToStringRtkRel(d.gpsRtkRel, data->hdr);       break;
 	case DID_GPS1_RTK_POS_MISC: str = DataToStringRtkMisc(d.gpsRtkMisc, data->hdr);     break;
@@ -1119,6 +1121,32 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	return buf;
 }
 
+string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, const p_data_hdr_t& hdr)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Sw-%s Hw-%s",
+		ver.swVersion,
+		ver.hwVersion );
+
+	for (int i=0; i<GPS_VER_NUM_EXTENSIONS; i++)
+	{	
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, ", %s", (char*)&(ver.extension[i]));
+	}
+
+	if (m_displayMode != DMODE_SCROLL)
+	{
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n"); 
+	}
+
+	return buf;
+}
+
 string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
@@ -1414,8 +1442,26 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 	char* ptrEnd = buf + BUF_SIZE;
 
 	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d, Fw %d.%d.%d.%d %d%c, %04d-%02d-%02d",
-		info.serialNumber,
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
+		info.serialNumber
+	);
+
+	switch (info.hardware)
+	{
+	default:						ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
+	case DEV_INFO_HARDWARE_UINS:	ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
+	case DEV_INFO_HARDWARE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
+	case DEV_INFO_HARDWARE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
+	case DEV_INFO_HARDWARE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
+	}
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
+		info.hardwareVer[0],
+		info.hardwareVer[1],
+		info.hardwareVer[2]
+	);
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d.%d %d%c %04d-%02d-%02d",
 		info.firmwareVer[0],
 		info.firmwareVer[1],
 		info.firmwareVer[2],
@@ -1429,14 +1475,15 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 
 	if (full)
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d, Proto %d.%d.%d.%d",
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
 			info.buildHour,
 			info.buildMinute,
 			info.buildSecond,
 			info.protocolVer[0],
 			info.protocolVer[1],
 			info.protocolVer[2],
-			info.protocolVer[3]
+			info.protocolVer[3],
+			info.addInfo
 		);
 	}
 
