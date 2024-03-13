@@ -191,10 +191,10 @@ TEST(ISLogger, parse_filename)
 	TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1);
 	TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1);
 	TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1);
-	TestParseFileName("00000000.RAW", -1, "", "", 0);
-	TestParseFileName("00000001.RAW", -1, "", "", 1);
-	TestParseFileName("00000002.raw", -1, "", "", 2);
-	TestParseFileName("12345678.RAW", -1, "", "", 12345678);
+	TestParseFileName("00000000.RAW", 0, "", "", 0);
+	TestParseFileName("00000001.RAW", 0, "", "", 1);
+	TestParseFileName("00000002.raw", 0, "", "", 2);
+	TestParseFileName("12345678.RAW", 0, "", "", 12345678);
 }
 
 TEST(ISLogger, dat_conversion)
