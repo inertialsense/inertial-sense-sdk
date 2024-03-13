@@ -78,7 +78,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 {
     vector<string> stl_serials = serials.cast<vector<string>>();
     cout << "Loading from: " << log_directory << endl;
-    cout << "Reading serial numbers: ";
+    cout << "Serial numbers: ";
     for (int i = 0; i < (int)stl_serials.size(); i++)
         cout << stl_serials[i] << "\n";
 

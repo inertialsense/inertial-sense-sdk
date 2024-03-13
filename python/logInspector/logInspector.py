@@ -317,7 +317,7 @@ class LogInspectorWindow(QMainWindow):
                 msg.exec()
 
     def load(self, directory):
-        print("loading files from " + directory)
+        print("\nLoading files from " + directory)
         self.setStatus("Loading...")
         # if self.log is None:
         self.log = Log()
