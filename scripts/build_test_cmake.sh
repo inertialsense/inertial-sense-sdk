@@ -11,19 +11,16 @@ BUILD='false'
 CLEAN='false'
 TEST='false'
 
-for i in "$@"; do
-  case "$1" in
+for arg in "$@"; do
+  case $arg in
     -b|--build)
       BUILD='true'
-      shift
       ;;
     -c|--clean)
       CLEAN='true'
-      shift
       ;;
     -t|--test)
       TEST='true'
-      shift
       ;;
   esac
 done

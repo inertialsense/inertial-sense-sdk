@@ -8,7 +8,7 @@ source ${SCRIPT_DIR}/lib/results_build.sh
 source ${SCRIPT_DIR}/lib/results_tests.sh
 
 BUILD_TYPE=Release
-CLEAN=""
+CLEAN="false"
 
 for arg in "$@"; do
     case $arg in
@@ -23,7 +23,7 @@ done
 
 pushd .. > /dev/null
 
-if [ -n "${CLEAN}" ]; then
+if [ "${CLEAN}" == "true" ]; then
     echo -e "\n\n=== Running make clean... ==="
     make clean 2> /dev/null
     rm -rf build

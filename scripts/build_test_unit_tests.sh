@@ -1,10 +1,12 @@
 #!/bin/bash
 
+args="${@:1}" # All arguments
+
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 source ./build_test_cmake.sh
 
-build_test_cmake "SDK Unit Tests" ../tests IS-SDK_unit-tests
+build_test_cmake "SDK Unit Tests" ../tests IS-SDK_unit-tests ${args}
 
 
 ###############################################################################
