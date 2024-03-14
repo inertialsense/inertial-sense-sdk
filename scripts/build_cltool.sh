@@ -6,10 +6,6 @@ pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 source ./lib/build_test_cmake.sh
 
-###############################################################################
-#  Builds and Tests
-###############################################################################
-
 build_cmake "cltool" ../cltool ${args}
 
 popd > /dev/null

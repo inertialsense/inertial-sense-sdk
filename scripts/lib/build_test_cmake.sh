@@ -85,8 +85,7 @@ function test_cmake() {
 }
 
 function build_test_cmake() {
-  args="${@:1}" # All arguments
-  build_cmake ${args} && test_cmake ${args}
+  build_cmake "$@" && test_cmake "$@"
 }
 
 # Options were shifted out earlier, so use $1 and $2
