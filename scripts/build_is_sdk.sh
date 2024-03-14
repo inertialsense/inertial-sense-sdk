@@ -1,11 +1,11 @@
 #!/bin/bash
 
-pushd "$(dirname "$(realpath $0)")" > /dev/null
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/lib/echo_color.sh
 source ${SCRIPT_DIR}/lib/results_build.sh
 source ${SCRIPT_DIR}/lib/results_tests.sh
+
+pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 BUILD_TYPE=Release
 CLEAN="false"

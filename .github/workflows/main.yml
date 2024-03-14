@@ -59,8 +59,8 @@ jobs:
       - name: Build cltool
         run: ./build_cltool.sh
 
-      - name: Build SDK Example Projects
-        run: ./lib/build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
+      - name: Build SDK Examples
+        run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
 
   ba_windows:
     name: "General Software Windows"
@@ -84,7 +84,7 @@ jobs:
         run: ./clean_all.bat
 
 #      - name: SDK Unit Tests
-#        run: ./lib/build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+#        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
 
       - name: Build SDK Examples
         run: ./build_sdk_examples.bat

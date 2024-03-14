@@ -4,7 +4,7 @@ args="${@:1}" # All arguments
 
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
-source ./lib/build_test_cmake.sh
+source ./build_test_cmake.sh
 
 build_cmake "cltool" ../cltool ${args}
 

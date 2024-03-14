@@ -2,7 +2,7 @@
 
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
-source ./lib/build_test_cmake.sh
+source ./build_test_cmake.sh
 
 ###############################################################################
 #  Builds and Tests
