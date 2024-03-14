@@ -135,12 +135,12 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     if(pfnInfoProgress_cb != nullptr) {
         if ((remoteDevInfo.hardware >= HDW_TYPE__UINS) && (remoteDevInfo.hardware <= HDW_TYPE__GPX)) {
             const char *hdw_names[5] = {"UNKNOWN", "UINS", "EVB", "IMX", "GPX"};
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received Version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardware],
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardware],
                                remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
                                remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3],
                                remoteDevInfo.buildNumber);
         } else {
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received Version info: %s, Fw %d.%d.%d.%d", fwUpdate_getTargetName(msg.data.version_resp.resTarget),
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s, Fw %d.%d.%d.%d", fwUpdate_getTargetName(msg.data.version_resp.resTarget),
                                remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3]);
         }
     }
@@ -535,13 +535,15 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                     // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
                     const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
                     if (gpxVInfo) {
-                        int v1, v2, v3, v4, bn;
-                        if (sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) {
+                        int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
+                        if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
+                            (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4))
+                        {
                             remoteDevInfo.hardware = HDW_TYPE__GPX;
                             remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
                             remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
                             target_devInfo = &remoteDevInfo;
-                            if ((v1 == 2) && (v2 == 0) && (v3 == 0) && (v4 <= 10))
+                            if ((v1 == 2) && (v2 == 0) && (v3 == 0))
                                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
                         }
                     }

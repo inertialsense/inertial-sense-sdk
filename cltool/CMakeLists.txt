@@ -8,8 +8,8 @@ find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
 if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
     # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
     add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
-# else()
-#     link_directories(${IS_SDK_DIR}/Build/Release)
+else()
+    link_directories(${IS_SDK_DIR}/Build/Release)
 endif()
 
 # Include InertialSenseSDK header files
