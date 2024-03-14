@@ -3,10 +3,11 @@
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source ${SCRIPT_DIR}/lib/echo_color.sh
-source ${SCRIPT_DIR}/lib/results_build.sh
-source ${SCRIPT_DIR}/lib/results_tests.sh
+source ${SCRIPT_DIR}/echo_color.sh
+source ${SCRIPT_DIR}/results_build.sh
+source ${SCRIPT_DIR}/results_tests.sh
 
+BUILD_TYPE=Release
 BUILD='false'
 CLEAN='false'
 TEST='false'
@@ -19,6 +20,9 @@ for arg in "$@"; do
     -c|--clean)
       CLEAN='true'
       ;;
+    -d|--debug)
+      BUILD_TYPE=Debug
+      ;;
     -t|--test)
       TEST='true'
       ;;
@@ -26,19 +30,30 @@ for arg in "$@"; do
 done
 
 function build_cmake() {
+
   testname="$1"
   cmakelists_dir="$2"
+  CLEAN='false'
+
+  for arg in "$@"; do
+    case $arg in
+      -c|--clean)
+        CLEAN='true'
+        ;;
+    esac
+  done
 
   pushd ${cmakelists_dir} > /dev/null
 
-  if [ ${CLEAN} == 'true' ]; then
+  if [ "${CLEAN}" == 'true' ]; then
     echo -e "\n=== Running make clean... ==="
     rm -rf build
   else
     build_header "${testname}"
     mkdir -p build
     pushd build > /dev/null
-    cmake .. -DCMAKE_BUILD_TYPE=Release && make -j`nproc` -l`nproc`
+    echo -e "\n\n=== Running make... (${BUILD_TYPE}) ==="
+    cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} && make -j`nproc` -l`nproc`
     build_result=$?
     build_footer $build_result
     popd > /dev/null
@@ -70,12 +85,13 @@ function test_cmake() {
 }
 
 function build_test_cmake() {
-  build_cmake "$1" "$2" "$3" && test_cmake "$1" "$2" "$3"
+  args="${@:1}" # All arguments
+  build_cmake ${args} && test_cmake ${args}
 }
 
 # Options were shifted out earlier, so use $1 and $2
 if [ ${BUILD} == 'true' ]; then
-  if build_cmake "$1" "$2" "$3"; then
+  if build_cmake ${args}; then
     : # success
   else
     popd > /dev/null
@@ -83,7 +99,7 @@ if [ ${BUILD} == 'true' ]; then
   fi
 fi
 if [ ${TEST} == 'true' ]; then
-  if test_cmake "$1" "$2" "$3"; then
+  if test_cmake ${args}; then
     : # success
   else
     popd > /dev/null

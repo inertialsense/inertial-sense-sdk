@@ -739,7 +739,7 @@ static int inertialSenseMain()
 }
 
 
-int cltool_main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))
