@@ -54,7 +54,7 @@ jobs:
         run: ./build_is_sdk.sh
   
       - name: SDK Unit Tests
-        run: ./build_unit_tests.sh
+        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
 
       - name: Build cltool
         run: ./build_cltool.sh
