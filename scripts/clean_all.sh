@@ -9,22 +9,20 @@ source ./lib/results_build.sh
 #  Clean
 ###############################################################################
 
+build_header "IS_SDK_lib"
+./build_is_sdk.sh --clean
+build_footer $?
+
+build_header "cltool"
+./build_cltool.sh --clean
+build_footer $?
+
 build_header "LogInspector"
 ./build_log_inspector.sh --clean
 build_footer $?
 
-clean_directory "cltool"                ../cltool/build
 clean_directory "SDK_Examples"          ../ExampleProjects/build
 clean_directory "SDK_Unit_Tests"        ../tests/build
-
-clean_directory "libInertialSenseSDK"   ../CMakeFiles
-pushd ..
-rm -rf cmake-build-debug CMakeCache.txt cmake_install.cmake libInertialSenseSDK.a
-popd
-
-rm -rf build
-
-
 
 
 ###############################################################################

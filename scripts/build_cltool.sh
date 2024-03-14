@@ -10,7 +10,7 @@ source ./build_test_cmake.sh
 #  Builds and Tests
 ###############################################################################
 
-build_cmake "cltool" ../cltool
+build_cmake "cltool" ../cltool ${args}
 
 popd > /dev/null
 

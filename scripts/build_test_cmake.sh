@@ -8,12 +8,17 @@ source ${SCRIPT_DIR}/lib/results_build.sh
 source ${SCRIPT_DIR}/lib/results_tests.sh
 
 BUILD='false'
+CLEAN='false'
 TEST='false'
 
 for i in "$@"; do
   case "$1" in
     -b|--build)
       BUILD='true'
+      shift
+      ;;
+    -c|--clean)
+      CLEAN='true'
       shift
       ;;
     -t|--test)
@@ -28,13 +33,20 @@ function build_cmake() {
   cmakelists_dir="$2"
 
   pushd ${cmakelists_dir} > /dev/null
-  build_header "${testname}"
-  mkdir -p build
-  pushd build > /dev/null
-  cmake .. -DCMAKE_BUILD_TYPE=Release && make -j`nproc` -l`nproc`
-  build_result=$?
-  build_footer $build_result
-  popd > /dev/null
+
+  if [ ${CLEAN} == 'true' ]; then
+    echo -e "\n=== Running make clean... ==="
+    rm -rf build
+  else
+    build_header "${testname}"
+    mkdir -p build
+    pushd build > /dev/null
+    cmake .. -DCMAKE_BUILD_TYPE=Release && make -j`nproc` -l`nproc`
+    build_result=$?
+    build_footer $build_result
+    popd > /dev/null
+  fi
+
   popd > /dev/null
   return $build_result
 }

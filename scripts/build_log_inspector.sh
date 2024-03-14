@@ -14,7 +14,7 @@ BUILD_TYPE=Release
 for i in "$@"; do
     case "$1" in
         -c|--clean)
-            clean="true"
+            CLEAN="true"
             shift
             ;;
         -d|--debug)
@@ -26,7 +26,7 @@ for i in "$@"; do
 done
 
 pushd "../python/logInspector" > /dev/null
-    if [ -n "${clean}" ]; then
+    if [ -n "${CLEAN}" ]; then
         echo -e "\n\n=== Running make clean... ==="
         rm -rf build
         rm -f *.so
@@ -54,7 +54,7 @@ echo -ne "${BOLD}${CYAN}Build options: ${RESET}"
 if [ "${DEBUG}" == "GDB" ]; then
     echo -ne "${BOLD}${RED}DEBUG${RESET} "
 fi
-if [ -n "${clean}" ]; then
+if [ -n "${CLEAN}" ]; then
     echo -ne "${BOLD}CLEAN${RESET} "
 fi
 echo
