@@ -1,11 +1,7 @@
 #!/bin/bash
 
-pushd "$(dirname "$(realpath $0)")" > /dev/null
-
 LIB_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${LIB_DIR}/echo_color.sh
-
-popd > /dev/null
 
 TESTS_EXIT_CODE=0
 LAST_TESTS_SUCCESS=0

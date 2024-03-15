@@ -10,9 +10,9 @@ source ./build_test_cmake.sh
 #  Builds and Tests
 ###############################################################################
 
-build_cmake "cltool" ../cltool
+build_cmake "cltool" ../cltool ${args}
 
-./run_cltool.sh ${args}
+./run_cltool.sh
 
 # echo "BUILD" $BUILD_EXIT_CODE
 # echo "TESTS" $TESTS_EXIT_CODE

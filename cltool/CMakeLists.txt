@@ -15,6 +15,7 @@ endif()
 
 # Include InertialSenseSDK header files
 include_directories(
+    src
     ${IS_SDK_DIR}/src
     ${IS_SDK_DIR}/src/libusb/libusb
 )
@@ -28,7 +29,10 @@ if(WIN32)
 endif()
 
 # Define the executable
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} 
+    src/cltool_main.cpp
+    src/cltool.cpp
+)
 
 # Find pthread package
 find_package(Threads REQUIRED)

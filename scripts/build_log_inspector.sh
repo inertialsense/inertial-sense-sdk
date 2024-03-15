@@ -7,26 +7,24 @@ BOLD="\x1b[1m"
 GREEN="\x1b[32m"
 BLUE="\x1b[34m"
 RESET="\x1b[0m"
-
+CLEAN="false"
 DEBUG=
 BUILD_TYPE=Release
 
-for i in "$@"; do
-    case "$1" in
+for arg in "$@"; do
+    case $arg in
         -c|--clean)
-            clean="true"
-            shift
+            CLEAN="true"
             ;;
         -d|--debug)
             DEBUG=GDB
             BUILD_TYPE=Debug
-            shift
             ;;
     esac
 done
 
 pushd "../python/logInspector" > /dev/null
-    if [ -n "${clean}" ]; then
+    if [ "${CLEAN}" == "true" ]; then
         echo -e "\n\n=== Running make clean... ==="
         rm -rf build
         rm -f *.so
@@ -54,7 +52,7 @@ echo -ne "${BOLD}${CYAN}Build options: ${RESET}"
 if [ "${DEBUG}" == "GDB" ]; then
     echo -ne "${BOLD}${RED}DEBUG${RESET} "
 fi
-if [ -n "${clean}" ]; then
+if [ "${CLEAN}" == "true" ]; then
     echo -ne "${BOLD}CLEAN${RESET} "
 fi
 echo
