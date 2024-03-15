@@ -50,10 +50,10 @@ jobs:
         run: |
           rm -rf ../cltool/build ../ExampleProjects/build
 
-      - name: SDK
+      - name: Build SDK
         run: ./build_is_sdk.sh
   
-      - name: SDK Unit Tests
+      - name: Build/Run Unit Tests
         run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests IS-SDK_unit-tests
 
       - name: Build cltool
