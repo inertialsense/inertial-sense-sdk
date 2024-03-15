@@ -60,7 +60,6 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool bootloaderVerify; 					// -bv
 	bool replayDataLog;
 	bool softwareResetImx;
-	bool softwareResetEvb;
 	bool magRecal;
 	uint32_t magRecalMode;
 	survey_in_t surveyIn;
@@ -86,13 +85,11 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	std::string baseConnection; 			// -base=IP:port    (client)	
 	
 	std::string flashCfg;
-	std::string evbFlashCfg;	
 	uint32_t timeoutFlushLoggerSeconds;
 	uint32_t outputOnceDid;	
 	
 	uint32_t sysCommand;
 	int32_t platformType;
-	bool chipEraseEvb2;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
 	uint32_t runDuration = 0;				// Run for this many millis before exiting (0 = indefinitely)
@@ -116,7 +113,6 @@ void cltool_firmwareUpdateWaiter();
 void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
-bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, std::string evbFlashCfg); // true if should continue
 
 #endif // __CLTOOL_H__
 
