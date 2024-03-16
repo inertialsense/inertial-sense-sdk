@@ -123,7 +123,6 @@ public:
         system_command_t sysCmd;
         nvm_flash_cfg_t flashCfg;
         unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-        evb_flash_cfg_t evbFlashCfg;
         sys_params_t sysParams;
         is_fwUpdate_info_t fwUpdate;
     } is_device_t;
@@ -386,22 +385,6 @@ public:
     * @return int number bytes sent
     */
     int SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
-
-    /**
-    * Get the EVB flash config, returns the latest flash config read from the uINS flash memory
-    * @param flashCfg the flash config value
-    * @param pHandle the port pHandle to get flash config for
-    * @return bool whether the EVB flash config is valid, currently synchronized
-    */
-    bool EvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
-
-    /**
-    * Set the EVB flash config and update flash config on the EVB-2 flash memory
-    * @param evbFlashCfg the flash config
-    * @param pHandle the pHandle to set flash config for
-    * @return int number bytes sent
-    */
-    int SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);

@@ -231,21 +231,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
     }
-    if (g_commandLineOptions.softwareResetEvb)
-    {   // Issue software reset to EVB
-        cout << "Sending EVB software reset." << endl;
-        uint32_t sysCommand = SYS_CMD_SOFTWARE_RESET;
-        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
-    }
-    if (g_commandLineOptions.chipEraseEvb2)
-    {   // Chip erase EVB
-        cout << "Sending EVB chip erase." << endl;
-        uint32_t sysCommand;
-        sysCommand = SYS_CMD_MANF_UNLOCK;
-        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
-        sysCommand = SYS_CMD_MANF_CHIP_ERASE;
-        inertialSenseInterface.SendRawData(DID_EVB_STATUS, (uint8_t*)&sysCommand, sizeof(uint32_t), offsetof(evb_status_t, sysCommand));
-    }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
         cout << "Sending system command: " << g_commandLineOptions.sysCommand;
@@ -314,11 +299,20 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.flashCfg.length() != 0)
     {
+        unsigned int startMs = current_timeMs();
+        while(!inertialSenseInterface.FlashConfigSynced())
+        {   // Request and wait for flash config
+            inertialSenseInterface.Update();
+            SLEEP_MS(100);
+
+            if (current_timeMs() - startMs > 3000)
+            {   // Timeout waiting for flash config
+                cout << "Failed to read flash config!" << endl;
+                return false;
+            }
+        }
+
         return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
-    }
-    if (g_commandLineOptions.evbFlashCfg.length() != 0)
-    {
-        return cltool_updateEvbFlashCfg(inertialSenseInterface, g_commandLineOptions.evbFlashCfg);
     }
     return true;
 }
@@ -526,11 +520,6 @@ static int cltool_createHost()
         cout << "Failed to update flash config" << endl;
         return -1;
     }
-    else if (g_commandLineOptions.evbFlashCfg.length() != 0 && !cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.evbFlashCfg))
-    {
-        cout << "Failed to update EVB flash config" << endl;
-        return -1;
-    }
     else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))
     {
         cout << "Failed to create host at " << g_commandLineOptions.baseConnection << endl;
@@ -730,7 +719,7 @@ static int inertialSenseMain()
 }
 
 
-int cltool_main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))

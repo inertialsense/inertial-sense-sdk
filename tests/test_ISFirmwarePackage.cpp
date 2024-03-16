@@ -13,6 +13,7 @@
 #include "gtest_helpers.h"
 #include "test_utils.h"
 
+#include "ISFileManager.h"
 #include "ISFirmwareUpdater.h"
 
 
@@ -135,6 +136,9 @@ TEST(ISFirmwarePackage, packages__extract_archive) {
 
     // Close the archive, freeing any resources it was using
     mz_zip_reader_end(&zip_archive);
+
+    // Clean up test file(s)
+	ISFileManager::DeleteFile(s_Test_archive_filename);
 }
 
 #ifdef ZIP_PACKAGE_TEST

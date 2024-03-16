@@ -195,10 +195,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.baudRate = strtol(&a[6], NULL, 10);
         }
-        else if (startsWith(a, "-chipEraseEvb"))
-        {
-            g_commandLineOptions.chipEraseEvb2 = true;
-        }
         else if (startsWith(a, "-chipEraseIMX"))
         {
             g_commandLineOptions.sysCommand = SYS_CMD_MANF_CHIP_ERASE;
@@ -257,18 +253,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 return false;
             }
         }
-        else if (startsWith(a, "-evbFlashCfg="))
-        {
-            g_commandLineOptions.evbFlashCfg = &a[13];
-        }
-        else if (startsWith(a, "-evbFlashCfg"))
-        {
-            g_commandLineOptions.evbFlashCfg = ".";
-        }
-        else if (startsWith(a, "-evbReset"))
-        {
-            g_commandLineOptions.softwareResetEvb = true;
-        }
         else if (startsWith(a, "-factoryReset"))
         {
             g_commandLineOptions.sysCommand = SYS_CMD_MANF_FACTORY_RESET;
@@ -284,6 +268,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-flashCfg"))
         {
             g_commandLineOptions.flashCfg = ".";
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
         }
         else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
         {
@@ -393,10 +378,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.replayDataLog = true;
             g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
             enable_display_mode();
-        }
-        else if (startsWith(a, "-resetEvb"))
-        {
-            g_commandLineOptions.softwareResetEvb = true;
         }
         else if (startsWith(a, "-reset"))
         {
@@ -560,7 +541,6 @@ void cltool_outputUsage()
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
-	cout << "    -resetEvb      " << boldOff << " Issue software reset on EVB." << endlbOn;
 	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
 	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
@@ -575,7 +555,6 @@ void cltool_outputUsage()
 	if (g_internal)
 	{
 	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
-	cout << "    -chipEraseEvb2 " << boldOff << " CAUTION!!! Erase everything on EVB2 (firmware, config, etc.)" << endlbOn;
 	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
 	}
 	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
@@ -607,8 +586,6 @@ void cltool_outputUsage()
 	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
 	cout << "    -flashCfg" << boldOff << "       List all IMX \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
-	cout << "    -evbFlashCfg" << boldOff << "    List all EVB \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-evbFlashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            Set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
@@ -681,56 +658,6 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             }
         }
         inertialSenseInterface.SetFlashConfig(flashCfg);
-    }
-
-    return false;
-}
-
-bool cltool_updateEvbFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
-{
-    evb_flash_cfg_t evbFlashCfg;
-    inertialSenseInterface.EvbFlashConfig(evbFlashCfg);
-    const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_EVB_FLASH_CFG);
-
-    if (flashCfgString.length() < 2)
-    {
-        // read flash config and display
-        data_mapping_string_t stringBuffer;
-        cout << "Current EVB flash config" << endl;
-        for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
-        {
-            if (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&evbFlashCfg, stringBuffer))
-            {
-                cout << i->second.name << " = " << stringBuffer << endl;
-            }
-        }
-    }
-    else
-    {
-        vector<string> keyValues;
-        splitString(flashCfgString, '|', keyValues);
-        for (size_t i = 0; i < keyValues.size(); i++)
-        {
-            vector<string> keyAndValue;
-            splitString(keyValues[i], '=', keyAndValue);
-            if (keyAndValue.size() == 2)
-            {
-                if (flashMap.find(keyAndValue[0]) == flashMap.end())
-                {
-                    cout << "Unrecognized EVB flash config key '" << keyAndValue[0] << "' specified, ignoring." << endl;
-                }
-                else
-                {
-                    const data_info_t& info = flashMap.at(keyAndValue[0]);
-                    int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
-                    int substrIndex = 2 * (radix == 16); // skip 0x for hex
-                    const string& str = keyAndValue[1].substr(substrIndex);
-                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&evbFlashCfg, info, radix);
-                    cout << "Updated EVB flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
-                }
-            }
-        }
-        inertialSenseInterface.SetEvbFlashConfig(evbFlashCfg);
     }
 
     return false;

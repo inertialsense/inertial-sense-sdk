@@ -824,35 +824,6 @@ int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     return comManagerSendData(pHandle, &device.flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
 }
 
-bool InertialSense::EvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
-{
-    if ((size_t)pHandle >= m_comManagerState.devices.size())
-    {
-        pHandle = 0;
-    }
-
-    evbFlashCfg = m_comManagerState.devices[pHandle].evbFlashCfg;
-
-    return true;
-}
-
-int InertialSense::SetEvbFlashConfig(evb_flash_cfg_t &evbFlashCfg, int pHandle)
-{
-    if ((size_t)pHandle >= m_comManagerState.devices.size())
-    {
-        return 0;
-    }
-    is_device_t &device = m_comManagerState.devices[pHandle];
-
-    // Update checksum
-    evbFlashCfg.checksum = flashChecksum32(&evbFlashCfg, sizeof(evb_flash_cfg_t));
-
-    device.evbFlashCfg = evbFlashCfg;
-
-    // [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-    return comManagerSendData(pHandle, &device.evbFlashCfg, DID_EVB_FLASH_CFG, sizeof(evb_flash_cfg_t), 0);
-}
-
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
 {
     if (data->hdr.size==0 || data->ptr==NULL)
@@ -866,7 +837,6 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     {
         case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;                               break;
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
-        case DID_EVB_FLASH_CFG:     device.evbFlashCfg = *(evb_flash_cfg_t*)data->ptr;                      break;
         case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));
