@@ -3,10 +3,6 @@
 //
 
 #include "ISFirmwareUpdater.h"
-#include "ISFileManager.h"
-#include "ISUtilities.h"
-#include "util/md5.h"
-
 
 /**
  * Specifies the target device that you wish to update. This will attempt an initial REQ_VERSION request of that device
@@ -421,6 +417,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
     std::vector<std::string> args;
     splitString(cmd, '=', args);
     if (!args.empty()) {
+        activeCommand = args[0];
         if ((args[0] == "package") && (args.size() == 2)) {
             bool isManifest = (args[1].length() >= 5) && (0 == args[1].compare (args[1].length() - 5, 5, ".yaml"));
             pkg_error_e err_result = isManifest ? processPackageManifest(args[1]) : openFirmwarePackage(args[1]);
@@ -572,6 +569,8 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
     // If we are here, we've successfully executed our command, and it can be removed from the command queue.
     if (!commands.empty())
         commands.erase(commands.begin()); // pop the command off the front
+    else
+        activeCommand.clear();
 }
 
 /**

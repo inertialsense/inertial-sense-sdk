@@ -684,31 +684,24 @@ static int inertialSenseMain()
                         break;
                     }
 
-                    // Exit CLTool at end of Update
-                    g_devicesUpdating = 0;
+                    // If updating firmware, and all devices have finished, Exit
                     if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
-                        for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
-                            auto device = inertialSenseInterface.ComManagerDevice(i);
-                            if (device != nullptr && (device->fwUpdater != nullptr) && device->fwUpdater->hasPendingCommands()) {
-                                g_devicesUpdating++;
-                                break;
-                            }
-                        }
-                        if (!g_devicesUpdating) { // If nothing is updating, everything must be finished. Exit
+                        if (inertialSenseInterface.isFirmwareUpdateFinished()) {
                             exitCode = 0;
                             break;
                         }
-                    } else {
-                        // Print to standard output
+                    } else {  // Only print the usual output if we AREN'T updating firmware...
                         bool refreshDisplay = g_inertialSenseDisplay.PrintData();
 
                         // Collect and print summary list of client messages received
-    					display_logger_status(&inertialSenseInterface, refreshDisplay);
+                        display_logger_status(&inertialSenseInterface, refreshDisplay);
                         display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                     }
 
-                    if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration))
+                    // If the user specified a runDuration, then exit after that time has elapsed
+                    if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration)) {
                         break;
+                    }
                 }
             }
             catch (...)
@@ -718,11 +711,9 @@ static int inertialSenseMain()
         }
 
         //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-
         if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-            for (size_t i=0; i < inertialSenseInterface.DeviceCount(); i++) {
-                auto device = inertialSenseInterface.ComManagerDevice(i);
-                if (device != nullptr && device->closeStatus < fwUpdate::NOT_STARTED) {
+            for (auto& device : inertialSenseInterface.getDevices()) {
+                if (device.fwUpdate.hasError) {
                     exitCode = -3;
                     break;
                 }

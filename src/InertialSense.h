@@ -62,7 +62,61 @@ typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pH
 class InertialSense : public iISTcpServerDelegate
 {
 public:
-    struct is_device_t
+    typedef struct {
+        ISFirmwareUpdater* fwUpdater;
+        float percent;
+        bool hasError;
+        uint16_t lastSlot;
+        fwUpdate::target_t lastTarget;
+        fwUpdate::update_status_e lastStatus;
+        std::string lastMessage;
+
+        std::vector<std::string> target_idents;
+        std::vector<std::string> target_messages;
+
+        bool inProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
+        void update() {
+            if (fwUpdater) {
+                if ("upload" == fwUpdater->getActiveCommand()) {
+                    hasError = (!hasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED);
+                    lastSlot = fwUpdater->fwUpdate_getSessionImageSlot();
+                    lastTarget = fwUpdater->fwUpdate_getSessionTarget();
+                    if ((lastStatus != fwUpdater->fwUpdate_getSessionStatus()) && (fwUpdater->fwUpdate_getSessionStatus() != fwUpdate::NOT_STARTED)) {
+                        lastStatus = fwUpdater->fwUpdate_getSessionStatus();
+                        lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
+                    }
+                    if ((lastStatus == fwUpdate::IN_PROGRESS)) {
+                        percent = ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
+                    } else {
+                        percent = lastStatus <= fwUpdate::READY ? 0.f : 100.f;
+                    }
+                } else {
+                    if (fwUpdater->getActiveCommand() == "waitfor") {
+                        lastMessage = "Waiting for response from device.";
+                    } else if (fwUpdater->getActiveCommand() == "reset") {
+                        lastMessage = "Resetting device.";
+                    } else if (fwUpdater->getActiveCommand() == "delay") {
+                        lastMessage = "Waiting...";
+                    } else {
+                        if (!fwUpdater->hasPendingCommands() && !hasError)
+                            lastMessage = "Completed successfully.";
+                        else
+                            lastMessage.clear();
+                    }
+                }
+
+                // cleanup if we're done.
+                if (fwUpdater->fwUpdate_isDone()) {
+                    delete fwUpdater;
+                    fwUpdater = nullptr;
+                }
+            } else {
+                percent = 0.0;
+            }
+        }
+    } is_fwUpdate_info_t;
+
+    typedef struct
     {
         serial_port_t serialPort;
         dev_info_t devInfo;
@@ -71,9 +125,8 @@ public:
         unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
         evb_flash_cfg_t evbFlashCfg;
         sys_params_t sysParams;
-        ISFirmwareUpdater *fwUpdater;
-        fwUpdate::update_status_e closeStatus;
-    };
+        is_fwUpdate_info_t fwUpdate;
+    } is_device_t;
 
     struct com_manager_cpp_state_t
     {
@@ -148,6 +201,19 @@ public:
     * @return the number of open devices
     */
     size_t DeviceCount();
+
+    /**
+     * Returns a vector of available, connected devices
+     * @return
+     */
+    std::vector<is_device_t>& getDevices();
+
+
+    /**
+     * Returns a reference to an is_device_t struct that contains information about the specified device
+     * @return
+     */
+    is_device_t& getDevice(uint32_t index);
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -476,8 +542,21 @@ public:
             void (*waitAction)()
     );
 
+    /**
+     * @return true if all devices have finished all firmware update steps
+     */
     bool isFirmwareUpdateFinished();
+
+    /**
+     * @return true if all devices has completed with no reported errors
+     */
     bool isFirmwareUpdateSuccessful();
+
+    /**
+     * @return returns a percentage (0-100) indicating the average percent complete of all devices performing a firmware update
+     * Note: Percent Complete is only reported when uploading a file. Since this is an average, as devices progress through
+     * different files (IMX, GPX, GNSS, etc) the percent will start over (as their individual progress will restart for each new file).
+     */
     int getFirmwareUpdatePercent();
 
     /**
@@ -485,27 +564,6 @@ public:
     * @param deviceIndex
     */
     fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
-
-    /**
-    * Gets current update target, slot, and filename for the selected device index
-    * @param deviceIndex
-    * @param target a reference to a target_t which will be set with the value of the active target
-    * @param slotNo a reference to an int which will be set with the value of the active slot
-    * @return returns a char * to the name of the active target, or nullptr if no session is active
-    */
-    const char * getUpdateTargetInfo(uint32_t deviceIndex, fwUpdate::target_t& target, int& slotNo);
-
-    /**
-    * Gets reason device was closed for selected device index
-    * @param deviceIndex
-    */
-    fwUpdate::update_status_e getCloseStatus(uint32_t deviceIndex);
-
-    /**
-    * Gets current update percent for selected device index
-    * @param deviceIndex
-    */
-    float getUploadPercent(uint32_t deviceIndex);
 
     /**
     * Gets device index from COM port

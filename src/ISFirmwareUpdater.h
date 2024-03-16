@@ -8,9 +8,11 @@
 #include <fstream>
 #include <algorithm>
 
-// #include "InertialSense.h"
 #include <protocol/FirmwareUpdate.h>
 
+#include "ISFileManager.h"
+#include "ISUtilities.h"
+#include "util/md5.h"
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
 #include "miniz.h"
@@ -52,6 +54,7 @@ private:
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
     std::vector<std::string> commands;
+    std::string activeCommand;          //! the name (without parameters) of the currently executing command
     std::string failLabel;              //! a label to jump to, when an error occurs
     bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
@@ -107,6 +110,18 @@ public:
     bool addCommands(std::vector<std::string> cmds);
 
     bool hasPendingCommands() { return !commands.empty(); }
+
+    int getPendingCommands() { return commands.size(); }
+    int getPendingUploads() {
+        int count = 0;
+        for (auto cmd: commands) {
+            if (cmd.find_first_of("upload") == 0)
+                count++;
+        }
+        return count;
+    }
+
+    std::string getActiveCommand() { return activeCommand; };
 
     void clearAllCommands() { commands.clear(); }
 
