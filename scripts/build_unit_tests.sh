@@ -6,7 +6,7 @@ pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 source ./build_test_cmake.sh
 
-build_cmake "cltool" ../cltool ${args}
+build_cmake "SDK Unit Tests" ../tests ${args}
 
 popd > /dev/null
 

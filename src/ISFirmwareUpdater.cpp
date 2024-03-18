@@ -535,13 +535,15 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                     // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
                     const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
                     if (gpxVInfo) {
-                        int v1, v2, v3, v4, bn;
-                        if (sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) {
+                        int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
+                        if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
+                            (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4))
+                        {
                             remoteDevInfo.hardware = HDW_TYPE__GPX;
                             remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
                             remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
                             target_devInfo = &remoteDevInfo;
-                            if ((v1 == 2) && (v2 == 0) && (v3 == 0) && (v4 <= 10))
+                            if ((v1 == 2) && (v2 == 0) && (v3 == 0))
                                 flags |= fwUpdate::IMG_FLAG_useAlternateMD5;
                         }
                     }

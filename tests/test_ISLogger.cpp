@@ -4,11 +4,8 @@
 #include "ISFileManager.h"
 #include "test_data_utils.h"
 
-#if defined(DEBUG)
-#define DELETE_DIRECTORY(d)		// Leave test data in place for inspection
-#else
 #define DELETE_DIRECTORY(d)		ISFileManager::DeleteDirectory(d)
-#endif
+// #define DELETE_DIRECTORY(d)		// Leave test data in place for inspection
 
 using namespace std;
 
