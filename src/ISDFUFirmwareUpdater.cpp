@@ -26,42 +26,61 @@ namespace dfu {
 //        "ERROR",
 //    };
 
+    std::mutex ISDFUFirmwareUpdater::dfuMutex;
 
     /**
      * Adds all discovered DFU devices, which match the specified VID/PID (if != 0) to the referenced devices vector.
      * @param devices a vectorof DFUDevice which contains all available/matching DFU devices
      * @param vid
      * @param pid
-     * @return
+     * @return the number of dfu devices discovered (devices.size())
      */
-    int ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid, uint16_t pid) {
+    size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid, uint16_t pid) {
         libusb_device **device_list;
         libusb_device *dev;
 
-        size_t device_count = libusb_get_device_list(NULL, &device_list);
-        for (size_t i = 0; i < device_count; ++i) {
-            dev = device_list[i];
+        if(dfuMutex.try_lock())
+        {
+            libusb_init(NULL);
 
-            // let's instantiate a DFUDevice object and add it to our list, if everything is cool
-            if (isDFUDevice(dev, vid, pid)) {
-                DFUDevice *dfuDevice = new DFUDevice(dev);
-                devices.push_back(dfuDevice);
+            size_t device_count = libusb_get_device_list(NULL, &device_list);
+            for (size_t i = 0; i < device_count; ++i) {
+                dev = device_list[i];
+
+                // let's instantiate a DFUDevice object and add it to our list, if everything is cool
+                if (isDFUDevice(dev, vid, pid)) {
+                    DFUDevice *dfuDevice = new DFUDevice(dev);
+                    devices.push_back(dfuDevice);
+                }
             }
-        }
 
-        libusb_free_device_list(device_list, 1);
+            libusb_free_device_list(device_list, 1);
+            libusb_exit(NULL);
+            dfuMutex.unlock();
+        }
         return devices.size();
     }
 
     /**
-     * Removed any DFUDevice from devices which does not match the specified md5 fingerprint
-     * @param devices
-     * @param fingerprint
-     * @return
+     * Removes any DFUDevice from devices which does not match the specified md5 fingerprint
+     * @param devices vector of known devices
+     * @param fingerprint the md5 digest "fingerprint" to match against (matches will be retained, all others will be removed)
+     * @return the number of devices remaining in the vector (devices.size())
      */
-    int ISDFUFirmwareUpdater::filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint) {
-
+    size_t ISDFUFirmwareUpdater::filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint) {
         auto removed = std::remove_if(std::begin(devices), std::end(devices), [&fingerprint](DFUDevice *d) { return !md5_matches(d->getFingerprint(), fingerprint); });
+        devices.erase(removed, devices.end());
+        return devices.size();
+    }
+
+    /**
+     * Removes any DFUDevice from devices which does not match the specified fwUpdate::target_t type
+     * @param devices vector of known devices
+     * @param target the target type retain (all others will be removed)
+     * @return the number of devices remaining in the vector (devices.size())
+     */
+    size_t ISDFUFirmwareUpdater::filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target) {
+        auto removed = std::remove_if(std::begin(devices), std::end(devices), [&target](DFUDevice *d) { return d->getTargetType() != target; });
         devices.erase(removed, devices.end());
         return devices.size();
     }
@@ -77,25 +96,50 @@ namespace dfu {
     bool dfu::ISDFUFirmwareUpdater::isDFUDevice(libusb_device *usbDevice, uint16_t vid, uint16_t pid) {
         struct libusb_device_descriptor desc;
         struct libusb_config_descriptor *cfg;
+        bool success = true;
 
-        if (libusb_get_device_descriptor(usbDevice, &desc) < 0)
-            return false;
+        if (libusb_get_device_descriptor(usbDevice, &desc) < 0) {
+            success = false;
+        }
 
         // Check vendor and product ID
-        if (((vid != 0x0000) && (desc.idVendor != vid)) || ((pid != 0x0000) && (desc.idProduct != pid)))
-            return false;      // must be some other usb device
+        else if (((vid != 0x0000) && (desc.idVendor != vid)) || ((pid != 0x0000) && (desc.idProduct != pid))) {
+            success = false;      // must be some other usb device
+        }
 
-        if (libusb_get_config_descriptor(usbDevice, 0, &cfg) < 0)
-            return false;
+        else if (libusb_get_config_descriptor(usbDevice, 0, &cfg) < 0) {
+            success = false;
+        }
 
         // USB-IF DFU interface class numbers
-        if ((cfg->interface->altsetting[0].bInterfaceClass != 0xFE) ||
+        else if ((cfg->interface->altsetting[0].bInterfaceClass != 0xFE) ||
             (cfg->interface->altsetting[0].bInterfaceSubClass != 0x01) ||
-            (cfg->interface->altsetting[0].bInterfaceProtocol != 0x02))
-            return false;
+            (cfg->interface->altsetting[0].bInterfaceProtocol != 0x02)) {
+            success = false;
+        }
 
-        return true;
+        return success;
     }
+
+    /**
+     * Returns a fwUpdate-compatible target type (fwUpdate::target_t) appropriate for this DFU device,
+     * given the parsed hardware id, where available.
+     * @return determined fwUpdate::target_t is detectable, otherwise TARGET_UNKNOWN
+     */
+    fwUpdate::target_t DFUDevice::getTargetType() {
+        switch (DECODE_HDW_TYPE(hardwareId)) {
+            case HDW_TYPE__IMX:
+                if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_IMX5;
+                // else if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 1)) return fwUpdate::TARGET_IMX51;
+                break;
+            case HDW_TYPE__GPX:
+                if ((DECODE_HDW_MAJOR(hardwareId) == 1) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_GPX1;
+                break;
+        }
+
+        return fwUpdate::TARGET_UNKNOWN;
+    }
+
 
     /**
      * high-level method to query and parse as much identifying information (USB, DFU, OTP, etc) as possible from the
@@ -190,7 +234,7 @@ namespace dfu {
                             char alt_name[MAX_DESC_STR_LEN];
                             if (get_string_descriptor_ascii(intf->iInterface, alt_name, MAX_DESC_STR_LEN) > 0) {
                                 dfuDescriptors.push_back(alt_name);
-                                int lastPos = dfuDescriptors.size()-1;
+                                size_t lastPos = dfuDescriptors.size()-1;
                                 decodeMemoryPageDescriptor(dfuDescriptors[lastPos], segments[lastPos]);
                             } else
                                 dfuDescriptors.push_back("");
@@ -406,6 +450,91 @@ namespace dfu {
             int lastSep = filename.find_last_of('/')+1;
             std::string fname(filename.substr(lastSep, filename.length() - lastSep));
             statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Updating flash with firmware \"%s\" (@ 0x%08X)", getDescription(), fname.c_str(), segments[STM32_DFU_INTERFACE_FLASH].address + offset);
+        }
+
+        ret_libusb = abort();
+        if (ret_libusb == LIBUSB_SUCCESS) {
+            if (statusFn) {
+                statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Erasing flash memory...", getDescription());
+            }
+
+            offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
+            for (size_t i = 0; i < image_sections; i++) {
+                //offset = image[i].address + offset;
+                ret_dfu = eraseFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len);
+                if (ret_dfu != DFU_ERROR_NONE) {
+                    statusFn(this, IS_LOG_LEVEL_ERROR, "(%s) Error erasing flash: %04x", getDescription(), -ret_dfu);
+                    return ret_dfu;
+                }
+            }
+
+            if (statusFn) {
+                statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Programming flash memory...", getDescription());
+            }
+
+            offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
+            for (size_t i = 0; i < image_sections; i++) {
+                ret_dfu = writeFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len, image[i].image);
+                if (ret_dfu != DFU_ERROR_NONE) {
+                    statusFn(this, IS_LOG_LEVEL_ERROR, "(%s) Error writing flash: %04x", getDescription(), -ret_dfu);
+                    return ret_dfu;
+                }
+            }
+        }
+
+        // Unload the firmware image
+        ihex_unload_sections(image, image_sections);
+        return ret_dfu;
+    }
+
+    /**
+     * High-level function used to program flash memory using the provided stream. This function will ONLY
+     * target the devices FLASH memory segment. The baseAddress must point to a location within the
+     * flash memory, and that the size of the firmware image must not exceed the size of, or allow writing
+     * outside of the FLASH memory segment. This function will erase existing flash memory before writing
+     * the new firmware image.  Using the baseAddress allows writing of partitions or portions of data
+     * into the firmware, allowing for example, to target one of multiple mcuBOOT slots, without overwriting
+     * data in adjacent partitions.  Note that this call does not handle any file format parsing/conversion;
+     * the passed stream should backed by a byte-for-byte copy of the firmware image.
+     * @param stream a binary stream of "raw" firmware image data that should be written to flash
+     * @param baseAddress this is the actual memory location which the firmware should be written to.
+     * @return
+     */
+    dfu_error DFUDevice::updateFirmware(std::istream& stream, uint64_t baseAddress) {
+        ihex_image_section_t image[MAX_NUM_IHEX_SECTIONS];
+        size_t image_sections;
+        int ret_libusb;
+        dfu_error ret_dfu;
+
+        SLEEP_MS(100);
+
+        if (!isConnected()) {
+            ret_dfu = open();
+            if (ret_dfu != DFU_ERROR_NONE)
+                return ret_dfu;
+        }
+
+        {
+            if (!stream)
+                return DFU_ERROR_FILE_NOTFOUND;
+
+
+            image[0].address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
+            auto fsize = stream.tellg();
+            stream.seekg( 0, std::ios::end );
+            image[0].len = stream.tellg() - fsize;
+            stream.seekg( 0, std::ios::beg );
+
+            image[0].image = static_cast<uint8_t *>(malloc(image[0].len));
+            stream.read((char *)image[0].image, image[0].len);
+
+            //stream.close();
+            image_sections = 1;
+        }
+
+        uint32_t offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
+        if (statusFn) {
+            statusFn(this, IS_LOG_LEVEL_INFO, "(%s) Updating flash with firmware \"%s\" (@ 0x%08X)", getDescription(), segments[STM32_DFU_INTERFACE_FLASH].address + offset);
         }
 
         ret_libusb = abort();
@@ -685,7 +814,7 @@ namespace dfu {
     }
 
     /**
-     * Closes the DFU/USB device, by cancelling any active DFU optionations, and waiting for an DFU IDLE state
+     * Closes the DFU/USB device, by cancelling any active DFU operations, and waiting for the DFU IDLE state
      * before releasing the USB interface.
      * @return
      */

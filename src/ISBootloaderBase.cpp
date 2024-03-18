@@ -103,13 +103,9 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
     FILE* blfile = 0;
 
 #ifdef _MSC_VER
-
     fopen_s(&blfile, filename.c_str(), "rb");
-
 #else
-
     blfile = fopen(filename.c_str(), "rb");
-
 #endif
 
     if (blfile == 0)
@@ -119,7 +115,6 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
     unsigned char ver_info[4];
 	size_t n = fread(ver_info, 1, 4, blfile);
     (void)n;
-    fclose(blfile);
 
     //Check for marker for valid version info
     if (ver_info[0] == 0xAA && ver_info[1] == 0x55)
@@ -136,7 +131,6 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
         fseek(blfile, 0x3DFC, SEEK_SET);
         size_t n = fread(ver_info, 1, 4, blfile);
         (void)n;
-        fclose(blfile);
 
         //Check for marker for valid version info
         if (ver_info[0] == 0xAA && ver_info[1] == 0x55)
@@ -146,6 +140,7 @@ eImageSignature cISBootloaderBase::get_bin_image_signature(std::string filename,
         }
     }
 
+    fclose(blfile);
     return (eImageSignature)(IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 }
 

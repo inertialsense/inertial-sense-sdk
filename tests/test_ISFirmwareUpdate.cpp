@@ -179,7 +179,7 @@ public:
 
     bool sendProgressUpdates = true;
 
-    int fwUpdate_performReset(fwUpdate::target_t target_id, uint16_t reset_flags) { return 0; };
+    int fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) { return 0; };
 
     bool fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& devInfo) { return false; };
 

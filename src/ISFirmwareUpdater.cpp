@@ -3,10 +3,6 @@
 //
 
 #include "ISFirmwareUpdater.h"
-#include "ISFileManager.h"
-#include "ISUtilities.h"
-#include "util/md5.h"
-
 
 /**
  * Specifies the target device that you wish to update. This will attempt an initial REQ_VERSION request of that device
@@ -43,7 +39,7 @@ bool ISFirmwareUpdater::setCommands(std::vector<std::string> cmds) {
  * @param progressRate
  * @return
  */
-fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int progressRate)
+fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags, int progressRate)
 {
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
@@ -135,12 +131,12 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     if(pfnInfoProgress_cb != nullptr) {
         if ((remoteDevInfo.hardware >= HDW_TYPE__UINS) && (remoteDevInfo.hardware <= HDW_TYPE__GPX)) {
             const char *hdw_names[5] = {"UNKNOWN", "UINS", "EVB", "IMX", "GPX"};
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received Version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardware],
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardware],
                                remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
                                remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3],
                                remoteDevInfo.buildNumber);
         } else {
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received Version info: %s, Fw %d.%d.%d.%d", fwUpdate_getTargetName(msg.data.version_resp.resTarget),
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s, Fw %d.%d.%d.%d", fwUpdate_getTargetName(msg.data.version_resp.resTarget),
                                remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3]);
         }
     }
@@ -411,16 +407,13 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     while (!commands.empty() && (commands[0] != failLabel)) {
         commands.erase(commands.begin());
     }
-    if (!commands.empty() && (commands[0] == failLabel)) {
-        // consume the label before proceeding.
-        commands.erase(commands.begin());
-    }
 }
 
 void ISFirmwareUpdater::runCommand(std::string cmd) {
     std::vector<std::string> args;
     splitString(cmd, '=', args);
     if (!args.empty()) {
+        activeCommand = args[0];
         if ((args[0] == "package") && (args.size() == 2)) {
             bool isManifest = (args[1].length() >= 5) && (0 == args[1].compare (args[1].length() - 5, 5, ".yaml"));
             pkg_error_e err_result = isManifest ? processPackageManifest(args[1]) : openFirmwarePackage(args[1]);
@@ -566,12 +559,19 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
             if(pfnInfoProgress_cb != nullptr)
                 pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Issuing 'RESET'");
+        } else if (args[0][0] == ':') {
+            // new step section/target - we should reset certain states here if needed
+            session_target = target = fwUpdate::TARGET_HOST;
+            session_image_slot = slotNum = 0;
+            failLabel.clear();
         }
     }
 
     // If we are here, we've successfully executed our command, and it can be removed from the command queue.
     if (!commands.empty())
         commands.erase(commands.begin()); // pop the command off the front
+    else
+        activeCommand.clear();
 }
 
 /**
