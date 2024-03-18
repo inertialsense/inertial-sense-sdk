@@ -9,6 +9,7 @@
 #include "util.h"
 
 #include <chrono>
+#include <cstring>
 
 namespace utils {
 
@@ -25,7 +26,7 @@ namespace utils {
         tt = system_clock::to_time_t(currentTime);
         auto timeinfo = localtime(&tt);
         strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
-        sprintf(buffer, "%s.%03d", buffer, (int) millis);
+        sprintf(buffer + strlen(buffer), "%03d", (int) millis);
 
         return std::string(buffer);
     }

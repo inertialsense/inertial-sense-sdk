@@ -35,7 +35,7 @@ namespace dfu {
      * @param pid
      * @return the number of dfu devices discovered (devices.size())
      */
-    int ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid, uint16_t pid) {
+    size_t ISDFUFirmwareUpdater::getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid, uint16_t pid) {
         libusb_device **device_list;
         libusb_device *dev;
 
@@ -67,7 +67,7 @@ namespace dfu {
      * @param fingerprint the md5 digest "fingerprint" to match against (matches will be retained, all others will be removed)
      * @return the number of devices remaining in the vector (devices.size())
      */
-    int ISDFUFirmwareUpdater::filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint) {
+    size_t ISDFUFirmwareUpdater::filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint) {
         auto removed = std::remove_if(std::begin(devices), std::end(devices), [&fingerprint](DFUDevice *d) { return !md5_matches(d->getFingerprint(), fingerprint); });
         devices.erase(removed, devices.end());
         return devices.size();
@@ -79,7 +79,7 @@ namespace dfu {
      * @param target the target type retain (all others will be removed)
      * @return the number of devices remaining in the vector (devices.size())
      */
-    int ISDFUFirmwareUpdater::filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target) {
+    size_t ISDFUFirmwareUpdater::filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target) {
         auto removed = std::remove_if(std::begin(devices), std::end(devices), [&target](DFUDevice *d) { return d->getTargetType() != target; });
         devices.erase(removed, devices.end());
         return devices.size();
@@ -234,7 +234,7 @@ namespace dfu {
                             char alt_name[MAX_DESC_STR_LEN];
                             if (get_string_descriptor_ascii(intf->iInterface, alt_name, MAX_DESC_STR_LEN) > 0) {
                                 dfuDescriptors.push_back(alt_name);
-                                int lastPos = dfuDescriptors.size()-1;
+                                size_t lastPos = dfuDescriptors.size()-1;
                                 decodeMemoryPageDescriptor(dfuDescriptors[lastPos], segments[lastPos]);
                             } else
                                 dfuDescriptors.push_back("");

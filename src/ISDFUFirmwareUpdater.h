@@ -236,7 +236,7 @@ private:
     uint16_t vid;                               // the vendor id for this device (for filtering/selection)
     uint16_t pid;                               // the product id for this device (for filtering/selection)
     usb_dfu_func_descriptor funcDescriptor;     // a copy of the DFU functional descriptor
-    std::vector<std::string> dfuDescriptors;    // a array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
+    std::vector<std::string> dfuDescriptors;    // an array containing the contents of each of the available Alt Identifier strings (used to generate the fingerprint)
 
     std::string dfuManufacturer;                // the extracted manufacturer id/name (as a string) from the iManufacturer descriptor
     std::string dfuProduct;                     // the extracted product id/name (as a string) from the iProduct descriptor
@@ -307,11 +307,11 @@ public:
      */
     ISDFUFirmwareUpdater(libusb_device *device, uint32_t hdwId, uint32_t serialNo);
 
-    static int getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
+    static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
 
-    static int filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
+    static size_t filterDevicesByFingerprint(std::vector<DFUDevice *> &devices, md5hash_t fingerprint);
 
-    static int filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target);
+    static size_t filterDevicesByTargetType(std::vector<DFUDevice *> &devices, fwUpdate::target_t target);
 
     static bool isDFUDevice(libusb_device *usbDevice, uint16_t vid, uint16_t pid);
 
