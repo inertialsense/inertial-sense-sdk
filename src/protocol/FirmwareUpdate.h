@@ -154,7 +154,7 @@ namespace fwUpdate {
         FINALIZING = 4,             // indicates that all chunks have been received, and checksum is valid, but still waiting on internal operations to complete
         IN_PROGRESS = 3,            // indicates that the update status has started, and at least 1 chunk has been sent, but more chunks are still expected
         READY = 2,                  // indicates that the update status has finished initializing and is waiting for the first chunk of firmware data
-        INITIALIZING = 1,           // indicates that an update has been requested, but the subsystem is waiting on completion of the bootloader or other back-end mechanism to initialize before data transfer can begin.
+        INITIALIZING = 1,           // indicates that an update has been received, but the subsystem is waiting on completion of the bootloader or other back-end mechanism to initialize before data transfer can begin.
         NOT_STARTED = 0,            // indicates that the update process has not been initiated (it will fall back to this after an error, and a short timeout).
         ERR_INVALID_SESSION = -1,   // indicates that the requested session ID is invalid.
         ERR_INVALID_SLOT = -2,      // indicates that the request slot does not exist. Different targets have different number of slots which can be written to.

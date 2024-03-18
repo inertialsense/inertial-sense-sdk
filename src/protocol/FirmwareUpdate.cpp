@@ -28,7 +28,7 @@ namespace fwUpdate {
             { .name = "ERR_FLASH_INVALID", .nice = "Flash Invalid" },
             { .name = "ERR_FLASH_OPEN_FAILURE", .nice = "Flash Open Failure" },
             { .name = "ERR_FLASH_WRITE_FAILURE", .nice = "Flash Write Failure" },
-            { .name = "ERR_NOT_SUPPORTED", .nice = "Request Not Supported" },
+            { .name = "ERR_NOT_SUPPORTED", .nice = "Request or Feature Not Supported" },
             { .name = "ERR_COMMS", .nice = "Communications Error" },
             { .name = "ERR_CHECKSUM_MISMATCH", .nice = "Checksum Mismatch" },
             { .name = "ERR_TIMEOUT", .nice = "Communications Timeout" },
@@ -757,7 +757,7 @@ namespace fwUpdate {
 
     bool FirmwareUpdateHost::fwUpdate_requestUpdate() {
 
-        if ((session_status > NOT_STARTED) || (session_id == 0))
+        if ((session_status >= READY) || (session_id == 0))
             return false;
 
         fwUpdate::payload_t request;

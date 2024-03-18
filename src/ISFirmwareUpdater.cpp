@@ -407,10 +407,6 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     while (!commands.empty() && (commands[0] != failLabel)) {
         commands.erase(commands.begin());
     }
-    if (!commands.empty() && (commands[0] == failLabel)) {
-        // consume the label before proceeding.
-        commands.erase(commands.begin());
-    }
 }
 
 void ISFirmwareUpdater::runCommand(std::string cmd) {
@@ -563,6 +559,11 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
             if(pfnInfoProgress_cb != nullptr)
                 pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Issuing 'RESET'");
+        } else if (args[0][0] == ':') {
+            // new step section/target - we should reset certain states here if needed
+            session_target = target = fwUpdate::TARGET_HOST;
+            session_image_slot = slotNum = 0;
+            failLabel.clear();
         }
     }
 

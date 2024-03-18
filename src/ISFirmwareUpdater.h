@@ -109,6 +109,8 @@ public:
 
     bool addCommands(std::vector<std::string> cmds);
 
+    bool isWaitingResponse() { return requestPending; }
+
     bool hasPendingCommands() { return !commands.empty(); }
 
     int getPendingCommands() { return commands.size(); }
