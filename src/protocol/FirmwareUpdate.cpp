@@ -28,7 +28,7 @@ namespace fwUpdate {
             { .name = "ERR_FLASH_INVALID", .nice = "Flash Invalid" },
             { .name = "ERR_FLASH_OPEN_FAILURE", .nice = "Flash Open Failure" },
             { .name = "ERR_FLASH_WRITE_FAILURE", .nice = "Flash Write Failure" },
-            { .name = "ERR_NOT_SUPPORTED", .nice = "Request Not Supported" },
+            { .name = "ERR_NOT_SUPPORTED", .nice = "Request or Feature Not Supported" },
             { .name = "ERR_COMMS", .nice = "Communications Error" },
             { .name = "ERR_CHECKSUM_MISMATCH", .nice = "Checksum Mismatch" },
             { .name = "ERR_TIMEOUT", .nice = "Communications Timeout" },
@@ -598,7 +598,7 @@ namespace fwUpdate {
         response.hdr.msg_type = MSG_RESET_RESP;
         fwUpdate_sendPayload(response); // make sure this goes out before the reset happens. We might need to schedule the reset, so the send can happen, if the underlying call doesn't block.
 
-        return fwUpdate_performReset(session_target, payload.data.req_reset.reset_flags);
+        return fwUpdate_performReset(session_target, (reset_flags_e)payload.data.req_reset.reset_flags);
     }
 
 
@@ -757,7 +757,7 @@ namespace fwUpdate {
 
     bool FirmwareUpdateHost::fwUpdate_requestUpdate() {
 
-        if ((session_status > NOT_STARTED) || (session_id == 0))
+        if ((session_status >= READY) || (session_id == 0))
             return false;
 
         fwUpdate::payload_t request;

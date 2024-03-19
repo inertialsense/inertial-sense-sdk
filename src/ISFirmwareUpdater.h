@@ -8,9 +8,11 @@
 #include <fstream>
 #include <algorithm>
 
-#include "ISFirmwareUpdater.h"
 #include <protocol/FirmwareUpdate.h>
 
+#include "ISFileManager.h"
+#include "ISUtilities.h"
+#include "util/md5.h"
 #include "ISDFUFirmwareUpdater.h"
 #include "ISBootloaderBase.h"
 #include "miniz.h"
@@ -22,15 +24,14 @@
 
 extern "C"
 {
-// [C COMM INSTRUCTION]  Include data_sets.h and com_manager.h
-#include "data_sets.h"
-#include "com_manager.h"
-
-#include "serialPortPlatform.h"
+    // [C COMM INSTRUCTION]  Include data_sets.h and com_manager.h
+    #include "data_sets.h"
+    #include "com_manager.h"
+    #include "serialPortPlatform.h"
 }
 
 
-class ISFirmwareUpdater final : public fwUpdate::FirmwareUpdateHost {
+class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 private:
     std::istream *srcFile = nullptr;    //! the file that we are currently sending to a remote device, or nullptr if none
     uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
@@ -53,6 +54,7 @@ private:
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
     std::vector<std::string> commands;
+    std::string activeCommand;          //! the name (without parameters) of the currently executing command
     std::string failLabel;              //! a label to jump to, when an error occurs
     bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
     int slotNum = 0, chunkSize = 512, progressRate = 250;
@@ -64,9 +66,8 @@ private:
     std::string filename;
     fwUpdate::target_t target;
 
-    mz_zip_archive* zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
-
-    dfu::ISDFUFirmwareUpdater* dfuUpdater = nullptr;
+    mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
+    dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
 
     void runCommand(std::string cmd);
@@ -88,6 +89,7 @@ public:
         PKG_ERR_IMAGE_FILE_MD5_MISMATCH = -11,      // the image file's actual md5sum doesn't match the manifest's reported md5sum
     };
 
+    // const ISDevice& device;
     int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
     const char *portName = nullptr;         //! the name of the port referenced by pHandle
     const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
@@ -102,9 +104,27 @@ public:
     ~ISFirmwareUpdater() override {};
 
     void setTarget(fwUpdate::target_t _target);
+
     bool setCommands(std::vector<std::string> cmds);
+
     bool addCommands(std::vector<std::string> cmds);
+
+    bool isWaitingResponse() { return requestPending; }
+
     bool hasPendingCommands() { return !commands.empty(); }
+
+    int getPendingCommands() { return commands.size(); }
+    int getPendingUploads() {
+        int count = 0;
+        for (auto cmd: commands) {
+            if (cmd.find_first_of("upload") == 0)
+                count++;
+        }
+        return count;
+    }
+
+    std::string getActiveCommand() { return activeCommand; };
+
     void clearAllCommands() { commands.clear(); }
 
     /**
@@ -114,7 +134,7 @@ public:
      * @param errCode
      * @param errMsg
      */
-    void handleCommandError(const std::string& cmd, int errCode, const char *errMmsg, ...);
+    void handleCommandError(const std::string &cmd, int errCode, const char *errMmsg, ...);
 
     /**
      * Initializes a DFU-based firmware update targeting the specified USB device.
@@ -125,12 +145,13 @@ public:
      * @param _target the fwUpdate target device (passed for device/firmware validation and protocol compatibility)
      * @param deviceId the device's unique id/serial number from the manufacturing/dev info used to ensure we are targeting a specific device - if 0, this is ignored
      * @param filename  the filename of the firmware image to upload.  This MUST be a .hex file
+     * @param flags additional flags used to configure options for the firmware update process
      * @param progressRate the period (ms) in which progress updates are sent back to this class to report back to the UI, etc.
      * @return return true if the ISDFUFirmwareUpdater was instantiated and validations passed indicating that the device is ready to start receiving image data.
      */
-    fwUpdate::update_status_e initializeDFUUpdate(libusb_device* usbDevice, fwUpdate::target_t _target, uint32_t deviceId, const std::string &filename, int progressRate);
+    fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
 
-    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string& filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
+    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
 
     /**
      * @param offset the offset into the image file to pull data from
@@ -144,7 +165,7 @@ public:
      * @param msg
      * @return
      */
-    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t& msg);
+    bool fwUpdate_handleVersionResponse(const fwUpdate::payload_t &msg);
 
     bool fwUpdate_handleUpdateResponse(const fwUpdate::payload_t &msg);
 
@@ -153,30 +174,42 @@ public:
     bool fwUpdate_handleUpdateProgress(const fwUpdate::payload_t &msg);
 
     bool fwUpdate_handleDone(const fwUpdate::payload_t &msg);
+
     bool fwUpdate_isDone();
 
-    void setUploadProgressCb(ISBootloader::pfnBootloadProgress pfnUploadProgress){pfnUploadProgress_cb = pfnUploadProgress;}
-    void setVerifyProgressCb(ISBootloader::pfnBootloadProgress pfnVerifyProgress){pfnVerifyProgress_cb = pfnVerifyProgress;}
-    void setInfoProgressCb(ISBootloader::pfnBootloadStatus pfnInfoProgress) {pfnInfoProgress_cb = pfnInfoProgress;}
+    void setUploadProgressCb(ISBootloader::pfnBootloadProgress pfnUploadProgress) { pfnUploadProgress_cb = pfnUploadProgress; }
+
+    void setVerifyProgressCb(ISBootloader::pfnBootloadProgress pfnVerifyProgress) { pfnVerifyProgress_cb = pfnVerifyProgress; }
+
+    void setInfoProgressCb(ISBootloader::pfnBootloadStatus pfnInfoProgress) { pfnInfoProgress_cb = pfnInfoProgress; }
 
     /**
-     * called at each step interval; if you put this behind a Scheduled Task, call this method at each interval.
-     * This method is primarily used to drive the update process. Unlike the device interface, on the SDK-side, you must call Step,
-     * in order to advance the update engine, and transfer image data. Failure to call Step at a regular interval could lead to the
-     * device triggering a timeout and aborting the upgrade process.
-     * @return the message type, if any that was most recently processed.
+     * this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
+     * This method is primarily used to drive the update process.
+     * @param msg_type the type of message that was last processed, or MSG_UNKNOWN
+     * @param processed true, if the message was already processed (in this case, you can do additional or optional processing in needed), or false if it was not.
+     * @return true if some action was handled by the reception of this message, otherwise false.
      */
-    // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
     bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
 
-    bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
+    /**
+     * Overridden implementation that is responsible for writing the fwUpdate packets to the wire/port.
+     * @param target the target that this message is directed to - note that this information is already encoded in the buffer, and maybe different. This
+     *               parameter is primarily for decision making in determining which port should be selected.  Ie, an implementation might keep track of
+     *               which ports packets from specific targets were received on, and the direct data back to that specific port based on the target that
+     *               is being replied to. Use of this parameter is at the implementers discretion.
+     * @param buffer the encoded buffer to be send
+     * @param buff_len the number of bytes in the encoded buffer to send
+     * @return true on success, otherwise false
+     */
+    bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) override;
 
     /**
      * Firmware Package Support -- Firmware packages are zip files with a YAML-based manifest, which describes the devices, images, and related metadata necessary to update multiple devices
      * together.  This allows for a user to update a number of connected devices (IMX, GPX, and GNSS Receiver Firmware) using a single file, and without any coordination of which files are
      * necessary for which devices, etc.
      */
-    pkg_error_e openFirmwarePackage(const std::string& pkg_file);
+    pkg_error_e openFirmwarePackage(const std::string &pkg_file);
 
     /**
      * Parses a YAML tree containing the manifest of the firmware package
@@ -184,8 +217,9 @@ public:
      * @param archive a pointer to the archive which contains this manifest (or null-ptr if parsed from a file).
      * @return
      */
-    pkg_error_e processPackageManifest(YAML::Node& manifest, mz_zip_archive* archive);
-    pkg_error_e processPackageManifest(const std::string& manifest_file);
+    pkg_error_e processPackageManifest(YAML::Node &manifest, mz_zip_archive *archive);
+
+    pkg_error_e processPackageManifest(const std::string &manifest_file);
 
     /**
      * Performs any necessary cleanup of memory, file handles, or temporary files after all tasks associated with a firmware package have finished (or from an unrecoverable error).
@@ -193,7 +227,16 @@ public:
      */
     pkg_error_e cleanupFirmwarePackage();
 
+    int cmd_processPackage(std::vector<std::string> &args);
 
+    int cmd_setTarget(std::vector<std::string> &args);
+
+    int cmd_setMethod(std::vector<std::string>& args);
+
+    int cmd_WaitFor(std::vector<std::string> &args);
+
+    int cmd_Upload(std::vector<std::string> &args);
+
+    int cmd_Reset(std::vector<std::string> &args);
 };
-
 #endif //SDK_ISFIRMWAREUPDATER_H
