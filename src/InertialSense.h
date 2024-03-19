@@ -62,7 +62,7 @@ typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pH
 class InertialSense : public iISTcpServerDelegate
 {
 public:
-    typedef struct {
+    typedef struct is_fwUpdate_info_s {
         ISFirmwareUpdater* fwUpdater;
         float percent;
         bool hasError;
