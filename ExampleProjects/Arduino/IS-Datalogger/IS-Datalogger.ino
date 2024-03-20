@@ -60,6 +60,7 @@ struct config_s {
 // this could be a local variable, but we don't want to keep putting it on the stack everytime loop() is called
 char ser_buf[SERIAL_RX_BUFFER_SIZE];
 
+const char fw1x_ppd_request[] = { 0xff, 0x05, 0x1e, 0x11, 0x09, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe2, 0x3c, 0x35, 0x01, 0x90, 0x00, 0x00, 0xc0, 0x00, 0x01, 0x00, 0x00, 0x8e, 0xd4, 0x44, 0xfe };
 
 /**
  * Utility function to format a uint64_t as a hexadecimal string (apparently Arduino doesn't support printf("%llX"))
@@ -138,6 +139,9 @@ void stream_configure_PPD(uint64_t bits = 0, uint32_t options = 0) {
 
   int len = is_comm_data_to_buf(buf, sizeof(buf), &commTx, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
   Serial1.write(buf, len);
+
+  // Also send over this 1.x "PPD Enable" string for allow 1.x firmware devices to start streaming
+  Serial1.write(fw1x_ppd_request, sizeof(fw1x_ppd_request));
 }
 
 /**
