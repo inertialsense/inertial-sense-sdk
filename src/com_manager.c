@@ -564,6 +564,9 @@ int findAsciiMessage(const void * a, const void * b)
     return memcmp(a1, a2->messageId, 4);
 }
 
+int tmpRaw1 = 0;
+int tmpRaw2 = 0;
+
 /**
 *   @brief Process binary packet content:
 *
@@ -588,6 +591,11 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         {
             return -1;
         }
+
+        if (hdr->id == DID_GPS1_RAW)
+            tmpRaw1++;
+        if (hdr->id == DID_GPS2_RAW)
+            tmpRaw2++;
 
         regData = &(cmInstance->regData[hdr->id]);
 
