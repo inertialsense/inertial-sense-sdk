@@ -32,7 +32,7 @@ logInspector can open and plot [.dat PPD log files](https://docs.inertialsense.c
 Once the log is opened, the buttons in the upper left hand corner are used to graph various data sets.
 
 
-![NED Map](assets/NEDMap.png "NED Map")
+![NED Map](assets/loginspector_nedmap.png "NED Map")
 
 ## Standard data sets
 -----

@@ -438,6 +438,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
                 splitString(std::string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
                 //g_commandLineOptions.fwUpdateCmds = argv[++i];    // use next argument
+                enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);    // Only display firmware update info
             }
             else
             {
