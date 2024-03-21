@@ -702,7 +702,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         {
             comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
         }
-        else
+        
         #endif
         if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t*)(pkt->data.ptr)))
         {

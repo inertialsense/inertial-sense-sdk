@@ -1692,11 +1692,14 @@ typedef struct PACKED
 #define RMC_BITS_IMU3_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
 #define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
-#define RMC_BITS_GPS2_SIG               0x0000080000000000      // "
-#define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000      // 1ms
-#define RMC_BITS_GPX_DEBUG              0x0000200000000000      // 1ms
-#define RMC_BITS_GPX_STATUS             0x0000400000000000      // 1ms
-#define RMC_BITS_GPX_DEV_INFO           0x0000800000000000      // 1ms
+#define RMC_BITS_GPS2_SIG               0x0000080000000000
+#define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000
+#define RMC_BITS_GPX_DEBUG              0x0000200000000000
+#define RMC_BITS_GPX_STATUS             0x0000400000000000
+#define RMC_BITS_GPX_DEV_INFO           0x0000800000000000
+#define RMC_BITS_GPX_RMC                0x0001000000000000
+#define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
+#define RMC_BITS_GPX_BIT                0x0004000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -4212,6 +4215,9 @@ typedef struct
     /** GNSS status (see RunState) **/
     uint32_t                gnss1RunState;
     uint32_t                gnss2RunState;
+
+    /** port */
+    uint8_t                imxPort;
 } gpx_status_t;
 
 
