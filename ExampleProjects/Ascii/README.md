@@ -10,15 +10,15 @@ This [ISAsciiExample](https://github.com/inertialsense/inertial-sense-sdk/tree/r
 
 #### SDK Files
 
-* [data_sets.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/data_sets.c)
-* [data_sets.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/data_sets.h)
-* [ISComm.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISComm.c)
-* [ISComm.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISComm.h)
-* [ISConstants.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/ISConstants.h)
-* [serialPort.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.c)
-* [serialPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPort.h)
-* [serialPortPlatform.c](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.c)
-* [serialPortPlatform.h](https://github.com/inertialsense/inertial-sense-sdk/tree/master/src/serialPortPlatform.h)
+* [data_sets.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/data_sets.c)
+* [data_sets.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/data_sets.h)
+* [ISComm.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISComm.c)
+* [ISComm.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISComm.h)
+* [ISConstants.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/ISConstants.h)
+* [serialPort.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPort.c)
+* [serialPort.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPort.h)
+* [serialPortPlatform.c](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPortPlatform.c)
+* [serialPortPlatform.h](https://github.com/inertialsense/inertial-sense-sdk/tree/main/src/serialPortPlatform.h)
 
 ## Implementation
 
