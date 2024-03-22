@@ -196,16 +196,14 @@ int main(int argc, char* argv[])
 	save_persistent_messages(&serialPort, &comm);
 #endif
 
-
 	// STEP 8: Handle received data
-	int count;
 	uint8_t inByte;
 
 	// You can set running to false with some other piece of code to break out of the loop and end the program
 	while (running)
 	{
 		// Read one byte with a 20 millisecond timeout
-		while ((count = serialPortReadCharTimeout(&s_serialPort, &inByte, 20)) > 0)
+		while (serialPortReadCharTimeout(&s_serialPort, &inByte, 20) > 0)
 		{
 			// timeMs = current_timeMs();
 			switch (is_comm_parse_byte(&comm, inByte))
