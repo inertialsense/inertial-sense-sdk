@@ -26,14 +26,14 @@ This [ISLoggerSimpleExample](https://github.com/inertialsense/inertial-sense-sdk
 ### Step: Log serial port data to file
 
 ```C++
-   uint8_t buf[512];
-   if (int len = serialPortRead(&s_serialPort, buf, sizeof(buf)))
-   {
-      // Log serial port data to file
-      logger.LogData(0, len, buf);
+    uint8_t buf[512];
+    if (int len = serialPortRead(&s_serialPort, buf, sizeof(buf)))
+    {
+        // Log serial port data to file
+        logger.LogData(0, len, buf);
 
-      printf("Log file size: %.3f MB \r", logger.LogSizeMB());
-   }
+        printf("Log file size: %.3f MB \r", logger.LogSizeMB());
+    }
 ```
 
 By default, data logs will be stored in the "IS_logs" directory in the current directory.
