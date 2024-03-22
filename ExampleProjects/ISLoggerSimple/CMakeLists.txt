@@ -1,8 +1,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-project(IS-SDK_unit-tests)
+project(ISLoggerSimpleExample)
 
-set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 
 find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
 if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
@@ -13,23 +13,17 @@ endif()
 # Include InertialSenseSDK header files
 include_directories(
     ${IS_SDK_DIR}/src
-    ${IS_SDK_DIR}/src/protocol
     ${IS_SDK_DIR}/src/libusb/libusb
-    ${IS_SDK_DIR}/src/util
 )
-
-find_package(GTest REQUIRED)
 
 # Link the InertialSenseSDK static library 
 link_directories(${IS_SDK_DIR})
 
-file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
-list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
-
 # Define the executable
-add_executable(${PROJECT_NAME} 
-    ${TESTS_SOURCES}
-)
+add_executable(${PROJECT_NAME} ISLoggerSimpleExample.cpp)
+
+# Find pthread package
+find_package(Threads REQUIRED)
 
 # Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} gtest_main InertialSenseSDK ${GTEST_LIBRARIES} udev pthread m)
+target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
