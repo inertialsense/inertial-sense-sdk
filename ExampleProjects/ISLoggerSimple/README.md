@@ -57,7 +57,7 @@ There must be data streaming out of the IMX in order to log data.  The Post Proc
 
 ```C++
    // Enable PPD data stream without disabling other messages
-	stream_configure_rmc_preset(RMC_PRESET_PPD_BITS, RMC_OPTIONS_PRESERVE_CTRL);
+   stream_configure_rmc_preset(RMC_PRESET_PPD_BITS, RMC_OPTIONS_PRESERVE_CTRL);
 
    void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0) 
    {
