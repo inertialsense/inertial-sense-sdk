@@ -134,6 +134,8 @@ typedef uint32_t eDataIDs;
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
+#define DID_IS_EVENT                    (eDataIDs)119 /** INTERNAL USE ONLY (ISEvent_t)*/
+
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
@@ -4604,6 +4606,15 @@ typedef struct
     port_monitor_set_t port[NUM_SERIAL_PORTS];
         
 } port_monitor_t;
+
+#define ISEvent_MAX_SIZE 64
+typedef struct ISEvent
+{
+    uint8_t protocol;
+    uint8_t length;
+    uint16_t checksum;
+    uint8_t data[ISEvent_MAX_SIZE];
+}ISEvent_t;
 
 
 /**
