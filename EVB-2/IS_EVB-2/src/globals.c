@@ -90,22 +90,22 @@ void globals_init(void)
 	g_evbDevInfo.buildNumber  = BUILD_NUMBER;
 
 #if defined(DEBUG)
-	g_evbDevInfo.buildDate[0] = 'd';					// Debug
+	g_evbDevInfo.buildType = 'd';					// Debug
 #else
-	g_evbDevInfo.buildDate[0] = 'r';					// Release
+	g_evbDevInfo.buildType = 'r';					// Release
 #endif
 
 #if 0
     setBuildDateTimeFromCompileTime(g_evbDevInfo.buildDate, g_evbDevInfo.buildTime);
 #else
-	g_evbDevInfo.buildDate[1] = BUILD_DATE_YEAR-2000;
-	g_evbDevInfo.buildDate[2] = BUILD_DATE_MONTH;
-	g_evbDevInfo.buildDate[3] = BUILD_DATE_DAY;
+	g_evbDevInfo.buildYear = BUILD_DATE_YEAR-2000;
+	g_evbDevInfo.buildMonth = BUILD_DATE_MONTH;
+	g_evbDevInfo.buildDay = BUILD_DATE_DAY;
 
-	g_evbDevInfo.buildTime[0] = BUILD_TIME_HOUR;
-	g_evbDevInfo.buildTime[1] = BUILD_TIME_MINUTE;
-	g_evbDevInfo.buildTime[2] = BUILD_TIME_SECOND;
-	g_evbDevInfo.buildTime[3] = (uint8_t)BUILD_TIME_MILLISECOND;
+	g_evbDevInfo.buildHour = BUILD_TIME_HOUR;
+	g_evbDevInfo.buildMinute = BUILD_TIME_MINUTE;
+	g_evbDevInfo.buildSecond = BUILD_TIME_SECOND;
+	g_evbDevInfo.buildMillisecond = (uint8_t)BUILD_TIME_MILLISECOND;
 #endif
 
 	strncpy(g_evbDevInfo.manufacturer, "Inertial Sense INC", DEVINFO_MANUFACTURER_STRLEN);
