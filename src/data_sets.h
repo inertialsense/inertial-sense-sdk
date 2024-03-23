@@ -1423,18 +1423,18 @@ typedef struct nmeaBroadcastMsgPair
 
 	/** Message period multiple. */
     uint8_t msgPeriod;
-}nmeaBroadcastMsgPair_t;
+} nmeaBroadcastMsgPair_t;
 
 #define MAX_nmeaBroadcastMsgPairs 20
 
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
-    /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistant] (see RMC_OPTIONS_...) */
+    /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistent] (see RMC_OPTIONS_...) */
     uint32_t				options;
 
-    /** NMEA message to be set.  Up to 20 to indicate which indexes are valid. (see eNmeaAsciiMsgId) */
-    nmeaBroadcastMsgPair_t nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
+    /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaAsciiMsgId) */
+    nmeaBroadcastMsgPair_t	nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
      *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGpsDtMs = 200 (5Hz) 
