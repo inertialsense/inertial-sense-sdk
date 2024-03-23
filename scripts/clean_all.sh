@@ -17,7 +17,15 @@ clean_directory "cltool"                ../cltool/build
 clean_directory "SDK_Examples"          ../ExampleProjects/build
 clean_directory "SDK_Unit_Tests"        ../tests/build
 
+clean_directory "libInertialSenseSDK"   ../CMakeFiles
+pushd ..
+rm -rf cmake-build-debug CMakeCache.txt cmake_install.cmake libInertialSenseSDK.a
+popd
+
 rm -rf build
+
+
+
 
 ###############################################################################
 #  Summary
