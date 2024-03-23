@@ -134,7 +134,7 @@ extern "C" {
     #define FREE(m) free(m)
 #endif 
 
-#if __ZEPHYR__
+#ifdef __ZEPHYR__
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf
     #define VSNPRINTF vsnprintf
