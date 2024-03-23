@@ -177,7 +177,7 @@ static int nmea_talker(char* a, int aSize, uint8_t gnssId=s_gnssId)
 
 int nmea_sprint_footer(char* a, int aSize, int &n)
 {
-	unsigned int checkSum = nmea_compute_checksum((uint8_t*)(a+1), n);	
+	unsigned int checkSum = nmea_compute_checksum((uint8_t*)(a+1), n-1);	
 	n += ssnprintf(a+n, aSize-n, "*%.2X\r\n", checkSum);
 	return n;
 }

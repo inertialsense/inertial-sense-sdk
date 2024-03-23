@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2023 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 2)
 	{
-		printf("Please pass the com port and then optionally the log type as the only arguments (dat,sdat,csv,kml).\r\n");
+		printf("Provide the port and optionally log type (dat,raw,sdat,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
 		return -1;
 	}

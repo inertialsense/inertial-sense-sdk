@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2023 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -57,7 +57,7 @@ static bool matches(const char* str, const char* pre)
 }
 
 #define CL_DEFAULT_BAUD_RATE                IS_BAUDRATE_DEFAULT
-#define CL_DEFAULT_COM_PORT                 "*"
+#define CL_DEFAULT_DEVICE_PORT                 "*"
 #define CL_DEFAULT_DISPLAY_MODE             cInertialSenseDisplay::DMODE_SCROLL
 #define CL_DEFAULT_LOG_TYPE                 "dat"
 #define CL_DEFAULT_LOGS_DIRECTORY           DEFAULT_LOGS_DIRECTORY
@@ -140,7 +140,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 {
     // defaults
     g_commandLineOptions.baudRate = CL_DEFAULT_BAUD_RATE;
-    g_commandLineOptions.comPort = CL_DEFAULT_COM_PORT;
+    g_commandLineOptions.comPort = CL_DEFAULT_DEVICE_PORT;
     g_commandLineOptions.displayMode = CL_DEFAULT_DISPLAY_MODE;
     g_commandLineOptions.rmcPreset = 0;
     g_commandLineOptions.enableLogging = CL_DEFAULT_ENABLE_LOGGING;
@@ -428,26 +428,32 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-ub") && (i + 1) < argc)
         {
-            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST; // use legacy firmware update mechanism
-            g_commandLineOptions.updateBootloaderFilename = argv[++i];    // use next argument
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
+            g_commandLineOptions.updateBootloaderFilename = argv[++i];              // use next argument
         }
         else if (startsWith(a, "-uf") && (i + 1) < argc)
         {
-            if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
+            if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1; // use the new firmware update mechanism and target the GPX specifically
-                splitString(std::string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
-                //g_commandLineOptions.fwUpdateCmds = argv[++i];    // use next argument
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.fwUpdateCmds.push_back(string("package=") + string(argv[++i]));
+                enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
+            }
+            else if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
+            {
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                splitString(string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
+                enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
             else
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST; // use legacy firmware update mechanism
-                g_commandLineOptions.updateAppFirmwareFilename = argv[++i];    // use next argument
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;  // use legacy firmware update mechanism
+                g_commandLineOptions.updateAppFirmwareFilename = argv[++i];         // use next argument
             }
         }
         else if (startsWith(a, "-uv"))
         {
-            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST; // use legacy firmware update mechanism
+            g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.bootloaderVerify = true;
         }
 		else if (startsWith(a, "-v") || startsWith(a, "--version"))
@@ -471,12 +477,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     }
     else if (g_commandLineOptions.updateAppFirmwareFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
     {
-        cout << "Use COM_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
         return false;
     }
     else if (g_commandLineOptions.updateBootloaderFilename.length() != 0 && g_commandLineOptions.comPort.length() == 0)
     {
-        cout << "Use COM_PORT option \"-c \" with bootloader" << endl;
+        cout << "Use DEVICE_PORT option \"-c \" with bootloader" << endl;
         return false;
     }
 
@@ -527,16 +533,17 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << "    # Connect to RTK NTRIP base" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
-	cout << "                                                   " << boldOff << " # update application firmware and bootloader" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -rover=RTCM3:192.168.1.100:7777:mount:user:password" << boldOff << "    # Connect to RTK NTRIP base" << endlbOn;
+	cout << endlbOn;
+	cout << "EXAMPLES (Firmware Update)" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -ufpkg fw/IS-firmware.fpkg" << boldOff << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
-	cout << "    -c " << boldOff << "COM_PORT     Select the serial port. Set COM_PORT to \"*\" for all ports and \"*4\" to use" << endlbOn;
-	cout << "       " << boldOff << "             only the first four ports. " <<  endlbOn;
+	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
@@ -544,11 +551,11 @@ void cltool_outputUsage()
 	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
 	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
+    cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
 	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
 	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
-    cout << "    -uf-cmd " << boldOff << "CMDSET  Update one or more V2-protocol devices using V2 command sets." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;

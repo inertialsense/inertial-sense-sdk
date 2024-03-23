@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2023 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -389,6 +389,74 @@ enum eHdwStatusFlags
 
     /** Critical System Fault - CPU error */
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+};
+
+/** Hardware status flags */
+enum eGPXHdwStatusFlags
+{
+    /** GNSS1 satellite signals are being received (antenna and cable are good) */
+    GPX_HDW_STATUS_GNSS1_SATELLITE_RX                   = (int)0x00000001,
+    /** GNSS2 satellite signals are being received (antenna and cable are good) */
+    GPX_HDW_STATUS_GNSS2_SATELLITE_RX                   = (int)0x00000002,
+    /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
+    GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID             = (int)0x00000004,
+    /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
+    GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID             = (int)0x00000008,
+    
+    /** GNSS 1 reset required count */
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x000000f0,
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
+#define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
+
+    /** GNSS 2 reset required count */
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000f00,
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
+#define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
+
+    /** System Reset is Required for proper function */
+    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00001000,
+    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+    GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
+
+    /** Communications Tx buffer limited */
+    GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
+    /** Communications Rx buffer overrun */
+    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,
+    /** GPS PPS timepulse signal has not been received or is in error */
+    GPX_HDW_STATUS_ERR_NO_GPS_PPS                       = (int)0x00040000,
+    /** Time synchronized by GPS PPS */
+    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x00080000,
+
+    /** Communications parse error count */
+    GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK             = (int)0x00F00000,
+    GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET           = 20,
+#define GPX_HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
+
+    /** (BIT) Built-in self-test running */
+    GPX_HDW_STATUS_BIT_RUNNING                      = (int)0x01000000,
+    /** (BIT) Built-in self-test passed */
+    GPX_HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
+    /** (BIT) Built-in self-test failure */
+    GPX_HDW_STATUS_BIT_FAULT                        = (int)0x03000000,
+    /** (BIT) Built-in self-test mask */
+    GPX_HDW_STATUS_BIT_MASK                         = (int)0x03000000,
+
+    /** Temperature outside spec'd operating range */
+    GPX_HDW_STATUS_ERR_TEMPERATURE                  = (int)0x04000000,
+
+    /** Fault reset cause */
+    GPX_HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    /** Reset from Backup mode (low-power state w/ CPU off) */
+    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
+    /** Reset from Watchdog */
+    GPX_HDW_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
+    /** Reset from Software */
+    GPX_HDW_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
+    /** Reset from Hardware (NRST pin low) */
+    GPX_HDW_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+
+    /** Critical System Fault - CPU error */
+    GPX_HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
 /** System status flags */
@@ -1456,6 +1524,8 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_GNSS1_PASS_THROUGH               = 33,           // (uint32 inv: 4294967262)
     SYS_CMD_GPX_ENABLE_GNSS2_PASS_THROUGH               = 34,           // (uint32 inv: 4294967261)
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 35,           // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX.
+    SYS_CMD_GPX_HARD_RESET_GNSS1                        = 36,           // (uint32 inv: 4294967259)
+    SYS_CMD_GPX_HARD_RESET_GNSS2                        = 37,           // (uint32 inv: 4294967258)
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
 
@@ -1690,11 +1760,14 @@ typedef struct PACKED
 #define RMC_BITS_IMU3_RAW               0x0000010000000000
 #define RMC_BITS_IMU_RAW                0x0000020000000000
 #define RMC_BITS_GPS1_SIG               0x0000040000000000      // 1s
-#define RMC_BITS_GPS2_SIG               0x0000080000000000      // "
-#define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000      // 1ms
-#define RMC_BITS_GPX_DEBUG              0x0000200000000000      // 1ms
-#define RMC_BITS_GPX_STATUS             0x0000400000000000      // 1ms
-#define RMC_BITS_GPX_DEV_INFO           0x0000800000000000      // 1ms
+#define RMC_BITS_GPS2_SIG               0x0000080000000000
+#define RMC_BITS_GPX_RTOS_INFO          0x0000100000000000
+#define RMC_BITS_GPX_DEBUG              0x0000200000000000
+#define RMC_BITS_GPX_STATUS             0x0000400000000000
+#define RMC_BITS_GPX_DEV_INFO           0x0000800000000000
+#define RMC_BITS_GPX_RMC                0x0001000000000000
+#define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
+#define RMC_BITS_GPX_BIT                0x0004000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -4192,7 +4265,7 @@ typedef struct
     uint64_t                grmcNMEABitsSer2;
     uint64_t                grmcNMEABitsUSB;
 
-    /** Hardware status flags (eHdwStatusFlags) */
+    /** Hardware status flags (eGPXHdwStatusFlags) */
     uint32_t                hdwStatus;
 
     /** MCU temperature (not available yet) */
@@ -4210,6 +4283,9 @@ typedef struct
     /** GNSS status (see RunState) **/
     uint32_t                gnss1RunState;
     uint32_t                gnss2RunState;
+
+    /** port */
+    uint8_t                gpxSourcePort;
 } gpx_status_t;
 
 

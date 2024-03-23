@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2023 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -702,7 +702,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         {
             comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
         }
-        else
+        
         #endif
         if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t*)(pkt->data.ptr)))
         {

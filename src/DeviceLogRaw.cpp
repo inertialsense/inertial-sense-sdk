@@ -1,7 +1,7 @@
 /*
 MIT LICENSE
 
-Copyright (c) 2014-2023 Inertial Sense, Inc. - http://inertialsense.com
+Copyright (c) 2014-2024 Inertial Sense, Inc. - http://inertialsense.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 
@@ -110,7 +110,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors){ printf("SaveData() parse errors: %d\n", m_comm.rxErrorCount); }
+				if (m_showParseErrors)
+				{ 
+					if (m_comm.rxErrorCount>1) { printf("SaveData() parse errors: %d\n", m_comm.rxErrorCount); }
+				}
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:
@@ -256,7 +259,10 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
 				break;
 
 			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors){ printf("ReadDataFromChunk() parse errors: %d\n", m_comm.rxErrorCount); }
+				if (m_showParseErrors)
+				{
+					if (m_comm.rxErrorCount > 1) { printf("ReadDataFromChunk() parse errors: %d\n", m_comm.rxErrorCount); }
+				}
 				break;
 
 			case _PTYPE_INERTIAL_SENSE_DATA:

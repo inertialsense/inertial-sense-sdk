@@ -24,13 +24,13 @@ TEST(protocol_nmea, nmea_parse_asce)
 
     rmci_t rmci[NUM_COM_PORTS] = {};
     int port = 1;
-    rmci_t &r = rmci[port];
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = '2';
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU] = '1';
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA] = '0';
+    rmci_t &r = rmci[port] = {};
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = 2;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU] = 10;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA] = 1;
     r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS2 |
-        NMEA_RMC_BITS_PIMU |
+        NMEA_RMC_BITS_PPIMU |
         NMEA_RMC_BITS_GxGGA;
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
@@ -38,7 +38,7 @@ TEST(protocol_nmea, nmea_parse_asce)
     int n=0;
 	nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", options);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PIMU,  r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PIMU]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PPIMU, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGGA, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
 
