@@ -2188,7 +2188,6 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS])
 {
 	(void)msgSize;
-	char *ptr;
 
 	uint32_t options = 0;
 	uint32_t id;
@@ -2200,7 +2199,8 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci
 		return 0;
 	}
 	
-	ptr = (char *)&msg[6];				// $ASCE
+	char *ptr = (char*)&msg[6];				// $ASCE
+	char *end = (char*)&msg[msgSize];
 	
 	// check if next index is ','
 	if(*ptr != ',')
@@ -2219,7 +2219,15 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci
 		 	break;
 		
 		// set id and increament ptr to next field
-		id = ((*ptr == ',') ? 0 : atoi(ptr));
+		if (isdigit(*ptr))
+		{	// Is a number.  Read NMEA ID directly
+			id = ((*ptr == ',') ? 0 : atoi(ptr));
+		}
+		else
+		{	// Is a letter.  Convert talker string to NMEA ID
+			char *ptr2 = ptr-1;
+			id = getNmeaMsgId(ptr2, end-ptr2);
+		}
 		ptr = ASCII_find_next_field(ptr);
 
 		// end of nmea string
