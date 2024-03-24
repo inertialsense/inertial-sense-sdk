@@ -301,7 +301,7 @@ void uINS_stream_enable_PPD(void)
 }
 
 
-void time_sync_evb_from_uINS(uint32_t week,	double timeOfWeek)
+void time_sync_evb_from_IMX(uint32_t week,	double timeOfWeek)
 {
 	g_towOffset = timeOfWeek - time_seclf();
 
@@ -330,7 +330,7 @@ void handle_data_from_IMX(p_data_hdr_t &dataHdr, uint8_t *data)
 
 	case DID_INS_1:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins1.week, d.ins1.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins1.week, d.ins1.timeOfWeek);
 		g_uins.ins1 = d.ins1;
 		convertIns1ToIns2(&d.ins1, &g_uins.ins2);
 		g_insUpdateTimeMs = g_comm_time_ms;
@@ -338,7 +338,7 @@ void handle_data_from_IMX(p_data_hdr_t &dataHdr, uint8_t *data)
 	                    
 	case DID_INS_2:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins2.week, d.ins2.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins2.week, d.ins2.timeOfWeek);
 		g_uins.ins2 = d.ins2;
 		if(g_uins.refLlaValid)
 		{
@@ -353,12 +353,12 @@ void handle_data_from_IMX(p_data_hdr_t &dataHdr, uint8_t *data)
 
 	case DID_INS_3:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins3.week, d.ins3.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins3.week, d.ins3.timeOfWeek);
 		break;
 
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins4.week, d.ins4.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins4.week, d.ins4.timeOfWeek);
 		break;
 
 	case DID_INL2_STATES:
@@ -737,12 +737,6 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				
 				enable_bootloader(PORT_SEL_USB);
 				break;				
-
-			case NMEA_MSG_ID_INFO:
-				// send_nmea_dev_info(srcPort);
-				// Don't send $INFO as it will conflict with IMX
-				is_comm_data(serWrite, srcPort, comm, DID_EVB_DEV_INFO, sizeof(g_evbDevInfo), 0, (void*)&g_evbDevInfo);
-				break;
 				
 			case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 				if (comm->rxPkt.dataHdr.size == 22 &&
@@ -760,7 +754,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				break;
 
 			default:
-				// Disable uINS bootloader if host sends larger NMEA sentence
+				// Disable IMX bootloader if host sends larger NMEA sentence
 				g_imxBootloaderEnableTimeMs = 0;
 				break;
 			}				
