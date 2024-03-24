@@ -312,7 +312,7 @@ void time_sync_evb_from_uINS(uint32_t week,	double timeOfWeek)
 }
 
 
-void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
+void handle_data_from_IMX(p_data_hdr_t &dataHdr, uint8_t *data)
 {
 	uDatasets d = {0};
 
@@ -420,7 +420,7 @@ void broadcastRmcMessage(is_comm_instance_t *comm, uint32_t did, uint32_t size, 
 		did == didSendNow)
 	{
 		time_ms = g_comm_time_ms;
-		is_comm_data(serWrite, EVB2_PORT_USB, comm, did, 0, size, data);
+		is_comm_data(serWrite, EVB2_PORT_USB, comm, did, size, 0, data);
 	}
 }
 
@@ -452,7 +452,7 @@ void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow)
 }
 
 
-void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
+void log_IMX_data(cISLogger &logger, is_comm_instance_t &comm)
 {
 	is_evb_log_stream stm = {};
 	uint8_t data[MAX_DATASET_SIZE];
@@ -611,6 +611,14 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 }
 
 
+void send_nmea_dev_info(int portNum)
+{
+	char a[NMEA_BUFFER_SIZE];
+	int n = nmea_dev_info(a, sizeof(a), g_evbDevInfo);
+	serWrite(portNum, (unsigned char*)a, n);
+}
+
+
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->rxPkt.data.ptr + comm->rxPkt.dataHdr.offset;
@@ -675,21 +683,25 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		}
 
 		// Disable uINS bootloader if host sends IS binary data
-		g_uInsBootloaderEnableTimeMs = 0;
+		g_imxBootloaderEnableTimeMs = 0;
 		break;
 
 	case _PTYPE_INERTIAL_SENSE_CMD:
 		switch(comm->rxPkt.flags&PKT_TYPE_MASK)
 		{
 		case PKT_TYPE_GET_DATA:
-			// Set ERMC broadcast control bits
-			setErmcBroadcastBits(comm, srcPort, evbDidToErmcBit(comm->rxPkt.dataHdr.id));
+			{
+				p_data_get_t *get = (p_data_get_t*)(comm->rxPkt.data.ptr);
+				
+				// Set ERMC broadcast control bits
+				setErmcBroadcastBits(comm, srcPort, evbDidToErmcBit(get->id));
 
-			// Send data now
-			step_broadcast_data(comm, comm->rxPkt.dataHdr.id);
-
+				// Send data now
+				step_broadcast_data(comm, get->id);
+			}
+		
 			// Disable uINS bootloader mode if host sends IS binary command
-			g_uInsBootloaderEnableTimeMs = 0;
+			g_imxBootloaderEnableTimeMs = 0;
 			break; // PID_GET_DATA
 
 		// case PKT_TYPE_SET_DATA:
@@ -710,51 +722,48 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 	case _PTYPE_NMEA:
 		{
-			if(comm->rxPkt.dataHdr.size == 10)
-			{	// 4 character commands (i.e. "$STPB*14\r\n")
-				switch (getNmeaMsgId(dataPtr, comm->rxPkt.dataHdr.size))
-				{
-				case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
-					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
+			switch (getNmeaMsgId(dataPtr, comm->rxPkt.dataHdr.size))
+			{
+			case NMEA_MSG_ID_BLEN: // Enable bootloader (IMX)
+				g_imxBootloaderEnableTimeMs = g_comm_time_ms;
 
-					// Disable EVB broadcasts
-					g_ermc.bits = 0;
-					break;
-							
-				case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
-					// Disable uINS bootloader if host enables EVB bootloader
-					g_uInsBootloaderEnableTimeMs = 0;
-					
-					enable_bootloader(PORT_SEL_USB);
-					break;				
+				// Disable EVB broadcasts
+				g_ermc.bits = 0;
+				break;
+						
+			case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
+				// Disable uINS bootloader if host enables EVB bootloader
+				g_imxBootloaderEnableTimeMs = 0;
+				
+				enable_bootloader(PORT_SEL_USB);
+				break;				
 
-				case NMEA_MSG_ID_STPB:
-				case NMEA_MSG_ID_STPC:	
-					// Disable EVB communications
-					g_ermc.bits = 0;
-					break;
-				}
-				break;							
-			}
-			else
-			{	// General NMEA							
-				switch (getNmeaMsgId(dataPtr, comm->rxPkt.dataHdr.size))
-				{
-				case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
-					if (comm->rxPkt.dataHdr.size == 22 &&
+			case NMEA_MSG_ID_INFO:
+				// send_nmea_dev_info(srcPort);
+				// Don't send $INFO as it will conflict with IMX
+				is_comm_data(serWrite, srcPort, comm, DID_EVB_DEV_INFO, sizeof(g_evbDevInfo), 0, (void*)&g_evbDevInfo);
+				break;
+				
+			case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
+				if (comm->rxPkt.dataHdr.size == 22 &&
 // 									(pHandle == EVB2_PORT_USB) && 
-						strncmp((const char*)(&(comm->rxBuf.start[6])), "!!SAM-BA!!", 6) == 0)
-					{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-						enable_rom_bootloader();
-					}
-					break;
-					
-				default:
-					// Disable uINS bootloader if host sends larger NMEA sentence
-					g_uInsBootloaderEnableTimeMs = 0;
-					break;
-				}				
-			}
+					strncmp((const char*)(&(comm->rxBuf.start[6])), "!!SAM-BA!!", 6) == 0)
+				{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
+					enable_rom_bootloader();
+				}
+				break;
+
+			case NMEA_MSG_ID_STPB:
+			case NMEA_MSG_ID_STPC:	
+				// Disable EVB communications
+				g_ermc.bits = 0;
+				break;
+
+			default:
+				// Disable uINS bootloader if host sends larger NMEA sentence
+				g_imxBootloaderEnableTimeMs = 0;
+				break;
+			}				
 		}
 		break;
 	}
@@ -852,23 +861,16 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 	if ((n = comRead(srcPort, comm.rxBuf.tail, n, ledPin)) > 0)
 	{
-		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422)
-		{
-			com_bridge_forward(srcPort, comm.rxBuf.head, n);
-			return;
-		}
-		if (g_uInsBootloaderEnableTimeMs)
-		{	// When uINS bootloader is enabled forwarding is disabled below is_comm_parse(), so forward bootloader data here.
-			switch (srcPort)
-			{
-				case EVB2_PORT_USB:		comWrite(EVB2_PORT_UINS0, comm.rxBuf.tail, n, LED_INS_TXD_PIN);	break;
-				case EVB2_PORT_UINS0:	comWrite(EVB2_PORT_USB, comm.rxBuf.tail, n, 0);					break;
-			}					
-		}
-		
+		com_bridge_forward(srcPort, comm.rxBuf.tail, n);			
+
 		// Update comm buffer tail pointer
 		comm.rxBuf.tail += n;
-				
+
+		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422 || g_imxBootloaderEnableTimeMs)
+		{	// Skip packet parsing
+			return;
+		}
+						
 		// Search comm buffer for valid packets
 		protocol_type_t ptype;
 		while((ptype = is_comm_parse_timeout(&comm, g_comm_time_ms)) != _PTYPE_NONE)
@@ -884,10 +886,9 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 			if (ptype!=_PTYPE_NONE && 
 				ptype!=_PTYPE_PARSE_ERROR &&
-				g_uInsBootloaderEnableTimeMs==0)
+				g_imxBootloaderEnableTimeMs==0)
 			{	// Forward data
 				uint32_t pktSize = _MIN(comm.rxPkt.size, PKT_BUF_SIZE);
-				com_bridge_forward(srcPort, comm.rxBuf.head, pktSize);
 
 				// Send uINS data to Logging task
 				if (srcPort == g_flashCfg->uinsComPort && pktSize > 0)
@@ -900,7 +901,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 					case _PTYPE_INERTIAL_SENSE_DATA:
 						if (comm.rxPkt.dataHdr.size > 0)
 						{
-							handle_data_from_uINS(comm.rxPkt.dataHdr, comm.rxPkt.data.ptr);
+							handle_data_from_IMX(comm.rxPkt.dataHdr, comm.rxPkt.data.ptr);
 					
 							stm.size = sizeof(p_data_hdr_t) + comm.rxPkt.dataHdr.size;
 							xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
@@ -939,9 +940,11 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 
 	if ((n = xStreamBufferReceive(xStreamBuffer, comm.rxBuf.tail, n, 0)) > 0)
 	{
+		com_bridge_forward(srcPort, comm.rxBuf.tail, n);
+
 		// Update comm buffer tail pointer
 		comm.rxBuf.tail += n;
-		
+
 		// Search comm buffer for valid packets
 		protocol_type_t ptype;
 		while ((ptype = is_comm_parse_timeout(&comm, g_comm_time_ms)) != _PTYPE_NONE)
@@ -949,15 +952,7 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 			if (srcPort == EVB2_PORT_USB)
 			{
 				handle_data_from_host(&comm, ptype, srcPort);
-			}
-			
-			if (ptype!=_PTYPE_NONE && 
-				ptype!=_PTYPE_PARSE_ERROR &&
-				g_uInsBootloaderEnableTimeMs==0)
-			{	// Forward data
-				uint32_t pktSize = _MIN(comm.rxPkt.size, PKT_BUF_SIZE);
-				com_bridge_forward(srcPort, comm.rxBuf.head, pktSize);
-			}
+			}			
 		}
 	}
 }
@@ -972,24 +967,26 @@ void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len)
         return;
     }        
 
-	if (g_uInsBootloaderEnableTimeMs==0)
-	{	// uINS bootloader mode enabled - don't allow forwarding on these ports
-		if(dstCbf & (1<<EVB2_PORT_USB))
-		{
-			comWrite(EVB2_PORT_USB, buf, len, 0);
-		}
-    
-		if(dstCbf & (1<<EVB2_PORT_UINS0))
-		{
-			comWrite(EVB2_PORT_UINS0, buf, len, LED_INS_TXD_PIN);
-		}		
+	if(dstCbf & (1<<EVB2_PORT_USB))
+	{
+		comWrite(EVB2_PORT_USB, buf, len, 0);
+	}
+
+	if(dstCbf & (1<<EVB2_PORT_UINS0))
+	{
+		comWrite(EVB2_PORT_UINS0, buf, len, LED_INS_TXD_PIN);
+	}		
+
+	if (g_imxBootloaderEnableTimeMs)
+	{	// IMX bootloader mode enabled - don't allow forwarding on any other port than those above
+		return;
 	}
 
     if(dstCbf & (1<<EVB2_PORT_UINS1))
     {
         comWrite(EVB2_PORT_UINS1, buf, len, LED_INS_TXD_PIN);
     }
-	
+
 	bool sendXbee   = dstCbf & (1<<EVB2_PORT_XBEE) && xbee_runtime_mode();	// Disable XBee communications when being configured
 	bool sendXradio = dstCbf & (1<<EVB2_PORT_XRADIO);
 	if(sendXbee || sendXradio)

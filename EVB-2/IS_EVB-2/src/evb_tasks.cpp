@@ -103,7 +103,7 @@ void evbTaskLogger(rtos_task_t &task, is_comm_instance_t &comm)
     step_logger_control(logger, comm);
     
     // Ready uINS data from com task.  Log to file.
-    log_uINS_data(logger, comm);
+    log_IMX_data(logger, comm);
     
     // Mount/unmount SD card
     sd_card_maintenance();
@@ -145,11 +145,11 @@ int evbTaskMaint(rtos_task_t &task)
             rtos_monitor(EVB_RTOS_NUM_TASKS);
         }
         
-        if (g_uInsBootloaderEnableTimeMs)
+        if (g_imxBootloaderEnableTimeMs)
         {	// uINS bootloader mode enabled
-            if ( (g_comm_time_ms-g_uInsBootloaderEnableTimeMs) > 180000 )
+            if ( (g_comm_time_ms-g_imxBootloaderEnableTimeMs) > 180000 )
             {	// Automatically disable uINS after 3 minutes 
-                g_uInsBootloaderEnableTimeMs = 0;
+                g_imxBootloaderEnableTimeMs = 0;
             }			
         }
 
