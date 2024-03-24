@@ -297,7 +297,7 @@ void uINS_stream_enable_PPD(void)
 }
 
 
-void time_sync_evb_from_uINS(uint32_t week,	double timeOfWeek)
+void time_sync_evb_from_IMX(uint32_t week,	double timeOfWeek)
 {
 	g_towOffset = timeOfWeek - time_seclf();
 
@@ -308,7 +308,7 @@ void time_sync_evb_from_uINS(uint32_t week,	double timeOfWeek)
 }
 
 
-void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
+void handle_data_from_IMX(p_data_hdr_t &dataHdr, uint8_t *data)
 {
 	uDatasets d = {0};
 
@@ -326,7 +326,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 
 	case DID_INS_1:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_1_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins1.week, d.ins1.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins1.week, d.ins1.timeOfWeek);
 		g_uins.ins1 = d.ins1;
 		convertIns1ToIns2(&d.ins1, &g_uins.ins2);
 		g_insUpdateTimeMs = g_comm_time_ms;
@@ -334,7 +334,7 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 	                    
 	case DID_INS_2:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_2_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins2.week, d.ins2.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins2.week, d.ins2.timeOfWeek);
 		g_uins.ins2 = d.ins2;
 		if(g_uins.refLlaValid)
 		{
@@ -349,12 +349,12 @@ void handle_data_from_uINS(p_data_hdr_t &dataHdr, uint8_t *data)
 
 	case DID_INS_3:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_3_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins3.week, d.ins3.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins3.week, d.ins3.timeOfWeek);
 		break;
 
 	case DID_INS_4:
 		if(dataHdr.size+dataHdr.offset > sizeof(ins_4_t)){ /* Invalid */ return; }
-		time_sync_evb_from_uINS(d.ins4.week, d.ins4.timeOfWeek);
+		time_sync_evb_from_IMX(d.ins4.week, d.ins4.timeOfWeek);
 		break;
 
 	case DID_INL2_STATES:
@@ -449,7 +449,7 @@ void step_broadcast_data(is_comm_instance_t *comm, uint32_t didSendNow)
 }
 
 
-void log_uINS_data(cISLogger &logger, is_comm_instance_t &comm)
+void log_IMX_data(cISLogger &logger, is_comm_instance_t &comm)
 {
 	is_evb_log_stream stm = {};
 	uint8_t data[MAX_DATASET_SIZE];
@@ -672,7 +672,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 		}
 
 		// Disable uINS bootloader if host sends IS binary data
-		g_uInsBootloaderEnableTimeMs = 0;
+		g_imxBootloaderEnableTimeMs = 0;
 		break;
 
 	case _PTYPE_INERTIAL_SENSE_CMD:
@@ -686,7 +686,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 			step_broadcast_data(comm, comm->dataHdr.id);
 
 			// Disable uINS bootloader mode if host sends IS binary command
-			g_uInsBootloaderEnableTimeMs = 0;
+			g_imxBootloaderEnableTimeMs = 0;
 			break; // PID_GET_DATA
 
 		// case PID_SET_DATA:
@@ -712,7 +712,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
 				{
 				case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
-					g_uInsBootloaderEnableTimeMs = g_comm_time_ms;
+					g_imxBootloaderEnableTimeMs = g_comm_time_ms;
 
 					// Disable EVB broadcasts
 					g_ermc.bits = 0;
@@ -720,7 +720,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 							
 				case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
 					// Disable uINS bootloader if host enables EVB bootloader
-					g_uInsBootloaderEnableTimeMs = 0;
+					g_imxBootloaderEnableTimeMs = 0;
 					
 					enable_bootloader(PORT_SEL_USB);
 					break;				
@@ -748,7 +748,7 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 					
 				default:
 					// Disable uINS bootloader if host sends larger NMEA sentence
-					g_uInsBootloaderEnableTimeMs = 0;
+					g_imxBootloaderEnableTimeMs = 0;
 					break;
 				}				
 			}
@@ -849,23 +849,16 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 	if ((n = comRead(srcPort, comm.buf.tail, n, ledPin)) > 0)
 	{
-		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422)
-		{
-			com_bridge_forward(srcPort, comm.buf.head, n);
-			return;
-		}
-		if (g_uInsBootloaderEnableTimeMs)
-		{	// When uINS bootloader is enabled forwarding is disabled below is_comm_parse(), so forward bootloader data here.
-			switch (srcPort)
-			{
-				case EVB2_PORT_USB:		comWrite(EVB2_PORT_UINS0, comm.buf.tail, n, LED_INS_TXD_PIN);	break;
-				case EVB2_PORT_UINS0:	comWrite(EVB2_PORT_USB, comm.buf.tail, n, 0);					break;
-			}					
-		}
-		
+		com_bridge_forward(srcPort, comm.buf.tail, n);			
+
 		// Update comm buffer tail pointer
 		comm.buf.tail += n;
-				
+
+		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422 || g_imxBootloaderEnableTimeMs)
+		{	// Skip packet parsing
+			return;
+		}
+						
 		// Search comm buffer for valid packets
 		protocol_type_t ptype;
 		while((ptype = is_comm_parse_timeout(&comm, g_comm_time_ms)) != _PTYPE_NONE)
@@ -881,10 +874,9 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 			if (ptype!=_PTYPE_NONE && 
 				ptype!=_PTYPE_PARSE_ERROR &&
-				g_uInsBootloaderEnableTimeMs==0)
+				g_imxBootloaderEnableTimeMs==0)
 			{	// Forward data
 				uint32_t pktSize = _MIN(comm.buf.scan - comm.pktPtr, PKT_BUF_SIZE);
-				com_bridge_forward(srcPort, comm.pktPtr, pktSize);
 
 				// Send uINS data to Logging task
 				if (srcPort == g_flashCfg->uinsComPort && pktSize > 0)
@@ -897,7 +889,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 					case _PTYPE_INERTIAL_SENSE_DATA:
 						if (comm.dataHdr.size > 0)
 						{
-							handle_data_from_uINS(comm.dataHdr, comm.dataPtr);
+							handle_data_from_IMX(comm.dataHdr, comm.dataPtr);
 					
 							stm.size = sizeof(p_data_hdr_t) + comm.dataHdr.size;
 							xStreamBufferSend(g_xStreamBufferUINS, (void*)&(stm), sizeof(is_evb_log_stream), 0);
@@ -936,6 +928,8 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 
 	if ((n = xStreamBufferReceive(xStreamBuffer, comm.buf.tail, n, 0)) > 0)
 	{
+		com_bridge_forward(srcPort, comm.buf.tail, n);
+
 		// Update comm buffer tail pointer
 		comm.buf.tail += n;
 		
@@ -946,14 +940,6 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 			if (srcPort == EVB2_PORT_USB)
 			{
 				handle_data_from_host(&comm, ptype, srcPort);
-			}
-			
-			if (ptype!=_PTYPE_NONE && 
-				ptype!=_PTYPE_PARSE_ERROR &&
-				g_uInsBootloaderEnableTimeMs==0)
-			{	// Forward data
-				uint32_t pktSize = _MIN(comm.buf.scan - comm.pktPtr, PKT_BUF_SIZE);
-				com_bridge_forward(srcPort, comm.pktPtr, pktSize);
 			}
 		}
 	}
@@ -969,17 +955,19 @@ void com_bridge_forward(uint32_t srcPort, uint8_t *buf, int len)
         return;
     }        
 
-	if (g_uInsBootloaderEnableTimeMs==0)
-	{	// uINS bootloader mode enabled - don't allow forwarding on these ports
-		if(dstCbf & (1<<EVB2_PORT_USB))
-		{
-			comWrite(EVB2_PORT_USB, buf, len, 0);
-		}
-    
-		if(dstCbf & (1<<EVB2_PORT_UINS0))
-		{
-			comWrite(EVB2_PORT_UINS0, buf, len, LED_INS_TXD_PIN);
-		}		
+	if(dstCbf & (1<<EVB2_PORT_USB))
+	{
+		comWrite(EVB2_PORT_USB, buf, len, 0);
+	}
+
+	if(dstCbf & (1<<EVB2_PORT_UINS0))
+	{
+		comWrite(EVB2_PORT_UINS0, buf, len, LED_INS_TXD_PIN);
+	}		
+
+	if (g_imxBootloaderEnableTimeMs)
+	{	// IMX bootloader mode enabled - don't allow forwarding on any other port than those above
+		return;
 	}
 
     if(dstCbf & (1<<EVB2_PORT_UINS1))
