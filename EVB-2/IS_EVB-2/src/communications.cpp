@@ -731,9 +731,9 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				enable_bootloader(PORT_SEL_USB);
 				break;
 
-			// case NMEA_MSG_ID_INFO:
-			// 	send_nmea_dev_info(srcPort);
-			// 	break;				
+			case NMEA_MSG_ID_INFO:
+				send_nmea_dev_info(srcPort);
+				break;				
 
 			case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 				if (comm->dataHdr.size == 22 &&

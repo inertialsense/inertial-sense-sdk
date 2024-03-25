@@ -65,6 +65,7 @@ public:
 	{
 		serial_port_t serialPort;
 		dev_info_t devInfo;
+		dev_info_t evbDevInfo;
 		system_command_t sysCmd;
 		nvm_flash_cfg_t flashCfg;
 		unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten  
