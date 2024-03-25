@@ -98,12 +98,6 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
             return IS_IMAGE_SIGN_NONE;
         }
     }
-    messageSize = is_comm_get_data(&comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, comm.buf.start, messageSize))
-    {
-        //serialPortClose(m_port);
-        return IS_IMAGE_SIGN_NONE;
-    }
 
     protocol_type_t ptype;
     n = is_comm_free(&comm);
@@ -147,11 +141,26 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                 case NMEA_MSG_ID_INFO:
                     {	// IMX device Info
                         dev_info_t devInfo;
-                        nmea_parse_info(devInfo, (const char*)comm.dataPtr, comm.dataHdr.size);
-                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
-                        m_sn = devInfo.serialNumber;
-                        valid_signatures = devInfoToValidSignatures(&devInfo);
-                        return (eImageSignature)valid_signatures;
+                        nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+                        if (devInfo.hardware == DEV_INFO_HARDWARE_EVB)
+                        {   // EVB2
+                            memcpy(m_app.evb_version, devInfo.hardwareVer, 4);
+                            if (m_isEVB)
+                            {
+                                valid_signatures = devInfoToValidSignatures(&devInfo);
+                                return (eImageSignature)valid_signatures;
+                            }
+                        }
+                        else
+                        {   // IMX
+	                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
+	                        m_sn = devInfo.serialNumber;
+                            if (!m_isEVB)
+                            {
+		                        valid_signatures = devInfoToValidSignatures(&devInfo);
+		                        return (eImageSignature)valid_signatures;
+			                }
+                        }
                     }
                     break;
                 }

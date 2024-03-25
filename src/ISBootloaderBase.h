@@ -131,6 +131,7 @@ public:
         m_start_time_ms = 0;
         m_finished_flash = false;
         m_verify = false;
+        m_isEVB = false;
 
         if(m_update_callback == NULL) m_update_callback = dummy_update_callback;
         if(m_verify_callback == NULL) m_verify_callback = dummy_verify_callback;
@@ -281,6 +282,7 @@ public:
 
     std::string m_filename;
     bool m_isISB;
+    bool m_isEVB;
 
 protected:
     void status_update(const char* info, eLogLevel level) 
