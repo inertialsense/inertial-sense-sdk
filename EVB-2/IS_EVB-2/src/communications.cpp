@@ -737,7 +737,11 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 				
 				enable_bootloader(PORT_SEL_USB);
 				break;				
-				
+
+			case NMEA_MSG_ID_INFO:
+				send_nmea_dev_info(srcPort);
+				break;				
+
 			case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 				if (comm->rxPkt.dataHdr.size == 22 &&
 // 									(pHandle == EVB2_PORT_USB) && 
@@ -946,7 +950,7 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 			if (srcPort == EVB2_PORT_USB)
 			{
 				handle_data_from_host(&comm, ptype, srcPort);
-			}			
+			}
 		}
 	}
 }
