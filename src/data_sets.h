@@ -1765,6 +1765,8 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 
+#define RMC_BITS_IS_EVENT               0x0800000000000000
+
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -4603,11 +4605,21 @@ typedef struct
 } port_monitor_t;
 
 #define ISEvent_MAX_SIZE 64
+
+enum ISEventProtocol// make this uint8!!!
+{
+    ISEventProtocol_byte    = 1,
+    ISEventProtocol_ASCII   = 2,
+
+    ISEventProtocol_EPH     = 250,
+};
+
 typedef struct ISEvent
 {
     uint8_t protocol;
     uint8_t length;
     uint16_t checksum;
+    
     uint8_t data[ISEvent_MAX_SIZE];
 }ISEvent_t;
 
