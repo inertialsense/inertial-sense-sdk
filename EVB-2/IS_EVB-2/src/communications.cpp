@@ -608,6 +608,14 @@ void update_flash_cfg(evb_flash_cfg_t &newCfg)
 }
 
 
+void send_nmea_dev_info(int portNum)
+{
+	char a[NMEA_BUFFER_SIZE];
+	int n = nmea_dev_info(a, sizeof(a), g_evbDevInfo);
+	serWrite(portNum, (unsigned char*)a, n);
+}
+
+
 void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint32_t srcPort)
 {
 	uint8_t *dataPtr = comm->dataPtr + comm->dataHdr.offset;
@@ -707,51 +715,46 @@ void handle_data_from_host(is_comm_instance_t *comm, protocol_type_t ptype, uint
 
 	case _PTYPE_NMEA:
 		{
-			if(comm->dataHdr.size == 10)
-			{	// 4 character commands (i.e. "$STPB*14\r\n")
-				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
-				{
-				case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
-					g_imxBootloaderEnableTimeMs = g_comm_time_ms;
+			switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
+			{
+			case NMEA_MSG_ID_BLEN: // Enable bootloader (uINS)
+				g_imxBootloaderEnableTimeMs = g_comm_time_ms;
 
-					// Disable EVB broadcasts
-					g_ermc.bits = 0;
-					break;
-							
-				case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
-					// Disable uINS bootloader if host enables EVB bootloader
-					g_imxBootloaderEnableTimeMs = 0;
-					
-					enable_bootloader(PORT_SEL_USB);
-					break;				
+				// Disable EVB broadcasts
+				g_ermc.bits = 0;
+				break;
+						
+			case NMEA_MSG_ID_EBLE: // Enable bootloader (EVB)
+				// Disable uINS bootloader if host enables EVB bootloader
+				g_imxBootloaderEnableTimeMs = 0;
+				
+				enable_bootloader(PORT_SEL_USB);
+				break;
 
-				case NMEA_MSG_ID_STPB:
-				case NMEA_MSG_ID_STPC:	
-					// Disable EVB communications
-					g_ermc.bits = 0;
-					break;
-				}
-				break;							
-			}
-			else
-			{	// General NMEA							
-				switch (getNmeaMsgId(dataPtr, comm->dataHdr.size))
-				{
-				case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
-					if (comm->dataHdr.size == 22 &&
+			// case NMEA_MSG_ID_INFO:
+			// 	send_nmea_dev_info(srcPort);
+			// 	break;				
+
+			case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
+				if (comm->dataHdr.size == 22 &&
 // 									(pHandle == EVB2_PORT_USB) && 
-						strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
-					{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-						enable_rom_bootloader();
-					}
-					break;
-					
-				default:
-					// Disable uINS bootloader if host sends larger NMEA sentence
-					g_imxBootloaderEnableTimeMs = 0;
-					break;
-				}				
-			}
+					strncmp((const char*)(&(comm->buf.start[6])), "!!SAM-BA!!", 6) == 0)
+				{	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
+					enable_rom_bootloader();
+				}
+				break;
+
+			case NMEA_MSG_ID_STPB:
+			case NMEA_MSG_ID_STPC:	
+				// Disable EVB communications
+				g_ermc.bits = 0;
+				break;
+
+			default:
+				// Disable uINS bootloader if host sends larger NMEA sentence
+				g_imxBootloaderEnableTimeMs = 0;
+				break;
+			}				
 		}
 		break;
 	}
