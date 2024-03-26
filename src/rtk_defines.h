@@ -183,7 +183,7 @@
 typedef uint32_t pthread_t;
 typedef uint32_t pthread_mutex_t;
 typedef int lock_t;
-typedef int DIR;
+// typedef int DIR;
 struct dirent { char* d_name; };
 
 #define pthread_mutex_init(f, f2)

@@ -515,7 +515,7 @@ typedef struct
 	uint32_t size;
 
 	/** Start of data in buffer. Data is read from here. */
-	uint8_t* head;	// TODO remove this once we have all of the separate parser points in place. WHJ
+	uint8_t* head;
 
 	/** End of data in buffer. New data is written here. */
 	uint8_t* tail;

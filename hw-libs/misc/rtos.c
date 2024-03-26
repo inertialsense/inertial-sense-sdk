@@ -162,10 +162,10 @@ void vApplicationTickHook(void)
 static void setGpbrWithTaskInfo(void)
 {
     uint32_t task;
-    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_SAMPLE].handle){ task = TASK_SAMPLE; }
-    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_NAV].handle){ task = TASK_NAV; }
-    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_COMMUNICATIONS].handle){ task = TASK_COMMUNICATIONS; }
-    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[TASK_MAINTENANCE].handle){ task = TASK_MAINTENANCE; }
+    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[IMX_TASK_SAMPLE].handle){ task = IMX_TASK_SAMPLE; }
+    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[IMX_TASK_NAV].handle){ task = IMX_TASK_NAV; }
+    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[IMX_TASK_COMMUNICATIONS].handle){ task = IMX_TASK_COMMUNICATIONS; }
+    if((uint32_t)xTaskGetCurrentTaskHandle() == (uint32_t)g_rtos.task[IMX_TASK_MAINTENANCE].handle){ task = IMX_TASK_MAINTENANCE; }
 
 #ifndef IMX_5
     GPBR->SYS_GPBR[GPBR_IDX_G1_TASK] = task;

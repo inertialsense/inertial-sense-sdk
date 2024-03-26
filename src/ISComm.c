@@ -181,7 +181,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 	c->rxErrorState = 1;
 }
 
-void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
+static void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
 	is_comm_parser_t *p = &(c->parser);
 	p->state = 1;
@@ -1014,7 +1014,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 	}
 }
 
-int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
+static int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
 {
 	if (pkt->size > buf_size)
 	{	// Packet doesn't fit in buffer

@@ -26,7 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #endif
 
 #if PLATFORM_IS_EMBEDDED
-    #include "drivers/d_time.h"
+    #include "d_time.h"
 #elif PLATFORM_IS_WINDOWS
     #include <windows.h>
     #include <process.h>
