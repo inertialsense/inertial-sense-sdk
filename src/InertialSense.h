@@ -140,9 +140,12 @@ public:
         serial_port_t serialPort;
         dev_info_t devInfo;
         system_command_t sysCmd;
-        nvm_flash_cfg_t flashCfg;
-        unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+        nvm_flash_cfg_t imxFlashCfg;
+        gpx_flash_cfg_t gpxFlashCfg;
+        unsigned int imxFlashCfgUploadTimeMs;	// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+        unsigned int gpxFlashCfgUploadTimeMs;	// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
         sys_params_t sysParams;
+        gpx_status_t gpxStatus;
         is_fwUpdate_info_t fwUpdate;
     } is_device_t;
 
@@ -384,26 +387,29 @@ public:
 
     /**
     * Get the flash config, returns the latest flash config read from the uINS flash memory
-    * @param flashCfg the flash config value
+    * @param imxFlashCfg the flash config value
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
     */
-    bool FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool FlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle = 0);
+    bool GpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle = 0);
 
     /**
     * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized.
     */
-    bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfg.checksum == device.sysParams.flashCfgChecksum; }
+    bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum; }
+    bool GpxFlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum; }
 
     /**
     * Set the flash config and update flash config on the uINS flash memory
-    * @param flashCfg the flash config
+    * @param imxFlashCfg the flash config
     * @param pHandle the pHandle to set flash config for
     * @return int number bytes sent
     */
-    int SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    int SetFlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle = 0);
+    int SetGpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
@@ -643,6 +649,7 @@ private:
     uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
+    unsigned int m_gpxSyncCheckTimeMs = 0;
 
     // returns false if logger failed to open
     bool UpdateServer();
@@ -657,7 +664,8 @@ private:
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
-    void SyncFlashConfig(unsigned int timeMs);
+    void SyncImxFlashConfig(unsigned int timeMs);
+    void SyncGpxFlashConfig(unsigned int timeMs);
 };
 
 #endif

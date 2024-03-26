@@ -270,6 +270,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.flashCfg = ".";
             g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
         }
+        else if (startsWith(a, "-gpxFlashCfg="))
+        {
+            g_commandLineOptions.gpxFlashCfg = &a[10];
+        }
+        else if (startsWith(a, "-gpxFlashCfg"))
+        {
+            g_commandLineOptions.gpxFlashCfg = ".";
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
+        }
         else if (startsWith(a, "-hi") || startsWith(a, "--hi"))
         {
             g_internal = true;
@@ -593,6 +602,8 @@ void cltool_outputUsage()
 	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
 	cout << "    -flashCfg" << boldOff << "       List all IMX \"keys\" and \"values\"" << endlbOn;
 	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
+	cout << "    -gpxFlashCfg" << boldOff << "    List all GPX \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-gpxFlashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
 	cout << "        " << boldOff << "            Set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
@@ -621,6 +632,56 @@ void cltool_outputHelp()
 }
 
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
+{
+    nvm_flash_cfg_t flashCfg;
+    inertialSenseInterface.FlashConfig(flashCfg);
+    const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
+
+    if (flashCfgString.length() < 2)
+    {
+        // read flash config and display
+        data_mapping_string_t stringBuffer;
+        cout << "Current flash config" << endl;
+        for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
+        {
+            if (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashCfg, stringBuffer))
+            {
+                cout << i->second.name << " = " << stringBuffer << endl;
+            }
+        }
+    }
+    else
+    {
+        vector<string> keyValues;
+        splitString(flashCfgString, '|', keyValues);
+        for (size_t i = 0; i < keyValues.size(); i++)
+        {
+            vector<string> keyAndValue;
+            splitString(keyValues[i], '=', keyAndValue);
+            if (keyAndValue.size() == 2)
+            {
+                if (flashMap.find(keyAndValue[0]) == flashMap.end())
+                {
+                    cout << "Unrecognized flash config key '" << keyAndValue[0] << "' specified, ignoring." << endl;
+                }
+                else
+                {
+                    const data_info_t& info = flashMap.at(keyAndValue[0]);
+                    int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
+                    int substrIndex = 2 * (radix == 16); // skip 0x for hex
+                    const string& str = keyAndValue[1].substr(substrIndex);
+                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, radix);
+                    cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
+                }
+            }
+        }
+        inertialSenseInterface.SetFlashConfig(flashCfg);
+    }
+
+    return false;
+}
+
+bool cltool_updateGpxFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
     nvm_flash_cfg_t flashCfg;
     inertialSenseInterface.FlashConfig(flashCfg);

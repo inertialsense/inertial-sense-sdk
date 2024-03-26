@@ -85,6 +85,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	std::string baseConnection; 			// -base=IP:port    (client)	
 	
 	std::string flashCfg;
+	std::string gpxFlashCfg;
 	uint32_t timeoutFlushLoggerSeconds;
 	uint32_t outputOnceDid;	
 	

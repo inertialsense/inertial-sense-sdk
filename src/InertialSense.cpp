@@ -418,7 +418,8 @@ bool InertialSense::Update()
         if (m_comManagerState.devices.size() > 0)
         {
             comManagerStep();
-            SyncFlashConfig(m_timeMs);
+            SyncImxFlashConfig(m_timeMs);
+            SyncGpxFlashConfig(m_timeMs);
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (auto& device : m_comManagerState.devices) {
@@ -759,7 +760,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 }
 
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
-void InertialSense::SyncFlashConfig(unsigned int timeMs)
+void InertialSense::SyncImxFlashConfig(unsigned int timeMs)
 {
     if (timeMs - m_syncCheckTimeMs > SYNC_FLASH_CFG_CHECK_PERIOD_MS)
     {
@@ -769,19 +770,19 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
         {
             is_device_t &device = m_comManagerState.devices[i];
 
-            if (device.flashCfgUploadTimeMs)
+            if (device.imxFlashCfgUploadTimeMs)
             {	// Upload in progress
-                if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+                if (timeMs - device.imxFlashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
                 {	// Wait for upload to process.  Pause sync.
                     continue;
                 }
                 else
                 {	// Upload complete.  Allow sync.
-                    device.flashCfgUploadTimeMs = 0;
+                    device.imxFlashCfgUploadTimeMs = 0;
                 }
             }
 
-            if (device.flashCfg.checksum != device.sysParams.flashCfgChecksum)
+            if (device.imxFlashCfg.checksum != device.sysParams.flashCfgChecksum)
             {	// Out of sync.  Request flash config.
                 comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
             }
@@ -789,7 +790,38 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
     }
 }
 
-bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+// This method uses DID_GPX_STATUS.flashCfgChecksum to determine if the local flash config is synchronized.
+void InertialSense::SyncGpxFlashConfig(unsigned int timeMs)
+{
+    if (timeMs - m_gpxSyncCheckTimeMs > SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+    {
+        m_gpxSyncCheckTimeMs = timeMs;
+
+        for (size_t i=0; i<m_comManagerState.devices.size(); i++)
+        {
+            is_device_t &device = m_comManagerState.devices[i];
+
+            if (device.gpxFlashCfgUploadTimeMs)
+            {	// Upload in progress
+                if (timeMs - device.gpxFlashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+                {	// Wait for upload to process.  Pause sync.
+                    continue;
+                }
+                else
+                {	// Upload complete.  Allow sync.
+                    device.gpxFlashCfgUploadTimeMs = 0;
+                }
+            }
+
+            if (device.gpxFlashCfg.checksum != device.gpxStatus.flashCfgChecksum)
+            {	// Out of sync.  Request flash config.
+                comManagerGetData((int)i, DID_GPX_FLASH_CFG, 0, 0, 0);
+            }
+        }
+    }
+}
+
+bool InertialSense::FlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
@@ -799,13 +831,29 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     is_device_t &device = m_comManagerState.devices[pHandle];
 
     // Copy flash config
-    flashCfg = device.flashCfg;
+    imxFlashCfg = device.imxFlashCfg;
 
     // Indicate whether flash config is sychronized
-    return device.sysParams.flashCfgChecksum == device.flashCfg.checksum;
+    return device.sysParams.flashCfgChecksum == device.imxFlashCfg.checksum;
 }
 
-int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle)
+{
+    if ((size_t)pHandle >= m_comManagerState.devices.size())
+    {
+        pHandle = 0;
+    }
+
+    is_device_t &device = m_comManagerState.devices[pHandle];
+
+    // Copy flash config
+    gpxFlashCfg = device.gpxFlashCfg;
+
+    // Indicate whether flash config is synchronized
+    return device.gpxStatus.flashCfgChecksum == device.gpxFlashCfg.checksum;
+}
+
+int InertialSense::SetFlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
@@ -814,14 +862,33 @@ int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     is_device_t &device = m_comManagerState.devices[pHandle];
 
     // Update checksum
-    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    imxFlashCfg.checksum = flashChecksum32(&imxFlashCfg, sizeof(nvm_flash_cfg_t));
 
-    device.flashCfg = flashCfg;
-    device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
-    device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
+    device.imxFlashCfg = imxFlashCfg;
+    device.imxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
+    device.sysParams.flashCfgChecksum = device.imxFlashCfg.checksum;
 
-    // [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-    return comManagerSendData(pHandle, &device.flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
+    // [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the IMX.
+    return comManagerSendData(pHandle, &device.imxFlashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
+}
+
+int InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle)
+{
+    if ((size_t)pHandle >= m_comManagerState.devices.size())
+    {
+        return 0;
+    }
+    is_device_t &device = m_comManagerState.devices[pHandle];
+
+    // Update checksum
+    gpxFlashCfg.checksum = flashChecksum32(&gpxFlashCfg, sizeof(gpx_flash_cfg_t));
+
+    device.gpxFlashCfg = gpxFlashCfg;
+    device.gpxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
+    device.gpxStatus.flashCfgChecksum = device.gpxFlashCfg.checksum;
+
+    // [C COMM INSTRUCTION]  Update the entire DID_GPX_FLASH_CFG data set in the GPX.
+    return comManagerSendData(pHandle, &device.gpxFlashCfg, DID_GPX_FLASH_CFG, sizeof(gpx_flash_cfg_t), 0);
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
@@ -839,10 +906,17 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
         case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
         case DID_FLASH_CONFIG:
-            copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));
+            copyDataPToStructP(&device.imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
             {	// Checksum received
-                device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
+                device.sysParams.flashCfgChecksum = device.imxFlashCfg.checksum;
+            }
+            break;
+        case DID_GPX_FLASH_CFG:
+            copyDataPToStructP(&device.gpxFlashCfg, data, sizeof(gpx_flash_cfg_t));
+            if ( dataOverlap( offsetof(gpx_flash_cfg_t, checksum), 4, data ) )
+            {	// Checksum received
+                device.gpxStatus.flashCfgChecksum = device.gpxFlashCfg.checksum;
             }
             break;
         case DID_FIRMWARE_UPDATE:
@@ -1322,7 +1396,7 @@ void InertialSense::CloseSerialPorts()
 
 void InertialSense::SaveFlashConfigFile(std::string path, int pHandle)
 {
-    nvm_flash_cfg_t* outData = &m_comManagerState.devices[pHandle].flashCfg;
+    nvm_flash_cfg_t* outData = &m_comManagerState.devices[pHandle].imxFlashCfg;
 
     YAML::Node map = YAML::Node(YAML::NodeType::Map);
 
