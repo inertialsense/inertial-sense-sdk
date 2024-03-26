@@ -365,6 +365,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Vel UVW', 'velUVW')
         self.addListItem('Attitude', 'attitude')
         self.addListItem('Altitude', 'altitude')
+        self.addListItem('Climb Rate', 'climbRate')
         self.addListItem('Heading', 'heading')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
@@ -520,7 +521,7 @@ class LogInspectorWindow(QMainWindow):
         self.hideControlButton = QPushButton("Hide Panel")
         self.hideControlButton.clicked.connect(self.hideControl)
         self.toolLayout.addWidget(self.hideControlButton)
-        self.newWindwButton = QPushButton("New")
+        self.newWindwButton = QPushButton("Window")
         self.newWindwButton.clicked.connect(self.newWindow)
         self.toolLayout.addWidget(self.newWindwButton)
 
