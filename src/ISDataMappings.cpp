@@ -159,6 +159,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
     sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
+    sizeMap[DID_IS_EVENT] = sizeof(ISEvent_t);
+
     sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
@@ -1061,6 +1063,24 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 	ADD_MAP(m, totalSize, "magInterferenceThreshold", magInterferenceThreshold, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
+}
+
+static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+     typedef ISEvent_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_IS_EVENT];
+    uint32_t totalSize = 0;
+
+    ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "Sender hardware type", hdwrType, 0, DataTypeUInt16, uint16_t, 0);
+
+    ADD_MAP(m, totalSize, "protocol", protocol, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "length", length, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, char[ISEvent_MAX_SIZE], 0);
+
+    ADD_MAP(m, totalSize, "Reserved 32 bit", res32, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "Reserved 16 bit", res16, 0, DataTypeUInt16, uint16_t, 0);
 }
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2602,7 +2622,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
     "",                                 // 117
     "",                                 // 118
-    "",                                 // 119
+    "DID_IS_EVENT",                     // 119
     "DID_GPX_DEV_INFO",                 // 120
     "DID_GPX_FLASH_CFG",                // 121
     "DID_GPX_RTOS_INFO",                // 122
@@ -2672,6 +2692,8 @@ cISDataMappings::cISDataMappings()
     PopulateReferenceIMUMappings(m_lookupInfo);
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
     PopulateInfieldCalMappings(m_lookupInfo);
+
+    PopulateISEventMappings(m_lookupInfo);
 
     PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
     PopulateGpxFlashCfgMappings(m_lookupInfo);
