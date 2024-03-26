@@ -1077,7 +1077,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "protocol", protocol, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "length", length, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "checksum", checksum, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, char[ISEvent_MAX_SIZE], 0);
+    ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
     ADD_MAP(m, totalSize, "Reserved 32 bit", res32, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Reserved 16 bit", res16, 0, DataTypeUInt16, uint16_t, 0);
