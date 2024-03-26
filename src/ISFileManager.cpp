@@ -493,11 +493,7 @@ namespace ISFileManager {
         std::string realPath = path;
         // first check if path is absolute
         if (!isPathAbsolute(path)) {
-            char curdir[256];
-            if (_GETCWD(curdir, sizeof(curdir)) == nullptr)
-            {   // Handle error
-            }
-            realPath = std::string(curdir) + path_seperator + path;
+            realPath = CurrentWorkingDirectory() + path_seperator + path;
         }
 
         auto pos = realPath.rfind(path_seperator);
