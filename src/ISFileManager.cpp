@@ -455,6 +455,10 @@ namespace ISFileManager {
         return path;
     }
 
+    /***
+     * Returns the current working directory as a std::string.
+     * @return Current working directory.
+    */
     std::string CurrentWorkingDirectory()
     {
         char curdir[256] = { 0 };
