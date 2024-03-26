@@ -2698,7 +2698,6 @@ cISDataMappings::cISDataMappings()
     PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
     PopulateGpxFlashCfgMappings(m_lookupInfo);
     // DID_GPX_RTOS_INFO
-    // DID_GPX_STATUS
     PopulateGpxStatusMappings(m_lookupInfo);
     PopulateDebugArrayMappings(m_lookupInfo, DID_GPX_DEBUG_ARRAY);
 
