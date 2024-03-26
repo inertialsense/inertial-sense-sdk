@@ -1658,11 +1658,12 @@ class logPlot:
     def altitude(self, fig=None):
         if fig is None:
             fig = plt.figure()
-        ax = fig.subplots(3, 1, sharex=True)
+        ax = fig.subplots(4, 1, sharex=True)
 
-        self.configureSubplot(ax[0], 'Altitude - Barometer', ',m')
-        self.configureSubplot(ax[1], 'Altitude - GPS', ',m')
-        self.configureSubplot(ax[2], 'Altitude - Barometer & GPS', ',m')
+        self.configureSubplot(ax[0], 'Altitude: Barometer', 'm')
+        self.configureSubplot(ax[1], 'Altitude: GPS', 'm')
+        self.configureSubplot(ax[2], 'Altitude: INS', 'm')
+        self.configureSubplot(ax[3], 'Altitude: Combined', 'm')
         fig.suptitle('Altitude - ' + os.path.basename(os.path.normpath(self.log.directory)))
         
         for d in self.active_devs:
@@ -1670,19 +1671,58 @@ class logPlot:
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             altGps = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            altIns = self.getData(d, DID_INS_2, 'lla')[:, 2]
+
             if np.shape(towOffset)[0] != 0:
                 timeBar = timeBar + towOffset[-1]
             mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
             ax[0].plot(timeBar, mslBar, label=self.log.serials[d])
             ax[1].plot(timeGps, altGps)
-            ax[2].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
-            ax[2].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
+            ax[2].plot(timeIns, altIns)
+            if len(altGps) > 0:
+                ax[3].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
+                ax[3].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
 
         ax[0].legend(ncol=2)
-        ax[2].legend(ncol=2)
+        ax[3].legend(ncol=2)
         for a in ax:
             a.grid(True)
         self.saveFig(fig, 'altitude')
+
+    def climbRate(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(3, 1, sharex=True)
+
+        self.configureSubplot(ax[0], 'Climb Rate: Barometer', 'm/s')
+        self.configureSubplot(ax[1], 'Climb Rate: GPS', 'm/s')
+        self.configureSubplot(ax[2], 'Climb Rate: INS', 'm/s')
+        fig.suptitle('Climb Rate: ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            timeBar = self.getData(d, DID_BAROMETER, 'time')
+            mslBar  = self.getData(d, DID_BAROMETER, 'mslBar')
+            timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+            altGps  = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            altIns = self.getData(d, DID_INS_2, 'lla')[:, 2]
+            towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+            if len(towOffset) > 0:
+                timeBar = timeBar + towOffset[-1]
+            if len(timeBar) > 2:
+                climbBar = np.gradient(mslBar, timeBar)
+                ax[0].plot(timeBar, climbBar, label=self.log.serials[d])
+            if len(timeGps) > 2:
+                climbGps = np.gradient(altGps, timeGps)
+                ax[1].plot(timeGps, climbGps)
+            if len(timeIns) > 2:
+                climbIns = np.gradient(altIns, timeIns)
+                ax[2].plot(timeIns, climbIns)
+
+        ax[0].legend(ncol=2)
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'climbrate')
 
     def barometer(self, fig=None):
         if fig is None:

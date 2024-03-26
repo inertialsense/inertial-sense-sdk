@@ -68,6 +68,7 @@ class logInspectorInternal(LogInspectorWindow):
     def __init__(self, config):
         super(logInspectorInternal, self).__init__(config)
         self.page = 0
+        self.exePath = __file__
 
     def createListIns(self):
         super(logInspectorInternal, self).createListIns()
