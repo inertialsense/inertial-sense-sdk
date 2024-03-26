@@ -41,7 +41,7 @@ uint32_t                    g_comm_time_ms = 0;
 double                      g_comm_time = 0;
 double                      g_towOffset = 0;
 bool                        g_loggerEnabled = false;
-uint32_t                    g_uInsBootloaderEnableTimeMs = 0;	// 0 = disabled
+uint32_t                    g_imxBootloaderEnableTimeMs = 0;	// 0 = disabled
 bool                        g_enRtosStats = 0;
 ermc_t                      g_ermc = {0};
 

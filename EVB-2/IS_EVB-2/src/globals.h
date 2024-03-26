@@ -124,7 +124,7 @@ extern uint32_t                     g_comm_time_ms;
 extern double                       g_comm_time;
 extern double                       g_towOffset;
 extern bool                         g_loggerEnabled;
-extern uint32_t                     g_uInsBootloaderEnableTimeMs;
+extern uint32_t                     g_imxBootloaderEnableTimeMs;
 extern bool                         g_enRtosStats;
 extern ermc_t    			        g_ermc;
 
