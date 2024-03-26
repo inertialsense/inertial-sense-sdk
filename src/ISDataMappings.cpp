@@ -1072,7 +1072,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     uint32_t totalSize = 0;
 
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "Sender hardware type", hdwrType, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwrType, 0, DataTypeUInt16, uint16_t, 0);
 
     ADD_MAP(m, totalSize, "protocol", protocol, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "length", length, 0, DataTypeUInt8, uint8_t, 0);

@@ -4620,7 +4620,7 @@ typedef struct ISEvent
     uint32_t        senderSN;
  
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-	uint16_t        hdwrType;
+	uint16_t        senderHdwrType;
     uint16_t        res16;
 
     uint32_t        res32;
