@@ -521,9 +521,9 @@ class LogInspectorWindow(QMainWindow):
         self.hideControlButton = QPushButton("Hide Panel")
         self.hideControlButton.clicked.connect(self.hideControl)
         self.toolLayout.addWidget(self.hideControlButton)
-        self.newWindwButton = QPushButton("Window")
-        self.newWindwButton.clicked.connect(self.newWindow)
-        self.toolLayout.addWidget(self.newWindwButton)
+        self.newWindowButton = QPushButton("New Window")
+        self.newWindowButton.clicked.connect(self.newWindow)
+        self.toolLayout.addWidget(self.newWindowButton)
 
         self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
