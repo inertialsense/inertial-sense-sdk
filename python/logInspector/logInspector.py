@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
     QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
 from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
+from PyQt5.QtCore import QItemSelectionModel
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -328,6 +329,7 @@ class LogInspectorWindow(QMainWindow):
         self.plotter.setDownSample(self.downsample)
         self.updatePlot()
         self.setStatus("")
+        self.expandAndSelectDirectory(directory)
 
     def setupUi(self):
         self.setObjectName("LogInspector")
@@ -615,6 +617,17 @@ class LogInspectorWindow(QMainWindow):
         self.dirModel.setRootPath(self.config["logs_directory"])
         self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
 
+    def expandAndSelectDirectory(self, directory):
+        # Find the index for the folder
+        index = self.dirModel.index(directory)
+        # Expand the tree view to this folder
+        self.fileTree.expand(index)
+        # Select the folder
+        self.fileTree.setCurrentIndex(index)
+        self.fileTree.selectionModel().select(index, QItemSelectionModel.Select)        
+        # Scroll to the selected item
+        self.fileTree.scrollTo(index)
+        
     def populateRMSCheck(self, directory):
         for subdir in os.listdir(directory):
             path = os.path.join(directory, subdir)
