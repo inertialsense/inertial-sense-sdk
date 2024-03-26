@@ -358,6 +358,7 @@ extern "C" {
 #ifndef __ZEPHYR__
 #ifndef STRINGIFY
 #define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 #endif
 #endif
 

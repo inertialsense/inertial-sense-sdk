@@ -1570,34 +1570,28 @@ enum eSerialPortBridge
 
 typedef struct nmeaBroadcastMsgPair
 {
-    /** Message ID to be set up to 20 at a time using msgCount to indicate which indexes are valid. 
-     *  See eNmeaAsciiMsgId for msg IDs
-    */
+    /** Message ID. (see eNmeaAsciiMsgId) */
     uint8_t msgID;
+
+	/** Message period multiple. */
     uint8_t msgPeriod;
-}nmeaBroadcastMsgPair_t;
+} nmeaBroadcastMsgPair_t;
 
 #define MAX_nmeaBroadcastMsgPairs 20
 
 /** (DID_NMEA_BCAST_PERIOD) Set NMEA message broadcast periods. This data structure is zeroed out on stop_all_broadcasts */
 typedef struct PACKED
 {
-    /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistant] (see RMC_OPTIONS_...) */
+    /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistent] (see RMC_OPTIONS_...) */
     uint32_t				options;
 
-    /** The number of messages being set in this message */
-    uint8_t                 msgCount;
-    
-    /** NMEA message to be set. (up to 20 at a time using msgCount to indicate which indexes are valid). 
-     *  See eNmeaAsciiMsgId for msg IDs
-    */
-    nmeaBroadcastMsgPair_t nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
+    /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaAsciiMsgId) */
+    nmeaBroadcastMsgPair_t	nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
-     *  If you are setting message GGA (0x06) at 1Hz and GGL (0x07) at 5Hz. 
-     *  msgCount = 2
-     *  nmeaBroadcastMsgs[0].msgID = 0x06, nmeaBroadcastMsgs[1].msgID = 0x07 
-     *  nmeaBroadcastMsgs[0].msgPeriod = 0x05, nmeaBroadcastMsgs[1].msgPeriod = 0x01 */           
+     *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGpsDtMs = 200 (5Hz) 
+     *  nmeaBroadcastMsgs[0].msgID = 6, nmeaBroadcastMsgs[0].msgPeriod = 5  
+     *  nmeaBroadcastMsgs[1].msgID = 7, nmeaBroadcastMsgs[1].msgPeriod = 1 */           
 
 } nmea_msgs_t;
 
@@ -1825,23 +1819,24 @@ typedef struct PACKED
 
 enum eNmeaAsciiMsgId
 {
-    NMEA_MSG_ID_PIMU      = 0,
-    NMEA_MSG_ID_PPIMU     = 1,
-    NMEA_MSG_ID_PRIMU     = 2,
-    NMEA_MSG_ID_PINS1     = 3,
-    NMEA_MSG_ID_PINS2     = 4,
-    NMEA_MSG_ID_PGPSP     = 5,
-    NMEA_MSG_ID_GxGGA     = 6,
-    NMEA_MSG_ID_GxGLL     = 7,
-    NMEA_MSG_ID_GxGSA     = 8,
-    NMEA_MSG_ID_GxRMC     = 9,
-    NMEA_MSG_ID_GxZDA     = 10,
-    NMEA_MSG_ID_PASHR     = 11, 
-    NMEA_MSG_ID_PSTRB     = 12,
-    NMEA_MSG_ID_INFO      = 13,
-    NMEA_MSG_ID_GxGSV     = 14,
-    NMEA_MSG_ID_GxVTG     = 15,
-    NMEA_MSG_ID_INTEL     = 16,
+    NMEA_MSG_ID_INVALID   = 0,
+    NMEA_MSG_ID_PIMU      = 1,
+    NMEA_MSG_ID_PPIMU     = 2,
+    NMEA_MSG_ID_PRIMU     = 3,
+    NMEA_MSG_ID_PINS1     = 4,
+    NMEA_MSG_ID_PINS2     = 5,
+    NMEA_MSG_ID_PGPSP     = 6,
+    NMEA_MSG_ID_GxGGA     = 7,
+    NMEA_MSG_ID_GxGLL     = 8,
+    NMEA_MSG_ID_GxGSA     = 9,
+    NMEA_MSG_ID_GxRMC     = 10,
+    NMEA_MSG_ID_GxZDA     = 11,
+    NMEA_MSG_ID_PASHR     = 12,
+    NMEA_MSG_ID_PSTRB     = 13,
+    NMEA_MSG_ID_INFO      = 14,
+    NMEA_MSG_ID_GxGSV     = 15,
+    NMEA_MSG_ID_GxVTG     = 16,
+    NMEA_MSG_ID_INTEL     = 17,
     NMEA_MSG_ID_COUNT,
 
 	// IMX/GPX Input Commands
