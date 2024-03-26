@@ -211,6 +211,7 @@ class LogInspectorWindow(QMainWindow):
         super(LogInspectorWindow, self).__init__()
         self.initMatPlotLib()
         self.configFilePath = configFilePath
+        self.exePath = __file__
 
         folder = os.path.dirname(self.configFilePath)
         if not os.path.exists(folder):
@@ -329,6 +330,9 @@ class LogInspectorWindow(QMainWindow):
         self.setWindowIcon(QIcon('assets/Magnifying_glass_icon.png'))
 
         self.controlLayout = QVBoxLayout()
+        self.controlWidget = QWidget(self)
+        self.controlWidget.setLayout(self.controlLayout)
+        
         self.createPlotSelection()
         self.createFileTree()
         self.createStatus()
@@ -341,8 +345,9 @@ class LogInspectorWindow(QMainWindow):
         self.figureLayout.addLayout(self.toolLayout)
         self.figureLayout.setStretchFactor(self.canvas, 1)
 
+
         layout = QHBoxLayout()
-        layout.addLayout(self.controlLayout)
+        layout.addWidget(self.controlWidget)
         layout.addLayout(self.figureLayout)
         layout.setStretch(1, 1)
         widget = QWidget()
@@ -497,10 +502,27 @@ class LogInspectorWindow(QMainWindow):
         # self.statusLabel.setVisible(str != "")     # Hide status if string is empty
         self.statusLabel.setText(str)
         QtCore.QCoreApplication.processEvents() # refresh UI
+        
+    def hideControl(self):
+        self.controlWidget.setVisible(not self.controlWidget.isVisible())
+        if self.controlWidget.isVisible():
+            self.hideControlButton.setText("Hide Panel")
+        else:
+            self.hideControlButton.setText("Show Panel")
+            
+    def newWindow(self):
+        subprocess.Popen([sys.executable,  self.exePath, self.config['directory']])
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
         self.toolLayout.addWidget(self.toolbar)
+
+        self.hideControlButton = QPushButton("Hide Panel")
+        self.hideControlButton.clicked.connect(self.hideControl)
+        self.toolLayout.addWidget(self.hideControlButton)
+        self.newWindwButton = QPushButton("New")
+        self.newWindwButton.clicked.connect(self.newWindow)
+        self.toolLayout.addWidget(self.newWindwButton)
 
         self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
