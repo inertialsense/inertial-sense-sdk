@@ -1684,6 +1684,33 @@ class logPlot:
             a.grid(True)
         self.saveFig(fig, 'altitude')
 
+    def barometer(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(3, 1, sharex=True)
+
+        self.configureSubplot(ax[0], 'Baro MSL', 'm')
+        self.configureSubplot(ax[1], 'Baro Temp', 'C')
+        self.configureSubplot(ax[2], 'Baro Humidity', '%%rH')
+        fig.suptitle('Barometer - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            if 1:
+                time = self.getData(d, DID_BAROMETER, 'time')
+                towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
+                if np.shape(towOffset)[0] != 0:
+                    time = time + towOffset[-1]
+                mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
+                barTemp = self.getData(d, DID_BAROMETER, 'barTemp')
+                humidity = self.getData(d, DID_BAROMETER, 'humidity')
+            ax[0].plot(time, mslBar, label=self.log.serials[d])
+            ax[1].plot(time, barTemp)
+            ax[2].plot(time, humidity)
+
+        ax[0].legend(ncol=2)
+        for a in ax:
+            a.grid(True)
+        self.saveFig(fig, 'barometer')
+
     def magnetometer(self, fig=None):
         if fig is None:
             fig = plt.figure()

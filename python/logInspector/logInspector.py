@@ -370,6 +370,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('IMU Accel', 'imuAcc')
         self.addListItem('PSD PQR', 'gyroPSD')
         self.addListItem('PSD Accel', 'accelPSD')
+        self.addListItem('Barometer', 'barometer')
         self.addListItem('Magnetometer', 'magnetometer')
         self.addListItem('Temp', 'temp')
 
