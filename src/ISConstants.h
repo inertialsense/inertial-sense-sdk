@@ -364,6 +364,7 @@ extern void vPortFree(void* pv);
 
 #ifndef STRINGIFY
 #define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 #endif
 
 #ifndef M_PI
