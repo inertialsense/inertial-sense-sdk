@@ -455,6 +455,22 @@ namespace ISFileManager {
         return path;
     }
 
+    /***
+     * Returns the current working directory as a std::string.
+     * @return Current working directory.
+    */
+    std::string CurrentWorkingDirectory()
+    {
+        char curdir[256] = { 0 };
+        if (_GETCWD(curdir, sizeof(curdir)) != nullptr)
+        {
+            return std::string(curdir);
+        }
+
+        // Error
+        return "";
+    }
+
     /**
      * Returns true if the specified path is consider an absolute path
      * @param path
@@ -481,11 +497,7 @@ namespace ISFileManager {
         std::string realPath = path;
         // first check if path is absolute
         if (!isPathAbsolute(path)) {
-            char curdir[256];
-            if (_GETCWD(curdir, sizeof(curdir)))
-            {   // Handle error
-            }
-            realPath = std::string(curdir) + path_seperator + path;
+            realPath = CurrentWorkingDirectory() + path_seperator + path;
         }
 
         auto pos = realPath.rfind(path_seperator);

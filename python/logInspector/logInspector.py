@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
     QTableWidget,QTableWidgetItem, QSpinBox, QCheckBox, QGroupBox, QListView, QStyle
 from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
+from PyQt5.QtCore import QItemSelectionModel
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -217,6 +218,7 @@ class LogInspectorWindow(QMainWindow):
         super(LogInspectorWindow, self).__init__()
         self.initMatPlotLib()
         self.configFilePath = configFilePath
+        self.exePath = __file__
 
         folder = os.path.dirname(self.configFilePath)
         if not os.path.exists(folder):
@@ -327,6 +329,7 @@ class LogInspectorWindow(QMainWindow):
         self.plotter.setDownSample(self.downsample)
         self.updatePlot()
         self.setStatus("")
+        self.expandAndSelectDirectory(directory)
 
     def setupUi(self):
         self.setObjectName("LogInspector")
@@ -335,6 +338,9 @@ class LogInspectorWindow(QMainWindow):
         self.setWindowIcon(QIcon('assets/Magnifying_glass_icon.png'))
 
         self.controlLayout = QVBoxLayout()
+        self.controlWidget = QWidget(self)
+        self.controlWidget.setLayout(self.controlLayout)
+        
         self.createPlotSelection()
         self.createFileTree()
         self.createStatus()
@@ -347,8 +353,9 @@ class LogInspectorWindow(QMainWindow):
         self.figureLayout.addLayout(self.toolLayout)
         self.figureLayout.setStretchFactor(self.canvas, 1)
 
+
         layout = QHBoxLayout()
-        layout.addLayout(self.controlLayout)
+        layout.addWidget(self.controlWidget)
         layout.addLayout(self.figureLayout)
         layout.setStretch(1, 1)
         widget = QWidget()
@@ -366,6 +373,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('Vel UVW', 'velUVW')
         self.addListItem('Attitude', 'attitude')
         self.addListItem('Altitude', 'altitude')
+        self.addListItem('Climb Rate', 'climbRate')
         self.addListItem('Heading', 'heading')
         self.addListItem('INS Status', 'insStatus')
         self.addListItem('HDW Status', 'hdwStatus')
@@ -376,6 +384,7 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('IMU Accel', 'imuAcc')
         self.addListItem('PSD PQR', 'gyroPSD')
         self.addListItem('PSD Accel', 'accelPSD')
+        self.addListItem('Barometer', 'barometer')
         self.addListItem('Magnetometer', 'magnetometer')
         self.addListItem('Temp', 'temp')
 
@@ -503,10 +512,27 @@ class LogInspectorWindow(QMainWindow):
         # self.statusLabel.setVisible(str != "")     # Hide status if string is empty
         self.statusLabel.setText(str)
         QtCore.QCoreApplication.processEvents() # refresh UI
+        
+    def hideControl(self):
+        self.controlWidget.setVisible(not self.controlWidget.isVisible())
+        if self.controlWidget.isVisible():
+            self.hideControlButton.setText("Hide Panel")
+        else:
+            self.hideControlButton.setText("Show Panel")
+            
+    def newWindow(self):
+        subprocess.Popen([sys.executable,  self.exePath, self.config['directory']])
 
     def createBottomToolbar(self):
         self.toolLayout = QHBoxLayout()
         self.toolLayout.addWidget(self.toolbar)
+
+        self.hideControlButton = QPushButton("Hide Panel")
+        self.hideControlButton.clicked.connect(self.hideControl)
+        self.toolLayout.addWidget(self.hideControlButton)
+        self.newWindowButton = QPushButton("New Window")
+        self.newWindowButton.clicked.connect(self.newWindow)
+        self.toolLayout.addWidget(self.newWindowButton)
 
         self.toolLayout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # self.toolLayout.addWidget(QSpacerItem(150, 10, QSizePolicy.Expanding))
@@ -591,6 +617,17 @@ class LogInspectorWindow(QMainWindow):
         self.dirModel.setRootPath(self.config["logs_directory"])
         self.fileTree.setRootIndex(self.dirModel.index(self.config['logs_directory']))
 
+    def expandAndSelectDirectory(self, directory):
+        # Find the index for the folder
+        index = self.dirModel.index(directory)
+        # Expand the tree view to this folder
+        self.fileTree.expand(index)
+        # Select the folder
+        self.fileTree.setCurrentIndex(index)
+        self.fileTree.selectionModel().select(index, QItemSelectionModel.Select)        
+        # Scroll to the selected item
+        self.fileTree.scrollTo(index)
+        
     def populateRMSCheck(self, directory):
         for subdir in os.listdir(directory):
             path = os.path.join(directory, subdir)
