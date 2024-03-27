@@ -2802,6 +2802,9 @@ typedef struct PACKED
 	/** Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection. */
 	float                   magInterferenceThreshold;
 
+	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
+	float                   magCalibrationQualityThreshold;
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
