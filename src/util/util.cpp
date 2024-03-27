@@ -11,6 +11,11 @@
 #include <chrono>
 #include <cstring>
 
+#include <memory>
+#include <string>
+#include <stdexcept>
+
+
 namespace utils {
 
     std::string getCurrentTimestamp() {
