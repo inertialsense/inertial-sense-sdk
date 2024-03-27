@@ -57,6 +57,8 @@ namespace ISFileManager
     // get just the parent/base path from a path
     std::string GetParentDirectory(const std::string& path);
 
+    // get the current working directory
+    std::string CurrentWorkingDirectory();
 
     /**
      * Returns true if the specified path is consider an absolute path
