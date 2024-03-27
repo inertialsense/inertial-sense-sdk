@@ -298,40 +298,40 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         }
     }
 
-    if (g_commandLineOptions.flashCfg.length() != 0)
+    if (g_commandLineOptions.imxFlashCfg.length() != 0)
     {
         unsigned int startMs = current_timeMs();
-        while(!inertialSenseInterface.FlashConfigSynced())
+        while(!inertialSenseInterface.ImxFlashConfigSynced())
         {   // Request and wait for flash config
             inertialSenseInterface.Update();
             SLEEP_MS(100);
 
             if (current_timeMs() - startMs > 3000)
             {   // Timeout waiting for flash config
-                cout << "Failed to read flash config!" << endl;
+                cout << "Failed to read IMX flash config!" << endl;
                 return false;
             }
         }
 
-        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
+        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG);
     }
 
     if (g_commandLineOptions.gpxFlashCfg.length() != 0)
     {
         unsigned int startMs = current_timeMs();
-        while(!inertialSenseInterface.FlashConfigSynced())
+        while(!inertialSenseInterface.GpxFlashConfigSynced())
         {   // Request and wait for flash config
             inertialSenseInterface.Update();
             SLEEP_MS(100);
 
             if (current_timeMs() - startMs > 3000)
             {   // Timeout waiting for flash config
-                cout << "Failed to read flash config!" << endl;
+                cout << "Failed to read GPX flash config!" << endl;
                 return false;
             }
         }
 
-        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
+        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg, DID_GPX_FLASH_CFG);
     }
 
     return true;
@@ -536,9 +536,14 @@ static int cltool_createHost()
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;
     }
-    else if (g_commandLineOptions.flashCfg.length() != 0 && !cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg))
+    else if (g_commandLineOptions.imxFlashCfg.length() != 0 && !cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG))
     {
-        cout << "Failed to update flash config" << endl;
+        cout << "Failed to update IMX flash config" << endl;
+        return -1;
+    }
+    else if (g_commandLineOptions.gpxFlashCfg.length() != 0 && !cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.gpxFlashCfg, DID_GPX_FLASH_CFG))
+    {
+        cout << "Failed to update GPX flash config" << endl;
         return -1;
     }
     else if (!inertialSenseInterface.CreateHost(g_commandLineOptions.baseConnection))

@@ -84,7 +84,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	std::string roverConnection; 			// -rover=type:IP/URL:port:mountpoint:user:password   (server)
 	std::string baseConnection; 			// -base=IP:port    (client)	
 	
-	std::string flashCfg;
+	std::string imxFlashCfg;
 	std::string gpxFlashCfg;
 	uint32_t timeoutFlushLoggerSeconds;
 	uint32_t outputOnceDid;	
@@ -113,7 +113,7 @@ void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
 void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
 void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
-bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
+bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg, uint32_t did); // true if should continue
 
 #endif // __CLTOOL_H__
 

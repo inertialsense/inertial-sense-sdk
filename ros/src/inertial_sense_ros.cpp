@@ -428,7 +428,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     CONFIG_STREAM(rs_.inl2_states, DID_INL2_STATES, inl2_states_t, INL2_states_callback);
 
     nvm_flash_cfg_t flashCfg;
-    IS_.FlashConfig(flashCfg);
+    IS_.ImxFlashConfig(flashCfg);
     if (!NavSatFixConfigured)
     {
         if (rs_.gps1_navsatfix.enabled) {
@@ -625,7 +625,7 @@ void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
-    IS_.FlashConfig(current_flash_cfg);
+    IS_.ImxFlashConfig(current_flash_cfg);
     //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
@@ -2068,7 +2068,7 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.FlashConfig(current_flash);
+    IS_.ImxFlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
@@ -2103,7 +2103,7 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Req
 
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.FlashConfig(current_flash);
+    IS_.ImxFlashConfig(current_flash);
     while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
     {
         comManagerStep();
