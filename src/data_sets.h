@@ -1800,7 +1800,8 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
-                                        | RMC_BITS_RTK_PHASE_RESIDUAL)
+                                        | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_IS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
                                         | RMC_BITS_GROUND_VEHICLE)
@@ -4618,16 +4619,14 @@ typedef struct ISEvent
 {
     /** Serial number */
     uint32_t        senderSN;
+    uint32_t        res32;
  
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
 	uint16_t        senderHdwrType;
     uint16_t        res16;
 
-    uint32_t        res32;
-
     uint8_t         protocol;
     uint8_t         length;
-    uint16_t        checksum;
     
     uint8_t data[ISEvent_MAX_SIZE];
 }ISEvent_t;
