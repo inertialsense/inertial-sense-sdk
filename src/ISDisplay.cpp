@@ -1582,6 +1582,12 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	return buf;
 }
 
+/**
+ * Formats the specified DID (of type gpx_statys_t) into primary components
+ * @param gpxStatus the parsed DID struct to display
+ * @param hdr the DID header
+ * @return returns a fully formatted string
+ */
 string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr)
 {
     (void)hdr;
@@ -1606,6 +1612,13 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
     return buf;
 }
 
+/**
+ * Formats the specified DID (of type debug_array_t) into its array components of
+ * 9 integers, 9 floats, and 3 doubles.
+ * @param debug the parsed DID struct to display
+ * @param hdr the DID header
+ * @return returns a fully formatted string
+ */
 string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr)
 {
     (void)hdr;
@@ -1641,6 +1654,14 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
     return buf;
 }
 
+/**
+ * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
+ * otherwise supported.
+ * @param raw_data a pointer to the raw DID byte stream
+ * @param hdr the DID header
+ * @param bytesPerLine the number of hexadecimal bytes to print per line.
+ * @return returns a fully formatted string
+ */
 string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine)
 {
     (void)hdr;
