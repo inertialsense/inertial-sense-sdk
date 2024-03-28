@@ -614,7 +614,7 @@ static void nmea_latToDegMin(char* a, int aSize, int &offset, double v)
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	offset += ssnprintf(a, aSize, ",%02d%08.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'N' : 'S'));
+	offset += ssnprintf(a, aSize, ",%02d%08.5lf,%c", abs(degrees), fabs(minutes), (v >= 0 ? 'N' : 'S'));
 }
 
 static void nmea_lonToDegMin(char* a, int aSize, int &offset, double v)
@@ -624,7 +624,7 @@ static void nmea_lonToDegMin(char* a, int aSize, int &offset, double v)
 	int degrees = (int)(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
-	offset += ssnprintf(a, aSize, ",%03d%08.5lf,%c", abs(degrees), fabs(minutes), (degrees >= 0 ? 'E' : 'W'));
+	offset += ssnprintf(a, aSize, ",%03d%08.5lf,%c", abs(degrees), fabs(minutes), (v >= 0 ? 'E' : 'W'));
 }
 
 static void nmea_GPSTimeToUTCTime(char* a, int aSize, int &offset, gps_pos_t &pos)
