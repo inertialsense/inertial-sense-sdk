@@ -1639,6 +1639,35 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
     return buf;
 }
 
+string cInertialSenseDisplay::DataToStringRawHex(const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    ");
+    int lines = hdr.size / 16;
+    for (int j = 0; j < lines; j++) {
+        for (int i = 0; i < 16; i++) {
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
+        }
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    }
+
+
+    return buf;
+}
+
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT	"%22s "
 
