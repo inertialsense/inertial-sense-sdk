@@ -117,6 +117,8 @@ public:
 	static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
 	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+    std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
+    std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
 	std::string DataToStringGeneric(const p_data_t* data);
 	static void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
 

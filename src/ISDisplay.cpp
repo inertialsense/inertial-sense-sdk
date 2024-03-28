@@ -636,6 +636,9 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
 	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);  break;
 	case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr); break;
+    case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr); break;
+    case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr); break;
+    case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr); break;
 	default:
 #if 0	// List all DIDs 
 		char buf[128];
@@ -1577,6 +1580,64 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	return buf;
 }
 
+string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", gpxStatus.timeOfWeekMs / 1000.0);
+#endif
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1RunState: %d, gnss2RunState: %d, mcuTemp: %0.3lf\n",
+                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnss1RunState, gpxStatus.gnss2RunState, gpxStatus.mcuTemp
+    );
+
+    return buf;
+}
+
+string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
+    for (int i = 0; i < 9; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
+    }
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
+    for (int i = 0; i < 9; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
+    }
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
+    for (int i = 0; i < 3; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
+    }
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+
+    return buf;
+}
 
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT	"%22s "
