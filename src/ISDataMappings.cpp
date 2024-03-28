@@ -3150,7 +3150,8 @@ double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf
             if (timeStampField->dataType == DataTypeDouble)
             {
                 // field is seconds, use as is
-                return *(double*)ptr;
+                double secVal = (*(double*)ptr);  // This seems a little weird, but this is necessary to work around compiler/pointer alignment issues on armv7
+                return secVal;
             }
             else if (timeStampField->dataType == DataTypeUInt32)
             {
