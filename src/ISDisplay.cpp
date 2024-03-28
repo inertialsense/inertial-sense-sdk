@@ -640,6 +640,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
     case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr); break;
     case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr); break;
 	default:
+        if (m_showRawHex)
+            str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
 #if 0	// List all DIDs 
 		char buf[128];
 		SNPRINTF(buf, sizeof(buf), "(%d) %s \n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
@@ -1639,14 +1641,14 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
     return buf;
 }
 
-string cInertialSenseDisplay::DataToStringRawHex(const p_data_hdr_t& hdr)
+string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine)
 {
     (void)hdr;
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s (RAW):", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };
@@ -1655,15 +1657,16 @@ string cInertialSenseDisplay::DataToStringRawHex(const p_data_hdr_t& hdr)
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    ");
-    int lines = hdr.size / 16;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    int lines = hdr.size / bytesPerLine;
     for (int j = 0; j < lines; j++) {
-        for (int i = 0; i < 16; i++) {
-            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
+        int linelen = (j == lines-1) ? hdr.size % bytesPerLine : bytesPerLine;
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t");
+        for (int i = 0; i < linelen; i++) {
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "%02x ", (uint8_t)raw_data[(j * bytesPerLine) + i]);
         }
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
     }
-
 
     return buf;
 }
