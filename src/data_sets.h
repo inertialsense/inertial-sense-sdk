@@ -5031,6 +5031,9 @@ typedef union PACKED
     rmc_t					rmc;
     evb_status_t			evbStatus;
     infield_cal_t			infieldCal;
+    gpx_status_t            gpxStatus;
+    debug_array_t           imxDebugArray;
+    debug_array_t           gpxDebugArray;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
