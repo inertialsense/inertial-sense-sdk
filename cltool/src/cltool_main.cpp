@@ -136,10 +136,13 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-    if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
-    {
-        return;
+    if (g_commandLineOptions.outputOnceDid) {
+        if (data->hdr.id != g_commandLineOptions.outputOnceDid)
+            return;
+        g_inertialSenseDisplay.showRawData(true);
     }
+
+
     (void)i;
     (void)pHandle;
 

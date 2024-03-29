@@ -66,7 +66,8 @@ public:
 	~cInertialSenseDisplay();
 
 	void SetDisplayMode(eDisplayMode mode) { m_displayMode = mode; };
-	eDisplayMode GetDisplayMode() { return m_displayMode; }
+	eDisplayMode GetDisplayMode() { return m_displayMode; };
+    void showRawData(bool enable) { m_showRawHex = enable; };
 	void ShowCursor(bool visible);
 	void ShutDown();
 	void Clear(void);
@@ -117,6 +118,9 @@ public:
 	static std::string DataToStringDevInfo(const dev_info_t &info, bool full=false);
 	std::string DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t& hdr);
 	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
+    std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
+    std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
+    std::string DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 	std::string DataToStringGeneric(const p_data_t* data);
 	static void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
 
@@ -146,6 +150,7 @@ private:
 	edit_data_t m_editData = {};
 	uint32_t m_outputOnceDid = 0;			// Set to DID to display then exit cltool.  0 = disabled
 	bool m_interactiveMode = true;
+    bool m_showRawHex = false;
 
 	struct sDidStats
 	{

@@ -3180,6 +3180,9 @@ typedef struct PACKED
 	/** Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection. */
 	float                   magInterferenceThreshold;
 
+	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
+	float                   magCalibrationQualityThreshold;
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
@@ -4291,7 +4294,7 @@ typedef struct
     uint32_t                gnss2RunState;
 
     /** port */
-    uint8_t                gpxSourcePort;
+    uint8_t                 gpxSourcePort;
 } gpx_status_t;
 
 
@@ -5062,6 +5065,9 @@ typedef union PACKED
     rmc_t					rmc;
     evb_status_t			evbStatus;
     infield_cal_t			infieldCal;
+    gpx_status_t            gpxStatus;
+    debug_array_t           imxDebugArray;
+    debug_array_t           gpxDebugArray;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
