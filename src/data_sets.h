@@ -4289,7 +4289,7 @@ typedef struct
     uint32_t                gnss2RunState;
 
     /** port */
-    uint8_t                gpxSourcePort;
+    uint8_t                 gpxSourcePort;
 } gpx_status_t;
 
 
