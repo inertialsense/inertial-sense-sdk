@@ -134,7 +134,7 @@ typedef uint32_t eDataIDs;
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
-#define DID_IS_EVENT                    (eDataIDs)119 /** INTERNAL USE ONLY (ISEvent_t)*/
+#define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (DID_Event_t)*/
 
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
@@ -1771,7 +1771,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 
-#define RMC_BITS_IS_EVENT               0x0800000000000000
+#define RMC_BITS_EVENT               0x0800000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -1807,7 +1807,7 @@ typedef struct PACKED
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
                                         | RMC_BITS_RTK_PHASE_RESIDUAL \
-                                        | RMC_BITS_IS_EVENT)
+                                        | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
                                         | RMC_BITS_GROUND_VEHICLE)
@@ -4614,17 +4614,15 @@ typedef struct
         
 } port_monitor_t;
 
-#define ISEvent_MAX_SIZE 64
+#define EVENT_MAX_SIZE 64
 
-enum ISEventProtocol// make this uint8!!!
+enum DID_EventProtocol// make this uint8!!!
 {
-    ISEventProtocol_byte    = 1,
-    ISEventProtocol_ASCII   = 2,
-
-    ISEventProtocol_EPH     = 250,
+    DID_EventProtocol_byte    = 1,
+    DID_EventProtocol_ASCII   = 2,
 };
 
-typedef struct ISEvent
+typedef struct DID_Event
 {
     /** Serial number */
     uint32_t        senderSN;
@@ -4634,11 +4632,11 @@ typedef struct ISEvent
 	uint16_t        senderHdwrType;
     uint16_t        res16;
 
-    uint8_t         protocol;
-    uint8_t         length;
+    uint16_t        protocol;
+    uint16_t        length;
     
-    uint8_t data[ISEvent_MAX_SIZE];
-}ISEvent_t;
+    uint8_t data[EVENT_MAX_SIZE];
+}DID_Event_t;
 
 
 /**
