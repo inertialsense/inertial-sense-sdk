@@ -246,6 +246,28 @@ private:
 	const data_info_t* m_timestampFields[DID_COUNT];
 	map_name_to_info_t m_lookupInfo[DID_COUNT];
 
+    #define PROTECT_UNALIGNED_ASSIGNS
+    template<typename T>
+    static inline void protectUnalignedAssign(void* out, T in) {
+    #ifdef PROTECT_UNALIGNED_ASSIGNS
+        memcpy((void*)out, (void*)&in, sizeof(T));
+    #else
+        *(T*)out = in;
+    #endif
+    }
+
+    template<typename T>
+    static inline T protectUnalignedAssign(void* in) {
+    #ifdef PROTECT_UNALIGNED_ASSIGNS
+        T out;
+        memcpy((void*)&out, in, sizeof(T));
+        return out;
+    #else
+        return *(T*)in;
+    #endif
+    }
+
+
 #if PLATFORM_IS_EMBEDDED
 
 	// on embedded we cannot new up C++ runtime until after free rtos has started

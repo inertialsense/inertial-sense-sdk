@@ -264,6 +264,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-flashCfg="))
         {
             g_commandLineOptions.flashCfg = &a[10];
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
         }
         else if (startsWith(a, "-flashCfg"))
         {
@@ -647,7 +648,17 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
         {
             vector<string> keyAndValue;
             splitString(keyValues[i], '=', keyAndValue);
-            if (keyAndValue.size() == 2)
+            if (keyAndValue.size() == 1) {
+                // read flash config and display only the selected values
+                data_mapping_string_t stringBuffer;
+                for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
+                {
+                    if ((i->second.name == keyAndValue[0]) && (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashCfg, stringBuffer)))
+                    {
+                        cout << i->second.name << " = " << stringBuffer << endl;
+                    }
+                }
+            } else if (keyAndValue.size() == 2)
             {
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
                 {
