@@ -801,17 +801,55 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     // Copy flash config
     flashCfg = device.flashCfg;
 
-    // Indicate whether flash config is sychronized
+    // Indicate whether flash config is synchronized
     return device.sysParams.flashCfgChecksum == device.flashCfg.checksum;
 }
 
-int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
         return 0;
     }
     is_device_t &device = m_comManagerState.devices[pHandle];
+
+#define FLASH_CFG_DATA_OFFSET_FIRST offsetof(nvm_flash_cfg_t, startupImuDtMs)
+#define FLASH_CFG_DATA_OFFSET_LAST  offsetof(nvm_flash_cfg_t, magCalibrationQualityThreshold)
+    
+    bool failure = false;
+    uint8_t *start = (uint8_t*)&flashCfg;
+    uint8_t *head = NULL;
+    uint8_t *tail = NULL;
+
+    // Upload only segments of mismatched data
+    for (unsigned int offset=FLASH_CFG_DATA_OFFSET_FIRST; offset<=FLASH_CFG_DATA_OFFSET_LAST; offset++)
+    {
+        uint8_t *newCfg = offset+(uint8_t*)&flashCfg;
+        uint8_t *curCfg = offset+(uint8_t*)&device.flashCfg; 
+
+        
+        if (head == NULL)
+        {   // Find segment start
+            if (*newCfg != *curCfg)
+            {   // Found start of mismatch segment
+                head = newCfg;
+            }
+        }
+        else
+        {   // Find segment end
+            if (*newCfg == *curCfg)
+            {
+                tail = newCfg;
+                failure = failure || comManagerSendData(pHandle, head, DID_FLASH_CONFIG, tail-head, tail-start);
+                head = NULL;
+            }
+        }
+    }
+
+    if (head)
+    {   // Upload remaining segment
+        failure = failure || comManagerSendData(pHandle, head, DID_FLASH_CONFIG, tail-head, tail-start);
+    }
 
     // Update checksum
     flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
@@ -820,8 +858,8 @@ int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
     device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
 
-    // [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-    return comManagerSendData(pHandle, &device.flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
+    // Success?
+    return !failure;
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)

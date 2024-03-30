@@ -401,9 +401,9 @@ public:
     * Set the flash config and update flash config on the uINS flash memory
     * @param flashCfg the flash config
     * @param pHandle the pHandle to set flash config for
-    * @return int number bytes sent
+    * @return true if success
     */
-    int SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
