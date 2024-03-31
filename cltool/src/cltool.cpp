@@ -591,14 +591,17 @@ void cltool_outputUsage()
 	cout << "    -rp " << boldOff << "PATH        Replay data log from PATH" << endlbOn;
 	cout << "    -rs=" << boldOff << "SPEED       Replay data log at x SPEED. SPEED=0 runs as fast as possible." << endlbOn;
 	cout << endlbOn;
-	cout << "OPTIONS (Read or write flash configuration from command line)" << endl;
-	cout << "    -flashCfg" << boldOff << "       List all IMX \"keys\" and \"values\"" << endlbOn;
-	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\" " << boldOff <<  endlbOn;
-	cout << "        " << boldOff << "            Set key / value pairs in flash config. Surround with \"quotes\" when using pipe operator." << endlbOn;
+	cout << "OPTIONS (Read flash configuration from command line)" << endl;
+	cout << "    -flashCfg" << boldOff  <<  "                                   # List all \"keys\" and \"values\"" << endlbOn;
+	cout << "   \"-flashCfg=[key]|[key]|[key]\"" << boldOff << "                # List select values" <<  endlbOn;
+	cout << endl;
+	cout << "OPTIONS (Write flash configuration from command line)" << endl;
+	cout << "   \"-flashCfg=[key]=[value]|[key]=[value]\"" << boldOff << "      # Set key / value pairs in flash config. " << endlbOn;
+	cout << "        " << boldOff <<   "                                        # Surround with \"quotes\" when using pipe operator." << endlbOn;
 	cout << "EXAMPLES" << endlbOn;
 	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg  " << boldOff << "# Read from device and print all keys and values" << endlbOn;
-	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " -flashCfg=insRotation[0]=1.5708|insOffset[1]=1.2  " << boldOff << endlbOn;
-	cout << "     " << boldOff << "                             # Set multiple flashCfg values" << endlbOn;
+	cout << "    " << APP_NAME << APP_EXT << " -c " << EXAMPLE_PORT << " \"-flashCfg=insOffset[1]=1.2|=ser2BaudRate=115200\"  " << boldOff << "# Set multiple values" << endlbOn;
+	cout << endl;
 	cout << "OPTIONS (RTK Rover / Base)" << endlbOn;
 	cout << "    -rover=" << boldOff << "[type]:[IP or URL]:[port]:[mountpoint]:[username]:[password]" << endl;
 	cout << "        As a rover (client), receive RTK corrections.  Examples:" << endl;
@@ -623,13 +626,14 @@ void cltool_outputHelp()
 
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
+    inertialSenseInterface.WaitForFlashSynced();
+
     nvm_flash_cfg_t flashCfg;
     inertialSenseInterface.FlashConfig(flashCfg);
     const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
 
     if (flashCfgString.length() < 2)
-    {
-        // read flash config and display
+    {   // Display entire flash config
         data_mapping_string_t stringBuffer;
         cout << "Current flash config" << endl;
         for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
@@ -643,13 +647,15 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
     else
     {
         vector<string> keyValues;
+        bool modified = false;
+
         splitString(flashCfgString, '|', keyValues);
         for (size_t i = 0; i < keyValues.size(); i++)
         {
             vector<string> keyAndValue;
             splitString(keyValues[i], '=', keyAndValue);
-            if (keyAndValue.size() == 1) {
-                // read flash config and display only the selected values
+            if (keyAndValue.size() == 1) 
+            {   // Display only select flash config values
                 data_mapping_string_t stringBuffer;
                 for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
                 {
@@ -658,11 +664,12 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                         cout << i->second.name << " = " << stringBuffer << endl;
                     }
                 }
-            } else if (keyAndValue.size() == 2)
-            {
+            } 
+            else if (keyAndValue.size() == 2)
+            {   // Set select flash config values
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
                 {
-                    cout << "Unrecognized flash config key '" << keyAndValue[0] << "' specified, ignoring." << endl;
+                    cout << "Unrecognized DID_FLASH_CONFIG key '" << keyAndValue[0] << "' specified, ignoring." << endl;
                 }
                 else
                 {
@@ -671,12 +678,20 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                     int substrIndex = 2 * (radix == 16); // skip 0x for hex
                     const string& str = keyAndValue[1].substr(substrIndex);
                     cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, radix);
-                    cout << "Updated flash config key '" << keyAndValue[0] << "' to '" << keyAndValue[1].c_str() << "'" << endl;
+                    cout << "Setting DID_FLASH_CONFIG." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
+                    modified = true;
                 }
             }
         }
-        inertialSenseInterface.SetFlashConfig(flashCfg);
+
+        if (modified)
+        {
+            inertialSenseInterface.SetFlashConfig(flashCfg);
+        }
     }
+
+    // Check that upload completed
+    inertialSenseInterface.WaitForFlashSynced();
 
     return false;
 }

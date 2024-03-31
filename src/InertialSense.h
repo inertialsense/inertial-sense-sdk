@@ -395,7 +395,7 @@ public:
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized.
     */
-    bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfg.checksum == device.sysParams.flashCfgChecksum; }
+    bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && (device.flashCfgUploadTimeMs==0); }
 
     /**
     * Set the flash config and update flash config on the uINS flash memory
@@ -404,6 +404,13 @@ public:
     * @return true if success
     */
     bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+
+    /**
+     * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
+     * 
+     * @return false When failed to synchronize
+     */
+    bool WaitForFlashSynced();
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
