@@ -791,7 +791,15 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
                     if (device.flashCfgUploadTimeMs)
                     {   // Upload complete.  Allow sync.
                         device.flashCfgUploadTimeMs = 0;
-                        printf("DID_FLASH_CONFIG upload complete.\n");
+
+                        if (device.flashCfgUploadChecksum == device.sysParams.flashCfgChecksum)
+                        {
+                            printf("DID_FLASH_CONFIG upload complete.\n");
+                        }
+                        else
+                        {
+                            printf("DID_FLASH_CONFIG upload rejected.\n");
+                        }
                     }
                 }
                 else
@@ -860,10 +868,13 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 
     // Update checksum
     flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    if (device.flashCfgUploadTimeMs)
+    {
+        device.flashCfgUploadChecksum = flashCfg.checksum;
+    }
 
     // Update local copy of flash config
     device.flashCfg = flashCfg;
-    device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
 
     // Success
     return !failure;
@@ -884,7 +895,7 @@ bool InertialSense::WaitForFlashSynced()
         }
     }
 
-    return true;
+    return FlashConfigSynced();
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)

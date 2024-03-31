@@ -142,6 +142,7 @@ public:
         system_command_t sysCmd;
         nvm_flash_cfg_t flashCfg;
         unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+        uint32_t flashCfgUploadChecksum;
         sys_params_t sysParams;
         is_fwUpdate_info_t fwUpdate;
     } is_device_t;
@@ -395,7 +396,20 @@ public:
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized.
     */
-    bool FlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && (device.flashCfgUploadTimeMs==0); }
+    bool FlashConfigSynced(int pHandle = 0) 
+    { 
+        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
+                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
+    }
+
+    /**
+     * @brief Failed to upload flash configuration for any reason.   
+     * 
+     * @param pHandle the port pHandle to get flash config for
+     * @return true Flash config upload was either not received or rejected.
+     */
+    bool FlashConfigUploadFailure(int pHandle = 0){ is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); } 
 
     /**
     * Set the flash config and update flash config on the uINS flash memory

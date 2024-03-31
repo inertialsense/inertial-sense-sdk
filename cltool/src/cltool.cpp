@@ -685,13 +685,14 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
         }
 
         if (modified)
-        {
+        {   // Upload flash config
             inertialSenseInterface.SetFlashConfig(flashCfg);
+
+            // Check that upload completed
+            inertialSenseInterface.WaitForFlashSynced();
         }
     }
 
-    // Check that upload completed
-    inertialSenseInterface.WaitForFlashSynced();
 
     return false;
 }

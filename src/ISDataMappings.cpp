@@ -2829,13 +2829,25 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
     switch (dataType)
     {
     case DataTypeInt8:
+        protectUnalignedAssign<int8_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
+        break;
+
     case DataTypeInt16:
+        protectUnalignedAssign<int16_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
+        break;
+
     case DataTypeInt32:
         protectUnalignedAssign<int32_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
         break;
 
-        case DataTypeUInt8:
+    case DataTypeUInt8:
+        protectUnalignedAssign<uint8_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
+        break;
+
     case DataTypeUInt16:
+        protectUnalignedAssign<uint16_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
+        break;
+
     case DataTypeUInt32:
         protectUnalignedAssign<uint32_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
         break;
