@@ -2824,49 +2824,36 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     return StringToVariable(stringBuffer, stringLength, ptr, info.dataType, info.dataSize, radix, json);
 }
 
-
 bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
 {
     switch (dataType)
     {
     case DataTypeInt8:
-        *(int8_t*)dataBuffer = (int8_t)strtol(stringBuffer, NULL, radix);
-        break;
-
-    case DataTypeUInt8:
-        *(uint8_t*)dataBuffer = (uint8_t)strtoul(stringBuffer, NULL, radix);
-        break;
-
     case DataTypeInt16:
-        *(int16_t*)dataBuffer = (int16_t)strtol(stringBuffer, NULL, radix);
-        break;
-
-    case DataTypeUInt16:
-        *(uint16_t*)dataBuffer = (uint16_t)strtoul(stringBuffer, NULL, radix);
-        break;
-
     case DataTypeInt32:
-        *(int32_t*)dataBuffer = (int32_t)strtol(stringBuffer, NULL, radix);
+        protectUnalignedAssign<int32_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
         break;
 
+        case DataTypeUInt8:
+    case DataTypeUInt16:
     case DataTypeUInt32:
-        *(uint32_t*)dataBuffer = (uint32_t)strtoul(stringBuffer, NULL, radix);
+        protectUnalignedAssign<uint32_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt64:
-        *(int64_t*)dataBuffer = (int64_t)strtoll(stringBuffer, NULL, radix);
+        protectUnalignedAssign<int64_t>((void*)dataBuffer, strtoll(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt64:
-        *(uint64_t*)dataBuffer = (uint64_t)strtoull(stringBuffer, NULL, radix);
+        protectUnalignedAssign<uint64_t>((void*)dataBuffer, strtoull(stringBuffer, NULL, radix));
         break;
 
     case DataTypeFloat:
-        *(float*)dataBuffer = strtof(stringBuffer, NULL);
+        protectUnalignedAssign<float>((void*)dataBuffer, strtod(stringBuffer, NULL));
         break;
 
     case DataTypeDouble:
-        *(double*)dataBuffer = strtod(stringBuffer, NULL);
+        protectUnalignedAssign<double>((void*)dataBuffer, strtod(stringBuffer, NULL));
         break;
 
     case DataTypeString:
@@ -3131,8 +3118,7 @@ double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf
             if (timeStampField->dataType == DataTypeDouble)
             {
                 // field is seconds, use as is
-                double secVal = (*(double*)ptr);  // This seems a little weird, but this is necessary to work around compiler/pointer alignment issues on armv7
-                return secVal;
+                return protectUnalignedAssign<double>((void *)ptr);
             }
             else if (timeStampField->dataType == DataTypeUInt32)
             {
