@@ -4624,9 +4624,11 @@ enum DID_EventProtocol// make this uint8!!!
 
 typedef struct DID_Event
 {
+    /** Time */
+    uint32_t        timeMs;
+
     /** Serial number */
     uint32_t        senderSN;
-    uint32_t        res32;
  
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
 	uint16_t        senderHdwrType;
