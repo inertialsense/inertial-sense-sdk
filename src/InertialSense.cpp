@@ -910,7 +910,7 @@ bool InertialSense::WaitForFlashSynced()
         }
         else
         {   // Query DID_SYS_PARAMS
-    		comManagerSendDataNoAck(USB_PORT_NUM, &g_sysParams, DID_SYS_PARAMS, sizeof(sys_params_t), 0);
+            
             DEBUG_PRINT("Waiting for flash sync...\n");
         }
     }
