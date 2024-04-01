@@ -134,7 +134,7 @@ typedef uint32_t eDataIDs;
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
-#define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (DID_Event_t)*/
+#define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
 
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
@@ -4638,10 +4638,10 @@ typedef struct DID_Event
     uint16_t        length;
     
     uint8_t data[EVENT_MAX_SIZE];
-}DID_Event_t;
+}did_event_t;
 
 
-#define DID_EVENT_HEADER_SZ                             (sizeof(DID_Event_t) - EVENT_MAX_SIZE)
+#define DID_EVENT_HEADER_SZ                             (sizeof(did_event_t) - EVENT_MAX_SIZE)
 
 
 /**

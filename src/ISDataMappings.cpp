@@ -159,7 +159,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
     sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
-    sizeMap[DID_EVENT] = sizeof(DID_Event_t);
+    sizeMap[DID_EVENT] = sizeof(did_event_t);
 
     sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
@@ -1071,7 +1071,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 */
 static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
 {
-     typedef DID_Event_t MAP_TYPE;
+     typedef did_event_t MAP_TYPE;
     map_name_to_info_t& m = mappings[DID_EVENT];
     uint32_t totalSize = 0;
 
