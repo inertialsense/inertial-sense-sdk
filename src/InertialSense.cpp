@@ -873,6 +873,9 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
         printf("DID_FLASH_CONFIG in sync.  No upload.\n");
     }
 
+    // Exclude from the checksum update the following which does not get saved in the flash config
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
     // Update checksum
     flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
     if (device.flashCfgUploadTimeMs)
