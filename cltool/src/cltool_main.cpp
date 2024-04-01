@@ -302,19 +302,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.flashCfg.length() != 0)
     {
-        unsigned int startMs = current_timeMs();
-        while(!inertialSenseInterface.FlashConfigSynced())
-        {   // Request and wait for flash config
-            inertialSenseInterface.Update();
-            SLEEP_MS(100);
-
-            if (current_timeMs() - startMs > 3000)
-            {   // Timeout waiting for flash config
-                cout << "Failed to read flash config!" << endl;
-                return false;
-            }
-        }
-
         return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
     }
     return true;
