@@ -716,14 +716,13 @@ void InertialSense::SoftwareReset()
     }
 }
 
-// void InertialSense::GetData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
-// {
-//     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-//     {
-//         comManagerGetData((int)i, dataId, length, offset, 0);
-//         // comManagerGetData( m_portHdl, DID_DEV_INFO, 0, 0, 0 );
-//     }
-// }
+void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
+{
+    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    {
+        comManagerGetData((int)i, dataId, length, offset, 0);
+    }
+}
 
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
@@ -910,7 +909,7 @@ bool InertialSense::WaitForFlashSynced()
         }
         else
         {   // Query DID_SYS_PARAMS
-            
+            GetData(DID_SYS_PARAMS);
             DEBUG_PRINT("Waiting for flash sync...\n");
         }
     }

@@ -324,6 +324,16 @@ public:
     void SoftwareReset();
 
     /**
+     * @brief Request a specific data set by DID.
+     * 
+     * @param dataId Data set ID  
+     * @param length Byte length of data requested.  Zero means entire data set.
+     * @param offset Byte offset into data
+     * @param period Broadcast period multiple
+     */
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
+
+    /**
     * Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
     * @param dataId the data id of the data to send
     * @param data the data to send
