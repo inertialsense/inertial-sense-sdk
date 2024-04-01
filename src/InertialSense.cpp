@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#if 0
+#if 1
 #define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
 #else
 #define DEBUG_PRINT(...) 
@@ -886,12 +886,23 @@ bool InertialSense::WaitForFlashSynced()
     while(!FlashConfigSynced())
     {   // Request and wait for flash config
         Update();
-        SLEEP_MS(10);
+        SLEEP_MS(50);
 
         if (current_timeMs() - startMs > 3000)
         {   // Timeout waiting for flash config
             printf("Failed to read DID_FLASH_CONFIG!\n");
+
+            is_device_t &device = m_comManagerState.devices[0]; 
+            DEBUG_PRINT("device.flashCfg.checksum:          %d\n", device.flashCfg.checksum);
+            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %d\n", device.sysParams.flashCfgChecksum); 
+            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %d\n", device.flashCfgUploadTimeMs);
+            DEBUG_PRINT("device.flashCfgUploadChecksum:     %d\n", device.flashCfgUploadChecksum);
+
             return false;
+        }
+        else
+        {
+            DEBUG_PRINT("Waiting for flash sync...\n");
         }
     }
 

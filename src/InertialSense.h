@@ -409,7 +409,11 @@ public:
      * @param pHandle the port pHandle to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool FlashConfigUploadFailure(int pHandle = 0){ is_device_t &device = m_comManagerState.devices[pHandle]; return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); } 
+    bool FlashConfigUploadFailure(int pHandle = 0)
+    { 
+        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
+    } 
 
     /**
     * Set the flash config and update flash config on the uINS flash memory
