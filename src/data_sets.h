@@ -4614,7 +4614,7 @@ typedef struct
         
 } port_monitor_t;
 
-#define EVENT_MAX_SIZE 64
+#define EVENT_MAX_SIZE 128
 
 enum DID_EventProtocol
 {
