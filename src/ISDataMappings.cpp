@@ -1075,6 +1075,8 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     map_name_to_info_t& m = mappings[DID_EVENT];
     uint32_t totalSize = 0;
 
+
+    ADD_MAP(m, totalSize, "Time stamp of message", timeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwrType, 0, DataTypeUInt16, uint16_t, 0);
 
@@ -1082,7 +1084,6 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "length", length, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
-    ADD_MAP(m, totalSize, "Reserved 32 bit", res32, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Reserved 16 bit", res16, 0, DataTypeUInt16, uint16_t, 0);
 }
 
