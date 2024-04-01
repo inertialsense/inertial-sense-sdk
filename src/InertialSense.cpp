@@ -893,10 +893,10 @@ bool InertialSense::WaitForFlashSynced()
             printf("Failed to read DID_FLASH_CONFIG!\n");
 
             is_device_t &device = m_comManagerState.devices[0]; 
-            DEBUG_PRINT("device.flashCfg.checksum:          %d\n", device.flashCfg.checksum);
-            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %d\n", device.sysParams.flashCfgChecksum); 
-            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %d\n", device.flashCfgUploadTimeMs);
-            DEBUG_PRINT("device.flashCfgUploadChecksum:     %d\n", device.flashCfgUploadChecksum);
+            DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
+            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
+            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
+            DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
 
             return false;
         }
@@ -922,7 +922,10 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     {
         case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;                               break;
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
-        case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
+        case DID_SYS_PARAMS:        
+            copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      
+            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+            break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
