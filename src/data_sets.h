@@ -4641,6 +4641,9 @@ typedef struct DID_Event
 }DID_Event_t;
 
 
+#define DID_EVENT_HEADER_SZ                             (sizeof(DID_Event_t) - EVENT_MAX_SIZE)
+
+
 /**
 * (DID_SYS_FAULT) System Fault Information 
 * NOTE: If you modify these, please update crash_info_special_values in IS-src/python/src/ci_hdw/data_sets.py */
