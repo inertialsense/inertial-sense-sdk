@@ -716,11 +716,19 @@ void InertialSense::SoftwareReset()
     }
 }
 
+// void InertialSense::GetData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
+// {
+//     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+//     {
+//         comManagerGetData((int)i, dataId, length, offset, 0);
+//         // comManagerGetData( m_portHdl, DID_DEV_INFO, 0, 0, 0 );
+//     }
+// }
+
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
     {
-        // [C COMM INSTRUCTION]  4.) Send data to the uINS.
         comManagerSendData((int)i, data, dataId, length, offset);
     }
 }
@@ -886,7 +894,7 @@ bool InertialSense::WaitForFlashSynced()
     while(!FlashConfigSynced())
     {   // Request and wait for flash config
         Update();
-        SLEEP_MS(50);
+        SLEEP_MS(100);
 
         if (current_timeMs() - startMs > 3000)
         {   // Timeout waiting for flash config
@@ -901,7 +909,8 @@ bool InertialSense::WaitForFlashSynced()
             return false;
         }
         else
-        {
+        {   // Query DID_SYS_PARAMS
+    		comManagerSendDataNoAck(USB_PORT_NUM, &g_sysParams, DID_SYS_PARAMS, sizeof(sys_params_t), 0);
             DEBUG_PRINT("Waiting for flash sync...\n");
         }
     }
