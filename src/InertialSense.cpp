@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#if 1
+#if 0
 #define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
 #else
 #define DEBUG_PRINT(...) 
