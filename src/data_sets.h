@@ -4616,10 +4616,20 @@ typedef struct
 
 #define EVENT_MAX_SIZE 64
 
-enum DID_EventProtocol// make this uint8!!!
+enum DID_EventProtocol
 {
     DID_EventProtocol_byte    = 1,
     DID_EventProtocol_ASCII   = 2,
+};
+
+enum DID_EventPriority
+{
+    DID_EventPriority_Info      = 0,
+
+    DID_EventPriority_Low       = 1,
+    DID_EventPriority_Med       = 4,
+    DID_EventPriority_High      = 8,
+    DID_EventPriority_Urgent    = 12,
 };
 
 typedef struct DID_Event
@@ -4632,7 +4642,9 @@ typedef struct DID_Event
  
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
 	uint16_t        senderHdwrType;
-    uint16_t        res16;
+    
+    uint8_t         priority;
+    uint8_t         res8;
 
     uint16_t        protocol;
     uint16_t        length;
