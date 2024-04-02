@@ -465,7 +465,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		{	// Exit as soon as we display DID
 			Home();
 			cout << VectortoString();
-			exit(1);
+			exit(0);
 		}
 		break;
 
