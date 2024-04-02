@@ -4624,12 +4624,14 @@ enum DID_EventProtocol
 
 enum DID_EventPriority
 {
-    DID_EventPriority_Info      = 0,
-
-    DID_EventPriority_Low       = 1,
-    DID_EventPriority_Med       = 4,
-    DID_EventPriority_High      = 8,
-    DID_EventPriority_Urgent    = 12,
+    DID_EventPriority_none      = 0,
+    DID_EventPriority_debug_verbose,
+    DID_EventPriority_debug,
+    DID_EventPriority_info_verbose,
+    DID_EventPriority_info,
+    DID_EventPriority_warning,
+    DID_EventPriority_error,
+    DID_EventPriority_FAULT,
 };
 
 typedef struct DID_Event
