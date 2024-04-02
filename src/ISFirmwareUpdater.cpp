@@ -68,7 +68,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
     if(pfnInfoProgress_cb != nullptr)
-        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Requested firmware update with Image '%s', md5: %s\n", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Requested firmware update with Image '%s', md5: %s", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
     return result;
 }
 
@@ -215,7 +215,7 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
     }
 
     if(pfnInfoProgress_cb != nullptr)
-        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "Requesting resend of %d: %d\n", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "Requesting resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
     nextChunkSend = current_timeMs() + nextChunkDelay;
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
@@ -456,7 +456,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                         err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
                         break;
                 }
-                handleCommandError(args[0], err_result, "Error processing firmware package [%s]: %d :: %s\n", args[1].c_str(), err_result, err_msg);
+                handleCommandError(args[0], err_result, "Error processing firmware package [%s]: %d :: %s", args[1].c_str(), err_result, err_msg);
 
             }
         } else if ((args[0] == "target") && (args.size() == 2)) {
@@ -465,7 +465,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             else if (args[1] == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
             else if (args[1] == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
             else {
-                handleCommandError(args[0], -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)\n", args[1].c_str());
+                handleCommandError(args[0], -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", args[1].c_str());
             }
         } else if ((args[0] == "on-error") && (args.size() == 2)) {
             failLabel = args[1].c_str();
@@ -548,7 +548,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
 
             if (status < fwUpdate::NOT_STARTED) {
                 // there was an error -- probably should flush the command queue
-                handleCommandError(args[0], -1, "Error initiating Firmware upload: [%s] %s\n", filename.c_str(), fwUpdate_getStatusName(status));
+                handleCommandError(args[0], -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
             } else {
                 requestPending = true;
                 nextStartAttempt = current_timeMs() + attemptInterval;
