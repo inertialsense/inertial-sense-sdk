@@ -1,12 +1,10 @@
 #!/bin/bash
 
-args="${@:1}" # All arguments
-
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 source ./build_test_cmake.sh
 
-build_cmake "SDK Unit Tests" ../tests ${args}
+build_cmake "SDK Unit Tests" ../tests "$@"
 
 popd > /dev/null
 
