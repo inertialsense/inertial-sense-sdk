@@ -4618,8 +4618,8 @@ typedef struct
 
 enum DID_EventProtocol
 {
-    DID_EventProtocol_byte    = 1,
-    DID_EventProtocol_ASCII   = 2,
+    DID_EventProtocol_raw       = 1,
+    DID_EventProtocol_ASCII     = 2,
 };
 
 enum DID_EventPriority
