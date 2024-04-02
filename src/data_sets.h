@@ -4614,8 +4614,6 @@ typedef struct
         
 } port_monitor_t;
 
-#define EVENT_MAX_SIZE 128
-
 enum DID_EventProtocol
 {
     DID_EventProtocol_raw       = 1,
@@ -4643,7 +4641,7 @@ typedef struct DID_Event
     uint32_t        senderSN;
  
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-	uint16_t        senderHdwType;
+    uint16_t        senderHdwType;
     
     uint8_t         priority;
     uint8_t         res8;
@@ -4651,12 +4649,10 @@ typedef struct DID_Event
     uint16_t        protocol;
     uint16_t        length;
     
-    uint8_t data[EVENT_MAX_SIZE];
+    uint8_t data[1];
 }did_event_t;
 
-
-#define DID_EVENT_HEADER_SZ                             (sizeof(did_event_t) - EVENT_MAX_SIZE)
-
+#define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
 /**
 * (DID_SYS_FAULT) System Fault Information 
