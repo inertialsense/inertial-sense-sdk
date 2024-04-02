@@ -436,9 +436,10 @@ public:
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
      * 
+     * @param pHandle the port pHandle
      * @return false When failed to synchronize
      */
-    bool WaitForFlashSynced();
+    bool WaitForFlashSynced(int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);

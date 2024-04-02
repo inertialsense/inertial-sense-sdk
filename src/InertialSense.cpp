@@ -20,7 +20,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#if 0
+#define PRINT_DEBUG 0
+#if PRINT_DEBUG
 #define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
 #else
 #define DEBUG_PRINT(...) 
@@ -774,48 +775,49 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
 void InertialSense::SyncFlashConfig(unsigned int timeMs)
 {
-    if (timeMs - m_syncCheckTimeMs > SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+    if (timeMs - m_syncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
     {
-        m_syncCheckTimeMs = timeMs;
+        return;
+    }
+    m_syncCheckTimeMs = timeMs;
 
-        for (size_t i=0; i<m_comManagerState.devices.size(); i++)
-        {
-            is_device_t &device = m_comManagerState.devices[i];
+    for (size_t i=0; i<m_comManagerState.devices.size(); i++)
+    {
+        is_device_t &device = m_comManagerState.devices[i];
 
-            if (device.flashCfgUploadTimeMs)
-            {	// Upload in progress
-                if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
-                {	// Wait for upload to process.  Pause sync.
-                    device.sysParams.flashCfgChecksum = 0;
-                }
+        if (device.flashCfgUploadTimeMs)
+        {	// Upload in progress
+            if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+            {	// Wait for upload to process.  Pause sync.
+                device.sysParams.flashCfgChecksum = 0;
             }
+        }
 
-            // Require valid sysParams checksum
-            if (device.sysParams.flashCfgChecksum)  
-            {   
-                if (device.sysParams.flashCfgChecksum == device.flashCfg.checksum)
-                {
-                    if (device.flashCfgUploadTimeMs)
-                    {   // Upload complete.  Allow sync.
-                        device.flashCfgUploadTimeMs = 0;
+        // Require valid sysParams checksum
+        if (device.sysParams.flashCfgChecksum)  
+        {   
+            if (device.sysParams.flashCfgChecksum == device.flashCfg.checksum)
+            {
+                if (device.flashCfgUploadTimeMs)
+                {   // Upload complete.  Allow sync.
+                    device.flashCfgUploadTimeMs = 0;
 
-                        if (device.flashCfgUploadChecksum == device.sysParams.flashCfgChecksum)
-                        {
-                            printf("DID_FLASH_CONFIG upload complete.\n");
-                        }
-                        else
-                        {
-                            printf("DID_FLASH_CONFIG upload rejected.\n");
-                        }
+                    if (device.flashCfgUploadChecksum == device.sysParams.flashCfgChecksum)
+                    {
+                        printf("DID_FLASH_CONFIG upload complete.\n");
+                    }
+                    else
+                    {
+                        printf("DID_FLASH_CONFIG upload rejected.\n");
                     }
                 }
-                else
-                {	// Out of sync.  Request flash config.
-                    DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
-                    comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
-                }
-            } 
-        }
+            }
+            else
+            {	// Out of sync.  Request flash config.
+                DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
+                comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
+            }
+        } 
     }
 }
 
@@ -890,10 +892,10 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     return !failure;
 }
 
-bool InertialSense::WaitForFlashSynced()
+bool InertialSense::WaitForFlashSynced(int pHandle)
 {
     unsigned int startMs = current_timeMs();
-    while(!FlashConfigSynced())
+    while(!FlashConfigSynced(pHandle))
     {   // Request and wait for flash config
         Update();
         SLEEP_MS(100);
@@ -902,12 +904,13 @@ bool InertialSense::WaitForFlashSynced()
         {   // Timeout waiting for flash config
             printf("Failed to read DID_FLASH_CONFIG!\n");
 
-            is_device_t &device = m_comManagerState.devices[0]; 
+            #if PRINT_DEBUG
+            is_device_t &device = m_comManagerState.devices[pHandle]; 
             DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
             DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
             DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
             DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
-
+            #endif
             return false;
         }
         else
@@ -917,7 +920,7 @@ bool InertialSense::WaitForFlashSynced()
         }
     }
 
-    return FlashConfigSynced();
+    return FlashConfigSynced(pHandle);
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
