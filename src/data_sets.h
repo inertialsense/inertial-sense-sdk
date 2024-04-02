@@ -4643,7 +4643,7 @@ typedef struct DID_Event
     uint32_t        senderSN;
  
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-	uint16_t        senderHdwrType;
+	uint16_t        senderHdwType;
     
     uint8_t         priority;
     uint8_t         res8;
