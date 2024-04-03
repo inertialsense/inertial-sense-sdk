@@ -134,6 +134,8 @@ typedef uint32_t eDataIDs;
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
+#define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
+
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
@@ -1770,6 +1772,8 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 
+#define RMC_BITS_EVENT               0x0800000000000000
+
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1803,7 +1807,8 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
-                                        | RMC_BITS_RTK_PHASE_RESIDUAL)
+                                        | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
                                         | RMC_BITS_GROUND_VEHICLE)
@@ -4610,6 +4615,45 @@ typedef struct
         
 } port_monitor_t;
 
+enum DID_EventProtocol
+{
+    DID_EventProtocol_raw       = 1,
+    DID_EventProtocol_ASCII     = 2,
+};
+
+enum DID_EventPriority
+{
+    DID_EventPriority_none      = 0,
+    DID_EventPriority_debug_verbose,
+    DID_EventPriority_debug,
+    DID_EventPriority_info_verbose,
+    DID_EventPriority_info,
+    DID_EventPriority_warning,
+    DID_EventPriority_error,
+    DID_EventPriority_FAULT,
+};
+
+typedef struct DID_Event
+{
+    /** Time */
+    uint32_t        timeMs;
+
+    /** Serial number */
+    uint32_t        senderSN;
+ 
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
+    uint16_t        senderHdwType;
+    
+    uint8_t         priority;
+    uint8_t         res8;
+
+    uint16_t        protocol;
+    uint16_t        length;
+    
+    uint8_t data[1];
+}did_event_t;
+
+#define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
 /**
 * (DID_SYS_FAULT) System Fault Information 
