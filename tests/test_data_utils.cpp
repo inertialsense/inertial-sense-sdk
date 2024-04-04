@@ -316,6 +316,9 @@ void GenerateMessage(test_message_t &msg, protocol_type_t ptype)
     int i = dist(rng);
     float f = (float)i * 0.001;
 
+    static gps_pos_t gpsPos = {};
+    static gps_vel_t gpsVel = {};
+
     // Iterate through all ptypes
     if (ptype == _PTYPE_NONE)
     {
@@ -333,8 +336,6 @@ void GenerateMessage(test_message_t &msg, protocol_type_t ptype)
 
     case _PTYPE_NMEA:
         GenerateISB(msg, i, f);
-        static gps_pos_t gpsPos = {};
-        static gps_vel_t gpsVel = {};
         switch (msg.dataHdr.id)
         {
         case DID_PIMU:      msg.pktSize = nmea_ppimu((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, msg.data.pImu); break;
