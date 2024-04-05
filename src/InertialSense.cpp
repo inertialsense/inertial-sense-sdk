@@ -238,7 +238,6 @@ void InertialSense::RemoveDevice(size_t index)
     }
 
     serialPortClose(&m_comManagerState.devices[index].serialPort);
-    m_comManagerState.devices.erase(m_comManagerState.devices.begin() + index);
 }
 
 void InertialSense::LoggerThread(void* info)
@@ -1346,19 +1345,15 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
 	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
 
-	if (m_enableDeviceValidation)
-	{
-		time_t startTime = time(0);
+	if (m_enableDeviceValidation) {
+		unsigned int startTime = current_timeMs();
         bool removedSerials = false;
 
-		// Query devices with 10 second timeout
-		while (!HasReceivedDeviceInfoFromAllDevices() && (time(0) - startTime < 10))
-		{
+		do {
 			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
 			{
                 if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
-                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0))
-                {
+                    (comManagerSendRaw((int) i, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     RemoveDevice(i);
                     removedSerials = true, i--;
@@ -1367,7 +1362,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
 			SLEEP_MS(100);
 			comManagerStep();
-		}
+        } while (!HasReceivedDeviceInfoFromAllDevices());
 
 		// remove each failed device where communications were not received
 		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)

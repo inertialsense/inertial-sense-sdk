@@ -265,27 +265,25 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
     {
         com_manager_port_t *cmPort = &(cmInstance->ports[port]);
         is_comm_instance_t *comm = &(cmPort->comm);
-        protocol_type_t ptype;
-
-        // Get available size of comm buffer
-        int n = is_comm_free(comm);
+        protocol_type_t ptype = _PTYPE_NONE;
 
         // Read data directly into comm buffer
-        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, n)))
+        int n = 0;
+        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, is_comm_free(comm))) != 0)
         {
             // Update comm buffer tail pointer
             comm->rxBuf.tail += n;
 
             // Search comm buffer for valid packets
             while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
-            {	
+            {
                 int error = comManagerStepRxInstanceHandler(cmInstance, cmPort, comm, port, ptype);		
                 if(error == CM_ERROR_FORWARD_OVERRUN) 
                 {
                     break;	// Stop parsing and continue in outer loop
                 }
             }
-        }			
+        }
     }
 }
 
