@@ -1472,10 +1472,10 @@ enum eGenFaultCodes
     GFC_SENSOR_SATURATION 				= 0x00040000,
     /*! Fault: IMU initialization */
     GFC_INIT_IMU						= 0x00100000,
-    /*! Fault: Magnetometer initialization */
-    GFC_INIT_MAGNETOMETER				= 0x00400000,
     /*! Fault: Barometer initialization */
     GFC_INIT_BAROMETER					= 0x00200000,
+    /*! Fault: Magnetometer initialization */
+    GFC_INIT_MAGNETOMETER				= 0x00400000,
     /*! Fault: I2C initialization */
     GFC_INIT_I2C						= 0x00800000,
     /*! Fault: Chip erase line toggled but did not meet required hold time.  This is caused by noise/transient on chip erase pin.  */
