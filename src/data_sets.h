@@ -1448,6 +1448,10 @@ enum eGenFaultCodes
     GFC_INS_STATE_ORUN_ALT				= 0x00000004,
     /*! Unhandled interrupt */
     GFC_UNHANDLED_INTERRUPT				= 0x00000010,
+    /*! GNSS Tx Limited */
+    GFC_GNSS_TX_LIMITED				    = 0x00000040,
+    /*! GNSS Rx overrun */
+    GFC_GNSS_RX_OVERRUN			        = 0x00000080,
     /*! Fault: sensor initialization  */
     GFC_INIT_SENSORS					= 0x00000100,
     /*! Fault: SPI bus initialization  */
