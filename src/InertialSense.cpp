@@ -1351,7 +1351,7 @@ bool InertialSense::OpenSerialPorts(const char *port, int baudRate) {
             SLEEP_MS(100);
             comManagerStep();
 
-            if (current_timeMs() - startTime > m_comManagerState.discoveryTimeout) {
+            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
                 fprintf(stderr, "\nTimeout waiting for all discovered devices to respond.");
                 fflush(stderr);
                 break;

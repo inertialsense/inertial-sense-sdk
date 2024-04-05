@@ -2,9 +2,12 @@
 #include <vector>
 #include "protocol_nmea.h"
 #include "ISEarth.h"
+
+#include "gtest_helpers.h"
+
 using namespace std;
 
-#define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }
+#define PRINT_TEST_DESCRIPTION(description)   { TEST_COUT << "TEST DESCRIPTION: " << description << "\n"; }
 
 #define ASCII_BUF_LEN   200
 #define POS_LAT_DEG     40.330578
