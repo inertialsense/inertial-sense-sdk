@@ -112,7 +112,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 			case _PTYPE_PARSE_ERROR:
 				if (m_showParseErrors)
 				{ 
-					if (m_comm.rxErrorCount>1) { printf("SaveData() parse errors: %d\n", m_comm.rxErrorCount); }
+					if (m_comm.rxErrorCount>1) 
+					{ 
+						printf("SaveData() parse errors: %d\n", m_comm.rxErrorCount); 
+					}
 				}
 				break;
 

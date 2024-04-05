@@ -937,7 +937,12 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 			case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)  { setParserStart(c, processRtcm3Pkt); }    break;
 			case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN) { setParserStart(c, processSpartnByte); }  break;
 			case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)   { setParserStart(c, processSonyByte); }    break;
-			default:                        if (reportParseError(c)) { return _PTYPE_PARSE_ERROR; }                                       break;
+			default:                        
+				if (reportParseError(c)) 
+				{ 
+					return _PTYPE_PARSE_ERROR; 
+				}                                       
+				break;
 			}
 		}
 		else
