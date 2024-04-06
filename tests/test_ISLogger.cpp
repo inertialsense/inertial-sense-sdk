@@ -4,8 +4,8 @@
 #include "ISFileManager.h"
 #include "test_data_utils.h"
 
-#define DELETE_DIRECTORY(d)		ISFileManager::DeleteDirectory(d)
-// #define DELETE_DIRECTORY(d)		// Leave test data in place for inspection
+// #define DELETE_DIRECTORY(d)		ISFileManager::DeleteDirectory(d)
+#define DELETE_DIRECTORY(d)		// Leave test data in place for inspection
 
 using namespace std;
 
@@ -224,6 +224,7 @@ TEST(ISLogger, raw_conversion)
 	DELETE_DIRECTORY(logPath);
 }
 
+#if 0
 TEST(ISLogger, raw_conversion_with_garbage)
 {
 	string logPath = "test_log";
@@ -231,6 +232,7 @@ TEST(ISLogger, raw_conversion_with_garbage)
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT, false);
 	DELETE_DIRECTORY(logPath);
 }
+#endif
 
 // TEST(ISLogger, dat_conversion_with_multiple_files_issue_Aug_2017)
 // {

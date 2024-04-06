@@ -22,14 +22,16 @@ typedef struct
     int                     pktSize;
 } test_message_t;
 
-typedef enum
+enum eTestGenLogOptions
 {
     GEN_LOG_OPTIONS_NONE = 0,
     GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS,
-} test_gen_log_options_t;
+    GEN_LOG_OPTIONS_GARBAGE_IN_MSGS_VALID_CHECKSUM,
+    GEN_LOG_OPTIONS_GARBAGE_IN_MSGS_INVALID_CHECKSUM,
+};
 
-void GenerateMessage(test_message_t &msg, protocol_type_t ptype);
-void GenerateLogFiles(int numDevices, std::string directory, cISLogger::eLogType logType, float logSizeMB=20, int options=GEN_LOG_OPTIONS_NONE);
+bool GenerateMessage(test_message_t &msg, protocol_type_t ptype=_PTYPE_NONE);
+void GenerateLogFiles(int numDevices, std::string directory, cISLogger::eLogType logType, float logSizeMB=20, eTestGenLogOptions options=GEN_LOG_OPTIONS_NONE);
 
 
 

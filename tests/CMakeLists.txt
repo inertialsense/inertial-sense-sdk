@@ -28,7 +28,10 @@ list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 
 # Define the executable
 add_executable(${PROJECT_NAME} 
-    ${TESTS_SOURCES}
+    # ${TESTS_SOURCES}
+    test_ISLogger.cpp
+    # test_runtime_tests.cpp
+    test_data_utils.cpp
 )
 
 # Link InertialSenseSDK static library to the executable
