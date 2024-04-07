@@ -37,6 +37,7 @@ char *ASCII_to_vec4f(float vec[], char *ptr);
 char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
+void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
 int getNmeaMsgId(const void* msg, int msgSize);
 int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);

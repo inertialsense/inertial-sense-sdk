@@ -68,7 +68,7 @@ struct sTimeMs
 } s_msgTimeMs = {};
 
 
-void CurrentGpsTowMs(uint32_t &timeOfWeekMs, uint32_t &weeks)
+void CurrentGpsTimeOfWeekMs(uint32_t &timeOfWeekMs, uint32_t &weeks)
 {
     // Get current time in UTC
     auto now = std::chrono::system_clock::now();
@@ -261,7 +261,7 @@ bool GenerateISB(test_message_t &msg, int i, float f)
     {
         init = false;
         
-        CurrentGpsTowMs(s_gpsTowOffsetMs, s_gpsWeek);
+        CurrentGpsTimeOfWeekMs(s_gpsTowOffsetMs, s_gpsWeek);
         s_timeMs = 0;
         GeneratePimu(  msg, s_pimu,   i, f, true);
         GenerateIns1(  msg, s_ins1,   i, f, true);
@@ -506,7 +506,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     uint8_t comBuf[PKT_BUF_SIZE];
     is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
 
-    CurrentGpsTowMs(s_gpsTowOffsetMs, s_gpsWeek);
+    CurrentGpsTimeOfWeekMs(s_gpsTowOffsetMs, s_gpsWeek);
 
     for (s_timeMs=0; logger.LogSizeMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
@@ -565,7 +565,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
     is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
     int streamSize = 0;
 
-    CurrentGpsTowMs(s_gpsTowOffsetMs, s_gpsWeek);
+    CurrentGpsTimeOfWeekMs(s_gpsTowOffsetMs, s_gpsWeek);
 
     for (s_timeMs=0;; s_timeMs += s_timePeriodMs)
     {

@@ -30,6 +30,7 @@ enum eTestGenDataOptions
     GEN_LOG_OPTIONS_GARBAGE_IN_MSGS_INVALID_CHECKSUM,
 };
 
+void CurrentGpsTimeOfWeekMs(uint32_t &timeOfWeekMs, uint32_t &weeks);
 bool GenerateMessage(test_message_t &msg, protocol_type_t ptype=_PTYPE_NONE);
 void GenerateDataLogFiles(int numDevices, std::string directory, cISLogger::eLogType logType, float logSizeMB=20, eTestGenDataOptions options=GEN_LOG_OPTIONS_NONE);
 int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions options=GEN_LOG_OPTIONS_NONE);

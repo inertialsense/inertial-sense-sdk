@@ -18,6 +18,28 @@ using namespace std;
 #define DEBUG_PRINTF	
 #endif
 
+
+// TEST(protocol_nmea, gps_to_utc_time_conversion)
+// {
+//     uint32_t timeOfWeekMs, weeks;
+//     char* a, int aSize, int &offset;
+//     gps_pos_t pos = {};
+//     uint32_t timeMs = 0;
+
+//     // Cycle through entire range of time of week in milliseconds
+//     for (int towMs = 0; towMs < (7 * 24 * 60 * 60 * 1000); towMs += 200)
+//     {
+//         // Convert GPS to UTC time
+//         uint8_t buf[100] = {0};
+//         int offset = 0;
+//         nmea_GPSTimeToUTCTimeMsPrecision(buf, sizeof(buf), offset, pos);
+
+//         uint32_t utcTimeOfDayMs;
+//         ASCII_to_TimeOfDayMs(&utcTimeOfDayMs, buf);
+//         gpsPos.timeOfWeekMs = weekday*86400000 + utcTimeOfDayMs + gpsPos.leapS*1000;
+//     }
+// }
+
 TEST(protocol_nmea, nmea_parse_asce)
 {
 	PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");
@@ -286,6 +308,57 @@ TEST(protocol_nmea, GGA)
     nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
     pos.hAcc = result.hAcc;
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+}
+
+#define TOW_MS_MAX  (7 * 24 * 60 * 60 * 1000)   // Total number of milliseconds in a week
+
+TEST(protocol_nmea, GGA_cycle_ranges)
+{
+    double invTowMsMax = 1.0/(double)TOW_MS_MAX;
+
+    // Cycle through entire range of time of week in milliseconds
+    for (int towMs = 0; towMs < TOW_MS_MAX; towMs += 200)
+    {   // Scale will transition from 0.0 to 1.0
+        double scale = ((double)towMs) * invTowMsMax; 
+
+        char gga[ASCII_BUF_LEN] = {0};
+        gps_pos_t pos = {};
+        pos.week = 2309;
+        pos.timeOfWeekMs = towMs;
+        pos.satsUsed = 12;
+        pos.status = 
+            GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+            GPS_STATUS_FLAGS_FIX_OK |
+            GPS_STATUS_FLAGS_DGPS_USED |
+            GPS_STATUS_FIX_DGPS |
+            GPS_STATUS_FLAGS_GPS_NMEA_DATA;        
+        pos.hMSL = -100 + 50000 * scale;
+        pos.lla[0] =  -90.0 + 180.0 * scale;
+        pos.lla[1] = -180.0 + 230.0 * scale;
+        pos.lla[2] = pos.hMSL - 18.8;
+        pos.pDop = 0.47f;
+        pos.leapS = LEAP_SEC;
+        // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+        ixVector3d lla;
+        lla[0] = DEG2RAD(pos.lla[0]);
+        lla[1] = DEG2RAD(pos.lla[1]);
+        lla[2] = pos.lla[2];		// Use ellipsoid altitude
+        lla2ecef(lla, pos.ecef);
+
+        char abuf[ASCII_BUF_LEN] = { 0 };
+        int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
+        // printf("%s\n", gga);
+        // printf("%s\n", abuf);
+        // ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
+
+        gps_pos_t result = {};
+        result.week = pos.week;
+        result.leapS = pos.leapS;
+        uint32_t weekday = pos.timeOfWeekMs / 86400000;
+        nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+        pos.hAcc = result.hAcc;
+        ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+    }
 }
 
 TEST(protocol_nmea, GGA2)

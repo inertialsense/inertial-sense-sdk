@@ -637,7 +637,7 @@ static void nmea_GPSTimeToUTCTime(char* a, int aSize, int &offset, gps_pos_t &po
 	offset += ssnprintf(a, aSize, ",%02u%02u%02u", hours, minutes, seconds);
 }
 
-static void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos)
+void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
 	aSize -= offset;
 	a += offset;	

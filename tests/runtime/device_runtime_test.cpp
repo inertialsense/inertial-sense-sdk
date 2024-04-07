@@ -43,22 +43,26 @@ void DeviceRuntimeTest::ProcessNMEA(const uint8_t* msg, int msgSize)
 
 void DeviceRuntimeTest::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
+    if (m_hist.gpsPos.week)
+    {   // Require week for time conversion
+        return;
+    }
+
     gps_pos_t &histPos = m_hist.nmea.gga.gpsPos;
     gps_pos_t gpsPos = {};
-    nmea_parse_gga_to_did_gps(gpsPos, (char*)msg, msgSize, m_hist.gpsPos.week);
 
     printf("NMEA (%d): %.*s", msgSize, msgSize, msg);
 
-    if (m_hist.gpsPos.week)
-    {   // Require week for time conversion
-        if (gpsPos.timeOfWeekMs == histPos.timeOfWeekMs)
-        {   // Duplicate time
-            LogErrorNMEA(msg, msgSize, "Duplicate time: %d ms >> %d ms", histPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
-        }
-        else if (gpsPos.timeOfWeekMs < histPos.timeOfWeekMs)
-        {   // Regressed time
-            LogErrorNMEA(msg, msgSize, "Time reversed direction: %d ms >> %d ms", histPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
-        }
+    uint32_t weekday = m_hist.gpsPos.timeOfWeekMs / 86400000;
+    nmea_parse_gga_to_did_gps(gpsPos, (char*)msg, msgSize, weekday);
+
+    if (gpsPos.timeOfWeekMs == histPos.timeOfWeekMs)
+    {   // Duplicate time
+        LogErrorNMEA(msg, msgSize, "Duplicate time: %d ms >> %d ms", histPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
+    }
+    else if (gpsPos.timeOfWeekMs < histPos.timeOfWeekMs)
+    {   // Regressed time
+        LogErrorNMEA(msg, msgSize, "Time reversed direction: %d ms >> %d ms", histPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
     }
 
     // Update history
