@@ -6,8 +6,9 @@
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
  */
 
-#include <random>
+#include <chrono>
 #include <iostream>
+#include <random>
 
 #include "ISFileManager.h"
 #include "ISLogger.h"
@@ -31,6 +32,9 @@ static const float s_maxDiskSpacePercent = 0.5f;
 static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
 static const bool s_useTimestampSubFolder = false;
 static uint32_t s_timeMs = 0;
+static uint32_t s_gpsTowOffsetMs = 0;
+static uint32_t s_gpsWeek = 0;
+static double s_towOffset = 0;
 static const uint32_t s_timePeriodMs = 10;
 static const uint32_t s_pimuPeriodMs = 10;
 static const uint32_t s_navPeriodMs = 100;
@@ -64,6 +68,35 @@ struct sTimeMs
 } s_msgTimeMs = {};
 
 
+void CurrentGpsTowMs(uint32_t &timeOfWeekMs, uint32_t &weeks)
+{
+    // Get current time in UTC
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm *utc_tm = std::gmtime(&now_c);
+
+    // GPS epoch start (January 6, 1980)
+    std::tm gps_epoch = {};
+    gps_epoch.tm_year = 80;  // Year 1980
+    gps_epoch.tm_mon = 0;    // January
+    gps_epoch.tm_mday = 6;   // 6th
+
+    // Calculate difference in seconds
+    auto gps_epoch_c = std::mktime(&gps_epoch);
+    auto utc_now_t = std::mktime(utc_tm);
+    double seconds_since_gps_epoch = std::difftime(utc_now_t, gps_epoch_c);
+
+    // Subtract leap seconds (as of 2021, there are 18 leap seconds since 1980)
+    // Update this value based on the current number of leap seconds
+    const int leap_seconds = 18;
+    seconds_since_gps_epoch -= leap_seconds;
+
+    // Calculate weeks and seconds of the week
+    weeks = (int)seconds_since_gps_epoch / (60 * 60 * 24 * 7);
+    timeOfWeekMs = (((long long)(seconds_since_gps_epoch*1000.0)) % (60 * 60 * 24 * 7));    
+}
+
+
 bool periodCheck(uint32_t &msgTimeMs, uint32_t periodMs)
 {
     if (s_timeMs < msgTimeMs)
@@ -79,7 +112,7 @@ bool GeneratePimu(test_message_t &msg, pimu_t &pimu, int i, float f, bool init=f
     if (init)
     {
         memset(&pimu, 0, sizeof(pimu_t));
-        pimu.time = fabsf(f*f);
+        pimu.time = 0.001*((double)s_timeMs);
     }
 
     if (!periodCheck(s_msgTimeMs.pimu, s_pimuPeriodMs))
@@ -108,8 +141,8 @@ bool GenerateIns1(test_message_t &msg, ins_1_t &ins1, int i, float f, bool init=
     if (init)
     {
         memset(&ins1, 0, sizeof(ins_1_t));
-        ins1.timeOfWeek = fabsf(f*f);
-        ins1.week = abs(i);
+        ins1.timeOfWeek = 0.001*((double)(s_timeMs + s_gpsTowOffsetMs));
+        ins1.week = s_gpsWeek;
         ins1.lla[0] =   40.330565516;
         ins1.lla[1] = -111.725787806;
         ins1.lla[2] = 1408.565264;
@@ -120,8 +153,8 @@ bool GenerateIns1(test_message_t &msg, ins_1_t &ins1, int i, float f, bool init=
         return false;
     }
 
-    ins1.timeOfWeek = 0.001*((double)s_timeMs);
-    ins1.week += 1;
+    ins1.timeOfWeek = 0.001*((double)(s_timeMs + s_gpsTowOffsetMs));
+    ins1.week = s_gpsWeek;
     ins1.insStatus = i;
     ins1.hdwStatus = i;
     ins1.theta[0] += f*0.1f;
@@ -148,8 +181,8 @@ bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool in
     if (init)
     {
         memset(&gps, 0, sizeof(gps_pos_t));
-        gps.timeOfWeekMs = s_timeMs;
-        gps.week = abs(i);
+        gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
+        gps.week = s_gpsWeek;
         gps.ecef[0] = f*123.4;
         gps.ecef[1] = f*234.5;
         gps.ecef[2] = f*345.6;
@@ -169,8 +202,8 @@ bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool in
         return false;
     }
 
-    gps.timeOfWeekMs = s_timeMs;
-    gps.week += 1;
+    gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
+    gps.week = s_gpsWeek;
     gps.status = i;
     gps.ecef[0] = f*1.234;
     gps.ecef[1] = f*2.345;
@@ -196,7 +229,7 @@ bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool in
     if (init)
     {
         memset(&gps, 0, sizeof(gps_vel_t));
-        gps.timeOfWeekMs = s_timeMs;
+        gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
     }
 
     if (!periodCheck(s_msgTimeMs.gpsVel, s_gpsPeriodMs))
@@ -204,7 +237,7 @@ bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool in
         return false;
     }
 
-    gps.timeOfWeekMs = s_timeMs;
+    gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
     gps.status = i;
     gps.vel[0] = f*12.34;
     gps.vel[1] = f*23.45;
@@ -227,6 +260,8 @@ bool GenerateISB(test_message_t &msg, int i, float f)
     if (init)
     {
         init = false;
+        
+        CurrentGpsTowMs(s_gpsTowOffsetMs, s_gpsWeek);
         s_timeMs = 0;
         GeneratePimu(  msg, s_pimu,   i, f, true);
         GenerateIns1(  msg, s_ins1,   i, f, true);
@@ -234,10 +269,7 @@ bool GenerateISB(test_message_t &msg, int i, float f)
         GenerateGpsVel(msg, s_gpsVel, i, f, true);
     }
 
-    if (GeneratePimu(  msg, s_pimu,   i, f)) 
-    { 
-        return true; 
-    }
+    if (GeneratePimu(  msg, s_pimu,   i, f)) { return true; }
     if (GenerateIns1(  msg, s_ins1,   i, f)) { return true; }
     if (GenerateGpsPos(msg, s_gpsPos, i, f)) { return true; }
     if (GenerateGpsVel(msg, s_gpsVel, i, f)) { return true; }
@@ -267,6 +299,12 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
 
     if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
     {   
+        static uint32_t towMsLast = s_gpsPos.timeOfWeekMs;
+        if (towMsLast >= s_gpsPos.timeOfWeekMs)
+        {
+            printf("GPS TIME REGRESSED\n");
+        }
+
         msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
         return true;
@@ -448,7 +486,7 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
     return false;
 }
 
-void GenerateLogFiles(int numDevices, string directory, cISLogger::eLogType logType, float logSizeMB, eTestGenLogOptions options)
+void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType logType, float logSizeMB, eTestGenDataOptions options)
 {
     // Remove old files
 	ISFileManager::DeleteDirectory(directory);
@@ -468,7 +506,7 @@ void GenerateLogFiles(int numDevices, string directory, cISLogger::eLogType logT
     uint8_t comBuf[PKT_BUF_SIZE];
     is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
 
-    int count = 0;
+    CurrentGpsTowMs(s_gpsTowOffsetMs, s_gpsWeek);
 
     for (s_timeMs=0; logger.LogSizeMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
@@ -497,8 +535,9 @@ void GenerateLogFiles(int numDevices, string directory, cISLogger::eLogType logT
                     {   // Generate garbage
                         garbage[i] = rand();
                     }
+                    int garbageSize = garbage[0]%100;
                     
-                    logger.LogData(d, garbage[0]%100, garbage);
+                    logger.LogData(d, garbageSize, garbage);
                 }
             }
         }
@@ -507,3 +546,56 @@ void GenerateLogFiles(int numDevices, string directory, cISLogger::eLogType logT
     logger.CloseAllFiles();
 }
 
+bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *data, int dataSize)
+{
+    if (streamSize + dataSize < bufferSize)
+    {   // Data fits in buffer.  Write data to stream.
+        memcpy(buffer + streamSize, data, dataSize);
+        streamSize += dataSize;
+        return true;
+    }
+
+    return false;
+}
+
+int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions options)
+{
+    test_message_t msg = {};
+    uint8_t comBuf[PKT_BUF_SIZE];
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
+    int streamSize = 0;
+
+    CurrentGpsTowMs(s_gpsTowOffsetMs, s_gpsWeek);
+
+    for (s_timeMs=0;; s_timeMs += s_timePeriodMs)
+    {
+        while(GenerateMessage(msg))
+        {
+            if (!AddDataToStream(buffer, bufferSize, streamSize, msg.comm.rxBuf.start, msg.pktSize))
+            {   // Buffer full
+                return streamSize;
+            }
+
+            // Insert garbage data
+            static int pktCount = 0;
+            if (options == GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS && pktCount++ > 10)
+            {
+                pktCount = 0;
+                uint8_t garbage[100];
+
+                for (int i=0; i<sizeof(garbage); i++)
+                {   // Generate garbage
+                    garbage[i] = rand();
+                }
+                int garbageSize = garbage[0]%100;
+
+                if (!AddDataToStream(buffer, bufferSize, streamSize, garbage, garbageSize))
+                {   // Buffer full
+                    return streamSize;
+                }
+            }
+        }
+    }
+
+    return streamSize;
+}

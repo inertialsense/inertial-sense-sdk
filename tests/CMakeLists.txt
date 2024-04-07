@@ -16,6 +16,7 @@ include_directories(
     ${IS_SDK_DIR}/src/protocol
     ${IS_SDK_DIR}/src/libusb/libusb
     ${IS_SDK_DIR}/src/util
+    ${IS_SDK_DIR}/tests/runtime
 )
 
 find_package(GTest REQUIRED)
@@ -29,8 +30,9 @@ list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 # Define the executable
 add_executable(${PROJECT_NAME} 
     # ${TESTS_SOURCES}
-    test_ISLogger.cpp
-    # test_runtime_tests.cpp
+    # test_ISLogger.cpp
+    test_runtime_test.cpp
+    runtime/device_runtime_test.cpp
     test_data_utils.cpp
 )
 

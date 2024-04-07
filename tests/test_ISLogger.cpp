@@ -197,7 +197,7 @@ TEST(ISLogger, parse_filename)
 TEST(ISLogger, dat_conversion)
 {
 	string logPath = "test_log";
-	GenerateLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_DAT);
+	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
@@ -207,7 +207,7 @@ TEST(ISLogger, dat_conversion)
 TEST(ISLogger, sdat_conversion)
 {
 	string logPath = "test_log";
-	GenerateLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_SDAT);
+	GenerateDataLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_CSV);
@@ -217,7 +217,7 @@ TEST(ISLogger, sdat_conversion)
 TEST(ISLogger, raw_conversion)
 {
 	string logPath = "test_log";
-	GenerateLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_RAW);
+	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_RAW);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_CSV);
@@ -228,7 +228,7 @@ TEST(ISLogger, raw_conversion)
 TEST(ISLogger, raw_conversion_with_garbage)
 {
 	string logPath = "test_log";
-	GenerateLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_RAW, 20, GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
+	GenerateDataLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_RAW, 20, GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT, false);
 	DELETE_DIRECTORY(logPath);
 }
