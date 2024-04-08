@@ -801,23 +801,12 @@ static protocol_type_t processSpartnByte(void* v)
             {
                 switch(encryptPtr[1] & 0x07)
                 {
-                case 0:
-                    payloadLen += 8;
-                    break;
-                case 1:
-                    payloadLen += 12;
-                    break;
-                case 2:
-                    payloadLen += 16;
-                    break;
-                case 3:
-                    payloadLen += 32;
-                    break;
-                case 4:
-                    payloadLen += 64;
-                    break;
-                default:
-                    break;
+                    case 0: payloadLen += 8; break;
+                    case 1: payloadLen += 12; break;
+                    case 2: payloadLen += 16; break;
+                    case 3: payloadLen += 32; break;
+                    case 4: payloadLen += 64; break;
+                    default: break;
                 }
             }
         }
