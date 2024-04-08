@@ -376,8 +376,8 @@ bool cISLogger::LoadFromDirectory(const string& directory, eLogType logType, vec
 			if (serialNumbers.find(serialNumber) == serialNumbers.end())
 			{
 				bool emptySerialsList = serials.size() == 0;
-				bool inSerialsList = find(serials.begin(), serials.end(), "SN" + serialNumber) != serials.end();
-				bool useAll = find(serials.begin(), serials.end(), "ALL") != serials.end();
+                bool inSerialsList = find(serials.begin(), serials.end(), serialNumber) != serials.end();
+                bool useAll = find(serials.begin(), serials.end(), "ALL") != serials.end();
 
 				if (emptySerialsList || inSerialsList || useAll) // and that it is a serial number we want to use
 				{

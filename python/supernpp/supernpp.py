@@ -47,7 +47,7 @@ class SuperNPP():
 	def findLogFiles(self, directory):
 		# print("findLogFiles: ", directory)
 		for file in os.listdir(directory):
-			if ".sdat" in file or ".dat" in file:
+			if ".sdat" in file or ".dat" in file or ".raw" in file:
 				self.subdirs.append(directory)
 				break
 		# Recursively search for data in sub directories
@@ -98,7 +98,7 @@ class SuperNPP():
 		if config_serials == ["ALL"]:
 			serials = []
 			for file in os.listdir(os.path.join(folder,subdir)):
-				if ".sdat" in file or ".dat" in file:
+				if ".sdat" in file or ".dat" in file or ".raw" in file:
 					ser = int(re.sub('[^0-9]','', file.split("_")[1]))
 					if ser not in serials:
 						serials.append(ser)
@@ -108,14 +108,24 @@ class SuperNPP():
 		print("serial numbers")
 		print(serials)
 
+		# Determine the log type
+		logType = "DAT"
+		for file in os.listdir(os.path.join(folder,subdir)):
+			if ".sdat" in file:
+				logType = "SDAT"
+			elif ".dat" in file:
+				logType = "DAT"
+			elif ".raw" in file:
+				logType = "RAW"
+
 		if os.name == 'posix':
-			cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir for s in serials]
+			cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 			file_path = os.path.dirname(os.path.realpath(__file__))
 			npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
 		else:
 			# cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
 			# npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
-			cmds = [r'navpp.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
+			cmds = [r'navpp.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 			npp_build_folder = "../../../cpp/NavPostProcess/build/Release"
 
 		if self.startMode == 1:
