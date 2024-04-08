@@ -11,7 +11,7 @@
 
 #include "data_sets.h"
 #include "ISComm.h"
-
+#include "ISLogger.h"
 
 typedef struct
 {
@@ -30,7 +30,8 @@ enum eTestGenDataOptions
     GEN_LOG_OPTIONS_GARBAGE_IN_MSGS_INVALID_CHECKSUM,
 };
 
-void CurrentGpsTimeOfWeekMs(uint32_t &timeOfWeekMs, uint32_t &weeks);
+void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek);
+void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds=0);
 bool GenerateMessage(test_message_t &msg, protocol_type_t ptype=_PTYPE_NONE);
 void GenerateDataLogFiles(int numDevices, std::string directory, cISLogger::eLogType logType, float logSizeMB=20, eTestGenDataOptions options=GEN_LOG_OPTIONS_NONE);
 int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions options=GEN_LOG_OPTIONS_NONE);

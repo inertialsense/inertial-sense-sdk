@@ -1,6 +1,46 @@
 #include <gtest/gtest.h>
+#include "ISUtilities.h"
 #include "time_conversion.h"
+#include "test_data_utils.h"
 #include "protocol_nmea.h"
+
+
+TEST(time_conversion, UTC_to_GPS_to_UTC_time)
+{
+    SetUtcTimeZone();
+
+    int gpsTowMs = 111072800;
+    int gpsWeek = 2309;
+    int leapS = 18;
+
+    // Cycle through entire range of time of week
+    for (gpsTowMs = 0; gpsTowMs < C_MILLISECONDS_PER_WEEK; gpsTowMs += 200)
+    {
+        std::tm utcTime = GpsTimeToUtcDateTime(gpsTowMs/1000, gpsWeek);
+        uint32_t msec = gpsTowMs%1000;
+#if 1
+        printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
+        PrintUtcTime(utcTime, msec);
+#endif
+        uint32_t gpsTowMs2, gpsWeek2;
+        UtcDateTimeToGpsTime(utcTime, gpsTowMs2, gpsWeek2);
+        gpsTowMs2 = 1000*gpsTowMs2 + msec;
+        ASSERT_EQ(gpsTowMs, gpsTowMs2);
+        ASSERT_EQ(gpsWeek,  gpsWeek2);
+
+        uint32_t hours, minutes, seconds, milliseconds;
+        gpsTowMsToUtcTime(gpsTowMs, leapS, &hours, &minutes, &seconds, &milliseconds);
+        ASSERT_EQ(utcTime.tm_hour, hours);
+        ASSERT_EQ(utcTime.tm_min, minutes);
+        ASSERT_EQ(utcTime.tm_sec, seconds);
+        ASSERT_EQ(msec, milliseconds);
+
+        uint32_t gpsTowMs3;
+        uint32_t weekday = gpsTowMs / C_MILLISECONDS_PER_DAY;
+        utcTimeToGpsTowMs(hours, minutes, seconds, milliseconds, weekday, &gpsTowMs3, leapS);
+        ASSERT_EQ(gpsTowMs, gpsTowMs3);
+    }
+}
 
 TEST(time_conversion, GPS_to_UTC)
 {

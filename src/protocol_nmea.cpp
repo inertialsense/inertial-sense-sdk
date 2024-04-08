@@ -315,13 +315,18 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
 	return ptr;
 }
 
-char *ASCII_to_TimeOfDayMs(uint32_t *timeOfWeekMs, char *ptr)
+char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, char *ptr, uint32_t weekday, uint32_t leapS)
 {
 	// HHMMSS.sss
 	int hours, minutes; 
-	float seconds;
-	SSCANF(ptr, "%02d%02d%f", &hours, &minutes, &seconds);
-	timeOfWeekMs[0] = hours*3600000 + minutes*60000 + (uint32_t)(seconds*1000.0f);
+	float fseconds;
+	SSCANF(ptr, "%02d%02d%f", &hours, &minutes, &fseconds);
+	fseconds += 0.0005f;	// Prevent truncation problems.  Cause rounding at 0.5 ms.
+	uint32_t seconds = (uint32_t)fseconds;
+	fseconds *= 1000.0f;
+	uint32_t milliseconds = (uint32_t)fseconds;
+	milliseconds = milliseconds%1000;
+	utcTimeToGpsTowMs(hours, minutes, seconds, milliseconds, weekday, gpsTimeOfWeekMs, leapS);
 	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
@@ -611,7 +616,17 @@ static void nmea_latToDegMin(char* a, int aSize, int &offset, double v)
 {
 	aSize -= offset;
 	a += offset;
-	int degrees = (int)(v);
+
+	// Prevent truncation error when rounding
+	if (v < 0)
+	{
+		v -= 1.0E-10;
+	}
+	else
+	{
+		v += 1.0E-10;
+	}
+	int degrees = int(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
 	offset += ssnprintf(a, aSize, ",%02d%08.5lf,%c", abs(degrees), fabs(minutes), (v >= 0 ? 'N' : 'S'));
@@ -621,7 +636,17 @@ static void nmea_lonToDegMin(char* a, int aSize, int &offset, double v)
 {
 	aSize -= offset;
 	a += offset;
-	int degrees = (int)(v);
+
+	// Prevent truncation error when rounding
+	if (v < 0)
+	{
+		v -= 1.0E-10;
+	}
+	else
+	{
+		v += 1.0E-10;
+	}
+	int degrees = int(v);
 	double minutes = (v-((double)degrees))*60.0;
 	
 	offset += ssnprintf(a, aSize, ",%03d%08.5lf,%c", abs(degrees), fabs(minutes), (v >= 0 ? 'E' : 'W'));
@@ -715,7 +740,7 @@ int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "GGA");
-	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);						// 1
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);				// 1
 	nmea_latToDegMin(a, aSize, n, pos.lla[0]);						// 2,3
 	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);						// 4,5
 	nmea_sprint(a, aSize, n, ",%u", (unsigned int)fixQuality);		// 6 - GPS quality
@@ -1871,10 +1896,7 @@ int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	char *ptr = (char *)&a[7];	// $GxGGA,
 	
 	// 1 - UTC time HHMMSS.sss
-	uint32_t utcTimeOfDayMs;
-	ptr = ASCII_to_TimeOfDayMs(&utcTimeOfDayMs, ptr);
-	gpsPos.timeOfWeekMs = weekday*86400000 + utcTimeOfDayMs + gpsPos.leapS*1000;
-
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, ptr, weekday, gpsPos.leapS);
 	// 2,3 - Latitude (deg)
 	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
 	// 4,5 - Longitude (deg)
@@ -1968,12 +1990,8 @@ int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
 	// 3,4 - Longitude (deg)
 	ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
-
 	// 5 - UTC time HHMMSS
-	uint32_t utcTimeOfDayMs;
-	ptr = ASCII_to_TimeOfDayMs(&utcTimeOfDayMs, ptr);
-	gpsPos.timeOfWeekMs = weekday*86400000 + utcTimeOfDayMs + gpsPos.leapS*1000;
-
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, ptr, weekday, gpsPos.leapS);
 	// 6 - Valid (A=active, V=void)
 
 	return 0;

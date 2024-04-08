@@ -1,15 +1,49 @@
 #ifndef _C_TIMECONV_H_
 #define _C_TIMECONV_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include <ctime>
 #include "stdint.h"
+
+#define C_SECONDS_PER_WEEK          (   604800)        // (60 * 60 * 24 * 7)
+#define C_SECONDS_PER_DAY           (    86400)
+#define C_MILLISECONDS_PER_WEEK     (604800000)     // (60 * 60 * 24 * 7 * 1000)
+#define C_MILLISECONDS_PER_DAY      ( 86400000)
+#define C_MILLISECONDS_PER_HOUR     (  3600000)
+#define C_MILLISECONDS_PER_MINUTE   (    60000)
+#define C_MILLISECONDS_PER_SECOND   (     1000)
+#define C_DAYS_PER_SECOND           (1.1574074074074074074074074074074e-5)
+#define C_GPS_TO_UNIX_OFFSET_S      (315964800)
+
+/**
+ * @brief Set the UTC Time Zone object
+ */
+void SetUtcTimeZone(); 
 
 
 /** Convert GPS time of week in milliseconds to UTC time */
 void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, uint32_t* hours, uint32_t* minutes, uint32_t* seconds, uint32_t* milliseconds);
+/** Convert UTC time to GPS time of week in milliseconds */
+void utcTimeToGpsTowMs(uint32_t hours, uint32_t minutes, uint32_t seconds, uint32_t milliseconds, uint32_t weekday, uint32_t *gpsTimeOfWeekMs, uint32_t gpsLeapS = 18);
+
+/**
+ * @brief Convert GPS time of week in milliseconds to UTC date and time.
+ * 
+ * @param gpsSecondsOfWeek Output GPS seconds of week.
+ * @param gpsWeek Output GPS week number since January 6th, 1980.
+ * @param leapSeconds Leap seconds to account for difference between GPS and UTC time (18s by default).
+ * @return std::tm UTC time.
+ */
+std::tm GpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, uint32_t leapSeconds = 18);
+
+/**
+ * @brief Convert UTC date and time to GPS seconds in week and week number.
+ * 
+ * @param utcTime UTC time as std::tm.
+ * @param gpsSecondsOfWeek Output GPS seconds of week.
+ * @param gpsWeek Output GPS week number since January 6th, 1980.
+ * @param leapSeconds Leap seconds to account for difference between GPS and UTC time (18s by default).
+ */
+void UtcDateTimeToGpsTime(const std::tm &utcTime, uint32_t &gpsSecondsOfWeek, uint32_t &gpsWeek, uint32_t leapSeconds = 18);
 
 /** Convert Julian Date to calendar date. */
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond);
@@ -364,10 +398,5 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
  );
 
 #endif  // #if 0
-    
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif // _C_TIMECONV_H_

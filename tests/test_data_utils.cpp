@@ -11,9 +11,9 @@
 #include <random>
 
 #include "ISFileManager.h"
-#include "ISLogger.h"
 #include "protocol_nmea.h"
 #include "test_data_utils.h"
+#include "time_conversion.h"
 
 #define MIN_VALUE 		-1000
 #define MAX_VALUE 		 1000
@@ -67,35 +67,29 @@ struct sTimeMs
     u_int32_t rtcm1095;
 } s_msgTimeMs = {};
 
-
-void CurrentGpsTimeOfWeekMs(uint32_t &timeOfWeekMs, uint32_t &weeks)
+void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek)
 {
     // Get current time in UTC
     auto now = std::chrono::system_clock::now();
-    auto now_c = std::chrono::system_clock::to_time_t(now);
-    std::tm *utc_tm = std::gmtime(&now_c);
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    const std::tm *utc_tm = std::gmtime(&now_c);
 
-    // GPS epoch start (January 6, 1980)
-    std::tm gps_epoch = {};
-    gps_epoch.tm_year = 80;  // Year 1980
-    gps_epoch.tm_mon = 0;    // January
-    gps_epoch.tm_mday = 6;   // 6th
-
-    // Calculate difference in seconds
-    auto gps_epoch_c = std::mktime(&gps_epoch);
-    auto utc_now_t = std::mktime(utc_tm);
-    double seconds_since_gps_epoch = std::difftime(utc_now_t, gps_epoch_c);
-
-    // Subtract leap seconds (as of 2021, there are 18 leap seconds since 1980)
-    // Update this value based on the current number of leap seconds
-    const int leap_seconds = 18;
-    seconds_since_gps_epoch -= leap_seconds;
-
-    // Calculate weeks and seconds of the week
-    weeks = (int)seconds_since_gps_epoch / (60 * 60 * 24 * 7);
-    timeOfWeekMs = (((long long)(seconds_since_gps_epoch*1000.0)) % (60 * 60 * 24 * 7));    
+    // Convert current UTC time to GPS time
+    UtcDateTimeToGpsTime(*utc_tm, gpsTimeOfWeekMs, gpsWeek);
+    gpsTimeOfWeekMs *= 1000;
 }
 
+void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds)
+{
+    printf( "UTC Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\n", 
+        utcTime.tm_year + 1900,   // tm_year is year since 1900
+        utcTime.tm_mon + 1,       // tm_mon is months since January (0-11)
+        utcTime.tm_mday,
+        utcTime.tm_hour,
+        utcTime.tm_min,
+        utcTime.tm_sec,
+        milliseconds );
+}
 
 bool periodCheck(uint32_t &msgTimeMs, uint32_t periodMs)
 {
@@ -261,7 +255,7 @@ bool GenerateISB(test_message_t &msg, int i, float f)
     {
         init = false;
         
-        CurrentGpsTimeOfWeekMs(s_gpsTowOffsetMs, s_gpsWeek);
+        CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
         s_timeMs = 0;
         GeneratePimu(  msg, s_pimu,   i, f, true);
         GenerateIns1(  msg, s_ins1,   i, f, true);
@@ -506,7 +500,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     uint8_t comBuf[PKT_BUF_SIZE];
     is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
 
-    CurrentGpsTimeOfWeekMs(s_gpsTowOffsetMs, s_gpsWeek);
+    CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
     for (s_timeMs=0; logger.LogSizeMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
@@ -565,7 +559,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
     is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
     int streamSize = 0;
 
-    CurrentGpsTimeOfWeekMs(s_gpsTowOffsetMs, s_gpsWeek);
+    CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
     for (s_timeMs=0;; s_timeMs += s_timePeriodMs)
     {
