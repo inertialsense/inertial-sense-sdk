@@ -763,7 +763,8 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GMRC_BIT_POS_GPS1_RTK_POS_MISC]    = 1,
     [GMRC_BIT_POS_GPS1_RTK_POS_REL]     = 1,
     [GMRC_BIT_POS_GPS2_RTK_CMP_MISC]    = 1,
-    [GMRC_BIT_POS_GPS2_RTK_CMP_REL]     = 1,    
+    [GMRC_BIT_POS_GPS2_RTK_CMP_REL]     = 1, 
+    [GMRC_BIT_POS_DID_RTK_DEBUG]     	= GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,    
 };
 
 #ifndef GPX_1
