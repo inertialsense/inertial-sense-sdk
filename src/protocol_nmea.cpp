@@ -75,6 +75,23 @@ void nmea_print_u32(char buf[], int bufSize, int &offset, int precision, uint32_
 	}
 }
 
+void nmea_print_i32(char buf[], int bufSize, int &offset, int precision, uint32_t value)
+{
+    bufSize -= offset;
+    if (bufSize<=0) return;		// Prevent snprintf w/ invalid size
+    buf += offset;
+
+    if (value)
+    {	// Non-zero
+        offset += ssnprintf(buf, bufSize, ",%0*ld", precision, value);
+    }
+    else
+    {	// Print nothing for Zero
+        buf[0] = ',';
+        offset++;
+    }
+}
+
 uint32_t nmea_compute_checksum(uint8_t* str, int size)
 {
 	uint32_t checksum = 0;
@@ -671,7 +688,7 @@ static void nmea_GPSDateOfLastFixCSV(char* a, int aSize, int &offset, gps_pos_t 
 
 int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 {
-	int fixQuality;
+	int fixQuality = 0;
 	switch((pos.status&GPS_STATUS_FIX_MASK))
 	{
 	default:
@@ -715,15 +732,15 @@ int nmea_gga(char a[], const int aSize, gps_pos_t &pos)
 
 	int n = nmea_talker(a, aSize);
 	nmea_sprint(a, aSize, n, "GGA");
-	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);						// 1
-	nmea_latToDegMin(a, aSize, n, pos.lla[0]);						// 2,3
-	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);						// 4,5
-	nmea_sprint(a, aSize, n, ",%u", (unsigned int)fixQuality);		// 6 - GPS quality
-	nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));		// 7 - Satellites used
-	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);					// 8 - HDop
-	nmea_sprint(a, aSize, n, ",%.2f,M", pos.hMSL);					// 9,10 - MSL altitude
-	nmea_sprint(a, aSize, n, ",%.2f,M", pos.lla[2] - pos.hMSL);		// 11,12 - Geoid separation
-	nmea_sprint(a, aSize, n, ",,"); 								// 13,14 - Age of differential, DGPS station ID number	
+	nmea_GPSTimeToUTCTimeMsPrecision(a, aSize, n, pos);                                             // 1
+	nmea_latToDegMin(a, aSize, n, pos.lla[0]);                                                      // 2,3
+	nmea_lonToDegMin(a, aSize, n, pos.lla[1]);                                                      // 4,5
+	nmea_sprint(a, aSize, n, ",%01u", (unsigned int)(fixQuality & 0xF));                            // 6 - GPS quality -- limit to available options (TODO: Overkill and probably unnecessary)
+	nmea_sprint(a, aSize, n, ",%02u", (unsigned int)(pos.status&GPS_STATUS_NUM_SATS_USED_MASK));    // 7 - Satellites used
+	nmea_sprint(a, aSize, n, ",%.2f", pos.pDop);                                                    // 8 - HDop
+	nmea_sprint(a, aSize, n, ",%.2f,M", pos.hMSL);                                                  // 9,10 - MSL altitude
+	nmea_sprint(a, aSize, n, ",%.2f,M", pos.lla[2] - pos.hMSL);                                     // 11,12 - Geoid separation
+	nmea_sprint(a, aSize, n, ",,");                                                                 // 13,14 - Age of differential, DGPS station ID number
 	return nmea_sprint_footer(a, aSize, n);
 }
 
@@ -1386,8 +1403,8 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 				for (uint32_t j=0; j<=gsat.numSats; j++)
 				{
 					gps_sat_sv_t &sat = gsat.sat[j];
-					if (sat.gnssId == sig.gnssId &&
-						sat.svId == sig.svId)
+					if ((sat.gnssId == sig.gnssId) && (sat.svId == sig.svId)
+                        && (sat.elev >= 0)) // TODO: We should probably remove this, implement a parameter in the GPX flash config, and configure on the CXD5610.
 					{
 						uint16_t svId = prnToSvId(sig.gnssId, sig.svId);
 						if (s_protocol_version < NMEA_PROTOCOL_4P10)
@@ -1395,8 +1412,8 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 							svId = sigId_to_nmea2p3_svId(gnssId, sig.sigId, svId);
 						}
 						nmea_sprint(a, aSize, n, ",%02u", svId);				// 4 + 4*msgNum... svid
-						nmea_print_u32(a, aSize, n, 2, sat.elev);				// 5 + 4*msgNum... elevation
-						nmea_print_u32(a, aSize, n, 3, sat.azim);				// 6 + 4*msgNum... azimuth
+						nmea_print_i32(a, aSize, n, 2, sat.elev);				// 5 + 4*msgNum... elevation
+						nmea_print_i32(a, aSize, n, 3, sat.azim);				// 6 + 4*msgNum... azimuth
 						nmea_print_u32(a, aSize, n, 2, sig.cno);				// 7 + 4*msgNum... cno
 						++cnt;
 						break;
