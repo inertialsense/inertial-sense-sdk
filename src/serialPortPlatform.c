@@ -579,7 +579,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         if (n <= -1)
         {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                error_message("error %d from read, fd %d", errno, handle->fd);
+                // error_message("Error reading from file %d : %s (%d)\n", handle->fd, strerror(errno), errno);
             }
             return -1;
         }
@@ -629,9 +629,10 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
     int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
 #endif
 
-    if ((result < 0) && !((errno == EAGAIN) && !handle->blocking))
+    if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
+        error_message("Error reading from %s (%d) : %s (%d)\n", serialPort->port, handle->fd, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
-    else
+    } else
         serialPort->errorCode = 0; // clear any previous errorcode
     return result;
 }

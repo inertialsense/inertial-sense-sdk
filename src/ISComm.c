@@ -165,7 +165,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 	c->rxBuf.size = bufferSize;
 	c->rxBuf.start = buffer;
 	c->rxBuf.end = buffer + bufferSize;
-	c->rxBuf.tail = c->rxBuf.scan = buffer;
+	c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
 	
 	// Set parse enable flags
 	c->config.enabledMask = 
@@ -857,13 +857,20 @@ static protocol_type_t processSpartnByte(void* v)
 	return _PTYPE_NONE;
 }
 
+/**
+ *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
+ *
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
+ * Specifically, if the buffer is empty, it will reset all pointers to the start of the buffer.
+ * If the buffer pointers are at the end of the buffer, and there is free space at the beginning, it will
+ * move the buffer contents back to start, and realign the buffer pointers to maximize free space at the end.
+ * If the buffer is mostly (2/3rds) full and cannot be shifted, it will be cleared (reinitialized, dropping
+ * old data).
+ * @param c the comm instance associated with the port
+ * @return the number of free bytes available in the buffer (for subsequent reads)
+ */
 int is_comm_free(is_comm_instance_t* c)
 {
-// 	if (c == 0 || c->buf.start == 0)
-// 	{
-// 		return -1;
-// 	}
-
 	is_comm_buffer_t *buf = &(c->rxBuf);
 
 	int bytesFree = (int)(buf->end - buf->tail);

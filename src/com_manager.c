@@ -176,7 +176,7 @@ int initComManagerInstanceInternal
         
     // Port specific info
     cmInstance->ports = cmPorts;
-        for (i = 0; i < numPorts; i++)
+    for (i = 0; i < numPorts; i++)
     {	// Initialize IScomm instance, for serial reads / writes
         com_manager_port_t *port = &(cmInstance->ports[i]);
         is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
@@ -269,7 +269,9 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
 
         // Read data directly into comm buffer
         int n = 0;
-        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, is_comm_free(comm))) != 0)
+        // Here there lie dragons - is_comm_free() modifies comm->rxBuf pointers, so make sure you call here first!!
+        int free_size = is_comm_free(comm);
+        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, free_size)) != 0)
         {
             // Update comm buffer tail pointer
             comm->rxBuf.tail += n;
