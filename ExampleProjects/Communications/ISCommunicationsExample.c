@@ -140,7 +140,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// STEP 2: Init comm instance
 	is_comm_instance_t comm;
 	uint8_t buffer[2048];
@@ -166,7 +165,6 @@ int main(int argc, char* argv[])
 		return -2;
 	}
 
-
 	int error;
 
 	// STEP 4: Stop any message broadcasting
@@ -183,24 +181,20 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-
 	// STEP 6: Enable message broadcasting
 	if ((error = enable_message_broadcasting(&serialPort, &comm)))
 	{
 		return error;
 	}
 
-
 #if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
 	save_persistent_messages(&serialPort, &comm);
 #endif
-
 
 	// STEP 8: Handle received data
 	int count;
 	uint8_t inByte;
 
-	// You can set running to false with some other piece of code to break out of the loop and end the program
 	while (running)
 	{
 		// Read one byte with a 20 millisecond timeout
@@ -229,6 +223,17 @@ int main(int argc, char* argv[])
 
 					// TODO: add other cases for other data ids that you care about
 				}
+				break;
+
+			case _PTYPE_NMEA:
+				switch (getNmeaMsgId(comm.dataPtr, comm.dataHdr.size))
+				{
+                case NMEA_MSG_ID_GxGGA:
+					// Access NMEA message here:
+					// comm.dataPtr 
+					// comm.dataHdr.size
+                    break;
+                }
 				break;
 
 			default:
