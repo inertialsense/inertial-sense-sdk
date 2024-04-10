@@ -738,6 +738,7 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GPS1_RTK_POS_REL]       = GMRC_BITS_GPS1_RTK_POS_REL,
     [DID_GPS2_RTK_CMP_MISC]      = GMRC_BITS_GPS2_RTK_CMP_MISC,
     [DID_GPS2_RTK_CMP_REL]       = GMRC_BITS_GPS2_RTK_CMP_REL,
+    [DID_RTK_DEBUG]       		 = GMRC_BITS_DID_RTK_DEBUG,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
