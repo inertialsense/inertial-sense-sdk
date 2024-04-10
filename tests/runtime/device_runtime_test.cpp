@@ -4,11 +4,15 @@
 
 
 
+DeviceRuntimeTest::DeviceRuntimeTest()
+{
+    m_hist.gps1Pos.week = 2309;
+}
+
 void DeviceRuntimeTest::ProcessRaw(uint8_t *data, int dataSize)
 {
 
 }
-
 
 void DeviceRuntimeTest::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
 {
@@ -21,7 +25,7 @@ void DeviceRuntimeTest::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *d
 
     switch(dataHdr.id)
     {
-    case DID_GPS1_POS:      copyDataPToStructP2(&m_hist.gpsPos, &dataHdr, dataBuf, sizeof(gps_pos_t));       break;
+    case DID_GPS1_POS:      copyDataPToStructP2(&m_hist.gps1Pos, &dataHdr, dataBuf, sizeof(gps_pos_t));       break;
     }
 }
 
@@ -43,39 +47,50 @@ void DeviceRuntimeTest::ProcessNMEA(const uint8_t* msg, int msgSize)
 
 void DeviceRuntimeTest::TestNmeaGga(const uint8_t* msg, int msgSize)
 {
-    if (m_hist.gpsPos.week)
+    if (m_hist.gps1Pos.week == 0)
     {   // Require week for time conversion
         return;
     }
 
-    gps_pos_t &histPos = m_hist.nmea.gga.gpsPos;
+    gga_nmea_history_t &ggaHist = m_hist.nmea.gga;
     gps_pos_t gpsPos = {};
 
-    printf("NMEA (%d): %.*s", msgSize, msgSize, msg);
-
-    uint32_t weekday = m_hist.gpsPos.timeOfWeekMs / 86400000;
+    uint32_t weekday = m_hist.gps1Pos.timeOfWeekMs / 86400000;
+    // uint32_t weekday = 0;
     nmea_parse_gga_to_did_gps(gpsPos, (char*)msg, msgSize, weekday);
 
-    if (gpsPos.timeOfWeekMs == histPos.timeOfWeekMs)
+    printf("NMEA (%d ms %d): %.*s", gpsPos.timeOfWeekMs, weekday, msgSize, msg);
+
+    if (gpsPos.timeOfWeekMs == ggaHist.gpsPos.timeOfWeekMs)
     {   // Duplicate time
-        LogErrorNMEA(msg, msgSize, "Duplicate time: %d ms >> %d ms", histPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
+        LogEvent("NMEA Error: GGA duplicate time: %d ms >> %d ms\n", ggaHist.gpsPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
+        LogEvent("  1: %.*s  2: %.*s", ggaHist.msgSize, ggaHist.msg, msgSize, msg);
     }
-    else if (gpsPos.timeOfWeekMs < histPos.timeOfWeekMs)
+    else if (gpsPos.timeOfWeekMs < ggaHist.gpsPos.timeOfWeekMs)
     {   // Regressed time
-        LogErrorNMEA(msg, msgSize, "Time reversed direction: %d ms >> %d ms", histPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
+        LogEvent("NMEA Error: GGA time reversed direction: %d ms >> %d ms\n", ggaHist.gpsPos.timeOfWeekMs, gpsPos.timeOfWeekMs);
+        LogEvent("  1: %.*s  2: %.*s", ggaHist.msgSize, ggaHist.msg, msgSize, msg);
     }
 
     // Update history
-    histPos = gpsPos;
+    ggaHist.gpsPos = gpsPos;
+    memcpy(ggaHist.msg, msg, _MIN(msgSize, MAX_MSG_LENGTH_NMEA));
+    ggaHist.msgSize = msgSize;
 }
 
-void DeviceRuntimeTest::LogErrorNMEA(const uint8_t* msg, int msgSize, const char *format, ...)
+void DeviceRuntimeTest::LogEvent(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
 
-    printf("NMEA Error: ");
     vprintf(format, args);
-    printf("\n");
-    // printf("%.*s", msgSize, msg);   
+
+    FILE *file;
+    if (file = fopen("realtime_test_log.txt", "a"))
+    {
+        fprintf(file, "NMEA Error: ");
+        vfprintf(file, format, args);
+        fclose(file);
+    }
 }
+

@@ -318,15 +318,15 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
 char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, char *ptr, uint32_t weekday, uint32_t leapS)
 {
 	// HHMMSS.sss
-	int hours, minutes; 
-	float fseconds;
-	SSCANF(ptr, "%02d%02d%f", &hours, &minutes, &fseconds);
-	fseconds += 0.0005f;	// Prevent truncation problems.  Cause rounding at 0.5 ms.
-	uint32_t seconds = (uint32_t)fseconds;
-	fseconds *= 1000.0f;
-	uint32_t milliseconds = (uint32_t)fseconds;
-	milliseconds = milliseconds%1000;
-	utcTimeToGpsTowMs(hours, minutes, seconds, milliseconds, weekday, gpsTimeOfWeekMs, leapS);
+	utc_time_t t;
+	float fsecond;
+	SSCANF(ptr, "%02d%02d%f", &t.hour, &t.minute, &fsecond);
+	fsecond += 0.0005f;	// Prevent truncation problems.  Cause rounding at 0.5 ms.
+	t.second = (uint32_t)fsecond;
+	fsecond *= 1000.0f;
+	t.millisecond = (uint32_t)fsecond;
+	t.millisecond = t.millisecond%1000;
+	utcTimeToGpsTowMs(&t, weekday, gpsTimeOfWeekMs, leapS);
 	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
@@ -655,21 +655,21 @@ static void nmea_lonToDegMin(char* a, int aSize, int &offset, double v)
 static void nmea_GPSTimeToUTCTime(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
 	aSize -= offset;
-	a += offset;	
-	uint32_t hours, minutes, seconds, milliseconds;
-	gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &hours, &minutes,  &seconds, &milliseconds);
+	a += offset;
+	utc_time_t t;
+	gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
 	
-	offset += ssnprintf(a, aSize, ",%02u%02u%02u", hours, minutes, seconds);
+	offset += ssnprintf(a, aSize, ",%02u%02u%02u", t.hour, t.minute, t.second);
 }
 
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos)
 {
 	aSize -= offset;
-	a += offset;	
-	uint32_t hours, minutes, seconds, milliseconds;
-	gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &hours, &minutes,  &seconds, &milliseconds);
+	a += offset;
+	utc_time_t t;
+	gpsTowMsToUtcTime(pos.timeOfWeekMs, pos.leapS, &t);
 
-	offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", hours, minutes, seconds, milliseconds);
+	offset += ssnprintf(a, aSize, ",%02u%02u%02u.%03u", t.hour, t.minute, t.second, t.millisecond);
 }
 
 static void nmea_GPSDateOfLastFix(char* a, int aSize, int &offset, gps_pos_t &pos)

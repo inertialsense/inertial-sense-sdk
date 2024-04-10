@@ -18,7 +18,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
     {
         std::tm utcTime = GpsTimeToUtcDateTime(gpsTowMs/1000, gpsWeek);
         uint32_t msec = gpsTowMs%1000;
-#if 1
+#if 0
         printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
         PrintUtcTime(utcTime, msec);
 #endif
@@ -28,16 +28,16 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
         ASSERT_EQ(gpsTowMs, gpsTowMs2);
         ASSERT_EQ(gpsWeek,  gpsWeek2);
 
-        uint32_t hours, minutes, seconds, milliseconds;
-        gpsTowMsToUtcTime(gpsTowMs, leapS, &hours, &minutes, &seconds, &milliseconds);
-        ASSERT_EQ(utcTime.tm_hour, hours);
-        ASSERT_EQ(utcTime.tm_min, minutes);
-        ASSERT_EQ(utcTime.tm_sec, seconds);
-        ASSERT_EQ(msec, milliseconds);
+    	utc_time_t t;
+        gpsTowMsToUtcTime(gpsTowMs, leapS, &t);
+        ASSERT_EQ(utcTime.tm_hour, t.hour);
+        ASSERT_EQ(utcTime.tm_min, t.minute);
+        ASSERT_EQ(utcTime.tm_sec, t.second);
+        ASSERT_EQ(msec, t.millisecond);
 
         uint32_t gpsTowMs3;
         uint32_t weekday = gpsTowMs / C_MILLISECONDS_PER_DAY;
-        utcTimeToGpsTowMs(hours, minutes, seconds, milliseconds, weekday, &gpsTowMs3, leapS);
+        utcTimeToGpsTowMs(&t, weekday, &gpsTowMs3, leapS);
         ASSERT_EQ(gpsTowMs, gpsTowMs3);
     }
 }
@@ -47,13 +47,13 @@ TEST(time_conversion, GPS_to_UTC)
     uint32_t gpsWeek = 2294; 
     uint32_t gpsTowMs = 421338800;
     uint32_t gpsLeapS = 18;
-    uint32_t utc_hours, utc_minutes, utc_seconds, utc_ms;
-    gpsTowMsToUtcTime(gpsTowMs, gpsLeapS, &utc_hours, &utc_minutes, &utc_seconds, &utc_ms);
+    utc_time_t t;
+    gpsTowMsToUtcTime(gpsTowMs, gpsLeapS, &t);
 
-    ASSERT_EQ(utc_hours, 21);
-    ASSERT_EQ(utc_minutes, 02);
-    ASSERT_EQ(utc_seconds, 0);
-    ASSERT_EQ(utc_ms, 800);
+    ASSERT_EQ(t.hour, 21);
+    ASSERT_EQ(t.minute, 02);
+    ASSERT_EQ(t.second, 0);
+    ASSERT_EQ(t.millisecond, 800);
 }
 
 #if 0

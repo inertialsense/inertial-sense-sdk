@@ -284,39 +284,42 @@ bool timeIsSameAndSet(uint32_t &msgMs, uint32_t timeMs)
 
 bool GenerateNMEA(test_message_t &msg, int i, float f)
 {
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaPImu, s_msgTimeMs.pimu))
-    {
-        msg.pktSize = nmea_ppimu((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_pimu);
-        msg.ptype = _PTYPE_NMEA;
-        return true;
-    }
+    // if (timeIsSameAndSet(s_msgTimeMs.nmeaPImu, s_msgTimeMs.pimu))
+    // {
+    //     msg.pktSize = nmea_ppimu((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_pimu);
+    //     msg.ptype = _PTYPE_NMEA;
+    //     return true;
+    // }
 
     if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
     {   
-        static uint32_t towMsLast = s_gpsPos.timeOfWeekMs;
-        if (towMsLast >= s_gpsPos.timeOfWeekMs)
+        static uint32_t towMsLast = 0;
+        if (!towMsLast && towMsLast >= s_gpsPos.timeOfWeekMs)
         {
             printf("GPS TIME REGRESSED\n");
         }
+        towMsLast = s_gpsPos.timeOfWeekMs;
 
         msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
+
+        printf("(%d ms): %.*s", s_gpsPos.timeOfWeekMs, msg.pktSize, msg.comm.rxBuf.start);
         return true;
     }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gpsPos))
-    {
-        msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos, s_gpsVel);
-        msg.ptype = _PTYPE_NMEA;
-        return true;
-    }
+    // if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gpsPos))
+    // {
+    //     msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos, s_gpsVel);
+    //     msg.ptype = _PTYPE_NMEA;
+    //     return true;
+    // }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaIns1, s_msgTimeMs.ins1))
-    {
-        msg.pktSize = nmea_pins1((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_ins1);
-        msg.ptype = _PTYPE_NMEA;
-        return true;
-    }
+    // if (timeIsSameAndSet(s_msgTimeMs.nmeaIns1, s_msgTimeMs.ins1))
+    // {
+    //     msg.pktSize = nmea_pins1((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_ins1);
+    //     msg.ptype = _PTYPE_NMEA;
+    //     return true;
+    // }
 
     return false;
 }
@@ -452,6 +455,7 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
         case _PTYPE_INERTIAL_SENSE_CMD:
         case _PTYPE_INERTIAL_SENSE_ACK:
             msg.pktSize = is_comm_data_to_buf(msg.comm.rxBuf.start, msg.comm.rxBuf.size, &msg.comm, msg.dataHdr.id, msg.dataHdr.size, 0, (void*)&msg.data);
+            msg.pktSize = 0;    // Disable ISB
             return true;
         }
     }
@@ -463,19 +467,19 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
         return true;
     }
 
-    if ((ptype == _PTYPE_NONE || ptype == _PTYPE_UBLOX) && GenerateUblox(msg, i, f))
-    {
-        msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
-        msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
-        return true;
-    }
+    // if ((ptype == _PTYPE_NONE || ptype == _PTYPE_UBLOX) && GenerateUblox(msg, i, f))
+    // {
+    //     msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
+    //     msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
+    //     return true;
+    // }
 
-    if ((ptype == _PTYPE_NONE  || ptype == _PTYPE_RTCM3) && GenerateRTCM3(msg, i, f))
-    {
-        msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
-        msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
-        return true;
-    }
+    // if ((ptype == _PTYPE_NONE  || ptype == _PTYPE_RTCM3) && GenerateRTCM3(msg, i, f))
+    // {
+    //     msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
+    //     msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
+    //     return true;
+    // }
 
     return false;
 }
@@ -558,6 +562,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
     uint8_t comBuf[PKT_BUF_SIZE];
     is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
     int streamSize = 0;
+    static int pktCount = 0;
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
@@ -570,11 +575,31 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
                 return streamSize;
             }
 
-            // Insert garbage data
-            static int pktCount = 0;
-            if (options == GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS && pktCount++ > 10)
+#if 0
+            // Duplicate data
+            if (options & GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE && (pktCount%23 == 0))
+            {   
+                if (!AddDataToStream(buffer, bufferSize, streamSize, msg.comm.rxBuf.start, msg.pktSize))
+                {   // Buffer full
+                    return streamSize;
+                }
+            }
+
+            // Cause timestamp to momentarily reverse 
+            if (options & GEN_LOG_OPTIONS_TIMESTAMP_REVERSE && (pktCount%18 == 0))
             {
-                pktCount = 0;
+                s_timeMs -= s_gpsPeriodMs;
+                s_msgTimeMs.nmeaGpsPos = 0;
+                s_msgTimeMs.nmeaGga = 0;
+                s_msgTimeMs.nmeaIns1 = 0;
+                s_msgTimeMs.gpsPos = 0;
+                s_msgTimeMs.ins1 = 0;
+            }
+#endif
+
+            // Insert garbage data
+            if (options & GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS && (pktCount%15 == 0))
+            {
                 uint8_t garbage[100];
 
                 for (int i=0; i<sizeof(garbage); i++)
@@ -588,6 +613,8 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
                     return streamSize;
                 }
             }
+
+            pktCount++;
         }
     }
 

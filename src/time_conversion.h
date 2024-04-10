@@ -14,6 +14,21 @@
 #define C_DAYS_PER_SECOND           (1.1574074074074074074074074074074e-5)
 #define C_GPS_TO_UNIX_OFFSET_S      (315964800)
 
+typedef struct
+{
+    int year;
+    int month;
+    int day;
+} utc_date_t;
+
+typedef struct
+{
+    int hour;
+    int minute;
+    int second;
+    int millisecond;
+} utc_time_t;
+
 /**
  * @brief Set the UTC Time Zone object
  */
@@ -21,9 +36,9 @@ void SetUtcTimeZone();
 
 
 /** Convert GPS time of week in milliseconds to UTC time */
-void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, uint32_t* hours, uint32_t* minutes, uint32_t* seconds, uint32_t* milliseconds);
+void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, utc_time_t *time);
 /** Convert UTC time to GPS time of week in milliseconds */
-void utcTimeToGpsTowMs(uint32_t hours, uint32_t minutes, uint32_t seconds, uint32_t milliseconds, uint32_t weekday, uint32_t *gpsTimeOfWeekMs, uint32_t gpsLeapS = 18);
+void utcTimeToGpsTowMs(utc_time_t *time, uint32_t weekday, uint32_t *gpsTimeOfWeekMs, uint32_t gpsLeapS);
 
 /**
  * @brief Convert GPS time of week in milliseconds to UTC date and time.

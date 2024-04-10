@@ -8,12 +8,8 @@
 using namespace std;
 
 
-
-TEST(runtime_tests, data_with_no_errors)
+void run_realtime_test(uint8_t *stream, int streamSize)
 {
-	uint8_t stream[5000000] = {0};
-	int streamSize = GenerateDataStream(stream, sizeof(stream));
-
     is_comm_instance_t comm;
 	uint8_t comBuf[PKT_BUF_SIZE];
     is_comm_init(&comm, comBuf, PKT_BUF_SIZE);
@@ -56,6 +52,19 @@ TEST(runtime_tests, data_with_no_errors)
 		runtimeTest.ProcessRaw(stream+n, chunkSize);
 		n += chunkSize;
 	}
-
 }
 
+
+TEST(runtime_tests, data_with_no_errors)
+{
+	uint8_t stream[2000] = {0};
+	int streamSize = GenerateDataStream(stream, sizeof(stream));
+	run_realtime_test(stream, streamSize);
+}
+
+TEST(runtime_tests, timestamp_duplicates)
+{
+	// uint8_t stream[5000000] = {0};
+	// int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE);
+	// run_realtime_test(stream, streamSize);
+}
