@@ -392,8 +392,9 @@ TEST(protocol_nmea, GGA)
     gps_pos_t pos2 = {};
     pos2.week = pos.week;
     pos2.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
-    nmea_parse_gga_to_did_gps(pos2, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga_to_did_gps(pos2, t, abuf, ASCII_BUF_LEN, utcWeekday);
     pos.hAcc = pos2.hAcc;
     
     compareGpsPos(pos, pos2);
@@ -439,8 +440,9 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
         gps_pos_t pos2 = {};
         pos2.week = pos.week;
         pos2.leapS = pos.leapS;
-        uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
-        nmea_parse_gga_to_did_gps(pos2, abuf, ASCII_BUF_LEN, weekday);
+        utc_time_t t;
+        int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+        nmea_parse_gga_to_did_gps(pos2, t, abuf, ASCII_BUF_LEN, utcWeekday);
         pos.hAcc = pos2.hAcc;
 
         compareGpsPos(pos, pos2);
@@ -489,8 +491,9 @@ TEST(protocol_nmea, GGA2)
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga_to_did_gps(result, t, abuf, ASCII_BUF_LEN, utcWeekday);
     pos.hAcc = result.hAcc;
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -531,8 +534,9 @@ TEST(protocol_nmea, GGA3)
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga_to_did_gps(result, t, abuf, ASCII_BUF_LEN, utcWeekday);
     pos.hAcc = result.hAcc;
     EXPECT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -573,8 +577,9 @@ TEST(protocol_nmea, GGA4)
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga_to_did_gps(result, t, abuf, ASCII_BUF_LEN, utcWeekday);
     pos.hAcc = result.hAcc;
     EXPECT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -595,7 +600,8 @@ TEST(protocol_nmea, GLL)
     gps_pos_t result = {};
     result.leapS = pos.leapS;
     uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
-    nmea_parse_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    nmea_parse_gll_to_did_gps(result, t, abuf, ASCII_BUF_LEN, weekday);
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 

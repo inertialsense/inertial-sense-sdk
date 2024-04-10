@@ -5,6 +5,7 @@
 #include "protocol_nmea.h"
 
 
+
 TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 {
     SetUtcTimeZone();
@@ -36,8 +37,7 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
         ASSERT_EQ(msec, t.millisecond);
 
         uint32_t gpsTowMs3;
-        uint32_t weekday = gpsTowMs / C_MILLISECONDS_PER_DAY;
-        utcTimeToGpsTowMs(&t, weekday, &gpsTowMs3, leapS);
+        utcTimeToGpsTowMs(&t, utcTime.tm_wday, &gpsTowMs3, leapS);
         ASSERT_EQ(gpsTowMs, gpsTowMs3);
     }
 }

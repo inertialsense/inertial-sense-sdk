@@ -17,7 +17,7 @@
 #define TIMECONV_DAYS_IN_NOV 30
 #define TIMECONV_DAYS_IN_DEC 31
 
-void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, utc_time_t *time)
+void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time)
 {
     int leapMs = gpsLeapS * 1000;
     int towMsMinusLeapMs = gpsTimeOfWeekMs - leapMs;
@@ -32,20 +32,39 @@ void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, utc_time_t *
 	time->millisecond = todayMs % 1000;
 }
 
-void utcTimeToGpsTowMs(utc_time_t *time, uint32_t weekday, uint32_t *gpsTimeOfWeekMs, uint32_t gpsLeapS)
+void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS)
 {
-    int leapMs = gpsLeapS * 1000;
-    int todayMs = 
+    int towMs = 
         time->hour   * C_MILLISECONDS_PER_HOUR +
         time->minute * C_MILLISECONDS_PER_MINUTE +
         time->second * C_MILLISECONDS_PER_SECOND +
         time->millisecond +
-        leapMs;
-    if (todayMs >= C_MILLISECONDS_PER_DAY)
-    {   // Handle day wrap
-        todayMs -= C_MILLISECONDS_PER_DAY;
+        gpsLeapS * 1000 +
+        utcWeekday * C_MILLISECONDS_PER_DAY;
+
+    // Handle week wrap
+    if (towMs >= C_MILLISECONDS_PER_WEEK)
+    {   
+        towMs -= C_MILLISECONDS_PER_WEEK;
+    } 
+    else if (towMs < 0)
+    {
+        towMs += C_MILLISECONDS_PER_WEEK;
     }
-    *gpsTimeOfWeekMs = todayMs + weekday * C_MILLISECONDS_PER_DAY;
+
+    *gpsTimeOfWeekMs = towMs;
+}
+
+int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS)
+{
+    int utcTowMs = gpsTowMs - (leapS*1000);
+    if (utcTowMs < 0)
+    {   // Handle wrap
+        utcTowMs -= C_MILLISECONDS_PER_DAY;
+    }
+
+    int utcWeekday = utcTowMs / C_MILLISECONDS_PER_DAY;
+    return utcWeekday;
 }
 
 void SetUtcTimeZone()

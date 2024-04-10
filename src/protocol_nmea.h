@@ -2,6 +2,7 @@
 #define PROTOCOL_NMEA_H_
 
 #include "data_sets.h"
+#include "time_conversion.h"
 
 #define NMEA_CMD_QUERY_DEVICE_INFO                      "$INFO*0E\r\n"
 #define NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS          "$STPB*15\r\n"
@@ -78,8 +79,8 @@ int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
 // Used in test_common.cpp
 int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &gpsPos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1], const char a[], const int aSize);
-int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
-int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday);
+int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, utc_time_t &t, const char a[], const int aSize, uint32_t utcWeekday);
+int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, utc_time_t &t, const char a[], const int aSize, uint32_t utcWeekday);
 int nmea_parse_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &gpsSat, const char a[], const int aSize);
 int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize);
 int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3]);

@@ -57,7 +57,8 @@ void DeviceRuntimeTest::TestNmeaGga(const uint8_t* msg, int msgSize)
 
     uint32_t weekday = m_hist.gps1Pos.timeOfWeekMs / 86400000;
     // uint32_t weekday = 0;
-    nmea_parse_gga_to_did_gps(gpsPos, (char*)msg, msgSize, weekday);
+    utc_time_t t;
+    nmea_parse_gga_to_did_gps(gpsPos, t, (char*)msg, msgSize, weekday);
 
     printf("NMEA (%d ms %d): %.*s", gpsPos.timeOfWeekMs, weekday, msgSize, msg);
 

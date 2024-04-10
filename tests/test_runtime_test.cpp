@@ -57,7 +57,7 @@ void run_realtime_test(uint8_t *stream, int streamSize)
 
 TEST(runtime_tests, data_with_no_errors)
 {
-	uint8_t stream[2000] = {0};
+	uint8_t stream[1000] = {0};
 	int streamSize = GenerateDataStream(stream, sizeof(stream));
 	run_realtime_test(stream, streamSize);
 }

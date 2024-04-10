@@ -34,11 +34,14 @@ typedef struct
  */
 void SetUtcTimeZone(); 
 
-
 /** Convert GPS time of week in milliseconds to UTC time */
-void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, utc_time_t *time);
+void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time);
+
 /** Convert UTC time to GPS time of week in milliseconds */
-void utcTimeToGpsTowMs(utc_time_t *time, uint32_t weekday, uint32_t *gpsTimeOfWeekMs, uint32_t gpsLeapS);
+void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS);
+
+/** Convert GPS time in milliseconds to UTC weekday */
+int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS);
 
 /**
  * @brief Convert GPS time of week in milliseconds to UTC date and time.

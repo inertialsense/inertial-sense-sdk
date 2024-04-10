@@ -315,18 +315,17 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
 	return ptr;
 }
 
-char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, char *ptr, uint32_t weekday, uint32_t leapS)
+char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *t, char *ptr, uint32_t utcWeekday, uint32_t leapS)
 {
 	// HHMMSS.sss
-	utc_time_t t;
 	float fsecond;
-	SSCANF(ptr, "%02d%02d%f", &t.hour, &t.minute, &fsecond);
+	SSCANF(ptr, "%02d%02d%f", &t->hour, &t->minute, &fsecond);
 	fsecond += 0.0005f;	// Prevent truncation problems.  Cause rounding at 0.5 ms.
-	t.second = (uint32_t)fsecond;
+	t->second = (uint32_t)fsecond;
 	fsecond *= 1000.0f;
-	t.millisecond = (uint32_t)fsecond;
-	t.millisecond = t.millisecond%1000;
-	utcTimeToGpsTowMs(&t, weekday, gpsTimeOfWeekMs, leapS);
+	t->millisecond = (uint32_t)fsecond;
+	t->millisecond = t->millisecond%1000;
+	utcTimeToGpsTowMs(t, utcWeekday, gpsTimeOfWeekMs, leapS);
 	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
@@ -1890,13 +1889,13 @@ int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel
 	return 0;
 }
 
-int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
+int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, utc_time_t &t, const char a[], const int aSize, uint32_t utcWeekday)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
 	
 	// 1 - UTC time HHMMSS.sss
-	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, ptr, weekday, gpsPos.leapS);
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &t, ptr, utcWeekday, gpsPos.leapS);
 	// 2,3 - Latitude (deg)
 	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
 	// 4,5 - Longitude (deg)
@@ -1981,7 +1980,7 @@ int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	return 0;
 }
 
-int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t weekday)
+int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, utc_time_t &t, const char a[], const int aSize, uint32_t utcWeekday)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
@@ -1991,7 +1990,7 @@ int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize
 	// 3,4 - Longitude (deg)
 	ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
 	// 5 - UTC time HHMMSS
-	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, ptr, weekday, gpsPos.leapS);
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &t, ptr, utcWeekday, gpsPos.leapS);
 	// 6 - Valid (A=active, V=void)
 
 	return 0;
