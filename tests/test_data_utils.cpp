@@ -24,6 +24,13 @@
 #define DATA_DIR "./"
 #endif
 
+#define PRINT_DEBUG 0
+#if PRINT_DEBUG
+#define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...) 
+#endif
+
 using namespace std;
 
 static const int s_maxFileSize = 5242880;
@@ -108,6 +115,7 @@ bool GeneratePimu(test_message_t &msg, pimu_t &pimu, int i, float f, bool init=f
     {
         memset(&pimu, 0, sizeof(pimu_t));
         pimu.time = 0.001*((double)s_timeMs);
+        return false;
     }
 
     if (!periodCheck(s_msgTimeMs.pimu, s_pimuPeriodMs))
@@ -141,6 +149,7 @@ bool GenerateIns1(test_message_t &msg, ins_1_t &ins1, int i, float f, bool init=
         ins1.lla[0] =   40.330565516;
         ins1.lla[1] = -111.725787806;
         ins1.lla[2] = 1408.565264;
+        return false;
     }
 
     if (!periodCheck(s_msgTimeMs.ins1, s_navPeriodMs))
@@ -190,6 +199,7 @@ bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool in
         gps.pDop = (float)i;
         gps.towOffset = (double)i*123.4;
         gps.leapS = C_GPS_LEAP_SECONDS;
+        return false;
     }
 
     if (!periodCheck(s_msgTimeMs.gpsPos, s_gpsPeriodMs))
@@ -225,6 +235,7 @@ bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool in
     {
         memset(&gps, 0, sizeof(gps_vel_t));
         gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
+        return false;
     }
 
     if (!periodCheck(s_msgTimeMs.gpsVel, s_gpsPeriodMs))
@@ -292,27 +303,18 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
     //     return true;
     // }
 
-    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
-    {   
-        msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
-        msg.ptype = _PTYPE_NMEA;
-        return true;
-    }
+    // if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
+    // {   
+    //     msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
+    //     msg.ptype = _PTYPE_NMEA;
+    //     printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
+    //     return true;
+    // }
 
     if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
     {   
-        static uint32_t towMsLast = 0;
-        if (!towMsLast && towMsLast >= s_gpsPos.timeOfWeekMs)
-        {
-            printf("GPS TIME REGRESSED\n");
-        }
-        towMsLast = s_gpsPos.timeOfWeekMs;
-
         msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
-
-        int utcWeekday = gpsTowMsToUtcWeekday(s_gpsPos.timeOfWeekMs, s_gpsPos.leapS);
-        printf("(%d ms, %d wkday): %.*s", s_gpsPos.timeOfWeekMs, utcWeekday, msg.pktSize, msg.comm.rxBuf.start);
         return true;
     }
 
@@ -454,19 +456,18 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
     int i = dist(rng);
     float f = (float)i * 0.001;
 
-    bool isb = GenerateISB(msg, i, f);
-    if (isb)
+    // GenerateISB() must run to generate ISB data used in GenerateNMEA()
+    if (GenerateISB(msg, i, f))
     {
-        switch (ptype)
+        if (ptype == _PTYPE_NONE || ptype == _PTYPE_INERTIAL_SENSE_DATA)
         {
-        case _PTYPE_NONE:
-        case _PTYPE_INERTIAL_SENSE_DATA:
-        case _PTYPE_INERTIAL_SENSE_CMD:
-        case _PTYPE_INERTIAL_SENSE_ACK:
             msg.pktSize = is_comm_data_to_buf(msg.comm.rxBuf.start, msg.comm.rxBuf.size, &msg.comm, msg.dataHdr.id, msg.dataHdr.size, 0, (void*)&msg.data);
-            msg.pktSize = 0;    // Disable ISB
-            return true;
         }
+        else
+        {
+            msg.pktSize = 0;
+        }
+        return true;
     }
 
     if ((ptype == _PTYPE_NONE || ptype == _PTYPE_NMEA) && GenerateNMEA(msg, i, f))
@@ -476,19 +477,19 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
         return true;
     }
 
-    // if ((ptype == _PTYPE_NONE || ptype == _PTYPE_UBLOX) && GenerateUblox(msg, i, f))
-    // {
-    //     msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
-    //     msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
-    //     return true;
-    // }
+    if ((ptype == _PTYPE_NONE || ptype == _PTYPE_UBLOX) && GenerateUblox(msg, i, f))
+    {
+        msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
+        msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
+        return true;
+    }
 
-    // if ((ptype == _PTYPE_NONE  || ptype == _PTYPE_RTCM3) && GenerateRTCM3(msg, i, f))
-    // {
-    //     msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
-    //     msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
-    //     return true;
-    // }
+    if ((ptype == _PTYPE_NONE  || ptype == _PTYPE_RTCM3) && GenerateRTCM3(msg, i, f))
+    {
+        msg.dataHdr.size = msg.comm.rxPkt.dataHdr.size = msg.pktSize;
+        msg.comm.rxBuf.tail = msg.comm.rxBuf.start + msg.pktSize;
+        return true;
+    }
 
     return false;
 }
@@ -579,15 +580,30 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
     {
         while(GenerateMessage(msg))
         {
+            if (msg.pktSize == 0)
+            {   // Ignore empty data
+                continue;
+            }
+
+            pktCount++;
+
+            // Truncate message end
+            if ((options & GEN_LOG_OPTIONS_MISSING_MESSAGE_END) && (pktCount%28 == 0))
+            {
+                msg.pktSize /= 2;
+            }
+
+            // Add data to steam
             if (!AddDataToStream(buffer, bufferSize, streamSize, msg.comm.rxBuf.start, msg.pktSize))
             {   // Buffer full
                 return streamSize;
             }
 
-#if 0
             // Duplicate data
-            if (options & GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE && (pktCount%23 == 0))
+            if ((options & GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE) && (pktCount%23 == 0))
             {   
+                DEBUG_PRINT("ADDING DUPLICATE: \n");
+                DEBUG_PRINT("      %.*s", msg.pktSize, msg.comm.rxBuf.start);
                 if (!AddDataToStream(buffer, bufferSize, streamSize, msg.comm.rxBuf.start, msg.pktSize))
                 {   // Buffer full
                     return streamSize;
@@ -595,21 +611,22 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
             }
 
             // Cause timestamp to momentarily reverse 
-            if (options & GEN_LOG_OPTIONS_TIMESTAMP_REVERSE && (pktCount%18 == 0))
+            if ((options & GEN_LOG_OPTIONS_TIMESTAMP_REVERSE) && (pktCount%18 == 0))
             {
+                DEBUG_PRINT("ADDING REVERSAL: \n");
                 s_timeMs -= s_gpsPeriodMs;
+                s_msgTimeMs.gpsPos = 0;
+                s_msgTimeMs.ins1 = 0;
                 s_msgTimeMs.nmeaGpsPos = 0;
                 s_msgTimeMs.nmeaZda = 0;
                 s_msgTimeMs.nmeaGga = 0;
                 s_msgTimeMs.nmeaIns1 = 0;
-                s_msgTimeMs.gpsPos = 0;
-                s_msgTimeMs.ins1 = 0;
             }
-#endif
 
             // Insert garbage data
             if (options & GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS && (pktCount%15 == 0))
             {
+                DEBUG_PRINT("ADDING GARBAGE: \n");
                 uint8_t garbage[100];
 
                 for (int i=0; i<sizeof(garbage); i++)
@@ -623,8 +640,6 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
                     return streamSize;
                 }
             }
-
-            pktCount++;
         }
     }
 
