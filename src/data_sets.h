@@ -3247,16 +3247,6 @@ POP_PACK
 
 PUSH_PACK_8
 
-/** time struct */
-typedef struct
-{
-    /** time (s) expressed by standard time_t */
-    int64_t time;
-
-    /** fraction of second under 1 s */
-    double sec;         
-} gtime_t;
-
 typedef struct PACKED
 {
     gtime_t time;

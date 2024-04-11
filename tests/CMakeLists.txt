@@ -31,9 +31,9 @@ list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 add_executable(${PROJECT_NAME} 
     # ${TESTS_SOURCES}
     # test_ISLogger.cpp
-    # test_runtime_test.cpp
+    test_runtime_test.cpp
     # test_protocol_nmea.cpp
-    test_time_conversion.cpp
+    # test_time_conversion.cpp
     runtime/device_runtime_test.cpp
     test_data_utils.cpp
 )

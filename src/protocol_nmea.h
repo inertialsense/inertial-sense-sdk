@@ -66,7 +66,6 @@ int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
 int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel);
 
-
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////
@@ -77,23 +76,18 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-// Used in test_common.cpp
-int nmea_parse_intel_to_did_gps(dev_info_t &info, gps_pos_t &gpsPos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1], const char a[], const int aSize);
-int nmea_parse_gga_to_did_gps(gps_pos_t &gpsPos, utc_time_t &t, const char a[], const int aSize, uint32_t utcWeekday);
-int nmea_parse_gll_to_did_gps(gps_pos_t &gpsPos, utc_time_t &t, const char a[], const int aSize, uint32_t utcWeekday);
-int nmea_parse_gsa_to_did_gps(gps_pos_t &gpsPos, gps_sat_t &gpsSat, const char a[], const int aSize);
-int nmea_parse_gsv_to_did_gps_sat(gps_sat_t &gpsSat, const char a[], const int aSize);
-int nmea_parse_vtg_to_did_gps(gps_vel_t &vel, const char a[], const int aSize, const double refLla[3]);
-int nmea_parse_zda_to_did_gps(gps_pos_t &gpsPos, const char a[], const int aSize, uint32_t leapS);
-// Used in GPS_nmea.cpp
 uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
 uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS]);
-int nmea_parse_zda(const char msgBuf[], int msgSize, double &day, double &month, double &year);
+// NMEA standard messages
 int nmea_parse_gns(const char msgBuf[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
-int nmea_parse_gga(const char a[], int aSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags=0);
-int nmea_parse_rmc(const char a[], int aSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags=0);
-int nmea_parse_gsa(const char a[], int aSize, gps_pos_t *gpsPos, int *navMode);
+int nmea_parse_gga(const char a[], int aSize, gps_pos_t &gpsPos, utc_time_t &t, uint32_t utcWeekday, uint32_t statusFlags=0);
+int nmea_parse_gll(const char a[], int aSize, gps_pos_t &gpsPos, utc_time_t &t, uint32_t utcWeekday);
+int nmea_parse_gsa(const char a[], int aSize, gps_pos_t &gpsPos, gps_sat_t &gpsSat);
 char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount);
+int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_t &gpsPos, gps_vel_t &vel, float ppsPhase[2], uint32_t ppsNoiseNs[1]);
+int nmea_parse_rmc(const char a[], int aSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags=0);
+int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3]);
+int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS);
 
 
 #endif /* PROTOCOL_NMEA_H_ */

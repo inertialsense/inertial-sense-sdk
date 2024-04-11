@@ -55,6 +55,7 @@ struct sTimeMs
     uint32_t nmeaPImu;
     uint32_t nmeaIns1;
     uint32_t nmeaGpsPos;
+    uint32_t nmeaZda;
     uint32_t nmeaGga;
 
     uint32_t ubxNav;
@@ -75,7 +76,7 @@ void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek)
     const std::tm *utc_tm = std::gmtime(&now_c);
 
     // Convert current UTC time to GPS time
-    UtcDateTimeToGpsTime(*utc_tm, gpsTimeOfWeekMs, gpsWeek);
+    stdUtcDateTimeToGpsTime(*utc_tm, C_GPS_LEAP_SECONDS, gpsTimeOfWeekMs, gpsWeek);
     gpsTimeOfWeekMs *= 1000;
 }
 
@@ -188,7 +189,7 @@ bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool in
         gps.hMSL = (float)i;
         gps.pDop = (float)i;
         gps.towOffset = (double)i*123.4;
-        gps.leapS = (uint8_t)i;
+        gps.leapS = C_GPS_LEAP_SECONDS;
     }
 
     if (!periodCheck(s_msgTimeMs.gpsPos, s_gpsPeriodMs))
@@ -210,7 +211,7 @@ bool GenerateGpsPos(test_message_t &msg, gps_pos_t &gps, int i, float f, bool in
     gps.hMSL = fabsf(f);
     gps.pDop = fabsf(f);
     gps.towOffset = f;
-    gps.leapS = abs(i);
+    gps.leapS = C_GPS_LEAP_SECONDS;
 
     msg.data.gpsPos = gps;
     msg.dataHdr.id = DID_GPS1_POS;
@@ -291,6 +292,13 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
     //     return true;
     // }
 
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
+    {   
+        msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
+        msg.ptype = _PTYPE_NMEA;
+        return true;
+    }
+
     if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
     {   
         static uint32_t towMsLast = 0;
@@ -303,7 +311,8 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
         msg.pktSize = nmea_gga((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
 
-        printf("(%d ms): %.*s", s_gpsPos.timeOfWeekMs, msg.pktSize, msg.comm.rxBuf.start);
+        int utcWeekday = gpsTowMsToUtcWeekday(s_gpsPos.timeOfWeekMs, s_gpsPos.leapS);
+        printf("(%d ms, %d wkday): %.*s", s_gpsPos.timeOfWeekMs, utcWeekday, msg.pktSize, msg.comm.rxBuf.start);
         return true;
     }
 
@@ -590,6 +599,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
             {
                 s_timeMs -= s_gpsPeriodMs;
                 s_msgTimeMs.nmeaGpsPos = 0;
+                s_msgTimeMs.nmeaZda = 0;
                 s_msgTimeMs.nmeaGga = 0;
                 s_msgTimeMs.nmeaIns1 = 0;
                 s_msgTimeMs.gpsPos = 0;
