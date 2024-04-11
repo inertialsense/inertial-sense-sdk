@@ -38,7 +38,6 @@ class DeviceRuntimeTests
 
 public:
     DeviceRuntimeTests();
-    void CreateDirectory(const std::string path);
     std::string CreateLogFilename(const std::string path);
     void ProcessParseError(is_comm_instance_t &comm);
     void ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf);

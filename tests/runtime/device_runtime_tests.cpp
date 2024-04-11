@@ -1,13 +1,13 @@
 #include <chrono>
-#include <filesystem>
+// #include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <stdarg.h>
 #include "protocol_nmea.h"
 #include "device_runtime_tests.h"
+#include "ISFileManager.h"
 
-using namespace std;
 
 #define LOG_DIRECTORY   "realtime_logs"
 
@@ -15,51 +15,38 @@ DeviceRuntimeTests::DeviceRuntimeTests()
 {
     m_hist.gps1Pos.leapS = C_GPS_LEAP_SECONDS;
 
-    CreateDirectory(LOG_DIRECTORY);
+    ISFileManager::CreateDirectory(LOG_DIRECTORY);
     m_filename = CreateLogFilename(LOG_DIRECTORY);
 }
 
-void DeviceRuntimeTests::CreateDirectory(const string path) 
-{
-    // Check if directory already exists
-    if (!filesystem::exists(path)) 
-    {
-        // Create the directory
-        if (!filesystem::create_directory(path)) 
-        {
-            cerr << "Failed to create directory: " << path << endl;
-        }
-    } 
-}
-
-string DeviceRuntimeTests::CreateLogFilename(const string path)
+std::string DeviceRuntimeTests::CreateLogFilename(const std::string path)
 {
     // Get current time
-    auto now = chrono::system_clock::now();
-    auto in_time_t = chrono::system_clock::to_time_t(now);
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
     // Convert to local time
-    tm bt = *localtime(&in_time_t);
+    std::tm bt = *localtime(&in_time_t);
 
     // Create a stringstream and format time
-    stringstream ss;
-    ss << put_time(&bt, "%Y%m%d_%H%M%S"); // YYYYMMDD_HHMMSS format
+    std::stringstream ss;
+    ss << std::put_time(&bt, "%Y%m%d_%H%M%S"); // YYYYMMDD_HHMMSS format
 
     // Construct filename
-    string filename = path + "/" + ss.str() + ".txt"; // or any other extension
+    std::string filename = path + "/" + ss.str() + ".txt"; // or any other extension
 
     return filename;
 }
 
-string charArrayToHex(uint8_t* arr, int arrSize) 
+std::string charArrayToHex(uint8_t* arr, int arrSize) 
 {
-    stringstream ss;
-    ss << "0x" << hex << setfill('0'); // Set to output hex values, padded with 0
+    std::stringstream ss;
+    ss << "0x" << std::hex << std::setfill('0'); // Set to output hex values, padded with 0
 
     for (int i = 0; i < arrSize; ++i) 
     {
         // Static cast to unsigned int to handle negative char values correctly
-        ss << setw(2) << static_cast<unsigned int>(arr[i]);
+        ss << std::setw(2) << static_cast<unsigned int>(arr[i]);
     }
 
     return ss.str();
@@ -67,7 +54,7 @@ string charArrayToHex(uint8_t* arr, int arrSize)
 
 void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
 {
-    string parser;
+    std::string parser;
     switch (comm.rxBuf.head[0])
     {
     case PSC_ISB_PREAMBLE_BYTE1:    parser = "ISB";     break;
