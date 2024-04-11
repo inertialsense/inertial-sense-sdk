@@ -623,7 +623,7 @@ TEST(protocol_nmea, GSA)
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
-    nmea_parse_gsa(abuf, n, resultPos, resultSat);
+    nmea_parse_gsa(abuf, n, resultPos, &resultSat);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
 }

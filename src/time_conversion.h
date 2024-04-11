@@ -18,7 +18,8 @@ typedef struct
 {
     int year;
     int month;
-    int day;
+    int day;        // Day of month
+    int weekday;    // Day of week
 } utc_date_t;
 
 typedef struct

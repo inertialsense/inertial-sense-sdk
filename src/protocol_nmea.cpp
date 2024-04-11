@@ -315,17 +315,17 @@ char *ASCII_to_hours_minutes_seconds(int *hours, int *minutes, float *seconds, c
 	return ptr;
 }
 
-char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *t, char *ptr, uint32_t utcWeekday, uint32_t leapS)
+char *ASCII_UtcTimeToGpsTowMs(uint32_t *gpsTimeOfWeekMs, utc_time_t *utcTime, char *ptr, int utcWeekday, uint32_t leapS)
 {
 	// HHMMSS.sss
 	float fsecond;
-	SSCANF(ptr, "%02d%02d%f", &t->hour, &t->minute, &fsecond);
+	SSCANF(ptr, "%02d%02d%f", &utcTime->hour, &utcTime->minute, &fsecond);
 	fsecond += 0.0005f;	// Prevent truncation problems.  Cause rounding at 0.5 ms.
-	t->second = (uint32_t)fsecond;
+	utcTime->second = (uint32_t)fsecond;
 	fsecond *= 1000.0f;
-	t->millisecond = (uint32_t)fsecond;
-	t->millisecond = t->millisecond%1000;
-	utcTimeToGpsTowMs(t, utcWeekday, gpsTimeOfWeekMs, leapS);
+	utcTime->millisecond = (uint32_t)fsecond;
+	utcTime->millisecond = utcTime->millisecond%1000;
+	utcTimeToGpsTowMs(utcTime, utcWeekday, gpsTimeOfWeekMs, leapS);
 	ptr = ASCII_find_next_field(ptr);
 	return ptr;
 }
@@ -1983,25 +1983,16 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci
 *   Time
 *   Position (lat, lon)
 *   Positioning mode (fix type)
-*   Number Satellites
 *   Altitude & Geoid separation
 */
-int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double datetime[6], uint32_t *satsUsed, uint32_t statusFlags)
+int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags)
 {
-	(void)msgSize;
-	char *ptr = (char *)&msg[7];
+	(void)aSize;
+	char *ptr = (char *)&a[7];	// $GxGNS,
 	//$xxGNS,time,lat,NS,lon,EW,posMode,numSV,HDOP,alt,sep,diffAge,diffStation,navStatus*cs<CR><LF>
 
-	//UTC time, hhmmss
-	double UTCtime = atof(ptr);
-	ptr = ASCII_find_next_field(ptr);
-
-	//Convert UTC time to GPS time of week and week number 
-	datetime[3] = ((int)UTCtime / 10000) % 100;
-	datetime[4] = ((int)UTCtime / 100) % 100;
-	double subSec = UTCtime - (int)UTCtime;
-	datetime[5] = (double)((int)UTCtime % 100) + subSec + gpsPos->leapS;
-	UtcDateTimeToGpsTime(datetime, gpsPos->leapS, gpsPos->timeOfWeekMs, gpsPos->week);			
+	// 1 - UTC time HHMMSS.sss
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
 		
 	//Latitude
 	ixVector3d lla;
@@ -2033,7 +2024,7 @@ int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 	//Based off of ZED-F9P datasheet
 	uint32_t fixType = GPS_STATUS_FIX_NONE;
 	statusFlags |= GPS_STATUS_FLAGS_GPS_NMEA_DATA;
-	gpsPos->hAcc = 0.0f;
+	gpsPos.hAcc = 0.0f;
 	if(pMode[0] == 'R' || pMode[1] == 'R' || pMode[2] == 'R' || pMode[3] == 'R')		// RTK fix
 	{
 		fixType = GPS_STATUS_FIX_RTK_FIX;
@@ -2043,7 +2034,7 @@ int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID |
 			GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD |
 			GPS_STATUS_FLAGS_DGPS_USED;
-		gpsPos->hAcc = 0.05f;
+		gpsPos.hAcc = 0.05f;
 	}
 	else if(pMode[0] == 'F' || pMode[1] == 'F' || pMode[2] == 'F' || pMode[3] == 'F')	// RTK float
 	{
@@ -2052,7 +2043,7 @@ int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 			GPS_STATUS_FLAGS_FIX_OK |
 			GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED |
 			GPS_STATUS_FLAGS_DGPS_USED;
-		gpsPos->hAcc = 0.4f;
+		gpsPos.hAcc = 0.4f;
 	}
 	else if(pMode[0] == 'D' || pMode[1] == 'D' || pMode[2] == 'D' || pMode[3] == 'D')	// Differential (DGPS)
 	{
@@ -2060,22 +2051,22 @@ int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		statusFlags |= 
 			GPS_STATUS_FLAGS_FIX_OK |
 			GPS_STATUS_FLAGS_DGPS_USED;
-		gpsPos->hAcc = 0.8f;
+		gpsPos.hAcc = 0.8f;
 	}
 	else if(pMode[0] == 'A' || pMode[1] == 'A' || pMode[2] == 'A' || pMode[3] == 'A')	// Autonomous, 2D/3D
 	{
 		fixType = GPS_STATUS_FIX_3D;
 		statusFlags |= GPS_STATUS_FLAGS_FIX_OK;
-		gpsPos->hAcc = 1.5f;
+		gpsPos.hAcc = 1.5f;
 	}
 	else if(pMode[0] == 'E' || pMode[1] == 'E' || pMode[2] == 'E' || pMode[3] == 'E')	// Dead reckoning
 	{
 		fixType = GPS_STATUS_FIX_DEAD_RECKONING_ONLY;
 	}
-	gpsPos->vAcc = 1.4f * gpsPos->hAcc;
+	gpsPos.vAcc = 1.4f * gpsPos.hAcc;
 			
 	//Number of satellites used in solution
-	*satsUsed = atoi(ptr);
+	gpsPos.satsUsed = atoi(ptr);
 	ptr = ASCII_find_next_field(ptr);
 		
 	//HDOP
@@ -2083,44 +2074,44 @@ int nmea_parse_gns(const char msg[], int msgSize, gps_pos_t *gpsPos, double date
 		
 	//MSL Altitude (altitude above mean sea level)
 	lla[2] = atof(ptr);
-	gpsPos->hMSL = (float)lla[2];
+	gpsPos.hMSL = (float)lla[2];
 	ptr = ASCII_find_next_field(ptr);
 
 	//Geoid separation (difference between ellipsoid and mean sea level)
 	double sep = atof(ptr);
 		
 	//Store data		
-	set_gpsPos_status_mask(&(gpsPos->status), *satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
-	set_gpsPos_status_mask(&(gpsPos->status), fixType, (uint32_t)GPS_STATUS_FIX_MASK);
+	set_gpsPos_status_mask(&(gpsPos.status), gpsPos.satsUsed, (uint32_t)GPS_STATUS_NUM_SATS_USED_MASK);
+	set_gpsPos_status_mask(&(gpsPos.status), statusFlags, (uint32_t)GPS_STATUS_FLAGS_MASK);
+	set_gpsPos_status_mask(&(gpsPos.status), fixType, (uint32_t)GPS_STATUS_FIX_MASK);
 		
-	gpsPos->lla[0] = lla[0];
-	gpsPos->lla[1] = lla[1];
-	gpsPos->lla[2] = lla[2] + sep;
+	gpsPos.lla[0] = lla[0];
+	gpsPos.lla[1] = lla[1];
+	gpsPos.lla[2] = lla[2] + sep;
 
 	//Change LLA to radians
 	lla[0] = DEG2RAD(lla[0]);
 	lla[1] = DEG2RAD(lla[1]);
-	lla[2] = gpsPos->lla[2];	// Use ellipsoid alt
+	lla[2] = gpsPos.lla[2];	// Use ellipsoid alt
 		
 	//Convert LLA to ECEF.  Ensure LLA uses ellipsoid alt 
 	ixVector3d ecef;
 	lla2ecef(lla, ecef);
 				
-	gpsPos->ecef[0] = ecef[0];
-	gpsPos->ecef[1] = ecef[1];
-	gpsPos->ecef[2] = ecef[2];	
+	gpsPos.ecef[0] = ecef[0];
+	gpsPos.ecef[1] = ecef[1];
+	gpsPos.ecef[2] = ecef[2];	
 
 	return 0;	
 }
 
-int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &t, uint32_t utcWeekday, uint32_t statusFlags)
+int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGGA,
 	
 	// 1 - UTC time HHMMSS.sss
-	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &t, ptr, utcWeekday, gpsPos.leapS);
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
 	// 2,3 - Latitude (deg)
 	ptr = ASCII_DegMin_to_Lat(&(gpsPos.lla[0]), ptr);
 	// 4,5 - Longitude (deg)
@@ -2212,7 +2203,7 @@ int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_
 	return 0;
 }
 
-int nmea_parse_gll(const char a[], int aSize, gps_pos_t &gpsPos, utc_time_t &t, uint32_t utcWeekday)
+int nmea_parse_gll(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGLL,
@@ -2222,7 +2213,7 @@ int nmea_parse_gll(const char a[], int aSize, gps_pos_t &gpsPos, utc_time_t &t, 
 	// 3,4 - Longitude (deg)
 	ptr = ASCII_DegMin_to_Lon(&(gpsPos.lla[1]), ptr);
 	// 5 - UTC time HHMMSS.sss
-	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &t, ptr, utcWeekday, gpsPos.leapS);
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsPos.timeOfWeekMs, &utcTime, ptr, utcWeekday, gpsPos.leapS);
 	// 6 - Valid (A=active, V=void)
 
 	return 0;
@@ -2231,7 +2222,7 @@ int nmea_parse_gll(const char a[], int aSize, gps_pos_t &gpsPos, utc_time_t &t, 
 /* G_GSA Message
 * Provides pDOP and navigation mode (saved to determine 2D/3D mode)
 */
-int nmea_parse_gsa(const char a[], int aSize, gps_pos_t &gpsPos, gps_sat_t &sat)
+int nmea_parse_gsa(const char a[], const int aSize, gps_pos_t &gpsPos, gps_sat_t *sat)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxGSA,
@@ -2252,9 +2243,12 @@ int nmea_parse_gsa(const char a[], int aSize, gps_pos_t &gpsPos, gps_sat_t &sat)
 	}
 
 	// 3-14 - Sat ID
-	for (uint32_t i = 0; i < 12; i++)
+	if (sat)
 	{
-		ptr = ASCII_to_u8(&(sat.sat[i].svId), ptr);
+		for (uint32_t i = 0; i < 12; i++)
+		{
+			ptr = ASCII_to_u8(&(sat->sat[i].svId), ptr);
+		}
 	}
 
 	// 15 - pDop
@@ -2273,7 +2267,7 @@ int nmea_parse_gsa(const char a[], int aSize, gps_pos_t &gpsPos, gps_sat_t &sat)
 * Provides satellite information
 * Multiple GSV messages will come in a block. We wait until block is finished before flagging data is ready.
 */
-char* nmea_parse_gsv(const char a[], int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount)
+char* nmea_parse_gsv(const char a[], const int aSize, gps_sat_t *gpsSat, gps_sig_t *gpsSig, uint32_t *cnoSum, uint32_t *cnoCount)
 {
 	if (gpsSat == NULL || gpsSig == NULL)
 	{	// Don't parse
@@ -2425,16 +2419,15 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
 /* G_RMC Message
 * Provides speed (speed and course over ground)
 */
-int nmea_parse_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double datetime[6], uint32_t statusFlags)
+int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utcTime, int utcWeekday, int leapS, uint32_t statusFlags)
 {
-	(void)msgSize;
-	char *ptr = (char *)&msg[7];
+	(void)aSize;
+	char *ptr = (char *)&a[7];
 	//$xxRMC,time,status,lat,NS,lon,EW,spd,cog,date,mv,mvEW,posMode,navStatus*cs<CR><LF>
 
-	//UTC time, hhmmss
-	double UTCtime = atof(ptr);
-	ptr = ASCII_find_next_field(ptr);
-			
+	// 1 - UTC time HHMMSS.sss
+	ptr = ASCII_UtcTimeToGpsTowMs(&gpsVel.timeOfWeekMs, &utcTime, ptr, utcWeekday, leapS);
+
 	//Skip 5
 	for(int i=0;i<5;++i)
 	{
@@ -2445,28 +2438,20 @@ int nmea_parse_rmc(const char msg[], int msgSize, gps_vel_t *gpsVel, double date
 	float spdm_s = (float)atof(ptr) * C_KNOTS_METERS_F;
 	ptr = ASCII_find_next_field(ptr);
 	float cogRad = DEG2RAD((float)atof(ptr));
-			
-	//Convert time to iTOW
-	datetime[3] = ((int)UTCtime / 10000) % 100;
-	datetime[4] = ((int)UTCtime / 100) % 100;
-	double subSec = UTCtime - (int)UTCtime;
-	datetime[5] = (double)((int)UTCtime % 100) + subSec;			
-	uint32_t gpsWeek;		
-	UtcDateTimeToGpsTime(datetime, C_GPS_LEAP_SECONDS, gpsVel->timeOfWeekMs, gpsWeek);
-			
+
 	//Speed data in NED
-	gpsVel->vel[0] = spdm_s * cosf(cogRad);
-	gpsVel->vel[1] = spdm_s * sinf(cogRad);
-	gpsVel->vel[2] = 0;
-	//dependencies_.gpsVel->sAcc = 0;
+	gpsVel.vel[0] = spdm_s * cosf(cogRad);
+	gpsVel.vel[1] = spdm_s * sinf(cogRad);
+	gpsVel.vel[2] = 0;
+	//dependencies_.gpsVel.sAcc = 0;
 			
 	//Indicate it is coming from NMEA
-	gpsVel->status = GPS_STATUS_FLAGS_GPS_NMEA_DATA | statusFlags;
+	gpsVel.status = GPS_STATUS_FLAGS_GPS_NMEA_DATA | statusFlags;
 
 	return 0;	
 }
 
-int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3])
+int nmea_parse_vtg(const char a[], int aSize, gps_vel_t &vel, const double refLla[3])
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxVTG,
@@ -2525,7 +2510,7 @@ int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double
 	return 0;
 }
 
-int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS)
+int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS)
 {
 	(void)aSize;
 	char *ptr = (char *)&a[7];	// $GxZDA,
@@ -2537,13 +2522,14 @@ int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t
 	time.millisecond = ((int)(second*1000.0f))%1000;
 
 	// 2,3,4 - dd,mm,yyy (Day,Month,Year)
-	ptr = ASCII_to_i32(&(date.day), ptr);
-	ptr = ASCII_to_i32(&(date.month), ptr);
-	ptr = ASCII_to_i32(&(date.year), ptr);
+	ptr = ASCII_to_i32((int32_t*)&(date.day), ptr);
+	ptr = ASCII_to_i32((int32_t*)&(date.month), ptr);
+	ptr = ASCII_to_i32((int32_t*)&(date.year), ptr);
 
 	// Convert UTC date and time to GPS time of week and number of weeks		
 	double datetime[6] = { (double)date.year, (double)date.month, (double)date.day, (double)time.hour, (double)time.minute, (double)second };		// year,month,day,hour,min,sec
 	UtcDateTimeToGpsTime(datetime, leapS, gpsTowMs, gpsWeek);
+	date.weekday = gpsTowMsToUtcWeekday(gpsTowMs, leapS);
 
 	// 5,6 - Local time zone offset from GMT (00,00)
 
