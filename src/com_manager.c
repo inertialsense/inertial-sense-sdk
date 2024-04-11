@@ -298,6 +298,10 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
     switch (ptype)
     {
     case _PTYPE_PARSE_ERROR:
+        if (cmInstance->cmMsgHandlerError)
+        {
+            cmInstance->cmMsgHandlerError(port, comm);
+        }
         error = 1;
         break;
 
@@ -399,9 +403,10 @@ void comManagerSetCallbacks(
     pfnComManagerGenMsgHandler handlerAscii,
     pfnComManagerGenMsgHandler handlerUblox, 
     pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn)
+    pfnComManagerGenMsgHandler handlerSpartn,
+    pfnComManagerParseErrorHandler handlerError)
 {
-    comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
+    comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn, handlerError);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
@@ -409,7 +414,8 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
     pfnComManagerGenMsgHandler handlerAscii,
     pfnComManagerGenMsgHandler handlerUblox,
     pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn)
+    pfnComManagerGenMsgHandler handlerSpartn,
+    pfnComManagerParseErrorHandler handlerError)
 {
     if (cmInstance != 0)
     {
@@ -418,6 +424,7 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
         ((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
         ((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
         ((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
+        ((com_manager_t*)cmInstance)->cmMsgHandlerError = handlerError;        
     }
 }
 
