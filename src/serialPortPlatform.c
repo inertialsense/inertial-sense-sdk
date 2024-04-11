@@ -630,7 +630,7 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("Error reading from %s (%d) : %s (%d)\n", serialPort->port, handle->fd, strerror(errno), errno);
+        error_message("Error reading from %s : %s (%d)\n", serialPort->port, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
     } else
         serialPort->errorCode = 0; // clear any previous errorcode
