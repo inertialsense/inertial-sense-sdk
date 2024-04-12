@@ -68,6 +68,7 @@ int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS)
     return utcWeekday;
 }
 
+#if !PLATFORM_IS_EMBEDDED
 static std::string s_savedTZ;
 
 void SetUtcTimeZone()
@@ -92,6 +93,7 @@ void RevertUtcTimeZone()
     }
     tzset();  // Reapply the original timezone settings
 }
+#endif
 
 std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int leapSeconds) 
 {

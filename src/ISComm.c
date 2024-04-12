@@ -12,7 +12,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "ISConstants.h"
 #if PLATFORM_IS_EMBEDDED
+#ifndef __ZEPHYR__
 #include "rtos.h"
+#endif
 #endif
 
 #include "ISComm.h"
