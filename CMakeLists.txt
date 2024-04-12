@@ -11,8 +11,8 @@ file(GLOB SOURCES_SDK
     "src/util/*.cpp"
     "src/util/*.h"
 	"hw-libs/bootloader/bootloaderShared.c"
-    "src/tests/runtime/*.cpp"
-    "src/tests/runtime/*.h"
+    "tests/runtime/*.cpp"
+    "tests/runtime/*.h"
 	"src/yaml-cpp/*.cpp"
 	"src/yaml-cpp/*.h"
 	"src/yaml-cpp/contrib/*.cpp"
@@ -56,8 +56,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 	src/protocol
 	src/libusb
 	src/libusb/libusb
-	src/tests/runtime
 	src/yaml-cpp
+	tests/runtime
 	external
 )
 

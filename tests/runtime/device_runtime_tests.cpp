@@ -85,7 +85,7 @@ void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *
     switch(dataHdr.id)
     {
     case DID_DEV_INFO: {
-        int serialNumber = m_devInfo.serialNumber;     
+        uint32_t serialNumber = m_devInfo.serialNumber;
         copyDataPToStructP2(&m_devInfo, &dataHdr, dataBuf, sizeof(dev_info_t));
         if (serialNumber != m_devInfo.serialNumber)
         {   // Serial number changed.  Update log filename.
@@ -139,7 +139,6 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
     uint32_t gpsWeek;
     utc_date_t utcDate; 
     utc_time_t utcTime;
-    int leapS;
     nmea_parse_zda((char*)msg, msgSize, gpsTowMs, gpsWeek, utcDate, utcTime, C_GPS_LEAP_SECONDS);
 
     printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
@@ -160,7 +159,7 @@ std::string printfToString(const char* format, ...)
     std::string str(100, '\0');
 
     // Attempt to write to the string's buffer
-    int needed = std::vsnprintf(&str[0], str.size(), format, args);
+    unsigned int needed = std::vsnprintf(&str[0], str.size(), format, args);
 
     // If the string was not big enough, resize and try again
     if (needed >= str.size()) 
@@ -281,7 +280,7 @@ std::string formatString(const char* format, va_list args)
         va_copy(args_copy, args); // Make a copy of args to use
 
         // Attempt to format the string
-        int needed = std::vsnprintf(buffer.data(), size, format, args_copy);
+        size_t needed = std::vsnprintf(buffer.data(), size, format, args_copy);
 
         // Clean up the copied va_list
         va_end(args_copy);
