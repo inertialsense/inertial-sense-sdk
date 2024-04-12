@@ -93,23 +93,17 @@ void RevertUtcTimeZone()
     tzset();  // Reapply the original timezone settings
 }
 
-const std::time_t GPS_EPOCH = []() 
-{
-    SetUtcTimeZone();   
-    std::tm epoch = {};
-    epoch.tm_year = 80; // Years since 1900
-    epoch.tm_mday = 6;  // Day of the month
-    std::time_t time = std::mktime(&epoch);
-    RevertUtcTimeZone();
-    return time;
-}();
-
-// TODO: stdGpsTimeToUtcDateTime() is faster than julianToDate() because it does not use double precision floating point.  
-// We want to eventually replace all julianToDate() code with stdGpsTimeToUtcDateTime().
 std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int leapSeconds) 
 {
+    std::tm gpsEpoch = {};
+    gpsEpoch.tm_year = 80;  // Year 1980
+    gpsEpoch.tm_mon = 0;    // January
+    gpsEpoch.tm_mday = 6;   // 6th
+    gpsEpoch.tm_hour = 0;   // 00:00:00
+    std::time_t epochTime = std::mktime(&gpsEpoch);
+
     // Total seconds since GPS epoch
-    std::time_t totalSeconds = GPS_EPOCH + gpsWeek * C_SECONDS_PER_WEEK + gpsSecondsOfWeek;
+    std::time_t totalSeconds = epochTime + gpsWeek * C_SECONDS_PER_WEEK + gpsSecondsOfWeek;
 
     // Adjust for leap seconds
     totalSeconds -= leapSeconds;
@@ -122,11 +116,18 @@ std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int
 
 void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &gpsSecondsOfWeek, uint32_t &gpsWeek)
 {
+    std::tm gpsEpoch = {};
+    gpsEpoch.tm_year = 80;  // Year 1980
+    gpsEpoch.tm_mon = 0;    // January
+    gpsEpoch.tm_mday = 6;   // 6th
+    gpsEpoch.tm_hour = 0;   // 00:00:00
+    std::time_t epochTime = std::mktime(&gpsEpoch);
+
     // Convert UTC tm structure to time_t
     std::time_t utcTimeT = std::mktime(const_cast<std::tm*>(&utcTime));
 
     // Calculate the difference in seconds from GPS epoch
-    long long secondsSinceGpsEpoch = (long long)std::difftime(utcTimeT, GPS_EPOCH);
+    long long secondsSinceGpsEpoch = (long long)std::difftime(utcTimeT, epochTime);
 
     // Subtract leap seconds (update this value based on the current number of leap seconds)
     secondsSinceGpsEpoch += leapSeconds;
