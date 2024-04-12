@@ -280,7 +280,7 @@ std::string formatString(const char* format, va_list args)
         va_copy(args_copy, args); // Make a copy of args to use
 
         // Attempt to format the string
-        size_t needed = std::vsnprintf(buffer.data(), size, format, args_copy);
+        int needed = std::vsnprintf(buffer.data(), size, format, args_copy);
 
         // Clean up the copied va_list
         va_end(args_copy);
@@ -291,7 +291,7 @@ std::string formatString(const char* format, va_list args)
             return "";
         }
 
-        if (needed < size) 
+        if (needed < (int)size)
         {   // Buffer was big enough
             return std::string(buffer.data());
         }
