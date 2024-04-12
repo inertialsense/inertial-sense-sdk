@@ -55,6 +55,7 @@ public:
         m_log.clear();
         return log; 
     }
+    void SetPortName(std::string portName){ m_portName = portName; };
 
     struct error_count
     {
@@ -70,11 +71,13 @@ private:
     bool CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist);
     void LogEvent(std::string str);
     void LogEvent(const char *format, ...);
+    std::string Timestamp();
 
     std::string m_filename;
     std::string m_log;
     bool m_enable = true;
     dev_info_t m_devInfo = {};
+    std::string m_portName;
 
     RuntimeTest     m_testGgaDuplicate{"GGA Duplicate"};
     RuntimeTest     m_testZdaDuplicate{"ZDA Duplicate"};

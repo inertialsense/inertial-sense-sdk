@@ -210,6 +210,31 @@ bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count
     return false;
 }
 
+std::string DeviceRuntimeTests::Timestamp() 
+{
+    // Get current time as a high-resolution time_point
+    auto now = std::chrono::system_clock::now();
+    // Convert time_point to time_t for easier formatting of date and time
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    // To add milliseconds, subtract time_t from time_point, then cast to milliseconds
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+
+    std::stringstream ss;
+    // Use put_time to format the date and time part
+    ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d %H:%M:%S");
+    // Manually add the formatted milliseconds
+    ss << '.' << std::setfill('0') << std::setw(3) << milliseconds.count();
+
+    std::string timestamp = "[" + ss.str();
+    if (m_portName.size())
+    {
+        timestamp += " " + m_portName;
+    }
+    timestamp += "] ";
+    return timestamp;
+}
+
 void DeviceRuntimeTests::LogEvent(std::string str)
 {   
     // Add serial number if non-zero
@@ -218,6 +243,9 @@ void DeviceRuntimeTests::LogEvent(std::string str)
         str = "[SN" + std::to_string(m_devInfo.serialNumber) + "] " + str;
     }
     str += "\n";
+
+    // Prepend timestamp
+    str = Timestamp() + str;
 
 #define MAX_LOG_SIZE    500000
     // Prevent logging too much data
@@ -247,7 +275,8 @@ std::string formatString(const char* format, va_list args)
     size_t size = MAX_MSG_LENGTH_NMEA;
     std::vector<char> buffer(size);
 
-    while (true) {
+    while (true) 
+    {
         va_list args_copy;
         va_copy(args_copy, args); // Make a copy of args to use
 

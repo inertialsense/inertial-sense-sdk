@@ -1387,8 +1387,7 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 				for (uint32_t j=0; j<=gsat.numSats; j++)
 				{
 					gps_sat_sv_t &sat = gsat.sat[j];
-					if ((sat.gnssId == sig.gnssId) && (sat.svId == sig.svId)
-                        && (sat.elev >= 0)) // TODO: We should probably remove this, implement a parameter in the GPX flash config, and configure on the CXD5610.
+					if ((sat.gnssId == sig.gnssId) && (sat.svId == sig.svId))
 					{
 						uint16_t svId = prnToSvId(sig.gnssId, sig.svId);
 						if (s_protocol_version < NMEA_PROTOCOL_4P10)
