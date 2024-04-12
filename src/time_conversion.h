@@ -31,9 +31,10 @@ typedef struct
 } utc_time_t;
 
 /**
- * @brief Set the UTC Time Zone object
+ * @brief Set and revert the UTC Time Zone object
  */
 void SetUtcTimeZone(); 
+void RevertUtcTimeZone();
 
 /** Convert GPS time of week in milliseconds to UTC time */
 void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time);

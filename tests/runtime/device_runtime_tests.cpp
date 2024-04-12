@@ -228,7 +228,7 @@ void DeviceRuntimeTests::LogEvent(std::string str)
     }
     m_log += str;
 
-#if 1   // Print to display
+#if 0   // Print to display
     std::cout << str;
 #endif
 

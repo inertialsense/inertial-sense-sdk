@@ -1,3 +1,4 @@
+#include <string>
 #include "ISConstants.h"
 #include "time_conversion.h"
 
@@ -67,10 +68,29 @@ int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS)
     return utcWeekday;
 }
 
+static std::string s_savedTZ;
+
 void SetUtcTimeZone()
 {
+    const char* oldTZ = getenv("TZ");
+    s_savedTZ = oldTZ ? oldTZ : "";
+
     setenv("TZ", "UTC", 1);
     tzset();
+}
+
+void RevertUtcTimeZone()
+{
+    // Restore the original timezone if necessary
+    if (s_savedTZ.empty()) 
+    {
+        unsetenv("TZ");
+    } 
+    else 
+    {
+        setenv("TZ", s_savedTZ.c_str(), 1);
+    }
+    tzset();  // Reapply the original timezone settings
 }
 
 const std::time_t GPS_EPOCH = []() 
@@ -79,7 +99,9 @@ const std::time_t GPS_EPOCH = []()
     std::tm epoch = {};
     epoch.tm_year = 80; // Years since 1900
     epoch.tm_mday = 6;  // Day of the month
-    return std::mktime(&epoch);
+    std::time_t time = std::mktime(&epoch);
+    RevertUtcTimeZone();
+    return time;
 }();
 
 // TODO: stdGpsTimeToUtcDateTime() is faster than julianToDate() because it does not use double precision floating point.  

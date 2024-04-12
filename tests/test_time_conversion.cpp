@@ -8,11 +8,11 @@
 
 TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 {
-    SetUtcTimeZone();
-
     int gpsTowMs = 111072800;
     int gpsWeek = 2309;
     int leapS = C_GPS_LEAP_SECONDS;
+
+    SetUtcTimeZone();
 
     // Cycle through entire range of time of week
     for (gpsTowMs = 0; gpsTowMs < C_MILLISECONDS_PER_WEEK; gpsTowMs += 200)
@@ -50,6 +50,8 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
         utcTimeToGpsTowMs(&t, utcTime.tm_wday, &gpsTowMs3, leapS);
         ASSERT_EQ(gpsTowMs, gpsTowMs3);
     }
+
+    RevertUtcTimeZone();
 }
 
 TEST(time_conversion, GPS_to_UTC)
