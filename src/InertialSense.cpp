@@ -20,6 +20,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#define PRINT_DEBUG 0
+#if PRINT_DEBUG
+#define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...) 
+#endif
+
 static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
@@ -710,11 +717,18 @@ void InertialSense::SoftwareReset()
     }
 }
 
+void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
+{
+    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    {
+        comManagerGetData((int)i, dataId, length, offset, 0);
+    }
+}
+
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
     {
-        // [C COMM INSTRUCTION]  4.) Send data to the uINS.
         comManagerSendData((int)i, data, dataId, length, offset);
     }
 }
@@ -781,15 +795,49 @@ void InertialSense::CheckRequestFlashConfig(unsigned int timeMs, unsigned int &u
 // Determine if the local flash config is synchronized and request flash config if not.
 void InertialSense::SyncFlashConfig(unsigned int timeMs)
 {
-    if (timeMs - m_syncCheckTimeMs > SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+    if (timeMs - m_syncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
     {
-        m_syncCheckTimeMs = timeMs;
-        for (size_t i=0; i<m_comManagerState.devices.size(); i++)
-        {
-            is_device_t &device = m_comManagerState.devices[i];
-            CheckRequestFlashConfig(timeMs, device.imxFlashCfgUploadTimeMs, device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum, i, DID_FLASH_CONFIG);
-            CheckRequestFlashConfig(timeMs, device.gpxFlashCfgUploadTimeMs, device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum, i, DID_GPX_FLASH_CFG);
+        return;
+    }
+    m_syncCheckTimeMs = timeMs;
+
+    for (size_t i=0; i<m_comManagerState.devices.size(); i++)
+    {
+        is_device_t &device = m_comManagerState.devices[i];
+
+        if (device.flashCfgUploadTimeMs)
+        {	// Upload in progress
+            if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+            {	// Wait for upload to process.  Pause sync.
+                device.sysParams.flashCfgChecksum = 0;
+            }
         }
+
+        // Require valid sysParams checksum
+        if (device.sysParams.flashCfgChecksum)  
+        {   
+            if (device.sysParams.flashCfgChecksum == device.flashCfg.checksum)
+            {
+                if (device.flashCfgUploadTimeMs)
+                {   // Upload complete.  Allow sync.
+                    device.flashCfgUploadTimeMs = 0;
+
+                    if (device.flashCfgUploadChecksum == device.sysParams.flashCfgChecksum)
+                    {
+                        printf("DID_FLASH_CONFIG upload complete.\n");
+                    }
+                    else
+                    {
+                        printf("DID_FLASH_CONFIG upload rejected.\n");
+                    }
+                }
+            }
+            else
+            {	// Out of sync.  Request flash config.
+                DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
+                comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
+            }
+        } 
     }
 }
 
@@ -804,70 +852,94 @@ bool InertialSense::ImxFlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle)
     // Copy flash config
     imxFlashCfg = device.imxFlashCfg;
 
-    // Indicate whether flash config is sychronized
-    return device.sysParams.flashCfgChecksum == device.imxFlashCfg.checksum;
-}
-
-bool InertialSense::GpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle)
-{
-    if ((size_t)pHandle >= m_comManagerState.devices.size())
-    {
-        return false;
-    }
-    is_device_t &device = m_comManagerState.devices[pHandle];
-
-    // Copy flash config
-    gpxFlashCfg = device.gpxFlashCfg;
-
     // Indicate whether flash config is synchronized
-    return device.gpxStatus.flashCfgChecksum == device.gpxFlashCfg.checksum;
+    return device.sysParams.flashCfgChecksum == device.flashCfg.checksum;
 }
 
-int InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle)
+bool InertialSense::SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
         return 0;
     }
     is_device_t &device = m_comManagerState.devices[pHandle];
-
-    // Update checksum
-    imxFlashCfg.checksum = flashChecksum32(&imxFlashCfg, sizeof(nvm_flash_cfg_t));
-
-    device.imxFlashCfg = imxFlashCfg;
-    device.imxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
-    device.sysParams.flashCfgChecksum = device.imxFlashCfg.checksum;
-
-    // [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the IMX.
-    return comManagerSendData(pHandle, &device.imxFlashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
-}
-
-int InertialSense::SetGpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle)
-{
-    if ((size_t)pHandle >= m_comManagerState.devices.size())
+    
+    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
+    static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
+    uint32_t *newCfg = (uint32_t*)&flashCfg;
+    uint32_t *curCfg = (uint32_t*)&device.flashCfg; 
+    int iSize = sizeof(nvm_flash_cfg_t) / 4;
+    bool failure = false;
+    for (int i = 2; i < iSize; i++)
     {
-        return 0;
+        if (newCfg[i] != curCfg[i])
+        {   // Found start
+            uint8_t *head = (uint8_t*)&(newCfg[i]);
+
+            // Search for end
+            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
+
+            // Found end
+            uint8_t *tail = (uint8_t*)&(newCfg[i]);
+            int size = tail-head;
+            int offset = head-((uint8_t*)newCfg);
+            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            failure = failure || comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);
+            device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
+        }
     }
-    is_device_t &device = m_comManagerState.devices[pHandle];
+
+    if (device.flashCfgUploadTimeMs == 0)
+    {
+        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+    }
+
+    // Exclude from the checksum update the following which does not get saved in the flash config
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
 
     // Update checksum
-    gpxFlashCfg.checksum = flashChecksum32(&gpxFlashCfg, sizeof(gpx_flash_cfg_t));
+    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    if (device.flashCfgUploadTimeMs)
+    {
+        device.flashCfgUploadChecksum = flashCfg.checksum;
+    }
 
-    device.gpxFlashCfg = gpxFlashCfg;
-    device.gpxFlashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
-    device.gpxStatus.flashCfgChecksum = device.gpxFlashCfg.checksum;
+    // Update local copy of flash config
+    device.flashCfg = flashCfg;
 
-    // [C COMM INSTRUCTION]  Update the entire DID_GPX_FLASH_CFG data set in the GPX.
-    return comManagerSendData(pHandle, &device.gpxFlashCfg, DID_GPX_FLASH_CFG, sizeof(gpx_flash_cfg_t), 0);
+    // Success
+    return !failure;
 }
 
-// Call this function to enable synchronization of a specific flash config that has not yet been sync. 
-void InertialSense::EnableSyncFlashCfgChecksum(uint32_t &flashCfgChecksum)
+bool InertialSense::WaitForFlashSynced(int pHandle)
 {
-    if (flashCfgChecksum == 0)
-    {   // If the flashCfgChecksum is zero (invalid), set to non-zero (invalid) value to trigger synchronization. 
-        flashCfgChecksum = 0xFFFFFFFF;		
+    unsigned int startMs = current_timeMs();
+    while(!FlashConfigSynced(pHandle))
+    {   // Request and wait for flash config
+        Update();
+        SLEEP_MS(100);
+
+        if (current_timeMs() - startMs > 3000)
+        {   // Timeout waiting for flash config
+            printf("Failed to read DID_FLASH_CONFIG!\n");
+
+            #if PRINT_DEBUG
+            is_device_t &device = m_comManagerState.devices[pHandle]; 
+            DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
+            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
+            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
+            DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
+            #endif
+            return false;
+        }
+        else
+        {   // Query DID_SYS_PARAMS
+            GetData(DID_SYS_PARAMS);
+            DEBUG_PRINT("Waiting for flash sync...\n");
+        }
     }
+
+    return FlashConfigSynced(pHandle);
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
@@ -890,7 +962,10 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
             EnableSyncFlashCfgChecksum(device.gpxStatus.flashCfgChecksum);
             break;
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
-        case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
+        case DID_SYS_PARAMS:        
+            copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      
+            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+            break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&device.imxFlashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
@@ -904,6 +979,7 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
             {	// Checksum received
                 device.gpxStatus.flashCfgChecksum = device.gpxFlashCfg.checksum;
             }
+            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
             break;
         case DID_FIRMWARE_UPDATE:
             // we don't respond to messages if we don't already have an active Updater

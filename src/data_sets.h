@@ -134,6 +134,8 @@ typedef uint32_t eDataIDs;
 #define DID_FIRMWARE_UPDATE             (eDataIDs)98 /** (firmware_payload_t) firmware update payload */
 #define DID_RUNTIME_PROFILER            (eDataIDs)99 /** INTERNAL USE ONLY (runtime_profiler_t) System runtime profiler */
 
+#define DID_EVENT                       (eDataIDs)119 /** INTERNAL USE ONLY (did_event_t)*/
+
 #define DID_GPX_FIRST                             120 /** First of GPX DIDs */
 #define DID_GPX_DEV_INFO                (eDataIDs)120 /** (dev_info_t) GPX device information */
 #define DID_GPX_FLASH_CFG               (eDataIDs)121 /** (gpx_flash_cfg_t) GPX flash configuration */
@@ -404,14 +406,20 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID             = (int)0x00000008,
     
     /** GNSS 1 reset required count */
-    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x000000f0,
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
     GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
 #define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
+ 
+    GPX_HDW_STATUS_GNSS1_FAULT_FLAG                     = (int)0x00000080,
+    GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
 
     /** GNSS 2 reset required count */
-    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000f00,
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
     GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
 #define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
+
+    GPX_HDW_STATUS_GNSS2_FAULT_FLAG                     = (int)0x00000800,
+    GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
 
     /** System Reset is Required for proper function */
     GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00001000,
@@ -1526,6 +1534,7 @@ enum eSystemCommand
     SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 35,           // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX.
     SYS_CMD_GPX_HARD_RESET_GNSS1                        = 36,           // (uint32 inv: 4294967259)
     SYS_CMD_GPX_HARD_RESET_GNSS2                        = 37,           // (uint32 inv: 4294967258)
+    SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
 
@@ -1763,6 +1772,8 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 
+#define RMC_BITS_EVENT               0x0800000000000000
+
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
 #define RMC_BITS_PRESET                 0x8000000000000000		// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
@@ -1796,7 +1807,8 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
-                                        | RMC_BITS_RTK_PHASE_RESIDUAL)
+                                        | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
                                         | RMC_BITS_GROUND_VEHICLE)
@@ -3169,6 +3181,9 @@ typedef struct PACKED
 	/** Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection. */
 	float                   magInterferenceThreshold;
 
+	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
+	float                   magCalibrationQualityThreshold;
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
@@ -4280,7 +4295,7 @@ typedef struct
     uint32_t                gnss2RunState;
 
     /** port */
-    uint8_t                gpxSourcePort;
+    uint8_t                 gpxSourcePort;
 } gpx_status_t;
 
 
@@ -4600,6 +4615,45 @@ typedef struct
         
 } port_monitor_t;
 
+enum DID_EventProtocol
+{
+    DID_EventProtocol_raw       = 1,
+    DID_EventProtocol_ASCII     = 2,
+};
+
+enum DID_EventPriority
+{
+    DID_EventPriority_none      = 0,
+    DID_EventPriority_debug_verbose,
+    DID_EventPriority_debug,
+    DID_EventPriority_info_verbose,
+    DID_EventPriority_info,
+    DID_EventPriority_warning,
+    DID_EventPriority_error,
+    DID_EventPriority_FAULT,
+};
+
+typedef struct DID_Event
+{
+    /** Time */
+    uint32_t        timeMs;
+
+    /** Serial number */
+    uint32_t        senderSN;
+ 
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
+    uint16_t        senderHdwType;
+    
+    uint8_t         priority;
+    uint8_t         res8;
+
+    uint16_t        protocol;
+    uint16_t        length;
+    
+    uint8_t data[1];
+}did_event_t;
+
+#define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
 /**
 * (DID_SYS_FAULT) System Fault Information 
@@ -5025,6 +5079,9 @@ typedef union PACKED
     rmc_t					rmc;
     evb_status_t			evbStatus;
     infield_cal_t			infieldCal;
+    gpx_status_t            gpxStatus;
+    debug_array_t           imxDebugArray;
+    debug_array_t           gpxDebugArray;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;

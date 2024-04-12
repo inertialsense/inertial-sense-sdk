@@ -159,6 +159,8 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_EVB_RTOS_INFO] = sizeof(evb_rtos_info_t);
     sizeMap[DID_EVB_DEV_INFO] = sizeof(dev_info_t);
 
+    sizeMap[DID_EVENT] = sizeof(did_event_t);
+
     sizeMap[DID_GPX_DEV_INFO] = sizeof(dev_info_t);
     sizeMap[DID_GPX_STATUS] = sizeof(gpx_status_t);
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
@@ -1059,8 +1061,31 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "wheelConfig.track_width", wheelConfig.track_width, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "wheelConfig.radius", wheelConfig.radius, 0, DataTypeFloat, float, 0);
 	ADD_MAP(m, totalSize, "magInterferenceThreshold", magInterferenceThreshold, 0, DataTypeFloat, float, 0);
+	ADD_MAP(m, totalSize, "magCalibrationQualityThreshold", magCalibrationQualityThreshold, 0, DataTypeFloat, float, 0);
 
     ASSERT_SIZE(totalSize);
+}
+
+/**
+ * Maps DID_EVENT for SDK
+*/
+static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+     typedef did_event_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_EVENT];
+    uint32_t totalSize = 0;
+
+
+    ADD_MAP(m, totalSize, "Time stamp of message", timeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwType, 0, DataTypeUInt16, uint16_t, 0);
+
+    ADD_MAP(m, totalSize, "protocol", protocol, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "length", length, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
+
+    ADD_MAP(m, totalSize, "Reserved 8 bit", res8, 0, DataTypeUInt8, uint8_t, 0);
 }
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2602,7 +2627,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_EVB_LUNA_AUX_COMMAND",         // 116
     "",                                 // 117
     "",                                 // 118
-    "",                                 // 119
+    "DID_EVENT",                        // 119
     "DID_GPX_DEV_INFO",                 // 120
     "DID_GPX_FLASH_CFG",                // 121
     "DID_GPX_RTOS_INFO",                // 122
@@ -2673,10 +2698,11 @@ cISDataMappings::cISDataMappings()
     PopulateIMUDeltaThetaVelocityMappings(m_lookupInfo, DID_REFERENCE_PIMU);
     PopulateInfieldCalMappings(m_lookupInfo);
 
+    PopulateISEventMappings(m_lookupInfo);
+
     PopulateDeviceInfoMappings(m_lookupInfo, DID_GPX_DEV_INFO);
     PopulateGpxFlashCfgMappings(m_lookupInfo);
     // DID_GPX_RTOS_INFO
-    // DID_GPX_STATUS
     PopulateGpxStatusMappings(m_lookupInfo);
     PopulateDebugArrayMappings(m_lookupInfo, DID_GPX_DEBUG_ARRAY);
 
@@ -2823,49 +2849,48 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     return StringToVariable(stringBuffer, stringLength, ptr, info.dataType, info.dataSize, radix, json);
 }
 
-
 bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
 {
     switch (dataType)
     {
     case DataTypeInt8:
-        *(int8_t*)dataBuffer = (int8_t)strtol(stringBuffer, NULL, radix);
-        break;
-
-    case DataTypeUInt8:
-        *(uint8_t*)dataBuffer = (uint8_t)strtoul(stringBuffer, NULL, radix);
+        protectUnalignedAssign<int8_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt16:
-        *(int16_t*)dataBuffer = (int16_t)strtol(stringBuffer, NULL, radix);
-        break;
-
-    case DataTypeUInt16:
-        *(uint16_t*)dataBuffer = (uint16_t)strtoul(stringBuffer, NULL, radix);
+        protectUnalignedAssign<int16_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt32:
-        *(int32_t*)dataBuffer = (int32_t)strtol(stringBuffer, NULL, radix);
+        protectUnalignedAssign<int32_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
+        break;
+
+    case DataTypeUInt8:
+        protectUnalignedAssign<uint8_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
+        break;
+
+    case DataTypeUInt16:
+        protectUnalignedAssign<uint16_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt32:
-        *(uint32_t*)dataBuffer = (uint32_t)strtoul(stringBuffer, NULL, radix);
+        protectUnalignedAssign<uint32_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt64:
-        *(int64_t*)dataBuffer = (int64_t)strtoll(stringBuffer, NULL, radix);
+        protectUnalignedAssign<int64_t>((void*)dataBuffer, strtoll(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt64:
-        *(uint64_t*)dataBuffer = (uint64_t)strtoull(stringBuffer, NULL, radix);
+        protectUnalignedAssign<uint64_t>((void*)dataBuffer, strtoull(stringBuffer, NULL, radix));
         break;
 
     case DataTypeFloat:
-        *(float*)dataBuffer = strtof(stringBuffer, NULL);
+        protectUnalignedAssign<float>((void*)dataBuffer, strtod(stringBuffer, NULL));
         break;
 
     case DataTypeDouble:
-        *(double*)dataBuffer = strtod(stringBuffer, NULL);
+        protectUnalignedAssign<double>((void*)dataBuffer, strtod(stringBuffer, NULL));
         break;
 
     case DataTypeString:
@@ -3130,7 +3155,7 @@ double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf
             if (timeStampField->dataType == DataTypeDouble)
             {
                 // field is seconds, use as is
-                return *(double*)ptr;
+                return protectUnalignedAssign<double>((void *)ptr);
             }
             else if (timeStampField->dataType == DataTypeUInt32)
             {

@@ -465,7 +465,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		{	// Exit as soon as we display DID
 			Home();
 			cout << VectortoString();
-			exit(1);
+			exit(0);
 		}
 		break;
 
@@ -636,7 +636,12 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	case DID_RTOS_INFO:         str = DataToStringRTOS(d.rtosInfo, data->hdr);          break;
 	case DID_SENSORS_ADC:       str = DataToStringSensorsADC(d.sensorsAdc, data->hdr);  break;
 	case DID_WHEEL_ENCODER:     str = DataToStringWheelEncoder(d.wheelEncoder, data->hdr); break;
+    case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr); break;
+    case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr); break;
+    case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr); break;
 	default:
+        if (m_showRawHex)
+            str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
 #if 0	// List all DIDs 
 		char buf[128];
 		SNPRINTF(buf, sizeof(buf), "(%d) %s \n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
@@ -1577,6 +1582,115 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	return buf;
 }
 
+/**
+ * Formats the specified DID (of type gpx_statys_t) into primary components
+ * @param gpxStatus the parsed DID struct to display
+ * @param hdr the DID header
+ * @return returns a fully formatted string
+ */
+string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", gpxStatus.timeOfWeekMs / 1000.0);
+#endif
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1RunState: %d, gnss2RunState: %d, mcuTemp: %0.3lf\n",
+                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnss1RunState, gpxStatus.gnss2RunState, gpxStatus.mcuTemp
+    );
+
+    return buf;
+}
+
+/**
+ * Formats the specified DID (of type debug_array_t) into its array components of
+ * 9 integers, 9 floats, and 3 doubles.
+ * @param debug the parsed DID struct to display
+ * @param hdr the DID header
+ * @return returns a fully formatted string
+ */
+string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
+    for (int i = 0; i < 9; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
+    }
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
+    for (int i = 0; i < 9; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
+    }
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
+    for (int i = 0; i < 3; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
+    }
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+
+    return buf;
+}
+
+/**
+ * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
+ * otherwise supported.
+ * @param raw_data a pointer to the raw DID byte stream
+ * @param hdr the DID header
+ * @param bytesPerLine the number of hexadecimal bytes to print per line.
+ * @return returns a fully formatted string
+ */
+string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine)
+{
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s (RAW):", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    int lines = hdr.size / bytesPerLine;
+    for (int j = 0; j < lines; j++) {
+        int linelen = (j == lines-1) ? hdr.size % bytesPerLine : bytesPerLine;
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t");
+        for (int i = 0; i < linelen; i++) {
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "%02x ", (uint8_t)raw_data[(j * bytesPerLine) + i]);
+        }
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    }
+
+    return buf;
+}
 
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT	"%22s "

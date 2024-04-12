@@ -136,10 +136,13 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-    if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
-    {
-        return;
+    if (g_commandLineOptions.outputOnceDid) {
+        if (data->hdr.id != g_commandLineOptions.outputOnceDid)
+            return;
+        g_inertialSenseDisplay.showRawData(true);
     }
+
+
     (void)i;
     (void)pHandle;
 
@@ -300,20 +303,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
     if (g_commandLineOptions.imxFlashCfg.length() != 0)
     {
-        unsigned int startMs = current_timeMs();
-        while(!inertialSenseInterface.ImxFlashConfigSynced())
-        {   // Request and wait for flash config
-            inertialSenseInterface.Update();
-            SLEEP_MS(100);
-
-            if (current_timeMs() - startMs > 3000)
-            {   // Timeout waiting for flash config
-                cout << "Failed to read IMX flash config!" << endl;
-                return false;
-            }
-        }
-
-        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG);
+        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
     }
 
     if (g_commandLineOptions.gpxFlashCfg.length() != 0)
@@ -505,8 +495,7 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         cout << buffer << endl;
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
-        if ((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) &&
-            (buffer[0] || (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) ) {
+        if (buffer[0] || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
             printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();

@@ -145,6 +145,8 @@ public:
         gpx_flash_cfg_t gpxFlashCfg;
         unsigned int imxFlashCfgUploadTimeMs;	// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
         unsigned int gpxFlashCfgUploadTimeMs;	// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+        uint32_t imxFlashCfgUploadChecksum;
+        uint32_t gpxFlashCfgUploadChecksum;
         sys_params_t sysParams;
         gpx_status_t gpxStatus;
         is_fwUpdate_info_t fwUpdate;
@@ -327,6 +329,16 @@ public:
     void SoftwareReset();
 
     /**
+     * @brief Request a specific data set by DID.
+     * 
+     * @param dataId Data set ID  
+     * @param length Byte length of data requested.  Zero means entire data set.
+     * @param offset Byte offset into data
+     * @param period Broadcast period multiple
+     */
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
+
+    /**
     * Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
     * @param dataId the data id of the data to send
     * @param data the data to send
@@ -400,17 +412,40 @@ public:
     * @param pHandle the port pHandle to get flash config
     * @return bool whether the flash config is valid and currently synchronized
     */
-    bool ImxFlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return (device.imxFlashCfg.checksum!=0) && (device.imxFlashCfg.checksum==device.sysParams.flashCfgChecksum); }
-    bool GpxFlashConfigSynced(int pHandle = 0) { is_device_t &device = m_comManagerState.devices[pHandle]; return (device.gpxFlashCfg.checksum!=0) && (device.gpxFlashCfg.checksum==device.gpxStatus.flashCfgChecksum); }
+    bool FlashConfigSynced(int pHandle = 0) 
+    { 
+        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
+                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
+    }
+
+    /**
+     * @brief Failed to upload flash configuration for any reason.   
+     * 
+     * @param pHandle the port pHandle to get flash config for
+     * @return true Flash config upload was either not received or rejected.
+     */
+    bool FlashConfigUploadFailure(int pHandle = 0)
+    { 
+        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
+    } 
 
     /**
     * Set the flash config and update flash config in the device flash memory
     * @param flashCfg the flash config
     * @param pHandle the pHandle to set flash config for
-    * @return int number bytes sent
+    * @return true if success
     */
-    int SetImxFlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle = 0);
-    int SetGpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle = 0);
+    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+
+    /**
+     * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
+     * 
+     * @param pHandle the port pHandle
+     * @return false When failed to synchronize
+     */
+    bool WaitForFlashSynced(int pHandle = 0);
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
