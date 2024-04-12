@@ -19,7 +19,8 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
     {
         std::tm utcTime = stdGpsTimeToUtcDateTime(gpsTowMs/1000, gpsWeek, leapS);
         uint32_t msec = gpsTowMs%1000;
-#if 0
+
+#if 0   // Enable print for debugging
         printf("tow: %d ms %d week   ", gpsTowMs, gpsWeek);
         PrintUtcTime(utcTime, msec);
 #endif

@@ -58,27 +58,6 @@ void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
     EXPECT_EQ(g1.status, g2.status);
 }
 
-// TEST(protocol_nmea, gps_to_utc_time_conversion)
-// {
-//     uint32_t timeOfWeekMs, weeks;
-//     char* a, int aSize, int &offset;
-//     gps_pos_t pos = {};
-//     uint32_t timeMs = 0;
-
-//     // Cycle through entire range of time of week in milliseconds
-//     for (int towMs = 0; towMs < (7 * 24 * 60 * 60 * 1000); towMs += 200)
-//     {
-//         // Convert GPS to UTC time
-//         uint8_t buf[100] = {0};
-//         int offset = 0;
-//         nmea_GPSTimeToUTCTimeMsPrecision(buf, sizeof(buf), offset, pos);
-
-//         uint32_t utcTimeOfDayMs;
-//         ASCII_UtcTimeToGpsTowMs(&utcTimeOfDayMs, buf, weekday);
-//         gpsPos.timeOfWeekMs = weekday*C_MILLISECONDS_PER_DAY + utcTimeOfDayMs + gpsPos.leapS*1000;
-//     }
-// }
-
 TEST(protocol_nmea, nmea_parse_asce)
 {
 	PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");

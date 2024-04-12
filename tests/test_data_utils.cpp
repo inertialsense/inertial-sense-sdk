@@ -296,20 +296,20 @@ bool timeIsSameAndSet(uint32_t &msgMs, uint32_t timeMs)
 
 bool GenerateNMEA(test_message_t &msg, int i, float f)
 {
-    // if (timeIsSameAndSet(s_msgTimeMs.nmeaPImu, s_msgTimeMs.pimu))
-    // {
-    //     msg.pktSize = nmea_ppimu((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_pimu);
-    //     msg.ptype = _PTYPE_NMEA;
-    //     return true;
-    // }
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaPImu, s_msgTimeMs.pimu))
+    {
+        msg.pktSize = nmea_ppimu((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_pimu);
+        msg.ptype = _PTYPE_NMEA;
+        return true;
+    }
 
-    // if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
-    // {   
-    //     msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
-    //     msg.ptype = _PTYPE_NMEA;
-    //     printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
-    //     return true;
-    // }
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaZda, s_msgTimeMs.gpsPos))
+    {   
+        msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
+        msg.ptype = _PTYPE_NMEA;
+        printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
+        return true;
+    }
 
     if (timeIsSameAndSet(s_msgTimeMs.nmeaGga, s_msgTimeMs.gpsPos))
     {   
@@ -318,19 +318,19 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
         return true;
     }
 
-    // if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gpsPos))
-    // {
-    //     msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos, s_gpsVel);
-    //     msg.ptype = _PTYPE_NMEA;
-    //     return true;
-    // }
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaGpsPos, s_msgTimeMs.gpsPos))
+    {
+        msg.pktSize = nmea_pgpsp((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos, s_gpsVel);
+        msg.ptype = _PTYPE_NMEA;
+        return true;
+    }
 
-    // if (timeIsSameAndSet(s_msgTimeMs.nmeaIns1, s_msgTimeMs.ins1))
-    // {
-    //     msg.pktSize = nmea_pins1((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_ins1);
-    //     msg.ptype = _PTYPE_NMEA;
-    //     return true;
-    // }
+    if (timeIsSameAndSet(s_msgTimeMs.nmeaIns1, s_msgTimeMs.ins1))
+    {
+        msg.pktSize = nmea_pins1((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_ins1);
+        msg.ptype = _PTYPE_NMEA;
+        return true;
+    }
 
     return false;
 }
