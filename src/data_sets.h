@@ -2116,6 +2116,7 @@ enum eBitState
 enum eBitTestMode
 {
     BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101, // Send duplicate message 
 };
 
 /** Hardware built-in test (BIT) flags */

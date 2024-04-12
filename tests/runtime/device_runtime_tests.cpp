@@ -17,9 +17,11 @@ DeviceRuntimeTests::DeviceRuntimeTests()
 
     ISFileManager::CreateDirectory(LOG_DIRECTORY);
     m_filename = CreateLogFilename(LOG_DIRECTORY);
+
+    LogEvent("Realtime tests started...\n");
 }
 
-std::string DeviceRuntimeTests::CreateLogFilename(const std::string path)
+std::string DeviceRuntimeTests::CreateLogFilename(const std::string path, int serialNumber)
 {
     // Get current time
     auto now = std::chrono::system_clock::now();
@@ -28,12 +30,12 @@ std::string DeviceRuntimeTests::CreateLogFilename(const std::string path)
     // Convert to local time
     std::tm bt = *localtime(&in_time_t);
 
-    // Create a stringstream and format time
+    // Create a stringstream filename
     std::stringstream ss;
-    ss << std::put_time(&bt, "%Y%m%d_%H%M%S"); // YYYYMMDD_HHMMSS format
+    ss << "SN" << serialNumber << "_" << std::put_time(&bt, "%Y%m%d_%H%M%S") << ".txt"; // YYYYMMDD_HHMMSS format
 
     // Construct filename
-    std::string filename = path + "/" + ss.str() + ".txt"; // or any other extension
+    std::string filename = path + "/" + ss.str();
 
     return filename;
 }
@@ -63,11 +65,12 @@ void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
     case RTCM3_START_BYTE:          parser = "RTCM3";   break;
     case SPARTN_START_BYTE:         parser = "SPARTN";  break;
     case SONY_START_BYTE:           parser = "SONY";    break;
-    default:                        parser = charArrayToHex(comm.rxBuf.head, 4);    break;
+    // default:                        parser = charArrayToHex(comm.rxBuf.head, 4);    break;
+    default:                        parser = "Unknown"; break;
     }
     
     m_errorCount.parse = comm.rxErrorCount;
-    LogEvent("Parse error #%d: %s size %d\n", comm.rxErrorCount, parser.c_str(), comm.rxBuf.scanPrior - comm.rxBuf.head);
+    LogEvent("Parse error #%d: %s, size %d", comm.rxErrorCount, parser.c_str(), comm.rxBuf.scanPrior - comm.rxBuf.head);
 }
 
 void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
@@ -81,7 +84,16 @@ void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *
 
     switch(dataHdr.id)
     {
-    case DID_GPS1_POS:      copyDataPToStructP2(&m_hist.gps1Pos, &dataHdr, dataBuf, sizeof(gps_pos_t));       break;
+    case DID_DEV_INFO: {
+        int serialNumber = m_devInfo.serialNumber;     
+        copyDataPToStructP2(&m_devInfo, &dataHdr, dataBuf, sizeof(dev_info_t));
+        if (serialNumber != m_devInfo.serialNumber)
+        {   // Serial number changed.  Update log filename.
+            m_filename = CreateLogFilename(LOG_DIRECTORY, m_devInfo.serialNumber);
+        }
+    }
+        break;
+    case DID_GPS1_POS:      copyDataPToStructP2(&m_hist.gps1Pos, &dataHdr, dataBuf, sizeof(gps_pos_t));     break;
     }
 }
 
@@ -113,14 +125,8 @@ void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
 
     // printf("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
 
-    if (CheckGpsDuplicate("NEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, hist))
-    {
-        LogEvent("  1: %.*s  2: %.*s", hist.msgSize, hist.msg, msgSize, msg);
-    }
-    if (CheckGpsTimeReverse("NEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, hist))
-    {
-        LogEvent("  1: %.*s  2: %.*s", hist.msgSize, hist.msg, msgSize, msg);
-    }
+    CheckGpsDuplicate("NEA GGA Error",   m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
+    CheckGpsTimeReverse("NEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
 
     // Update history
     hist.update(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize);
@@ -136,67 +142,142 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
     int leapS;
     nmea_parse_zda((char*)msg, msgSize, gpsTowMs, gpsWeek, utcDate, utcTime, C_GPS_LEAP_SECONDS);
 
-    // printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
+    printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
-    if (CheckGpsDuplicate("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, hist))
-    {
-        LogEvent("  1: %.*s  2: %.*s", hist.msgSize, hist.msg, msgSize, msg);
-    }
-    if (CheckGpsTimeReverse("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, hist))
-    {
-        LogEvent("  1: %.*s  2: %.*s", hist.msgSize, hist.msg, msgSize, msg);
-    }
+    CheckGpsDuplicate("NMEA ZDA Error",   m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
+    CheckGpsTimeReverse("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
 
     // Update history
     hist.update(gpsTowMs, gpsWeek, (uint8_t*)msg, msgSize);
 }
 
-bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, msg_history_t &hist)
+std::string printfToString(const char* format, ...) 
+{
+    va_list args;
+    va_start(args, format);
+
+    // Start with a size that might be large enough
+    std::string str(100, '\0');
+
+    // Attempt to write to the string's buffer
+    int needed = std::vsnprintf(&str[0], str.size(), format, args);
+
+    // If the string was not big enough, resize and try again
+    if (needed >= str.size()) 
+    {
+        str.resize(needed + 1);
+        std::vsnprintf(&str[0], str.size(), format, args);
+    } 
+    else 
+    {
+        str.resize(needed); // Resize to actual needed size
+    }
+
+    va_end(args);
+
+    return str;
+}
+
+bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
 {
     int toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
     int histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
 
     if (toyMs == histToyMs)
     {   // Duplicate time
-        LogEvent("%s: Duplicate time (#%d): %d ms %d week >> %d ms %d week\n", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
+        LogEvent("NMEA Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
+        LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
+        LogEvent("  2: %.*s", msgSize-2, (char*)msg);
         return true;
     }
 
     return false;
 }
 
-bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, msg_history_t &hist)
+bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
 {
     int toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
     int histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
 
     if (toyMs < histToyMs)
     {   // Reversed time
-        LogEvent("%s: Reversed time (#%d): %d ms %d week >> %d ms %d week\n", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
+        LogEvent("NMEA Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
+        LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
+        LogEvent("  2: %.*s", msgSize-2, (char*)msg);
         return true;
     }
 
     return false;
 }
 
-void DeviceRuntimeTests::LogEvent(const char *format, ...)
-{
-#if 0
-    va_list args1;
-    va_start(args1, format);
-    vprintf(format, args1);
-    va_end(args1);              // Clean up the variable arguments list
+void DeviceRuntimeTests::LogEvent(std::string str)
+{   
+    // Add serial number if non-zero
+    if (m_devInfo.serialNumber)
+    {
+        str = "[SN" + std::to_string(m_devInfo.serialNumber) + "] " + str;
+    }
+    str += "\n";
+
+#define MAX_LOG_SIZE    500000
+    // Prevent logging too much data
+    if (m_log.size() + str.size() > MAX_LOG_SIZE) 
+    {
+        // If appending would exceed maxSize, trim the existing content first
+        m_log = m_log.substr(0, MAX_LOG_SIZE - str.size());
+    }
+    m_log += str;
+
+#if 1   // Print to display
+    std::cout << str;
 #endif
 
+    // Log to file 
     FILE *file = fopen(m_filename.c_str(), "a");
     if (file != NULL)
     {
-        va_list args2;
-        va_start(args2, format);
-        fprintf(file, "NMEA Error: ");
-        vfprintf(file, format, args2);
+        fprintf(file, "%.*s", (int)str.size(), str.c_str());
         fclose(file);
-        va_end(args2);          // Clean up the variable arguments list
     }
 }
 
+std::string formatString(const char* format, va_list args) 
+{
+    // Starting with a guess for the required length
+    size_t size = MAX_MSG_LENGTH_NMEA;
+    std::vector<char> buffer(size);
+
+    while (true) {
+        va_list args_copy;
+        va_copy(args_copy, args); // Make a copy of args to use
+
+        // Attempt to format the string
+        int needed = std::vsnprintf(buffer.data(), size, format, args_copy);
+
+        // Clean up the copied va_list
+        va_end(args_copy);
+
+        // Check if the buffer was large enough
+        if (needed < 0) 
+        {   // Formatting error
+            return "";
+        }
+
+        if (needed < size) 
+        {   // Buffer was big enough
+            return std::string(buffer.data());
+        }
+
+        // Increase buffer size and retry
+        size = needed + 10;
+        buffer.resize(size);
+    }
+}
+
+void DeviceRuntimeTests::LogEvent(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    LogEvent(formatString(format, args));
+    va_end(args);
+}

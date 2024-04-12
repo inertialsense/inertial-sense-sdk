@@ -38,7 +38,7 @@ class DeviceRuntimeTests
 
 public:
     DeviceRuntimeTests();
-    std::string CreateLogFilename(const std::string path);
+    std::string CreateLogFilename(const std::string path, int serialNumber=0);
     void ProcessParseError(is_comm_instance_t &comm);
     void ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf);
     void ProcessNMEA(const uint8_t* msg, int msgSize);
@@ -47,6 +47,13 @@ public:
         return  m_errorCount.parse +
                 m_errorCount.nmeaGgaTime +
                 m_errorCount.nmeaZdaTime;
+    }
+    bool HasLog(){ return m_log.size() != 0; }
+    std::string Log()
+    {
+        std::string log = m_log;
+        m_log.clear();
+        return log; 
     }
 
     struct error_count
@@ -59,12 +66,15 @@ public:
 private:
     void TestNmeaGga(const uint8_t* msg, int msgSize);
     void TestNmeaZda(const uint8_t* msg, int msgSize);
-    bool CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, msg_history_t &hist);
-    bool CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, msg_history_t &hist);
+    bool CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist);
+    bool CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist);
+    void LogEvent(std::string str);
     void LogEvent(const char *format, ...);
 
     std::string m_filename;
+    std::string m_log;
     bool m_enable = true;
+    dev_info_t m_devInfo = {};
 
     RuntimeTest     m_testGgaDuplicate{"GGA Duplicate"};
     RuntimeTest     m_testZdaDuplicate{"ZDA Duplicate"};
