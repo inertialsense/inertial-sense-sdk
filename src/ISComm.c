@@ -10,6 +10,11 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "ISConstants.h"
+#if PLATFORM_IS_EMBEDDED
+#include "rtos.h"
+#endif
+
 #include "ISComm.h"
 
 #define MAX_MSG_LENGTH_ISB					PKT_BUF_SIZE
@@ -1029,6 +1034,8 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 	// Update checksum using precomputed header checksum and new data
     pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
+	BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
+
  	// Write packet to buffer
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
 	MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));   // Header
@@ -1038,6 +1045,8 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     }
 	MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
 	MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                 // Footer (checksum)
+
+	END_CRITICAL_SECTION
 
 	// Increment Tx count
 	comm->txPktCount++;
@@ -1051,6 +1060,8 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
 	// Compute checksum using precomputed header checksum
     pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
+	BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
+
  	// Write packet to port
 	int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
 	if (pkt->offset)
@@ -1062,6 +1073,8 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
         n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
     }
 	n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+
+	END_CRITICAL_SECTION
 
 	// Increment Tx count
 	comm->txPktCount++;
