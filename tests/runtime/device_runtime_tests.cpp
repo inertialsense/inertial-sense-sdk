@@ -18,7 +18,7 @@ DeviceRuntimeTests::DeviceRuntimeTests()
     ISFileManager::CreateDirectory(LOG_DIRECTORY);
     m_filename = CreateLogFilename(LOG_DIRECTORY);
 
-    LogEvent("Realtime tests started...\n");
+    LogEvent("Realtime tests started...");
 }
 
 std::string DeviceRuntimeTests::CreateLogFilename(const std::string path, int serialNumber)
