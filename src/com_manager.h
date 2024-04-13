@@ -98,6 +98,9 @@ typedef int(*pfnComManagerPreSend)(int port, p_data_hdr_t *dataHdr);
 // Generic message handler function, return 1 if message handled
 typedef int(*pfnComManagerGenMsgHandler)(int port, const unsigned char* msg, int msgSize);
 
+// Parse error handler function, return 1 if message handled
+typedef int(*pfnComManagerParseErrorHandler)(int port, is_comm_instance_t* comm);
+
 // broadcast message handler
 typedef int(*pfnComManagerAsapMsg)(int port, p_data_get_t* req);
 
@@ -185,6 +188,9 @@ typedef struct
 	
 	// Message handler - SPARTN
 	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
+
+	// Error handler 
+	pfnComManagerParseErrorHandler cmMsgHandlerError;
 
 } com_manager_t;
 
@@ -474,23 +480,27 @@ void comManagerRegisterInstance(CMHANDLE cmInstance, uint16_t did, pfnComManager
 /**
 * Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
 * 
-* @param msgFunc handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
-* @param msgFunc handler for NMEA messages.
-* @param msgFunc handler for ublox messages.
-* @param msgFunc handler for RTCM3 messages.
+* @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
+* @param asciiHandler handler for NMEA messages.
+* @param ubloxHandler handler for ublox messages.
+* @param rtcm3Handler handler for RTCM3 messages.
+* @param spartnHandler handler for SPARTN messages.
+* @param handlerError handler for parse errors.
 */
 void comManagerSetCallbacks(
 	pfnComManagerAsapMsg rmcHandler,
 	pfnComManagerGenMsgHandler asciiHandler,
 	pfnComManagerGenMsgHandler ubloxHandler, 
 	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler);
+	pfnComManagerGenMsgHandler spartnHandler,
+	pfnComManagerParseErrorHandler handlerError);
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
 	pfnComManagerAsapMsg rmcHandler,
 	pfnComManagerGenMsgHandler asciiHandler,
 	pfnComManagerGenMsgHandler ubloxHandler,
 	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler);
+	pfnComManagerGenMsgHandler spartnHandler,
+	pfnComManagerParseErrorHandler handlerError);
 
 /**
 * Attach user defined data to a com manager instance
