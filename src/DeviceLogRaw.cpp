@@ -98,7 +98,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				break;
 
 			case _PTYPE_UBLOX:
-				m_comm.rxPkt.dataHdr.id = *(uint16_t*)(m_comm.rxPkt.data.ptr+2);		// Read Class and ID as uint16
+				m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
 				globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
 				cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
 				break;

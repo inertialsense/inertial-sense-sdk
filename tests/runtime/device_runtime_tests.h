@@ -18,7 +18,7 @@ public:
 
 class DeviceRuntimeTests
 {
-    typedef struct
+    typedef struct sMsgHistory
     {
         void update(uint32_t gpsTowMs_, uint32_t gpsWeek_, uint8_t *msg_, int msgSize_)
         {

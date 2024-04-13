@@ -73,15 +73,18 @@ static std::string s_savedTZ;
 
 void SetUtcTimeZone()
 {
+#if PLATFORM_IS_LINUX
     const char* oldTZ = getenv("TZ");
     s_savedTZ = oldTZ ? oldTZ : "";
 
     setenv("TZ", "UTC", 1);
     tzset();
+#endif
 }
 
 void RevertUtcTimeZone()
 {
+#if PLATFORM_IS_LINUX
     // Restore the original timezone if necessary
     if (s_savedTZ.empty()) 
     {
@@ -92,6 +95,7 @@ void RevertUtcTimeZone()
         setenv("TZ", s_savedTZ.c_str(), 1);
     }
     tzset();  // Reapply the original timezone settings
+#endif
 }
 #endif
 

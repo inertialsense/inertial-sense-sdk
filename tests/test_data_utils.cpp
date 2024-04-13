@@ -68,11 +68,11 @@ struct sTimeMs
     uint32_t ubxNav;
     uint32_t ubxRxm;
 
-    u_int32_t rtcm1005;
-    u_int32_t rtcm1007;
-    u_int32_t rtcm1033;
-    u_int32_t rtcm1085;
-    u_int32_t rtcm1095;
+    uint32_t rtcm1005;
+    uint32_t rtcm1007;
+    uint32_t rtcm1033;
+    uint32_t rtcm1085;
+    uint32_t rtcm1095;
 } s_msgTimeMs = {};
 
 void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek)
@@ -245,9 +245,9 @@ bool GenerateGpsVel(test_message_t &msg, gps_vel_t &gps, int i, float f, bool in
 
     gps.timeOfWeekMs = s_timeMs + s_gpsTowOffsetMs;
     gps.status = i;
-    gps.vel[0] = f*12.34;
-    gps.vel[1] = f*23.45;
-    gps.vel[2] = f*34.56;
+    gps.vel[0] = f*12.34f;
+    gps.vel[1] = f*23.45f;
+    gps.vel[2] = f*34.56f;
     gps.sAcc = fabsf(f);
 
     msg.data.gpsVel = gps;
@@ -454,7 +454,7 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
 
     // Generate random number
     int i = dist(rng);
-    float f = (float)i * 0.001;
+    float f = (float)i * 0.001f;
 
     // GenerateISB() must run to generate ISB data used in GenerateNMEA()
     if (GenerateISB(msg, i, f))
