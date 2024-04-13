@@ -24,8 +24,17 @@ class DeviceRuntimeTests
         {
             gpsTowMs = gpsTowMs_;
             gpsWeek = gpsWeek_;
-            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
             msgSize = msgSize_;
+            memset(&dataHdr, 0, sizeof(p_data_hdr_t));
+            memcpy(msg, msg_, _MIN(msgSize_, MAX_MSG_LENGTH_NMEA));
+        }
+        void update(uint32_t gpsTowMs_, uint32_t gpsWeek_, p_data_hdr_t &dataHdr_, const uint8_t *dataBuf_)
+        {
+            gpsTowMs = gpsTowMs_;
+            gpsWeek = gpsWeek_;
+            msgSize = 0;
+            dataHdr = dataHdr_;
+            memcpy(msg, dataBuf_, _MIN(dataHdr.size, MAX_MSG_LENGTH_NMEA));
         }
 
         utc_date_t date;
@@ -34,6 +43,7 @@ class DeviceRuntimeTests
         uint32_t gpsWeek;
         uint8_t msg[MAX_MSG_LENGTH_NMEA];
         int msgSize;
+        p_data_hdr_t dataHdr;
     } msg_history_t;
 
 public:
@@ -65,6 +75,7 @@ public:
     } m_errorCount = {};
     
 private:
+    void TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf);
     void TestNmeaGga(const uint8_t* msg, int msgSize);
     void TestNmeaZda(const uint8_t* msg, int msgSize);
     bool CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist);
@@ -84,10 +95,15 @@ private:
     RuntimeTest     m_testGgaTimeReverse{"GGA Time Reverse"};
     RuntimeTest     m_testZdaTimeReverse{"ZDA Time Reverse"};
 
+    gps_pos_t       m_gps1Pos;
+
     struct
     {
-        gps_pos_t           gps1Pos;
-        
+        struct
+        {
+            msg_history_t   gps1Pos;
+        } isb;
+
         struct
         {
             msg_history_t   zda;

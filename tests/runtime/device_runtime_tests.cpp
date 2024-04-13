@@ -7,6 +7,7 @@
 #include "protocol_nmea.h"
 #include "device_runtime_tests.h"
 #include "ISFileManager.h"
+#include "ISDataMappings.h"
 
 
 #define LOG_DIRECTORY   "realtime_logs"
@@ -17,7 +18,7 @@
  */
 DeviceRuntimeTests::DeviceRuntimeTests()
 {
-    m_hist.gps1Pos.leapS = C_GPS_LEAP_SECONDS;
+    m_gps1Pos.leapS = C_GPS_LEAP_SECONDS;
 
     ISFileManager::CreateDirectory(LOG_DIRECTORY);
     m_filename = CreateLogFilename(LOG_DIRECTORY);
@@ -60,21 +61,26 @@ std::string charArrayToHex(uint8_t* arr, int arrSize)
 
 void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
 {
+    int size = comm.rxBuf.scanPrior - comm.rxBuf.head;
+
     std::string parser;
     switch (comm.rxBuf.head[0])
     {
-    case PSC_ISB_PREAMBLE_BYTE1:    parser = "ISB";     break;
-    case PSC_NMEA_START_BYTE:       parser = "NMEA";    break;
-    case UBLOX_START_BYTE1:         parser = "UBX";     break;
-    case RTCM3_START_BYTE:          parser = "RTCM3";   break;
-    case SPARTN_START_BYTE:         parser = "SPARTN";  break;
-    case SONY_START_BYTE:           parser = "SONY";    break;
+    case PSC_ISB_PREAMBLE_BYTE1:    
+        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::GetDataSetName(comm.rxPkt.dataHdr.id));
+        parser += ", size " + std::to_string(comm.rxPkt.dataHdr.size); 
+        break;
+    case PSC_NMEA_START_BYTE:       parser = std::string("NMEA ") + std::string((char*)comm.rxBuf.head, _MIN(size, MAX_MSG_LENGTH_NMEA));    break;
+    case UBLOX_START_BYTE1:         parser = std::string("UBX");        break;
+    case RTCM3_START_BYTE:          parser = std::string("RTCM3");      break;
+    case SPARTN_START_BYTE:         parser = std::string("SPARTN");     break;
+    case SONY_START_BYTE:           parser = std::string("SONY");       break;
     // default:                        parser = charArrayToHex(comm.rxBuf.head, 4);    break;
-    default:                        parser = "Unknown"; break;
+    default:                        parser = std::string("Unknown");    break;
     }
     
     m_errorCount.parse = comm.rxErrorCount;
-    LogEvent("Parse error #%d: %s, size %d", comm.rxErrorCount, parser.c_str(), comm.rxBuf.scanPrior - comm.rxBuf.head);
+    LogEvent("Parse Error #%d, size %d: %s", comm.rxErrorCount, size, parser.c_str());
 }
 
 void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
@@ -97,8 +103,24 @@ void DeviceRuntimeTests::ProcessISB(const p_data_hdr_t &dataHdr, const uint8_t *
         }
     }
         break;
-    case DID_GPS1_POS:      copyDataPToStructP2(&m_hist.gps1Pos, &dataHdr, dataBuf, sizeof(gps_pos_t));     break;
+
+    case DID_GPS1_POS:      TestIsbGps(dataHdr, dataBuf);       break;
     }
+}
+
+void DeviceRuntimeTests::TestIsbGps(const p_data_hdr_t &dataHdr, const uint8_t *dataBuf)
+{
+    msg_history_t &hist = m_hist.isb.gps1Pos;
+
+    copyDataPToStructP2(&m_gps1Pos, &dataHdr, dataBuf, sizeof(gps_pos_t));
+
+    // printf("ISB GpsPos1 (%d ms, %d wkday): %.*s", m_gps1Pos.timeOfWeekMs, utcWeekday, msgSize, msg);
+
+    CheckGpsDuplicate  ("ISB GpsPos1 Error", m_errorCount.nmeaGgaTime, m_gps1Pos.timeOfWeekMs, m_gps1Pos.week, NULL, 0, hist);
+    CheckGpsTimeReverse("ISB GpsPos1 Error", m_errorCount.nmeaGgaTime, m_gps1Pos.timeOfWeekMs, m_gps1Pos.week, NULL, 0, hist);
+
+    // Update history
+    hist.update(m_gps1Pos.timeOfWeekMs, m_gps1Pos.week, NULL, 0);
 }
 
 void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
@@ -124,13 +146,13 @@ void DeviceRuntimeTests::TestNmeaGga(const uint8_t* msg, int msgSize)
     gps_pos_t gpsPos = {};
 
     utc_time_t t;
-    int utcWeekday = gpsTowMsToUtcWeekday(gpsPos.timeOfWeekMs, m_hist.gps1Pos.leapS);
+    int utcWeekday = gpsTowMsToUtcWeekday(gpsPos.timeOfWeekMs, m_gps1Pos.leapS);
     nmea_parse_gga((const char *)msg, msgSize, gpsPos, t, utcWeekday);
 
     // printf("NMEA GGA (%d ms, %d wkday): %.*s", gpsPos.timeOfWeekMs, utcWeekday, msgSize, msg);
 
-    CheckGpsDuplicate("NEA GGA Error",   m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
-    CheckGpsTimeReverse("NEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
+    CheckGpsDuplicate  ("NMEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
+    CheckGpsTimeReverse("NMEA GGA Error", m_errorCount.nmeaGgaTime, gpsPos.timeOfWeekMs, gpsPos.week, msg, msgSize, hist);
 
     // Update history
     hist.update(gpsPos.timeOfWeekMs, gpsPos.week, (uint8_t*)msg, msgSize);
@@ -147,7 +169,7 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
 
     printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
-    CheckGpsDuplicate("NMEA ZDA Error",   m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
+    CheckGpsDuplicate  ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
     CheckGpsTimeReverse("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
 
     // Update history
@@ -189,8 +211,11 @@ bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, 
     if (toyMs == histToyMs)
     {   // Duplicate time
         LogEvent("NMEA Error: %s: Duplicate time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
-        LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
-        LogEvent("  2: %.*s", msgSize-2, (char*)msg);
+        if (msg)
+        {
+            LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
+            LogEvent("  2: %.*s", msgSize-2, (char*)msg);
+        }
         return true;
     }
 
@@ -205,8 +230,11 @@ bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count
     if (toyMs < histToyMs)
     {   // Reversed time
         LogEvent("NMEA Error: %s: Reversed time (#%d): %d ms %d week >> %d ms %d week", description, ++count, hist.gpsTowMs, hist.gpsWeek, towMs, gpsWeek);
-        LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
-        LogEvent("  2: %.*s", msgSize-2, (char*)msg);
+        if (msg)
+        {
+            LogEvent("  1: %.*s", hist.msgSize-2, (char*)hist.msg);
+            LogEvent("  2: %.*s", msgSize-2, (char*)msg);
+        }
         return true;
     }
 
@@ -259,7 +287,7 @@ void DeviceRuntimeTests::LogEvent(std::string str)
     }
     m_log += str;
 
-#if 0   // Print to display
+#if 1   // Print to display
     std::cout << str;
 #endif
 
