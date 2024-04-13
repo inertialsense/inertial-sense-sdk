@@ -1344,7 +1344,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 	}
 
 	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 
 	if (m_enableDeviceValidation)
 	{
@@ -1397,7 +1397,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 		if (removedSerials)
 		{
 			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 		}
 	}
 

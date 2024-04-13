@@ -97,11 +97,11 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
-            case _PTYPE_UBLOX:
-                m_comm.rxPkt.dataHdr.id = *(uint16_t*)(m_comm.rxPkt.data.ptr+2);		// Read Class and ID as uint16
-                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-                break;
+			case _PTYPE_UBLOX:
+				m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
+				globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
+				cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+				break;
 
             case _PTYPE_NMEA:
                 m_comm.rxPkt.dataHdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
@@ -109,12 +109,15 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
-            case _PTYPE_PARSE_ERROR:
-                if (m_showParseErrors && m_comm.rxErrorCount>1) 
-                { 
-                    printf("SaveData() parse errors: %d\n", m_comm.rxErrorCount); 
-                }
-                break;
+			case _PTYPE_PARSE_ERROR:
+				if (m_showParseErrors)
+				{ 
+					if (m_comm.rxErrorCount>1) 
+					{ 
+						printf("SN%d SaveData() parse errors: %d\n", m_devInfo.serialNumber, m_comm.rxErrorCount); 
+					}
+				}
+				break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD: {
@@ -258,12 +261,12 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
                 // Do nothing
                 break;
 
-            case _PTYPE_PARSE_ERROR:
-                if (m_showParseErrors)
-                {
-                    if (m_comm.rxErrorCount > 1) { printf("ReadDataFromChunk() parse errors: %d\n", m_comm.rxErrorCount); }
-                }
-                break;
+			case _PTYPE_PARSE_ERROR:
+				if (m_showParseErrors)
+				{
+					if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devInfo.serialNumber, m_comm.rxErrorCount); }
+				}
+				break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:

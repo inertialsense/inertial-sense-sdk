@@ -1776,7 +1776,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
 
-#define RMC_BITS_EVENT               0x0800000000000000
+#define RMC_BITS_EVENT                  0x0800000000000000
 
 #define RMC_BITS_MASK                   0x0FFFFFFFFFFFFFFF
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000      // 
@@ -2125,6 +2125,7 @@ enum eBitState
 enum eBitTestMode
 {
     BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101, // Send duplicate message 
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -3255,16 +3256,6 @@ typedef struct PACKED
 POP_PACK
 
 PUSH_PACK_8
-
-/** time struct */
-typedef struct
-{
-    /** time (s) expressed by standard time_t */
-    int64_t time;
-
-    /** fraction of second under 1 s */
-    double sec;         
-} gtime_t;
 
 typedef struct PACKED
 {
