@@ -39,7 +39,7 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
-int getNmeaMsgId(const void* msg, int msgSize);
+int getNmeaMsgId(const void* a, int aSize);
 int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
@@ -76,8 +76,8 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS]);
-uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
 // NMEA standard messages
 int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);
 int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);

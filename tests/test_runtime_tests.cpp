@@ -64,7 +64,6 @@ void run_realtime_test(DeviceRuntimeTests &RuntimeTest, uint8_t *stream, int str
 #define BUFFER_SIZE		500000
 // #define BUFFER_SIZE		5000
 
-#if 1
 TEST(runtime_tests, data_with_no_errors)
 {
 	DeviceRuntimeTests RuntimeTest;
@@ -73,9 +72,7 @@ TEST(runtime_tests, data_with_no_errors)
 	run_realtime_test(RuntimeTest, stream, streamSize);
 	ASSERT_EQ( RuntimeTest.ErrorCount(), 0 );
 }
-#endif
 
-#if 1
 TEST(runtime_tests, timestamp_duplicates)
 {
 	DeviceRuntimeTests RuntimeTest;
@@ -85,9 +82,7 @@ TEST(runtime_tests, timestamp_duplicates)
 	ASSERT_NE( RuntimeTest.ErrorCount(), 0 );
 	ASSERT_NE( RuntimeTest.m_errorCount.nmeaGgaTime, 0 );
 }
-#endif
 
-#if 1
 TEST(runtime_tests, timestamp_reverse)
 {
 	DeviceRuntimeTests RuntimeTest;
@@ -97,9 +92,7 @@ TEST(runtime_tests, timestamp_reverse)
 	ASSERT_NE( RuntimeTest.ErrorCount(), 0 );
 	ASSERT_NE( RuntimeTest.m_errorCount.nmeaGgaTime, 0 );
 }
-#endif
 
-#if 1
 TEST(runtime_tests, truncate_message_end)
 {
 	DeviceRuntimeTests RuntimeTest;
@@ -109,5 +102,4 @@ TEST(runtime_tests, truncate_message_end)
 	ASSERT_NE( RuntimeTest.ErrorCount(), 0 );
 	ASSERT_NE( RuntimeTest.m_errorCount.parse, 0 );
 }
-#endif
 

@@ -1516,12 +1516,12 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
  * Error -1 for NMEA head not found 
  * 		 -2 for invalid length 
 */
-int getNmeaMsgId(const void *msg, int msgSize)
+int getNmeaMsgId(const void *a, int aSize)
 {
-	if(msgSize < 5)     // five characters required (i.e. "$INFO")
+	if(aSize < 5)     // five characters required (i.e. "$INFO")
 		return -2;
 
-    char *cptr = (char*)msg;
+    char *cptr = (char*)a;
     char *talker = &cptr[1];
 
     switch(*talker)
@@ -1826,9 +1826,9 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 	return 0;
 }
 
-uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
 {
-	(void)msgSize;
+	(void)aSize;
 
 	uint32_t options = 0;
 	uint32_t id;
@@ -1840,8 +1840,8 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 		return 0;
 	}
 	
-	char *ptr = (char*)&msg[6];				// $ASCE
-	char *end = (char*)&msg[msgSize];
+	char *ptr = (char*)&a[6];				// $ASCE
+	char *end = (char*)&a[aSize];
 	
 	// check if next index is ','
 	if(*ptr != ',')
@@ -1897,9 +1897,9 @@ uint32_t nmea_parse_asce(int pHandle, const char msg[], int msgSize, rmci_t rmci
 	return options;
 }
 
-uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
 {
-	(void)msgSize;
+	(void)aSize;
 
 	uint32_t options = 0;
 	uint32_t id;
@@ -1911,8 +1911,8 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char msg[], int msgSize, grmci
 		return 0;
 	}
 	
-	char *ptr = (char*)&msg[6];				// $ASCE
-	char *end = (char*)&msg[msgSize];
+	char *ptr = (char*)&a[6];				// $ASCE
+	char *end = (char*)&a[aSize];
 	
 	// check if next index is ','
 	if(*ptr != ',')

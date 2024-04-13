@@ -11,6 +11,10 @@
 
 #define LOG_DIRECTORY   "realtime_logs"
 
+/**
+ * @brief This class provides realtime evaluation conditions or errors in data streaming from the Inertial Sense products.
+ * 
+ */
 DeviceRuntimeTests::DeviceRuntimeTests()
 {
     m_hist.gps1Pos.leapS = C_GPS_LEAP_SECONDS;

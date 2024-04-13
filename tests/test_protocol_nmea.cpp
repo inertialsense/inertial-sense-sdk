@@ -289,7 +289,6 @@ TEST(protocol_nmea, PGPSP)
 
 #define OPERATING_LIMIT_MPS     500     // (m/s)
 
-#if 1
 TEST(protocol_nmea, PGPSP_sweep_operating_range)
 {
     double invTowMsMax = 1.0/(double)C_MILLISECONDS_PER_WEEK;
@@ -333,7 +332,6 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
         compareGpsVel(vel, resultVel);
     }
 }
-#endif
 
 TEST(protocol_nmea, GGA)
 {
@@ -379,7 +377,6 @@ TEST(protocol_nmea, GGA)
     compareGpsPos(pos, pos2);
 }
 
-#if 1
 TEST(protocol_nmea, GGA_sweep_operating_range)
 {
     double invTowMsMax = 1.0/(double)C_MILLISECONDS_PER_WEEK;
@@ -432,7 +429,6 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
         ASSERT_EQ(memcmp(&abuf, &abuf2, n), 0) << "towMs " << towMs << "  abuf: " << abuf << "abuf2: " << abuf2;
     }
 }
-#endif
 
 TEST(protocol_nmea, GGA2)
 {
