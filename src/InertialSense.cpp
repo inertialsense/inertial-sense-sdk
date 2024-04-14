@@ -1280,10 +1280,12 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
     }
 }
 
-bool InertialSense::OpenSerialPorts(const char *port, int baudRate) {
+bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
+{
     CloseSerialPorts();
 
-    if (port == NULLPTR || comManagerValidateBaudRate(baudRate) != 0) {
+    if (port == NULLPTR || comManagerValidateBaudRate(baudRate) != 0)
+    {
         return false;
     }
 
@@ -1292,29 +1294,37 @@ bool InertialSense::OpenSerialPorts(const char *port, int baudRate) {
     size_t maxCount = UINT32_MAX;
 
     // handle wildcard, auto-detect serial ports
-    if (port[0] == '*') {
+    if (port[0] == '*')
+    {
         m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.
         cISSerialPort::GetComPorts(ports);
-        if (port[1] != '\0') {
+        if (port[1] != '\0')
+        {
             maxCount = atoi(port + 1);
             maxCount = (maxCount == 0 ? UINT32_MAX : maxCount);
         }
-    } else {
+    }
+    else
+    {
         // comma separated list of serial ports
         splitString(port, ',', ports);
     }
 
     // open serial ports
-    for (size_t i = 0; i < ports.size(); i++) {
+    for (size_t i = 0; i < ports.size(); i++)
+    {
         serial_port_t serial;
         serialPortPlatformInit(&serial);
-        if (serialPortOpen(&serial, ports[i].c_str(), baudRate, 0) == 0) {
+        if (serialPortOpen(&serial, ports[i].c_str(), baudRate, 0) == 0)
+        {
             // failed to open
             serialPortClose(&serial);
-        } else {
+        }
+        else
+        {
             is_device_t device = {};
             device.serialPort = serial;
-            device.sysParams.flashCfgChecksum = 0xFFFFFFFF;        // Invalidate flash config checksum to trigger sync event
+            device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
             m_comManagerState.devices.push_back(device);
         }
     }
@@ -1332,7 +1342,7 @@ bool InertialSense::OpenSerialPorts(const char *port, int baudRate) {
     }
 
     // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 
     if (m_enableDeviceValidation) {
         unsigned int startTime = current_timeMs();
@@ -1381,7 +1391,7 @@ bool InertialSense::OpenSerialPorts(const char *port, int baudRate) {
         // setup com manager again if serial ports dropped out with new count of serial ports
         if (removedSerials) {
             comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
         }
     }
 

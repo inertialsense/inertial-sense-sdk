@@ -16,6 +16,7 @@ include_directories(
     ${IS_SDK_DIR}/src/protocol
     ${IS_SDK_DIR}/src/libusb/libusb
     ${IS_SDK_DIR}/src/util
+    ${IS_SDK_DIR}/tests/runtime
 )
 
 find_package(GTest REQUIRED)
@@ -29,6 +30,14 @@ list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
 # Define the executable
 add_executable(${PROJECT_NAME} 
     ${TESTS_SOURCES}
+    runtime/device_runtime_tests.cpp
+
+    # test_ISLogger.cpp
+    # test_protocol_nmea.cpp
+    # test_time_conversion.cpp
+    
+    # test_data_utils.cpp
+    # test_runtime_tests.cpp
 )
 
 # Link InertialSenseSDK static library to the executable

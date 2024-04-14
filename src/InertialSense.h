@@ -654,6 +654,7 @@ private:
     pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
     pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
     pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
+    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
     cISLogger m_logger;
     void* m_logThread;
     cMutex m_logMutex;
