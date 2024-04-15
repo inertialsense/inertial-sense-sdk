@@ -161,6 +161,7 @@ public:
         char* clientBuffer;
         int clientBufferSize;
         int* clientBytesToSend;
+        int16_t discoveryTimeout = 5000;
     };
 
     typedef struct

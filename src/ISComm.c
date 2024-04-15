@@ -33,7 +33,7 @@ typedef union
     {
         uint8_t a;	// Lower 8 bits
         uint8_t b;	// Upper 8 bits
-    };	
+    };
 } checksum16_u;
 
 const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
@@ -109,7 +109,7 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
     {
         cksum.a += ((uint8_t*)data)[i];
         cksum.b += cksum.a;
-    }	
+    }
     return cksum.ck;
 }
 
@@ -167,25 +167,25 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
 
-    // Clear buffer and initialize buffer pointers
-    memset(buffer, 0, bufferSize);
-    c->rxBuf.size = bufferSize;
-    c->rxBuf.start = buffer;
-    c->rxBuf.end = buffer + bufferSize;
-    c->rxBuf.tail = c->rxBuf.scan = buffer;
-    
-    // Set parse enable flags
-    c->config.enabledMask = 
-        ENABLE_PROTOCOL_ISB
-        | ENABLE_PROTOCOL_NMEA
-        | ENABLE_PROTOCOL_UBLOX
-        | ENABLE_PROTOCOL_RTCM3
-        // | ENABLE_PROTOCOL_SONY
-        // | ENABLE_PROTOCOL_SPARTN
-        ;
-    
-    c->rxPkt.data.ptr = c->rxBuf.start;
-    c->rxErrorState = 1;
+	// Clear buffer and initialize buffer pointers
+	memset(buffer, 0, bufferSize);
+	c->rxBuf.size = bufferSize;
+	c->rxBuf.start = buffer;
+	c->rxBuf.end = buffer + bufferSize;
+	c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
+	
+	// Set parse enable flags
+	c->config.enabledMask = 
+		ENABLE_PROTOCOL_ISB
+		| ENABLE_PROTOCOL_NMEA
+		| ENABLE_PROTOCOL_UBLOX
+		| ENABLE_PROTOCOL_RTCM3
+		// | ENABLE_PROTOCOL_SONY
+		// | ENABLE_PROTOCOL_SPARTN
+		;
+	
+	c->rxPkt.data.ptr = c->rxBuf.start;
+	c->rxErrorState = 1;
 }
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
@@ -239,7 +239,7 @@ static protocol_type_t processIsbPkt(void* v)
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
     int numBytes;
-    
+
     switch (p->state)
     {
     case 0:
@@ -261,12 +261,12 @@ static protocol_type_t processIsbPkt(void* v)
     case 2:		// Wait for packet header
         numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
         if (numBytes < (int)(sizeof(packet_hdr_t)-1))
-        {	
+        {
             return _PTYPE_NONE;
         }
         p->state++;
 
-        // Parse header 
+        // Parse header
         packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
         p->size = sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2;		// Header + payload + footer (checksum)
         if (p->size > MAX_MSG_LENGTH_ISB)
@@ -275,7 +275,7 @@ static protocol_type_t processIsbPkt(void* v)
         }
         return _PTYPE_NONE;
 
-    default:	// Wait for entire packet 
+    default:	// Wait for entire packet
         numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
         if (numBytes < (int)(p->size))
         {
@@ -303,7 +303,7 @@ static protocol_type_t processIsbPkt(void* v)
     /////////////////////////////////////////////////////////
     // Valid packet found - Checksum passed - Populate rxPkt
     validPacketReset(c, numBytes);
-    
+
     packet_t *pkt = &(c->rxPkt);
 
     // Header
@@ -314,7 +314,7 @@ static protocol_type_t processIsbPkt(void* v)
 
     // Payload
     if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
-    {	// Offset is first two bytes in payload  
+    {	// Offset is first two bytes in payload
         pkt->data.size     = _MAX(payloadSize-2, 0);
         pkt->data.ptr      = (pkt->data.size ? payload+2 : NULL);	// Data starts after offset if data size is non-zero
         pkt->offset        = *((uint16_t*)payload);
@@ -337,7 +337,7 @@ static protocol_type_t processIsbPkt(void* v)
     switch (ptype)
     {
     case PKT_TYPE_SET_DATA:
-    case PKT_TYPE_DATA: 
+    case PKT_TYPE_DATA:
         // Validate data size
         if (pkt->data.size <= MAX_DATASET_SIZE)
         {
@@ -345,7 +345,7 @@ static protocol_type_t processIsbPkt(void* v)
             {	// acknowledge valid data received
                 c->ackNeeded = PKT_TYPE_ACK;
             }
-                
+
             return _PTYPE_INERTIAL_SENSE_DATA;
         }
         else
@@ -353,7 +353,7 @@ static protocol_type_t processIsbPkt(void* v)
             c->ackNeeded = PKT_TYPE_NACK;
         }
         break;
-            
+
     case PKT_TYPE_GET_DATA:
         {
             p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
@@ -372,7 +372,7 @@ static protocol_type_t processIsbPkt(void* v)
     case PKT_TYPE_ACK:
     case PKT_TYPE_NACK:
         return _PTYPE_INERTIAL_SENSE_ACK;
-    }                    
+    }
 
     // Invalid data type
     return parseErrorResetState(c);
@@ -475,7 +475,7 @@ static protocol_type_t processUbloxPkt(void* v)
 
     case 1:
         if (*(c->rxBuf.scan) == UBLOX_START_BYTE2)
-        {	// Found complete preamble 
+        {	// Found complete preamble
             p->state++;
         }
         else
@@ -486,11 +486,11 @@ static protocol_type_t processUbloxPkt(void* v)
 
     case 2:		// Wait for packet header
         if ((int)(c->rxBuf.scan - c->rxBuf.head) < (int)(sizeof(ubx_pkt_hdr_t)-1))
-        {	
+        {
             return _PTYPE_NONE;
         }
 
-        // Parse header 
+        // Parse header
         ubx_pkt_hdr_t *hdr = (ubx_pkt_hdr_t*)(c->rxBuf.head);
         p->size = sizeof(ubx_pkt_hdr_t) + hdr->payloadSize + 2;		// Header + payload + footer (checksum)
         p->state++;
@@ -659,7 +659,7 @@ static protocol_type_t processSonyByte(void* v)
 
     case 1:		// Wait for header
         if ((int)(c->rxBuf.scan - c->rxBuf.head) < (int)(sizeof(sony_pkt_hdr_t)-1))
-        {	
+        {
             return _PTYPE_NONE;
         }
 
@@ -853,14 +853,21 @@ static protocol_type_t processSpartnByte(void* v)
     return _PTYPE_NONE;
 }
 
+/**
+ *            *** MAKE SURE YOU UNDERSTAND THIS FUNCTION BEFORE YOU USE IT ***
+ *
+ * Manages the comm_instance_t buffer pointers and returns the amount of free space in the buffer.
+ * Specifically, if the buffer is empty, it will reset all pointers to the start of the buffer.
+ * If the buffer pointers are at the end of the buffer, and there is free space at the beginning, it will
+ * move the buffer contents back to start, and realign the buffer pointers to maximize free space at the end.
+ * If the buffer is mostly (2/3rds) full and cannot be shifted, it will be cleared (reinitialized, dropping
+ * old data).
+ * @param c the comm instance associated with the port
+ * @return the number of free bytes available in the buffer (for subsequent reads)
+ */
 int is_comm_free(is_comm_instance_t* c)
 {
-// 	if (c == 0 || c->buf.start == 0)
-// 	{
-// 		return -1;
-// 	}
-
-    is_comm_buffer_t *buf = &(c->rxBuf);
+	is_comm_buffer_t *buf = &(c->rxBuf);
 
     int bytesFree = (int)(buf->end - buf->tail);
 
@@ -869,13 +876,13 @@ int is_comm_free(is_comm_instance_t* c)
     {
         int shift = (int)(buf->head - buf->start);
 
-        if (shift < (int)(buf->size / 3))	
+        if (shift < (int)(buf->size / 3))
         {	// If the buffer is mostly full and can only be shifted less than 1/3 of the buffer
             // we will be hung unless we flush the ring buffer, we have to drop bytes in this case and the caller
             // will need to resend the data
             parseErrorResetState(c);
-            buf->head = 
-            buf->tail = 
+            buf->head =
+            buf->tail =
             buf->scan = buf->start;
         }
         else
@@ -897,11 +904,11 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, 
 {
     // Reset buffer if needed
     is_comm_free(c);
-    
+
     // Add byte to buffer
     *(c->rxBuf.tail) = byte;
     c->rxBuf.tail++;
-    
+
     return is_comm_parse_timeout(c, timeMs);
 }
 
@@ -961,7 +968,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     }
 #endif
 
-    return _PTYPE_NONE; 
+    return _PTYPE_NONE;
 }
 
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
