@@ -45,8 +45,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-#ifndef error_message
-#define error_message printf
+#ifndef error_message2
+#define error_message2 printf
 #endif
 
 #ifndef B460800
@@ -144,7 +144,7 @@ static int set_interface_attribs(int fd, int speed, int parity)
     memset(&tty, 0, sizeof tty);
     if (tcgetattr(fd, &tty) != 0)
     {
-        error_message("error %d from tcgetattr\n", errno);
+        error_message2("error %d from tcgetattr\n", errno);
         return -1;
     }
 
@@ -157,7 +157,7 @@ static int set_interface_attribs(int fd, int speed, int parity)
     // HACK: Set the actual speed, allows higher than 230400 baud
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1)
     {
-        error_message("error %d from ioctl IOSSIOSPEED", errno);
+        error_message2("error %d from ioctl IOSSIOSPEED", errno);
     }
 
 #else
@@ -189,7 +189,7 @@ static int set_interface_attribs(int fd, int speed, int parity)
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0)
     {
-        error_message("error %d from tcsetattr\n", errno);
+        error_message2("error %d from tcsetattr\n", errno);
         return -1;
     }
 
@@ -360,13 +360,13 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     );
     if (fd < 0)
     {
-        // error_message("[%s] open():: Error opening port: %d\n", port, errno);
+        // error_message2("[%s] open():: Error opening port: %d\n", port, errno);
         serialPort->errorCode = errno;
         return 0;
     }
 
     if (set_interface_attribs(fd, baudRate, 0) != 0) {
-        error_message("[%s] open():: Error configuring port: %d\n", port, errno);
+        error_message2("[%s] open():: Error configuring port: %d\n", port, errno);
         serialPort->errorCode = errno;
         return 0;
     }
@@ -579,7 +579,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         if (n <= -1)
         {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                // error_message("Error reading from file %d : %s (%d)\n", handle->fd, strerror(errno), errno);
+                // error_message2("Error reading from file %d : %s (%d)\n", handle->fd, strerror(errno), errno);
             }
             return -1;
         }
@@ -630,7 +630,7 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("Error reading from %s : %s (%d)\n", serialPort->port, strerror(errno), errno);
+        error_message2("Error reading from %s : %s (%d)\n", serialPort->port, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
     } else
         serialPort->errorCode = 0; // clear any previous errorcode
@@ -723,7 +723,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     {
         if ((pollrc <= 0) && !(fds[0].revents & POLLOUT)) {
             if (fds[0].revents & POLLERR) {
-                error_message("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
+                error_message2("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
                 serialPort->errorCode = errno;
                 return -1; // more than a timeout occurred.
             }
@@ -749,7 +749,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     if (count < 0)
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-            // error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
+            // error_message2("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
             serialPort->errorCode = errno;
         }
         return 0;
