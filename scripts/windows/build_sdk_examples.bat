@@ -13,7 +13,7 @@ REM MSBUILD_EXECUTABLE, MSBUILD_OPTIONS and NMAKE_EXECUTABLE are set in init_bui
 ::###############################################################################
 
 call :build_header "SDK Example Projects"
-cd %~dp0..\ExampleProjects
+cd %~dp0..\..\ExampleProjects
 cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=Release" && cmake --build ./build --config Release -j 7
 call :build_footer
 

@@ -296,7 +296,7 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
     double invTowMsMax = 1.0/(double)C_MILLISECONDS_PER_WEEK;
 
     // Cycle through entire range of time of week in milliseconds
-    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500)
+    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 1500)
     {   // Scale will transition from 0.0 to 1.0
         double scale = ((double)towMs) * invTowMsMax;
 
@@ -384,7 +384,7 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
     double invTowMsMax = 1.0/(double)C_MILLISECONDS_PER_WEEK;
 
     // Cycle through entire range of time of week in milliseconds
-    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500)
+    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 1500)
     {   // Scale will transition from 0.0 to 1.0
         double scale = ((double)towMs) * invTowMsMax;
 

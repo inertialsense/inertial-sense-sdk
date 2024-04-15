@@ -35,10 +35,10 @@ call clean_log_inspector.bat
 call :clean_footer
 
 rem call :clean_header "Unit Tests Alt"
-rem %MSBUILD_EXECUTABLE% "%SDK_DIR%\cpp\utilities\UnitTests\InertialSenseUnitTests.sln" %MSBUILD_OPTIONS%
+rem %MSBUILD_EXECUTABLE% "%SDK_DIR%\cpp\utilities\imx_unit_tests\InertialSenseUnitTests.sln" %MSBUILD_OPTIONS%
 rem call :clean_footer
 rem call :tests_header "Unit Tests Alt"
-rem "%SDK_DIR%\cpp\utilities\UnitTests\x64\Release\InertialSenseUnitTests_Release.exe"
+rem "%SDK_DIR%\cpp\utilities\imx_unit_tests\x64\Release\InertialSenseUnitTests_Release.exe"
 rem call :tests_footer
 
 @REM call :clean_directory "cltool" "%SDK_DIR%\SDK\cltool\VS_project\x64"
