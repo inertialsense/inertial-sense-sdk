@@ -86,8 +86,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-#      - name: SDK Unit Tests
-#        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+      - name: Build Unit Tests
+        run: ./build_sdk_unit_tests.bat
+
+      - name: Run Unit Tests
+        run: ../tests/VS_project/x64/Release/imx_unit_tests.exe
 
       - name: Build CLTool
         run: ./build_cltool.bat
