@@ -45,10 +45,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-// #ifndef error_message
-#define error_message printf
-// #endif
-
 #ifndef B460800
 #define B460800 460800
 #endif
@@ -68,6 +64,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define B3000000 3000000
 #endif
 
+#endif
+
+#ifndef error_message
+    #define error_message printf
 #endif
 
 typedef struct
