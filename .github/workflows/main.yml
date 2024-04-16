@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
@@ -77,7 +77,7 @@ jobs:
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
@@ -128,7 +128,7 @@ jobs:
           git --version
 
       - name: Checkout source and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
