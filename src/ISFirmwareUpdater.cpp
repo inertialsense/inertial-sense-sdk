@@ -115,7 +115,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     }
 
     remoteDevInfo.serialNumber = msg.data.version_resp.serialNumber;
-    remoteDevInfo.hardware = msg.data.version_resp.hardwareId;
+    remoteDevInfo.hardwareType = msg.data.version_resp.hardwareType;
     memcpy(remoteDevInfo.hardwareVer, msg.data.version_resp.hardwareVer, 4);
     memcpy(remoteDevInfo.firmwareVer, msg.data.version_resp.firmwareVer, 4);
     remoteDevInfo.buildYear = msg.data.version_resp.buildYear;
@@ -129,9 +129,9 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     target_devInfo = &remoteDevInfo;
 
     if(pfnInfoProgress_cb != nullptr) {
-        if ((remoteDevInfo.hardware >= HDW_TYPE__UINS) && (remoteDevInfo.hardware <= HDW_TYPE__GPX)) {
+        if ((remoteDevInfo.hardwareType >= DEV_INFO_HARDWARE_TYPE_UINS) && (remoteDevInfo.hardwareType <= DEV_INFO_HARDWARE_TYPE_GPX)) {
             const char *hdw_names[5] = {"UNKNOWN", "UINS", "EVB", "IMX", "GPX"};
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardware],
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardwareType],
                                remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
                                remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3],
                                remoteDevInfo.buildNumber);
@@ -519,12 +519,12 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             // any target which doesn't report version info will also expect the old MD5 digest
             if (!target_devInfo) {
                 // TODO: We should be able to remove most of this after 2.1.0 has been released
-                if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardware == HDW_TYPE__IMX)) ||
-                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardware == HDW_TYPE__GPX)) ) {
+                if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == DEV_INFO_HARDWARE_TYPE_IMX)) ||
+                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == DEV_INFO_HARDWARE_TYPE_GPX)) ) {
                     // just copy the in the current "main" device's dev info, since they are the same device as the target
                     remoteDevInfo = *devInfo;
                     target_devInfo = &remoteDevInfo;
-                } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardware == HDW_TYPE__IMX)) {
+                } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == DEV_INFO_HARDWARE_TYPE_IMX)) {
                     // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
                     const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
                     if (gpxVInfo) {
@@ -532,7 +532,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                         if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
                             (sscanf(gpxVInfo, "G%d.%d.%d-%d", &v1, &v2, &v3, &bn) == 4))
                         {
-                            remoteDevInfo.hardware = HDW_TYPE__GPX;
+                            remoteDevInfo.hardwareType = DEV_INFO_HARDWARE_TYPE_GPX;
                             remoteDevInfo.hardwareVer[0] = 1, remoteDevInfo.hardwareVer[1] = 0, remoteDevInfo.hardwareVer[2] = 3, remoteDevInfo.hardwareVer[3] = 0;
                             remoteDevInfo.firmwareVer[0] = v1, remoteDevInfo.firmwareVer[1] = v2, remoteDevInfo.firmwareVer[2] = v3, remoteDevInfo.firmwareVer[3] = v4;
                             target_devInfo = &remoteDevInfo;

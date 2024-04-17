@@ -877,7 +877,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p)
 /** Populate missing hardware descriptor in dev_info_t */ 
 void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 {
-	if (devInfo->hardware != DEV_INFO_HARDWARE_UNSPECIFIED)
+	if (devInfo->hardwareType != DEV_INFO_HARDWARE_TYPE_UNSPECIFIED)
 	{	// Hardware type is not missing
 		return;
 	}
@@ -887,9 +887,9 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 	{	// Hardware from 2024 and earlier is detectible using hardware version
 		switch (devInfo->hardwareVer[0])	
 		{
-		case 2: devInfo->hardware = DEV_INFO_HARDWARE_EVB;  break;
-		case 3: devInfo->hardware = DEV_INFO_HARDWARE_UINS; break;
-		case 5: devInfo->hardware = DEV_INFO_HARDWARE_IMX;  break;
+		case 2: devInfo->hardwareType = DEV_INFO_HARDWARE_TYPE_EVB;  break;
+		case 3: devInfo->hardwareType = DEV_INFO_HARDWARE_TYPE_UINS; break;
+		case 5: devInfo->hardwareType = DEV_INFO_HARDWARE_TYPE_IMX;  break;
 		}
 	}
 }

@@ -128,11 +128,11 @@ namespace dfu {
      */
     fwUpdate::target_t DFUDevice::getTargetType() {
         switch (DECODE_HDW_TYPE(hardwareId)) {
-            case HDW_TYPE__IMX:
+            case DEV_INFO_HARDWARE_TYPE_IMX:
                 if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_IMX5;
                 // else if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 1)) return fwUpdate::TARGET_IMX51;
                 break;
-            case HDW_TYPE__GPX:
+            case DEV_INFO_HARDWARE_TYPE_GPX:
                 if ((DECODE_HDW_MAJOR(hardwareId) == 1) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_GPX1;
                 break;
         }
@@ -284,25 +284,25 @@ namespace dfu {
         }
 
         if ((hardwareId == 0xFFFF) && (processorType != IS_PROCESSOR_UNKNOWN)) {
-            if (processorType == IS_PROCESSOR_STM32L4) hardwareType = DEV_INFO_HARDWARE_IMX; // only the IMX-5 uses the STM32L4
-            else if (processorType == IS_PROCESSOR_STM32U5) hardwareType = DEV_INFO_HARDWARE_GPX; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
+            if (processorType == IS_PROCESSOR_STM32L4) hardwareType = DEV_INFO_HARDWARE_TYPE_IMX; // only the IMX-5 uses the STM32L4
+            else if (processorType == IS_PROCESSOR_STM32U5) hardwareType = DEV_INFO_HARDWARE_TYPE_GPX; // TODO: Both the GPX-1 and IMX-5.1 will use the STM32U5 (at the moment)
         }
 
         // based on what we know so far, let's try and figure out a hardware type
         if ((hardwareType & 0xFFF0) == 0) {
             // if this is true, then we don't *really* know the hardware type or version (just the type)
             switch (hardwareType) {
-                case DEV_INFO_HARDWARE_UINS:
-                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_UINS, 3, 2);
+                case DEV_INFO_HARDWARE_TYPE_UINS:
+                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_TYPE_UINS, 3, 2);
                     break;
-                case DEV_INFO_HARDWARE_EVB:
-                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_EVB, 2, 0);
+                case DEV_INFO_HARDWARE_TYPE_EVB:
+                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_TYPE_EVB, 2, 0);
                     break;
-                case DEV_INFO_HARDWARE_IMX:
-                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_IMX, 5, 0);
+                case DEV_INFO_HARDWARE_TYPE_IMX:
+                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_TYPE_IMX, 5, 0);
                     break;
-                case DEV_INFO_HARDWARE_GPX:
-                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_GPX, 1, 0);
+                case DEV_INFO_HARDWARE_TYPE_GPX:
+                    hardwareId = ENCODE_HDW_INFO(DEV_INFO_HARDWARE_TYPE_GPX, 1, 0);
                     break;
             }
         }
@@ -847,9 +847,9 @@ namespace dfu {
     const char *DFUDevice::getDescription() {
         static char buff[64];
         if (sn != 0xFFFFFFFF)
-            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
+            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == DEV_INFO_HARDWARE_TYPE_GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
         else
-            sprintf(buff, "%s-%d.%d:DFU-%s", (DECODE_HDW_TYPE(hardwareId) == HDW_TYPE__GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
+            sprintf(buff, "%s-%d.%d:DFU-%s", (DECODE_HDW_TYPE(hardwareId) == DEV_INFO_HARDWARE_TYPE_GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
         return buff;
     }
 

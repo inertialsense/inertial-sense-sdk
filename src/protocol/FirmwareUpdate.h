@@ -264,7 +264,8 @@ namespace fwUpdate {
         struct {
             target_t resTarget;     //! the target identifier of the responding device (for which this data represents)
             uint32_t serialNumber;  //! the serial number of the host, or controlling device (return the IMX SN if querying the IMX's Accelerometer, for example)
-            uint16_t hardwareId;    //! hardware identifier
+            uint8_t reserved;       //! unused
+            uint8_t hardwareType;   //! hardware identifier
             uint8_t hardwareVer[4]; //! Hardware version
             uint8_t firmwareVer[4]; //! Firmware (software) version
 

@@ -567,7 +567,7 @@ typedef struct PACKED
  *  Middle 4 bits are the major hardware/product version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
  *  Lower 6 bits are the minor hardware/product version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
  *
- *  If the TYPE and MAJOR are 0, then fall back to eDevInfoHardware to determine the type from the legacy map:
+ *  If the TYPE and MAJOR are 0, then fall back to eDevInfoHardwareType to determine the type from the legacy map:
  *      0 = Unknown
  *      1 = UINS32
  *      2 = EVB
@@ -578,12 +578,7 @@ typedef struct PACKED
 #define HDW_TYPE__MASK                         0xFC00
 #define HDW_TYPE__SHIFT                        10
 #define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
-#define HDW_TYPE__UNKNOWN                      0
-#define HDW_TYPE__UINS                         1
-#define HDW_TYPE__EVB                          2
-#define HDW_TYPE__IMX                          3
-#define HDW_TYPE__GPX                          4
-
+// Use eDevInfoHardwareType for hardware type
 #define HDW_MAJOR__MASK                        0x03C0
 #define HDW_MAJOR__SHIFT                       6
 #define DECODE_HDW_MAJOR(x)                    ((x & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
@@ -594,14 +589,14 @@ typedef struct PACKED
 
 #define ENCODE_HDW_INFO(type, major, minor)    ( ((type << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((major << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((minor << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 
-enum eDevInfoHardware
+enum eDevInfoHardwareType
 {
-	DEV_INFO_HARDWARE_UNSPECIFIED   = 0,
-	DEV_INFO_HARDWARE_UINS          = 1,
-	DEV_INFO_HARDWARE_EVB           = 2,
-	DEV_INFO_HARDWARE_IMX           = 3,
-	DEV_INFO_HARDWARE_GPX           = 4,
-	DEV_INFO_HARDWARE_COUNT         = 5     // Keep last
+	DEV_INFO_HARDWARE_TYPE_UNSPECIFIED    = 0,
+	DEV_INFO_HARDWARE_TYPE_UINS           = 1,
+	DEV_INFO_HARDWARE_TYPE_EVB            = 2,
+	DEV_INFO_HARDWARE_TYPE_IMX            = 3,
+	DEV_INFO_HARDWARE_TYPE_GPX            = 4,
+	DEV_INFO_HARDWARE_TYPE_COUNT          = 5     // Keep last
 };
 
 /** (DID_DEV_INFO) Device information */
@@ -610,8 +605,11 @@ typedef struct PACKED
 	/** Reserved bits */
 	uint16_t        reserved;
 
-	/** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-	uint16_t        hardware;
+	/** Unused */
+	uint8_t         reserved2;
+
+	/** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardwareType) */
+	uint8_t         hardwareType;
 
     /** Serial number */
     uint32_t        serialNumber;
@@ -2221,7 +2219,13 @@ typedef struct PACKED
     float                   accSigma;
 
     /** Self-test mode (see eBitTestMode) */
-    uint32_t                testMode;
+    uint16_t                testMode;
+
+    /** Unused */
+    uint8_t                 reserved;
+
+    /** The hardware type detected (see eDevInfoHardwareType).  This is used to ensure correct firmware is used. */
+    uint8_t                 detectedHardwareType;
 
 } bit_t;
 
@@ -2270,16 +2274,22 @@ typedef struct PACKED
     uint32_t                results;
     
     /** Command  **/
-    uint8_t                command;
+    uint8_t                 command;
 
     /* what port we are running on*/
-    uint8_t                port;
+    uint8_t                 port;
 
     /** Self-test mode*/
-    uint8_t                testMode;
+    uint8_t                 testMode;
 
     /** Built-in self-test state */
-    uint8_t                state;
+    uint8_t                 state;
+
+    /** The hardware type detected (see eDevInfoHardwareType).  This is used to ensure correct firmware is used. */
+    uint8_t                 detectedHardwareId;
+
+    /** Unused */
+    uint8_t                 reserved[3];
 
 } GPX_bit_t;
 
@@ -4645,8 +4655,11 @@ typedef struct DID_Event
     /** Serial number */
     uint32_t        senderSN;
  
-    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-    uint16_t        senderHdwType;
+    /** Unused */
+    uint8_t         reserved;
+ 
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardwareType) */
+    uint8_t         senderHdwType;
     
     uint8_t         priority;
     uint8_t         res8;
