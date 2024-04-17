@@ -2125,8 +2125,6 @@ enum eBitTestMode
 {
     BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100,         // Simulate CNO noise
     BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101,         // Send duplicate message 
-    BIT_TEST_MODE_HDW_DETECT_TYPE_MASK                  = (int)0xFFFF0000,  // Detected hardware type mask 
-    BIT_TEST_MODE_HDW_DETECT_TYPE_OFFSET                = (int)16,          // Detected hardware type offset
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2286,7 +2284,7 @@ typedef struct PACKED
     uint8_t                 state;
 
     /** The hardware type detected (see eDevInfoHardwareType).  This is used to ensure correct firmware is used. */
-    uint8_t                 detectedHardwareId;
+    uint8_t                 detectedHardwareType;
 
     /** Unused */
     uint8_t                 reserved[3];
