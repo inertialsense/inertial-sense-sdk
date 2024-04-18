@@ -293,16 +293,16 @@ namespace dfu {
             // if this is true, then we don't *really* know the hardware type or version (just the type)
             switch (hardwareType) {
                 case IS_HARDWARE_TYPE_UINS:
-                    hardwareId = ENCODE_HDW_INFO(IS_HARDWARE_TYPE_UINS, 3, 2);
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2);
                     break;
                 case IS_HARDWARE_TYPE_EVB:
-                    hardwareId = ENCODE_HDW_INFO(IS_HARDWARE_TYPE_EVB, 2, 0);
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_EVB, 2, 0);
                     break;
                 case IS_HARDWARE_TYPE_IMX:
-                    hardwareId = ENCODE_HDW_INFO(IS_HARDWARE_TYPE_IMX, 5, 0);
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
                     break;
                 case IS_HARDWARE_TYPE_GPX:
-                    hardwareId = ENCODE_HDW_INFO(IS_HARDWARE_TYPE_GPX, 1, 0);
+                    hardwareId = ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
                     break;
             }
         }

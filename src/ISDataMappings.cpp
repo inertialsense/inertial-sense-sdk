@@ -322,8 +322,7 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
     ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "detectedHardwareType", detectedHardwareType, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "detectedHardwareId", detectedHardwareId, 0, DataTypeUInt16, uint16_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1081,8 +1080,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "Time stamp of message", timeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "Reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwType, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
     ADD_MAP(m, totalSize, "Protocol", protocol, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
