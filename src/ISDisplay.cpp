@@ -1454,10 +1454,10 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 	switch (info.hardwareType)
 	{
 	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
-	case DEV_INFO_HARDWARE_TYPE_UINS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
-	case DEV_INFO_HARDWARE_TYPE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
-	case DEV_INFO_HARDWARE_TYPE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
-	case DEV_INFO_HARDWARE_TYPE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");  	break;
+	case IS_HARDWARE_TYPE_UINS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
+	case IS_HARDWARE_TYPE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
+	case IS_HARDWARE_TYPE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
+	case IS_HARDWARE_TYPE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");  	break;
 	}
 
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",

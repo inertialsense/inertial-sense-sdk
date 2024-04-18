@@ -567,7 +567,7 @@ typedef struct PACKED
  *  Middle 4 bits are the major hardware/product version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
  *  Lower 6 bits are the minor hardware/product version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
  *
- *  If the TYPE and MAJOR are 0, then fall back to eDevInfoHardwareType to determine the type from the legacy map:
+ *  If the TYPE and MAJOR are 0, then fall back to eIsHardwareType to determine the type from the legacy map:
  *      0 = Unknown
  *      1 = UINS32
  *      2 = EVB
@@ -578,7 +578,7 @@ typedef struct PACKED
 #define HDW_TYPE__MASK                         0xFC00
 #define HDW_TYPE__SHIFT                        10
 #define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
-// Use eDevInfoHardwareType for hardware type
+// Use eIsHardwareType for hardware type
 #define HDW_MAJOR__MASK                        0x03C0
 #define HDW_MAJOR__SHIFT                       6
 #define DECODE_HDW_MAJOR(x)                    ((x & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
@@ -589,17 +589,17 @@ typedef struct PACKED
 
 #define ENCODE_HDW_INFO(type, major, minor)    ( ((type << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((major << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((minor << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 
-enum eDevInfoHardwareType
+enum eIsHardwareType
 {
-	DEV_INFO_HARDWARE_TYPE_UNKNOWN      = 0,
-	DEV_INFO_HARDWARE_TYPE_UINS         = 1,
-	DEV_INFO_HARDWARE_TYPE_EVB          = 2,
-	DEV_INFO_HARDWARE_TYPE_IMX          = 3,
-	DEV_INFO_HARDWARE_TYPE_GPX          = 4,
-	DEV_INFO_HARDWARE_TYPE_COUNT        = 5     // Keep last
+	IS_HARDWARE_TYPE_UNKNOWN        = 0,
+	IS_HARDWARE_TYPE_UINS           = 1,
+	IS_HARDWARE_TYPE_EVB            = 2,
+	IS_HARDWARE_TYPE_IMX            = 3,
+	IS_HARDWARE_TYPE_GPX            = 4,
+	IS_HARDWARE_TYPE_COUNT          = 5     // Keep last
 };
 
-extern const char* g_devInfoHardwareTypeList[DEV_INFO_HARDWARE_TYPE_COUNT];
+extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 
 
 /** (DID_DEV_INFO) Device information */
@@ -611,7 +611,7 @@ typedef struct PACKED
 	/** Unused */
 	uint8_t         reserved2;
 
-	/** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardwareType) */
+	/** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
 	uint8_t         hardwareType;
 
     /** Serial number */
@@ -2225,7 +2225,7 @@ typedef struct PACKED
     /** Unused */
     uint8_t                 reserved;
 
-    /** The hardware type detected (see eDevInfoHardwareType).  This is used to ensure correct firmware is used. */
+    /** The hardware type detected (see eIsHardwareType).  This is used to ensure correct firmware is used. */
     uint8_t                 detectedHardwareType;
 
 } bit_t;
@@ -2286,7 +2286,7 @@ typedef struct PACKED
     /** Built-in self-test state */
     uint8_t                 state;
 
-    /** The hardware type detected (see eDevInfoHardwareType).  This is used to ensure correct firmware is used. */
+    /** The hardware type detected (see eIsHardwareType).  This is used to ensure correct firmware is used. */
     uint8_t                 detectedHardwareType;
 
     /** Unused */
@@ -4659,7 +4659,7 @@ typedef struct DID_Event
     /** Unused */
     uint8_t         reserved;
  
-    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardwareType) */
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
     uint8_t         senderHdwType;
     
     uint8_t         priority;
