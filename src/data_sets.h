@@ -559,36 +559,37 @@ typedef struct PACKED
 }pos_measurement_t;
 
 /***
- * Product Info Mask  [6:4:6]
- * Product Info is masked into 16 bits:
+ * Product Hardware ID Mask  [6:4:6]
+ * Product hardware ID is masked into 16 bits:
  *  [ 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ]
  *    |- TYPE  -| |MAJOR| |- MINOR -|
  *
- *  Upper 6 bits are the hardware/product type (IMX, GPX, uINS, etc; 64 possible values)
- *  Middle 4 bits are the major hardware/product version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
- *  Lower 6 bits are the minor hardware/product version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *  Upper 6 bits are the hardware type (IMX, GPX, uINS, etc; 64 possible values)
+ *  Middle 4 bits are the major hardware version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
+ *  Lower 6 bits are the minor hardware version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
  *
  *  If the TYPE and MAJOR are 0, then fall back to eIsHardwareType to determine the type from the legacy map:
  *      0 = Unknown
  *      1 = UINS32
- *      2 = EVB
+ *      2 = EVB2
  *      3 = IMX5
  *      4 = GPX1
  */
 
 #define HDW_TYPE__MASK                         0xFC00
 #define HDW_TYPE__SHIFT                        10
-#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
+#define DECODE_HDW_TYPE(x)                     (((x) & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
 // Use eIsHardwareType for hardware type
 #define HDW_MAJOR__MASK                        0x03C0
 #define HDW_MAJOR__SHIFT                       6
-#define DECODE_HDW_MAJOR(x)                    ((x & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
+#define DECODE_HDW_MAJOR(x)                    (((x) & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
 
 #define HDW_MINOR__MASK                        0x003F
 #define HDW_MINOR__SHIFT                       0
-#define DECODE_HDW_MINOR(x)                    ((x & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
+#define DECODE_HDW_MINOR(x)                    (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
-#define ENCODE_HDW_INFO(type, major, minor)    ( ((type << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((major << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((minor << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
+#define ENCODE_HDW_ID(type, major, minor)    ( (((type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
+#define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)   ( ((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 
 enum eIsHardwareType
 {
@@ -2223,11 +2224,8 @@ typedef struct PACKED
     /** Self-test mode (see eBitTestMode) */
     uint16_t                testMode;
 
-    /** Unused */
-    uint8_t                 reserved;
-
-    /** The hardware type detected (see eIsHardwareType).  This is used to ensure correct firmware is used. */
-    uint8_t                 detectedHardwareType;
+    /** The hardware type detected (see "Product Hardware ID").  This is used to ensure correct firmware is used. */
+    uint16_t                 detectedHardwareId;
 
 } bit_t;
 
@@ -2287,11 +2285,11 @@ typedef struct PACKED
     /** Built-in self-test state */
     uint8_t                 state;
 
-    /** The hardware type detected (see eIsHardwareType).  This is used to ensure correct firmware is used. */
-    uint8_t                 detectedHardwareType;
+    /** The hardware ID detected (see "Product Hardware ID").  This is used to ensure correct firmware is used. */
+    uint16_t                detectedHardwareId;
 
     /** Unused */
-    uint8_t                 reserved[3];
+    uint8_t                 reserved[2];
 
 } GPX_bit_t;
 
@@ -4666,12 +4664,9 @@ typedef struct DID_Event
 
     /** Serial number */
     uint32_t        senderSN;
- 
-    /** Unused */
-    uint8_t         reserved;
- 
-    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
-    uint8_t         senderHdwType;
+  
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
+    uint16_t        senderHdwId;
     
     uint8_t         priority;
     uint8_t         res8;
