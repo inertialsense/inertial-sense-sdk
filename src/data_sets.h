@@ -4623,14 +4623,10 @@ typedef struct
     uint32_t        status;
 
     /** Rx count */
-    uint32_t        rxBytesSent;  
-    /** Rx drop count */
-    uint32_t        rxBytesDrop;  
-    /** Rx pkt drop count */
-    uint32_t        rxPktDrop;   
-
+    uint32_t        rxByteCount;  
+    
     /** Tx count */
-    uint32_t        txBytesSent;  
+    uint32_t        txBytesCount;
     /** Tx drop count */
     uint32_t        txBytesDrop;  
     /** Tx pkt drop count */
