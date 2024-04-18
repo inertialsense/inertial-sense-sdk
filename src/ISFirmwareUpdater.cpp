@@ -130,8 +130,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
 
     if(pfnInfoProgress_cb != nullptr) {
         if ((remoteDevInfo.hardwareType >= DEV_INFO_HARDWARE_TYPE_UINS) && (remoteDevInfo.hardwareType <= DEV_INFO_HARDWARE_TYPE_GPX)) {
-            const char *hdw_names[5] = {"UNKNOWN", "UINS", "EVB", "IMX", "GPX"};
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", hdw_names[remoteDevInfo.hardwareType],
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", g_devInfoHardwareTypeList[remoteDevInfo.hardwareType],
                                remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
                                remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3],
                                remoteDevInfo.buildNumber);

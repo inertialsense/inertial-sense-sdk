@@ -591,13 +591,16 @@ typedef struct PACKED
 
 enum eDevInfoHardwareType
 {
-	DEV_INFO_HARDWARE_TYPE_UNSPECIFIED    = 0,
-	DEV_INFO_HARDWARE_TYPE_UINS           = 1,
-	DEV_INFO_HARDWARE_TYPE_EVB            = 2,
-	DEV_INFO_HARDWARE_TYPE_IMX            = 3,
-	DEV_INFO_HARDWARE_TYPE_GPX            = 4,
-	DEV_INFO_HARDWARE_TYPE_COUNT          = 5     // Keep last
+	DEV_INFO_HARDWARE_TYPE_UNKNOWN      = 0,
+	DEV_INFO_HARDWARE_TYPE_UINS         = 1,
+	DEV_INFO_HARDWARE_TYPE_EVB          = 2,
+	DEV_INFO_HARDWARE_TYPE_IMX          = 3,
+	DEV_INFO_HARDWARE_TYPE_GPX          = 4,
+	DEV_INFO_HARDWARE_TYPE_COUNT        = 5     // Keep last
 };
+
+extern const char* g_devInfoHardwareTypeList[DEV_INFO_HARDWARE_TYPE_COUNT];
+
 
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED

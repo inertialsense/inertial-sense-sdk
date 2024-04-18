@@ -847,9 +847,9 @@ namespace dfu {
     const char *DFUDevice::getDescription() {
         static char buff[64];
         if (sn != 0xFFFFFFFF)
-            sprintf(buff, "%s-%d.%d:SN-%05d", (DECODE_HDW_TYPE(hardwareId) == DEV_INFO_HARDWARE_TYPE_GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
+            sprintf(buff, "%s-%d.%d:SN-%05d", g_devInfoHardwareTypeList[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), (sn != 0xFFFFFFFF ? sn : 0));
         else
-            sprintf(buff, "%s-%d.%d:DFU-%s", (DECODE_HDW_TYPE(hardwareId) == DEV_INFO_HARDWARE_TYPE_GPX ? "GPX" : "IMX"), DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
+            sprintf(buff, "%s-%d.%d:DFU-%s", g_devInfoHardwareTypeList[DECODE_HDW_TYPE(hardwareId)], DECODE_HDW_MAJOR(hardwareId), DECODE_HDW_MINOR(hardwareId), dfuSerial.c_str());
         return buff;
     }
 
