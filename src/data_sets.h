@@ -144,7 +144,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
-#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
+#define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
+#define DID_GPX_LAST                              127 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -4620,7 +4621,21 @@ typedef struct
 
     /** Status */
     uint32_t        status;
-    
+
+    /** Rx count */
+    uint32_t        rxBytesSent;  
+    /** Rx drop count */
+    uint32_t        rxBytesDrop;  
+    /** Rx pkt drop count */
+    uint32_t        rxPktDrop;   
+
+    /** Tx count */
+    uint32_t        txBytesSent;  
+    /** Tx drop count */
+    uint32_t        txBytesDrop;  
+    /** Tx pkt drop count */
+    uint32_t        txPktDrop;   
+
 } port_monitor_set_t;
 
 typedef struct
