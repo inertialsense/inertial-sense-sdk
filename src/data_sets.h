@@ -592,6 +592,7 @@ typedef struct PACKED
 
 enum eIsHardwareType
 {
+	IS_HARDWARE_TYPE_MIXED          = -1,   // Used for ci-hdw testing
 	IS_HARDWARE_TYPE_UNKNOWN        = 0,
 	IS_HARDWARE_TYPE_UINS           = 1,
 	IS_HARDWARE_TYPE_EVB            = 2,
