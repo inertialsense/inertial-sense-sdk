@@ -683,7 +683,8 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
 	[DID_GPX_DEV_INFO]        = RMC_BITS_GPX_DEV_INFO,
 	[DID_GPX_FLASH_CFG]       = RMC_BITS_GPX_FLASH_CFG,
 	[DID_GPX_RMC]			  = RMC_BITS_GPX_RMC,
-	[DID_GPX_BIT]			  = RMC_BITS_GPX_BIT
+	[DID_GPX_BIT]			  = RMC_BITS_GPX_BIT,
+	[DID_GPX_PORT_MONITOR]	  = RMC_BITS_GPX_PORT_MON,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)

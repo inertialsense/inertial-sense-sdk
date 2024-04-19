@@ -1779,6 +1779,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_RMC                0x0001000000000000
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
+#define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 
 #define RMC_BITS_EVENT                  0x0800000000000000
 

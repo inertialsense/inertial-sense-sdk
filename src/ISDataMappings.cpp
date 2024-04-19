@@ -167,6 +167,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
     sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
     sizeMap[DID_GPX_RMC] = sizeof(rmc_t);
+    sizeMap[DID_GPX_PORT_MONITOR] = sizeof(port_monitor_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -2637,7 +2638,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_DEBUG_ARRAY",              // 124
     "DID_GPX_BIT",                      // 125
     "DID_GPX_RMC",                      // 126
-    "",                                 // 127
+    "DID_GPX_PORT_MONITOR",             // 127
     "",                                 // 128
     "",                                 // 129
     "",                                 // 130
