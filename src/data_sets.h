@@ -4622,13 +4622,15 @@ typedef struct
 
     /** Rx count */
     uint32_t        rxByteCount;  
-    
+    /** Rx overrrun count */
+    uint32_t        rxOverrunCnt;  
+
     /** Tx count */
     uint32_t        txByteCount;
     /** Tx drop count */
     uint32_t        txByteDrop;  
-    /** Tx pkt drop count */
-    uint32_t        txPktDrop;   
+    /** Tx limited count */
+    uint32_t        txLimitedCnt;   
 
 } port_monitor_set_t;
 
