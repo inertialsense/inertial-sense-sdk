@@ -4624,9 +4624,9 @@ typedef struct
     uint32_t        rxByteCount;  
     
     /** Tx count */
-    uint32_t        txBytesCount;
+    uint32_t        txByteCount;
     /** Tx drop count */
-    uint32_t        txBytesDrop;  
+    uint32_t        txByteDrop;  
     /** Tx pkt drop count */
     uint32_t        txPktDrop;   
 
