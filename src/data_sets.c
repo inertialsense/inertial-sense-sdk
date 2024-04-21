@@ -14,6 +14,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 #include <math.h>
 
+const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT] = {"UNKNOWN", "uINS", "EVB", "IMX", "GPX"};
+
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function
 void flipFloat(uint8_t* ptr)
@@ -877,7 +879,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p)
 /** Populate missing hardware descriptor in dev_info_t */ 
 void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 {
-	if (devInfo->hardware != DEV_INFO_HARDWARE_UNSPECIFIED)
+	if (devInfo->hardwareType != IS_HARDWARE_TYPE_UNKNOWN)
 	{	// Hardware type is not missing
 		return;
 	}
@@ -887,9 +889,9 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 	{	// Hardware from 2024 and earlier is detectible using hardware version
 		switch (devInfo->hardwareVer[0])	
 		{
-		case 2: devInfo->hardware = DEV_INFO_HARDWARE_EVB;  break;
-		case 3: devInfo->hardware = DEV_INFO_HARDWARE_UINS; break;
-		case 5: devInfo->hardware = DEV_INFO_HARDWARE_IMX;  break;
+		case 2: devInfo->hardwareType = IS_HARDWARE_TYPE_EVB;  break;
+		case 3: devInfo->hardwareType = IS_HARDWARE_TYPE_UINS; break;
+		case 5: devInfo->hardwareType = IS_HARDWARE_TYPE_IMX;  break;
 		}
 	}
 }
