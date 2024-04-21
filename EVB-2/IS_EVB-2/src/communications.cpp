@@ -893,20 +893,8 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 				ptype!=_PTYPE_PARSE_ERROR &&
 				g_imxBootloaderEnableTimeMs==0)
 			{	// Forward data
-				uint32_t pktSize = _MIN(comm.rxPkt.size, PKT_BUF_SIZE);
-				
+				uint32_t pktSize = _MIN(comm.rxPkt.size, PKT_BUF_SIZE);				
 				com_bridge_forward(srcPort, comm.rxBuf.head-pktSize, pktSize);
-				// switch (ptype)
-				// {
-				// case _PTYPE_INERTIAL_SENSE_ACK:
-				// case _PTYPE_INERTIAL_SENSE_CMD:
-				// case _PTYPE_INERTIAL_SENSE_DATA:
-				// 	break;
-					
-				// default:
-				// 	com_bridge_forward(srcPort, comm.rxPkt.data.ptr, pktSize);
-				// 	break;
-				// }
 
 				// Send uINS data to Logging task
 				if (srcPort == g_flashCfg->uinsComPort && pktSize > 0)
