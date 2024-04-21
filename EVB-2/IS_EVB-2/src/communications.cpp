@@ -859,15 +859,22 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 
 	if ((n = comRead(srcPort, comm.rxBuf.tail, n, ledPin)) > 0)
 	{
-		com_bridge_forward(srcPort, comm.rxBuf.tail, n);			
-
-		// Update comm buffer tail pointer
-		comm.rxBuf.tail += n;
-
-		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422 || g_imxBootloaderEnableTimeMs)
-		{	// Skip packet parsing
+		if (g_flashCfg->cbPreset == EVB2_CB_PRESET_USB_HUB_RS422)
+		{
+			com_bridge_forward(srcPort, comm.rxBuf.head, n);
 			return;
 		}
+		if (g_imxBootloaderEnableTimeMs)
+		{	// When IMX bootloader is enabled forwarding is disabled below is_comm_parse(), so forward bootloader data here.
+			switch (srcPort)
+			{
+				case EVB2_PORT_USB:		comWrite(EVB2_PORT_UINS0, comm.rxBuf.tail, n, LED_INS_TXD_PIN);	break;
+				case EVB2_PORT_UINS0:	comWrite(EVB2_PORT_USB, comm.rxBuf.tail, n, 0);					break;
+			}					
+		}
+		
+		// Update comm buffer tail pointer
+		comm.rxBuf.tail += n;
 						
 		// Search comm buffer for valid packets
 		protocol_type_t ptype;
@@ -887,6 +894,7 @@ void com_bridge_smart_forward(uint32_t srcPort, uint32_t ledPin)
 				g_imxBootloaderEnableTimeMs==0)
 			{	// Forward data
 				uint32_t pktSize = _MIN(comm.rxPkt.size, PKT_BUF_SIZE);
+				com_bridge_forward(srcPort, comm.rxPkt.data.ptr, pktSize);
 
 				// Send uINS data to Logging task
 				if (srcPort == g_flashCfg->uinsComPort && pktSize > 0)
@@ -938,8 +946,6 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 
 	if ((n = xStreamBufferReceive(xStreamBuffer, comm.rxBuf.tail, n, 0)) > 0)
 	{
-		com_bridge_forward(srcPort, comm.rxBuf.tail, n);
-
 		// Update comm buffer tail pointer
 		comm.rxBuf.tail += n;
 
@@ -950,6 +956,14 @@ void com_bridge_smart_forward_xstream(uint32_t srcPort, StreamBufferHandle_t xSt
 			if (srcPort == EVB2_PORT_USB)
 			{
 				handle_data_from_host(&comm, ptype, srcPort);
+			}
+			
+			if (ptype!=_PTYPE_NONE && 
+				ptype!=_PTYPE_PARSE_ERROR &&
+				g_imxBootloaderEnableTimeMs==0)
+			{	// Forward data
+				uint32_t pktSize = _MIN(comm.rxPkt.size, PKT_BUF_SIZE);
+				com_bridge_forward(srcPort, comm.rxPkt.data.ptr, pktSize);
 			}
 		}
 	}

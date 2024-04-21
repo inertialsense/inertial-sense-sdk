@@ -973,7 +973,7 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 		{	// Device Info
 			dev_info_t info;
 			nmea_parse_info(info, (const char*)msg, msgSize);
-			if (info.hardware == DEV_INFO_HARDWARE_EVB)
+			if (info.hardwareType == IS_HARDWARE_TYPE_EVB)
 			{
 				device.evbDevInfo = info;
 			}
