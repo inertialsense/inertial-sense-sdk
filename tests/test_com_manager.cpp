@@ -244,6 +244,11 @@ static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
+static int msgHandlerError(int port, is_comm_instance_t* comm)
+{
+	return 0;
+}
+
 static void printNmeaMessage(const char *name, const uint8_t* str, int size)
 {
 	DEBUG_PRINTF("%s: ", name);
@@ -275,7 +280,7 @@ static bool initComManager(test_data_t &t)
 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
 	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
-	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR);
+	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR, msgHandlerError);
 
 	// Enable/disable protocols
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);

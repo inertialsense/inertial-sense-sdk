@@ -364,7 +364,7 @@ namespace ISFileManager {
         bool created = (_MKDIR(directory.c_str()) == 0);
 
         if(!created)
-            makePath(directory.c_str());
+            CreateDirectory(directory.c_str());
 
         if (realpath(directory.c_str(), fullPath) == NULL)
         {
@@ -388,7 +388,7 @@ namespace ISFileManager {
 
     }
 
-    bool makePath(const std::string& path)
+    bool CreateDirectory(const std::string& path)
     {
     #if defined(_WIN32)
         int ret = _mkdir(path.c_str());
@@ -413,7 +413,7 @@ namespace ISFileManager {
                 if (pos == std::string::npos)
     #endif
                     return false;
-                if (!makePath( path.substr(0, pos) ))
+                if (!CreateDirectory( path.substr(0, pos) ))
                     return false;
             }
             // now, try to create again
@@ -455,6 +455,22 @@ namespace ISFileManager {
         return path;
     }
 
+    /***
+     * Returns the current working directory as a std::string.
+     * @return Current working directory.
+    */
+    std::string CurrentWorkingDirectory()
+    {
+        char curdir[256] = { 0 };
+        if (_GETCWD(curdir, sizeof(curdir)) != 0)
+        {
+            return std::string(curdir);
+        }
+
+        // Error
+        return "";
+    }
+
     /**
      * Returns true if the specified path is consider an absolute path
      * @param path
@@ -481,11 +497,7 @@ namespace ISFileManager {
         std::string realPath = path;
         // first check if path is absolute
         if (!isPathAbsolute(path)) {
-            char curdir[256];
-            if (_GETCWD(curdir, sizeof(curdir)))
-            {   // Handle error
-            }
-            realPath = std::string(curdir) + path_seperator + path;
+            realPath = CurrentWorkingDirectory() + path_seperator + path;
         }
 
         auto pos = realPath.rfind(path_seperator);

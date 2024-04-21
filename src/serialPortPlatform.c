@@ -45,10 +45,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
-#ifndef error_message
-#define error_message printf
-#endif
-
 #ifndef B460800
 #define B460800 460800
 #endif
@@ -68,6 +64,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define B3000000 3000000
 #endif
 
+#endif
+
+#ifndef error_message
+    #define error_message printf
 #endif
 
 typedef struct
@@ -360,7 +360,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     );
     if (fd < 0)
     {
-        error_message("[%s] open():: Error opening port: %d\n", port, errno);
+        // error_message("[%s] open():: Error opening port: %d\n", port, errno);
         serialPort->errorCode = errno;
         return 0;
     }
@@ -579,7 +579,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
         if (n <= -1)
         {
             if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-                error_message("error %d from read, fd %d", errno, handle->fd);
+                // error_message("Error reading from file %d : %s (%d)\n", handle->fd, strerror(errno), errno);
             }
             return -1;
         }
@@ -629,9 +629,10 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
     int result = serialPortReadTimeoutPlatformLinux(handle, buffer, readCount, timeoutMilliseconds);
 #endif
 
-    if ((result < 0) && !((errno == EAGAIN) && !handle->blocking))
+    if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
+        error_message("Error reading from %s : %s (%d)\n", serialPort->port, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
-    else
+    } else
         serialPort->errorCode = 0; // clear any previous errorcode
     return result;
 }
@@ -748,7 +749,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     if (count < 0)
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-            error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
+            // error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
             serialPort->errorCode = errno;
         }
         return 0;

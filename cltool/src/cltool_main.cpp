@@ -136,10 +136,13 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-    if (data->hdr.id != g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid)
-    {
-        return;
+    if (g_commandLineOptions.outputOnceDid) {
+        if (data->hdr.id != g_commandLineOptions.outputOnceDid)
+            return;
+        g_inertialSenseDisplay.showRawData(true);
     }
+
+
     (void)i;
     (void)pHandle;
 
@@ -299,19 +302,6 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     if (g_commandLineOptions.flashCfg.length() != 0)
     {
-        unsigned int startMs = current_timeMs();
-        while(!inertialSenseInterface.FlashConfigSynced())
-        {   // Request and wait for flash config
-            inertialSenseInterface.Update();
-            SLEEP_MS(100);
-
-            if (current_timeMs() - startMs > 3000)
-            {   // Timeout waiting for flash config
-                cout << "Failed to read flash config!" << endl;
-                return false;
-            }
-        }
-
         return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
     }
     return true;
@@ -485,7 +475,7 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         cout << buffer << endl;
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
-        if (buffer[0] || (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) {
+        if (buffer[0] || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
             printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();
@@ -554,6 +544,114 @@ static int cltool_createHost()
     return 0;
 }
 
+static int cltool_dataStreaming()
+{
+    // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
+    // Create InertialSense object, passing in data callback function pointer.
+    InertialSense inertialSenseInterface(cltool_dataCallback);
+
+    // [C++ COMM INSTRUCTION] STEP 2: Open serial port
+    if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
+    {
+        cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
+        return -1;    // Failed to open serial port
+    }
+
+    int exitCode = 0;
+
+    // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
+    if (cltool_setupCommunications(inertialSenseInterface))
+    {
+        // [LOGGER INSTRUCTION] Setup and start data logger
+        if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
+        {
+            cout << "Failed to setup logger!" << endl;
+            inertialSenseInterface.Close();
+            inertialSenseInterface.CloseServerConnection();
+            return -1;
+        }
+        try
+        {
+            if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
+                if(inertialSenseInterface.updateFirmware(
+                        g_commandLineOptions.comPort,
+                        g_commandLineOptions.baudRate,
+                        g_commandLineOptions.updateFirmwareTarget,
+                        g_commandLineOptions.fwUpdateCmds,
+                        bootloadUpdateCallback,
+                        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+                        cltool_firmwareUpdateInfo,
+                        cltool_firmwareUpdateWaiter
+                ) != IS_OP_OK) {
+                    inertialSenseInterface.Close();
+                    inertialSenseInterface.CloseServerConnection();
+                    return -1;
+                };
+            }
+
+            // Main loop. Could be in separate thread if desired.
+            uint32_t startTime = current_timeMs();
+            while (!g_inertialSenseDisplay.ExitProgram())
+            {
+                g_inertialSenseDisplay.GetKeyboardInput();
+
+                if (g_inertialSenseDisplay.UploadNeeded())
+                {
+                    cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
+                    inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
+                }
+
+                // [C++ COMM INSTRUCTION] STEP 4: Read data
+                if (!inertialSenseInterface.Update())
+                {   // device disconnected, exit
+                    exitCode = -2;
+                    break;
+                }
+
+                // If updating firmware, and all devices have finished, Exit
+                if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
+                    if (inertialSenseInterface.isFirmwareUpdateFinished()) {
+                        exitCode = 0;
+                        break;
+                    }
+                } else {  // Only print the usual output if we AREN'T updating firmware...
+                    bool refreshDisplay = g_inertialSenseDisplay.PrintData();
+
+                    // Collect and print summary list of client messages received
+                    display_logger_status(&inertialSenseInterface, refreshDisplay);
+                    display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
+                }
+
+                // If the user specified a runDuration, then exit after that time has elapsed
+                if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration)) {
+                    break;
+                }
+            }
+        }
+        catch (...)
+        {
+            cout << "Unknown exception...";
+        }
+    }
+
+    //If Firmware Update is specified return an error code based on the Status of the Firmware Update
+    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+        for (auto& device : inertialSenseInterface.getDevices()) {
+            if (device.fwUpdate.hasError) {
+                exitCode = -3;
+                break;
+            }
+        }
+    }
+
+    // [C++ COMM INSTRUCTION] STEP 6: Close interface
+    // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
+    inertialSenseInterface.Close();
+    inertialSenseInterface.CloseServerConnection();
+
+    return exitCode;
+}
+
 static void sigint_cb(int sig)
 {
     g_killThreadsNow = true;
@@ -563,16 +661,15 @@ static void sigint_cb(int sig)
 
 static int inertialSenseMain()
 {
-    int exitCode = 0;
     // clear display
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
 
     // if replay data log specified on command line, do that now and return
-        if (g_commandLineOptions.replayDataLog)
+    if (g_commandLineOptions.replayDataLog)
     {
         // [REPLAY INSTRUCTION] 1.) Replay data log
-        return !cltool_replayDataLog();
+        return cltool_replayDataLog();
     }
         // if app firmware was specified on the command line, do that now and return
     else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
@@ -610,112 +707,12 @@ static int inertialSenseMain()
             }
         }
     }
-        // open the device, start streaming data and logging if needed
     else
-    {
-        // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
-        // Create InertialSense object, passing in data callback function pointer.
-        InertialSense inertialSenseInterface(cltool_dataCallback);
-
-        // [C++ COMM INSTRUCTION] STEP 2: Open serial port
-        if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
-        {
-            cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
-            return -1;    // Failed to open serial port
-        }
-
-        // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
-        if (cltool_setupCommunications(inertialSenseInterface))
-        {
-            // [LOGGER INSTRUCTION] Setup and start data logger
-            if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
-            {
-                cout << "Failed to setup logger!" << endl;
-                inertialSenseInterface.Close();
-                inertialSenseInterface.CloseServerConnection();
-                return -1;
-            }
-            try
-            {
-                if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
-                    if(inertialSenseInterface.updateFirmware(
-                            g_commandLineOptions.comPort,
-                            g_commandLineOptions.baudRate,
-                            g_commandLineOptions.updateFirmwareTarget,
-                            g_commandLineOptions.fwUpdateCmds,
-                            bootloadUpdateCallback,
-                            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
-                            cltool_firmwareUpdateInfo,
-                            cltool_firmwareUpdateWaiter
-                    ) != IS_OP_OK) {
-                        inertialSenseInterface.Close();
-                        inertialSenseInterface.CloseServerConnection();
-                        return -1;
-                    };
-                }
-
-                // Main loop. Could be in separate thread if desired.
-                uint32_t startTime = current_timeMs();
-                while (!g_inertialSenseDisplay.ExitProgram())
-                {
-                    g_inertialSenseDisplay.GetKeyboardInput();
-
-                    if (g_inertialSenseDisplay.UploadNeeded())
-                    {
-                        cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
-                        inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
-                    }
-
-                    // [C++ COMM INSTRUCTION] STEP 4: Read data
-                    if (!inertialSenseInterface.Update())
-                    {   // device disconnected, exit
-                        exitCode = -2;
-                        break;
-                    }
-
-                    // If updating firmware, and all devices have finished, Exit
-                    if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
-                        if (inertialSenseInterface.isFirmwareUpdateFinished()) {
-                            exitCode = 0;
-                            break;
-                        }
-                    } else {  // Only print the usual output if we AREN'T updating firmware...
-                        bool refreshDisplay = g_inertialSenseDisplay.PrintData();
-
-                        // Collect and print summary list of client messages received
-                        display_logger_status(&inertialSenseInterface, refreshDisplay);
-                        display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
-                    }
-
-                    // If the user specified a runDuration, then exit after that time has elapsed
-                    if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration)) {
-                        break;
-                    }
-                }
-            }
-            catch (...)
-            {
-                cout << "Unknown exception...";
-            }
-        }
-
-        //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-        if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-            for (auto& device : inertialSenseInterface.getDevices()) {
-                if (device.fwUpdate.hasError) {
-                    exitCode = -3;
-                    break;
-                }
-            }
-        }
-
-        // [C++ COMM INSTRUCTION] STEP 6: Close interface
-        // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
-        inertialSenseInterface.Close();
-        inertialSenseInterface.CloseServerConnection();
+    {   // open the device, start streaming data and logging if needed
+        return cltool_dataStreaming();
     }
 
-    return exitCode;
+    return 0;
 }
 
 

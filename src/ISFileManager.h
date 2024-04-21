@@ -57,6 +57,8 @@ namespace ISFileManager
     // get just the parent/base path from a path
     std::string GetParentDirectory(const std::string& path);
 
+    // get the current working directory
+    std::string CurrentWorkingDirectory();
 
     /**
      * Returns true if the specified path is consider an absolute path
@@ -87,7 +89,13 @@ namespace ISFileManager
 
     bool TouchFile(const std::string& path);
 
-    bool makePath(const std::string& path);
+    /**
+     * @brief Create directory specified if it does not exist.
+     * 
+     * @param path relative or absolute path for directory to be created.
+     * @return true on success 
+     */
+    bool CreateDirectory(const std::string& path);
 }
 
 #endif //IS_SDK_IS_FILE_MANAGER_H_

@@ -136,6 +136,12 @@ static void probe_serial8250_comports(vector<string>& comList, vector<string> co
 
 #endif // #if PLATFORM_IS_LINUX
 
+/**
+ * Populates a vector of string identifiers for all available Serial/TTY/UART devices on the host system.
+ * This does not open, access, or configure the devices, nor does it make any guarantee about the availability
+ * of the ports (only that the OS has registered/enumerated it).
+ * @param ports a reference to a vector of strings, which will be populated with available serial ports
+ */
 void cISSerialPort::GetComPorts(vector<string>& ports)
 {
 	ports.clear();

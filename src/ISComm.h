@@ -523,6 +523,9 @@ typedef struct
 	/** Search pointer in data (head <= scan <= tail) */
 	uint8_t* scan;
 
+	/** Search pointer prior to reset (used to identify errors) */
+	uint8_t* scanPrior;
+
 } is_comm_buffer_t;
 
 typedef enum
@@ -838,6 +841,7 @@ static inline uint8_t dataOverlap( uint32_t dstOffset, uint32_t dstSize, p_data_
 static inline void is_comm_reset_parser(is_comm_instance_t* c)
 {
 	c->parser.state = 0;
+	c->rxBuf.scanPrior = c->rxBuf.scan;
 	c->rxBuf.scan = c->rxBuf.head;
 	c->processPkt = NULL;
 }

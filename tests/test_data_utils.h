@@ -11,7 +11,7 @@
 
 #include "data_sets.h"
 #include "ISComm.h"
-
+#include "ISLogger.h"
 
 typedef struct
 {
@@ -22,14 +22,20 @@ typedef struct
     int                     pktSize;
 } test_message_t;
 
-typedef enum
+enum eTestGenDataOptions
 {
-    GEN_LOG_OPTIONS_NONE = 0,
-    GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS,
-} test_gen_log_options_t;
+    GEN_LOG_OPTIONS_NONE                                = 0x00000000,
+    GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS         = 0x00000001,
+    GEN_LOG_OPTIONS_MISSING_MESSAGE_END                 = 0x00000002,
+    GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE                 = 0x00000008,
+    GEN_LOG_OPTIONS_TIMESTAMP_REVERSE                   = 0x00000010,
+};
 
-void GenerateMessage(test_message_t &msg, protocol_type_t ptype);
-void GenerateLogFiles(int numDevices, std::string directory, cISLogger::eLogType logType, float logSizeMB=20, int options=GEN_LOG_OPTIONS_NONE);
+void CurrentGpsTimeMs(uint32_t &gpsTimeOfWeekMs, uint32_t &gpsWeek);
+void PrintUtcTime(std::tm &utcTime, uint32_t milliseconds=0);
+bool GenerateMessage(test_message_t &msg, protocol_type_t ptype=_PTYPE_NONE);
+void GenerateDataLogFiles(int numDevices, std::string directory, cISLogger::eLogType logType, float logSizeMB=20, eTestGenDataOptions options=GEN_LOG_OPTIONS_NONE);
+int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions options=GEN_LOG_OPTIONS_NONE);
 
 
 

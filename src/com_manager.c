@@ -176,7 +176,7 @@ int initComManagerInstanceInternal
         
     // Port specific info
     cmInstance->ports = cmPorts;
-        for (i = 0; i < numPorts; i++)
+    for (i = 0; i < numPorts; i++)
     {	// Initialize IScomm instance, for serial reads / writes
         com_manager_port_t *port = &(cmInstance->ports[i]);
         is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
@@ -265,27 +265,27 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
     {
         com_manager_port_t *cmPort = &(cmInstance->ports[port]);
         is_comm_instance_t *comm = &(cmPort->comm);
-        protocol_type_t ptype;
-
-        // Get available size of comm buffer
-        int n = is_comm_free(comm);
+        protocol_type_t ptype = _PTYPE_NONE;
 
         // Read data directly into comm buffer
-        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, n)))
+        int n = 0;
+        // Here there lie dragons - is_comm_free() modifies comm->rxBuf pointers, so make sure you call here first!!
+        int free_size = is_comm_free(comm);
+        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, free_size)) != 0)
         {
             // Update comm buffer tail pointer
             comm->rxBuf.tail += n;
 
             // Search comm buffer for valid packets
             while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
-            {	
+            {
                 int error = comManagerStepRxInstanceHandler(cmInstance, cmPort, comm, port, ptype);		
                 if(error == CM_ERROR_FORWARD_OVERRUN) 
                 {
                     break;	// Stop parsing and continue in outer loop
                 }
             }
-        }			
+        }
     }
 }
 
@@ -298,6 +298,10 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manage
     switch (ptype)
     {
     case _PTYPE_PARSE_ERROR:
+        if (cmInstance->cmMsgHandlerError)
+        {
+            cmInstance->cmMsgHandlerError(port, comm);
+        }
         error = 1;
         break;
 
@@ -399,9 +403,10 @@ void comManagerSetCallbacks(
     pfnComManagerGenMsgHandler handlerAscii,
     pfnComManagerGenMsgHandler handlerUblox, 
     pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn)
+    pfnComManagerGenMsgHandler handlerSpartn,
+    pfnComManagerParseErrorHandler handlerError)
 {
-    comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn);
+    comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn, handlerError);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
@@ -409,7 +414,8 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
     pfnComManagerGenMsgHandler handlerAscii,
     pfnComManagerGenMsgHandler handlerUblox,
     pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn)
+    pfnComManagerGenMsgHandler handlerSpartn,
+    pfnComManagerParseErrorHandler handlerError)
 {
     if (cmInstance != 0)
     {
@@ -418,6 +424,7 @@ void comManagerSetCallbacksInstance(CMHANDLE cmInstance,
         ((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
         ((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
         ((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
+        ((com_manager_t*)cmInstance)->cmMsgHandlerError = handlerError;        
     }
 }
 

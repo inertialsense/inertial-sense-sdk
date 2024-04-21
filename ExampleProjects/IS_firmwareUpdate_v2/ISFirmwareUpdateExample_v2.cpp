@@ -181,41 +181,50 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
             int fw_result = dfu::DFU_ERROR_NONE;
             int bl_result = dfu::DFU_ERROR_NONE;
             int dev_result = dfu::DFU_ERROR_NONE;
+            bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!imx_firmware.empty()) {
                 fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 24576);
                 if (fw_result != dfu::DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+                finalization_needed = true;
             }
             if (!imx_bootloader.empty()) {
                 bl_result = device->updateFirmware(imx_bootloader);
                 if (bl_result != dfu::DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+                finalization_needed = true;
             }
 
-            // always do this to get us back to a "normal" state???
-            dev_result = device->finalizeFirmware();
-            fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
+            if (finalization_needed) {
+                // always do this to get us back to a "normal" state???
+                dev_result = device->finalizeFirmware();
+                fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
+            }
         }
         if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32U5)) {
             // NOTE THAT GPX BOOTLOADER/FIRMWARE .hex files are ALWAYS configured to write to the correct memory location
             int fw_result = dfu::DFU_ERROR_NONE;
             int bl_result = dfu::DFU_ERROR_NONE;
             int dev_result = dfu::DFU_ERROR_NONE;
+            bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!gpx_firmware.empty()) {
                 fw_result = device->updateFirmware(gpx_firmware, 0x08084000); // mcu-boot SLOT 2
                 if (fw_result != dfu::DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+                finalization_needed = true;
             }
             if (!gpx_bootloader.empty()) {
                 bl_result = device->updateFirmware(gpx_bootloader);
                 if (bl_result != dfu::DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+                finalization_needed = true;
             }
-
-            dev_result = device->finalizeFirmware();
-            fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
+            if (finalization_needed) {
+                dev_result = device->finalizeFirmware();
+                fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
+            }
         }
     }
     return 0;

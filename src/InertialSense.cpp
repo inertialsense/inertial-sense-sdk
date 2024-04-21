@@ -20,6 +20,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#define PRINT_DEBUG 0
+#if PRINT_DEBUG
+#define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...) 
+#endif
+
 static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
@@ -231,7 +238,6 @@ void InertialSense::RemoveDevice(size_t index)
     }
 
     serialPortClose(&m_comManagerState.devices[index].serialPort);
-    m_comManagerState.devices.erase(m_comManagerState.devices.begin() + index);
 }
 
 void InertialSense::LoggerThread(void* info)
@@ -710,11 +716,18 @@ void InertialSense::SoftwareReset()
     }
 }
 
+void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
+{
+    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    {
+        comManagerGetData((int)i, dataId, length, offset, 0);
+    }
+}
+
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
     {
-        // [C COMM INSTRUCTION]  4.) Send data to the uINS.
         comManagerSendData((int)i, data, dataId, length, offset);
     }
 }
@@ -761,31 +774,49 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
 void InertialSense::SyncFlashConfig(unsigned int timeMs)
 {
-    if (timeMs - m_syncCheckTimeMs > SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+    if (timeMs - m_syncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
     {
-        m_syncCheckTimeMs = timeMs;
+        return;
+    }
+    m_syncCheckTimeMs = timeMs;
 
-        for (size_t i=0; i<m_comManagerState.devices.size(); i++)
-        {
-            is_device_t &device = m_comManagerState.devices[i];
+    for (size_t i=0; i<m_comManagerState.devices.size(); i++)
+    {
+        is_device_t &device = m_comManagerState.devices[i];
 
-            if (device.flashCfgUploadTimeMs)
-            {	// Upload in progress
-                if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
-                {	// Wait for upload to process.  Pause sync.
-                    continue;
-                }
-                else
-                {	// Upload complete.  Allow sync.
-                    device.flashCfgUploadTimeMs = 0;
-                }
-            }
-
-            if (device.flashCfg.checksum != device.sysParams.flashCfgChecksum)
-            {	// Out of sync.  Request flash config.
-                comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
+        if (device.flashCfgUploadTimeMs)
+        {	// Upload in progress
+            if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+            {	// Wait for upload to process.  Pause sync.
+                device.sysParams.flashCfgChecksum = 0;
             }
         }
+
+        // Require valid sysParams checksum
+        if (device.sysParams.flashCfgChecksum)  
+        {   
+            if (device.sysParams.flashCfgChecksum == device.flashCfg.checksum)
+            {
+                if (device.flashCfgUploadTimeMs)
+                {   // Upload complete.  Allow sync.
+                    device.flashCfgUploadTimeMs = 0;
+
+                    if (device.flashCfgUploadChecksum == device.sysParams.flashCfgChecksum)
+                    {
+                        printf("DID_FLASH_CONFIG upload complete.\n");
+                    }
+                    else
+                    {
+                        printf("DID_FLASH_CONFIG upload rejected.\n");
+                    }
+                }
+            }
+            else
+            {	// Out of sync.  Request flash config.
+                DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
+                comManagerGetData((int)i, DID_FLASH_CONFIG, 0, 0, 0);
+            }
+        } 
     }
 }
 
@@ -801,27 +832,94 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     // Copy flash config
     flashCfg = device.flashCfg;
 
-    // Indicate whether flash config is sychronized
+    // Indicate whether flash config is synchronized
     return device.sysParams.flashCfgChecksum == device.flashCfg.checksum;
 }
 
-int InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
+bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
         return 0;
     }
     is_device_t &device = m_comManagerState.devices[pHandle];
+    
+    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
+    static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
+    uint32_t *newCfg = (uint32_t*)&flashCfg;
+    uint32_t *curCfg = (uint32_t*)&device.flashCfg; 
+    int iSize = sizeof(nvm_flash_cfg_t) / 4;
+    bool failure = false;
+    for (int i = 2; i < iSize; i++)
+    {
+        if (newCfg[i] != curCfg[i])
+        {   // Found start
+            uint8_t *head = (uint8_t*)&(newCfg[i]);
+
+            // Search for end
+            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
+
+            // Found end
+            uint8_t *tail = (uint8_t*)&(newCfg[i]);
+            int size = tail-head;
+            int offset = head-((uint8_t*)newCfg);
+            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            failure = failure || comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);
+            device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
+        }
+    }
+
+    if (device.flashCfgUploadTimeMs == 0)
+    {
+        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+    }
+
+    // Exclude from the checksum update the following which does not get saved in the flash config
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
 
     // Update checksum
     flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    if (device.flashCfgUploadTimeMs)
+    {
+        device.flashCfgUploadChecksum = flashCfg.checksum;
+    }
 
+    // Update local copy of flash config
     device.flashCfg = flashCfg;
-    device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
-    device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
 
-    // [C COMM INSTRUCTION]  Update the entire DID_FLASH_CONFIG data set in the uINS.
-    return comManagerSendData(pHandle, &device.flashCfg, DID_FLASH_CONFIG, sizeof(nvm_flash_cfg_t), 0);
+    // Success
+    return !failure;
+}
+
+bool InertialSense::WaitForFlashSynced(int pHandle)
+{
+    unsigned int startMs = current_timeMs();
+    while(!FlashConfigSynced(pHandle))
+    {   // Request and wait for flash config
+        Update();
+        SLEEP_MS(100);
+
+        if (current_timeMs() - startMs > 3000)
+        {   // Timeout waiting for flash config
+            printf("Failed to read DID_FLASH_CONFIG!\n");
+
+            #if PRINT_DEBUG
+            is_device_t &device = m_comManagerState.devices[pHandle]; 
+            DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
+            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
+            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
+            DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
+            #endif
+            return false;
+        }
+        else
+        {   // Query DID_SYS_PARAMS
+            GetData(DID_SYS_PARAMS);
+            DEBUG_PRINT("Waiting for flash sync...\n");
+        }
+    }
+
+    return FlashConfigSynced(pHandle);
 }
 
 void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
@@ -837,13 +935,17 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     {
         case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;                               break;
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
-        case DID_SYS_PARAMS:        copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      break;
+        case DID_SYS_PARAMS:        
+            copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      
+            DEBUG_PRINT("Received DID_SYS_PARAMS\n");
+            break;
         case DID_FLASH_CONFIG:
             copyDataPToStructP(&device.flashCfg, data, sizeof(nvm_flash_cfg_t));
             if ( dataOverlap( offsetof(nvm_flash_cfg_t, checksum), 4, data ) )
             {	// Checksum received
                 device.sysParams.flashCfgChecksum = device.flashCfg.checksum;
             }
+            DEBUG_PRINT("Received DID_FLASH_CONFIG\n");
             break;
         case DID_FIRMWARE_UPDATE:
             // we don't respond to messages if we don't already have an active Updater
@@ -1236,79 +1338,74 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         }
     }
 
-	// [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
-	// serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
-	if (m_cmPorts) { delete [] m_cmPorts; }
-	m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
+    // [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
+    // serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
+    if (m_cmPorts) { delete[] m_cmPorts; }
+    m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
 
-	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
-	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
-	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
-	{	// Error
-		return false;
-	}
+    if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
+    m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
+    m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
+    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1) {    // Error
+        return false;
+    }
 
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+    // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 
-	if (m_enableDeviceValidation)
-	{
-		time_t startTime = time(0);
+    if (m_enableDeviceValidation) {
+        unsigned int startTime = current_timeMs();
         bool removedSerials = false;
 
-		// Query devices with 10 second timeout
-		while (!HasReceivedDeviceInfoFromAllDevices() && (time(0) - startTime < 10))
-		{
-			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-			{
+        do {
+            for (size_t i = 0; i < m_comManagerState.devices.size(); i++) {
                 if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
-                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0))
-                {
+                    (comManagerSendRaw((int) i, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     RemoveDevice(i);
                     removedSerials = true, i--;
                 }
-			}
+            }
 
-			SLEEP_MS(100);
-			comManagerStep();
-		}
+            SLEEP_MS(100);
+            comManagerStep();
 
-		// remove each failed device where communications were not received
-		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
-		{
-			if (!HasReceivedDeviceInfo(i))
-			{
-				RemoveDevice(i);
-				removedSerials = true;
-			}
-		}
+            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
+                fprintf(stderr, "\nTimeout waiting for all discovered devices to respond.");
+                fflush(stderr);
+                break;
+            }
+        } while (!HasReceivedDeviceInfoFromAllDevices());
 
-		// if no devices left, all failed, we return failure
-		if (m_comManagerState.devices.size() == 0)
-		{
-			CloseSerialPorts();
-			return false;
-		}
+        // remove each failed device where communications were not received
+        for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
+            if (!HasReceivedDeviceInfo(i)) {
+                RemoveDevice(i);
+                removedSerials = true;
+            }
+        }
 
-		// remove ports if we are over max count
-		while (m_comManagerState.devices.size() > maxCount)
-		{
-			RemoveDevice(m_comManagerState.devices.size()-1);
-			removedSerials = true;
-		}
+        // if no devices left, all failed, we return failure
+        if (m_comManagerState.devices.size() == 0) {
+            CloseSerialPorts();
+            return false;
+        }
 
-		// setup com manager again if serial ports dropped out with new count of serial ports
-		if (removedSerials)
-		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
-		}
-	}
+        // remove ports if we are over max count
+        while (m_comManagerState.devices.size() > maxCount) {
+            RemoveDevice(m_comManagerState.devices.size() - 1);
+            removedSerials = true;
+        }
+
+        // setup com manager again if serial ports dropped out with new count of serial ports
+        if (removedSerials) {
+            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+        }
+    }
 
     // request extended device info for remaining connected devices...
-    for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--) {
+    for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
         // but only if they are of a compatible protocol version
         if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
             comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
