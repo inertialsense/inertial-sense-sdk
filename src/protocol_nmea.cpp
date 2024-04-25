@@ -414,7 +414,7 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 		, info.buildYear+2000, info.buildMonth, info.buildDay // 8
 		, info.buildHour, info.buildMinute, info.buildSecond, info.buildMillisecond // 9
 		, info.addInfo           // 10
-		, info.hardware          // 11
+		, info.hardwareType          // 11
 		, info.reserved          // 12
 		, (info.buildType ? info.buildType : ' ') // 13
 		// , info.firmwareMD5Hash[0], info.firmwareMD5Hash[1], info.firmwareMD5Hash[2], info.firmwareMD5Hash[3]	// 14
@@ -1669,7 +1669,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 	ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
 
 	// uint16_t        hardware;
-	ptr = ASCII_to_u16(&info.hardware, ptr);
+	ptr = ASCII_to_u8(&info.hardwareType, ptr);
 
 	// uint16_t        reserved;
 	ptr = ASCII_to_u16(&info.reserved, ptr);

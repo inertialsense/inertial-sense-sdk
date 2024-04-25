@@ -4,9 +4,11 @@
 #include "protocol_nmea.h"
 #include "test_data_utils.h"
 #include "time_conversion.h"
+#include "gtest_helpers.h"
+
 using namespace std;
 
-#define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }
+#define PRINT_TEST_DESCRIPTION(description)   { TEST_COUT << "TEST DESCRIPTION: " << description << "\n"; }
 
 #define ASCII_BUF_LEN   200
 #define POS_LAT_DEG     40.330578
@@ -296,7 +298,7 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
     // Cycle through entire range of time of week in milliseconds
     for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500)
     {   // Scale will transition from 0.0 to 1.0
-        double scale = ((double)towMs) * invTowMsMax; 
+        double scale = ((double)towMs) * invTowMsMax;
 
         gps_pos_t pos = {};
         gps_vel_t vel = {};
@@ -327,7 +329,7 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
         gps_pos_t resultPos = {};
         gps_vel_t resultVel = {};
         nmea_parse_pgpsp(resultPos, resultVel, abuf, ASCII_BUF_LEN);
-        
+
         compareGpsPos(pos, resultPos);
         compareGpsVel(vel, resultVel);
     }
@@ -373,7 +375,7 @@ TEST(protocol_nmea, GGA)
     int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
     nmea_parse_gga(abuf, ASCII_BUF_LEN, pos2, t, utcWeekday);
     pos.hAcc = pos2.hAcc;
-    
+
     compareGpsPos(pos, pos2);
 }
 
@@ -384,18 +386,18 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
     // Cycle through entire range of time of week in milliseconds
     for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500)
     {   // Scale will transition from 0.0 to 1.0
-        double scale = ((double)towMs) * invTowMsMax; 
+        double scale = ((double)towMs) * invTowMsMax;
 
         gps_pos_t pos = {};
         pos.week = 2309;
         pos.timeOfWeekMs = towMs;
         pos.satsUsed = 12;
-        pos.status = 
+        pos.status =
             GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
             GPS_STATUS_FLAGS_FIX_OK |
             GPS_STATUS_FLAGS_DGPS_USED |
             GPS_STATUS_FIX_DGPS |
-            GPS_STATUS_FLAGS_GPS_NMEA_DATA;        
+            GPS_STATUS_FLAGS_GPS_NMEA_DATA;
         pos.hMSL = -100 + 50000 * scale;
         pos.lla[0] =  -90.0 + 180.0 * scale;
         pos.lla[1] = -180.0 + 230.0 * scale;

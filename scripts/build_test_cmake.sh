@@ -81,7 +81,7 @@ function test_cmake() {
   pushd build > /dev/null
 
   tests_header "${testname}"
-  ./${execname}
+  ./${execname} --gtest_color=yes
   test_result=$?
   tests_footer $test_result
 
