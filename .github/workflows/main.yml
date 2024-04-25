@@ -100,7 +100,7 @@ jobs:
 
   ros-bridge-tests:
     name: "ROS Bridge Tests"
-    runs-on: [self-hosted, linux, x64, focal]
+    runs-on: [self-hosted, X64, ubuntu, focal, docker]
     # if: false  # disable this job
     timeout-minutes: 5
 
