@@ -4634,7 +4634,7 @@ typedef struct
     uint32_t        txLimitedCnt;   
 
     /** Rx number of checksum failures*/
-    uint32_t        checksumErrorCount;
+    uint32_t        rxChecksumErrorCount;
 
 } port_monitor_set_t;
 
