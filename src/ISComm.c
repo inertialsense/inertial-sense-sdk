@@ -167,25 +167,25 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
 
-	// Clear buffer and initialize buffer pointers
-	memset(buffer, 0, bufferSize);
-	c->rxBuf.size = bufferSize;
-	c->rxBuf.start = buffer;
-	c->rxBuf.end = buffer + bufferSize;
-	c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
-	
-	// Set parse enable flags
-	c->config.enabledMask = 
-		ENABLE_PROTOCOL_ISB
-		| ENABLE_PROTOCOL_NMEA
-		| ENABLE_PROTOCOL_UBLOX
-		| ENABLE_PROTOCOL_RTCM3
-		// | ENABLE_PROTOCOL_SONY
-		// | ENABLE_PROTOCOL_SPARTN
-		;
-	
-	c->rxPkt.data.ptr = c->rxBuf.start;
-	c->rxErrorState = 1;
+    // Clear buffer and initialize buffer pointers
+    memset(buffer, 0, bufferSize);
+    c->rxBuf.size = bufferSize;
+    c->rxBuf.start = buffer;
+    c->rxBuf.end = buffer + bufferSize;
+    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = buffer;
+    
+    // Set parse enable flags
+    c->config.enabledMask = 
+        ENABLE_PROTOCOL_ISB
+        | ENABLE_PROTOCOL_NMEA
+        | ENABLE_PROTOCOL_UBLOX
+        | ENABLE_PROTOCOL_RTCM3
+        // | ENABLE_PROTOCOL_SONY
+        // | ENABLE_PROTOCOL_SPARTN
+        ;
+    
+    c->rxPkt.data.ptr = c->rxBuf.start;
+    c->rxErrorState = 1;
 }
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
@@ -867,7 +867,7 @@ static protocol_type_t processSpartnByte(void* v)
  */
 int is_comm_free(is_comm_instance_t* c)
 {
-	is_comm_buffer_t *buf = &(c->rxBuf);
+    is_comm_buffer_t *buf = &(c->rxBuf);
 
     int bytesFree = (int)(buf->end - buf->tail);
 
@@ -927,36 +927,36 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     }
 #endif
 
-	// Search for packet
-	while (buf->scan < buf->tail)
-	{
-		if (c->processPkt == NULL)
-		{	// Scan for packet start
-			switch (*(buf->scan))
-			{			
-			case PSC_ISB_PREAMBLE_BYTE1:    if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)    { setParserStart(c, processIsbPkt); }      break;
-			case PSC_NMEA_START_BYTE:       if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA)   { setParserStart(c, processNmeaPkt); }     break;
-			case UBLOX_START_BYTE1:         if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)  { setParserStart(c, processUbloxPkt); }    break;
-			case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)  { setParserStart(c, processRtcm3Pkt); }    break;
-			case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN) { setParserStart(c, processSpartnByte); }  break;
-			case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)   { setParserStart(c, processSonyByte); }    break;
-			default:                        
-				if (reportParseError(c)) 
-				{ 
-					return _PTYPE_PARSE_ERROR; 
-				}                                       
-				break;
-			}
-		}
-		else
-		{	// Parsing packet
-			protocol_type_t ptype = c->processPkt(c);
-			if (ptype != _PTYPE_NONE)
-			{	// Packet found or packet error
-				buf->scan++; 
-				return ptype;
-			}
-		}
+    // Search for packet
+    while (buf->scan < buf->tail)
+    {
+        if (c->processPkt == NULL)
+        {	// Scan for packet start
+            switch (*(buf->scan))
+            {			
+            case PSC_ISB_PREAMBLE_BYTE1:    if (c->config.enabledMask & ENABLE_PROTOCOL_ISB)    { setParserStart(c, processIsbPkt); }      break;
+            case PSC_NMEA_START_BYTE:       if (c->config.enabledMask & ENABLE_PROTOCOL_NMEA)   { setParserStart(c, processNmeaPkt); }     break;
+            case UBLOX_START_BYTE1:         if (c->config.enabledMask & ENABLE_PROTOCOL_UBLOX)  { setParserStart(c, processUbloxPkt); }    break;
+            case RTCM3_START_BYTE:          if (c->config.enabledMask & ENABLE_PROTOCOL_RTCM3)  { setParserStart(c, processRtcm3Pkt); }    break;
+            case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN) { setParserStart(c, processSpartnByte); }  break;
+            case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)   { setParserStart(c, processSonyByte); }    break;
+            default:                        
+                if (reportParseError(c)) 
+                { 
+                    return _PTYPE_PARSE_ERROR; 
+                }                                       
+                break;
+            }
+        }
+        else
+        {	// Parsing packet
+            protocol_type_t ptype = c->processPkt(c);
+            if (ptype != _PTYPE_NONE)
+            {	// Packet found or packet error
+                buf->scan++; 
+                return ptype;
+            }
+        }
 
         buf->scan++;
     }
@@ -1032,9 +1032,9 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     // Update checksum using precomputed header checksum and new data
     pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
-	BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
+    BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
 
- 	// Write packet to buffer
+     // Write packet to buffer
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
     MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));   // Header
     if (pkt->offset)
@@ -1044,10 +1044,10 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
     MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                 // Footer (checksum)
 
-	END_CRITICAL_SECTION
+    END_CRITICAL_SECTION
 
-	// Increment Tx count
-	comm->txPktCount++;
+    // Increment Tx count
+    comm->txPktCount++;
 
     return pkt->size;
 }
@@ -1057,16 +1057,16 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
  */ 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
-	BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
+    BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
 
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
- 	// Write packet to port
-	int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-	if (pkt->offset)
-	{
-		n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+     // Write packet to port
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
+    if (pkt->offset)
+    {
+        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
     }
     if (pkt->data.size)
     {
@@ -1077,10 +1077,10 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
     }
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 
-	END_CRITICAL_SECTION
+    END_CRITICAL_SECTION
 
-	// Increment Tx count
-	comm->txPktCount++;
+    // Increment Tx count
+    comm->txPktCount++;
 
     return n;
 }
