@@ -147,15 +147,14 @@ jobs:
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          cd ${GITHUB_WORKSPACE}
-          ls -al
+          cd ${GITHUB_WORKSPACE}/..
           mkdir -p catkin_ws/src
-          ln -s . catkin_ws/src/inertial-sense-sdk
-          cd ${GITHUB_WORKSPACE}/catkin_ws && catkin_make && catkin_make test_unit_tests && catkin_make test_ros_bridge 
+          ln -s ${GITHUB_WORKSPACE} catkin_ws/src/inertial-sense-sdk
+          cd ${GITHUB_WORKSPACE}/../catkin_ws && catkin_make && catkin_make test_unit_tests && catkin_make test_ros_bridge 
 
       - name: Run Unit Tests
         run: |          
-          cd ${GITHUB_WORKSPACE}/catkin_ws && source devel/setup.bash
+          cd ${GITHUB_WORKSPACE}/../catkin_ws && source devel/setup.bash
           rm -rf build/test_results
           roscore &
           catkin_make run_tests_inertial_sense_ros_gtest_test_unit_tests && catkin_test_results
@@ -163,6 +162,6 @@ jobs:
 
       - name: Run Functional/Integration Tests (via hardware)
         run: |
-          cd ${GITHUB_WORKSPACE}/catkin_ws && source devel/setup.bash
+          cd ${GITHUB_WORKSPACE}/../catkin_ws && source devel/setup.bash
             rostest inertial_sense_ros test_ros_bridge.launch && catkin_test_results || (rostest --text inertial_sense_ros test_ros_bridge.launch && catkin_test_results && false)
 
