@@ -4607,7 +4607,6 @@ enum eEvb2LoggerMode
         
 };
 
-
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
 */

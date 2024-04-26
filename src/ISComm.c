@@ -1052,13 +1052,15 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
-// Returns number of bytes written
+/**
+ * Returns number of bytes written
+ */ 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
-    // Compute checksum using precomputed header checksum
-    pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
 	BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
+
+    // Set checksum using precomputed header checksum
+    pkt->checksum = pkt->hdrCksum;
 
  	// Write packet to port
 	int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
@@ -1068,6 +1070,9 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
     }
     if (pkt->data.size)
     {
+        // Include payload in checksum calculation
+        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
+
         n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
     }
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
