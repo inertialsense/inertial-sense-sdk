@@ -66,6 +66,7 @@ public:
         return log; 
     }
     void SetPortName(std::string portName){ m_portName = portName; };
+    void Enable(bool enable=true){ m_enable = enable; }
 
     struct error_count
     {
