@@ -4633,7 +4633,7 @@ typedef struct
     /** Tx number of times that a write did not send all bytes */
     uint32_t        txLimitedCnt;   
 
-    /** Count of checksum failures, one entry for each com port */
+    /** Rx number of checksum failures*/
     uint32_t        checksumErrorCount;
 
 } port_monitor_set_t;
