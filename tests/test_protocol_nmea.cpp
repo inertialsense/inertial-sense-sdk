@@ -1,10 +1,14 @@
 #include <gtest/gtest.h>
 #include <vector>
-#include "protocol_nmea.h"
 #include "ISEarth.h"
+#include "protocol_nmea.h"
+#include "test_data_utils.h"
+#include "time_conversion.h"
+#include "gtest_helpers.h"
+
 using namespace std;
 
-#define PRINT_TEST_DESCRIPTION(description)   { cout << "TEST DESCRIPTION: " << description << "\n"; }
+#define PRINT_TEST_DESCRIPTION(description)   { TEST_COUT << "TEST DESCRIPTION: " << description << "\n"; }
 
 #define ASCII_BUF_LEN   200
 #define POS_LAT_DEG     40.330578
@@ -17,6 +21,44 @@ using namespace std;
 #else
 #define DEBUG_PRINTF	
 #endif
+
+
+void compareGpsPos(gps_pos_t &g1, gps_pos_t &g2)
+{
+    EXPECT_NEAR(g1.timeOfWeekMs, g2.timeOfWeekMs, 1);
+    EXPECT_EQ(g1.week, g2.week);
+    EXPECT_EQ(g1.status, g2.status);
+    for (int i=0; i<3; i++)
+    {
+        EXPECT_NEAR(g1.ecef[i], g2.ecef[i], 0.02);      // 20 cm
+    }
+    for (int i=0; i<2; i++)
+    {
+        EXPECT_NEAR(g1.lla[i], g2.lla[i], 1.0e-6);      // (deg)
+    }
+    EXPECT_NEAR(g1.lla[2], g2.lla[2], 0.01);            // 10 cm
+    EXPECT_NEAR(g1.hMSL, g2.hMSL, 0.01);                // 10 cm
+    EXPECT_NEAR(g1.hAcc, g2.hAcc, 0.01);                // 10 cm
+    EXPECT_NEAR(g1.vAcc, g2.vAcc, 0.01);                // 10 cm
+    EXPECT_NEAR(g1.pDop, g2.pDop, 0.01);
+    EXPECT_NEAR(g1.cnoMean, g2.cnoMean, 0.01);
+    EXPECT_NEAR(g1.towOffset, g2.towOffset, 0.01);
+    EXPECT_EQ(g1.leapS, g2.leapS);
+    EXPECT_EQ(g1.satsUsed, g2.satsUsed);
+    EXPECT_EQ(g1.cnoMeanSigma, g2.cnoMeanSigma);
+    EXPECT_EQ(g1.reserved, g2.reserved);
+}
+
+void compareGpsVel(gps_vel_t &g1, gps_vel_t &g2)
+{
+    EXPECT_NEAR(g1.timeOfWeekMs, g2.timeOfWeekMs, 1);
+    for (int i=0; i<3; i++)
+    {
+        EXPECT_NEAR(g1.vel[i], g2.vel[i], 0.01);        // 10 cm
+    }
+    EXPECT_NEAR(g1.sAcc, g2.sAcc, 0.01);                // 10 cm/s
+    EXPECT_EQ(g1.status, g2.status);
+}
 
 TEST(protocol_nmea, nmea_parse_asce)
 {
@@ -215,7 +257,7 @@ TEST(protocol_nmea, PGPSP)
 {
     gps_pos_t pos = {};
     gps_vel_t vel = {};
-    pos.week = 1;
+    pos.week = 2309;
     pos.timeOfWeekMs = vel.timeOfWeekMs = 370659600;
     pos.satsUsed = 45;
     pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
@@ -242,8 +284,55 @@ TEST(protocol_nmea, PGPSP)
     gps_pos_t resultPos = {};
     gps_vel_t resultVel = {};
     nmea_parse_pgpsp(resultPos, resultVel, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
-    ASSERT_EQ(memcmp(&vel, &resultVel, sizeof(resultVel)), 0);
+
+    compareGpsPos(pos, resultPos);
+    compareGpsVel(vel, resultVel);
+}
+
+#define OPERATING_LIMIT_MPS     500     // (m/s)
+
+TEST(protocol_nmea, PGPSP_sweep_operating_range)
+{
+    double invTowMsMax = 1.0/(double)C_MILLISECONDS_PER_WEEK;
+
+    // Cycle through entire range of time of week in milliseconds
+    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500)
+    {   // Scale will transition from 0.0 to 1.0
+        double scale = ((double)towMs) * invTowMsMax;
+
+        gps_pos_t pos = {};
+        gps_vel_t vel = {};
+        pos.week = 2309;
+        pos.timeOfWeekMs = vel.timeOfWeekMs = towMs;
+        pos.satsUsed = 45;
+        pos.status = GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed;
+        // for (int i=0; i<3; i++)
+        // {
+        //     // pos.ecef[i] = 20.0f+i;   // Not in full conversion
+        //     vel.vel[i] = -OPERATING_LIMIT_MPS + 2*OPERATING_LIMIT_MPS*scale;
+        // }
+        pos.hMSL = -100 + 50000 * scale;
+        pos.lla[0] =  -90.0 + 180.0 * scale;
+        pos.lla[1] = -180.0 + 230.0 * scale;
+        pos.lla[2] = pos.hMSL - 18.8;
+        pos.hAcc = 123;
+        pos.vAcc = 45;
+        pos.pDop = 6;
+        pos.cnoMean = 78;
+        pos.towOffset = 9;
+        pos.leapS = 12;
+        vel.sAcc = 345;
+
+        char abuf[ASCII_BUF_LEN] = { 0 };
+        nmea_pgpsp(abuf, ASCII_BUF_LEN, pos, vel);
+        // printf("%s\n", abuf);
+        gps_pos_t resultPos = {};
+        gps_vel_t resultVel = {};
+        nmea_parse_pgpsp(resultPos, resultVel, abuf, ASCII_BUF_LEN);
+
+        compareGpsPos(pos, resultPos);
+        compareGpsVel(vel, resultVel);
+    }
 }
 
 TEST(protocol_nmea, GGA)
@@ -279,13 +368,68 @@ TEST(protocol_nmea, GGA)
     // printf("%s\n", abuf);
     ASSERT_EQ(memcmp(&gga, &abuf, n), 0);
 
-    gps_pos_t result = {};
-    result.week = pos.week;
-    result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
-    pos.hAcc = result.hAcc;
-    ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
+    gps_pos_t pos2 = {};
+    pos2.week = pos.week;
+    pos2.leapS = pos.leapS;
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga(abuf, ASCII_BUF_LEN, pos2, t, utcWeekday);
+    pos.hAcc = pos2.hAcc;
+
+    compareGpsPos(pos, pos2);
+}
+
+TEST(protocol_nmea, GGA_sweep_operating_range)
+{
+    double invTowMsMax = 1.0/(double)C_MILLISECONDS_PER_WEEK;
+
+    // Cycle through entire range of time of week in milliseconds
+    for (int towMs = 0; towMs < C_MILLISECONDS_PER_WEEK; towMs += 500)
+    {   // Scale will transition from 0.0 to 1.0
+        double scale = ((double)towMs) * invTowMsMax;
+
+        gps_pos_t pos = {};
+        pos.week = 2309;
+        pos.timeOfWeekMs = towMs;
+        pos.satsUsed = 12;
+        pos.status =
+            GPS_STATUS_NUM_SATS_USED_MASK & pos.satsUsed |
+            GPS_STATUS_FLAGS_FIX_OK |
+            GPS_STATUS_FLAGS_DGPS_USED |
+            GPS_STATUS_FIX_DGPS |
+            GPS_STATUS_FLAGS_GPS_NMEA_DATA;
+        pos.hMSL = -100 + 50000 * scale;
+        pos.lla[0] =  -90.0 + 180.0 * scale;
+        pos.lla[1] = -180.0 + 230.0 * scale;
+        pos.lla[2] = pos.hMSL - 18.8;
+        pos.pDop = 0.47f;
+        pos.leapS = LEAP_SEC;
+        // Convert LLA to ECEF.  Ensure LLA uses ellipsoid altitude
+        ixVector3d lla;
+        lla[0] = DEG2RAD(pos.lla[0]);
+        lla[1] = DEG2RAD(pos.lla[1]);
+        lla[2] = pos.lla[2];		// Use ellipsoid altitude
+        lla2ecef(lla, pos.ecef);
+
+        char abuf[ASCII_BUF_LEN] = { 0 };
+        int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
+        // printf("%d ms, %d week, %s\n", towMs, pos.week, abuf);
+
+        gps_pos_t pos2 = {};
+        pos2.week = pos.week;
+        pos2.leapS = pos.leapS;
+        utc_time_t t;
+        int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+        nmea_parse_gga(abuf, ASCII_BUF_LEN, pos2, t, utcWeekday);
+        pos.hAcc = pos2.hAcc;
+
+        compareGpsPos(pos, pos2);
+
+        char abuf2[ASCII_BUF_LEN] = {0};
+        n = nmea_gga(abuf2, ASCII_BUF_LEN, pos2);
+        // printf("%d ms, %d week, %s\n", pos2.timeOfWeekMs, pos2.week, abuf2);
+        ASSERT_EQ(memcmp(&abuf, &abuf2, n), 0) << "towMs " << towMs << "  abuf: " << abuf << "abuf2: " << abuf2;
+    }
 }
 
 TEST(protocol_nmea, GGA2)
@@ -324,8 +468,9 @@ TEST(protocol_nmea, GGA2)
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga(abuf, ASCII_BUF_LEN, result, t, utcWeekday);
     pos.hAcc = result.hAcc;
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -366,8 +511,9 @@ TEST(protocol_nmea, GGA3)
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga(abuf, ASCII_BUF_LEN, result, t, utcWeekday);
     pos.hAcc = result.hAcc;
     EXPECT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -408,8 +554,9 @@ TEST(protocol_nmea, GGA4)
     gps_pos_t result = {};
     result.week = pos.week;
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_parse_gga_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    utc_time_t t;
+    int utcWeekday = gpsTowMsToUtcWeekday(pos.timeOfWeekMs, pos.leapS);
+    nmea_parse_gga(abuf, ASCII_BUF_LEN, result, t, utcWeekday);
     pos.hAcc = result.hAcc;
     EXPECT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
@@ -429,8 +576,9 @@ TEST(protocol_nmea, GLL)
     // printf("%s\n", abuf);
     gps_pos_t result = {};
     result.leapS = pos.leapS;
-    uint32_t weekday = pos.timeOfWeekMs / 86400000;
-    nmea_parse_gll_to_did_gps(result, abuf, ASCII_BUF_LEN, weekday);
+    uint32_t weekday = pos.timeOfWeekMs / C_MILLISECONDS_PER_DAY;
+    utc_time_t t;
+    nmea_parse_gll(abuf, ASCII_BUF_LEN, result, t, weekday);
     ASSERT_EQ(memcmp(&pos, &result, sizeof(result)), 0);
 }
 
@@ -452,7 +600,7 @@ TEST(protocol_nmea, GSA)
     // printf("%s\n", abuf);
     gps_pos_t resultPos = {};
     gps_sat_t resultSat = {};
-    nmea_parse_gsa_to_did_gps(resultPos, resultSat, abuf, n);
+    nmea_parse_gsa(abuf, n, resultPos, &resultSat);
     ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
     ASSERT_EQ(memcmp(&sat, &resultSat, sizeof(resultSat)), 0);
 }
@@ -501,15 +649,19 @@ TEST(protocol_nmea, ZDA)
     gps_pos_t pos = {};
     pos.timeOfWeekMs = 423199200;
     pos.week = 2277;
-    pos.leapS = 18;
+    pos.leapS = C_GPS_LEAP_SECONDS;
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     int n = nmea_zda(abuf, ASCII_BUF_LEN, pos);
     // printf("%s\n", abuf);
-    gps_pos_t resultPos = {};
-    nmea_parse_zda_to_did_gps(resultPos, abuf, n, pos.leapS);
+    uint32_t gpsTowMs;
+    uint32_t gpsWeek;
+    utc_date_t utcDate;
+    utc_time_t utcTime;
+    nmea_parse_zda(abuf, n, gpsTowMs, gpsWeek, utcDate, utcTime, pos.leapS);
 
-    ASSERT_EQ(memcmp(&pos, &resultPos, sizeof(resultPos)), 0);
+    ASSERT_EQ(pos.timeOfWeekMs, gpsTowMs);
+    ASSERT_EQ(pos.week, gpsWeek);
 }
 
 TEST(protocol_nmea, VTG)
@@ -534,7 +686,7 @@ TEST(protocol_nmea, VTG)
     // printf("%s\n", abuf);
     gps_vel_t resultVel = {};
 
-    nmea_parse_vtg_to_did_gps(resultVel, abuf, n, pos.lla);
+    nmea_parse_vtg(abuf, n, resultVel, pos.lla);
 
     for (int i=0; i<3; i++)
     {
@@ -572,7 +724,7 @@ TEST(protocol_nmea, INTEL)
     float resultPpsPhase[2];
     uint32_t resultPpsNoiseNs[1];
 
-    nmea_parse_intel_to_did_gps(resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs, abuf, n);
+    nmea_parse_intel(abuf, n, resultInfo, resultPos, resultVel, resultPpsPhase, resultPpsNoiseNs);
 
     for (int i=0; i<3; i++)
     {

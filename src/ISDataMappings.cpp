@@ -233,7 +233,8 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     map_name_to_info_t& m = mappings[id];
     uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "hardware", hardware, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "hardwareType", hardwareType, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "hardwareVer[0]", hardwareVer[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "hardwareVer[1]", hardwareVer[1], 0, DataTypeUInt8, uint8_t&, 0);
@@ -320,7 +321,8 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "detectedHardwareId", detectedHardwareId, 0, DataTypeUInt16, uint16_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1078,11 +1080,11 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "Time stamp of message", timeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwType, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
-    ADD_MAP(m, totalSize, "protocol", protocol, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Protocol", protocol, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
-    ADD_MAP(m, totalSize, "length", length, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Length", length, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
     ADD_MAP(m, totalSize, "Reserved 8 bit", res8, 0, DataTypeUInt8, uint8_t, 0);

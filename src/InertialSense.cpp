@@ -238,7 +238,6 @@ void InertialSense::RemoveDevice(size_t index)
     }
 
     serialPortClose(&m_comManagerState.devices[index].serialPort);
-    m_comManagerState.devices.erase(m_comManagerState.devices.begin() + index);
 }
 
 void InertialSense::LoggerThread(void* info)
@@ -1375,79 +1374,74 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         }
     }
 
-	// [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
-	// serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
-	if (m_cmPorts) { delete [] m_cmPorts; }
-	m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
+    // [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
+    // serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
+    if (m_cmPorts) { delete[] m_cmPorts; }
+    m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
 
-	if (m_cmInit.broadcastMsg) { delete [] m_cmInit.broadcastMsg; }
-	m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
-	m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-	if (comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1)
-	{	// Error
-		return false;
-	}
+    if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
+    m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
+    m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
+    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1) {    // Error
+        return false;
+    }
 
-	// Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-	comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
+    // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 
-	if (m_enableDeviceValidation)
-	{
-		time_t startTime = time(0);
+    if (m_enableDeviceValidation) {
+        unsigned int startTime = current_timeMs();
         bool removedSerials = false;
 
-		// Query devices with 10 second timeout
-		while (!HasReceivedDeviceInfoFromAllDevices() && (time(0) - startTime < 10))
-		{
-			for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-			{
+        do {
+            for (size_t i = 0; i < m_comManagerState.devices.size(); i++) {
                 if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
-                    (comManagerSendRaw((int)i, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0))
-                {
+                    (comManagerSendRaw((int) i, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     RemoveDevice(i);
                     removedSerials = true, i--;
                 }
-			}
+            }
 
-			SLEEP_MS(100);
-			comManagerStep();
-		}
+            SLEEP_MS(100);
+            comManagerStep();
 
-		// remove each failed device where communications were not received
-		for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--)
-		{
-			if (!HasReceivedDeviceInfo(i))
-			{
-				RemoveDevice(i);
-				removedSerials = true;
-			}
-		}
+            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
+                fprintf(stderr, "\nTimeout waiting for all discovered devices to respond.");
+                fflush(stderr);
+                break;
+            }
+        } while (!HasReceivedDeviceInfoFromAllDevices());
 
-		// if no devices left, all failed, we return failure
-		if (m_comManagerState.devices.size() == 0)
-		{
-			CloseSerialPorts();
-			return false;
-		}
+        // remove each failed device where communications were not received
+        for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
+            if (!HasReceivedDeviceInfo(i)) {
+                RemoveDevice(i);
+                removedSerials = true;
+            }
+        }
 
-		// remove ports if we are over max count
-		while (m_comManagerState.devices.size() > maxCount)
-		{
-			RemoveDevice(m_comManagerState.devices.size()-1);
-			removedSerials = true;
-		}
+        // if no devices left, all failed, we return failure
+        if (m_comManagerState.devices.size() == 0) {
+            CloseSerialPorts();
+            return false;
+        }
 
-		// setup com manager again if serial ports dropped out with new count of serial ports
-		if (removedSerials)
-		{
-			comManagerInit((int)m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-			comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn);
-		}
-	}
+        // remove ports if we are over max count
+        while (m_comManagerState.devices.size() > maxCount) {
+            RemoveDevice(m_comManagerState.devices.size() - 1);
+            removedSerials = true;
+        }
+
+        // setup com manager again if serial ports dropped out with new count of serial ports
+        if (removedSerials) {
+            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
+            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+        }
+    }
 
     // request extended device info for remaining connected devices...
-    for (int i = ((int)m_comManagerState.devices.size() - 1); i >= 0; i--) {
+    for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
         // but only if they are of a compatible protocol version
         if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
             comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);

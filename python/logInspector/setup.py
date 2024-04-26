@@ -64,7 +64,7 @@ ext_modules = [
          '../../src/protocol_nmea.cpp',
          '../../src/serialPort.c',
          '../../src/serialPortPlatform.c',
-         '../../src/time_conversion.c',
+         '../../src/time_conversion.cpp',
          '../../src/tinystr.cpp',
          '../../src/tinyxml.cpp',
          '../../src/tinyxmlerror.cpp',

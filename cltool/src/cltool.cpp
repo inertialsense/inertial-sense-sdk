@@ -520,10 +520,18 @@ bool cltool_replayDataLog()
 
     cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
     p_data_buf_t *data;
-    while ((data = logger.ReadData()) != NULL)
+    for (int d=0; d<logger.DeviceCount(); d++)
     {
-        p_data_t d = {data->hdr, data->buf};
-        g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+        if (logger.DeviceCount() > 1)
+        {
+            printf("Device(%d): SN%d\n", d, logger.DeviceInfo(d)->serialNumber);
+        }
+        while ((data = logger.ReadData(d)) != NULL)
+        {
+            p_data_t d = {data->hdr, data->buf};
+            g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+            g_inertialSenseDisplay.PrintData();
+        }
     }
 
     cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;

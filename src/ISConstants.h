@@ -806,6 +806,8 @@ extern "C" {
 #define INS_MAX_LONGITUDE				C_PI				// (rad)	INS operation limit - longitude
 #define INS_MAX_ALTITUDE				50000.0				// (m)		INS operation limit - altitude.  Limited by GPS.  50 km = 164,042 ft, 15 km = 49,212 ft
 
+#define C_GPS_LEAP_SECONDS              18
+
 typedef float       f_t;
 typedef int			i_t;
 typedef double      ixVector2d[2];    	// V = | 0 1 |
@@ -832,6 +834,19 @@ typedef enum {
     IS_OP_RETRY = -4,
     IS_OP_CLOSED = -5,
 } is_operation_result;
+
+PUSH_PACK_8
+
+typedef struct
+{
+    /** time (s) expressed by standard time_t */
+    int64_t time;
+
+    /** fraction of second under 1 s */
+    double sec;         
+} gtime_t;
+
+POP_PACK
 
 #ifdef __cplusplus
 } // extern "C"

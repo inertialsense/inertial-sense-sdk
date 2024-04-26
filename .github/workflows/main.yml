@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
@@ -59,14 +59,17 @@ jobs:
       - name: Build cltool
         run: ./build_cltool.sh
 
+      - name: Build LogInspector
+        run: ./build_log_inspector.sh
+
       - name: Build SDK Examples
         run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
 
   ba_windows:
     name: "General Software Windows"
     runs-on: [self-hosted, windows, x64]
-    if: false  # disable this job
-    # if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/development') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
+    # if: false  # disable this job
+    # if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/develop') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
 
     defaults:
       run:
@@ -74,7 +77,7 @@ jobs:
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive
@@ -86,11 +89,14 @@ jobs:
 #      - name: SDK Unit Tests
 #        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
 
-      - name: Build SDK Examples
-        run: ./build_sdk_examples.bat
-
       - name: Build CLTool
         run: ./build_cltool.bat
+
+      - name: Build LogInspector
+        run: ./build_log_inspector.bat
+
+      - name: Build SDK Examples
+        run: ./build_sdk_examples.bat
 
   ros-bridge-tests:
     name: "ROS Bridge Tests"
@@ -122,7 +128,7 @@ jobs:
           git --version
 
       - name: Checkout source and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
           submodules: recursive

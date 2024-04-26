@@ -1,15 +1,8 @@
+#include <string>
 #include "ISConstants.h"
 #include "time_conversion.h"
 
-
 #define GNSS_ERROR_MSG(errorMsg)
-
-#define SECONDS_PER_WEEK        (604800)
-#define SECONDS_PER_DAY         (86400)
-#define MILLISECONDS_PER_DAY    (86400000)
-#define MILLISECONDS_PER_HOUR   (3600000)
-#define DAYS_PER_SECOND         (1.1574074074074074074074074074074e-5)
-#define GPS_TO_UNIX_OFFSET_S    (315964800)
 
 #define TIMECONV_JULIAN_DATE_START_OF_GPS_TIME (2444244.5)  // [days]
 #define TIMECONV_JULIAN_DATE_START_OF_PC_TIME  (2440587.5)  // [days]
@@ -25,14 +18,177 @@
 #define TIMECONV_DAYS_IN_NOV 30
 #define TIMECONV_DAYS_IN_DEC 31
 
-
-void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, uint32_t gpsLeapS, uint32_t *hours, uint32_t *minutes, uint32_t *seconds, uint32_t *milliseconds)
+void gpsTowMsToUtcTime(uint32_t gpsTimeOfWeekMs, int gpsLeapS, utc_time_t *time)
 {
-	unsigned int todayMs = (gpsTimeOfWeekMs - (gpsLeapS * 1000)) % MILLISECONDS_PER_DAY;
-	*hours = todayMs / MILLISECONDS_PER_HOUR;
-	*minutes = (todayMs / 60000) % 60;
-	*seconds = (todayMs / 1000) % 60;
-	*milliseconds = todayMs % 1000;
+    int leapMs = gpsLeapS * 1000;
+    int towMsMinusLeapMs = gpsTimeOfWeekMs - leapMs;
+    if (towMsMinusLeapMs < 0)
+    {   // Handle week wrap
+        towMsMinusLeapMs += C_MILLISECONDS_PER_WEEK;
+    }
+    int todayMs = (towMsMinusLeapMs) % C_MILLISECONDS_PER_DAY;
+	time->hour   = (todayMs / C_MILLISECONDS_PER_HOUR);
+	time->minute = (todayMs / 60000) % 60;
+	time->second = (todayMs / 1000) % 60;
+	time->millisecond = todayMs % 1000;
+}
+
+void utcTimeToGpsTowMs(utc_time_t *time, int utcWeekday, uint32_t *gpsTimeOfWeekMs, int gpsLeapS)
+{
+    int towMs = 
+        time->hour   * C_MILLISECONDS_PER_HOUR +
+        time->minute * C_MILLISECONDS_PER_MINUTE +
+        time->second * C_MILLISECONDS_PER_SECOND +
+        time->millisecond +
+        gpsLeapS * 1000 +
+        utcWeekday * C_MILLISECONDS_PER_DAY;
+
+    // Handle week wrap
+    if (towMs >= C_MILLISECONDS_PER_WEEK)
+    {   
+        towMs -= C_MILLISECONDS_PER_WEEK;
+    } 
+    else if (towMs < 0)
+    {
+        towMs += C_MILLISECONDS_PER_WEEK;
+    }
+
+    *gpsTimeOfWeekMs = towMs;
+}
+
+int gpsTowMsToUtcWeekday(int gpsTowMs, int leapS)
+{
+    int utcTowMs = gpsTowMs - (leapS*1000);
+    if (utcTowMs < 0)
+    {   // Handle wrap
+        utcTowMs -= C_MILLISECONDS_PER_DAY;
+    }
+
+    int utcWeekday = utcTowMs / C_MILLISECONDS_PER_DAY;
+    return utcWeekday;
+}
+
+#if !PLATFORM_IS_EMBEDDED
+static std::string s_savedTZ;
+
+void SetUtcTimeZone()
+{
+#if PLATFORM_IS_LINUX
+    const char* oldTZ = getenv("TZ");
+    s_savedTZ = oldTZ ? oldTZ : "";
+
+    setenv("TZ", "UTC", 1);
+    tzset();
+#endif
+}
+
+void RevertUtcTimeZone()
+{
+#if PLATFORM_IS_LINUX
+    // Restore the original timezone if necessary
+    if (s_savedTZ.empty()) 
+    {
+        unsetenv("TZ");
+    } 
+    else 
+    {
+        setenv("TZ", s_savedTZ.c_str(), 1);
+    }
+    tzset();  // Reapply the original timezone settings
+#endif
+}
+#endif
+
+std::tm stdGpsTimeToUtcDateTime(uint32_t gpsSecondsOfWeek, uint32_t gpsWeek, int leapSeconds) 
+{
+    std::tm gpsEpoch = {};
+    gpsEpoch.tm_year = 80;  // Year 1980
+    gpsEpoch.tm_mon = 0;    // January
+    gpsEpoch.tm_mday = 6;   // 6th
+    gpsEpoch.tm_hour = 0;   // 00:00:00
+    std::time_t epochTime = std::mktime(&gpsEpoch);
+
+    // Total seconds since GPS epoch
+    std::time_t totalSeconds = epochTime + gpsWeek * C_SECONDS_PER_WEEK + gpsSecondsOfWeek;
+
+    // Adjust for leap seconds
+    totalSeconds -= leapSeconds;
+
+    // Convert to UTC
+    std::tm *utcTime = std::gmtime(&totalSeconds);
+
+    return *utcTime;
+}
+
+void stdUtcDateTimeToGpsTime(const std::tm &utcTime, int leapSeconds, uint32_t &gpsSecondsOfWeek, uint32_t &gpsWeek)
+{
+    std::tm gpsEpoch = {};
+    gpsEpoch.tm_year = 80;  // Year 1980
+    gpsEpoch.tm_mon = 0;    // January
+    gpsEpoch.tm_mday = 6;   // 6th
+    gpsEpoch.tm_hour = 0;   // 00:00:00
+    std::time_t epochTime = std::mktime(&gpsEpoch);
+
+    // Convert UTC tm structure to time_t
+    std::time_t utcTimeT = std::mktime(const_cast<std::tm*>(&utcTime));
+
+    // Calculate the difference in seconds from GPS epoch
+    long long secondsSinceGpsEpoch = (long long)std::difftime(utcTimeT, epochTime);
+
+    // Subtract leap seconds (update this value based on the current number of leap seconds)
+    secondsSinceGpsEpoch += leapSeconds;
+
+    // Calculate GPS week and seconds of week
+    gpsWeek = (uint32_t)(secondsSinceGpsEpoch / C_SECONDS_PER_WEEK);
+    gpsSecondsOfWeek = (uint32_t)(secondsSinceGpsEpoch - gpsWeek*C_SECONDS_PER_WEEK);
+}
+
+/* convert calendar day/time to time -------------------------------------------
+* convert calendar day/time to gtime_t struct
+* args   : double *ep       I   day/time {year,month,day,hour,min,sec}
+* return : gtime_t struct
+* notes  : proper in 1970-2037 or 1970-2099 (64bit time_t)
+*-----------------------------------------------------------------------------*/
+gtime_t epochToTime(const double *ep)
+{
+    const int doy[] = { 1,32,60,91,121,152,182,213,244,274,305,335 };
+    gtime_t time = { 0 };
+    int days, sec, year = (int)ep[0], mon = (int)ep[1], day = (int)ep[2];
+
+    if (year < 1970 || 2099 < year || mon < 1 || 12 < mon) return time;
+
+    /* leap year if year%4==0 in 1901-2099 */
+    days = (year - 1970) * 365 + (year - 1969) / 4 + doy[mon - 1] + day - 2 + (year % 4 == 0 && mon >= 3 ? 1 : 0);
+    sec = (int)floor(ep[5]);
+    time.time = (time_t)days * 86400 + (int)ep[3] * 3600 + (int)ep[4] * 60 + sec;
+    time.sec = ep[5] - sec;
+    return time;
+}
+
+static const gtime_t gpsRefT0 = { 315964800, 0 };	// (gtime) gps reference time = epochToTime(gpst0) at 1980
+
+/* time to gps time ------------------------------------------------------------
+* convert gtime_t struct to week and tow in gps time
+* args   : gtime_t t        I   gtime_t struct
+*          int    *week     IO  week number in gps time (NULL: no output)
+* return : time of week in gps time (s)
+*-----------------------------------------------------------------------------*/
+double timeToGpst(gtime_t t, int *week)
+{
+	time_t sec = t.time - gpsRefT0.time;
+	time_t w = (time_t)(sec / (86400*7));
+	
+	if (week){ *week = (int)w; }
+	return (double)(sec - (double)w*86400*7) + t.sec;
+}
+
+void UtcDateTimeToGpsTime(const double *datetime, int leapSeconds, uint32_t &gpsTowMs, uint32_t &gpsWeek)
+{
+    gtime_t gtm = epochToTime(datetime);
+    int week;
+    double iTOWd = timeToGpst(gtm, &week);
+    gpsTowMs = ((uint32_t)((iTOWd + 0.00001) * 1000.0)) + (leapSeconds*1000);
+    gpsWeek = week;
 }
 
 void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day, uint32_t* hour, uint32_t* minute, uint32_t* second, uint32_t* millisecond)
@@ -130,8 +286,8 @@ void julianToDate(double julian, uint32_t* year, uint32_t* month, uint32_t* day,
 double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMs, uint8_t leapSeconds)
 {
     uint32_t gpsTow = gpsTimeofWeekMs / 1000;
-	uint32_t gpsTime = gpsWeek * SECONDS_PER_WEEK + gpsTow;
-	double unixSeconds = (double)(gpsTime + GPS_TO_UNIX_OFFSET_S - leapSeconds);
+	uint32_t gpsTime = gpsWeek * C_SECONDS_PER_WEEK + gpsTow;
+	double unixSeconds = (double)(gpsTime + C_GPS_TO_UNIX_OFFSET_S - leapSeconds);
 #if 1   // Include fractional seconds
     double gpsFracS = (gpsTimeofWeekMs - gpsTow) * 0.001;
     unixSeconds += gpsFracS;
@@ -143,7 +299,7 @@ double gpsToUnix(uint32_t gpsWeek, uint32_t gpsTimeofWeekMs, uint8_t leapSeconds
 double gpsToJulian(uint32_t gpsWeek, uint32_t gpsMilliseconds, uint32_t leapSeconds)
 {
 	double gpsDays = (double)(gpsWeek * 7);
-	gpsDays += ((((double)gpsMilliseconds) * 0.001) - (double)leapSeconds) * DAYS_PER_SECOND;
+	gpsDays += ((((double)gpsMilliseconds) * 0.001) - (double)leapSeconds) * C_DAYS_PER_SECOND;
 	return TIMECONV_JULIAN_DATE_START_OF_GPS_TIME + gpsDays; // 2444244.500000 Julian date for Jan 6, 1980 midnight - start of gps time
 }
 
@@ -252,7 +408,7 @@ int TIMECONV_GetSystemTime(
     // coordinated universal time (UTC). Julian date for (00:00:00), January 1, 1970 is: 2440587.5 [days]
 
     // convert timebuffer.time from seconds to days
-    timebuffer_time_in_days = timebuffer_time_in_seconds/SECONDS_PER_DAY; // days since julian date 2440587.5000000 [days]
+    timebuffer_time_in_days = timebuffer_time_in_seconds/C_SECONDS_PER_DAY; // days since julian date 2440587.5000000 [days]
 
     // convert to julian date
     *julian_date = TIMECONV_JULIAN_DATE_START_OF_PC_TIME + timebuffer_time_in_days;
@@ -462,13 +618,13 @@ int TIMECONV_GetGPSTimeFromJulianDate(
     *gps_week = (unsigned short)((julian_date - TIMECONV_JULIAN_DATE_START_OF_GPS_TIME)/7.0); //
 
     *gps_tow   = (julian_date - TIMECONV_JULIAN_DATE_START_OF_GPS_TIME)*SECONDS_IN_DAY; // seconds since start of gps time [s]
-    *gps_tow  -= (*gps_week)*SECONDS_PER_WEEK;                                  // seconds into the current week [s] 
+    *gps_tow  -= (*gps_week)*C_SECONDS_PER_WEEK;                                  // seconds into the current week [s] 
 
     // however, GPS time is ahead of utc time by the UTC offset (and thus the Julian date as well)
     *gps_tow += utc_offset;
-    if( *gps_tow > SECONDS_PER_WEEK )
+    if( *gps_tow > C_SECONDS_PER_WEEK )
     {
-        *gps_tow  -= SECONDS_PER_WEEK;
+        *gps_tow  -= C_SECONDS_PER_WEEK;
         *gps_week += 1;
     }
     return 1;
