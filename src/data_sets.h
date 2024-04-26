@@ -4621,16 +4621,16 @@ typedef struct
     /** Status */
     uint32_t        status;
 
-    /** Rx count */
+    /** Rx number of bytes received */
     uint32_t        rxByteCount;  
-    /** Rx overrrun count */
+    /** Rx number of times that data was lost  */
     uint32_t        rxOverrunCnt;  
 
-    /** Tx count */
+    /** Tx number of byes sent */
     uint32_t        txByteCount;
-    /** Tx drop count */
-    uint32_t        txByteDrop;  
-    /** Tx limited count */
+    /** Tx number of bytes dropped */
+    uint32_t        txByteDrop;
+    /** Tx number of times that a write did not send all bytes */
     uint32_t        txLimitedCnt;   
 
 } port_monitor_set_t;
