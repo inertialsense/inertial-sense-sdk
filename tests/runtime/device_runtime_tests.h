@@ -86,7 +86,7 @@ private:
 
     std::string m_filename;
     std::string m_log;
-    bool m_enable = true;
+    bool m_enable = false;
     dev_info_t m_devInfo = {};
     std::string m_portName;
 
