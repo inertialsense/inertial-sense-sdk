@@ -147,6 +147,10 @@ jobs:
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
+          cd ${GITHUB_WORKSPACE}
+          ls -al
+          mkdir -p catkin_ws/src
+          ln -s . catkin_ws/src/inertial-sense-sdk
           cd ${GITHUB_WORKSPACE}/catkin_ws && catkin_make && catkin_make test_unit_tests && catkin_make test_ros_bridge 
 
       - name: Run Unit Tests
