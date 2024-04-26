@@ -1022,6 +1022,10 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
     }
 }
 
+/**
+ * Writes ISB header, payload, and Checksum to given buffer
+ * Returns number of bytes written
+ */ 
 int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
 {
     if (pkt->size > buf_size)
@@ -1029,10 +1033,10 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
         return 0;
     }
 
-    // Update checksum using precomputed header checksum and new data
-    pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
     BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
+
+    // Set checksum using precomputed header checksum
+    pkt->checksum = pkt->hdrCksum;
 
      // Write packet to buffer
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
@@ -1041,7 +1045,13 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     {
         MEMCPY_INC(buf, (uint8_t*)&(pkt->offset), 2);               // Offset (optional)
     }
-    MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
+    if (pkt->data.size)
+    {
+        // Include payload in checksum calculation
+        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
+
+        MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
+    }
     MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                 // Footer (checksum)
 
     END_CRITICAL_SECTION
@@ -1053,6 +1063,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 }
 
 /**
+ * Writes ISB header, payload, and Checksum to given port
  * Returns number of bytes written
  */ 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
