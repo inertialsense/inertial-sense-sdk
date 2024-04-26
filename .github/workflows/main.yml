@@ -112,6 +112,7 @@ jobs:
 
     defaults:
       run:
+        working-directory: scripts
         shell: bash
 
     steps:
@@ -133,8 +134,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd ${GITHUB_WORKSPACE}/scripts
-          ../SDK/scripts/install_sdk_dependencies.sh
+          ./install_sdk_dependencies.sh
           ./install_gtest.sh
   
       - name: Setup ROS environment
