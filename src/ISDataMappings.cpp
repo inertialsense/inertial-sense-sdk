@@ -2531,7 +2531,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPS1_VERSION",                 // 17
     "DID_GPS2_VERSION",                 // 18
     "DID_MAG_CAL",                      // 19
-    "DID_INTERNAL_DIAGNOSTIC",          // 20
+    "DID_UNUSED_20",                    // 20
     "DID_GPS1_RTK_POS_REL",             // 21
     "DID_GPS1_RTK_POS_MISC",            // 22
     "DID_FEATURE_BITS",                 // 23

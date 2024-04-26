@@ -158,7 +158,6 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS1_VERSION, dev_log_->gps1Version );
         HANDLE_MSG( DID_GPS2_VERSION, dev_log_->gps2Version );
         HANDLE_MSG( DID_MAG_CAL, dev_log_->magCal );
-        HANDLE_MSG( DID_INTERNAL_DIAGNOSTIC, dev_log_->internalDiagnostic );
         HANDLE_MSG( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel );
         HANDLE_MSG( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc );
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
@@ -251,7 +250,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_GPS1_VERSION, dev_log_->gps1Version, device_id );
     forward_message( DID_GPS2_VERSION, dev_log_->gps2Version, device_id );
     forward_message( DID_MAG_CAL, dev_log_->magCal, device_id );
-    forward_message( DID_INTERNAL_DIAGNOSTIC, dev_log_->internalDiagnostic, device_id );
     forward_message( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel, device_id );
     forward_message( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc, device_id );
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, device_id );

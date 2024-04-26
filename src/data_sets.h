@@ -53,7 +53,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
-#define DID_INTERNAL_DIAGNOSTIC         (eDataIDs)20 /** INTERNAL USE ONLY (internal_diagnostic_t) Internal diagnostic info */
+#define DID_UNUSED_20                   (eDataIDs)20 /** UNUSED */
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
@@ -4633,6 +4633,9 @@ typedef struct
     /** Tx limited count */
     uint32_t        txLimitedCnt;   
 
+    /** Count of checksum failures, one entry for each com port */
+    uint32_t        checksumErrorCount;
+
 } port_monitor_set_t;
 
 typedef struct
@@ -4737,25 +4740,6 @@ typedef struct
     uint32_t psr;
         
 } system_fault_t;
-
-/** Diagnostic information for internal use */
-typedef struct
-{
-    /** Count of gap of more than 0.5 seconds receiving serial data, driver level, one entry for each com port */
-    uint32_t gapCountSerialDriver[NUM_SERIAL_PORTS];
-
-    /** Count of gap of more than 0.5 seconds receiving serial data, class / parser level, one entry for each com port */
-    uint32_t gapCountSerialParser[NUM_SERIAL_PORTS];
-
-    /** Count of rx overflow, one entry for each com port */
-    uint32_t rxOverflowCount[NUM_SERIAL_PORTS];
-
-    /** Count of tx overflow, one entry for each com port */
-    uint32_t txOverflowCount[NUM_SERIAL_PORTS];
-    
-    /** Count of checksum failures, one entry for each com port */
-    uint32_t checksumFailCount[NUM_SERIAL_PORTS];
-} internal_diagnostic_t;
 
 /** RTOS tasks */
 typedef enum
