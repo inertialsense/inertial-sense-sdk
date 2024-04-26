@@ -100,9 +100,7 @@ jobs:
 
   ros-bridge-tests:
     name: "ROS Bridge Tests"
-    runs-on: [self-hosted, linux, docker, X64]
-    # if: false  # disable this job
-    timeout-minutes: 5
+    runs-on: [self-hosted, Linux, X64, docker]
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
