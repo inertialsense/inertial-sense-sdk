@@ -61,6 +61,11 @@ std::string charArrayToHex(uint8_t* arr, int arrSize)
 
 void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
 {
+    if (!m_enable)
+    {
+        return;
+    }
+    
     int size = comm.rxBuf.scanPrior - comm.rxBuf.head;
 
     std::string parser;
