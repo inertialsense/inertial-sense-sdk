@@ -26,6 +26,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "ISDataMappings.h"
 #include "ISLogFileFactory.h"
+#include "util/util.h"
 
 using namespace std;
 
@@ -244,29 +245,15 @@ bool cDeviceLog::OpenNextReadFile()
 
 string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
 {
-	// file name 
-#if 1
-    char filename[200];
-    SNPRINTF(filename, sizeof(filename), "%s/%s%d_%s_%04d%s%s", 
-        m_directory.c_str(), 
+    return utils::string_format("%s/%s%d_%s_%04d%s%s",
+        m_directory.c_str(),
         IS_LOG_FILE_PREFIX, 
         (int)serialNumber, 
         m_timeStamp.c_str(), 
         (int)(fileCount % 10000), 
         (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str()), 
-        LogFileExtention().c_str());
-    return filename;
-#else
-    // This code is not working on the embedded platform
-	ostringstream filename;
-	filename << m_directory << "/" << IS_LOG_FILE_PREFIX <<
-		serialNumber << "_" <<
-		m_timeStamp << "_" <<
-		setfill('0') << setw(4) << (fileCount % 10000) <<
-		(suffix == NULL || *suffix == 0 ? "" : string("_") + suffix) <<
-		LogFileExtention();
-	return filename.str();
-#endif
+        LogFileExtention().c_str()
+    );
 }
 
 

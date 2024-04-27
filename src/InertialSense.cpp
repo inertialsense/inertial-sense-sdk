@@ -271,12 +271,13 @@ void InertialSense::LoggerThread(void* info)
             // log the packets
             for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
             {
-                for (size_t j = 0; j < i->second.size(); j++)
-                {
-                    if (!inertialSense->m_logger.LogData(i->first, &i->second[j].hdr, i->second[j].buf))
-                    {
-                        // Failed to write to log
-                        SLEEP_MS(20);
+                if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
+                    size_t numPackets = i->second.size();
+                    for (size_t j = 0; j < numPackets; j++) {
+                        if (!inertialSense->m_logger.LogData(i->first, &i->second[j].hdr, i->second[j].buf)) {
+                            // Failed to write to log
+                            SLEEP_MS(20); // FIXME:  This maybe problematic, as it may unnecessarily delay the thread, leading run-away memory usage.
+                        }
                     }
                 }
 
