@@ -4614,27 +4614,25 @@ typedef struct
 {
     /** Tx rate (bytes/s) */
     uint32_t        txBytesPerS;
-
     /** Rx rate (bytes/s) */
     uint32_t        rxBytesPerS;
 
     /** Status */
     uint32_t        status;
 
-    /** Rx number of bytes received */
-    uint32_t        rxByteCount;  
-    /** Rx number of times that data was lost  */
-    uint32_t        rxOverrunCnt;  
-
-    /** Tx number of byes sent */
-    uint32_t        txByteCount;
-    /** Tx number of bytes dropped */
-    uint32_t        txByteDrop;
-    /** Tx number of times that a write did not send all bytes */
-    uint32_t        txLimitedCnt;   
-
+    /** Number of bytes received */
+    uint32_t        rxBytes;
+    /** Number of Rx buffer overflow occurances (not bytes dropped), which happens when reading data using serRead() does not keep up with the amount of data received. */
+    uint32_t        rxOverflowCount;
     /** Rx number of checksum failures*/
     uint32_t        rxChecksumErrorCount;
+
+    /** Number of byes sent */
+    uint32_t        txBytes;
+    /** Number of times serWrite did not send all data. */
+    uint32_t        txOverflowCount;
+    /** Number of bytes that were not sent. */
+    uint32_t        txBytesDropped;
 
 } port_monitor_set_t;
 
