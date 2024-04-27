@@ -32,11 +32,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 *  the project in solution explorer and then selecting properties -> debugging -> command line arguments
 */
 
+#include <signal.h>
+
 // Contains command line parsing and utility functions.  Include this in your project to use these utility functions.
 #include "cltool.h"
 #include "protocol_nmea.h"
-
-#include <signal.h>
+#include "natsort.h"
 
 using namespace std;
 
@@ -555,6 +556,39 @@ static int cltool_dataStreaming()
     {
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;    // Failed to open serial port
+    }
+
+    if (g_commandLineOptions.list_devices) {
+        struct nat_cmp {
+            bool operator()(const std::string& s1, const std::string& s2) const {
+                return (utils::natcmp(s1, s2) <= 0);
+            }
+        };
+        std::map<std::string, std::string, nat_cmp> portDevices;
+        int maxPortLen = 0;
+        for (auto d : inertialSenseInterface.getDevices()) {
+            if (ENCODE_DEV_INFO_TO_HDW_ID(d.devInfo) != 0) {
+                std::string port(d.serialPort.port);
+                if (d.devInfo.firmwareVer[3] == 0) {
+                    portDevices[port] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d %d%c)",
+                                                                          d.devInfo.serialNumber,
+                                                                          g_isHardwareTypeNames[d.devInfo.hardwareType], d.devInfo.hardwareVer[0], d.devInfo.hardwareVer[1],
+                                                                          d.devInfo.firmwareVer[0], d.devInfo.firmwareVer[1], d.devInfo.firmwareVer[2],
+                                                                          d.devInfo.buildNumber, d.devInfo.buildType);
+                } else {
+                    portDevices[port] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d.%d %d%c)",
+                                                                          d.devInfo.serialNumber,
+                                                                          g_isHardwareTypeNames[d.devInfo.hardwareType], d.devInfo.hardwareVer[0], d.devInfo.hardwareVer[1],
+                                                                          d.devInfo.firmwareVer[0], d.devInfo.firmwareVer[1], d.devInfo.firmwareVer[2], d.devInfo.firmwareVer[3],
+                                                                          d.devInfo.buildNumber, d.devInfo.buildType);
+                }
+                maxPortLen = std::max(maxPortLen, (int)strlen(d.serialPort.port));
+            }
+        }
+        for (auto i : portDevices) {
+            printf("%s --> %s\n", i.first.c_str(), i.second.c_str());
+        }
+        return 0;
     }
 
     int exitCode = 0;
