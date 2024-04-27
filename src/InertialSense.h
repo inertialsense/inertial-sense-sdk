@@ -409,15 +409,21 @@ public:
     bool GpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle = 0);
 
     /**
-    * Indicates whether the current flash config has been downloaded and available via FlashConfig()
+    * Indicates whether the current flash config has been downloaded and available via ImxFlashConfig()
     * @param pHandle the port pHandle to get flash config
     * @return bool whether the flash config is valid and currently synchronized
     */
-    bool FlashConfigSynced(int pHandle = 0) 
+    bool ImxFlashConfigSynced(int pHandle = 0) 
     { 
         is_device_t &device = m_comManagerState.devices[pHandle]; 
-        return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
-                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
+        return  (device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum) && 
+                (device.imxFlashCfgUploadTimeMs==0) && !ImxFlashConfigUploadFailure(pHandle); 
+    }
+    bool GpxFlashConfigSynced(int pHandle = 0) 
+    { 
+        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        return  (device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum) && 
+                (device.gpxFlashCfgUploadTimeMs==0) && !GpxFlashConfigUploadFailure(pHandle); 
     }
 
     /**
@@ -426,10 +432,15 @@ public:
      * @param pHandle the port pHandle to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool FlashConfigUploadFailure(int pHandle = 0)
+    bool ImxFlashConfigUploadFailure(int pHandle = 0)
     { 
         is_device_t &device = m_comManagerState.devices[pHandle]; 
-        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
+        return device.imxFlashCfgUploadChecksum && (device.imxFlashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
+    } 
+    bool GpxFlashConfigUploadFailure(int pHandle = 0)
+    { 
+        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        return device.gpxFlashCfgUploadChecksum && (device.gpxFlashCfgUploadChecksum != device.gpxStatus.flashCfgChecksum); 
     } 
 
     /**
@@ -438,7 +449,8 @@ public:
     * @param pHandle the pHandle to set flash config for
     * @return true if success
     */
-    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool SetImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool SetGpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 

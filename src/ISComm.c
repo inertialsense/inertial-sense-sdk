@@ -1022,6 +1022,12 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
     }
 }
 
+// int mem_copy_update_checksum(uint8_t *dstBuf, uint32_t dstBufSize, const uint8_t* buf, int len, uint16_t *checksum)
+// {
+//     MEMCPY_INC(buf, (uint8_t*)&(pkt->offset), 2);               // Offset (optional)
+//     return ;
+// }
+
 int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, packet_t *pkt)
 {
     if (pkt->size > buf_size)
@@ -1052,23 +1058,29 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
+int portWriteUpdateChecksum(pfnIsCommPortWrite portWrite, int port, const uint8_t* buf, int len, uint16_t *checksum)
+{
+    *checksum = is_comm_isb_checksum16(*checksum, buf, len);
+    return portWrite(port, buf, len);
+}
+
 // Returns number of bytes written
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
     // Compute checksum using precomputed header checksum
-    pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
+    // pkt->checksum = is_comm_isb_checksum16(pkt->hdrCksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
 	BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
 
  	// Write packet to port
-	int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
+    int n = portWriteUpdateChecksum(portWrite, port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t), pkt->hdrCksum);
 	if (pkt->offset)
 	{
-		n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)&(pkt->offset), 2, pkt->hdrCksum);                  // Offset
     }
     if (pkt->data.size)
     {
-        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+        n += portWriteUpdateChecksum(portWrite, port, (uint8_t*)pkt->data.ptr, pkt->data.size, pkt->hdrCksum);      // Payload
     }
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 

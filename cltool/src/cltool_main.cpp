@@ -303,7 +303,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
     if (g_commandLineOptions.imxFlashCfg.length() != 0)
     {
-        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.flashCfg);
+        return cltool_updateFlashCfg(inertialSenseInterface, g_commandLineOptions.imxFlashCfg, DID_FLASH_CONFIG);
     }
 
     if (g_commandLineOptions.gpxFlashCfg.length() != 0)

@@ -263,12 +263,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-flashCfg=") || startsWith(a, "-imxFlashCfg="))
         {
-<<<<<<< HEAD
             g_commandLineOptions.imxFlashCfg = &a[10];
-=======
-            g_commandLineOptions.flashCfg = &a[10];
             g_commandLineOptions.displayMode = cInertialSenseDisplay::eDisplayMode::DMODE_QUIET;
->>>>>>> origin/develop
         }
         else if (startsWith(a, "-flashCfg") || startsWith(a, "-imxFlashCfg"))
         {
@@ -691,7 +687,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                 data_mapping_string_t stringBuffer;
                 for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
                 {
-                    if ((i->second.name == keyAndValue[0]) && (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashCfg, stringBuffer)))
+                    if ((i->second.name == keyAndValue[0]) && (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&imxFlashCfg, stringBuffer)))
                     {
                         cout << i->second.name << " = " << stringBuffer << endl;
                     }
