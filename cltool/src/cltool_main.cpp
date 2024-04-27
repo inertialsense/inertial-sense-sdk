@@ -582,7 +582,7 @@ static int cltool_dataStreaming()
                                                                           d.devInfo.firmwareVer[0], d.devInfo.firmwareVer[1], d.devInfo.firmwareVer[2], d.devInfo.firmwareVer[3],
                                                                           d.devInfo.buildNumber, d.devInfo.buildType);
                 }
-                maxPortLen = std::max(maxPortLen, (int)strlen(d.serialPort.port));
+                maxPortLen = std::max<int>(maxPortLen, (int)strlen(d.serialPort.port));
             }
         }
         for (auto i : portDevices) {
