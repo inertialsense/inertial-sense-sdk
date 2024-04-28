@@ -271,12 +271,13 @@ void InertialSense::LoggerThread(void* info)
             // log the packets
             for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
             {
-                for (size_t j = 0; j < i->second.size(); j++)
-                {
-                    if (!inertialSense->m_logger.LogData(i->first, &i->second[j].hdr, i->second[j].buf))
-                    {
-                        // Failed to write to log
-                        SLEEP_MS(20);
+                if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
+                    size_t numPackets = i->second.size();
+                    for (size_t j = 0; j < numPackets; j++) {
+                        if (!inertialSense->m_logger.LogData(i->first, &i->second[j].hdr, i->second[j].buf)) {
+                            // Failed to write to log
+                            SLEEP_MS(20); // FIXME:  This maybe problematic, as it may unnecessarily delay the thread, leading run-away memory usage.
+                        }
                     }
                 }
 
@@ -1344,6 +1345,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
     comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 
+    bool timeoutOccurred = false;
     if (m_enableDeviceValidation) {
         unsigned int startTime = current_timeMs();
         bool removedSerials = false;
@@ -1362,18 +1364,28 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             comManagerStep();
 
             if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
-                fprintf(stderr, "\nTimeout waiting for all discovered devices to respond.");
-                fflush(stderr);
+                timeoutOccurred = true;
                 break;
             }
         } while (!HasReceivedDeviceInfoFromAllDevices());
 
         // remove each failed device where communications were not received
+        std::vector<std::string> deadPorts;
         for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
             if (!HasReceivedDeviceInfo(i)) {
+                deadPorts.push_back(m_comManagerState.devices[i].serialPort.port);
                 RemoveDevice(i);
                 removedSerials = true;
             }
+        }
+
+        if (timeoutOccurred) {
+            fprintf(stderr, "Timeout waiting for response from ports: [");
+            for (auto portItr = deadPorts.begin(); portItr != deadPorts.end(); portItr++) {
+                fprintf(stderr, "%s%s", (portItr == deadPorts.begin() ? "" : ", "), portItr->c_str());
+            }
+            fprintf(stderr, "]\n");
+            fflush(stderr);
         }
 
         // if no devices left, all failed, we return failure

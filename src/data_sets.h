@@ -610,11 +610,11 @@ typedef struct PACKED
 	/** Reserved bits */
 	uint16_t        reserved;
 
-	/** Unused */
-	uint8_t         reserved2;
-
 	/** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
 	uint8_t         hardwareType;
+
+    /** Unused */
+    uint8_t         reserved2;
 
     /** Serial number */
     uint32_t        serialNumber;
