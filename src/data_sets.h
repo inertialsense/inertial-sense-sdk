@@ -53,7 +53,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
-#define DID_INTERNAL_DIAGNOSTIC         (eDataIDs)20 /** INTERNAL USE ONLY (internal_diagnostic_t) Internal diagnostic info */
+#define DID_UNUSED_20                   (eDataIDs)20 /** UNUSED */
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
@@ -144,7 +144,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
-#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
+#define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
+#define DID_GPX_LAST                              127 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -1779,6 +1780,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_RMC                0x0001000000000000
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
+#define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 
 #define RMC_BITS_EVENT                  0x0800000000000000
 
@@ -4605,6 +4607,15 @@ enum eEvb2LoggerMode
         
 };
 
+enum ePortMonPortType
+{
+    PORT_MON_PORT_TYPE_UART             = (uint8_t)(1 << 4),
+    PORT_MON_PORT_TYPE_USB              = (uint8_t)(2 << 4),
+    PORT_MON_PORT_TYPE_SPI              = (uint8_t)(3 << 4),
+    PORT_MON_PORT_TYPE_I2C              = (uint8_t)(4 << 4),
+    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),        
+};
+
 
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
@@ -4612,20 +4623,37 @@ enum eEvb2LoggerMode
 typedef struct
 {
     /** Tx rate (bytes/s) */
-    uint32_t        txBytesPerS;
-
+    uint32_t        txBytesPerSec;
     /** Rx rate (bytes/s) */
-    uint32_t        rxBytesPerS;
+    uint32_t        rxBytesPerSec;
 
     /** Status */
     uint32_t        status;
-    
+
+    /** Number of bytes received */
+    uint32_t        rxBytes;
+    /** Number of Rx buffer overflow occurances (not bytes dropped), which happens when reading data using serRead() does not keep up with the amount of data received. */
+    uint32_t        rxOverflows;
+    /** Rx number of checksum failures*/
+    uint32_t        rxChecksumErrors;
+
+    /** Number of byes sent */
+    uint32_t        txBytes;
+    /** Number of times serWrite did not send all data. */
+    uint32_t        txOverflows;
+    /** Number of bytes that were not sent. */
+    uint32_t        txBytesDropped;
+
+    /** high nib port type (see ePortMonPortType) low nib index */
+    uint8_t portInfo;
 } port_monitor_set_t;
 
 typedef struct
 {
     /** Port monitor set */
     port_monitor_set_t port[NUM_SERIAL_PORTS];
+
+    uint8_t activePorts;
         
 } port_monitor_t;
 
@@ -4724,25 +4752,6 @@ typedef struct
     uint32_t psr;
         
 } system_fault_t;
-
-/** Diagnostic information for internal use */
-typedef struct
-{
-    /** Count of gap of more than 0.5 seconds receiving serial data, driver level, one entry for each com port */
-    uint32_t gapCountSerialDriver[NUM_SERIAL_PORTS];
-
-    /** Count of gap of more than 0.5 seconds receiving serial data, class / parser level, one entry for each com port */
-    uint32_t gapCountSerialParser[NUM_SERIAL_PORTS];
-
-    /** Count of rx overflow, one entry for each com port */
-    uint32_t rxOverflowCount[NUM_SERIAL_PORTS];
-
-    /** Count of tx overflow, one entry for each com port */
-    uint32_t txOverflowCount[NUM_SERIAL_PORTS];
-    
-    /** Count of checksum failures, one entry for each com port */
-    uint32_t checksumFailCount[NUM_SERIAL_PORTS];
-} internal_diagnostic_t;
 
 /** RTOS tasks */
 typedef enum
