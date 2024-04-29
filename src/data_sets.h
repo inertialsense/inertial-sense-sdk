@@ -4607,15 +4607,25 @@ enum eEvb2LoggerMode
         
 };
 
+enum ePortMonPortType
+{
+    PORT_MON_PORT_TYPE_UART             = (uint8_t)(1 << 4),
+    PORT_MON_PORT_TYPE_USB              = (uint8_t)(2 << 4),
+    PORT_MON_PORT_TYPE_SPI              = (uint8_t)(3 << 4),
+    PORT_MON_PORT_TYPE_I2C              = (uint8_t)(4 << 4),
+    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),        
+};
+
+
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
 */
 typedef struct
 {
     /** Tx rate (bytes/s) */
-    uint32_t        txBytesPerS;
+    uint32_t        txBytesPerSec;
     /** Rx rate (bytes/s) */
-    uint32_t        rxBytesPerS;
+    uint32_t        rxBytesPerSec;
 
     /** Status */
     uint32_t        status;
@@ -4623,23 +4633,27 @@ typedef struct
     /** Number of bytes received */
     uint32_t        rxBytes;
     /** Number of Rx buffer overflow occurances (not bytes dropped), which happens when reading data using serRead() does not keep up with the amount of data received. */
-    uint32_t        rxOverflowCount;
+    uint32_t        rxOverflows;
     /** Rx number of checksum failures*/
-    uint32_t        rxChecksumErrorCount;
+    uint32_t        rxChecksumErrors;
 
     /** Number of byes sent */
     uint32_t        txBytes;
     /** Number of times serWrite did not send all data. */
-    uint32_t        txOverflowCount;
+    uint32_t        txOverflows;
     /** Number of bytes that were not sent. */
     uint32_t        txBytesDropped;
 
+    /** high nib port type (see ePortMonPortType) low nib index */
+    uint8_t portInfo;
 } port_monitor_set_t;
 
 typedef struct
 {
     /** Port monitor set */
     port_monitor_set_t port[NUM_SERIAL_PORTS];
+
+    uint8_t activePorts;
         
 } port_monitor_t;
 
