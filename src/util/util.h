@@ -6,8 +6,8 @@
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef IS_GPX_UTIL_H
-#define IS_GPX_UTIL_H
+#ifndef INERTIALSENSE_SDK__UTIL_H
+#define INERTIALSENSE_SDK__UTIL_H
 
 #include <string>
 #include <memory>
@@ -30,4 +30,4 @@ namespace utils {
 };
 
 
-#endif //IS_GPX_UTIL_H
+#endif //INERTIALSENSE_SDK__UTIL_H
