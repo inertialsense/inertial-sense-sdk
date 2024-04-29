@@ -76,7 +76,7 @@
                             [this](InertialSense *i, p_data_t *data, int pHandle)           \
                             {                                                               \
                                 /* ROS_INFO("Got message %d", DID);*/                       \
-                                this->__cb_fun(DID, reinterpret_cast<__type *>(data->buf)); \
+                                this->__cb_fun(DID, reinterpret_cast<__type *>(data->ptr)); \
                             })
 
 

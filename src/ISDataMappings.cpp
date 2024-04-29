@@ -167,6 +167,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
     sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
     sizeMap[DID_GPX_RMC] = sizeof(rmc_t);
+    sizeMap[DID_GPX_PORT_MONITOR] = sizeof(port_monitor_t);
 
 #ifdef USE_IS_INTERNAL
 
@@ -233,7 +234,8 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     map_name_to_info_t& m = mappings[id];
     uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "hardware", hardware, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "hardwareType", hardwareType, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "serialNumber", serialNumber, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "hardwareVer[0]", hardwareVer[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "hardwareVer[1]", hardwareVer[1], 0, DataTypeUInt8, uint8_t&, 0);
@@ -320,7 +322,8 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "detectedHardwareId", detectedHardwareId, 0, DataTypeUInt16, uint16_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1078,7 +1081,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
 
     ADD_MAP(m, totalSize, "Time stamp of message", timeMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwType, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
     ADD_MAP(m, totalSize, "Protocol", protocol, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
@@ -2528,7 +2531,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPS1_VERSION",                 // 17
     "DID_GPS2_VERSION",                 // 18
     "DID_MAG_CAL",                      // 19
-    "DID_INTERNAL_DIAGNOSTIC",          // 20
+    "DID_UNUSED_20",                    // 20
     "DID_GPS1_RTK_POS_REL",             // 21
     "DID_GPS1_RTK_POS_MISC",            // 22
     "DID_FEATURE_BITS",                 // 23
@@ -2635,7 +2638,7 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_GPX_DEBUG_ARRAY",              // 124
     "DID_GPX_BIT",                      // 125
     "DID_GPX_RMC",                      // 126
-    "",                                 // 127
+    "DID_GPX_PORT_MONITOR",             // 127
     "",                                 // 128
     "",                                 // 129
     "",                                 // 130

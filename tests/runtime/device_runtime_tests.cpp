@@ -61,6 +61,11 @@ std::string charArrayToHex(uint8_t* arr, int arrSize)
 
 void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
 {
+    if (!m_enable)
+    {
+        return;
+    }
+    
     int size = comm.rxBuf.scanPrior - comm.rxBuf.head;
 
     std::string parser;
@@ -167,7 +172,7 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
     utc_time_t utcTime;
     nmea_parse_zda((char*)msg, msgSize, gpsTowMs, gpsWeek, utcDate, utcTime, C_GPS_LEAP_SECONDS);
 
-    printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
+    // printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
     CheckGpsDuplicate  ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
     CheckGpsTimeReverse("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
@@ -205,8 +210,8 @@ std::string printfToString(const char* format, ...)
 
 bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
 {
-    int toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
-    int histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
 
     if (toyMs == histToyMs)
     {   // Duplicate time
@@ -224,8 +229,8 @@ bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, 
 
 bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
 {
-    int toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
-    int histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
 
     if (toyMs < histToyMs)
     {   // Reversed time
