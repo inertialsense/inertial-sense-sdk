@@ -4645,7 +4645,7 @@ typedef struct
     uint32_t        txBytesDropped;
 
     /** high nib port type (see ePortMonPortType) low nib index */
-    uint8_t portInfo;
+    uint8_t         portInfo;
 } port_monitor_set_t;
 
 typedef struct
