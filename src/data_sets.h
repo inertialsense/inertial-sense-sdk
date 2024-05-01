@@ -1534,16 +1534,18 @@ enum eSystemCommand
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK     = 26,           // (uint32 inv: 4294967269)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK     = 27,           // (uint32 inv: 4294967268)
     SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK = 28,           // (uint32 inv: 4294967267)
+    SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK_TEST = 29,      // (uint32 inv: 4294967266)
 
     SYS_CMD_GPX_ENABLE_BOOTLOADER_MODE                  = 30,           // (uint32 inv: 4294967265)
     SYS_CMD_GPX_ENABLE_GNSS1_CHIPSET_BOOTLOADER         = 31,           // (uint32 inv: 4294967264)
     SYS_CMD_GPX_ENABLE_GNSS2_CHIPSET_BOOTLOADER         = 32,           // (uint32 inv: 4294967263)
     SYS_CMD_GPX_ENABLE_GNSS1_PASS_THROUGH               = 33,           // (uint32 inv: 4294967262)
     SYS_CMD_GPX_ENABLE_GNSS2_PASS_THROUGH               = 34,           // (uint32 inv: 4294967261)
-    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 35,           // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX.
     SYS_CMD_GPX_HARD_RESET_GNSS1                        = 36,           // (uint32 inv: 4294967259)
     SYS_CMD_GPX_HARD_RESET_GNSS2                        = 37,           // (uint32 inv: 4294967258)
     SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX.
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TEST  = 40,      // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
 
