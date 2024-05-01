@@ -843,7 +843,7 @@ typedef struct
     int64_t time;
 
     /** fraction of second under 1 s */
-    double sec;         
+    double sec;
 } gtime_t;
 
 POP_PACK
