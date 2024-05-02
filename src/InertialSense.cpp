@@ -1354,6 +1354,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         else
         {
             ISDevice device;
+            device.portHandle = i;
             device.serialPort = serial;
             device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
             m_comManagerState.devices.push_back(device);
