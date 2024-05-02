@@ -1012,7 +1012,7 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
 		0	Message ID $INTEL
 		1	Message ID KIM
 		2	Fimrware version of KIM
-		3	GPS Time of Week (seconds)
+		3	GPS Time of Week (seconds, no decimal)
 		4	GPS week number
 		5	GPS leap seconds
 		6	1PPS phase 1 (ns)
@@ -1037,7 +1037,7 @@ int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_
 		info.firmwareVer[1], 
 		info.firmwareVer[2], 
 		info.firmwareVer[3]);														// 2
-	nmea_sprint(a, aSize, n, ",%.1f", 0.001f*((float)pos.timeOfWeekMs));			// 3
+	nmea_sprint(a, aSize, n, ",%d", pos.timeOfWeekMs/1000);							// 3
 	nmea_sprint(a, aSize, n, ",%d", pos.week);										// 4
 	nmea_sprint(a, aSize, n, ",%d", pos.leapS);										// 5
 
@@ -2405,9 +2405,9 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
 	ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 	
 	// 3 -	GPS Time of Week (seconds)
-	float timeSec;
-	ptr = ASCII_to_f32(&timeSec, ptr);
-	pos.timeOfWeekMs = (uint32_t)(1000.0f*timeSec);
+	uint32_t timeSec;
+	ptr = ASCII_to_u32(&timeSec, ptr);
+	pos.timeOfWeekMs = 1000*timeSec;
 
 	// 4 -	GPS week number
 	ptr = ASCII_to_u32(&(pos.week), ptr);
