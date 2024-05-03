@@ -409,7 +409,12 @@ public:
     */
     bool FlashConfigSynced(int pHandle = 0) 
     { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        if (m_comManagerState.devices.size() == 0)
+        {   // No devices
+            return false;
+        }
+
+        is_device_t &device = m_comManagerState.devices[pHandle];
         return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
                 (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
     }
@@ -422,6 +427,11 @@ public:
      */
     bool FlashConfigUploadFailure(int pHandle = 0)
     { 
+        if (m_comManagerState.devices.size() == 0)
+        {   // No devices
+            return true;
+        }
+
         is_device_t &device = m_comManagerState.devices[pHandle]; 
         return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
     } 

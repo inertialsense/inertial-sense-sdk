@@ -1297,7 +1297,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     // handle wildcard, auto-detect serial ports
     if (port[0] == '*')
     {
-        m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.
+        // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
         cISSerialPort::GetComPorts(ports);
         if (port[1] != '\0')
         {
