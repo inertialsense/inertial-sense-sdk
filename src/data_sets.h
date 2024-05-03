@@ -422,8 +422,11 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG                     = (int)0x00000800,
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
 
+    /** GNSS is faulting firmware update REQUIRED */
+    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
+
     /** System Reset is Required for proper function */
-    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00001000,
+    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
     GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
 
