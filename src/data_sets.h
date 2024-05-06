@@ -53,7 +53,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPS1_VERSION                (eDataIDs)17 /** (gps_version_t) GPS 1 version info */
 #define DID_GPS2_VERSION                (eDataIDs)18 /** (gps_version_t) GPS 2 version info */
 #define DID_MAG_CAL                     (eDataIDs)19 /** (mag_cal_t) Magnetometer calibration */
-#define DID_INTERNAL_DIAGNOSTIC         (eDataIDs)20 /** INTERNAL USE ONLY (internal_diagnostic_t) Internal diagnostic info */
+#define DID_UNUSED_20                   (eDataIDs)20 /** UNUSED */
 #define DID_GPS1_RTK_POS_REL            (eDataIDs)21 /** (gps_rtk_rel_t) RTK precision position base to rover relative info. */
 #define DID_GPS1_RTK_POS_MISC           (eDataIDs)22 /** (gps_rtk_misc_t) RTK precision position related data. */
 #define DID_FEATURE_BITS                (eDataIDs)23 /** INTERNAL USE ONLY (feature_bits_t) */
@@ -144,7 +144,8 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
 #define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
-#define DID_GPX_LAST                              126 /** Last of GPX DIDs */
+#define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
+#define DID_GPX_LAST                              127 /** Last of GPX DIDs */
 
 // Adding a new data id?
 // 1] Add it above and increment the previous number, include the matching data structure type in the comments
@@ -421,8 +422,11 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG                     = (int)0x00000800,
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
 
+    /** GNSS is faulting firmware update REQUIRED */
+    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
+
     /** System Reset is Required for proper function */
-    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00001000,
+    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
     GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
 
@@ -558,50 +562,51 @@ typedef struct PACKED
 }pos_measurement_t;
 
 /***
- * Product Info Mask  [6:4:6]
- * Product Info is masked into 16 bits:
+ * Product Hardware ID Mask  [6:4:6]
+ * Product hardware ID is masked into 16 bits:
  *  [ 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 ]
  *    |- TYPE  -| |MAJOR| |- MINOR -|
  *
- *  Upper 6 bits are the hardware/product type (IMX, GPX, uINS, etc; 64 possible values)
- *  Middle 4 bits are the major hardware/product version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
- *  Lower 6 bits are the minor hardware/product version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
+ *  Upper 6 bits are the hardware type (IMX, GPX, uINS, etc; 64 possible values)
+ *  Middle 4 bits are the major hardware version (GPX-1, uINS-3, IMX-5, etc; 16 possible values)
+ *  Lower 6 bits are the minor hardware version (IMX-5.1, uINS-3.2, GPX-1.0; 64 possible values)
  *
- *  If the TYPE and MAJOR are 0, then fall back to eDevInfoHardware to determine the type from the legacy map:
+ *  If the TYPE and MAJOR are 0, then fall back to eIsHardwareType to determine the type from the legacy map:
  *      0 = Unknown
  *      1 = UINS32
- *      2 = EVB
+ *      2 = EVB2
  *      3 = IMX5
  *      4 = GPX1
  */
 
 #define HDW_TYPE__MASK                         0xFC00
 #define HDW_TYPE__SHIFT                        10
-#define DECODE_HDW_TYPE(x)                     ((x & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
-#define HDW_TYPE__UNKNOWN                      0
-#define HDW_TYPE__UINS                         1
-#define HDW_TYPE__EVB                          2
-#define HDW_TYPE__IMX                          3
-#define HDW_TYPE__GPX                          4
-
+#define DECODE_HDW_TYPE(x)                     (((x) & HDW_TYPE__MASK) >> HDW_TYPE__SHIFT)
+// Use eIsHardwareType for hardware type
 #define HDW_MAJOR__MASK                        0x03C0
 #define HDW_MAJOR__SHIFT                       6
-#define DECODE_HDW_MAJOR(x)                    ((x & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
+#define DECODE_HDW_MAJOR(x)                    (((x) & HDW_MAJOR__MASK) >> HDW_MAJOR__SHIFT)
 
 #define HDW_MINOR__MASK                        0x003F
 #define HDW_MINOR__SHIFT                       0
-#define DECODE_HDW_MINOR(x)                    ((x & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
+#define DECODE_HDW_MINOR(x)                    (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
-#define ENCODE_HDW_INFO(type, major, minor)    ( ((type << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((major << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((minor << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
+#define ENCODE_HDW_ID(type, major, minor)    ( (((type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
+#define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)   ( ((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 
-enum eDevInfoHardware
+enum eIsHardwareType
 {
-	DEV_INFO_HARDWARE_UNSPECIFIED   = 0,
-	DEV_INFO_HARDWARE_UINS          = 1,
-	DEV_INFO_HARDWARE_EVB           = 2,
-	DEV_INFO_HARDWARE_IMX           = 3,
-	DEV_INFO_HARDWARE_GPX           = 4,
+	IS_HARDWARE_TYPE_MIXED          = -1,   // Used for ci-hdw testing
+	IS_HARDWARE_TYPE_UNKNOWN        = 0,
+	IS_HARDWARE_TYPE_UINS           = 1,
+	IS_HARDWARE_TYPE_EVB            = 2,
+	IS_HARDWARE_TYPE_IMX            = 3,
+	IS_HARDWARE_TYPE_GPX            = 4,
+	IS_HARDWARE_TYPE_COUNT          = 5     // Keep last
 };
+
+extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
+
 
 /** (DID_DEV_INFO) Device information */
 typedef struct PACKED
@@ -609,8 +614,11 @@ typedef struct PACKED
 	/** Reserved bits */
 	uint16_t        reserved;
 
-	/** Hardware: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-	uint16_t        hardware;
+	/** Hardware Type: 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType) */
+	uint8_t         hardwareType;
+
+    /** Unused */
+    uint8_t         reserved2;
 
     /** Serial number */
     uint32_t        serialNumber;
@@ -633,7 +641,7 @@ typedef struct PACKED
     /** Manufacturer name */
     char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
 
-	/** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug) */
+	/** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=developer/debug) */
 	uint8_t         buildType;
     
     /** Build date year - 2000 */
@@ -1407,34 +1415,38 @@ typedef struct PACKED
     uint32_t                hdwStatus;
 
     /** IMU temperature */
-    float					imuTemp;
+    float                   imuTemp;
 
     /** Baro temperature */
-    float					baroTemp;
+    float                   baroTemp;
 
     /** MCU temperature (not available yet) */
-    float					mcuTemp;
+    float                   mcuTemp;
 
     /** System status flags (eSysStatusFlags) */
-    uint32_t				sysStatus;
+    uint32_t                sysStatus;
 
 	/** IMU sample period (ms). Zero disables sampling. */
-	uint32_t				imuSamplePeriodMs;
+	uint32_t                imuSamplePeriodMs;
 
 	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
-	uint32_t				navOutputPeriodMs;
+	uint32_t                navOutputPeriodMs;
 	
     /** Actual sample period relative to GPS PPS (sec) */
-    double					sensorTruePeriod;
+    double                  sensorTruePeriod;
 
 	/** Flash config checksum used with host SDK synchronization */
-	uint32_t				flashCfgChecksum;
+	uint32_t                flashCfgChecksum;
 
 	/** Navigation/AHRS filter update period (ms) */
-	uint32_t				navUpdatePeriodMs;
+	uint32_t                navUpdatePeriodMs;
 
     /** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
-    uint32_t				genFaultCode;
+    uint32_t                genFaultCode;
+
+    /** System up time in seconds (with double precision) */
+    double                  upTime;
+
 } sys_params_t;
 
 /*! General Fault Code descriptor */
@@ -1775,6 +1787,7 @@ typedef struct PACKED
 #define RMC_BITS_GPX_RMC                0x0001000000000000
 #define RMC_BITS_GPX_FLASH_CFG          0x0002000000000000
 #define RMC_BITS_GPX_BIT                0x0004000000000000
+#define RMC_BITS_GPX_PORT_MON           0x0008000000000000
 
 #define RMC_BITS_EVENT                  0x0800000000000000
 
@@ -2124,59 +2137,60 @@ enum eBitState
 /** Built-in Test: Test Mode */
 enum eBitTestMode
 {
-    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100, // Simulate CNO noise
-    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101, // Send duplicate message 
+    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100,         // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101,         // Send duplicate message 
 };
 
 /** Hardware built-in test (BIT) flags */
 enum eHdwBitStatusFlags
 {
-    HDW_BIT_PASSED_MASK             = (int)0x0000000F,
-    HDW_BIT_PASSED_ALL              = (int)0x00000001,
-    HDW_BIT_PASSED_NO_GPS           = (int)0x00000002,    // Passed w/o valid GPS signal
-    HDW_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
-    HDW_BIT_MODE_OFFSET             = (int)4,
-#define HDW_BIT_MODE(hdwBitStatus) (((hdwBitStatus)&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
-    HDW_BIT_FAILED_MASK             = (int)0xFFFFFF00,
-    HDW_BIT_FAILED_AHRS_MASK        = (int)0xFFFF0F00,
-    HDW_BIT_FAULT_NOISE_PQR         = (int)0x00000100,
-    HDW_BIT_FAULT_NOISE_ACC         = (int)0x00000200,
-    HDW_BIT_FAULT_MAGNETOMETER      = (int)0x00000400,
-    HDW_BIT_FAULT_BAROMETER         = (int)0x00000800,
-    HDW_BIT_FAULT_GPS_NO_COM        = (int)0x00001000,    // No GPS serial communications
-    HDW_BIT_FAULT_GPS_POOR_CNO      = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
-    HDW_BIT_FAULT_GPS_POOR_ACCURACY = (int)0x00002000,    // Low number of satellites, or bad accuracy 
-    HDW_BIT_FAULT_GPS_NOISE         = (int)0x00004000,    // (Not implemented)
+    HDW_BIT_PASSED_MASK                     = (int)0x0000000F,
+    HDW_BIT_PASSED_ALL                      = (int)0x00000001,
+    HDW_BIT_PASSED_NO_GPS                   = (int)0x00000002,    // Passed w/o valid GPS signal
+    HDW_BIT_MODE_MASK                       = (int)0x000000F0,    // BIT mode run
+    HDW_BIT_MODE_OFFSET                     = (int)4,
+#define HDW_BIT_MODE(hdwBitStatus)          (((hdwBitStatus)&HDW_BIT_MODE_MASK)>>HDW_BIT_MODE_OFFSET)
+    HDW_BIT_FAILED_MASK                     = (int)0xFFFFFF00,
+    HDW_BIT_FAILED_AHRS_MASK                = (int)0xFFFF0F00,
+    HDW_BIT_FAULT_NOISE_PQR                 = (int)0x00000100,
+    HDW_BIT_FAULT_NOISE_ACC                 = (int)0x00000200,
+    HDW_BIT_FAULT_MAGNETOMETER              = (int)0x00000400,
+    HDW_BIT_FAULT_BAROMETER                 = (int)0x00000800,
+    HDW_BIT_FAULT_GPS_NO_COM                = (int)0x00001000,    // No GPS serial communications
+    HDW_BIT_FAULT_GPS_POOR_CNO              = (int)0x00002000,    // Poor GPS signal strength.  Check antenna
+    HDW_BIT_FAULT_GPS_POOR_ACCURACY         = (int)0x00002000,    // Low number of satellites, or bad accuracy 
+    HDW_BIT_FAULT_GPS_NOISE                 = (int)0x00004000,    // (Not implemented)
+    HDW_BIT_FAULT_INCORRECT_HARDWARE_TYPE   = (int)0x01000000,    // Hardware type does not match firmware
 };
 
 /** Calibration built-in test flags */
 enum eCalBitStatusFlags
 {
-    CAL_BIT_PASSED_MASK             = (int)0x0000000F,
-    CAL_BIT_PASSED_ALL              = (int)0x00000001,
-    CAL_BIT_MODE_MASK               = (int)0x000000F0,    // BIT mode run
-    CAL_BIT_MODE_OFFSET             = (int)4,
-#define CAL_BIT_MODE(calBitStatus) (((calBitStatus)&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
-    CAL_BIT_FAILED_MASK             = (int)0x00FFFF00,
-    CAL_BIT_FAULT_TCAL_EMPTY        = (int)0x00000100,    // Temperature calibration not present
-    CAL_BIT_FAULT_TCAL_TSPAN        = (int)0x00000200,    // Temperature calibration temperature range is inadequate
-    CAL_BIT_FAULT_TCAL_INCONSISTENT = (int)0x00000400,    // Temperature calibration number of points or slopes are not consistent
-    CAL_BIT_FAULT_TCAL_CORRUPT      = (int)0x00000800,    // Temperature calibration memory corruption
-    CAL_BIT_FAULT_TCAL_PQR_BIAS     = (int)0x00001000,    // Temperature calibration gyro bias
-    CAL_BIT_FAULT_TCAL_PQR_SLOPE    = (int)0x00002000,    // Temperature calibration gyro slope
-    CAL_BIT_FAULT_TCAL_PQR_LIN      = (int)0x00004000,    // Temperature calibration gyro linearity
-    CAL_BIT_FAULT_TCAL_ACC_BIAS     = (int)0x00008000,    // Temperature calibration accelerometer bias
-    CAL_BIT_FAULT_TCAL_ACC_SLOPE    = (int)0x00010000,    // Temperature calibration accelerometer slope
-    CAL_BIT_FAULT_TCAL_ACC_LIN      = (int)0x00020000,    // Temperature calibration accelerometer linearity
-    CAL_BIT_FAULT_CAL_SERIAL_NUM    = (int)0x00040000,    // Calibration info: wrong device serial number
-    CAL_BIT_FAULT_MCAL_EMPTY        = (int)0x00100000,    // Motion calibration Cross-axis alignment is not calibrated
-    CAL_BIT_FAULT_MCAL_INVALID      = (int)0x00200000,    // Motion calibration Cross-axis alignment is poorly formed
-    CAL_BIT_FAULT_MOTION_PQR        = (int)0x00400000,    // Motion on gyros
-    CAL_BIT_FAULT_MOTION_ACC        = (int)0x00800000,    // Motion on accelerometers
-    CAL_BIT_NOTICE_IMU1_PQR_BIAS    = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
-    CAL_BIT_NOTICE_IMU2_PQR_BIAS    = (int)0x02000000,    // IMU 2 gyro bias offset detected.  If stationary, zero gyros command may be used.
-    CAL_BIT_NOTICE_IMU1_ACC_BIAS    = (int)0x10000000,    // IMU 1 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
-    CAL_BIT_NOTICE_IMU2_ACC_BIAS    = (int)0x20000000,    // IMU 2 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
+    CAL_BIT_PASSED_MASK                     = (int)0x0000000F,
+    CAL_BIT_PASSED_ALL                      = (int)0x00000001,
+    CAL_BIT_MODE_MASK                       = (int)0x000000F0,    // BIT mode run
+    CAL_BIT_MODE_OFFSET                     = (int)4,
+#define CAL_BIT_MODE(calBitStatus)          (((calBitStatus)&CAL_BIT_MODE_MASK)>>CAL_BIT_MODE_OFFSET)
+    CAL_BIT_FAILED_MASK                     = (int)0x00FFFF00,
+    CAL_BIT_FAULT_TCAL_EMPTY                = (int)0x00000100,    // Temperature calibration not present
+    CAL_BIT_FAULT_TCAL_TSPAN                = (int)0x00000200,    // Temperature calibration temperature range is inadequate
+    CAL_BIT_FAULT_TCAL_INCONSISTENT         = (int)0x00000400,    // Temperature calibration number of points or slopes are not consistent
+    CAL_BIT_FAULT_TCAL_CORRUPT              = (int)0x00000800,    // Temperature calibration memory corruption
+    CAL_BIT_FAULT_TCAL_PQR_BIAS             = (int)0x00001000,    // Temperature calibration gyro bias
+    CAL_BIT_FAULT_TCAL_PQR_SLOPE            = (int)0x00002000,    // Temperature calibration gyro slope
+    CAL_BIT_FAULT_TCAL_PQR_LIN              = (int)0x00004000,    // Temperature calibration gyro linearity
+    CAL_BIT_FAULT_TCAL_ACC_BIAS             = (int)0x00008000,    // Temperature calibration accelerometer bias
+    CAL_BIT_FAULT_TCAL_ACC_SLOPE            = (int)0x00010000,    // Temperature calibration accelerometer slope
+    CAL_BIT_FAULT_TCAL_ACC_LIN              = (int)0x00020000,    // Temperature calibration accelerometer linearity
+    CAL_BIT_FAULT_CAL_SERIAL_NUM            = (int)0x00040000,    // Calibration info: wrong device serial number
+    CAL_BIT_FAULT_MCAL_EMPTY                = (int)0x00100000,    // Motion calibration Cross-axis alignment is not calibrated
+    CAL_BIT_FAULT_MCAL_INVALID              = (int)0x00200000,    // Motion calibration Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MOTION_PQR                = (int)0x00400000,    // Motion on gyros
+    CAL_BIT_FAULT_MOTION_ACC                = (int)0x00800000,    // Motion on accelerometers
+    CAL_BIT_NOTICE_IMU1_PQR_BIAS            = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU2_PQR_BIAS            = (int)0x02000000,    // IMU 2 gyro bias offset detected.  If stationary, zero gyros command may be used.
+    CAL_BIT_NOTICE_IMU1_ACC_BIAS            = (int)0x10000000,    // IMU 1 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
+    CAL_BIT_NOTICE_IMU2_ACC_BIAS            = (int)0x20000000,    // IMU 2 accelerometer bias offset detected.  If stationary, zero accelerometer command may be used only on the vertical access.
 };
 
 
@@ -2217,7 +2231,10 @@ typedef struct PACKED
     float                   accSigma;
 
     /** Self-test mode (see eBitTestMode) */
-    uint32_t                testMode;
+    uint16_t                testMode;
+
+    /** The hardware type detected (see "Product Hardware ID").  This is used to ensure correct firmware is used. */
+    uint16_t                 detectedHardwareId;
 
 } bit_t;
 
@@ -2266,16 +2283,22 @@ typedef struct PACKED
     uint32_t                results;
     
     /** Command  **/
-    uint8_t                command;
+    uint8_t                 command;
 
     /* what port we are running on*/
-    uint8_t                port;
+    uint8_t                 port;
 
     /** Self-test mode*/
-    uint8_t                testMode;
+    uint8_t                 testMode;
 
     /** Built-in self-test state */
-    uint8_t                state;
+    uint8_t                 state;
+
+    /** The hardware ID detected (see "Product Hardware ID").  This is used to ensure correct firmware is used. */
+    uint16_t                detectedHardwareId;
+
+    /** Unused */
+    uint8_t                 reserved[2];
 
 } GPX_bit_t;
 
@@ -4296,6 +4319,8 @@ typedef struct
 
     /** port */
     uint8_t                 gpxSourcePort;
+
+    double                  upTime;     //! Time in seconds, since system was started
 } gpx_status_t;
 
 
@@ -4591,6 +4616,15 @@ enum eEvb2LoggerMode
         
 };
 
+enum ePortMonPortType
+{
+    PORT_MON_PORT_TYPE_UART             = (uint8_t)(1 << 4),
+    PORT_MON_PORT_TYPE_USB              = (uint8_t)(2 << 4),
+    PORT_MON_PORT_TYPE_SPI              = (uint8_t)(3 << 4),
+    PORT_MON_PORT_TYPE_I2C              = (uint8_t)(4 << 4),
+    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),        
+};
+
 
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
@@ -4598,20 +4632,37 @@ enum eEvb2LoggerMode
 typedef struct
 {
     /** Tx rate (bytes/s) */
-    uint32_t        txBytesPerS;
-
+    uint32_t        txBytesPerSec;
     /** Rx rate (bytes/s) */
-    uint32_t        rxBytesPerS;
+    uint32_t        rxBytesPerSec;
 
     /** Status */
     uint32_t        status;
-    
+
+    /** Number of bytes received */
+    uint32_t        rxBytes;
+    /** Number of Rx buffer overflow occurances (not bytes dropped), which happens when reading data using serRead() does not keep up with the amount of data received. */
+    uint32_t        rxOverflows;
+    /** Rx number of checksum failures*/
+    uint32_t        rxChecksumErrors;
+
+    /** Number of byes sent */
+    uint32_t        txBytes;
+    /** Number of times serWrite did not send all data. */
+    uint32_t        txOverflows;
+    /** Number of bytes that were not sent. */
+    uint32_t        txBytesDropped;
+
+    /** high nib port type (see ePortMonPortType) low nib index */
+    uint8_t portInfo;
 } port_monitor_set_t;
 
 typedef struct
 {
     /** Port monitor set */
     port_monitor_set_t port[NUM_SERIAL_PORTS];
+
+    uint8_t activePorts;
         
 } port_monitor_t;
 
@@ -4635,14 +4686,14 @@ enum DID_EventPriority
 
 typedef struct DID_Event
 {
-    /** Time */
-    uint32_t        timeMs;
+    /** Time (uptime in seconds) */
+    double          time;
 
     /** Serial number */
     uint32_t        senderSN;
- 
-    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eDevInfoHardware) */
-    uint16_t        senderHdwType;
+  
+    /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
+    uint16_t        senderHdwId;
     
     uint8_t         priority;
     uint8_t         res8;
@@ -4710,25 +4761,6 @@ typedef struct
     uint32_t psr;
         
 } system_fault_t;
-
-/** Diagnostic information for internal use */
-typedef struct
-{
-    /** Count of gap of more than 0.5 seconds receiving serial data, driver level, one entry for each com port */
-    uint32_t gapCountSerialDriver[NUM_SERIAL_PORTS];
-
-    /** Count of gap of more than 0.5 seconds receiving serial data, class / parser level, one entry for each com port */
-    uint32_t gapCountSerialParser[NUM_SERIAL_PORTS];
-
-    /** Count of rx overflow, one entry for each com port */
-    uint32_t rxOverflowCount[NUM_SERIAL_PORTS];
-
-    /** Count of tx overflow, one entry for each com port */
-    uint32_t txOverflowCount[NUM_SERIAL_PORTS];
-    
-    /** Count of checksum failures, one entry for each com port */
-    uint32_t checksumFailCount[NUM_SERIAL_PORTS];
-} internal_diagnostic_t;
 
 /** RTOS tasks */
 typedef enum

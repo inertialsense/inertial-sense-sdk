@@ -14,6 +14,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 #include <math.h>
 
+const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT] = {"UNKNOWN", "uINS", "EVB", "IMX", "GPX"};
+
 // Reversed bytes in a float.
 // compiler will likely inline this as it's a tiny function
 void flipFloat(uint8_t* ptr)
@@ -282,7 +284,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 17: DID_GPS1_VERSION
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
-		0,						// 20: DID_INTERNAL_DIAGNOSTIC
+		0,						// 20: DID_UNUSED_20
         0,                      // 21: DID_GPS1_RTK_POS_REL
         offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
 		0,						// 23: DID_FEATURE_BITS
@@ -472,7 +474,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 17: DID_GPS1_VERSION
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
-		0,						// 20: DID_INTERNAL_DIAGNOSTIC
+		0,						// 20: DID_UNUSED_20
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
 		0,						// 23: DID_FEATURE_BITS
@@ -681,7 +683,8 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
 	[DID_GPX_DEV_INFO]        = RMC_BITS_GPX_DEV_INFO,
 	[DID_GPX_FLASH_CFG]       = RMC_BITS_GPX_FLASH_CFG,
 	[DID_GPX_RMC]			  = RMC_BITS_GPX_RMC,
-	[DID_GPX_BIT]			  = RMC_BITS_GPX_BIT
+	[DID_GPX_BIT]			  = RMC_BITS_GPX_BIT,
+	[DID_GPX_PORT_MONITOR]	  = RMC_BITS_GPX_PORT_MON,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -877,7 +880,7 @@ void profiler_maintenance_1s(runtime_profiler_t *p)
 /** Populate missing hardware descriptor in dev_info_t */ 
 void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 {
-	if (devInfo->hardware != DEV_INFO_HARDWARE_UNSPECIFIED)
+	if (devInfo->hardwareType != IS_HARDWARE_TYPE_UNKNOWN)
 	{	// Hardware type is not missing
 		return;
 	}
@@ -887,9 +890,9 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
 	{	// Hardware from 2024 and earlier is detectible using hardware version
 		switch (devInfo->hardwareVer[0])	
 		{
-		case 2: devInfo->hardware = DEV_INFO_HARDWARE_EVB;  break;
-		case 3: devInfo->hardware = DEV_INFO_HARDWARE_UINS; break;
-		case 5: devInfo->hardware = DEV_INFO_HARDWARE_IMX;  break;
+		case 2: devInfo->hardwareType = IS_HARDWARE_TYPE_EVB;  break;
+		case 3: devInfo->hardwareType = IS_HARDWARE_TYPE_UINS; break;
+		case 5: devInfo->hardwareType = IS_HARDWARE_TYPE_IMX;  break;
 		}
 	}
 }

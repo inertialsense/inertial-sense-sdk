@@ -1374,7 +1374,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	if (m_displayMode == DMODE_PRETTY)
 	{
 		ptr = StatusToString(ptr, ptrEnd, sys.insStatus, sys.hdwStatus);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C\tBaro %4.1f C\tMCU %4.1f C\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C\tBaro %4.1f C\tMCU %4.1f C\tUpTime %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
 	}
 
 	return buf;
@@ -1451,13 +1451,13 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 		info.serialNumber
 	);
 
-	switch (info.hardware)
+	switch (info.hardwareType)
 	{
-	default:						ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
-	case DEV_INFO_HARDWARE_UINS:	ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
-	case DEV_INFO_HARDWARE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
-	case DEV_INFO_HARDWARE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
-	case DEV_INFO_HARDWARE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");  	break;
+	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
+	case IS_HARDWARE_TYPE_UINS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
+	case IS_HARDWARE_TYPE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
+	case IS_HARDWARE_TYPE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
+	case IS_HARDWARE_TYPE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");  	break;
 	}
 
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
@@ -1605,8 +1605,8 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", gpxStatus.timeOfWeekMs / 1000.0);
 #endif
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1RunState: %d, gnss2RunState: %d, mcuTemp: %0.3lf\n",
-                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnss1RunState, gpxStatus.gnss2RunState, gpxStatus.mcuTemp
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1RunState: %d, gnss2RunState: %d, mcuTemp: %0.3lf, upTime: %lf\n",
+                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnss1RunState, gpxStatus.gnss2RunState, gpxStatus.mcuTemp, gpxStatus.upTime
     );
 
     return buf;

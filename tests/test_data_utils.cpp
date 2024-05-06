@@ -307,7 +307,7 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
     {   
         msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
-        printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
+        // printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
         return true;
     }
 
