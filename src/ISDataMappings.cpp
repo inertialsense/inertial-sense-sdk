@@ -409,6 +409,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "navUpdatePeriodMs", navUpdatePeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "genFaultCode", genFaultCode, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "upTime", upTime, 0, DataTypeDouble, double, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1079,7 +1080,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     uint32_t totalSize = 0;
 
 
-    ADD_MAP(m, totalSize, "Time stamp of message", timeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "Time stamp of message (System Up seconds)", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
@@ -1142,6 +1143,8 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "rtkMode", rtkMode, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "gnss1RunState", gnss1RunState, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "gnss2RunState", gnss2RunState, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "SourcePort", gpxSourcePort, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "upTime", upTime, 0, DataTypeDouble, double, 0);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
