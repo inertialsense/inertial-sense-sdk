@@ -399,11 +399,11 @@ size_t InertialSense::DeviceCount()
  * Returns a vector of available, connected devices
  * @return
  */
-std::vector<InertialSense::is_device_t>& InertialSense::getDevices() {
+std::vector<ISDevice>& InertialSense::getDevices() {
     return m_comManagerState.devices;
 }
 
-InertialSense::is_device_t& InertialSense::getDevice(uint32_t deviceIndex) {
+ISDevice& InertialSense::getDevice(uint32_t deviceIndex) {
     return m_comManagerState.devices[deviceIndex];
 }
 
@@ -783,7 +783,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
 
     for (size_t i=0; i<m_comManagerState.devices.size(); i++)
     {
-        is_device_t &device = m_comManagerState.devices[i];
+        ISDevice& device = m_comManagerState.devices[i];
 
         if (device.flashCfgUploadTimeMs)
         {	// Upload in progress
@@ -828,7 +828,7 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
         pHandle = 0;
     }
 
-    is_device_t &device = m_comManagerState.devices[pHandle];
+    ISDevice& device = m_comManagerState.devices[pHandle];
 
     // Copy flash config
     flashCfg = device.flashCfg;
@@ -843,7 +843,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     {
         return 0;
     }
-    is_device_t &device = m_comManagerState.devices[pHandle];
+    ISDevice& device = m_comManagerState.devices[pHandle];
     
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
@@ -930,7 +930,7 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
         return;
     }
 
-    is_device_t &device = m_comManagerState.devices[pHandle];
+    ISDevice& device = m_comManagerState.devices[pHandle];
 
     switch (data->hdr.id)
     {
@@ -966,7 +966,7 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
         m_handlerNmea(pHandle, msg, msgSize);
     }
 
-    is_device_t &device = m_comManagerState.devices[pHandle];
+    ISDevice& device = m_comManagerState.devices[pHandle];
 
     switch (getNmeaMsgId(msg, msgSize))
     {
@@ -1033,7 +1033,7 @@ is_operation_result InertialSense::updateFirmware(
     EnableDeviceValidation(true);
     if (OpenSerialPorts(comPort.c_str(), baudRate)) {
         for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
-            is_device_t& device = m_comManagerState.devices[i];
+            ISDevice& device = m_comManagerState.devices[i];
             device.fwUpdate.fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
             device.fwUpdate.fwUpdater->setTarget(targetDevice);
 
@@ -1045,6 +1045,36 @@ is_operation_result InertialSense::updateFirmware(
             device.fwUpdate.fwUpdater->setCommands(cmds);
         }
     }
+
+    printf("\n\r");
+
+#if !PLATFORM_IS_WINDOWS
+    fputs("\e[?25h", stdout);	// Turn cursor back on
+#endif
+
+    return IS_OP_OK;
+}
+
+is_operation_result InertialSense::updateFirmware(
+        ISDevice& device,
+        fwUpdate::target_t targetDevice,
+        std::vector<std::string> cmds,
+        ISBootloader::pfnBootloadProgress uploadProgress,
+        ISBootloader::pfnBootloadProgress verifyProgress,
+        ISBootloader::pfnBootloadStatus infoProgress,
+        void (*waitAction)()
+)
+{
+    EnableDeviceValidation(true);
+    device.fwUpdate.fwUpdater = new ISFirmwareUpdater(device);
+    device.fwUpdate.fwUpdater->setTarget(targetDevice);
+
+    // TODO: Implement maybe
+    device.fwUpdate.fwUpdater->setUploadProgressCb(uploadProgress);
+    device.fwUpdate.fwUpdater->setVerifyProgressCb(verifyProgress);
+    device.fwUpdate.fwUpdater->setInfoProgressCb(infoProgress);
+
+    device.fwUpdate.fwUpdater->setCommands(cmds);
 
     printf("\n\r");
 
@@ -1323,7 +1353,8 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         }
         else
         {
-            is_device_t device = {};
+            ISDevice device;
+            device.portHandle = i;
             device.serialPort = serial;
             device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
             m_comManagerState.devices.push_back(device);
@@ -1657,4 +1688,32 @@ int InertialSense::LoadFlashConfig(std::string path, int pHandle)
     }
 
     return 0;
+}
+
+/**
+* Get the device info
+* @param pHandle the pHandle to get device info for
+* @return the device info
+*/
+const dev_info_t InertialSense::DeviceInfo(int pHandle)
+{
+    if ((size_t)pHandle >= m_comManagerState.devices.size())
+    {
+        pHandle = 0;
+    }
+    return m_comManagerState.devices[pHandle].devInfo;
+}
+
+/**
+* Get current device system command
+* @param pHandle the pHandle to get sysCmd for
+* @return current device system command
+*/
+system_command_t InertialSense::GetSysCmd(int pHandle)
+{
+    if ((size_t)pHandle >= m_comManagerState.devices.size())
+    {
+        pHandle = 0;
+    }
+    return m_comManagerState.devices[pHandle].sysCmd;
 }

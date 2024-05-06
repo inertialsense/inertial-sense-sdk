@@ -422,8 +422,11 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG                     = (int)0x00000800,
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
 
+    /** GNSS is faulting firmware update REQUIRED */
+    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
+
     /** System Reset is Required for proper function */
-    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00001000,
+    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
     GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
 
@@ -638,7 +641,7 @@ typedef struct PACKED
     /** Manufacturer name */
     char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
 
-	/** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=debug) */
+	/** Build type (Release: 'a'=ALPHA, 'b'=BETA, 'c'=RELEASE CANDIDATE, 'r'=PRODUCTION RELEASE, 'd'=developer/debug) */
 	uint8_t         buildType;
     
     /** Build date year - 2000 */
@@ -1412,34 +1415,38 @@ typedef struct PACKED
     uint32_t                hdwStatus;
 
     /** IMU temperature */
-    float					imuTemp;
+    float                   imuTemp;
 
     /** Baro temperature */
-    float					baroTemp;
+    float                   baroTemp;
 
     /** MCU temperature (not available yet) */
-    float					mcuTemp;
+    float                   mcuTemp;
 
     /** System status flags (eSysStatusFlags) */
-    uint32_t				sysStatus;
+    uint32_t                sysStatus;
 
 	/** IMU sample period (ms). Zero disables sampling. */
-	uint32_t				imuSamplePeriodMs;
+	uint32_t                imuSamplePeriodMs;
 
 	/** Preintegrated IMU (PIMU) integration period and navigation/AHRS filter output period (ms). */
-	uint32_t				navOutputPeriodMs;
+	uint32_t                navOutputPeriodMs;
 	
     /** Actual sample period relative to GPS PPS (sec) */
-    double					sensorTruePeriod;
+    double                  sensorTruePeriod;
 
 	/** Flash config checksum used with host SDK synchronization */
-	uint32_t				flashCfgChecksum;
+	uint32_t                flashCfgChecksum;
 
 	/** Navigation/AHRS filter update period (ms) */
-	uint32_t				navUpdatePeriodMs;
+	uint32_t                navUpdatePeriodMs;
 
     /** General fault code descriptor (eGenFaultCodes).  Set to zero to reset fault code. */
-    uint32_t				genFaultCode;
+    uint32_t                genFaultCode;
+
+    /** System up time in seconds (with double precision) */
+    double                  upTime;
+
 } sys_params_t;
 
 /*! General Fault Code descriptor */
@@ -4312,6 +4319,8 @@ typedef struct
 
     /** port */
     uint8_t                 gpxSourcePort;
+
+    double                  upTime;     //! Time in seconds, since system was started
 } gpx_status_t;
 
 
@@ -4677,8 +4686,8 @@ enum DID_EventPriority
 
 typedef struct DID_Event
 {
-    /** Time */
-    uint32_t        timeMs;
+    /** Time (uptime in seconds) */
+    double          time;
 
     /** Serial number */
     uint32_t        senderSN;
