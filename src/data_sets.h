@@ -230,6 +230,9 @@ enum eInsStatusFlags
     /** Nav mode (set) = estimating velocity and position. AHRS mode (cleared) = NOT estimating velocity and position */
     INS_STATUS_NAV_MODE                         = (int)0x00001000,
 
+    /** In dead reckoning mode.  The GPS is not aiding the solution while the position is being estimated.  */
+#define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && (((insStatus)&INS_STATUS_GPS_AIDING_POS)==0)) 
+
     /** INS in stationary mode.  If initiated by zero velocity command, user should not move (keep system motionless) to assist on-board processing. */
     INS_STATUS_STATIONARY_MODE                  = (int)0x00002000,    
     /** Velocity aided by GPS velocity */
