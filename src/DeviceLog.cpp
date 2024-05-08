@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 #include <stddef.h>
 
+#include "ISDevice.h"
 #include "DeviceLog.h"
 #include "ISFileManager.h"
 #include "ISConstants.h"
@@ -30,22 +31,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+cDeviceLog::cDeviceLog() {
+    m_logStats.Clear();
+}
 
-cDeviceLog::cDeviceLog()
-{
-    m_pFile = NULL;
-    m_pHandle = 0;
-    m_fileSize = 0;
-    m_logSize = 0;
-    m_fileCount = 0;
-    memset(&m_devInfo, 0, sizeof(dev_info_t));
-	m_altClampToGround = true;
-	m_enableGpsLogging = true;
-	m_showParseErrors = true;
-	m_showTracks = true;
-	m_showPointTimestamps = true;
-	m_pointUpdatePeriodSec = 1.0f;
-	m_logStats.Clear();
+cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
+    if (dev == nullptr)
+        throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
+    devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
+    devSerialNo = dev->devInfo.serialNumber;
+    m_logStats.Clear();
+}
+
+cDeviceLog::cDeviceLog(uint16_t hdwId, uint32_t serial) : devHdwId(hdwId), devSerialNo(serial) {
+    m_logStats.Clear();
 }
 
 cDeviceLog::~cDeviceLog()
@@ -55,9 +54,9 @@ cDeviceLog::~cDeviceLog()
     CloseAllFiles();
 }
 
-void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLog::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-    m_pHandle = pHandle;
+    // m_pHandle = pHandle;
 	m_timeStamp = timestamp;
 	m_directory = directory;
 	m_fileCount = 0;
@@ -78,14 +77,15 @@ void cDeviceLog::InitDeviceForReading()
 	m_logStats.Clear();
 }
 
-
 bool cDeviceLog::CloseAllFiles()
 {
-	if (m_writeMode)
-	{
-		string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
-		m_logStats.WriteToFile(str);
-	}
+    if (device == nullptr)
+        return false;
+
+    if (m_writeMode) {
+        string str = m_directory + "/stats_SN" + to_string(device->devInfo.serialNumber) + ".txt";
+        m_logStats.WriteToFile(str);
+    }
     return true;
 }
 
@@ -187,10 +187,10 @@ bool cDeviceLog::OpenNewSaveFile()
 
 	// Open new file
 	m_fileCount++;
-	uint32_t serNum = m_devInfo.serialNumber;
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
 	{
-		serNum = m_pHandle;
+		// serNum = device->portHandle; // FIXME: This really isn't okay... pHandle isn't guaranteed unique and we could run into collisions under some circumstances
 	}
 	string fileName = GetNewFileName(serNum, m_fileCount, NULL);
 	m_pFile = CreateISLogFile(fileName, "wb");
@@ -256,16 +256,24 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
     );
 }
 
+ISDevice* cDeviceLog::Device() {
+    return (ISDevice*)device;
+}
+const dev_info_t* cDeviceLog::DeviceInfo() {
+    return (dev_info_t*)&(device->devInfo);
+}
 
+/*
 void cDeviceLog::SetDeviceInfo(const dev_info_t *info)
 {
 	if (info == NULL)
 	{
 		return;
 	}
-	m_devInfo = *info;
+	// device->devInfo = *info;
 	SetSerialNumber(info->serialNumber);
 }
+*/
 
 
 void cDeviceLog::OnReadData(p_data_buf_t* data)

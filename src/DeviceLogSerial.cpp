@@ -27,192 +27,181 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-void cDeviceLogSerial::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
-{
-//     m_chunk.Init(chunkSize);
-	m_chunk.Clear();
-	m_chunk.m_hdr.pHandle = pHandle;
+cDeviceLogSerial::cDeviceLogSerial() : cDeviceLog() {
+    m_chunk.Clear();
+}
 
-	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
+cDeviceLogSerial::cDeviceLogSerial(const ISDevice *dev) : cDeviceLog(dev) {
+    m_chunk.Clear();
+    m_chunk.m_hdr.devSerialNum = SerialNumber();
+}
+
+cDeviceLogSerial::cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
+    m_chunk.Clear();
+    m_chunk.m_hdr.devSerialNum = SerialNumber();
+}
+
+void cDeviceLogSerial::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) {
+    m_chunk.Clear();
+    if (device != nullptr) {
+        m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
+        m_chunk.m_hdr.pHandle = device->portHandle;
+    }
+
+    cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
-bool cDeviceLogSerial::CloseAllFiles()
-{
+bool cDeviceLogSerial::CloseAllFiles() {
     cDeviceLog::CloseAllFiles();
 
-	// Write remaining data to file
-	FlushToFile();
+    // Write remaining data to file
+    FlushToFile();
 
-	// Close file
-	CloseISLogFile(m_pFile);
+    // Close file
+    CloseISLogFile(m_pFile);
 
-	return true;
+    return true;
 }
 
 
-bool cDeviceLogSerial::FlushToFile()
-{
+bool cDeviceLogSerial::FlushToFile() {
     cDeviceLog::FlushToFile();
 
-	if (m_writeMode)
-	{	// Write any remaining chunk data to file
-		WriteChunkToFile();
+    if (m_writeMode) {    // Write any remaining chunk data to file
+        WriteChunkToFile();
 
-		return true;
-	}
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 
-bool cDeviceLogSerial::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
-{
+bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype) {
     cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
-	// Add serial number if available
-	if (dataHdr->id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))
-	{
-		int start = dataHdr->offset;
-		int end = dataHdr->offset + dataHdr->size;
-		int snOffset = offsetof(dev_info_t, serialNumber);
+    // Add serial number if available
+    if (device != nullptr) {
+        if (dataHdr->id == DID_DEV_INFO && !copyDataPToStructP2((void *) (&(device->devInfo)), dataHdr, dataBuf, sizeof(dev_info_t))) {
+            int start = dataHdr->offset;
+            int end = dataHdr->offset + dataHdr->size;
+            int snOffset = offsetof(dev_info_t, serialNumber);
 
-		// Did we really get the serial number?
-		if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
-		{
-			m_chunk.m_hdr.devSerialNum = m_devInfo.serialNumber;
-		}
-	}
+            // Did we really get the serial number?
+            if (start <= snOffset && (int) (snOffset + sizeof(uint32_t)) <= end) {
+                m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
+            }
+        }
+    } else
+        m_chunk.m_hdr.devSerialNum = devSerialNo;
 
-	// Ensure data will fit in chunk.  If not, create new chunk
-	int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
-	if (dataBytes > m_chunk.GetBuffFree())
-	{
+    // Ensure data will fit in chunk.  If not, create new chunk
+    int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
+    int32_t buffFree = m_chunk.GetBuffFree();
+    if (dataBytes > buffFree) {
         // Save chunk to file and clear
-		if (!WriteChunkToFile())
-		{
-			return false;
-		}
-		else if (m_fileSize >= m_maxFileSize)
-		{
-			// Close existing file
-			CloseAllFiles();
-		}
-	}
-	// Add data header and data buffer to chunk
-	if (!m_chunk.PushBack((unsigned char*)dataHdr, sizeof(p_data_hdr_t), (unsigned char*)dataBuf, dataHdr->size))
-	{
-		return false;
-	}
+        if (!WriteChunkToFile()) {
+            return false;
+        } else if (m_fileSize >= m_maxFileSize) {
+            // Close existing file
+            CloseAllFiles();
+        }
+    }
+    // Add data header and data buffer to chunk
+    if (!m_chunk.PushBack((unsigned char *) dataHdr, sizeof(p_data_hdr_t), (unsigned char *) dataBuf, dataHdr->size)) {
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 
-bool cDeviceLogSerial::WriteChunkToFile()
-{
-	// Make sure we have data to write
-	if (m_chunk.GetDataSize() == 0)
-	{
-		return false;
-	}
+bool cDeviceLogSerial::WriteChunkToFile() {
+    // Make sure we have data to write
+    if (m_chunk.GetDataSize() == 0) {
+        return false;
+    }
 
-	// Create first file if it doesn't exist
-	if (m_pFile == NULLPTR)
-	{
-		OpenNewSaveFile();
-	}
+    // Create first file if it doesn't exist
+    if (m_pFile == NULLPTR) {
+        OpenNewSaveFile();
+    }
 
-	// Validate file pointer
-	if (m_pFile == NULLPTR)
-	{
-		return false;
-	}
+    // Validate file pointer
+    if (m_pFile == NULLPTR) {
+        return false;
+    }
 
-	// Write chunk to file
-	int fileBytes = m_chunk.WriteToFile(m_pFile, 0);
-	if (!m_pFile->good())
-	{
-		return false;
-	}
+    // Write chunk to file
+    int fileBytes = m_chunk.WriteToFile(m_pFile, 0);
+    if (!m_pFile->good()) {
+        return false;
+    }
 
-	// File byte size
-	m_fileSize += fileBytes;
-	m_logSize += fileBytes;
+    // File byte size
+    m_fileSize += fileBytes;
+    m_logSize += fileBytes;
 
-	return true;
+    return true;
 }
 
 
-p_data_buf_t* cDeviceLogSerial::ReadData()
-{
-	p_data_buf_t* data = NULL;
+p_data_buf_t *cDeviceLogSerial::ReadData() {
+    p_data_buf_t *data = NULL;
 
-	// Read data from chunk
-	while (!(data = ReadDataFromChunk()))
-	{
-		// Read next chunk from file
-		if (!ReadChunkFromFile())
-		{
-			return NULL;
-		}
-	}
+    // Read data from chunk
+    while (!(data = ReadDataFromChunk())) {
+        // Read next chunk from file
+        if (!ReadChunkFromFile()) {
+            return NULL;
+        }
+    }
 
-	// Read is good
+    // Read is good
     cDeviceLog::OnReadData(data);
-	return data;
+    return data;
 }
 
 
-p_data_buf_t* cDeviceLogSerial::ReadDataFromChunk()
-{
-	// Ensure chunk has data
-	if (m_chunk.GetDataSize() <= 0)
-	{
-		return NULL;
-	}
+p_data_buf_t *cDeviceLogSerial::ReadDataFromChunk() {
+    // Ensure chunk has data
+    if (m_chunk.GetDataSize() <= 0) {
+        return NULL;
+    }
 
-	p_data_buf_t* data = (p_data_buf_t*)m_chunk.GetDataPtr();
-	int size = data->hdr.size + sizeof(p_data_hdr_t);
-	if (m_chunk.PopFront(size))
-	{
-		return data;
-	}
-	else
-	{
-		return NULL;
-	}
+    p_data_buf_t *data = (p_data_buf_t *) m_chunk.GetDataPtr();
+    int size = data->hdr.size + sizeof(p_data_hdr_t);
+    if (m_chunk.PopFront(size)) {
+        return data;
+    } else {
+        return NULL;
+    }
 }
 
 
-bool cDeviceLogSerial::ReadChunkFromFile()
-{
-	// Read next chunk from file
-	while (m_chunk.ReadFromFile(m_pFile) < 0)
-	{
-		if (!OpenNextReadFile())
-		{
-			// No more data or error opening next file
-			return false;
-		}
-	}
-	return true;
+bool cDeviceLogSerial::ReadChunkFromFile() {
+    // Read next chunk from file
+    while (m_chunk.ReadFromFile(m_pFile) < 0) {
+        if (!OpenNextReadFile()) {
+            // No more data or error opening next file
+            return false;
+        }
+    }
+    return true;
 }
 
 
-void cDeviceLogSerial::SetSerialNumber(uint32_t serialNumber)
-{
-	m_devInfo.serialNumber = serialNumber;
-	m_chunk.m_hdr.devSerialNum = serialNumber;
+void cDeviceLogSerial::SetSerialNumber(uint32_t serialNumber) {
+    devSerialNo = serialNumber;
+    m_chunk.m_hdr.devSerialNum = serialNumber;
 }
 
 
-void cDeviceLogSerial::Flush()
-{
-	if (WriteChunkToFile())
-	{
-		m_pFile->flush();
-	}
+void cDeviceLogSerial::Flush() {
+    if (WriteChunkToFile()) {
+        m_pFile->flush();
+    }
 }
 
 

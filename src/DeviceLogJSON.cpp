@@ -102,7 +102,7 @@ bool cDeviceLogJSON::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, pro
 	}
 	else if (dataHdr->id == DID_DEV_INFO)
 	{
-		memcpy(&m_devInfo, dataBuf, sizeof(dev_info_t));
+		memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
 	}
 
 	// Write date to file
@@ -154,17 +154,16 @@ p_data_buf_t* cDeviceLogJSON::ReadDataFromFile()
 	{
 		if (m_data.hdr.id == DID_DEV_INFO)
 		{
-			memcpy(&m_devInfo, m_data.buf, sizeof(dev_info_t));
+			memcpy((void *)&(device->devInfo), m_data.buf, sizeof(dev_info_t));
 		}
 		return &m_data;
 	}
     return NULLPTR;
 }
 
-
 void cDeviceLogJSON::SetSerialNumber(uint32_t serialNumber)
 {
-	m_devInfo.serialNumber = serialNumber;
+    devSerialNo = serialNumber;
 }
 
 

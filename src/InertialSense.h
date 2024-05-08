@@ -198,7 +198,7 @@ public:
 	 * @param dataSize Number of bytes of raw data.
 	 * @param data Pointer to raw data.
 	 */
-	void LogRawData(int device, int dataSize, const uint8_t* data);
+	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
 	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.

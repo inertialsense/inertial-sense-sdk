@@ -31,19 +31,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cDeviceLogRaw::cDeviceLogRaw()
+cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog()
 {
     is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
 }
 
+cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) {
+    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+}
 
-void cDeviceLogRaw::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
+    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+};
+
+
+void cDeviceLogRaw::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 //     m_chunk.Init(chunkSize);
     m_chunk.Clear();
-    m_chunk.m_hdr.pHandle = pHandle;
+    m_chunk.m_hdr.pHandle = (device != nullptr ? device->portHandle : -1);
 
-    cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
+    cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
@@ -114,7 +122,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				{ 
 					if (m_comm.rxErrorCount>1) 
 					{ 
-						printf("SN%d SaveData() parse errors: %d\n", m_devInfo.serialNumber, m_comm.rxErrorCount); 
+						printf("SN%d SaveData() parse errors: %d\n", devSerialNo, m_comm.rxErrorCount);
 					}
 				}
 				break;
@@ -129,7 +137,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                 // Add serial number if available
-                if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO && !copyDataPToStructP2(&m_devInfo, &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t)))
+                if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO && !copyDataPToStructP2((void*)&(device->devInfo), &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t)))
                 {
                     int start = m_comm.rxPkt.dataHdr.offset;
                     int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
@@ -138,7 +146,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                     // Did we really get the serial number?
                     if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
                     {
-                        m_chunk.m_hdr.devSerialNum = m_devInfo.serialNumber;
+                        m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
                     }
                 }
                 }
@@ -264,7 +272,7 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
 			case _PTYPE_PARSE_ERROR:
 				if (m_showParseErrors)
 				{
-					if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devInfo.serialNumber, m_comm.rxErrorCount); }
+					if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", devSerialNo, m_comm.rxErrorCount); }
 				}
 				break;
 
@@ -295,10 +303,9 @@ bool cDeviceLogRaw::ReadChunkFromFile()
     return true;
 }
 
-
 void cDeviceLogRaw::SetSerialNumber(uint32_t serialNumber)
 {
-    m_devInfo.serialNumber = serialNumber;
+    devSerialNo = serialNumber;
     m_chunk.m_hdr.devSerialNum = serialNumber;
 }
 

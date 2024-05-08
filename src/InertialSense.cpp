@@ -49,7 +49,7 @@ static int staticReadData(int port, unsigned char* buf, int len)
 
 	if (s_is)
 	{	// Save raw data to ISlogger
-		s_is->LogRawData(port, bytesRead, buf);
+		s_is->LogRawData(&s_cm_state->devices[port], bytesRead, buf);
 	}
 
     return bytesRead;
@@ -164,14 +164,14 @@ InertialSense::~InertialSense()
 bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
 {
     cMutexLocker logMutexLocker(&m_logMutex);
-    if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, (int)m_comManagerState.devices.size(), logType, maxDiskSpacePercent, maxFileSize, subFolder.length() != 0))
+    if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, logType, maxDiskSpacePercent, maxFileSize, subFolder.length() != 0))
     {
         return false;
     }
     m_logger.EnableLogging(true);
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    for (auto& d : m_comManagerState.devices)
     {
-        m_logger.SetDeviceInfo(&m_comManagerState.devices[i].devInfo);
+        m_logger.registerDevice(d);
     }
     if (m_logThread == NULLPTR)
     {
@@ -195,9 +195,9 @@ void InertialSense::DisableLogging()
 	}
 }
 
-void InertialSense::LogRawData(int device, int dataSize, const uint8_t* data)
+void InertialSense::LogRawData(ISDevice* device, int dataSize, const uint8_t* data)
 {
-    m_logger.LogData(device, dataSize, data);
+    m_logger.LogData(device->devLogger, dataSize, data);
 }
 
 bool InertialSense::HasReceivedDeviceInfo(size_t index)
@@ -274,7 +274,8 @@ void InertialSense::LoggerThread(void* info)
                 if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
                     size_t numPackets = i->second.size();
                     for (size_t j = 0; j < numPackets; j++) {
-                        if (!inertialSense->m_logger.LogData(i->first, &i->second[j].hdr, i->second[j].buf)) {
+                        auto device = inertialSense->m_comManagerState.devices[i->first];
+                        if (!inertialSense->m_logger.LogData(device.devLogger, &i->second[j].hdr, i->second[j].buf)) {
                             // Failed to write to log
                             SLEEP_MS(20); // FIXME:  This maybe problematic, as it may unnecessarily delay the thread, leading run-away memory usage.
                         }

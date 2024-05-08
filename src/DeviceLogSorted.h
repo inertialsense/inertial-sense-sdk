@@ -26,8 +26,10 @@ class cDeviceLogSorted : public cDeviceLog
 {
 public:
     cDeviceLogSorted();
+    cDeviceLogSorted(const ISDevice* dev);
+    cDeviceLogSorted(uint16_t hdwId, uint32_t serialNo);
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
+    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
 	void InitDeviceForReading() OVERRIDE;
 	bool OpenAllReadFiles();
 	bool CloseAllFiles() OVERRIDE;

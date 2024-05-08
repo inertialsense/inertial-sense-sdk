@@ -42,8 +42,22 @@ cDeviceLogSorted::cDeviceLogSorted()
     }
 }
 
+cDeviceLogSorted::cDeviceLogSorted(const ISDevice* dev) : cDeviceLog(dev) {
+    for (uint32_t i = 0; i < DID_COUNT; i++)
+    {
+        m_chunks[i] = NULLPTR;
+    }
+}
 
-void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+cDeviceLogSorted::cDeviceLogSorted(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
+    for (uint32_t i = 0; i < DID_COUNT; i++)
+    {
+        m_chunks[i] = NULLPTR;
+    }
+}
+
+
+void cDeviceLogSorted::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 	for (uint32_t i = 0; i < DID_COUNT; i++)
     {
@@ -55,7 +69,7 @@ void cDeviceLogSorted::InitDeviceForWriting(int pHandle, std::string timestamp, 
     }
 	m_dataSerNum = 0;
 	m_lastSerNum = 0xFFFFFFFF;
-	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
+	cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
@@ -171,15 +185,18 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, p
         m_chunks[id] = new cSortedDataChunk();
         // First time saving to this chunk
         m_chunks[id]->m_subHdr.dHdr = *dataHdr;
-        m_chunks[id]->m_hdr.pHandle = m_pHandle;
-        m_chunks[id]->m_hdr.devSerialNum = m_devInfo.serialNumber;
+        m_chunks[id]->m_hdr.devSerialNum = SerialNumber();
+
+        if (device != nullptr) {
+            m_chunks[id]->m_hdr.pHandle = device->portHandle;
+        }
     }
     cSortedDataChunk* chunk = m_chunks[id];
 
 	// Add serial number if available
 	if (id == DID_DEV_INFO)
 	{
-		if (!copyDataPToStructP2(&m_devInfo, dataHdr, dataBuf, sizeof(dev_info_t)))
+		if (!copyDataPToStructP2((void *)&(device->devInfo), dataHdr, dataBuf, sizeof(dev_info_t)))
 		{
 			int start = dataHdr->offset;
 			int end = dataHdr->offset + dataHdr->size;
@@ -188,7 +205,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, p
 			// Did we get the serial number portion of devInfo?
 			if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
 			{
-				chunk->m_hdr.devSerialNum = m_devInfo.serialNumber;
+				chunk->m_hdr.devSerialNum = device->devInfo.serialNumber;
 			}
 		}
 	}
@@ -500,15 +517,16 @@ bool cDeviceLogSorted::ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id)
 	return true;
 }
 
-
 void cDeviceLogSorted::SetSerialNumber(uint32_t serialNumber)
 {
-	m_devInfo.serialNumber = serialNumber;
+    devSerialNo = serialNumber;
     if (m_chunks[DID_DEV_INFO] == NULLPTR)
 	{
         m_chunks[DID_DEV_INFO] = new cSortedDataChunk();
 		m_chunks[DID_DEV_INFO]->m_subHdr.dHdr.id = DID_DEV_INFO;
-		m_chunks[DID_DEV_INFO]->m_hdr.pHandle = m_pHandle;
+        if (device != nullptr) {
+            m_chunks[DID_DEV_INFO]->m_hdr.pHandle = device->portHandle;
+        }
 	}
     m_chunks[DID_DEV_INFO]->m_hdr.devSerialNum = serialNumber;
 }

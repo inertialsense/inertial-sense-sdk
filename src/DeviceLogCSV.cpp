@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stddef.h>
 #include <climits>
 
+#include "ISDevice.h"
 #include "ISPose.h"
 #include "DeviceLogCSV.h"
 #include "ISFileManager.h"
@@ -31,11 +32,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-void cDeviceLogCSV::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLogCSV::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 	m_logs.clear();
 	m_nextId = 0;
-	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
+	cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
@@ -51,9 +52,9 @@ void cDeviceLogCSV::InitDeviceForReading()
 		if (dataSet != NULL)
 		{
 			string dataSetRegex = string(dataSet) + "\\.csv$";
-			if (m_devInfo.serialNumber > 0 && m_devInfo.serialNumber < 4294967295)	// < 0xFFFFFFFF
+			if (devSerialNo > 0 && devSerialNo < 4294967295)	// < 0xFFFFFFFF
 			{	// Include serial number if valid
-				dataSetRegex = "LOG_SN" + to_string(m_devInfo.serialNumber) + ".*?" + dataSetRegex;
+				dataSetRegex = "LOG_SN" + to_string(devSerialNo) + ".*?" + dataSetRegex;
 			}
 			vector<ISFileManager::file_info_t> infos;
 			vector<string> files;
@@ -122,10 +123,10 @@ bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 	_MKDIR(m_directory.c_str());
 
 	// Open new file
-	uint32_t serNum = m_devInfo.serialNumber;
+	uint32_t serNum = SerialNumber();
 	if (!serNum)
 	{
-		serNum = m_pHandle;
+		serNum = device->portHandle; // FIXME: This is a bad idea...
 	}
 
 	string fileName;
@@ -226,7 +227,7 @@ bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, prot
 	}
 	else if (dataHdr->id == DID_DEV_INFO)
 	{
-		memcpy(&m_devInfo, dataBuf, sizeof(dev_info_t));
+		memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
 	}
 
 	// Write date to file
@@ -295,13 +296,14 @@ p_data_buf_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 		assert(false);
 		return NULL;
 	}
+    memset(&m_data, 0, sizeof(m_data));
 	m_data.hdr.id = log.dataId;
 	m_data.hdr.size = log.dataSize;
 	if (m_csv.StringCSVToData(log.nextLine, m_data.hdr, m_data.buf, _ARRAY_BYTE_COUNT(m_data.buf), log.columnHeaders))
 	{
 		if (m_data.hdr.id == DID_DEV_INFO)
 		{
-			memcpy(&m_devInfo, m_data.buf, sizeof(dev_info_t));
+			memcpy((void *)&(device->devInfo), m_data.buf, sizeof(dev_info_t));
 		}
 		log.nextLine.clear();
 		while (!GetNextLineForFile(log) && OpenNewFile(log, true)) {}
@@ -312,10 +314,9 @@ p_data_buf_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 	return NULL;
 }
 
-
 void cDeviceLogCSV::SetSerialNumber(uint32_t serialNumber)
 {
-	m_devInfo.serialNumber = serialNumber;
+    devSerialNo = serialNumber;
 }
 
 

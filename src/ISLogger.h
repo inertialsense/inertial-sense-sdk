@@ -68,15 +68,24 @@ public:
 	bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_DAT, std::vector<std::string> serials = {});
 
 	// Setup logger for writing to file.
-	bool InitSave(eLogType logType = LOGTYPE_DAT, const std::string& directory = g_emptyString, int numDevices = 1, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
-	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, int numDevices = 1, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSave(eLogType logType = LOGTYPE_DAT, const std::string& directory = g_emptyString, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+
+    // Establish link between devices and this logger
+    std::shared_ptr<cDeviceLog> registerDevice(ISDevice& device);
+    std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
+    std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
+
 
 	// update internal state, handle timeouts, etc.
 	void Update();
-	bool LogData(unsigned int device, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
-	bool LogData(unsigned int device, int dataSize, const uint8_t* dataBuf);
-	p_data_buf_t* ReadData(unsigned int device = 0);
-	p_data_buf_t* ReadNextData(unsigned int& device);
+	bool LogData(std::shared_ptr<cDeviceLog> devLogger, p_data_hdr_t* dataHdr, const uint8_t* dataBuf);
+	bool LogData(std::shared_ptr<cDeviceLog> devLogger, int dataSize, const uint8_t* dataBuf);
+    bool LogDataBySN(uint32_t serialNo, p_data_hdr_t* dataHdr, const uint8_t* dataBuf) { return LogData(DeviceLogBySerialNumber(serialNo), dataHdr, dataBuf); }
+    bool LogDataBySN(uint32_t serialNo, int dataSize, const uint8_t* dataBuf) {  return LogData(DeviceLogBySerialNumber(serialNo), dataSize, dataBuf); }
+	p_data_buf_t* ReadData(std::shared_ptr<cDeviceLog> devLogger = nullptr);
+    p_data_buf_t* ReadData(size_t devIndex);
+	p_data_buf_t* ReadNextData(size_t& devIndex);
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
 	bool Enabled() { return m_enabled; }
 	void CloseAllFiles();
@@ -86,22 +95,27 @@ public:
 	std::string TimeStamp() { return m_timeStamp; }
 	std::string LogDirectory() { return m_directory; }
 	uint64_t LogSizeAll();
-	uint64_t LogSize(unsigned int device = 0);
+	uint64_t LogSize(uint32_t devSerialNo = 0);
 	float LogSizeAllMB();
-	float LogSizeMB(unsigned int device = 0);
-	float FileSizeMB(unsigned int device = 0);
-	uint32_t FileCount(unsigned int device = 0);
-	std::string GetNewFileName(unsigned int device, uint32_t serialNumber, uint32_t fileCount, const char* suffix);
+	float LogSizeMB(uint32_t devSerialNo = 0);
+	float FileSizeMB(uint32_t devSerialNo = 0);
+	uint32_t FileCount(uint32_t devSerialNo = 0);
+	std::string GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char* suffix);
+    std::vector<std::shared_ptr<cDeviceLog>> DeviceLogs();
 	uint32_t DeviceCount() { return (uint32_t)m_devices.size(); }
-	bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
-	const dev_info_t* DeviceInfo(unsigned int device = 0);
+    std::shared_ptr<cDeviceLog> DeviceLogBySerialNumber(uint32_t serialNo) {
+        return (m_devices.count(serialNo) ? m_devices[serialNo] : nullptr);
+    }
+	// bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
+	// const dev_info_t* DeviceInfo(unsigned int device = 0);
+
 	bool CopyLog(
-		cISLogger& log, 
-		const std::string& timestamp = g_emptyString, 
-		const std::string& outputDir = g_emptyString, 
-		eLogType logType = LOGTYPE_DAT, 
-		float maxDiskSpacePercent = 0.5f, 
-		uint32_t maxFileSize = 1024 * 1024 * 5, 
+		cISLogger& log,
+		const std::string& timestamp = g_emptyString,
+		const std::string& outputDir = g_emptyString,
+		eLogType logType = LOGTYPE_DAT,
+		float maxDiskSpacePercent = 0.5f,
+		uint32_t maxFileSize = 1024 * 1024 * 5,
 		bool useSubFolderTimestamp = true,
 		bool enableCsvIns2ToIns1Conversion = true);
 	const cLogStats& GetStats() { return m_logStats; }
@@ -120,17 +134,17 @@ public:
 	void SetTimeoutFlushSeconds(time_t timeoutFlushSeconds) { m_timeoutFlushSeconds = timeoutFlushSeconds; }
 
     // check if a data header is corrupt
-    static bool LogHeaderIsCorrupt(const p_data_hdr_t* hdr);
+    static bool isHeaderCorrupt(const p_data_hdr_t* hdr);
 
 	// create a timestamp
 	static std::string CreateCurrentTimestamp();
 
     // check if a data packet is corrupt, NULL data is OK
-    bool LogDataIsCorrupt(const p_data_buf_t* data);
+    bool isDataCorrupt(const p_data_buf_t* data);
 
     // read all log data into memory - if the log is over 1.5 GB this will fail on 32 bit processes
     // the map contains device id (serial number) key and a vector containing log data for each data id, which will be an empty vector if no log data for that id
-    static bool ReadAllLogDataIntoMemory(const std::string& directory, std::map<uint32_t, std::vector<std::vector<uint8_t>>>& data);
+    // static bool ReadAllLogDataIntoMemory(const std::string& directory, std::map<uint32_t, std::vector<std::vector<uint8_t>>>& data);
 
 	void SetKmlConfig(bool gpsData = true, bool showPath = true, bool showSample = false, bool showTimeStamp = true, double updatePeriodSec = 1.0, bool altClampToGround = true)
 	{
@@ -141,9 +155,9 @@ public:
 		m_iconUpdatePeriodSec = updatePeriodSec;
 		m_altClampToGround = altClampToGround;
 
-		for (unsigned int dev = 0; dev < DeviceCount(); dev++)
+        for (auto d : DeviceLogs())
 		{
-			m_devices[dev]->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
+			d->SetKmlConfig(m_showPath, m_showSample, m_showTimeStamp, m_iconUpdatePeriodSec, m_altClampToGround);
 		}
 	}
 
@@ -181,8 +195,8 @@ private:
 	cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, int numDevices, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
-	bool InitDevicesForWriting(int numDevices = 1);
+	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
+	bool InitDevicesForWriting(std::vector<ISDevice>& devices);
 	void Cleanup();
 	void PrintProgress();
 
@@ -195,15 +209,15 @@ private:
 #endif
     }
 
-	eLogType				m_logType;
-	bool					m_useChunkHeader;
-	bool					m_enabled;
+	eLogType				m_logType = LOGTYPE_DAT;
+	bool					m_useChunkHeader = true;
+	bool					m_enabled = false;
 	std::string				m_directory;
 	std::string				m_timeStamp;
-	std::vector<std::shared_ptr<cDeviceLog>> m_devices;
+	std::map<uint32_t, std::shared_ptr<cDeviceLog>> m_devices = { };
 
-	uint64_t				m_maxDiskSpace;
-	uint32_t				m_maxFileSize;
+	uint64_t				m_maxDiskSpace = 0;
+	uint32_t				m_maxFileSize = 0;
 	cLogStats				m_logStats;
 #if PLATFORM_IS_EVB_2
 	cISLogFileFatFs         m_errorFile;
@@ -211,16 +225,16 @@ private:
 	cISLogFile				m_errorFile;
 #endif
 
-	bool					m_altClampToGround;
-	bool					m_gpsData;
-	bool					m_showSample;
-	bool					m_showPath;
-	bool					m_showTimeStamp;
-	double					m_iconUpdatePeriodSec;
-	time_t					m_lastCommTime;
-	time_t					m_timeoutFlushSeconds;
-	int						m_progress;
-	bool					m_showParseErrors;
+	bool					m_altClampToGround = false;
+	bool					m_gpsData = false;
+	bool					m_showSample = false;
+	bool					m_showPath = false;
+	bool					m_showTimeStamp = false;
+	double					m_iconUpdatePeriodSec = false;
+	time_t					m_lastCommTime = 0;
+	time_t					m_timeoutFlushSeconds = 0;
+	int						m_progress = 0;
+	bool					m_showParseErrors = true;
 };
 
 
