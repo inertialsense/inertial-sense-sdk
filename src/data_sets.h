@@ -218,7 +218,6 @@ enum eInsStatusFlags
     /** Heading aided by GPS */
     INS_STATUS_GPS_AIDING_HEADING               = (int)0x00000080,
 
-    INS_STATUS_POS_ALIGN_FINE                   = (int)0x00000040,
 #define INS_STATUS_DEAD_RECKONING(insStatus)    (((insStatus)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE)) && !((insStatus)&INS_STATUS_GPS_AIDING_POS))
 
     /** Position aided by GPS position */
