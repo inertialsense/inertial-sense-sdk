@@ -10,6 +10,8 @@
 
 #include <protocol/FirmwareUpdate.h>
 
+#include "ISDevice.h"
+// #include "InertialSense.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
 #include "util/md5.h"
@@ -101,6 +103,9 @@ public:
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
     ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
+
+    ISFirmwareUpdater(ISDevice device) : FirmwareUpdateHost(), pHandle(device.portHandle), portName(device.serialPort.port), devInfo(&device.devInfo) { };
+
     ~ISFirmwareUpdater() override {};
 
     void setTarget(fwUpdate::target_t _target);
