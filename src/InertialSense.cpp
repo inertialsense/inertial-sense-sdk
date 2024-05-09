@@ -979,6 +979,20 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 	}
 }
 
+bool InertialSense::BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple)
+{
+    if ((pHandle >= m_comManagerState.devices.size()) || (dataId >= (sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)))) {
+        return false;
+    }
+
+    if (periodMultiple < 0) {
+        comManagerDisableData(pHandle, dataId);
+    } else if (m_comManagerState.devices[pHandle].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+        comManagerGetData(pHandle, dataId, 0, 0, periodMultiple);
+    }
+    return true;
+}
+
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
 {
     if (m_comManagerState.devices.size() == 0 || dataId >= (sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)))
