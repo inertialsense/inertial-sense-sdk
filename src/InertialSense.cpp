@@ -456,16 +456,18 @@ bool InertialSense::Update()
     }
 
     // if any serial ports have closed, shutdown
+    bool anyOpen = false;
     for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
     {
         if (!serialPortIsOpen(&m_comManagerState.devices[i].serialPort))
         {
-            CloseSerialPorts();
-            return false;
-        }
+            // Make sure its closed..
+            serialPortClose(&m_comManagerState.devices[i].serialPort);
+        } else
+            anyOpen = true;
     }
 
-    return true;
+    return anyOpen;
 }
 
 bool InertialSense::UpdateServer()
@@ -981,7 +983,8 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
 bool InertialSense::BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple)
 {
-    if ((pHandle >= m_comManagerState.devices.size()) || (dataId >= (sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)))) {
+    if (pHandle >= m_comManagerState.devices.size())
+    {
         return false;
     }
 
@@ -995,14 +998,16 @@ bool InertialSense::BroadcastBinaryData(int pHandle, uint32_t dataId, int period
 
 bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback)
 {
-    if (m_comManagerState.devices.size() == 0 || dataId >= (sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)))
+    if (m_comManagerState.devices.size() == 0)
     {
         return false;
     }
-    else
+
+    if (dataId < (sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)))
     {
         m_comManagerState.binaryCallback[dataId] = callback;
     }
+
     if (periodMultiple < 0)
     {
         for (int i = 0; i < (int)m_comManagerState.devices.size(); i++)

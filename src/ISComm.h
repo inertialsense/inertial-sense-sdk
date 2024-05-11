@@ -538,6 +538,20 @@ typedef enum
 	ENABLE_PROTOCOL_SONY        = 0x00000020,
 } eProtocolMask;
 
+typedef enum {
+    EPARSE_INVALID_PREAMBLE,
+    EPARSE_INVALID_SIZE,
+    EPARSE_INVALID_CHKSUM,
+    EPARSE_INVALID_DATATYPE,
+    EPARSE_MISSING_EOS_MARKER,      //! Invalid End-of-Stream/End-of-Sentence(NMEA) marker
+    EPARSE_INCOMPLETE_PACKET,       //! Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
+    EPARSE_INVALID_HEADER,
+    EPARSE_INVALID_PAYLOAD,
+    EPARSE_RXBUFFER_FLUSHED,
+    EPARSE_STREAM_UNPARSEABLE,
+    NUM_EPARSE_ERRORS
+} eParseErrorType;
+
 typedef struct  
 {
 	/** See eProtocolMask */
@@ -571,7 +585,13 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
+    /** Communications error type (most recent) */
+    eParseErrorType rxErrorType;
+
+    /** Communications error counter, by type */
+    uint32_t rxErrorTypeCount[NUM_EPARSE_ERRORS];
+
+    /** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
 	pFnProcessPkt processPkt;
 
 	/** Protocol parser state */

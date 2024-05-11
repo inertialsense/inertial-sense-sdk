@@ -157,6 +157,11 @@ public:
     bool Update();
 
     /**
+     * Register a callback handler for data stream errors.
+     */
+    void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
+
+    /**
     * Enable or disable logging - logging is disabled by default
     * @param enable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
     * @param path the path to write the log files to
@@ -184,7 +189,7 @@ public:
     */
     bool LoggerEnabled() { return m_logger.Enabled(); }
 
-	/**
+    /**
 	 * @brief Get pointer to ISLogger
 	 * 
 	 * @return cISLogger* ISLogger pointer
