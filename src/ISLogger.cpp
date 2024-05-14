@@ -609,7 +609,7 @@ void cISLogger::ShowParseErrors(bool show)
 
 uint64_t cISLogger::LogSize(uint32_t devSerialNo)
 {
-    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() : -1;
+    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() : -1;
 }
 
 uint64_t cISLogger::LogSizeAll()
@@ -630,24 +630,24 @@ float cISLogger::LogSizeAllMB()
 
 float cISLogger::LogSizeMB(uint32_t devSerialNo)
 {
-    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0;
+    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0;
 }
 
 
 float cISLogger::FileSizeMB(uint32_t devSerialNo)
 {
-    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0;
+    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0;
 }
 
 
 uint32_t cISLogger::FileCount(uint32_t devSerialNo)
 {
-    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->FileCount() : 0;
+    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->FileCount() : 0;
 }
 
 std::string cISLogger::GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char *suffix)
 {
-    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : std::string("");
+    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : std::string("");
 }
 
 /*
@@ -713,7 +713,6 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
     EnableLogging(true);
     p_data_buf_t *data = NULL;
-    // for (unsigned int dev = 0; dev < log.DeviceCount(); dev++)
     for ( auto& srcDev : log.DeviceLogs() )
     {
         auto dstDev = ( srcDev->Device() != nullptr ? registerDevice(*(srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
