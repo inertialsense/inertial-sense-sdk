@@ -520,7 +520,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
-    for (s_timeMs=0; logger.LogSizeMB() < logSizeMB; s_timeMs += s_timePeriodMs)
+    for (s_timeMs=0; logger.LogSizeAllMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
         for (auto& d : logger.DeviceLogs())
         {

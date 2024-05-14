@@ -572,7 +572,8 @@ void cISLogger::CloseAllFiles()
 {
     for (auto it : m_devices)
     {
-        it.second->CloseAllFiles();
+        if (it.second != nullptr)
+            it.second->CloseAllFiles();
     }
 
     m_logStats.WriteToFile(m_directory + "/stats.txt");
@@ -606,6 +607,11 @@ void cISLogger::ShowParseErrors(bool show)
     m_showParseErrors = show;
 }
 
+uint64_t cISLogger::LogSize(uint32_t devSerialNo)
+{
+    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() : -1;
+}
+
 uint64_t cISLogger::LogSizeAll()
 {
     uint64_t size = 0;
@@ -615,13 +621,6 @@ uint64_t cISLogger::LogSizeAll()
     }
     return size;
 }
-
-
-uint64_t cISLogger::LogSize(uint32_t devSerialNo)
-{
-    return m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() : 0;
-}
-
 
 float cISLogger::LogSizeAllMB()
 {

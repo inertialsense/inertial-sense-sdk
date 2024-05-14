@@ -95,11 +95,11 @@ public:
 	std::string TimeStamp() { return m_timeStamp; }
 	std::string LogDirectory() { return m_directory; }
 	uint64_t LogSizeAll();
-	uint64_t LogSize(uint32_t devSerialNo = 0);
+	uint64_t LogSize(uint32_t devSerialNo);
 	float LogSizeAllMB();
-	float LogSizeMB(uint32_t devSerialNo = 0);
-	float FileSizeMB(uint32_t devSerialNo = 0);
-	uint32_t FileCount(uint32_t devSerialNo = 0);
+	float LogSizeMB(uint32_t devSerialNo);
+	float FileSizeMB(uint32_t devSerialNo);
+	uint32_t FileCount(uint32_t devSerialNo);
 	std::string GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char* suffix);
     std::vector<std::shared_ptr<cDeviceLog>> DeviceLogs();
 	uint32_t DeviceCount() { return (uint32_t)m_devices.size(); }
