@@ -508,7 +508,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
         devices[d].devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
         devices[d].devInfo.hardwareVer[0] = 5;
         devices[d].devInfo.hardwareVer[1] = 0;
-        devices[d].devInfo.serialNumber = random() % 999999;
+        devices[d].devInfo.serialNumber = rand() % 999999;
         logger.registerDevice(devices[d]);
     }
     logger.EnableLogging(true);
