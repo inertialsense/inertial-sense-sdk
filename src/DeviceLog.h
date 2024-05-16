@@ -16,7 +16,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <string.h>
 #include <vector>
-// #include "ISDevice.h"
 #include "ISLogFileBase.h"
 #include "ISLogStats.h"
 
@@ -70,8 +69,8 @@ public:
 
     const dev_info_t *DeviceInfo();
 
-    uint16_t HardwareId() { return devHdwId; }
-    uint32_t SerialNumber() { return devSerialNo; }
+    uint16_t HardwareId() { return m_devHdwId; }
+    uint32_t SerialNumber() { return m_devSerialNo; }
 
     // void SetDeviceInfo(const dev_info_t *info);
     uint64_t FileSize() { return m_fileSize; }
@@ -102,8 +101,8 @@ protected:
 
     const ISDevice *device = nullptr;               //! ISDevice reference to source of data
 
-    uint16_t devHdwId = 0;                          //! used when reading a file and no ISDevice is available
-    uint32_t devSerialNo = -1;                      //! used when reading a file, and no ISDevice is available
+    uint16_t m_devHdwId = 0;                          //! used when reading a file and no ISDevice is available
+    uint32_t m_devSerialNo = -1;                      //! used when reading a file, and no ISDevice is available
 
     std::vector<std::string> m_fileNames;
     cISLogFileBase *m_pFile = NULL;

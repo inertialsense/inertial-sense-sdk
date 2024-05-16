@@ -163,7 +163,7 @@ p_data_buf_t* cDeviceLogJSON::ReadDataFromFile()
 
 void cDeviceLogJSON::SetSerialNumber(uint32_t serialNumber)
 {
-    devSerialNo = serialNumber;
+    m_devSerialNo = serialNumber;
 }
 
 

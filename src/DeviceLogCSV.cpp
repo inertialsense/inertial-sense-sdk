@@ -52,9 +52,9 @@ void cDeviceLogCSV::InitDeviceForReading()
 		if (dataSet != NULL)
 		{
 			string dataSetRegex = string(dataSet) + "\\.csv$";
-			if (devSerialNo > 0 && devSerialNo < 4294967295)	// < 0xFFFFFFFF
+			if (m_devSerialNo > 0 && m_devSerialNo < 4294967295)	// < 0xFFFFFFFF
 			{	// Include serial number if valid
-				dataSetRegex = "LOG_SN" + to_string(devSerialNo) + ".*?" + dataSetRegex;
+				dataSetRegex = "LOG_SN" + to_string(m_devSerialNo) + ".*?" + dataSetRegex;
 			}
 			vector<ISFileManager::file_info_t> infos;
 			vector<string> files;
@@ -125,9 +125,7 @@ bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 	// Open new file
 	uint32_t serNum = SerialNumber();
 	if (!serNum)
-	{
-		serNum = device->portHandle; // FIXME: This is a bad idea...
-	}
+        return false;
 
 	string fileName;
 	if (readonly)
@@ -316,7 +314,7 @@ p_data_buf_t* cDeviceLogCSV::ReadDataFromFile(cCsvLog& log)
 
 void cDeviceLogCSV::SetSerialNumber(uint32_t serialNumber)
 {
-    devSerialNo = serialNumber;
+    m_devSerialNo = serialNumber;
 }
 
 

@@ -578,7 +578,7 @@ bool cDeviceLogKML::ReadChunkFromFile()
 
 void cDeviceLogKML::SetSerialNumber(uint32_t serialNumber)
 {
-    devSerialNo = serialNumber;
+    m_devSerialNo = serialNumber;
 }
 
 

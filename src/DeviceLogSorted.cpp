@@ -519,7 +519,7 @@ bool cDeviceLogSorted::ReadChunkFromFiles(cSortedDataChunk *chunk, uint32_t id)
 
 void cDeviceLogSorted::SetSerialNumber(uint32_t serialNumber)
 {
-    devSerialNo = serialNumber;
+    m_devSerialNo = serialNumber;
     if (m_chunks[DID_DEV_INFO] == NULLPTR)
 	{
         m_chunks[DID_DEV_INFO] = new cSortedDataChunk();

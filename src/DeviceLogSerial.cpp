@@ -94,7 +94,7 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, p
             }
         }
     } else
-        m_chunk.m_hdr.devSerialNum = devSerialNo;
+        m_chunk.m_hdr.devSerialNum = m_devSerialNo;
 
     // Ensure data will fit in chunk.  If not, create new chunk
     int32_t dataBytes = sizeof(p_data_hdr_t) + dataHdr->size;
@@ -193,7 +193,7 @@ bool cDeviceLogSerial::ReadChunkFromFile() {
 
 
 void cDeviceLogSerial::SetSerialNumber(uint32_t serialNumber) {
-    devSerialNo = serialNumber;
+    m_devSerialNo = serialNumber;
     m_chunk.m_hdr.devSerialNum = serialNumber;
 }
 

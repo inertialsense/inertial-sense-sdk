@@ -122,7 +122,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				{ 
 					if (m_comm.rxErrorCount>1) 
 					{ 
-						printf("SN%d SaveData() parse errors: %d\n", devSerialNo, m_comm.rxErrorCount);
+						printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
 					}
 				}
 				break;
@@ -272,7 +272,7 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
-                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", devSerialNo, m_comm.rxErrorCount); }
+                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
                 }
                 break;
 
@@ -305,7 +305,7 @@ bool cDeviceLogRaw::ReadChunkFromFile()
 
 void cDeviceLogRaw::SetSerialNumber(uint32_t serialNumber)
 {
-    devSerialNo = serialNumber;
+    m_devSerialNo = serialNumber;
     m_chunk.m_hdr.devSerialNum = serialNumber;
 }
 

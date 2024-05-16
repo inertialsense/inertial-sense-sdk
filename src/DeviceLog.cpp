@@ -38,12 +38,12 @@ cDeviceLog::cDeviceLog() {
 cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
     if (dev == nullptr)
         throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
-    devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
-    devSerialNo = dev->devInfo.serialNumber;
+    m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
+    m_devSerialNo = dev->devInfo.serialNumber;
     m_logStats.Clear();
 }
 
-cDeviceLog::cDeviceLog(uint16_t hdwId, uint32_t serial) : devHdwId(hdwId), devSerialNo(serial) {
+cDeviceLog::cDeviceLog(uint16_t hdwId, uint32_t serial) : m_devHdwId(hdwId), m_devSerialNo(serial) {
     m_logStats.Clear();
 }
 
@@ -56,7 +56,6 @@ cDeviceLog::~cDeviceLog()
 
 void cDeviceLog::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-    // m_pHandle = pHandle;
 	m_timeStamp = timestamp;
 	m_directory = directory;
 	m_fileCount = 0;
@@ -189,9 +188,8 @@ bool cDeviceLog::OpenNewSaveFile()
 	m_fileCount++;
     uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
-	{
-		// serNum = device->portHandle; // FIXME: This really isn't okay... pHandle isn't guaranteed unique and we could run into collisions under some circumstances
-	}
+        return false;
+
 	string fileName = GetNewFileName(serNum, m_fileCount, NULL);
 	m_pFile = CreateISLogFile(fileName, "wb");
 	m_fileSize = 0;
@@ -262,19 +260,6 @@ ISDevice* cDeviceLog::Device() {
 const dev_info_t* cDeviceLog::DeviceInfo() {
     return (dev_info_t*)&(device->devInfo);
 }
-
-/*
-void cDeviceLog::SetDeviceInfo(const dev_info_t *info)
-{
-	if (info == NULL)
-	{
-		return;
-	}
-	// device->devInfo = *info;
-	SetSerialNumber(info->serialNumber);
-}
-*/
-
 
 void cDeviceLog::OnReadData(p_data_buf_t* data)
 {
