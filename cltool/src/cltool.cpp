@@ -386,7 +386,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-reset"))
         {
-            g_commandLineOptions.softwareResetImx = true;
+            g_commandLineOptions.softwareReset = true;
         }		
 		else if (startsWith(a, "-romBootloader"))
 		{
