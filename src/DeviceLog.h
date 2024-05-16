@@ -111,7 +111,7 @@ protected:
     std::string m_timeStamp;
     std::string m_fileName;
     bool m_writeMode = false;                       //! Logger initialized for writing
-    bool m_showParseErrors;
+    bool m_showParseErrors = false;
     uint64_t m_fileSize = 0;
     uint64_t m_logSize = 0;
     uint32_t m_fileCount = 0;

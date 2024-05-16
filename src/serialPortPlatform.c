@@ -271,6 +271,8 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 {
     if (serialPort->handle != 0)
     {
+        // FIXME: Should we be closing the port and then reopen??
+        // serialPortClose(serialPort);
         // already open
         return 0;
     }

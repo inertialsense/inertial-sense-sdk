@@ -269,12 +269,12 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
                 // Do nothing
                 break;
 
-			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors)
-				{
-					if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", devSerialNo, m_comm.rxErrorCount); }
-				}
-				break;
+            case _PTYPE_PARSE_ERROR:
+                if (m_showParseErrors)
+                {
+                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", devSerialNo, m_comm.rxErrorCount); }
+                }
+                break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
