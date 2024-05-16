@@ -60,7 +60,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool forceBootloaderUpdate;				// -fb
 	bool bootloaderVerify; 					// -bv
 	bool replayDataLog;
-	bool softwareResetImx;
+	bool softwareReset;
 	bool magRecal;
 	uint32_t magRecalMode;
 	survey_in_t surveyIn;
