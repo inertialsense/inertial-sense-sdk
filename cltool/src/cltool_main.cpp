@@ -131,7 +131,105 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 		return;
 	}
 
-	printf("\nLogging %.1f KB to: %s\n", logger.LogSize() * 0.001f, logger.LogDirectory().c_str());
+    float logSize = logger.LogSizeAll() * 0.001;
+    if (logSize < 5000.0)
+        printf("\nLogging %.1f MB to: %s\n", logSize, logger.LogDirectory().c_str());
+    else
+        printf("\nLogging %.2f KB to: %s\n", logSize * 0.001f, logger.LogDirectory().c_str());
+}
+
+static int cltool_errorCallback(int port, is_comm_instance_t* comm)
+{
+    #define BUF_SIZE    8192
+    #define BLACK   "\u001b[30m"
+    #define RED     "\u001b[31m"
+    #define GREEN   "\u001b[32m"
+    #define YELLOW  "\u001b[33m"
+    #define BLUE    "\u001b[34m"
+    #define MAGENTA "\u001b[35m"
+    #define CYAN    "\u001b[36m"
+    #define WHITE   "\u001b[37m"
+    #define RESET   "\u001b[0m"
+
+    if (g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_RAW_PARSE)
+        return 0;
+
+    static const char* errorNames[] = {
+            "INVALID_PREAMBLE",
+            "INVALID_SIZE",
+            "INVALID_CHKSUM",
+            "INVALID_DATATYPE",
+            "MISSING_EOS_MARKER",
+            "INCOMPLETE_PACKET",
+            "INVALID_HEADER",
+            "INVALID_PAYLOAD",
+            "RXBUFFER_FLUSHED",
+            "STREAM_UNPARSEABLE",
+    };
+
+    typedef union
+    {
+        uint16_t ck;
+        struct
+        {
+            uint8_t a;	// Lower 8 bits
+            uint8_t b;	// Upper 8 bits
+        };
+    } checksum16_u;
+
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+    int bytesPerLine = 32;
+
+    const packet_t* rxPkt = &(comm->rxPkt);
+    const uint8_t* raw_data = rxPkt->data.ptr;
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "ERROR:   " RED "%s\n", errorNames[comm->rxErrorType]);
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[PREAMB] " RED "%02x %02x ", ((rxPkt->preamble >> 8) & 0xFF), (rxPkt->preamble & 0xFF));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Flags: " YELLOW "%u" BLUE "] " RED "%02x ", rxPkt->flags, rxPkt->flags);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " RED "%02x ", cISDataMappings::GetDataSetName(rxPkt->dataHdr.id), rxPkt->dataHdr.id);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Size: " YELLOW "%u" BLUE "] " RED "%02x %02x ", rxPkt->dataHdr.size, ((rxPkt->dataHdr.size >> 8) & 0xFF), (rxPkt->dataHdr.size & 0xFF));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Offset: " YELLOW "%u" BLUE "] " RED "%02x %02x", rxPkt->dataHdr.offset, ((rxPkt->dataHdr.offset >> 8) & 0xFF), (rxPkt->dataHdr.offset & 0xFF));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    int lines = (rxPkt->dataHdr.size / bytesPerLine) + 1;
+    for (int j = 0; j < lines; j++) {
+        int linelen = (j == lines-1) ? rxPkt->dataHdr.size % bytesPerLine : bytesPerLine;
+        if (linelen > 0) {
+            if (j == 0)
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "  [DATA] " RED);
+            else
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "         ");
+
+            for (int i = 0; i < linelen; i++) {
+                ptr += SNPRINTF(ptr, ptrEnd - ptr, "%02x ", (uint8_t) raw_data[(j * bytesPerLine) + i]);
+            }
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+        }
+    }
+
+    // recalculated actual checksum
+    packet_buf_t *isbPkt = (packet_buf_t*)(comm->rxBuf.head);
+    uint16_t payloadSize = isbPkt->hdr.payloadSize;
+    uint8_t *payload = comm->rxBuf.head + sizeof(packet_hdr_t);
+    checksum16_u *cksum = (checksum16_u*)(payload + payloadSize);
+    int bytes_cksum = rxPkt->size - 2;
+    uint16_t calcCksum = is_comm_isb_checksum16(0, comm->rxBuf.head, bytes_cksum);
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[CHKSUM] " RED "%02x %02x ", ((calcCksum >> 8) & 0xFF), (calcCksum & 0xFF));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "  Expected: " RED "%02x %02x ", ((rxPkt->checksum >> 8) & 0xFF), (rxPkt->checksum & 0xFF));
+
+    cout << buf << RESET << endl;
+    return 0;
 }
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
@@ -142,7 +240,6 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
             return;
         g_inertialSenseDisplay.showRawData(true);
     }
-
 
     (void)i;
     (void)pHandle;
@@ -167,7 +264,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         return true;
     }
 
-    // check for any compatible (procotol version 2) devices
+    // check for any compatible (protocol version 2) devices
     for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
         if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
             printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
@@ -551,6 +648,7 @@ static int cltool_dataStreaming()
     // [C++ COMM INSTRUCTION] STEP 1: Instantiate InertialSense Class
     // Create InertialSense object, passing in data callback function pointer.
     InertialSense inertialSenseInterface(cltool_dataCallback);
+    inertialSenseInterface.setErrorHandler(cltool_errorCallback);
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
@@ -597,6 +695,10 @@ static int cltool_dataStreaming()
     // [C++ COMM INSTRUCTION] STEP 3: Enable data broadcasting
     if (cltool_setupCommunications(inertialSenseInterface))
     {
+        if (g_commandLineOptions.displayMode == cInertialSenseDisplay::DMODE_RAW_PARSE) {
+            g_inertialSenseDisplay.showRawData(true);
+        }
+
         // [LOGGER INSTRUCTION] Setup and start data logger
         if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
         {

@@ -103,10 +103,10 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
     cout << logger_.DeviceCount() << " device(s):\n";
     vector<int> serialNumbers;
-    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
+    for (auto dev : logger_.DeviceLogs())
     {
-        cout << (i==0 ? "  " : ", ") << logger_.DeviceInfo(i)->serialNumber;
-        serialNumbers.push_back(logger_.DeviceInfo(i)->serialNumber);
+        cout << (serialNumbers.empty() ? "  " : ", ") << dev->SerialNumber();
+        serialNumbers.push_back(dev->SerialNumber());
     }
     cout << endl;
     serialNumbers_ = py::cast(serialNumbers);
@@ -116,10 +116,10 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     return true;
 }
 
-void LogReader::organizeData(int device_id)
+void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
 {
     p_data_buf_t* data = NULL;
-    while ((data = logger_.ReadData(device_id)))
+    while ((data = logger_.ReadData(devLog)))
     {
         // if (data->hdr.id == DID_DEV_INFO)
         //     volatile int debug = 0;
@@ -319,7 +319,8 @@ void LogReader::forwardData(int device_id)
 
 bool LogReader::load()
 {
-    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
+    std::vector<std::shared_ptr<cDeviceLog>> devices = logger_.DeviceLogs();
+    for (int i = 0; i < (int)devices.size(); i++)
     {
         if (dev_log_ != nullptr)
         {
@@ -327,7 +328,7 @@ bool LogReader::load()
         }
         dev_log_ = new DeviceLog();
 
-        organizeData(i);
+        organizeData(devices[i]);
         forwardData(i);
     }
 

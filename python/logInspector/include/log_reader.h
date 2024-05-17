@@ -146,7 +146,7 @@ public:
     }
 
 private:
-    void organizeData(int device_id);
+    void organizeData(std::shared_ptr<cDeviceLog>);
     void forwardData(int device_id);
 
     cISLogger logger_;
