@@ -506,11 +506,12 @@ class logPlot:
         
     def getGpsNedVel(self, d):
         velNed = None
-        status = self.getData(d, DID_GPS1_VEL, 'status')[0]
+        velDid = DID_GPS2_VEL if self.getData(d, DID_GPS1_VEL, 'status').size == 0 else DID_GPS1_VEL
+        status = self.getData(d, velDid, 'status')[0]
         if (status & 0x00008000):
-            velNed = self.getData(d, DID_GPS1_VEL, 'vel')    # NED velocity
+            velNed = self.getData(d, velDid, 'vel')    # NED velocity
         else:
-            velEcef = self.getData(d, DID_GPS1_VEL, 'vel')   # ECEF velocity
+            velEcef = self.getData(d, velDid, 'vel')   # ECEF velocity
             qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
             if len(velEcef) > 0:
                 velNed = quatConjRot(qe2n, velEcef)

@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "DataChunk.h"
 #include "DeviceLog.h"
+#include "ISDevice.h"
 #include "com_manager.h"
 #include "ISLogStats.h"
 
@@ -27,8 +28,11 @@ class cDeviceLogRaw : public cDeviceLog
 {
 public:
     cDeviceLogRaw();
+    cDeviceLogRaw(const ISDevice* dev);
+    cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo);
 
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
+
+    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool FlushToFile() OVERRIDE;
 	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;

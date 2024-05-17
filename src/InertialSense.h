@@ -157,6 +157,11 @@ public:
     bool Update();
 
     /**
+     * Register a callback handler for data stream errors.
+     */
+    void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
+
+    /**
     * Enable or disable logging - logging is disabled by default
     * @param enable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
     * @param path the path to write the log files to
@@ -184,7 +189,7 @@ public:
     */
     bool LoggerEnabled() { return m_logger.Enabled(); }
 
-	/**
+    /**
 	 * @brief Get pointer to ISLogger
 	 * 
 	 * @return cISLogger* ISLogger pointer
@@ -198,7 +203,7 @@ public:
 	 * @param dataSize Number of bytes of raw data.
 	 * @param data Pointer to raw data.
 	 */
-	void LogRawData(int device, int dataSize, const uint8_t* data);
+	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
 	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
@@ -345,6 +350,15 @@ public:
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
+
+    /**
+     * Request a specific device broadcast binary data
+     * @param pHandle the device's pHandle to request data from
+     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
+     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+     * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+     */
+    bool BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple);
 
     /**
     * Broadcast binary data
