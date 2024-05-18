@@ -36,17 +36,26 @@ void test_serial_rx_profile_frequency(void)
         g_debugDtUsMax = dtUs;
     }
 }
+#endif
 
-
-// Manual test used to verify that a repeating consecutive series of uint8 data from 0 to 255 is received.  The test is reset when zero is received.
-void test_serial_rx_receive(uint8_t rxBuf[], int n)
+/**
+ * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 0 to 255 is received.  The test is reset when zero is received.
+ * 
+ * @param rxBuf Data received
+ * @param len number of bytes received
+ * @param waitForStartSequence If test should wait for start sequence before running the test.
+ * @return int64_t Number of bytes received with test passing.  -1 if test fails.
+ */
+int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequence)
 {
+    static bool waitForStart = waitForStartSequence;
+
 #if 0   // Rx Test - 8-bit
     static uint8_t testVal = 0;
     static uint8_t testValLast = 0;
     static uint8_t rxBufLast = 0;
     static uint64_t count = 0;
-    for (int i=0; i<n; i++)
+    for (int i=0; i<len; i++)
     {
         if (rxBuf[i] == 0)
         {   // Reset Rx testVal
@@ -78,23 +87,33 @@ void test_serial_rx_receive(uint8_t rxBuf[], int n)
         };
     } rx;
 
-    static uint16_t rxLast = 0;        
+    static uint16_t rxLast = 0;
     static uint16_t testVal = 0;
     static uint16_t testValLast = 0;
     static bool rxUpperByte = false;
     static uint8_t rxByteLast[3] = {0};
-    static uint64_t count = 0;
-    for (int i=0; i<n; i++)
+    static int64_t count = 0;
+    for (int i=0; i<len; i++)
     {
         uint8_t rxByte = rxBuf[i];
 
         if (rxByteLast[2] == 0 && rxByteLast[1] == 0 &&
             rxByteLast[0] == 1 && rxByte == 0)
         {   // Received 0x00 0x00 0x01 0x00.  Reset Rx testVal.
-            count = 3;
+            // count = 3;
             rx.u16 = testVal = 1;
             g_debugDtUsMax = 0;
             rxUpperByte = true;
+            waitForStart = false;
+        }
+
+        rxByteLast[2] = rxByteLast[1];
+        rxByteLast[1] = rxByteLast[0];
+        rxByteLast[0] = rxByte;
+
+        if (waitForStart)
+        {
+            continue;
         }
 
         if (rxUpperByte)
@@ -105,7 +124,8 @@ void test_serial_rx_receive(uint8_t rxBuf[], int n)
             // Run the test (exclude zero because it is used to reset test)
             if (rx.u16 != 0 && rx.u16 != testVal)
             {   // Uncomment and put breakpoint here
-                while(1);
+                // while(1);
+                return -1;
             }
             testValLast = testVal;
             rxLast = rx.u16;
@@ -119,13 +139,11 @@ void test_serial_rx_receive(uint8_t rxBuf[], int n)
         }
         
         count++;
-        rxByteLast[2] = rxByteLast[1];
-        rxByteLast[1] = rxByteLast[0];
-        rxByteLast[0] = rxByte;
     }
 #endif
+
+    return count;
 }
-#endif
 
 
 int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
@@ -158,6 +176,6 @@ void test_serial_delay_for_tx(int bufSize, int baudrate)
     int bytes_per_sec = (baudrate/10);  // ~10 (bits/byte)
 
     // Delay for enough time to allow data
-    int delayUs = (1000000 * bufSize / bytes_per_sec);
+    int delayUs = (1000000 * bufSize / bytes_per_sec) + 10;     // + 10us additional for buffer
     TIME_DELAY_USEC(delayUs);
 }
