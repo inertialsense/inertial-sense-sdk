@@ -6,7 +6,7 @@
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
  */
 
-#include "ISConstants.h"
+#include "../src/ISConstants.h"
 #include "test_serial_utils.h"
 
 #if PLATFORM_IS_EMBEDDED
@@ -15,7 +15,7 @@
 #define TIME_USEC()             time_usec()
 #define TIME_DELAY_USEC(us)     time_delay_usec(us)
 #else
-#include "ISUtilities.h"
+#include "../src/ISUtilities.h"
 #define TIME_USEC()             current_timeUs()
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
