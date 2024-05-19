@@ -20,26 +20,10 @@
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
 
-#if 1
-uint32_t g_debugDtUsMax = 0;
-uint32_t g_debugTimeUsLast = 0;
-void test_serial_rx_profile_frequency(void)
-{
-    // Profile read frequency
-	uint32_t timeUs = TIME_USEC(); 
-    if (g_debugTimeUsLast==0) { g_debugTimeUsLast = timeUs; }
-    uint32_t dtUs = timeUs - g_debugTimeUsLast;
-
-    g_debugTimeUsLast = timeUs;
-    if (g_debugDtUsMax < dtUs)
-    {
-        g_debugDtUsMax = dtUs;
-    }
-}
-#endif
 
 /**
- * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 0 to 255 is received.  The test is reset when zero is received.
+ * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 
+ * 0 to 255 is received. The test is reset when start sequence is received is received.
  * 
  * @param rxBuf Data received
  * @param len number of bytes received
@@ -102,7 +86,6 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
         {   // Received 0x00 0x00 0x01 0x00.  Reset Rx testVal.
             // count = 3;
             rx.u16 = testVal = 1;
-            g_debugDtUsMax = 0;
             rxUpperByte = true;
             waitForStart = false;
         }
@@ -145,7 +128,13 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
     return count;
 }
 
-
+/**
+ * @brief Generate Tx data for manual serial test. 
+ * 
+ * @param buf Buffer where data is to be written.  Must be a multiple of two bytes.
+ * @param bufSize Size of available buffer.
+ * @return int 
+ */
 int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
 {
     static uint16_t testVal = 0;
@@ -170,7 +159,12 @@ int test_serial_generate_ordered_data(uint8_t buf[], int bufSize)
     return bufSize;
 }
 
-
+/**
+ * @brief Creates a delay sufficient for the specified data at baudrate to be sent, preventing buffer overflow.
+ * 
+ * @param bufSize Buffer for data to be written to.
+ * @param baudrate Size of available buffer.
+ */
 void test_serial_delay_for_tx(int bufSize, int baudrate)
 {
     int bytes_per_sec = (baudrate/10);  // ~10 (bits/byte)
