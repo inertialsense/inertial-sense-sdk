@@ -97,7 +97,7 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, p
 
             // Did we really get the serial number?
             if (start <= snOffset && (int) (snOffset + sizeof(uint32_t)) <= end) {
-                m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
+                m_chunk.m_hdr.devSerialNum = devInfo->serialNumber;
             }
         }
     } else
