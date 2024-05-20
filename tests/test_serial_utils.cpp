@@ -6,7 +6,6 @@
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
  */
 
-#include "../src/ISConstants.h"
 #include "../src/ISComm.h"
 #include "test_serial_utils.h"
 
@@ -48,9 +47,9 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  * @param dstPort Serial port to write to.
  * @param testMode Enable test mode to perform sequential serWrite() calls back to back to test capability of the serial driver.
  */
-void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led, bool testMode)
+void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led, int testMode)
 {
-#if ENABLE_MANUAL_TX_TEST   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_loopback.cpp 
+#if ENABLE_MANUAL_TX_TEST   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
     while(1)
     {
         uint8_t txBuf[200];
@@ -77,7 +76,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
         return;
     }
 
-#if ENABLE_MANUAL_RX_TEST   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_loopback.cpp 
+#if ENABLE_MANUAL_RX_TEST   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_driver.cpp 
     test_serial_rx_receive(comm.rxBuf.tail, n);
     return;  // Return to prevent Tx
 #endif
@@ -131,6 +130,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
                         // Restore enabled protocol mask
                         comm.config.enabledMask = enabledMaskBackup;
                         enabledMaskBackup = 0;
+                        testMode = 0;
                         break;
                     }
                 }
