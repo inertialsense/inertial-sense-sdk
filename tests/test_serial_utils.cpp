@@ -7,6 +7,7 @@
  */
 
 #include "../src/ISConstants.h"
+#include "../src/ISComm.h"
 #include "test_serial_utils.h"
 
 #if PLATFORM_IS_EMBEDDED
@@ -20,6 +21,105 @@
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
 
+
+#if PLATFORM_IS_EMBEDDED
+void serWriteInPieces(int serPort, const unsigned char *buf, int length)
+{
+    int left = length; 
+    for (int send=1; left>0; send*=2)
+    {
+        send = _MIN(left, send);
+        serWrite(serPort, &(buf[length - left]), send);
+        left -= send; 
+    }
+}
+
+/**
+ * @brief Forward data read from one serial port to another.  Includes testmode used to verify integrity of serial port driver.  
+ * 
+ * @param comm is_comm_instance_t used for parsing data (to disable serial port bridge)
+ * @param srcPort Serial port to read from.
+ * @param dstPort Serial port to write to.
+ * @param testMode Enable test mode to perform sequential serWrite() calls back to back to test capability of the serial driver.
+ */
+void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led, bool testMode)
+{
+#if 1   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_loopback.cpp 
+    while(1)
+    {
+        uint8_t txBuf[200];
+        int n = test_serial_generate_ordered_data(txBuf, sizeof(txBuf));
+#if 0   // Send data once
+        serWrite(dstPort, (unsigned char*)&(txBuf), n);
+#else   // Send data in pieces
+        serWriteInPieces(dstPort, (unsigned char*)&(txBuf), n);
+#endif
+        test_serial_delay_for_tx(n+5);
+    }
+#endif
+
+    // gpio_toggle_level(G19_QDEC1B_PIN);
+
+    int n = is_comm_free(&comm);
+    if ((n = serRead(srcPort, comm.rxBuf.tail, n)) <= 0)
+    {   // No data to forward
+        return;
+    }
+
+#if 0   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_loopback.cpp 
+    test_serial_rx_receive(comm.rxBuf.tail, n);
+    return;  // Return to prevent Tx
+#endif
+
+    // Forward data
+    if (testMode)
+    {   // Test mode enabled for driver testing.  Forward data in pieces.
+        serWriteInPieces(dstPort, comm.rxBuf.tail, n);
+    }
+    else
+    {   // All at once
+        serWrite(dstPort, comm.rxBuf.tail, n);
+    }
+
+    // Update comm buffer tail pointer
+    comm.rxBuf.tail += n;
+
+#if !defined(IMX_5) && !defined(GPX_1)
+    if (led){ LED_TOGGLE(led); }
+#endif
+
+    //////////////////////////////////////////////////
+    // Data parser follows
+    comm.config.enabledMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
+    protocol_type_t ptype;
+    while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+    {
+        switch (ptype)
+        {	
+        default:	break;	// Do nothing
+
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            if (comm.rxPkt.dataHdr.id == DID_SYS_CMD)
+            {
+                system_command_t *cmd = (system_command_t*)(comm.rxPkt.data.ptr);
+                if (cmd->command == ~cmd->invCommand)
+                {	// Valid command
+                    switch (cmd->command)
+                    {
+                    case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
+                        // Look for disable serial port bridge command
+                        // Require users to first disable serial bridge before enabling other bridge
+                        // We want to keep all serial bridge enable code in writeSysCmd().  WHJ
+                        serialPortBridge = 0;
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+#endif  // PLATFORM_IS_EMBEDDED
 
 /**
  * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 
@@ -71,9 +171,7 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
         };
     } rx;
 
-    static uint16_t rxLast = 0;
     static uint16_t testVal = 0;
-    static uint16_t testValLast = 0;
     static bool rxUpperByte = false;
     static uint8_t rxByteLast[3] = {0};
     static int64_t count = 0;
@@ -110,9 +208,6 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
                 // while(1);
                 return -1;
             }
-            testValLast = testVal;
-            rxLast = rx.u16;
-            
             testVal++;
         }
         else
@@ -173,3 +268,5 @@ void test_serial_delay_for_tx(int bufSize, int baudrate)
     int delayUs = (1000000 * bufSize / bytes_per_sec) + 10;     // + 10us additional for buffer
     TIME_DELAY_USEC(delayUs);
 }
+
+
