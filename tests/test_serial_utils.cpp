@@ -13,6 +13,9 @@
 #if PLATFORM_IS_EMBEDDED
 #include "drivers/d_time.h"
 #include "drivers/d_serial.h"
+#if defined(IMX_5)
+#include "drivers/d_watchdog.h"
+#endif
 #define TIME_USEC()             time_usec()
 #define TIME_DELAY_USEC(us)     time_delay_usec(us)
 #else
@@ -20,6 +23,9 @@
 #define TIME_USEC()             current_timeUs()
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
+
+#define ENABLE_MANUAL_TX_TEST   0       // Set to 0 for normal loopback testing
+#define ENABLE_MANUAL_RX_TEST   0       // Set to 0 for normal loopback testing
 
 
 #if PLATFORM_IS_EMBEDDED
@@ -44,17 +50,22 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  */
 void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led, bool testMode)
 {
-#if 1   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_loopback.cpp 
+#if ENABLE_MANUAL_TX_TEST   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_loopback.cpp 
     while(1)
     {
         uint8_t txBuf[200];
         int n = test_serial_generate_ordered_data(txBuf, sizeof(txBuf));
-#if 0   // Send data once
+#if 1   // Send data once
         serWrite(dstPort, (unsigned char*)&(txBuf), n);
 #else   // Send data in pieces
         serWriteInPieces(dstPort, (unsigned char*)&(txBuf), n);
 #endif
         test_serial_delay_for_tx(n+5);
+
+#if PLATFORM_IS_EMBEDDED && defined(IMX_5)
+        // Prevent watchdog reset
+        watchdog_preemptive();  watchdog_maintenance();
+#endif
     }
 #endif
 
@@ -66,7 +77,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
         return;
     }
 
-#if 0   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_loopback.cpp 
+#if ENABLE_MANUAL_RX_TEST   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_loopback.cpp 
     test_serial_rx_receive(comm.rxBuf.tail, n);
     return;  // Return to prevent Tx
 #endif
@@ -84,13 +95,18 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     // Update comm buffer tail pointer
     comm.rxBuf.tail += n;
 
-#if !defined(IMX_5) && !defined(GPX_1)
+#if PLATFORM_IS_EMBEDDED && !defined(IMX_5) && !defined(GPX_1)
     if (led){ LED_TOGGLE(led); }
 #endif
 
     //////////////////////////////////////////////////
     // Data parser follows
-    comm.config.enabledMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
+    static uint32_t enabledMaskBackup=0;
+    if (enabledMaskBackup==0)
+    {   
+        enabledMaskBackup = comm.config.enabledMask;
+        comm.config.enabledMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
+    }
     protocol_type_t ptype;
     while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
     {
@@ -111,6 +127,10 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
                         // Require users to first disable serial bridge before enabling other bridge
                         // We want to keep all serial bridge enable code in writeSysCmd().  WHJ
                         serialPortBridge = 0;
+
+                        // Restore enabled protocol mask
+                        comm.config.enabledMask = enabledMaskBackup;
+                        enabledMaskBackup = 0;
                         break;
                     }
                 }
@@ -205,7 +225,7 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
             // Run the test (exclude zero because it is used to reset test)
             if (rx.u16 != 0 && rx.u16 != testVal)
             {   // Uncomment and put breakpoint here
-                // while(1);
+//                while(1);
                 return -1;
             }
             testVal++;
