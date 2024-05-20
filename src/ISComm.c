@@ -11,12 +11,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 
 #include "ISConstants.h"
-#if PLATFORM_IS_EMBEDDED
-#ifndef __ZEPHYR__
-#include "rtos.h"
-#endif
-#endif
-
 #include "ISComm.h"
 
 #define MAX_MSG_LENGTH_ISB					PKT_BUF_SIZE
@@ -1033,8 +1027,6 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
         return 0;
     }
 
-    BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
-
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
@@ -1054,8 +1046,6 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     }
     MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                 // Footer (checksum)
 
-    END_CRITICAL_SECTION
-
     // Increment Tx count
     comm->txPktCount++;
 
@@ -1068,8 +1058,6 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
  */ 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
-    BEGIN_CRITICAL_SECTION	// Ensure entire packet gets written together
-
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
@@ -1087,8 +1075,6 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
         n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
     }
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
-
-    END_CRITICAL_SECTION
 
     // Increment Tx count
     comm->txPktCount++;
