@@ -128,27 +128,36 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 				break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
-            case _PTYPE_INERTIAL_SENSE_CMD: {
-                uint8_t *dataPtr = m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset;
-
-                timestamp = cISDataMappings::GetTimestamp(&m_comm.rxPkt.dataHdr, dataPtr);
-                globalLogStats.LogDataAndTimestamp(m_comm.rxPkt.dataHdr.id, timestamp);			
-
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
-
-                // Add serial number if available
-                if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO && !copyDataPToStructP2((void*)&(device->devInfo), &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t)))
+            case _PTYPE_INERTIAL_SENSE_CMD:
                 {
-                    int start = m_comm.rxPkt.dataHdr.offset;
-                    int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
-                    int snOffset = offsetof(dev_info_t, serialNumber);
+                    dev_info_t tmpInfo = {};
+                    dev_info_t* devInfo = &tmpInfo;
 
-                    // Did we really get the serial number?
-                    if (start <= snOffset && (int)(snOffset + sizeof(uint32_t)) <= end)
-                    {
-                        m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
+                    uint8_t *dataPtr = m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset;
+
+                    timestamp = cISDataMappings::GetTimestamp(&m_comm.rxPkt.dataHdr, dataPtr);
+                    globalLogStats.LogDataAndTimestamp(m_comm.rxPkt.dataHdr.id, timestamp);
+
+                    cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+
+                    if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO) {
+                        // if we have a device struct, let's use it, otherwise we'll just copy into our local copy
+                        if (device != nullptr)
+                            devInfo = (dev_info_t *) &(device->devInfo);
+
+                        // Record the serial number in the chunk header if available
+                        if (!copyDataPToStructP2((void *) devInfo, &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t)))
+                        {
+                            int start = m_comm.rxPkt.dataHdr.offset;
+                            int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
+                            int snOffset = offsetof(dev_info_t, serialNumber);
+
+                            // Did we really get the serial number?
+                            if (start <= snOffset && (int) (snOffset + sizeof(uint32_t)) <= end) {
+                                m_chunk.m_hdr.devSerialNum = devInfo->serialNumber;
+                            }
+                        }
                     }
-                }
                 }
                 break;
             }
