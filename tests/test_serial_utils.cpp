@@ -23,9 +23,6 @@
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
 
-#define ENABLE_MANUAL_TX_TEST   0       // Set to 0 for normal loopback testing
-#define ENABLE_MANUAL_RX_TEST   0       // Set to 0 for normal loopback testing
-
 
 #if PLATFORM_IS_EMBEDDED
 void serWriteInPieces(int serPort, const unsigned char *buf, int length)
@@ -49,7 +46,7 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  */
 void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led, int testMode)
 {
-#if ENABLE_MANUAL_TX_TEST   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
+#if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
     while(1)
     {
         uint8_t txBuf[200];
@@ -76,7 +73,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
         return;
     }
 
-#if ENABLE_MANUAL_RX_TEST   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_driver.cpp 
+#if TEST_ENABLE_MANUAL_RX   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_driver.cpp 
     test_serial_rx_receive(comm.rxBuf.tail, n);
     return;  // Return to prevent Tx
 #endif

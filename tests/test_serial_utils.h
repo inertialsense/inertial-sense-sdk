@@ -1,5 +1,9 @@
 #include <cstdint>
 
+#define TEST_ENABLE_MANUAL_TX   0       // Set to 0 for normal loopback testing
+#define TEST_ENABLE_MANUAL_RX   0       // Set to 0 for normal loopback testing
+
+
 #if PLATFORM_IS_EMBEDDED
 void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led=0, int testMode=1);
 #endif

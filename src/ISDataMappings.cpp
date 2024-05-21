@@ -322,7 +322,8 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "testVar", testVar, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "detectedHardwareId", detectedHardwareId, 0, DataTypeUInt16, uint16_t, 0);
 
     ASSERT_SIZE(totalSize);
