@@ -65,7 +65,7 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     }
 #endif
 
-    // gpio_toggle_level(G19_QDEC1B_PIN);
+    // gpio_toggle_level(G19_QDEC1B_PIN);   // GPX debug
 
     int n = is_comm_free(&comm);
     if ((n = serRead(srcPort, comm.rxBuf.tail, n)) <= 0)

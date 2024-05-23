@@ -142,7 +142,7 @@ typedef uint32_t eDataIDs;
 #define DID_GPX_RTOS_INFO               (eDataIDs)122 /** (gpx_rtos_info_t) GPX RTOs info */
 #define DID_GPX_STATUS                  (eDataIDs)123 /** (gpx_status_t) GPX status */
 #define DID_GPX_DEBUG_ARRAY             (eDataIDs)124 /** (debug_array_t) GPX debug */
-#define DID_GPX_BIT                     (eDataIDs)125 /** (GPX_bit_t) GPX BIT test */
+#define DID_GPX_BIT                     (eDataIDs)125 /** (gpx_bit_t) GPX BIT test */
 #define DID_GPX_RMC                     (eDataIDs)126 /** (rmc_t) GPX rmc  */
 #define DID_GPX_PORT_MONITOR            (eDataIDs)127 /** (port_monitor_t) Data rate and status monitoring for each communications port. */
 #define DID_GPX_LAST                              127 /** Last of GPX DIDs */
@@ -2146,8 +2146,8 @@ enum eBitTestMode
     BIT_TEST_MODE_DONE                                  = (int)99,      // Test mode ran and completed
     BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100,     // Simulate CNO noise
     BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101,     // Send duplicate message 
-    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW             = (int)102,     // Cause Rx buffer overlow on selected serial port by blocking date read until the overflow occurs.  Use g_bit.testVar to specify the port.
-    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW             = (int)103,     // Cause Tx buffer overlow on selected serial port by sending too much data.  Use g_bit.testVar to specify the port.
+    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW             = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW             = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2250,30 +2250,8 @@ typedef struct PACKED
 
 } bit_t;
 
-// GPXBit results bit
-#define GPXBit_resultsBit_PPS1      (0x01 << GPXBit_resultsPos_PPS1)
-#define GPXBit_resultsBit_PPS2      (0x01 << GPXBit_resultsPos_PPS2)
-#define GPXBit_resultsBit_UART      (0x01 << GPXBit_resultsPos_UART)
-#define GPXBit_resultsBit_IO        (0x01 << GPXBit_resultsPos_IO)
-#define GPXBit_resultsBit_GPS       (0x01 << GPXBit_resultsPos_GPS)
-#define GPXBit_resultsBit_FINISHED  (0x01 << GPXBit_resultsPos_FINISHED)
-#define GPXBit_resultsBit_CANCELED  (0x01 << GPXBit_resultsPos_CANCELED)
-#define GPXBit_resultsBit_ERROR     (0x01 << GPXBit_resultsPos_ERROR)
-
-// GPXBit commands
-enum GPXBit_CMDs{
-    GPXBit_CMDs_NONE = 0,
-    GPXBit_CMDs_START_MANUF_TEST,
-    GPXBit_CMDs_ALERT_UART_TEST_STR,
-    GPXBit_CMDs_ALERT_PPS1_RX,
-    GPXBit_CMDs_ALERT_PPS2_RX,
-    GPXBit_CMDs_REPORT,
-    GPXBit_CMDs_STOP,
-
-};
-
-// GPXBit results bit posisition
-enum GPXBit_resultsPos{
+// GPX Built-in Test (GPX-BIT)
+enum eGPXBit_resultsPos{
     GPXBit_resultsPos_PPS1 = 0,
     GPXBit_resultsPos_PPS2,
     GPXBit_resultsPos_UART,
@@ -2285,25 +2263,56 @@ enum GPXBit_resultsPos{
     GPXBit_resultsPos_ERROR,
 };
 
-// GPXBit commands
+enum eGPXBit_results{
+    GPXBit_resultsBit_PPS1                  = (0x01 << GPXBit_resultsPos_PPS1),
+    GPXBit_resultsBit_PPS2                  = (0x01 << GPXBit_resultsPos_PPS2),
+    GPXBit_resultsBit_UART                  = (0x01 << GPXBit_resultsPos_UART),
+    GPXBit_resultsBit_IO                    = (0x01 << GPXBit_resultsPos_IO),
+    GPXBit_resultsBit_GPS                   = (0x01 << GPXBit_resultsPos_GPS),
+    GPXBit_resultsBit_FINISHED              = (0x01 << GPXBit_resultsPos_FINISHED),
+    GPXBit_resultsBit_CANCELED              = (0x01 << GPXBit_resultsPos_CANCELED),
+    GPXBit_resultsBit_ERROR                 = (0x01 << GPXBit_resultsPos_ERROR),
+};
+
+enum eGPXBit_CMD{
+    GPXBit_CMD_NONE                         = 0,
+    GPXBit_CMD_START_MANUF_TEST             = 1,
+    GPXBit_CMD_ALERT_UART_TEST_STR          = 2,
+    GPXBit_CMD_ALERT_PPS1_RX                = 3,
+    GPXBit_CMD_ALERT_PPS2_RX                = 4,
+    GPXBit_CMD_REPORT                       = 5,
+    GPXBit_CMD_STOP                         = 6,
+};
+
+enum eGPXBit_test_mode{
+    GPXBit_test_mode_NONE                               = (int)0,
+    GPXBit_test_mode_FAILURE                            = (int)8,
+    GPXBit_test_mode_DONE                               = (int)9,
+    GPXBit_test_mode_MANUFACTURING                      = (int)10,      // Standard manufacturing
+    GPXBit_test_mode_SIM_GPS_NOISE                      = (int)100,     // Simulate CNO noise
+    GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
+    GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+};
+
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
 
 /** (DID_GPX_BIT) Built-in self-test parameters */
 typedef struct PACKED
 {
-    /** Calibration BIT status (see eCalBitStatusFlags) */
+    /** GPX built-in test status (see eGPXBit_results) */
     uint32_t                results;
     
-    /** Command  **/
+    /** Command (see eGPXBit_CMD) */
     uint8_t                 command;
 
-    /* what port we are running on*/
+    /** Port used with the test */
     uint8_t                 port;
 
-    /** Self-test mode*/
+    /** Self-test mode (see eGPXBit_test_mode) */
     uint8_t                 testMode;
 
-    /** Built-in self-test state */
+    /** Built-in self-test state (see eGPXBit_state) */
     uint8_t                 state;
 
     /** The hardware ID detected (see "Product Hardware ID").  This is used to ensure correct firmware is used. */
@@ -2312,7 +2321,7 @@ typedef struct PACKED
     /** Unused */
     uint8_t                 reserved[2];
 
-} GPX_bit_t;
+} gpx_bit_t;
 
 enum eInfieldCalState
 {
