@@ -4652,30 +4652,31 @@ enum ePortMonPortType
 */
 typedef struct
 {
-    /** Tx rate (bytes/s) */
-    uint32_t        txBytesPerSec;
-    /** Rx rate (bytes/s) */
-    uint32_t        rxBytesPerSec;
-
+    /** High nib port type (see ePortMonPortType) low nib index */
+    uint8_t         portInfo;
     /** Status */
     uint32_t        status;
 
-    /** Number of bytes received */
+    /** Tx data rate (bytes/s) */
+    uint32_t        txBytesPerSec;
+    /** Rx data rate (bytes/s) */
+    uint32_t        rxBytesPerSec;
+
+    /** Tx byte count */
+    uint32_t        txBytes;
+    /** Rx byte count */
     uint32_t        rxBytes;
-    /** Number of Rx buffer overflow occurances (not bytes dropped), which happens when reading data using serRead() does not keep up with the amount of data received. */
+
+    /** Tx buffer overflow occurrences, times serWrite could not send all data */
+    uint32_t        txOverflows;
+    /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
     uint32_t        rxOverflows;
-    /** Rx number of checksum failures*/
+
+    /** Tx number of bytes that were not sent */
+    uint32_t        txBytesDropped;
+    /** Rx number of checksum failures */
     uint32_t        rxChecksumErrors;
 
-    /** Number of byes sent */
-    uint32_t        txBytes;
-    /** Number of times serWrite did not send all data. */
-    uint32_t        txOverflows;
-    /** Number of bytes that were not sent. */
-    uint32_t        txBytesDropped;
-
-    /** high nib port type (see ePortMonPortType) low nib index */
-    uint8_t         portInfo;
 } port_monitor_set_t;
 
 typedef struct
