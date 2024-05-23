@@ -81,16 +81,23 @@ bool cDeviceLogSerial::FlushToFile() {
 bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype) {
     cDeviceLog::SaveData(dataHdr, dataBuf, ptype);
 
-    // Add serial number if available
-    if (device != nullptr) {
-        if (dataHdr->id == DID_DEV_INFO && !copyDataPToStructP2((void *) (&(device->devInfo)), dataHdr, dataBuf, sizeof(dev_info_t))) {
+    dev_info_t tmpInfo = {};
+    dev_info_t* devInfo = &tmpInfo;
+
+    if (dataHdr->id == DID_DEV_INFO) {
+        // if we have a device struct, let's use it, otherwise we'll just copy into our local copy
+        if (device != nullptr)
+            devInfo = (dev_info_t *) &(device->devInfo);
+
+        // Record the serial number in the chunk header if available
+        if (!copyDataPToStructP2((void *) devInfo, dataHdr, dataBuf, sizeof(dev_info_t))) {
             int start = dataHdr->offset;
             int end = dataHdr->offset + dataHdr->size;
             int snOffset = offsetof(dev_info_t, serialNumber);
 
             // Did we really get the serial number?
             if (start <= snOffset && (int) (snOffset + sizeof(uint32_t)) <= end) {
-                m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
+                m_chunk.m_hdr.devSerialNum = devInfo->serialNumber;
             }
         }
     } else
