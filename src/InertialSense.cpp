@@ -983,7 +983,7 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
 bool InertialSense::BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple)
 {
-    if (pHandle >= m_comManagerState.devices.size())
+    if (pHandle >= (int)m_comManagerState.devices.size())
     {
         return false;
     }
