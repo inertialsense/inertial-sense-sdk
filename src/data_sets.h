@@ -4652,30 +4652,30 @@ enum ePortMonPortType
 */
 typedef struct
 {
-    /** High nib port type (see ePortMonPortType) low nib index */
-    uint8_t         portInfo;
-    /** Status */
-    uint32_t        status;
-
     /** Tx data rate (bytes/s) */
     uint32_t        txBytesPerSec;
     /** Rx data rate (bytes/s) */
     uint32_t        rxBytesPerSec;
 
-    /** Tx byte count */
-    uint32_t        txBytes;
+    /** Status */
+    uint32_t        status;
+
     /** Rx byte count */
     uint32_t        rxBytes;
-
-    /** Tx buffer overflow occurrences, times serWrite could not send all data */
-    uint32_t        txOverflows;
     /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
     uint32_t        rxOverflows;
-
-    /** Tx number of bytes that were not sent */
-    uint32_t        txBytesDropped;
     /** Rx number of checksum failures */
     uint32_t        rxChecksumErrors;
+
+    /** Tx byte count */
+    uint32_t        txBytes;
+    /** Tx buffer overflow occurrences, times serWrite could not send all data */
+    uint32_t        txOverflows;
+    /** Tx number of bytes that were not sent */
+    uint32_t        txBytesDropped;
+
+    /** High nib port type (see ePortMonPortType) low nib index */
+    uint8_t         portInfo;
 
 } port_monitor_set_t;
 
