@@ -4676,8 +4676,6 @@ enum DID_EventProtocol
     DID_EventProtocol_RTMC3_rcvr1       = 11,
     DID_EventProtocol_RTMC3_rcvr2       = 12,
     DID_EventProtocol_RTMC3_ext         = 13,
-    DID_EventProtocol_RTMC3_rcvr2       = 12,
-    DID_EventProtocol_RTMC3_ext         = 13,
     DID_EventProtocol_SonyBinProt_rcvr1 = 14,
     DID_EventProtocol_SonyBinProt_rcvr2 = 15,
 };
