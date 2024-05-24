@@ -4671,25 +4671,25 @@ typedef struct
 
 enum DID_EventProtocol
 {
-    DID_EventProtocol_raw               = 1,
-    DID_EventProtocol_ASCII             = 2,
-    DID_EventProtocol_RTMC3_rcvr1       = 11,
-    DID_EventProtocol_RTMC3_rcvr2       = 12,
-    DID_EventProtocol_RTMC3_ext         = 13,
-    DID_EventProtocol_SonyBinProt_rcvr1 = 14,
-    DID_EventProtocol_SonyBinProt_rcvr2 = 15,
+    DID_EVENT_PROTOCOL_RAW              = 1,
+    DID_EVENT_PROTOCOL_ASCII            = 2,
+    DID_EVENT_PROTOCOL_RTMC3_RCVR1      = 11,
+    DID_EVENT_PROTOCOL_RTMC3_RCVR2      = 12,
+    DID_EVENT_PROTOCOL_RTMC3_EXT        = 13,
+    DID_EVENT_PROTOCOL_SONY_BIN_RCVR1   = 14,
+    DID_EVENT_PROTOCOL_SONY_BIN_RCVR2   = 15,
 };
 
 enum DID_EventPriority
 {
-    DID_EventPriority_none      = 0,
-    DID_EventPriority_debug_verbose,
-    DID_EventPriority_debug,
-    DID_EventPriority_info_verbose,
-    DID_EventPriority_info,
-    DID_EventPriority_warning,
-    DID_EventPriority_error,
-    DID_EventPriority_FAULT,
+    DID_EVENT_PRIORITY_NONE      = 0,
+    DID_EVENT_PRIORITY_DBG_VERBOSE,
+    DID_EVENT_PRIORITY_DBG,
+    DID_EVENT_PRIORITY_INFO_VERBOSE,
+    DID_EVENT_PRIORITY_INFO,
+    DID_EVENT_PRIORITY_WARNING,
+    DID_EVENT_PRIORITY_ERR,
+    DID_EVENT_PRIORITY_FAULT,
 };
 
 typedef struct DID_Event
