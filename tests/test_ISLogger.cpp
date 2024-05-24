@@ -26,7 +26,7 @@ static dev_info_t CreateDeviceInfo(uint32_t serial)
 	return d;
 }
 
-static bool LogData(cISLogger& logger, uint32_t device, uint32_t id, uint32_t offset, uint32_t size, void* data)
+static bool LogData(cISLogger& logger, std::shared_ptr<cDeviceLog> device, uint32_t id, uint32_t offset, uint32_t size, void* data)
 {
 	p_data_hdr_t hdr;
 	hdr.id = id;
@@ -73,8 +73,8 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	finalLogger2.ShowParseErrors(showParseErrors);		// Allow garbage data tests to hide parse errors
 	p_data_buf_t* data1;
 	p_data_buf_t* data2;
-	unsigned int devIndex1 = 0;
-	unsigned int devIndex2 = 0;
+	size_t devIndex1 = 0;
+	size_t devIndex2 = 0;
 	int dataIndex = -1;
 
 	while (1)

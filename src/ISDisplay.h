@@ -60,6 +60,7 @@ public:
 		DMODE_SCROLL,
 		DMODE_EDIT,
 		DMODE_STATS,
+        DMODE_RAW_PARSE,
 	};
 
 	cInertialSenseDisplay(eDisplayMode displayMode = DMODE_QUIET);
@@ -121,6 +122,7 @@ public:
     std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
     std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
     std::string DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
+    std::string DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize);
 	std::string DataToStringGeneric(const p_data_t* data);
 	static void AddCommaToString(bool &comma, char* &ptr, char* &ptrEnd){ if (comma) { ptr += SNPRINTF(ptr, ptrEnd - ptr, ", "); } comma = true; };
 

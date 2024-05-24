@@ -9,6 +9,9 @@
 #ifndef INERTIALSENSESDK_ISDEVICE_H
 #define INERTIALSENSESDK_ISDEVICE_H
 
+#include <memory>
+
+#include "DeviceLog.h"
 #include "protocol/FirmwareUpdate.h"
 // #include "ISFirmwareUpdater.h"
 
@@ -41,23 +44,25 @@ public:
 
 class ISDevice {
 public:
-    int portHandle;
+    int portHandle = 0;
     serial_port_t serialPort = { };
-    // libusb_device* usbDevice; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
+    // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
+
     dev_info_t devInfo = { };
-    system_command_t sysCmd = { };
+    sys_params_t sysParams = { };
     nvm_flash_cfg_t flashCfg = { };
     unsigned int flashCfgUploadTimeMs = 0;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
     uint32_t flashCfgUploadChecksum = 0;
     evb_flash_cfg_t evbFlashCfg = { };
-    sys_params_t sysParams = { };
+    system_command_t sysCmd = { };
+
+    std::shared_ptr<cDeviceLog> devLogger;
     fwUpdate::update_status_e closeStatus = { };
     ISDeviceUpdater fwUpdate = { };
 
     static ISDevice invalidRef;
 
     ISDevice() { };
-
 
 };
 

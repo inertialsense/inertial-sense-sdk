@@ -41,7 +41,11 @@ public:
 class cDeviceLogCSV : public cDeviceLog
 {
 public:
-	void InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
+    cDeviceLogCSV() : cDeviceLog() {};
+    cDeviceLogCSV(const ISDevice* dev) : cDeviceLog(dev) {};
+    cDeviceLogCSV(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
+
+    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
 	void InitDeviceForReading() OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;

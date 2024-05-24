@@ -25,6 +25,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 class cDeviceLogJSON : public cDeviceLog
 {
 public:
+    cDeviceLogJSON() : cDeviceLog() {};
+    cDeviceLogJSON(const ISDevice* dev) : cDeviceLog(dev) {};
+    cDeviceLogJSON(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
+
 	bool CloseAllFiles() OVERRIDE;
     bool SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA) OVERRIDE;
 	p_data_buf_t* ReadData() OVERRIDE;
