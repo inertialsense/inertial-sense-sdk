@@ -74,7 +74,10 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     }
 
 #if TEST_ENABLE_MANUAL_RX   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_driver.cpp 
-    test_serial_rx_receive(comm.rxBuf.tail, n);
+    if (test_serial_rx_receive(comm.rxBuf.tail, n) < 0)
+    {	// Catch error here
+    	while(1);
+    }
     return;  // Return to prevent Tx
 #endif
 
