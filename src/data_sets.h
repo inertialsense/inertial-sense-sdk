@@ -4646,7 +4646,6 @@ enum ePortMonPortType
     PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),        
 };
 
-
 /** 
 * (DID_PORT_MONITOR) Data rate and status monitoring for each communications port. 
 */
@@ -4688,7 +4687,7 @@ typedef struct
         
 } port_monitor_t;
 
-enum DID_EventProtocol
+typedef enum eEventProtocol
 {
     EVENT_PROTOCOL_RAW              = 1,
     EVENT_PROTOCOL_ASCII            = 2,
@@ -4699,19 +4698,19 @@ enum DID_EventProtocol
     EVENT_PROTOCOL_SONY_BIN_RCVR2   = 15,
 };
 
-enum DID_EventPriority
+enum eEventPriority
 {
-    EVENT_PRIORITY_NONE      = 0,
-    EVENT_PRIORITY_DBG_VERBOSE,
-    EVENT_PRIORITY_DBG,
-    EVENT_PRIORITY_INFO_VERBOSE,
-    EVENT_PRIORITY_INFO,
-    EVENT_PRIORITY_WARNING,
-    EVENT_PRIORITY_ERR,
-    EVENT_PRIORITY_FAULT,
+    EVENT_PRIORITY_NONE             = 0,
+    EVENT_PRIORITY_DBG_VERBOSE      = 1,
+    EVENT_PRIORITY_DBG              = 2,
+    EVENT_PRIORITY_INFO_VERBOSE     = 3,
+    EVENT_PRIORITY_INFO             = 4,
+    EVENT_PRIORITY_WARNING          = 5,
+    EVENT_PRIORITY_ERR              = 6,
+    EVENT_PRIORITY_FAULT            = 7,
 };
 
-typedef struct DID_Event
+typedef struct
 {
     /** Time (uptime in seconds) */
     double          time;
@@ -4729,7 +4728,7 @@ typedef struct DID_Event
     uint16_t        length;
     
     uint8_t data[1];
-}did_event_t;
+} did_event_t;
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
