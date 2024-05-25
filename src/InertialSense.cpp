@@ -983,7 +983,7 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
 bool InertialSense::BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple)
 {
-    if (pHandle >= m_comManagerState.devices.size())
+    if (pHandle >= (int)m_comManagerState.devices.size())
     {
         return false;
     }
@@ -1347,7 +1347,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     // handle wildcard, auto-detect serial ports
     if (port[0] == '*')
     {
-        m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.
+        // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
         cISSerialPort::GetComPorts(ports);
         if (port[1] != '\0')
         {
