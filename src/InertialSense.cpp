@@ -1407,7 +1407,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
                     (comManagerSendRaw((int) i, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
                     RemoveDevice(i);
-                    removedSerials = true, i--;
+                    removedSerials = true;
                 }
             }
 
