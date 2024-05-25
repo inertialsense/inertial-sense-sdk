@@ -4687,7 +4687,7 @@ typedef struct
         
 } port_monitor_t;
 
-typedef enum eEventProtocol
+enum eEventProtocol
 {
     EVENT_PROTOCOL_RAW              = 1,
     EVENT_PROTOCOL_ASCII            = 2,
