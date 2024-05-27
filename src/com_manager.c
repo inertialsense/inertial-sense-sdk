@@ -268,10 +268,10 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
         protocol_type_t ptype = _PTYPE_NONE;
 
         // Read data directly into comm buffer
-        int n = 0;
         // Here there lie dragons - is_comm_free() modifies comm->rxBuf pointers, so make sure you call here first!!
         int free_size = is_comm_free(comm);
-        if ((n = cmInstance->portRead(port, comm->rxBuf.tail, free_size)) != 0)
+        int n = cmInstance->portRead(port, comm->rxBuf.tail, free_size);
+        if (n > 0)
         {
             // Update comm buffer tail pointer
             comm->rxBuf.tail += n;

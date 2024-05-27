@@ -441,7 +441,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 
 	static unsigned int timeSinceClearMs = 0;
 	static char idHist[DID_COUNT] = { 0 };
-	if (m_displayMode != DMODE_SCROLL)
+
+	if ((m_displayMode != DMODE_SCROLL) && (m_displayMode != DMODE_RAW_PARSE))
 	{
 		// Clear display every 2 seconds or if we start seeing new messages.
 		if (curTimeMs - timeSinceClearMs > 2000 || curTimeMs < timeSinceClearMs || idHist[data->hdr.id] == 0)
@@ -469,7 +470,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 		break;
 
-	case DMODE_EDIT:
+		case DMODE_EDIT:
 		if (m_editData.did == data->hdr.id)
 		{
 			m_editData.pData = *data;
@@ -480,7 +481,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		DataToStats(data);
 		break;
 
-	case DMODE_SCROLL:	// Scroll display 
+	case DMODE_RAW_PARSE:	// fallthrough to DMODE_SCROLL
+	case DMODE_SCROLL:	// Scroll display
 		cout << DataToString(data) << endl;
 		break;
 	}
@@ -603,6 +605,12 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	// Copy only new data
 	copyDataPToStructP(&d, data, sizeof(uDatasets));
 
+	if (m_displayMode == DMODE_RAW_PARSE)
+    {
+		return DataToStringPacket((const char *) data->ptr, data->hdr, 32, true);
+	}
+
+
 	string str;
 	switch (data->hdr.id)
 	{
@@ -642,13 +650,6 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
-#if 0	// List all DIDs 
-		char buf[128];
-		SNPRINTF(buf, sizeof(buf), "(%d) %s \n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
-		str = buf;
-#elif 0
-		str = DataToStringGeneric(data);
-#endif
 		break;
 	}
 
@@ -1374,7 +1375,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	if (m_displayMode == DMODE_PRETTY)
 	{
 		ptr = StatusToString(ptr, ptrEnd, sys.insStatus, sys.hdwStatus);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C\tBaro %4.1f C\tMCU %4.1f C\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C\tBaro %4.1f C\tMCU %4.1f C\tUpTime %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
 	}
 
 	return buf;
@@ -1605,8 +1606,8 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", gpxStatus.timeOfWeekMs / 1000.0);
 #endif
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1RunState: %d, gnss2RunState: %d, mcuTemp: %0.3lf\n",
-                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnss1RunState, gpxStatus.gnss2RunState, gpxStatus.mcuTemp
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1RunState: %d, gnss2RunState: %d, mcuTemp: %0.3lf, upTime: %lf\n",
+                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnss1RunState, gpxStatus.gnss2RunState, gpxStatus.mcuTemp, gpxStatus.upTime
     );
 
     return buf;
@@ -1691,6 +1692,67 @@ string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_d
 
     return buf;
 }
+
+
+/**
+ * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
+ * otherwise supported.
+ * @param raw_data a pointer to the raw DID byte stream
+ * @param hdr the DID header
+ * @param bytesPerLine the number of hexadecimal bytes to print per line.
+ * @return returns a fully formatted string
+ */
+string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize = true)
+{
+	(void)hdr;
+	char buf[BUF_SIZE];
+	char* ptr = buf;
+	char* ptrEnd = buf + BUF_SIZE;
+
+	#define BLACK   "\u001b[30m"
+	#define RED     "\u001b[31m"
+	#define GREEN   "\u001b[32m"
+	#define YELLOW  "\u001b[33m"
+	#define BLUE    "\u001b[34m"
+	#define MAGENTA "\u001b[35m"
+	#define CYAN    "\u001b[36m"
+	#define WHITE   "\u001b[37m"
+	#define RESET   "\u001b[0m"
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[PREAMB] " GREEN "49 EF ");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Flags: " YELLOW "%s" BLUE "] " GREEN "?? ", "?");
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " GREEN "%02x ", cISDataMappings::GetDataSetName(hdr.id), hdr.id);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Size: " YELLOW "%u" BLUE "] " GREEN "%02x %02x ", hdr.size, ((hdr.size >> 8) & 0xFF), (hdr.size & 0xFF));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Offset: " YELLOW "%u" BLUE "] " GREEN "%02x %02x", hdr.offset, ((hdr.offset >> 8) & 0xFF), (hdr.offset & 0xFF));
+
+#if DISPLAY_DELTA_TIME==1
+	static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+	int lines = (hdr.size / bytesPerLine) + 1;
+	for (int j = 0; j < lines; j++) {
+		int linelen = (j == lines-1) ? hdr.size % bytesPerLine : bytesPerLine;
+		if (linelen > 0) {
+			if (j == 0)
+				ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "  [DATA] " GREEN);
+			else
+				ptr += SNPRINTF(ptr, ptrEnd - ptr, "         ");
+
+			for (int i = 0; i < linelen; i++) {
+				ptr += SNPRINTF(ptr, ptrEnd - ptr, "%02x ", (uint8_t) raw_data[(j * bytesPerLine) + i]);
+			}
+			ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+		}
+	}
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, RESET);
+
+	return buf;
+}
+
 
 #define DISPLAY_SNPRINTF(f_, ...)	{ptr += SNPRINTF(ptr, ptrEnd - ptr, (f_), ##__VA_ARGS__);}
 #define DTS_VALUE_FORMAT	"%22s "

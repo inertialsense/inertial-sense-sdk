@@ -239,7 +239,7 @@ uint32_t cISBootloaderAPP::get_device_info()
 
     protocol_type_t ptype;
     int n = is_comm_free(&comm);
-    uint8_t evb_version[4];
+    uint8_t evb_version[4] = {0};
     if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
         comm.rxBuf.tail += n;
