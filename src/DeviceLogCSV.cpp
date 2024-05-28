@@ -123,8 +123,8 @@ bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 	_MKDIR(m_directory.c_str());
 
 	// Open new file
-	uint32_t serNum = SerialNumber();
-	if (!serNum)
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
+    if (!serNum)
         return false;
 
 	string fileName;
