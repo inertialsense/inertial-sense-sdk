@@ -85,10 +85,11 @@ static void start_logger(cISLogger& logger, is_comm_instance_t &comm)
     g_status.evbStatus |= EVB_STATUS_SD_LOG_ENABLED;
 	evbUiRefreshLedLog();
 
-//     logger.InitSave(LOGTYPE_DAT, cISLogger::g_emptyString, 1, 0.5f, 1024 * 1024 * 5, 131072);
-    logger.InitSave(cISLogger::LOGTYPE_DAT, "IS_logs", 1, 0.5f, 1024 * 1024 * 5, 16384);
-//     logger.InitSave();
-    logger.SetDeviceInfo(&g_uins.uInsInfo);   // set uINS serial number 
+////     logger.InitSave(LOGTYPE_DAT, cISLogger::g_emptyString, 1, 0.5f, 1024 * 1024 * 5, 131072);
+    logger.InitSave(cISLogger::LOGTYPE_DAT, "IS_logs", 0.5f, 1024 * 1024 * 5, 16384);
+
+////     logger.InitSave();
+    // logger.SetDeviceInfo(&g_uins.uInsInfo);   // set uINS serial number 
     logger.EnableLogging(true);
 }
 
