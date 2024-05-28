@@ -15,8 +15,7 @@ on:
     branches:
       - '**'
     pull_request:
-      - 'development'
-      - 'dev_v2'
+      - 'develop'
       - 'master'
 
 concurrency:
@@ -69,7 +68,7 @@ jobs:
     name: "General Software Windows"
     runs-on: [self-hosted, windows, x64]
     # if: false  # disable this job
-    # if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/develop') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
+    # if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/develop')   # Only run job on these branches
 
     defaults:
       run:
