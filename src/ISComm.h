@@ -515,7 +515,7 @@ typedef struct
 	uint32_t size;
 
 	/** Start of data in buffer. Data is read from here. */
-	uint8_t* head;	// TODO remove this once we have all of the separate parser points in place. WHJ
+	uint8_t* head;
 
 	/** End of data in buffer. New data is written here. */
 	uint8_t* tail;
@@ -537,6 +537,20 @@ typedef enum
 	ENABLE_PROTOCOL_SPARTN      = 0x00000010,
 	ENABLE_PROTOCOL_SONY        = 0x00000020,
 } eProtocolMask;
+
+typedef enum {
+    EPARSE_INVALID_PREAMBLE,
+    EPARSE_INVALID_SIZE,
+    EPARSE_INVALID_CHKSUM,
+    EPARSE_INVALID_DATATYPE,
+    EPARSE_MISSING_EOS_MARKER,      //! Invalid End-of-Stream/End-of-Sentence(NMEA) marker
+    EPARSE_INCOMPLETE_PACKET,       //! Stream/Sentence(NMEA) is too short/incomplete to identify as a packet
+    EPARSE_INVALID_HEADER,
+    EPARSE_INVALID_PAYLOAD,
+    EPARSE_RXBUFFER_FLUSHED,
+    EPARSE_STREAM_UNPARSEABLE,
+    NUM_EPARSE_ERRORS
+} eParseErrorType;
 
 typedef struct  
 {
@@ -571,7 +585,13 @@ typedef struct
 	/** Communications error counter */
 	uint32_t rxErrorCount;
 
-	/** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
+    /** Communications error type (most recent) */
+    eParseErrorType rxErrorType;
+
+    /** Communications error counter, by type */
+    uint32_t rxErrorTypeCount[NUM_EPARSE_ERRORS];
+
+    /** Process packet function pointer.  Null pointer indicates no parsing is in progress. */
 	pFnProcessPkt processPkt;
 
 	/** Protocol parser state */

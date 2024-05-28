@@ -368,6 +368,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-raw-out"))
+        {
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_RAW_PARSE;
+        }
         else if (startsWith(a, "-rp") && (i + 1) < argc)
         {
             g_commandLineOptions.replayDataLog = true;
@@ -382,7 +386,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-reset"))
         {
-            g_commandLineOptions.softwareResetImx = true;
+            g_commandLineOptions.softwareReset = true;
         }		
 		else if (startsWith(a, "-romBootloader"))
 		{
@@ -462,11 +466,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
-		else if (startsWith(a, "-v") || startsWith(a, "--version"))
-		{
-			cout << cltool_version() << endl;
-			return false;
-		}
+        else if (startsWith(a, "-v") || startsWith(a, "--version"))
+        {
+            cout << cltool_version() << endl;
+            return false;
+        }
         else
         {
             cout << "Unrecognized command line option: " << a << endl;
@@ -512,13 +516,14 @@ bool cltool_replayDataLog()
 
     cout << "Replaying log files: " << g_commandLineOptions.logPath << endl;
     p_data_buf_t *data;
-    for (int d=0; d<logger.DeviceCount(); d++)
+    // for (int d=0; d<logger.DeviceCount(); d++)
+    for (auto dl : logger.DeviceLogs())
     {
         if (logger.DeviceCount() > 1)
         {
-            printf("Device(%d): SN%d\n", d, logger.DeviceInfo(d)->serialNumber);
+            printf("Device SN%d: \n", dl->SerialNumber());
         }
-        while ((data = logger.ReadData(d)) != NULL)
+        while (((data = logger.ReadData(dl)) != NULL) && !g_inertialSenseDisplay.ExitProgram())
         {
             p_data_t d = {data->hdr, data->buf};
             g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
@@ -558,6 +563,7 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
