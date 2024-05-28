@@ -16,7 +16,7 @@ on:
       - '**'
     pull_request:
       - 'develop'
-      - 'master'
+      - 'main'
 
 concurrency:
   group: ${{ github.ref }}
