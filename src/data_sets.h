@@ -1225,6 +1225,11 @@ typedef struct PACKED
 	gps_sig_sv_t			sig[MAX_NUM_SAT_SIGNALS];	
 } gps_sig_t;
 
+typedef struct {
+    uint16_t constMask; /* Constilation Mask (see eSatSvGnssId) usage 0x1 << eSatSvGnssId*/
+    uint16_t freqMask;  /* Freqency Mask */
+} gsvMask_t;
+
 typedef uint8_t         gps_extension_ver_t[30];
 #define GPS_VER_NUM_EXTENSIONS	6
 /** (DID_GPS1_VERSION) GPS version strings */

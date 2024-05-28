@@ -15,8 +15,8 @@
 
 enum eNmeaProtocolVersion
 {
-	NMEA_PROTOCOL_2P3 		= 0,	// <4.10
-	NMEA_PROTOCOL_4P10 		= 410,	// 4.10
+    NMEA_PROTOCOL_2P3 		= 0,	// <4.10
+    NMEA_PROTOCOL_4P10 		= 410,	// 4.10
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -88,6 +88,5 @@ int nmea_parse_intel(const char a[], const int aSize, dev_info_t &info, gps_pos_
 int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utcTime, int utcWeekday, int leapS, uint32_t statusFlags=0);
 int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3]);
 int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS);
-
 
 #endif /* PROTOCOL_NMEA_H_ */
