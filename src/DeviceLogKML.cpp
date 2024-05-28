@@ -98,11 +98,9 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 
 	// Create filename
 	log.fileCount++;
-	int serNum = device->devInfo.serialNumber;
-	if (!serNum)
-	{
-		serNum = device->portHandle;
-	}
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
+    if (!serNum)
+        return false;
 
 	log.fileName = GetNewFileName(serNum, log.fileCount, m_kml.GetDatasetName(kid).c_str());
 
