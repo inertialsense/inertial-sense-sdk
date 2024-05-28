@@ -180,8 +180,8 @@ extern "C" {
 
 #if __ZEPHYR__
     #include <zephyr/irq.h>
-    #define BEGIN_CRITICAL_SECTION irq_lock();
-    #define END_CRITICAL_SECTION irq_unlock(0);
+    #define BEGIN_CRITICAL_SECTION  irq_lock();
+    #define END_CRITICAL_SECTION    irq_unlock(0);
 #elif !PLATFORM_IS_EMBEDDED
     #define BEGIN_CRITICAL_SECTION
     #define END_CRITICAL_SECTION

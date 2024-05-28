@@ -166,8 +166,10 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPX_FLASH_CFG] = sizeof(gpx_flash_cfg_t);
     sizeMap[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
     sizeMap[DID_GPX_DEBUG_ARRAY] = sizeof(debug_array_t);
+    sizeMap[DID_GPX_BIT] = sizeof(gpx_bit_t);
     sizeMap[DID_GPX_RMC] = sizeof(rmc_t);
     sizeMap[DID_GPX_PORT_MONITOR] = sizeof(port_monitor_t);
+    
 
 #ifdef USE_IS_INTERNAL
 
@@ -322,8 +324,27 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "pqrSigma", pqrSigma, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "accSigma", accSigma, 0, DataTypeFloat, float, 0);
 
-    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "testVar", testVar, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "detectedHardwareId", detectedHardwareId, 0, DataTypeUInt16, uint16_t, 0);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpxBitMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef gpx_bit_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_GPX_BIT];
+    uint32_t totalSize = 0;
+
+    ADD_MAP(m, totalSize, "results", results, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "command", command, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "port", port, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "testMode", testMode, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "detectedHardwareId", detectedHardwareId, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2655,6 +2676,7 @@ cISDataMappings::cISDataMappings()
     PopulateDeviceInfoMappings(m_lookupInfo, DID_DEV_INFO);
     PopulateManufacturingInfoMappings(m_lookupInfo);
     PopulateBitMappings(m_lookupInfo);
+    PopulateGpxBitMappings(m_lookupInfo);
     PopulateSysFaultMappings(m_lookupInfo);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_UNCAL);
     PopulateIMU3Mappings(m_lookupInfo, DID_IMU3_RAW);
