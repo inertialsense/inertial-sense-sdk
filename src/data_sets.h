@@ -3687,7 +3687,7 @@ typedef struct
     /** Amplitude of the Sine Harmonic Correction Term to the Angle of Inclination (rad) */
     double cis;
 
-    /** Time Of Ephemeris, ephemeris reference epoch in seconds within the week (s), same as <toe> above but represented as double type. Note that toe is computed as eph->toe = gst2time(week, eph->toes) */
+    /** Time Of Ephemeris, ephemeris reference epoch in seconds within the week (s), same as <toe> above but represented as double type. Note that toe is computed as eph->toe = gst2time(week, eph->toes). This is the expiration time and is generally ~2 hours ahead of current time. */
     double toes;
 
     /** Fit interval (h) (0: 4 hours, 1: greater than 4 hours) */
