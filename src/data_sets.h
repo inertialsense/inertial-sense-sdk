@@ -3687,7 +3687,7 @@ typedef struct
     /** Amplitude of the Sine Harmonic Correction Term to the Angle of Inclination (rad) */
     double cis;
 
-    /** Time Of Ephemeris, ephemeris reference epoch in seconds within the week (s), same as <toe> above but represented as double type. Note that toe is computed as eph->toe = gst2time(week, eph->toes) */
+    /** Time Of Ephemeris, ephemeris reference epoch in seconds within the week (s), same as <toe> above but represented as double type. Note that toe is computed as eph->toe = gst2time(week, eph->toes). This is the expiration time and is generally ~2 hours ahead of current time. */
     double toes;
 
     /** Fit interval (h) (0: 4 hours, 1: greater than 4 hours) */
@@ -4651,30 +4651,30 @@ enum ePortMonPortType
 */
 typedef struct
 {
+    /** High nib port type (see ePortMonPortType) low nib index */
+    uint8_t         portInfo;
+    /** Status */
+    uint32_t        status;
+
     /** Tx data rate (bytes/s) */
     uint32_t        txBytesPerSec;
     /** Rx data rate (bytes/s) */
     uint32_t        rxBytesPerSec;
 
-    /** Status */
-    uint32_t        status;
-
-    /** Rx byte count */
-    uint32_t        rxBytes;
-    /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
-    uint32_t        rxOverflows;
-    /** Rx number of checksum failures */
-    uint32_t        rxChecksumErrors;
-
     /** Tx byte count */
     uint32_t        txBytes;
+    /** Rx byte count */
+    uint32_t        rxBytes;
+
     /** Tx buffer overflow occurrences, times serWrite could not send all data */
     uint32_t        txOverflows;
+    /** Rx buffer overflow occurrences, times that the receive buffer reduced in size due to overflow */
+    uint32_t        rxOverflows;
+
     /** Tx number of bytes that were not sent */
     uint32_t        txBytesDropped;
-
-    /** High nib port type (see ePortMonPortType) low nib index */
-    uint8_t         portInfo;
+    /** Rx number of checksum failures */
+    uint32_t        rxChecksumErrors;
 
 } port_monitor_set_t;
 
