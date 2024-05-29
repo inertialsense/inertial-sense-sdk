@@ -182,6 +182,7 @@ void TestParseFileName(string filename, int rSerialNum, string rDate, string rTi
 
 TEST(ISLogger, parse_filename)
 {
+	TestParseFileName("base_station.raw", 0, "", "", -1);
 	TestParseFileName("LOG_SN60339_20240311_132545_0000.RAW", 60339, "20240311", "132545", 0);
 	TestParseFileName("LOG_SN60339_20240311_132545_0001.RAW", 60339, "20240311", "132545", 1);
 	TestParseFileName("LOG_SN60339_20240311_132545_0002.raw", 60339, "20240311", "132545", 2);
