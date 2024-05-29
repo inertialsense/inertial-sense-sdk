@@ -1132,13 +1132,21 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
 
 int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
+    if (portWrite == NULL)
+    {
+        return -1;
+    }
+
     packet_t txPkt;
 
     // Encode header and header checksum
     is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
 
     // Update checksum and write packet to port
-    return (portWrite) ? is_comm_write_isb_precomp_to_port(portWrite, port, comm, &txPkt) : -1;
+    int n = is_comm_write_isb_precomp_to_port(portWrite, port, comm, &txPkt);
+
+    // Check that number of bytes sent matches packet size
+    return (n == txPkt.size) ? n : -1;
 }
 
 int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
