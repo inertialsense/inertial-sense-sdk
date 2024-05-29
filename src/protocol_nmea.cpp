@@ -1359,6 +1359,71 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     return 0;
 }
 
+bool gsvFreqEna(gps_sig_sv_t* sig)
+{
+    if(sig->gnssId >= SAT_SV_GNSS_ID_COUNT)
+        return false;
+
+    uint8_t mask = g_gsvMask.constMask[sig->gnssId];
+
+    switch(sig->gnssId)
+    {
+        case SAT_SV_GNSS_ID_GPS:
+SAT_SV_SIG_ID_GPS_L1CA          = 0,
+    SAT_SV_SIG_ID_GPS_L2CL          = 3,
+    SAT_SV_SIG_ID_GPS_L2CM          = 4,
+    SAT_SV_SIG_ID_GPS_L5I           = 6,
+    SAT_SV_SIG_ID_GPS_L5Q           = 7,
+    SAT_SV_SIG_ID_GPS_L5            = SAT_SV_SIG_ID_GPS_L5Q,
+            break;
+        case SAT_SV_GNSS_ID_SBS:
+    SAT_SV_SIG_ID_SBAS_L1CA         = 0,
+    SAT_SV_SIG_ID_SBAS_L2           = 1,
+    SAT_SV_SIG_ID_SBAS_L5           = 2,
+            break;
+        case SAT_SV_GNSS_ID_GAL:
+            SAT_SV_SIG_ID_Galileo_E1C2      = 0,
+    SAT_SV_SIG_ID_Galileo_E1B2      = 1,
+    SAT_SV_SIG_ID_Galileo_E1BC      = SAT_SV_SIG_ID_Galileo_E1B2,
+    SAT_SV_SIG_ID_Galileo_E5aI      = 3,
+    SAT_SV_SIG_ID_Galileo_E5aQ      = 4,
+    SAT_SV_SIG_ID_Galileo_E5a       = SAT_SV_SIG_ID_Galileo_E5aQ,
+    SAT_SV_SIG_ID_Galileo_E5bI      = 5,
+    SAT_SV_SIG_ID_Galileo_E5bQ      = 6,
+    SAT_SV_SIG_ID_Galileo_E5        = SAT_SV_SIG_ID_Galileo_E5bQ,
+            break;
+        case SAT_SV_GNSS_ID_BEI:
+        
+    SAT_SV_SIG_ID_BeiDou_B1D1       = 0,
+    SAT_SV_SIG_ID_BeiDou_B1D2       = 1,
+    SAT_SV_SIG_ID_BeiDou_B2D1       = 2,
+    SAT_SV_SIG_ID_BeiDou_B2D2       = 3,
+    SAT_SV_SIG_ID_BeiDou_B2         = SAT_SV_SIG_ID_BeiDou_B2D1,
+    SAT_SV_SIG_ID_BeiDou_B1C        = 5,
+    SAT_SV_SIG_ID_BeiDou_B2a        = 7,
+            break;
+        case SAT_SV_GNSS_ID_QZS:
+            SAT_SV_SIG_ID_QZSS_L1CA         = 0,
+    SAT_SV_SIG_ID_QZSS_L1S          = 1,
+    SAT_SV_SIG_ID_QZSS_L2CM         = 4,
+    SAT_SV_SIG_ID_QZSS_L2CL         = 5,
+    SAT_SV_SIG_ID_QZSS_L2           = SAT_SV_SIG_ID_QZSS_L2CL,
+    SAT_SV_SIG_ID_QZSS_L5I          = 8,
+    SAT_SV_SIG_ID_QZSS_L5Q          = 9,
+    SAT_SV_SIG_ID_QZSS_L5           = SAT_SV_SIG_ID_QZSS_L5Q,
+
+            break;
+        case SAT_SV_GNSS_ID_GLO:
+        
+    SAT_SV_SIG_ID_GLONASS_L1OF      = 0,
+    SAT_SV_SIG_ID_GLONASS_L2OF      = 2,
+            break;
+        default: 
+            return false;
+    }
+        return true;
+}
+
 int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
 {
     // Apply offset to buffer
@@ -1384,6 +1449,10 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
         for (int cnt=0; cnt<4 && i<=gsig.numSigs; i++)
         {
             gps_sig_sv_t &sig = gsig.sig[i];
+
+            // check if freqency is enabled
+            if(!gsvFreqEna(&gsig.sig[i])) continue;
+
             if (gsv_sig_match(gnssId, sigId, sig, noCno))
             {	
                 for (uint32_t j=0; j<=gsat.numSats; j++)
@@ -2044,7 +2113,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
             id = parseASCE_GSV(id);
         
         ptr = ASCII_find_next_field(ptr);
-        
+
         // end of nmea string
         if(*ptr=='*')
             break;
