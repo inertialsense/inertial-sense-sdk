@@ -751,7 +751,8 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     if (count < 0)
     {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-            // error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
+            // TODO: Debug test_flash_sync, comment out later (WHJ)
+            error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
             serialPort->errorCode = errno;
         }
         return 0;

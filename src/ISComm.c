@@ -1083,7 +1083,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
 #if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
         if (j != 2)
         {
-            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite optional offset: %d\n", j);
+            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite optional offset: %d,2\n", j);
         }
 #endif
 
@@ -1109,7 +1109,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
 #if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
     if (j != 2)
     {
-        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite footer: %d\n", j);
+        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite footer: %d,2\n", j);
     }
 #endif
 
