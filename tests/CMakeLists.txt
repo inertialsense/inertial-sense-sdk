@@ -2,6 +2,20 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
 project(IS-SDK_unit-tests)
 
+include(FetchContent)
+
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        release-1.11.0
+)
+FetchContent_MakeAvailable(googletest)
+add_library(GTest::GTest INTERFACE IMPORTED)
+target_link_libraries(GTest::GTest INTERFACE gtest_main)
+
+# Set the MSVC runtime library to static
+# set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 
 find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
@@ -19,13 +33,17 @@ include_directories(
     ${IS_SDK_DIR}/tests/runtime
 )
 
-find_package(GTest REQUIRED)
+# find_package(GTest REQUIRED)
 
 # Link the InertialSenseSDK static library 
 link_directories(${IS_SDK_DIR})
 
 file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
+if(WIN32)
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISFirmwareUpdate.cpp")
+endif()
 
 # Define the executable
 add_executable(${PROJECT_NAME} 
@@ -41,4 +59,8 @@ add_executable(${PROJECT_NAME}
 )
 
 # Link InertialSenseSDK static library to the executable
-target_link_libraries(${PROJECT_NAME} gtest_main InertialSenseSDK ${GTEST_LIBRARIES} udev pthread m)
+target_link_libraries(${PROJECT_NAME} GTest::GTest InertialSenseSDK ${GTEST_LIBRARIES})
+
+if(NOT WIN32)
+    target_link_libraries(${PROJECT_NAME} m pthread udev)
+endif()
