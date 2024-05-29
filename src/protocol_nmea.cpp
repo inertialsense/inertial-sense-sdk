@@ -1369,59 +1369,103 @@ bool gsvFreqEna(gps_sig_sv_t* sig)
     switch(sig->gnssId)
     {
         case SAT_SV_GNSS_ID_GPS:
-SAT_SV_SIG_ID_GPS_L1CA          = 0,
-    SAT_SV_SIG_ID_GPS_L2CL          = 3,
-    SAT_SV_SIG_ID_GPS_L2CM          = 4,
-    SAT_SV_SIG_ID_GPS_L5I           = 6,
-    SAT_SV_SIG_ID_GPS_L5Q           = 7,
-    SAT_SV_SIG_ID_GPS_L5            = SAT_SV_SIG_ID_GPS_L5Q,
-            break;
-        case SAT_SV_GNSS_ID_SBS:
-    SAT_SV_SIG_ID_SBAS_L1CA         = 0,
-    SAT_SV_SIG_ID_SBAS_L2           = 1,
-    SAT_SV_SIG_ID_SBAS_L5           = 2,
-            break;
-        case SAT_SV_GNSS_ID_GAL:
-            SAT_SV_SIG_ID_Galileo_E1C2      = 0,
-    SAT_SV_SIG_ID_Galileo_E1B2      = 1,
-    SAT_SV_SIG_ID_Galileo_E1BC      = SAT_SV_SIG_ID_Galileo_E1B2,
-    SAT_SV_SIG_ID_Galileo_E5aI      = 3,
-    SAT_SV_SIG_ID_Galileo_E5aQ      = 4,
-    SAT_SV_SIG_ID_Galileo_E5a       = SAT_SV_SIG_ID_Galileo_E5aQ,
-    SAT_SV_SIG_ID_Galileo_E5bI      = 5,
-    SAT_SV_SIG_ID_Galileo_E5bQ      = 6,
-    SAT_SV_SIG_ID_Galileo_E5        = SAT_SV_SIG_ID_Galileo_E5bQ,
-            break;
-        case SAT_SV_GNSS_ID_BEI:
-        
-    SAT_SV_SIG_ID_BeiDou_B1D1       = 0,
-    SAT_SV_SIG_ID_BeiDou_B1D2       = 1,
-    SAT_SV_SIG_ID_BeiDou_B2D1       = 2,
-    SAT_SV_SIG_ID_BeiDou_B2D2       = 3,
-    SAT_SV_SIG_ID_BeiDou_B2         = SAT_SV_SIG_ID_BeiDou_B2D1,
-    SAT_SV_SIG_ID_BeiDou_B1C        = 5,
-    SAT_SV_SIG_ID_BeiDou_B2a        = 7,
-            break;
-        case SAT_SV_GNSS_ID_QZS:
-            SAT_SV_SIG_ID_QZSS_L1CA         = 0,
-    SAT_SV_SIG_ID_QZSS_L1S          = 1,
-    SAT_SV_SIG_ID_QZSS_L2CM         = 4,
-    SAT_SV_SIG_ID_QZSS_L2CL         = 5,
-    SAT_SV_SIG_ID_QZSS_L2           = SAT_SV_SIG_ID_QZSS_L2CL,
-    SAT_SV_SIG_ID_QZSS_L5I          = 8,
-    SAT_SV_SIG_ID_QZSS_L5Q          = 9,
-    SAT_SV_SIG_ID_QZSS_L5           = SAT_SV_SIG_ID_QZSS_L5Q,
+            switch(sig->sigId)
+            {
+                case SAT_SV_SIG_ID_GPS_L1CA:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+            
+                case SAT_SV_SIG_ID_GPS_L2CL:
+                case SAT_SV_SIG_ID_GPS_L2CM:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                
+                case SAT_SV_SIG_ID_GPS_L5I:
+                case SAT_SV_SIG_ID_GPS_L5Q:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_5_BIT);
 
-            break;
-        case SAT_SV_GNSS_ID_GLO:
+                default: return false;
+            }
+            
+        case SAT_SV_GNSS_ID_SBS:
+            switch(sig->sigId)
+            {
+                case SAT_SV_SIG_ID_SBAS_L1CA:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+
+                case SAT_SV_SIG_ID_SBAS_L2:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    
+                case SAT_SV_SIG_ID_SBAS_L5:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_5_BIT);
+
+                default: return false;
+            }
+            
+        case SAT_SV_GNSS_ID_GAL:
+            switch(sig->sigId)
+            {
+                case SAT_SV_SIG_ID_Galileo_E1C2:
+                case SAT_SV_SIG_ID_Galileo_E1B2:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+
+                case SAT_SV_SIG_ID_Galileo_E5aI:
+                case SAT_SV_SIG_ID_Galileo_E5aQ:
+                case SAT_SV_SIG_ID_Galileo_E5bI:
+                case SAT_SV_SIG_ID_Galileo_E5bQ:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_5_BIT);
+
+                default: return false;
+            }
+
+        case SAT_SV_GNSS_ID_BEI:
+            switch(sig->sigId)
+            {
+                case SAT_SV_SIG_ID_BeiDou_B1D1:
+                case SAT_SV_SIG_ID_BeiDou_B1D2:
+                case SAT_SV_SIG_ID_BeiDou_B1C:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+
+                case SAT_SV_SIG_ID_BeiDou_B2D1:
+                case SAT_SV_SIG_ID_BeiDou_B2D2:
+                case SAT_SV_SIG_ID_BeiDou_B2a:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+
+                default: return false;
+            }
+
+        case SAT_SV_GNSS_ID_QZS:
+            switch(sig->sigId)
+            {
+                case SAT_SV_SIG_ID_QZSS_L1CA:
+                case SAT_SV_SIG_ID_QZSS_L1S:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+
+                case SAT_SV_SIG_ID_QZSS_L2CM:
+                case SAT_SV_SIG_ID_QZSS_L2CL:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    
+                case SAT_SV_SIG_ID_QZSS_L5I:
+                case SAT_SV_SIG_ID_QZSS_L5Q:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_5_BIT);
+
+                default: return false;
+            }
         
-    SAT_SV_SIG_ID_GLONASS_L1OF      = 0,
-    SAT_SV_SIG_ID_GLONASS_L2OF      = 2,
-            break;
+        case SAT_SV_GNSS_ID_GLO:
+            switch(sig->sigId)
+            {
+                case SAT_SV_SIG_ID_GLONASS_L1OF:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+
+                case SAT_SV_SIG_ID_GLONASS_L2OF:
+                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                
+                default: return false;
+            }
         default: 
             return false;
     }
-        return true;
+    
+    return false;
 }
 
 int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
