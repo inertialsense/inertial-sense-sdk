@@ -845,7 +845,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
         // TODO: Debug test_flash_sync, remove later (WHJ)
-        printf("InertialSense::SetFlashConfig() no devices present.\n")
+        printf("InertialSense::SetFlashConfig() no devices present.\n");
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
@@ -896,7 +896,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
     // TODO: Debug test_flash_sync, remove later (WHJ)
     if (failure)
     {
-        printf("InertialSense::SetFlashConfig() failed to send flash config!\n")
+        printf("InertialSense::SetFlashConfig() failed to send flash config!\n");
     }
 
     // Success
