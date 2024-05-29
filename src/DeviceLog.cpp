@@ -21,30 +21,30 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 #include <stddef.h>
 
+#include "ISDevice.h"
 #include "DeviceLog.h"
 #include "ISFileManager.h"
 #include "ISConstants.h"
 #include "ISDataMappings.h"
 #include "ISLogFileFactory.h"
+#include "util/util.h"
 
 using namespace std;
 
+cDeviceLog::cDeviceLog() {
+    m_logStats.Clear();
+}
 
-cDeviceLog::cDeviceLog()
-{
-    m_pFile = NULL;
-    m_pHandle = 0;
-    m_fileSize = 0;
-    m_logSize = 0;
-    m_fileCount = 0;
-    memset(&m_devInfo, 0, sizeof(dev_info_t));
-	m_altClampToGround = true;
-	m_enableGpsLogging = true;
-	m_showParseErrors = true;
-	m_showTracks = true;
-	m_showPointTimestamps = true;
-	m_pointUpdatePeriodSec = 1.0f;
-	m_logStats.Clear();
+cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
+    if (dev == nullptr)
+        throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
+    m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
+    m_devSerialNo = dev->devInfo.serialNumber;
+    m_logStats.Clear();
+}
+
+cDeviceLog::cDeviceLog(uint16_t hdwId, uint32_t serial) : m_devHdwId(hdwId), m_devSerialNo(serial) {
+    m_logStats.Clear();
 }
 
 cDeviceLog::~cDeviceLog()
@@ -54,9 +54,8 @@ cDeviceLog::~cDeviceLog()
     CloseAllFiles();
 }
 
-void cDeviceLog::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLog::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
-    m_pHandle = pHandle;
 	m_timeStamp = timestamp;
 	m_directory = directory;
 	m_fileCount = 0;
@@ -77,14 +76,15 @@ void cDeviceLog::InitDeviceForReading()
 	m_logStats.Clear();
 }
 
-
 bool cDeviceLog::CloseAllFiles()
 {
-	if (m_writeMode)
-	{
-		string str = m_directory + "/stats_SN" + to_string(m_devInfo.serialNumber) + ".txt";
-		m_logStats.WriteToFile(str);
-	}
+    if (device == nullptr)
+        return false;
+
+    if (m_writeMode) {
+        string str = m_directory + "/stats_SN" + to_string(device->devInfo.serialNumber) + ".txt";
+        m_logStats.WriteToFile(str);
+    }
     return true;
 }
 
@@ -186,11 +186,10 @@ bool cDeviceLog::OpenNewSaveFile()
 
 	// Open new file
 	m_fileCount++;
-	uint32_t serNum = m_devInfo.serialNumber;
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
-	{
-		serNum = m_pHandle;
-	}
+        return false;
+
 	string fileName = GetNewFileName(serNum, m_fileCount, NULL);
 	m_pFile = CreateISLogFile(fileName, "wb");
 	m_fileSize = 0;
@@ -244,42 +243,23 @@ bool cDeviceLog::OpenNextReadFile()
 
 string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
 {
-	// file name 
-#if 1
-    char filename[200];
-    SNPRINTF(filename, sizeof(filename), "%s/%s%d_%s_%04d%s%s", 
-        m_directory.c_str(), 
+    return utils::string_format("%s/%s%d_%s_%04d%s%s",
+        m_directory.c_str(),
         IS_LOG_FILE_PREFIX, 
         (int)serialNumber, 
         m_timeStamp.c_str(), 
         (int)(fileCount % 10000), 
         (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str()), 
-        LogFileExtention().c_str());
-    return filename;
-#else
-    // This code is not working on the embedded platform
-	ostringstream filename;
-	filename << m_directory << "/" << IS_LOG_FILE_PREFIX <<
-		serialNumber << "_" <<
-		m_timeStamp << "_" <<
-		setfill('0') << setw(4) << (fileCount % 10000) <<
-		(suffix == NULL || *suffix == 0 ? "" : string("_") + suffix) <<
-		LogFileExtention();
-	return filename.str();
-#endif
+        LogFileExtention().c_str()
+    );
 }
 
-
-void cDeviceLog::SetDeviceInfo(const dev_info_t *info)
-{
-	if (info == NULL)
-	{
-		return;
-	}
-	m_devInfo = *info;
-	SetSerialNumber(info->serialNumber);
+ISDevice* cDeviceLog::Device() {
+    return (ISDevice*)device;
 }
-
+const dev_info_t* cDeviceLog::DeviceInfo() {
+    return (dev_info_t*)&(device->devInfo);
+}
 
 void cDeviceLog::OnReadData(p_data_buf_t* data)
 {

@@ -2146,9 +2146,9 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
     while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
     {
         // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_INS_1)
+        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.pkt.data.ptr + comm.pkt.offset);
+            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
             if (msg->insStatus & 0x00400000)
             {
                 res.success = true;
@@ -2177,9 +2177,9 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
     while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
     {
         // Search comm buffer for valid packets
-        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.dataHdr.id == DID_INS_1)
+        if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
         {
-            ins_1_t *msg = (ins_1_t *)(comm.pkt.data.ptr + comm.pkt.offset);
+            ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
             if (msg->insStatus & 0x00400000)
             {
                 res.success = true;

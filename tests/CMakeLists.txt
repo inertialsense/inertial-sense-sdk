@@ -40,9 +40,14 @@ link_directories(${IS_SDK_DIR})
 
 file(GLOB TESTS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/test_*.cpp")
 list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_com_manager_2.cpp")
+<<<<<<< HEAD
 if(WIN32)
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_md5.cpp")
     list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_ISFirmwareUpdate.cpp")
+=======
+if(WIN32)   # These do not run in Windows
+    list(FILTER TESTS_SOURCES EXCLUDE REGEX "test_time_conversion.cpp")
+>>>>>>> 5d6021032a09b1c349335ddeac9e171cd7bec30d
 endif()
 
 # Define the executable

@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 			// Log serial port data to file
 			logger.LogData(0, len, buf);
 
-			printf("Log file size: %.3f MB \r", logger.LogSizeMB());
+			printf("Log file size: %.3f MB \r", logger.LogSizeAllMB());
 		}
     }
 

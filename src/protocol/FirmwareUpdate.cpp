@@ -620,7 +620,7 @@ namespace fwUpdate {
         response.hdr.msg_type = MSG_VERSION_INFO_RESP;
         response.data.version_resp.resTarget = payload.hdr.target_device;
         response.data.version_resp.serialNumber = devInfo.serialNumber;
-        response.data.version_resp.hardwareId = devInfo.hardware;
+        response.data.version_resp.hardwareType = devInfo.hardwareType;
         memcpy(&response.data.version_resp.hardwareVer[0], &devInfo.hardwareVer[0], 4);
         memcpy(&response.data.version_resp.firmwareVer[0], &devInfo.firmwareVer[0], 4);
         response.data.version_resp.buildYear = devInfo.buildYear;

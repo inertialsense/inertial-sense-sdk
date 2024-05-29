@@ -13,10 +13,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __INERTIALSENSE_H
 #define __INERTIALSENSE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
+#include <cstring>
 #include <string>
+#include <functional>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -31,11 +33,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISSerialPort.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
+#include "ISDevice.h"
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
-#include "string.h"
 
 extern "C"
 {
@@ -45,8 +47,6 @@ extern "C"
 
 #include "serialPortPlatform.h"
 }
-
-#include <functional>
 
 #define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
 
@@ -62,95 +62,10 @@ typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pH
 class InertialSense : public iISTcpServerDelegate
 {
 public:
-    typedef struct is_fwUpdate_info_s {
-        ISFirmwareUpdater* fwUpdater;
-        float percent;
-        bool hasError;
-        uint16_t lastSlot;
-        fwUpdate::target_t lastTarget;
-        fwUpdate::update_status_e lastStatus;
-        std::string lastMessage;
-
-        std::vector<std::string> target_idents;
-        std::vector<std::string> target_messages;
-
-        bool inProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
-        void update() {
-            if (fwUpdater) {
-                if ("upload" == fwUpdater->getActiveCommand()) {
-                    if (fwUpdater->fwUpdate_getSessionTarget() != lastTarget) {
-                        hasError = false;
-                        lastStatus = fwUpdate::NOT_STARTED;
-                        lastMessage.clear();
-                        lastTarget = fwUpdater->fwUpdate_getSessionTarget();
-                    }
-                    lastSlot = fwUpdater->fwUpdate_getSessionImageSlot();
-
-                    if ((fwUpdater->fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED) && fwUpdater->isWaitingResponse()) {
-                        // We're just starting (no error yet, but no response either)
-                        lastStatus = fwUpdate::INITIALIZING;
-                        lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-                    } else if ((fwUpdater->fwUpdate_getSessionStatus() != fwUpdate::NOT_STARTED) && (lastStatus != fwUpdater->fwUpdate_getSessionStatus())) {
-                        // We're got a valid status update (error or otherwise)
-                        lastStatus = fwUpdater->fwUpdate_getSessionStatus();
-                        lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-
-                        // check for error
-                        if (!hasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
-                            hasError = true;
-                        }
-                    }
-
-                    // update our upload progress
-                    if ((lastStatus == fwUpdate::IN_PROGRESS)) {
-                        percent = ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
-                    } else {
-                        percent = lastStatus <= fwUpdate::READY ? 0.f : 100.f;
-                    }
-                } else if ("waitfor" == fwUpdater->getActiveCommand()) {
-                        lastMessage = "Waiting for response from device.";
-                } else if ("reset" == fwUpdater->getActiveCommand()) {
-                    lastMessage = "Resetting device.";
-                } else if ("delay" == fwUpdater->getActiveCommand()) {
-                    lastMessage = "Waiting...";
-                }
-
-                if (!fwUpdater->hasPendingCommands()) {
-                    if (!hasError) {
-                        lastMessage = "Completed successfully.";
-                    } else {
-                        lastMessage = "Error: ";
-                        lastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-                    }
-                }
-
-                // cleanup if we're done.
-                if (fwUpdater->fwUpdate_isDone()) {
-                    delete fwUpdater;
-                    fwUpdater = nullptr;
-                }
-            } else {
-                percent = 0.0;
-            }
-        }
-    } is_fwUpdate_info_t;
-
-    typedef struct
-    {
-        serial_port_t serialPort;
-        dev_info_t devInfo;
-        system_command_t sysCmd;
-        nvm_flash_cfg_t flashCfg;
-        unsigned int flashCfgUploadTimeMs;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-        uint32_t flashCfgUploadChecksum;
-        sys_params_t sysParams;
-        is_fwUpdate_info_t fwUpdate;
-    } is_device_t;
-
     struct com_manager_cpp_state_t
     {
         // per device vars
-        std::vector<is_device_t> devices;
+        std::vector<ISDevice> devices;
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
@@ -226,20 +141,25 @@ public:
      * Returns a vector of available, connected devices
      * @return
      */
-    std::vector<is_device_t>& getDevices();
+    std::vector<ISDevice>& getDevices();
 
 
     /**
      * Returns a reference to an is_device_t struct that contains information about the specified device
      * @return
      */
-    is_device_t& getDevice(uint32_t index);
+    ISDevice& getDevice(uint32_t index);
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
     * @return true if updating should continue, false if the process should be shutdown
     */
     bool Update();
+
+    /**
+     * Register a callback handler for data stream errors.
+     */
+    void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
 
     /**
     * Enable or disable logging - logging is disabled by default
@@ -269,7 +189,7 @@ public:
     */
     bool LoggerEnabled() { return m_logger.Enabled(); }
 
-	/**
+    /**
 	 * @brief Get pointer to ISLogger
 	 * 
 	 * @return cISLogger* ISLogger pointer
@@ -283,7 +203,7 @@ public:
 	 * @param dataSize Number of bytes of raw data.
 	 * @param data Pointer to raw data.
 	 */
-	void LogRawData(int device, int dataSize, const uint8_t* data);
+	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
 	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
@@ -364,28 +284,14 @@ public:
     * @param pHandle the pHandle to get device info for
     * @return the device info
     */
-    const dev_info_t DeviceInfo(int pHandle = 0)
-    {
-        if ((size_t)pHandle >= m_comManagerState.devices.size())
-        {
-            pHandle = 0;
-        }
-        return m_comManagerState.devices[pHandle].devInfo;
-    }
+    const dev_info_t DeviceInfo(int pHandle = 0);
 
     /**
     * Get current device system command
     * @param pHandle the pHandle to get sysCmd for
     * @return current device system command
     */
-    system_command_t GetSysCmd(int pHandle = 0)
-    {
-        if ((size_t)pHandle >= m_comManagerState.devices.size())
-        {
-            pHandle = 0;
-        }
-        return m_comManagerState.devices[pHandle].sysCmd;
-    }
+    system_command_t GetSysCmd(int pHandle = 0);
 
     /**
     * Set device configuration
@@ -409,7 +315,12 @@ public:
     */
     bool FlashConfigSynced(int pHandle = 0) 
     { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        if (m_comManagerState.devices.size() == 0)
+        {   // No devices
+            return false;
+        }
+
+        ISDevice& device = m_comManagerState.devices[pHandle];
         return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
                 (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
     }
@@ -422,8 +333,13 @@ public:
      */
     bool FlashConfigUploadFailure(int pHandle = 0)
     { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
-        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
+        if (m_comManagerState.devices.size() == 0)
+        {   // No devices
+            return true;
+        }
+
+        ISDevice& device = m_comManagerState.devices[pHandle];
+        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
     } 
 
     /**
@@ -444,6 +360,15 @@ public:
 
     void ProcessRxData(int pHandle, p_data_t* data);
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
+
+    /**
+     * Request a specific device broadcast binary data
+     * @param pHandle the device's pHandle to request data from
+     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
+     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+     * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+     */
+    bool BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple);
 
     /**
     * Broadcast binary data
@@ -581,6 +506,16 @@ public:
             void (*waitAction)()
     );
 
+    is_operation_result updateFirmware(
+            ISDevice& device,
+            fwUpdate::target_t targetDevice,
+            std::vector<std::string> cmds,
+            ISBootloader::pfnBootloadProgress uploadProgress,
+            ISBootloader::pfnBootloadProgress verifyProgress,
+            ISBootloader::pfnBootloadStatus infoProgress,
+            void (*waitAction)()
+    );
+
     /**
      * @return true if all devices have finished all firmware update steps
      */
@@ -637,7 +572,7 @@ public:
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    InertialSense::is_device_t* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+    ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
