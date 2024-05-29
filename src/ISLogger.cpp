@@ -288,20 +288,14 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 
 bool nextStreamDigit(stringstream &ss, string &str)
 {
-    char c;
-    if (!(ss >> c))	// Read delimiter
-    {
-        return false;
-    }
-
-    if (isdigit(c))
-    {	// If not delimeter, put first char/digit back
-        ss.unget();
-    }
-
     if (!getline(ss, str, '_'))
     {
-        return false;	// No more data 
+        return false;	// No data 
+    }
+
+    if (str.size() == 0 || !isdigit(str[0]))
+    {
+        return false;	// No numerical data 
     }
 
     return true;
@@ -331,15 +325,20 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
         stringstream ss(content);
 
         // Read serial number, date, time, index
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	serialNum = stoi(str);
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	date = str;
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	time = str;
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	index = stoi(str);
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        serialNum = stoi(str);
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        date = str;
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        time = str;
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        index = stoi(str);
     }
     else
     {	// No prefix - only index number
         stringstream ss(content);
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	index = stoi(str);
+        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	
+        index = stoi(str);
     }
 
     return true;
