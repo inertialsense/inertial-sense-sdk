@@ -1097,7 +1097,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
         n += j = portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
 
 #if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-        if (j != pkt->data.size)
+        if (j != (int)(pkt->data.size))
         {
             printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite payload: %d,%d\n", j, pkt->data.size);
         }

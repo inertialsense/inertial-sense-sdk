@@ -917,10 +917,10 @@ bool InertialSense::WaitForFlashSynced(int pHandle)
 
         if (current_timeMs() - startMs > 3000)
         {   // Timeout waiting for flash config
-            printf("Failed to read DID_FLASH_CONFIG!\n");
+            printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
 
             #if PRINT_DEBUG
-            is_device_t &device = m_comManagerState.devices[pHandle]; 
+            ISDevice& device = m_comManagerState.devices[pHandle];
             DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
             DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
             DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
