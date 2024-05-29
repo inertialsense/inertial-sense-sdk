@@ -1060,23 +1060,58 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
  */ 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
 {
+    // TODO: Debug test_flash_sync, remove later (WHJ)
+    int j;
+
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
-     // Write packet to port
-    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
+    // Write packet to port
+    int n = j = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
+
+#ifdef IS_CI_HDW    // TODO: Debug test_flash_sync, remove later (WHJ)
+    if (j != sizeof(packet_hdr_t))
+    {
+        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite header: %d,%d\n", j, sizeof(packet_hdr_t));
+    }
+#endif
+
     if (pkt->offset)
     {
-        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+        n += j = portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+
+#ifdef IS_CI_HDW    // TODO: Debug test_flash_sync, remove later (WHJ)
+        if (j != 2)
+        {
+            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite optional offset: %d\n", j);
+        }
+#endif
+
     }
+
     if (pkt->data.size)
     {
         // Include payload in checksum calculation
         pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
-        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+        n += j = portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
+
+#ifdef IS_CI_HDW    // TODO: Debug test_flash_sync, remove later (WHJ)
+        if (j != pkt->data.size)
+        {
+            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite payload: %d,%d\n", j, pkt->data.size);
+        }
+#endif
+
     }
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+    n += j = portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
+
+#ifdef IS_CI_HDW    // TODO: Debug test_flash_sync, remove later (WHJ)
+    if (j != 2)
+    {
+        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite footer: %d\n", j);
+    }
+#endif
 
     // Increment Tx count
     comm->txPktCount++;
