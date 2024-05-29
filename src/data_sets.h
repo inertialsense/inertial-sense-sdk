@@ -1899,6 +1899,7 @@ enum eNmeaAsciiMsgId
 
     // Special cases
     // GxGSV special cases
+    NMEA_MSG_ID_SPECIAL_CASE_START = 1000,
     // GNGSV
     NMEA_MSG_ID_GNGSV           = 15000,
     NMEA_MSG_ID_GNGSV_1         = (NMEA_MSG_ID_GNGSV | NMEA_MSG_ID_GNGSV_FREQ_1_BIT),

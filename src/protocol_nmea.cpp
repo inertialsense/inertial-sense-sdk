@@ -21,6 +21,8 @@ static struct
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 
+gsvMask_t   g_gsvMask = {0};
+
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
@@ -1869,6 +1871,10 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
             char *ptr2 = ptr-1;
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
+
+        // check for special case
+        if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) id = parseNMEASpecial(id);
+
         ptr = ASCII_find_next_field(ptr);
 
         // end of nmea string
