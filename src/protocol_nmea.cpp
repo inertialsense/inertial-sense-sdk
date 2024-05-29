@@ -2036,8 +2036,15 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
             char *ptr2 = ptr-1;
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
-        ptr = ASCII_find_next_field(ptr);
 
+        // handle GSV cases
+        if (id == NMEA_MSG_ID_GxGSV)
+            parseASCE_GSV(NMEA_GNGSV);
+        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
+            id = parseASCE_GSV(id);
+        
+        ptr = ASCII_find_next_field(ptr);
+        
         // end of nmea string
         if(*ptr=='*')
             break;
