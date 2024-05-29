@@ -89,6 +89,6 @@ int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utc
 int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3]);
 int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS);
 
-extern gsvMask_t    g_gsvMask;
+extern gsvMask_t g_gsvMask;
 
 #endif /* PROTOCOL_NMEA_H_ */

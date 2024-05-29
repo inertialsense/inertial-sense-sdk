@@ -21,7 +21,7 @@ static struct
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 
-gsvMask_t   g_gsvMask = {0};
+gsvMask_t g_gsvMask = {0};
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
@@ -1828,6 +1828,52 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
     return 0;
 }
 
+/**
+ * Sets ASCE specail case.
+ * returns 15 if successful 
+ * returns 0 if unsuccessful
+*/
+int parseASCESpecial(int inId)
+{
+    uint8_t constTarget = (inId & 0xf0) >> 4;
+    uint8_t freqMask = (inId & 0x0f);
+
+    if(inId < NMEA_GNGSV_START || inId > NMEA_GNGSV_END)
+        return 0;
+
+    switch (constTarget)
+    {
+        case NMEA_GNGSV_MSG_ID:
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+            break;
+        case NMEA_GPGSV_MSG_ID:
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+            break;
+        case NMEA_GQGSV_MSG_ID:
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+            break;
+        case NMEA_GAGSV_MSG_ID:
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+            break;
+        case NMEA_GLGSV_MSG_ID:
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+            break;
+        case NMEA_GBGSV_MSG_ID:
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+            break;
+        default:
+            return 0;
+    }
+
+
+    return NMEA_MSG_ID_GxGSV;
+}
+
 uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
 {
     (void)aSize;
@@ -1873,7 +1919,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         }
 
         // check for special case
-        if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) id = parseNMEASpecial(id);
+        if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) id = parseASCESpecial(id);
 
         ptr = ASCII_find_next_field(ptr);
 
