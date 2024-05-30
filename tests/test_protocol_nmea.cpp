@@ -854,7 +854,7 @@ TEST(protocol_nmea, binary_GSV_binary)
     init_sat_and_sig(&gpsSat, &gpsSig);
     clear_GSV_values();
 
-    string buf = "$ASCE,0,GxGSV,1*44\r\n";
+    string buf = "$ASCE,0,GNGSV,1*72\r\n";
 
     rmci_t outRmci[NUM_COM_PORTS] = {};
     nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
@@ -1004,14 +1004,14 @@ TEST(protocol_nmea, GPGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats != 12);
+        ASSERT_TRUE(outSat.numSats == 12);
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
             ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
 
-        ASSERT_TRUE(outSig.numSigs != gpsSig.numSigs);
+        ASSERT_TRUE(outSig.numSigs == 19);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
@@ -1033,39 +1033,243 @@ TEST(protocol_nmea, GPGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+        ASSERT_TRUE(outSat.numSats == 12);
 
-        ASSERT_TRUE(outSat.numSats == gpsSat.numSats);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            gps_sat_sv_t& src = gpsSat.sat[i];
-            gps_sat_sv_t& dst = outSat.sat[i];
-            ASSERT_TRUE(dst.gnssId == src.gnssId);
-            ASSERT_TRUE(dst.svId == src.svId);
-            ASSERT_TRUE(dst.elev == src.elev);
-            ASSERT_TRUE(dst.azim == src.azim);
-            ASSERT_TRUE(dst.cno == src.cno);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
 
-        ASSERT_TRUE(outSig.numSigs == gpsSig.numSigs);
+        ASSERT_TRUE(outSig.numSigs == 19);
+
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            gps_sig_sv_t& src = gpsSig.sig[i];
-            gps_sig_sv_t& dst = outSig.sig[i];
-            ASSERT_TRUE(dst.gnssId == src.gnssId);
-            ASSERT_TRUE(dst.svId == src.svId);
-            ASSERT_TRUE(dst.sigId == src.sigId);
-            ASSERT_TRUE(dst.quality == src.quality);
-            ASSERT_TRUE(dst.cno == src.cno);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
     }
 }
 
+TEST(protocol_nmea, GAGSV)
+{
+    gps_sat_t gpsSat = {};
+    gps_sig_t gpsSig = {};
 
+    init_sat_and_sig(&gpsSat, &gpsSig);
+    clear_GSV_values();
 
+    string buf = "$ASCE,0,GAGSV,1*7D\r\n";
 
+    rmci_t outRmci[NUM_COM_PORTS] = {};
+    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
 
+    {   // Test NMEA protocol 2.3
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char* ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE(outSat.numSats == 4);
+
+        for (uint32_t i = 0; i < outSat.numSats; i++)
+        {
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+
+        ASSERT_TRUE(outSig.numSigs == 8);
+
+        for (uint32_t i = 0; i < outSig.numSigs; i++)
+        {
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+    }
+
+    {   // Test NMEA protocol 4.10
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char* ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        ASSERT_TRUE(outSat.numSats == 4);
+
+        for (uint32_t i = 0; i < outSat.numSats; i++)
+        {
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+
+        ASSERT_TRUE(outSig.numSigs == 8);
+
+        for (uint32_t i = 0; i < outSig.numSigs; i++)
+        {
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+    }
+}
+
+TEST(protocol_nmea, GBGSV)
+{
+    gps_sat_t gpsSat = {};
+    gps_sig_t gpsSig = {};
+
+    init_sat_and_sig(&gpsSat, &gpsSig);
+    clear_GSV_values();
+
+    string buf = "$ASCE,0,GBGSV,1*7E\r\n";
+
+    rmci_t outRmci[NUM_COM_PORTS] = {};
+    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+
+    {   // Test NMEA protocol 2.3
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char* ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE(outSat.numSats == 12);
+
+        for (uint32_t i = 0; i < outSat.numSats; i++)
+        {
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+
+        ASSERT_TRUE(outSig.numSigs == 19);
+
+        for (uint32_t i = 0; i < outSig.numSigs; i++)
+        {
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+    }
+
+    {   // Test NMEA protocol 4.10
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char* ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        ASSERT_TRUE(outSat.numSats == 12);
+
+        for (uint32_t i = 0; i < outSat.numSats; i++)
+        {
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+
+        ASSERT_TRUE(outSig.numSigs == 19);
+
+        for (uint32_t i = 0; i < outSig.numSigs; i++)
+        {
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+    }
+}
+
+TEST(protocol_nmea, GLGSV)
+{
+    gps_sat_t gpsSat = {};
+    gps_sig_t gpsSig = {};
+
+    init_sat_and_sig(&gpsSat, &gpsSig);
+    clear_GSV_values();
+
+    string buf = "$ASCE,0,GLGSV,1*70\r\n";
+
+    rmci_t outRmci[NUM_COM_PORTS] = {};
+    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+
+    {   // Test NMEA protocol 2.3
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char* ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE(outSat.numSats == 12);
+
+        for (uint32_t i = 0; i < outSat.numSats; i++)
+        {
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+
+        ASSERT_TRUE(outSig.numSigs == 19);
+
+        for (uint32_t i = 0; i < outSig.numSigs; i++)
+        {
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+    }
+
+    {   // Test NMEA protocol 4.10
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char* ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        ASSERT_TRUE(outSat.numSats == 12);
+
+        for (uint32_t i = 0; i < outSat.numSats; i++)
+        {
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+
+        ASSERT_TRUE(outSig.numSigs == 19);
+
+        for (uint32_t i = 0; i < outSig.numSigs; i++)
+        {
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+        }
+    }
+}
 
 
 
@@ -1173,84 +1377,84 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sat->azim = 310;
     sat->cno = 43;
     sat->elev = 40;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 95;
     sat->svId = 2;
     sat++;
     sat->azim = 324;
     sat->cno = 31;
     sat->elev = 07;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 95;
     sat->svId = 8;
     sat++;
     sat->azim = 267;
     sat->cno = 45;
     sat->elev = 48;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 10;
     sat++;
     sat->azim = 53;
     sat->cno = 45;
     sat->elev = 37;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 15;
     sat++;
     sat->azim = 268;
     sat->cno = 37;
     sat->elev = 12;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 95;
     sat->svId = 16;
     sat++;
     sat->azim = 78;
     sat->cno = 41;
     sat->elev = 69;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 18;
     sat++;
     sat->azim = 336;
     sat->cno = 41;
     sat->elev = 74;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 23;
     sat++;
     sat->azim = 111;
     sat->cno = 37;
     sat->elev = 15;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 24;
     sat++;
     sat->azim = 239;
     sat->cno = 31;
     sat->elev = 02;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 26;
     sat++;
     sat->azim = 307;
     sat->cno = 41;
     sat->elev = 35;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 95;
     sat->svId = 27;
     sat++;
     sat->azim = 162;
     sat->cno = 36;
     sat->elev = 12;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 31;
     sat->svId = 29;
     sat++;
     sat->azim = 199;
     sat->cno = 40;
     sat->elev = 14;
-    sat->gnssId = SAT_SV_GNSS_ID_GPS
+    sat->gnssId = SAT_SV_GNSS_ID_GPS;
     sat->status = 95;
     sat->svId = 32;
     sat++;
@@ -1278,28 +1482,28 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sat->azim = 145;
     sat->cno = 41;
     sat->elev = 65;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL
+    sat->gnssId = SAT_SV_GNSS_ID_GAL;
     sat->status = 31;
     sat->svId = 5;
     sat++;
     sat->azim = 53;
     sat->cno = 43;
     sat->elev = 39;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL
+    sat->gnssId = SAT_SV_GNSS_ID_GAL;
     sat->status = 31;
     sat->svId = 9;
     sat++;
     sat->azim = 340;
     sat->cno = 42;
     sat->elev = 71;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL
+    sat->gnssId = SAT_SV_GNSS_ID_GAL;
     sat->status = 31;
     sat->svId = 34;
     sat++;
     sat->azim = 104;
     sat->cno = 40;
     sat->elev = 47;
-    sat->gnssId = SAT_SV_GNSS_ID_GAL
+    sat->gnssId = SAT_SV_GNSS_ID_GAL;
     sat->status = 31;
     sat->svId = 36;
     sat++;
@@ -1571,7 +1775,7 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sig->cno = 28;
     sig->gnssId = SAT_SV_GNSS_ID_GPS;
     sig->quality = 7;
-    sig->sigId = SAT_SV_SIG_ID_GPS_L5I;
+    sig->sigId = SAT_SV_SIG_ID_GPS_L5;
     sig->status = 41;
     sig->svId = 32;
     sig++;
@@ -1772,7 +1976,7 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sig->svId = 0;
     sig++;
     sig->cno = 112;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS
+    sig->gnssId = SAT_SV_GNSS_ID_GPS;
     sig->quality = 0;
     sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
     sig->status = 0;
@@ -1793,7 +1997,7 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sig->svId = 0;
     sig++;
     sig->cno = 208;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS
+    sig->gnssId = SAT_SV_GNSS_ID_GPS;
     sig->quality = 235;
     sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
     sig->status = 8978;
@@ -1835,7 +2039,7 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sig->svId = 0;
     sig++;
     sig->cno = 52;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS
+    sig->gnssId = SAT_SV_GNSS_ID_GPS;
     sig->quality = 0;
     sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
     sig->status = 0;
@@ -1856,7 +2060,7 @@ void init_sat_and_sig(gps_sat_t* gpsSat, gps_sig_t* gpsSig)
     sig->svId = 0;
     sig++;
     sig->cno = 74;
-    sig->gnssId = SAT_SV_GNSS_ID_GPS
+    sig->gnssId = SAT_SV_GNSS_ID_GPS;
     sig->quality = 0;
     sig->sigId = SAT_SV_SIG_ID_GPS_L1CA;
     sig->status = 19972;
