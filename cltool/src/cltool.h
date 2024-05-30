@@ -112,8 +112,8 @@ bool cltool_replayDataLog();
 void cltool_outputUsage();
 void cltool_outputHelp();
 void cltool_firmwareUpdateWaiter();
-void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
-void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...);
+void cltool_bootloadUpdateInfo(void* obj, int level, const char* str, ...);
+void cltool_firmwareUpdateInfo(void* obj, int level, const char* str, ...);
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, std::string flashCfg); // true if should continue
 
 #endif // __CLTOOL_H__

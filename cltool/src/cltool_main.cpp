@@ -515,7 +515,7 @@ is_operation_result bootloadVerifyCallback(void* obj, float percent)
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
+void cltool_bootloadUpdateInfo(void* obj, int level, const char* str, ...)
 {
     print_mutex.lock();
     static char buffer[256];
@@ -557,7 +557,7 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     print_mutex.unlock();
 }
 
-void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const char* str, ...)
+void cltool_firmwareUpdateInfo(void* obj, int level, const char* str, ...)
 {
     print_mutex.lock();
     static char buffer[256];
@@ -792,7 +792,7 @@ static int cltool_dataStreaming()
 static void sigint_cb(int sig)
 {
     g_killThreadsNow = true;
-    cltool_bootloadUpdateInfo(NULL, ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR, "Update cancelled, killing threads and exiting...");
+    cltool_bootloadUpdateInfo(NULL, IS_LOG_LEVEL_ERROR, "Update cancelled, killing threads and exiting...");
     signal(SIGINT, SIG_DFL);
 }
 

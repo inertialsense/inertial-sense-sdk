@@ -500,9 +500,9 @@ public:
             int baudRate,
             fwUpdate::target_t targetDevice,
             std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress,
-            ISBootloader::pfnBootloadProgress verifyProgress,
-            ISBootloader::pfnBootloadStatus infoProgress,
+            fwUpdate::pfnProgressCb fwUpdateProgress,
+            fwUpdate::pfnProgressCb verifyProgress,
+            fwUpdate::pfnStatusCb fwUpdateStatus,
             void (*waitAction)()
     );
 
@@ -510,9 +510,9 @@ public:
             ISDevice& device,
             fwUpdate::target_t targetDevice,
             std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress,
-            ISBootloader::pfnBootloadProgress verifyProgress,
-            ISBootloader::pfnBootloadStatus infoProgress,
+            fwUpdate::pfnProgressCb fwUpdateProgress,
+            fwUpdate::pfnProgressCb verifyProgress,
+            fwUpdate::pfnStatusCb fwUpdateStatus,
             void (*waitAction)()
     );
 

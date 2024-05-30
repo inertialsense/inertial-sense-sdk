@@ -71,7 +71,7 @@ static is_operation_result verifyProgress(void* obj, float pct)
     return IS_OP_OK;
 }
 
-static void statusText(void* obj, eLogLevel level, const char* info, ...)
+static void statusText(void* obj, int level, const char* info, ...)
 {
     if (obj == NULL) return;
 
@@ -143,18 +143,6 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
 
     std::string gpx_firmware;
     std::string gpx_bootloader;
-
-    const char *dfu_errors[] = {
-        "SUCCESS",
-        "DEVICE_NOT_FOUND",
-        "DEVICE_BUSY",
-        "DEVICE_TIMEOUT",
-        "LIBUSB_ERROR",
-        "INVALID_STATUS",
-        "INVALID_ARGUMENT",
-        "FILE_NOT_FOUND",
-        "INVALID_IMAGE",
-    };
 
     // parse arguments
     for (int i = 1; i < argc; i++) {

@@ -29,15 +29,6 @@ static constexpr int IS_DEVICE_LIST_LEN = 256;
 static constexpr int IS_FIRMWARE_PATH_LENGTH = 256;
 
 typedef enum {
-    IS_LOG_LEVEL_NONE  = 0,
-    IS_LOG_LEVEL_ERROR = 1,
-    IS_LOG_LEVEL_WARN  = 2,
-    IS_LOG_LEVEL_INFO  = 3,
-    IS_LOG_LEVEL_DEBUG = 4,
-    IS_LOG_LEVEL_SILLY = 5
-} eLogLevel;
-
-typedef enum {
     IS_DEV_TYPE_NONE = 0,
     IS_DEV_TYPE_SAMBA,
     IS_DEV_TYPE_ISB,
@@ -96,11 +87,11 @@ typedef struct
 } firmwares_t;
 
 typedef is_operation_result (*pfnBootloadProgress)(void* obj, float percent);
-typedef void (*pfnBootloadStatus)(void* obj, eLogLevel level, const char* infoString, ...);
+typedef void (*pfnBootloadStatus)(void* obj, int level, const char* infoString, ...);
 
 is_operation_result dummy_update_callback(void* obj, float percent);
 is_operation_result dummy_verify_callback(void* obj, float percent);
-static inline void dummy_info_callback(void* obj, eLogLevel level, const char* infoString, ...)
+static inline void dummy_info_callback(void* obj, int level, const char* infoString, ...)
 {
     (void)obj;
     (void)infoString;
@@ -280,7 +271,7 @@ public:
     bool m_isISB;
 
 protected:
-    void status_update(const char* info, eLogLevel level) 
+    void status_update(const char* info, int level)
     { 
         if(m_info_callback) m_info_callback((void*)this, level, info);
     }

@@ -52,7 +52,7 @@ static is_operation_result bootloaderVerifyProgress(void* obj, float pct)
 	return IS_OP_OK;
 }
 
-static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ...)
+static void bootloaderStatusText(void* obj, int level, const char* str, ...)
 {
 	if (obj == NULL) return;
 

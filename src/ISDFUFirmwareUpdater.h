@@ -9,6 +9,7 @@
 #ifndef IS_DFU_FIRMWAREUPDATER_H
 #define IS_DFU_FIRMWAREUPDATER_H
 
+#include "ISFirmwareUpdater.h"
 #include "protocol/FirmwareUpdate.h"
 
 #include "ihex.h"
@@ -19,8 +20,6 @@
 #include "libusb.h"
 
 #include <mutex>
-
-namespace dfu {
 
 #ifdef _MSC_VER
 # pragma pack(push)
@@ -174,25 +173,13 @@ typedef enum {
     IS_PROCESSOR_NUM,               // Must be last
 } eProcessorType;
 
-typedef enum {
-    IS_LOG_LEVEL_NONE  = 0,
-    IS_LOG_LEVEL_ERROR = 1,
-    IS_LOG_LEVEL_WARN  = 2,
-    IS_LOG_LEVEL_INFO  = 3,
-    IS_LOG_LEVEL_DEBUG = 4,
-    IS_LOG_LEVEL_SILLY = 5
-} eLogLevel;
-
-typedef void (*pfnFwUpdateStatus)(void* obj, int logLevel, const char* msg, ...);
-typedef void (*pfnFwUpdateProgress)(void* obj, const std::string stepName, int stepNo, int totalSteps, float percent);
-
 class DFUDevice {
 public:
 
-    DFUDevice(libusb_device *device, pfnFwUpdateProgress cbProgress = nullptr, pfnFwUpdateStatus cbStatus = nullptr) {
+    DFUDevice(libusb_device *device, fwUpdate::pfnProgressCb cbProgress = nullptr, fwUpdate::pfnStatusCb  cbStatus = nullptr) {
         usbDevice = device;
-        progressFn = cbProgress;
-        statusFn = cbStatus;
+        progressCb = cbProgress;
+        statusCb = cbStatus;
         usbHandle = nullptr;
         fetchDeviceInfo();
     }
@@ -215,8 +202,10 @@ public:
 
     fwUpdate::target_t getTargetType();
 
-    void setProgressCb(pfnFwUpdateProgress cbProgress){progressFn = cbProgress;}
-    void setStatusCb(pfnFwUpdateStatus cbStatus) {statusFn = cbStatus;}
+    void setProgressCb(fwUpdate::pfnProgressCb cbProgress){ progressCb = cbProgress;}
+    void setStatusCb(fwUpdate::pfnStatusCb cbStatus) { statusCb = cbStatus;}
+
+    const char* getErrorName(int errNo) { return dfuDeviceErrors[errNo]; }
 
 protected:
     dfu_error fetchDeviceInfo();
@@ -252,8 +241,8 @@ private:
     uint16_t dlBlockNum = 0;                    // download block count; should be reset for each separate transfer
     uint16_t ulBlockNum = 0;                    // upload block count; should be reset for each separate transfer
 
-    pfnFwUpdateProgress progressFn;
-    pfnFwUpdateStatus statusFn;
+    fwUpdate::pfnProgressCb progressCb;
+    fwUpdate::pfnStatusCb statusCb;
 
     /**
      * @brief OTP section
@@ -293,6 +282,8 @@ private:
     static int findDescriptor(const uint8_t *desc_list, int list_len, uint8_t desc_type, void *res_buf, int res_size);
 
     static int decodeMemoryPageDescriptor(const std::string& altSetting, dfu_memory_t& segment);
+
+    static const char *dfuDeviceErrors[];
 };
 
 class ISDFUFirmwareUpdater : public fwUpdate::FirmwareUpdateDevice {
@@ -324,5 +315,4 @@ private:
 
 };
 
-} // namespace dfu
 #endif //IS_DFU_FIRMWAREUPDATER_H

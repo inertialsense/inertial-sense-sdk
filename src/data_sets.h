@@ -4732,6 +4732,15 @@ typedef struct
 
 #define DID_EVENT_HEADER_SIZE           (sizeof(did_event_t) - sizeof(uint8_t))
 
+typedef enum {
+    IS_LOG_LEVEL_NONE  = 0,
+    IS_LOG_LEVEL_ERROR = 1,
+    IS_LOG_LEVEL_WARN  = 2,
+    IS_LOG_LEVEL_INFO  = 3,
+    IS_LOG_LEVEL_DEBUG = 4,
+    IS_LOG_LEVEL_SILLY = 5
+} eLogLevel;
+
 /**
 * (DID_SYS_FAULT) System Fault Information 
 * NOTE: If you modify these, please update crash_info_special_values in IS-src/python/src/ci_hdw/data_sets.py */

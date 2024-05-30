@@ -1044,9 +1044,9 @@ is_operation_result InertialSense::updateFirmware(
         int baudRate,
         fwUpdate::target_t targetDevice,
         std::vector<std::string> cmds,
-        ISBootloader::pfnBootloadProgress uploadProgress,
-        ISBootloader::pfnBootloadProgress verifyProgress,
-        ISBootloader::pfnBootloadStatus infoProgress,
+        fwUpdate::pfnProgressCb fwUpdateProgress,
+        fwUpdate::pfnProgressCb  verifyProgress,
+        fwUpdate::pfnStatusCb fwUpdateStatus,
         void (*waitAction)()
 )
 {
@@ -1058,9 +1058,9 @@ is_operation_result InertialSense::updateFirmware(
             device.fwUpdate.fwUpdater->setTarget(targetDevice);
 
             // TODO: Implement maybe
-            device.fwUpdate.fwUpdater->setUploadProgressCb(uploadProgress);
+            device.fwUpdate.fwUpdater->setUploadProgressCb(fwUpdateProgress);
             device.fwUpdate.fwUpdater->setVerifyProgressCb(verifyProgress);
-            device.fwUpdate.fwUpdater->setInfoProgressCb(infoProgress);
+            device.fwUpdate.fwUpdater->setInfoProgressCb(fwUpdateStatus);
 
             device.fwUpdate.fwUpdater->setCommands(cmds);
         }
@@ -1079,20 +1079,21 @@ is_operation_result InertialSense::updateFirmware(
         ISDevice& device,
         fwUpdate::target_t targetDevice,
         std::vector<std::string> cmds,
-        ISBootloader::pfnBootloadProgress uploadProgress,
-        ISBootloader::pfnBootloadProgress verifyProgress,
-        ISBootloader::pfnBootloadStatus infoProgress,
+        fwUpdate::pfnProgressCb fwUpdateProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
+        fwUpdate::pfnStatusCb fwUpdateStatus,
         void (*waitAction)()
 )
 {
+
     EnableDeviceValidation(true);
     device.fwUpdate.fwUpdater = new ISFirmwareUpdater(device);
     device.fwUpdate.fwUpdater->setTarget(targetDevice);
 
     // TODO: Implement maybe
-    device.fwUpdate.fwUpdater->setUploadProgressCb(uploadProgress);
+    device.fwUpdate.fwUpdater->setUploadProgressCb(fwUpdateProgress);
     device.fwUpdate.fwUpdater->setVerifyProgressCb(verifyProgress);
-    device.fwUpdate.fwUpdater->setInfoProgressCb(infoProgress);
+    device.fwUpdate.fwUpdater->setInfoProgressCb(fwUpdateStatus);
 
     device.fwUpdate.fwUpdater->setCommands(cmds);
 
