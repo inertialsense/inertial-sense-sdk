@@ -76,13 +76,13 @@ To use NTRIP, we must enable the DID_GPS1_POS message which will be rebroadcast 
 ```C++
 int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
-	int n = is_comm_get_data(comm, DID_GPS1_POS, 0, 0, 1);
+	int n = is_comm_get_data_to_buf(buffer, bufferSize, comm, DID_GPS1_POS, 0, 0, 1);
 	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
-	n = is_comm_get_data(comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
+	n = is_comm_get_data_to_buf(buffer, bufferSize, comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
 	if (n != serialPortWrite(serialPort, comm->buf.start, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
