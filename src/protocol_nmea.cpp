@@ -1612,14 +1612,16 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
     // eSatSvGnssId
     for (int gnssId=1; gnssId<=SAT_SV_GNSS_ID_IRN; gnssId++)
     {
-        if (gnssId == SAT_SV_GNSS_ID_SBS) { continue; }
-        // printf("gnssId: %d\n", gnssId);
+        if (gnssId != SAT_SV_GNSS_ID_SBS && (g_gsvMask.constMask[gnssId])) 
+        {
+            // printf("gnssId: %d\n", gnssId);
 
-        // With CNO
-        nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId);
+            // With CNO
+            nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId);
 
-        // Zero CNO
-        // nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId, true);
+            // Zero CNO
+            // nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId, true);
+        }
     }
 
     return n;
@@ -2002,6 +2004,7 @@ int parseASCE_GSV(int inId)
         case SAT_SV_GNSS_ID_GNSS:
             g_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
             g_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+            g_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
             g_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
             g_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
             g_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;

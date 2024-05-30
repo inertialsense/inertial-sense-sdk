@@ -744,8 +744,13 @@ TEST(protocol_nmea, GSV_binary_GSV)
 
     string buf;
 
+    buf = "$ASCE,0,GxGSV,1*44\r\n";
+
+    rmci_t outRmci[NUM_COM_PORTS] = {};
+    uint32_t outOptions = nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+
     // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
-    buf += "$GPGSV,6,1,23" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"      "*7C\r\n";
+    buf =  "$GPGSV,6,1,23" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"      "*7C\r\n";
     buf += "$GPGSV,6,2,23" ",16,12,268,35" ",18,69,078,41" ",23,74,336,40" ",24,15,111,37"      "*79\r\n";
     buf += "$GPGSV,6,3,23" ",26,02,239,31" ",27,35,307,38" ",29,12,162,37" ",32,14,199,39"      "*7B\r\n";
     buf += "$GPGSV,6,4,23" ",44,43,188,43" ",46,40,206,43" ",522,48,267,45" ",527,37,053,26"    "*73\r\n";
