@@ -556,11 +556,13 @@ int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t did, uint16
     return comManagerSendInstance(&s_cm, pHandle, pFlags, data, did, size, offset);
 }
 
-// Returns 0 on success, -1 on failure.
 int comManagerSendInstance(CMHANDLE cmInstance, int port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     com_manager_t *cm = (com_manager_t*)cmInstance;
-    return is_comm_write(cm->portWrite, port, &(cm->ports[port].comm), pFlags, did, size, offset, data);
+    int bytes = is_comm_write(cm->portWrite, port, &(cm->ports[port].comm), pFlags, did, size, offset, data);
+
+    // Return 0 on success, -1 on failure
+    return (bytes < 0) ? -1 : 0;
 }
 
 int findAsciiMessage(const void * a, const void * b)
