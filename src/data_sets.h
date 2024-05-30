@@ -1862,10 +1862,6 @@ typedef struct PACKED
 #define NMEA_GNGSV_QZS_OFFSET    (SAT_SV_GNSS_ID_QZS << 4)
 #define NMEA_GNGSV_GLO_OFFSET    (SAT_SV_GNSS_ID_GLO << 4)
 
-typedef struct {
-    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constilation mask (see eGnGSVIndex)*/
-}gsvMask_t;
-
 enum eNmeaAsciiMsgId
 {
     NMEA_MSG_ID_INVALID   = 0,

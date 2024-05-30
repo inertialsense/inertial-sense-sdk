@@ -22,7 +22,11 @@ static struct
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 bool gsv_freq_ena(gps_sig_sv_t* sig);
 
-gsvMask_t g_gsvMask = {0};
+typedef struct {
+    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constilation mask (see eGnGSVIndex)*/
+}gsvMask_t;
+
+static gsvMask_t s_gsvMask = {0};
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
@@ -1360,12 +1364,31 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     return 0;
 }
 
+/**
+ * Gets GSV constellation mask for a given constellation ID
+ * returns mask if value constellation passed and 0 if
+ * an invalid constellation is passed
+*/
+uint8_t gsv_get_const_mask(uint8_t constellation)
+{
+    if (constellation < SAT_SV_GNSS_ID_COUNT)
+    {
+        return s_gsvMask.constMask[constellation];
+    }
+
+    return 0;
+}
+
+/**
+ * Checks if for a given gps_sig_sv_t* sig 
+ * the freqency accociated with sig is enabled
+*/
 bool gsv_freq_ena(gps_sig_sv_t* sig)
 {
     if(sig->gnssId >= SAT_SV_GNSS_ID_COUNT)
         return false;
 
-    uint8_t mask = g_gsvMask.constMask[sig->gnssId];
+    uint8_t mask = s_gsvMask.constMask[sig->gnssId];
 
     switch(sig->gnssId)
     {
@@ -1612,7 +1635,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
     // eSatSvGnssId
     for (int gnssId=1; gnssId<=SAT_SV_GNSS_ID_IRN; gnssId++)
     {
-        if (gnssId != SAT_SV_GNSS_ID_SBS && (g_gsvMask.constMask[gnssId])) 
+        if (gnssId != SAT_SV_GNSS_ID_SBS && (s_gsvMask.constMask[gnssId])) 
         {
             // printf("gnssId: %d\n", gnssId);
 
@@ -2002,28 +2025,28 @@ int parseASCE_GSV(int inId)
     switch (constTarget)
     {
         case SAT_SV_GNSS_ID_GNSS:
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
             break;
         case SAT_SV_GNSS_ID_GPS:
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
             break;
         case SAT_SV_GNSS_ID_GAL:
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
             break;
         case SAT_SV_GNSS_ID_BEI:
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
             break;
         case SAT_SV_GNSS_ID_QZS:
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
             break;
         case SAT_SV_GNSS_ID_GLO:
-            g_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+            s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
             break;
         default:
             return 0;
@@ -2770,6 +2793,11 @@ int nmea_parse_zda(const char a[], int aSize, uint32_t &gpsTowMs, uint32_t &gpsW
     // 5,6 - Local time zone offset from GMT (00,00)
 
     return 0;
+}
+
+void gsv_clear_const_mask()
+{
+    memset(&s_gsvMask, 0, sizeof(gsvMask_t));
 }
 
 
