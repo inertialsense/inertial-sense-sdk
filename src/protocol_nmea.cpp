@@ -20,6 +20,7 @@ static struct
 } s_dataSpeed;
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
+bool gsv_freq_ena(gps_sig_sv_t* sig);
 
 gsvMask_t g_gsvMask = {0};
 
@@ -1112,7 +1113,7 @@ int nmea_gsv_num_sat_sigs(uint8_t gnssId, uint8_t sigId, gps_sig_t &sig, bool no
     for (uint32_t i=0; i<sig.numSigs; i++)
     {
         gps_sig_sv_t &s = sig.sig[i];
-        if (gsv_sig_match(gnssId, sigId, s, noCno))
+        if (gsv_freq_ena(&sig.sig[i]) && gsv_sig_match(gnssId, sigId, s, noCno))
         {
             numSigs++;
         }
@@ -1128,11 +1129,11 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
     case SAT_SV_GNSS_ID_GPS:
         switch(sigId)
         {
-        case SAT_SV_SIG_ID_GPS_L1CA:		return '1';
-        case SAT_SV_SIG_ID_GPS_L2CL:		return '6';
-        case SAT_SV_SIG_ID_GPS_L2CM:		return '5';
-        case SAT_SV_SIG_ID_GPS_L5I:			return '7';
-        case SAT_SV_SIG_ID_GPS_L5Q:			return '8';
+            case SAT_SV_SIG_ID_GPS_L1CA:		return '1';
+            case SAT_SV_SIG_ID_GPS_L2CL:		return '6';
+            case SAT_SV_SIG_ID_GPS_L2CM:		return '5';
+            case SAT_SV_SIG_ID_GPS_L5I:			return '7';
+            case SAT_SV_SIG_ID_GPS_L5Q:			return '8';
         }
         break;
     case SAT_SV_GNSS_ID_SBS:
@@ -1140,47 +1141,47 @@ uint8_t sigId_to_nmea4p11_signalId(uint8_t gnssId, uint8_t sigId)
     case SAT_SV_GNSS_ID_GAL:
         switch(sigId)
         {
-        case SAT_SV_SIG_ID_Galileo_E1C2:
-        case SAT_SV_SIG_ID_Galileo_E1B2:	return '7';
-        case SAT_SV_SIG_ID_Galileo_E5aI:
-        case SAT_SV_SIG_ID_Galileo_E5aQ:	return '1';
-        case SAT_SV_SIG_ID_Galileo_E5bI:
-        case SAT_SV_SIG_ID_Galileo_E5bQ:	return '2';
+            case SAT_SV_SIG_ID_Galileo_E1C2:
+            case SAT_SV_SIG_ID_Galileo_E1B2:	return '7';
+            case SAT_SV_SIG_ID_Galileo_E5aI:
+            case SAT_SV_SIG_ID_Galileo_E5aQ:	return '1';
+            case SAT_SV_SIG_ID_Galileo_E5bI:
+            case SAT_SV_SIG_ID_Galileo_E5bQ:	return '2';
         }
         break;
     case SAT_SV_GNSS_ID_BEI:
         switch(sigId)
         {
-        case SAT_SV_SIG_ID_BeiDou_B1D1:
-        case SAT_SV_SIG_ID_BeiDou_B1D2:		return '1';
-        case SAT_SV_SIG_ID_BeiDou_B2D1:
-        case SAT_SV_SIG_ID_BeiDou_B2D2:		return 'B';
-        case SAT_SV_SIG_ID_BeiDou_B1C:		return '3';
-        case SAT_SV_SIG_ID_BeiDou_B2a:		return '5';
+            case SAT_SV_SIG_ID_BeiDou_B1D1:
+            case SAT_SV_SIG_ID_BeiDou_B1D2:		return '1';
+            case SAT_SV_SIG_ID_BeiDou_B2D1:
+            case SAT_SV_SIG_ID_BeiDou_B2D2:		return 'B';
+            case SAT_SV_SIG_ID_BeiDou_B1C:		return '3';
+            case SAT_SV_SIG_ID_BeiDou_B2a:		return '5';
         }
         break;
     case SAT_SV_GNSS_ID_QZS:
         switch(sigId)
         {
-        case SAT_SV_SIG_ID_QZSS_L1CA:		return '1';
-        case SAT_SV_SIG_ID_QZSS_L1S:		return '4';
-        case SAT_SV_SIG_ID_QZSS_L2CM:		return '5';
-        case SAT_SV_SIG_ID_QZSS_L2CL:		return '6';
-        case SAT_SV_SIG_ID_QZSS_L5I:		return '7';
-        case SAT_SV_SIG_ID_QZSS_L5Q:		return '8';
+            case SAT_SV_SIG_ID_QZSS_L1CA:		return '1';
+            case SAT_SV_SIG_ID_QZSS_L1S:		return '4';
+            case SAT_SV_SIG_ID_QZSS_L2CM:		return '5';
+            case SAT_SV_SIG_ID_QZSS_L2CL:		return '6';
+            case SAT_SV_SIG_ID_QZSS_L5I:		return '7';
+            case SAT_SV_SIG_ID_QZSS_L5Q:		return '8';
         }
         break;
     case SAT_SV_GNSS_ID_GLO:
         switch(sigId)
         {
-        case SAT_SV_SIG_ID_GLONASS_L1OF:	return '1';
-        case SAT_SV_SIG_ID_GLONASS_L2OF:	return '3';
+            case SAT_SV_SIG_ID_GLONASS_L1OF:	return '1';
+            case SAT_SV_SIG_ID_GLONASS_L2OF:	return '3';
         }
         break;
     case SAT_SV_GNSS_ID_IRN:	// NavIC
         switch(sigId)
         {
-        case SAT_SV_SIG_ID_NAVIC_L5A:		return '7';
+            case SAT_SV_SIG_ID_NAVIC_L5A:		return '7';
         }
         break;
     }
@@ -1359,7 +1360,7 @@ uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId)
     return 0;
 }
 
-bool gsvFreqEna(gps_sig_sv_t* sig)
+bool gsv_freq_ena(gps_sig_sv_t* sig)
 {
     if(sig->gnssId >= SAT_SV_GNSS_ID_COUNT)
         return false;
@@ -1494,10 +1495,8 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
         {
             gps_sig_sv_t &sig = gsig.sig[i];
 
-            // check if freqency is enabled
-            if(!gsvFreqEna(&gsig.sig[i])) continue;
-
-            if (gsv_sig_match(gnssId, sigId, sig, noCno))
+            // check if freqency is enabled and that the signals match
+            if (gsv_freq_ena(&gsig.sig[i]) && gsv_sig_match(gnssId, sigId, sig, noCno))
             {	
                 for (uint32_t j=0; j<=gsat.numSats; j++)
                 {
@@ -1986,7 +1985,7 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 }
 
 /**
- * Sets ASCE specail case.
+ * Sets ASCE special case.
  * returns 15 if successful 
  * returns 0 if unsuccessful
 */
