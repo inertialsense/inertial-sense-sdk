@@ -1082,14 +1082,14 @@ TEST(protocol_nmea, GAGSV)
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
 
         ASSERT_TRUE(outSig.numSigs == 8);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
     }
 
@@ -1111,14 +1111,14 @@ TEST(protocol_nmea, GAGSV)
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
 
         ASSERT_TRUE(outSig.numSigs == 8);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
     }
 }
@@ -1152,18 +1152,18 @@ TEST(protocol_nmea, GBGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats == 12);
+        ASSERT_TRUE(outSat.numSats == 8);
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 19);
+        ASSERT_TRUE(outSig.numSigs == 10);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
     }
 
@@ -1181,18 +1181,18 @@ TEST(protocol_nmea, GBGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        ASSERT_TRUE(outSat.numSats == 12);
+        ASSERT_TRUE(outSat.numSats == 8);
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 19);
+        ASSERT_TRUE(outSig.numSigs == 10);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
     }
 }
@@ -1226,18 +1226,18 @@ TEST(protocol_nmea, GLGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats == 12);
+        ASSERT_TRUE(outSat.numSats == 6);
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 19);
+        ASSERT_TRUE(outSig.numSigs == 6);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
     }
 
@@ -1255,18 +1255,18 @@ TEST(protocol_nmea, GLGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        ASSERT_TRUE(outSat.numSats == 12);
+        ASSERT_TRUE(outSat.numSats == 6);
 
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 19);
+        ASSERT_TRUE(outSig.numSigs == 6);
 
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
     }
 }
