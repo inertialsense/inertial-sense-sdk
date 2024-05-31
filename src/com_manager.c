@@ -560,7 +560,7 @@ int comManagerSend(int pHandle, uint8_t pFlags, void* data, uint16_t did, uint16
 int comManagerSendInstance(CMHANDLE cmInstance, int port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     com_manager_t *cm = (com_manager_t*)cmInstance;
-    return (is_comm_write(cm->portWrite, port, &(cm->ports[port].comm), pFlags, did, size, offset, data) ? 0 : -1);
+    return is_comm_write(cm->portWrite, port, &(cm->ports[port].comm), pFlags, did, size, offset, data);
 }
 
 int findAsciiMessage(const void * a, const void * b)
@@ -981,7 +981,7 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did)
 // Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.  Returns 0 on success, -1 on failure.
 int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 {
-    return (is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt) ? 0 : -1);
+    return is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt);
 }
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)
