@@ -1396,11 +1396,11 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
             switch(sig->sigId)
             {
                 case SAT_SV_SIG_ID_GPS_L1CA:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND1_BIT);
             
                 case SAT_SV_SIG_ID_GPS_L2CL:
                 case SAT_SV_SIG_ID_GPS_L2CM:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND2_BIT);
                 
                 case SAT_SV_SIG_ID_GPS_L5I:
                 case SAT_SV_SIG_ID_GPS_L5Q:
@@ -1413,10 +1413,10 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
             switch(sig->sigId)
             {
                 case SAT_SV_SIG_ID_SBAS_L1CA:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND1_BIT);
 
                 case SAT_SV_SIG_ID_SBAS_L2:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND2_BIT);
                     
                 case SAT_SV_SIG_ID_SBAS_L5:
                     return (bool)(mask & NMEA_GNGSV_FREQ_5_BIT);
@@ -1429,7 +1429,7 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
             {
                 case SAT_SV_SIG_ID_Galileo_E1C2:
                 case SAT_SV_SIG_ID_Galileo_E1B2:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND1_BIT);
 
                 case SAT_SV_SIG_ID_Galileo_E5aI:
                 case SAT_SV_SIG_ID_Galileo_E5aQ:
@@ -1446,12 +1446,12 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
                 case SAT_SV_SIG_ID_BeiDou_B1D1:
                 case SAT_SV_SIG_ID_BeiDou_B1D2:
                 case SAT_SV_SIG_ID_BeiDou_B1C:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND1_BIT);
 
                 case SAT_SV_SIG_ID_BeiDou_B2D1:
                 case SAT_SV_SIG_ID_BeiDou_B2D2:
                 case SAT_SV_SIG_ID_BeiDou_B2a:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND2_BIT);
 
                 default: return false;
             }
@@ -1461,11 +1461,11 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
             {
                 case SAT_SV_SIG_ID_QZSS_L1CA:
                 case SAT_SV_SIG_ID_QZSS_L1S:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND1_BIT);
 
                 case SAT_SV_SIG_ID_QZSS_L2CM:
                 case SAT_SV_SIG_ID_QZSS_L2CL:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND2_BIT);
                     
                 case SAT_SV_SIG_ID_QZSS_L5I:
                 case SAT_SV_SIG_ID_QZSS_L5Q:
@@ -1478,10 +1478,10 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
             switch(sig->sigId)
             {
                 case SAT_SV_SIG_ID_GLONASS_L1OF:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_1_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND1_BIT);
 
                 case SAT_SV_SIG_ID_GLONASS_L2OF:
-                    return (bool)(mask & NMEA_GNGSV_FREQ_2_BIT);
+                    return (bool)(mask & NMEA_GNGSV_FREQ_BAND2_BIT);
                 
                 default: return false;
             }
@@ -1652,38 +1652,39 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 
 /**
  * decodes the NMEA GSV family of messages
- * Returns:
- * 	-2 for invalid length
- *  -3 other error 
+ * Returns: message id (see eNmeaAsciiMsgId)
+ *  Error   -1 for NMEA head not found 
+ * 	        -2 for invalid length
+ *          -3 other error 
 */
 int decodeGSV(char* a, int aSize)
 {
     if(aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
         return -2;
 
-    int msgNum;
+    int msgNum = NMEA_GNGSV_START;
     
     if(a[1] == 'x')        return NMEA_MSG_ID_GxGSV;
-    else if (a[1] == 'N')  msgNum = NMEA_GNGSV_START;
-    else if (a[1] == 'P')  msgNum = NMEA_GNGSV_START | NMEA_GNGSV_GPS_OFFSET;
-    else if (a[1] == 'A')  msgNum = NMEA_GNGSV_START | NMEA_GNGSV_GAL_OFFSET;
-    else if (a[1] == 'B')  msgNum = NMEA_GNGSV_START | NMEA_GNGSV_BEI_OFFSET;
-    else if (a[1] == 'Q')  msgNum = NMEA_GNGSV_START | NMEA_GNGSV_QZS_OFFSET;
-    else if (a[1] == 'L')  msgNum = NMEA_GNGSV_START | NMEA_GNGSV_GLO_OFFSET;
+    else if (a[1] == 'N')  {;} // DO NOTHING
+    else if (a[1] == 'P')  msgNum |= NMEA_GNGSV_GPS_OFFSET;
+    else if (a[1] == 'A')  msgNum |= NMEA_GNGSV_GAL_OFFSET;
+    else if (a[1] == 'B')  msgNum |= NMEA_GNGSV_BEI_OFFSET;
+    else if (a[1] == 'Q')  msgNum |= NMEA_GNGSV_QZS_OFFSET;
+    else if (a[1] == 'L')  msgNum |= NMEA_GNGSV_GLO_OFFSET;
     else                   return -3;
 
     // Parse freqencys
     // Enable all Freqs ie GNGSV,
     if(a[5] == ',' || a[5] == '*')
-        msgNum |= (NMEA_GNGSV_FREQ_1_BIT | NMEA_GNGSV_FREQ_2_BIT | NMEA_GNGSV_FREQ_3_BIT | NMEA_GNGSV_FREQ_5_BIT);
+        msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
     else // special case ie GNGSV_1_2_3_5
     {
         for(int i = 5; i < aSize; i++)
         {
             if(a[i] == '_')         continue;
-            else if(a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_1_BIT;
-            else if(a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_2_BIT;
-            else if(a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_3_BIT;
+            else if(a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_BAND1_BIT;
+            else if(a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_BAND2_BIT;
+            else if(a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_BAND3_BIT;
             else if(a[i] == '5')    msgNum |= NMEA_GNGSV_FREQ_5_BIT;
             else                    break;
         }
@@ -2010,8 +2011,8 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 }
 
 /**
- * Sets ASCE special case.
- * returns 15 if successful 
+ * Sets ASCE special case for GSV messages.
+ * returns NMEA_MSG_ID_GxGSV if successful 
  * returns 0 if unsuccessful
 */
 int parseASCE_GSV(int inId)
