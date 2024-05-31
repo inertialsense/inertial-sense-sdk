@@ -24,7 +24,7 @@ bool gsv_freq_ena(gps_sig_sv_t* sig);
 
 typedef struct {
     uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constilation mask (see eGnGSVIndex)*/
-}gsvMask_t;
+} gsvMask_t;
 
 static gsvMask_t s_gsvMask = {0};
 
@@ -1666,11 +1666,11 @@ int decodeGSV(char* a, int aSize)
     
     if(a[1] == 'x')        return NMEA_MSG_ID_GxGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
-    else if (a[1] == 'P')  msgNum |= NMEA_GNGSV_GPS_OFFSET;
-    else if (a[1] == 'A')  msgNum |= NMEA_GNGSV_GAL_OFFSET;
-    else if (a[1] == 'B')  msgNum |= NMEA_GNGSV_BEI_OFFSET;
-    else if (a[1] == 'Q')  msgNum |= NMEA_GNGSV_QZS_OFFSET;
-    else if (a[1] == 'L')  msgNum |= NMEA_GNGSV_GLO_OFFSET;
+    else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
+    else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
+    else if (a[1] == 'B')  msgNum += NMEA_GNGSV_BEI_OFFSET;
+    else if (a[1] == 'Q')  msgNum += NMEA_GNGSV_QZS_OFFSET;
+    else if (a[1] == 'L')  msgNum += NMEA_GNGSV_GLO_OFFSET;
     else                   return -3;
 
     // Parse freqencys
