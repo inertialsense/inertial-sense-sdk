@@ -120,7 +120,7 @@ public:
 	* @param dataLength the number of bytes in data
 	* @return the number of bytes written
 	*/
-	int Write(const uint8_t* data, int dataLength);
+	int Write(const void* data, int dataLength);
 
 	/**
 	* Get whether the server is open
