@@ -19,7 +19,7 @@
         #define L1_L5_RTK   1		// Use second slot for L5 
     #endif
 #else
-    #define L1_L5_RTK   1	
+    #define L1_L5_RTK       0	
 #endif
 
 // #if defined(RTK_EMBEDDED)
