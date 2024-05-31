@@ -957,24 +957,6 @@ TEST(protocol_nmea, binary_GSV_binary)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 TEST(protocol_nmea, GPGSV)
 {
     gps_sat_t gpsSat = {};
@@ -1270,24 +1252,6 @@ TEST(protocol_nmea, GLGSV)
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #if 0   // Uncomment to generate example NMEA strings for user manual documentation. 
 TEST(protocol_nmea, generate_example_nmea_for_user_manual)
