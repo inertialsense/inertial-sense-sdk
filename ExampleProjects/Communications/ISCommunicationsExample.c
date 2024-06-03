@@ -81,7 +81,7 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
 {
 	// Stop all broadcasts on the device
-	if (is_comm_stop_broadcasts_all_ports(portWrite, 0, comm))
+	if (is_comm_stop_broadcasts_all_ports(portWrite, 0, comm) < 0)
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;

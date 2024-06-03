@@ -983,7 +983,10 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did)
 // Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.  Returns 0 on success, -1 on failure.
 int sendDataPacket(com_manager_t* cm, int port, packet_t* pkt)
 {
-    return is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt);
+    int bytes = is_comm_write_isb_precomp_to_port(cm->portWrite, port, &(cm->ports[port].comm), pkt);
+
+    // Return 0 on success, -1 on failure
+    return (bytes < 0) ? -1 : 0;
 }
 
 void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTypeFlags)
@@ -1009,7 +1012,7 @@ void sendAck(com_manager_t* cmInstance, int pHandle, packet_t *pkt, uint8_t pTyp
 
 int comManagerValidateBaudRate(unsigned int baudRate)
 {
-    // Valid baudrates for InertialSense hardware
+    // Valid baudrate for InertialSense hardware
     return validateBaudRate(baudRate);
 }
 
