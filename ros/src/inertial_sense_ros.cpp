@@ -108,7 +108,7 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
         firmware_compatiblity_check();
 
         IS_.StopBroadcasts(true);
-        configure_data_streams(true);
+        // configure_data_streams(true);
         configure_rtk();
         IS_.SavePersistent();
 
@@ -193,8 +193,10 @@ void InertialSenseROS::initializeROS()
         rs_.diagnostics.pub = nh_.advertise<diagnostic_msgs::DiagnosticArray>("diagnostics", 1);
         diagnostics_timer_ = nh_.createTimer(ros::Duration(0.5), &InertialSenseROS::diagnostics_callback, this); // 2 Hz
     }
+    //Configure data streams after publishers created.
 
-    data_stream_timer_ = nh_.createTimer(ros::Duration(1), configure_data_streams, this);
+    configure_data_streams(true);
+    data_stream_timer_ = nh_.createTimer(ros::Duration(1), configure_data_streams, this); //Why called every second?
 }
 
 void InertialSenseROS::load_params(YAML::Node &node)
@@ -624,6 +626,7 @@ bool vecF64Match(double v1[], double v2[], int size=3)
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
+    IS_.WaitForFlashSynced();
     nvm_flash_cfg_t current_flash_cfg;
     IS_.FlashConfig(current_flash_cfg);
     //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
@@ -804,6 +807,7 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
 
 void InertialSenseROS::configure_rtk()
 {
+    IS_.Waitforsynced();
     rtkConfigBits_ = 0;
     if (rs_.gps1.type == "F9P")
     {
@@ -2062,32 +2066,19 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
     current_lla_[1] = lla_[1];
     current_lla_[2] = lla_[2];
 
-    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&current_lla_), sizeof(current_lla_), offsetof(nvm_flash_cfg_t, refLla));
-
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-
     int i = 0;
     nvm_flash_cfg_t current_flash;
-    IS_.FlashConfig(current_flash);
-    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
-    {
-        comManagerStep();
-        i++;
-        if (i > 100)
-        {
-            break;
-        }
-    }
 
-    if (current_lla_[0] == current_flash.refLla[0] && current_lla_[1] == current_flash.refLla[1] && current_lla_[2] == current_flash.refLla[2])
+    IS_.WaitForFlashSynced();
+    IS_.FlashConfig(current_flash);
+
+    if (IS_.SetFlashConfig(current_flash))
     {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
         res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(current_lla_[0]) + "  Lon: " + std::to_string(current_lla_[1]) + "  Alt: " + std::to_string(current_lla_[2]));
     }
     else
     {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = false;
         res.message = "Unable to update refLLA. Please try again.";
     }
@@ -2097,39 +2088,28 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
 bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Request &req, inertial_sense_ros::refLLAUpdate::Response &res)
 {
-    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req.lla), sizeof(req.lla), offsetof(nvm_flash_cfg_t, refLla));
-
-    comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-
-    int i = 0;
     nvm_flash_cfg_t current_flash;
+    IS_.WaitForFlashSynced();
     IS_.FlashConfig(current_flash);
-    while (current_flash.refLla[0] == current_flash.refLla[0] && current_flash.refLla[1] == current_flash.refLla[1] && current_flash.refLla[2] == current_flash.refLla[2])
+
+    for (int i=0; i<3; i++)
     {
-        comManagerStep();
-        i++;
-        if (i > 100)
-        {
-            break;
-        }
+        current_flash.refLla[i] = req.lla[i];
     }
 
-    if (req.lla[0] == current_flash.refLla[0] && req.lla[1] == current_flash.refLla[1] && req.lla[2] == current_flash.refLla[2])
+    if (IS_.SetFlashConfig(current_flash))
     {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = true;
         res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(req.lla[0]) + "  Lon: " + std::to_string(req.lla[1]) + "  Alt: " + std::to_string(req.lla[2]));
     }
     else
     {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
         res.success = false;
         res.message = "Unable to update refLLA. Please try again.";
     }
 
     return true;
 }
-
 bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
     (void)req;
