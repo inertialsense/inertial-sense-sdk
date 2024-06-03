@@ -15,6 +15,7 @@
 #include "ISFileManager.h"
 #include "ISUtilities.h"
 #include "ISDFUFirmwareUpdater.h"
+#include "ISBFirmwareUpdater.h"
 #include "miniz.h"
 
 #ifndef __EMBEDDED__
@@ -238,7 +239,7 @@ private:
     fwUpdate::target_t target;
 
     mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
-    ISDFUFirmwareUpdater *dfuUpdater = nullptr;
+    fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
 
     void runCommand(std::string cmd);

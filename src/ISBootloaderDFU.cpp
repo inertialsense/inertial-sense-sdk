@@ -361,7 +361,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
             bytes_written_total += STM32_PAGE_SIZE;
 
             m_update_progress = 0.25f * ((float)bytes_written_total / (float)image_total_len);
-            m_update_callback(this, m_update_progress);
+            m_update_callback(this, m_update_progress, "Erasing Flash", 0, 0);
         } while(byteInSection < image[i].len - 1);
     }
 
@@ -419,7 +419,7 @@ is_operation_result cISBootloaderDFU::download_image(std::string filename)
             bytes_written_total += payloadLen;
 
             m_update_progress = 0.25f + 0.75f * ((float)bytes_written_total / (float)image_total_len);
-            m_update_callback(this, m_update_progress);
+            m_update_callback(this, m_update_progress, "Writing Flash", 0, 0);
         } while (byteInSection < image[i].len - 1);
     }
 

@@ -475,9 +475,9 @@ public:
             const std::string& blFileName,
             bool forceBootloaderUpdate,
             int baudRate = IS_BAUDRATE_921600,
-            ISBootloader::pfnBootloadProgress uploadProgress = NULLPTR,
-            ISBootloader::pfnBootloadProgress verifyProgress = NULLPTR,
-            ISBootloader::pfnBootloadStatus infoProgress = NULLPTR,
+            fwUpdate::pfnProgressCb uploadProgress = NULLPTR,
+            fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
+            fwUpdate::pfnStatusCb infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
     );
 

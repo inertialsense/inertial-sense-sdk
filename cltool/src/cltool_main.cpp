@@ -408,8 +408,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent);
-is_operation_result bootloadVerifyCallback(void* obj, float percent);
+is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
+is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
 
 static int cltool_updateFirmware()
 {
@@ -429,7 +429,7 @@ static int cltool_updateFirmware()
             g_commandLineOptions.forceBootloaderUpdate,
             g_commandLineOptions.baudRate,
             bootloadUpdateCallback,
-            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+            (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : (fwUpdate::pfnProgressCb)0),
             cltool_bootloadUpdateInfo,
             cltool_firmwareUpdateWaiter
     ) == IS_OP_OK) return 0;
@@ -494,7 +494,7 @@ void printProgress()
     print_mutex.unlock();
 }
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent)
+is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string stepName = "", int stepNo = 0, int totalSteps = 0)
 {
     if(obj)
     {
@@ -504,7 +504,7 @@ is_operation_result bootloadUpdateCallback(void* obj, float percent)
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-is_operation_result bootloadVerifyCallback(void* obj, float percent)
+is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps)
 {
     if(obj)
     {
@@ -716,7 +716,7 @@ static int cltool_dataStreaming()
                         g_commandLineOptions.updateFirmwareTarget,
                         g_commandLineOptions.fwUpdateCmds,
                         bootloadUpdateCallback,
-                        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
+                        (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : nullptr),
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
                 ) != IS_OP_OK) {

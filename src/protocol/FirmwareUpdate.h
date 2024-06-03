@@ -101,17 +101,17 @@ namespace fwUpdate {
  *
  */
 
-    typedef is_operation_result (*pfnProgressCb)(void* obj, const std::string stepName, int stepNo, int totalSteps, float percent);
+    typedef is_operation_result (*pfnProgressCb)(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
     typedef void (*pfnStatusCb)(void* obj, int level, const char* infoString, ...);
 
 
 #define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
-    static constexpr uint32_t TARGET_TYPE_MASK = 0xFFF0;
-    static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
-    static constexpr uint32_t TARGET_ISB_FLAG = 0x40000000;
-    static constexpr uint32_t TARGET_SMP_FLAG = 0x20000000;
+    static constexpr uint32_t TARGET_TYPE_MASK = 0x0000FFF0;
+    static constexpr uint32_t TARGET_DFU_FLAG  = 0x80000000;
+    static constexpr uint32_t TARGET_ISB_FLAG  = 0x40000000;
+    static constexpr uint32_t TARGET_SMP_FLAG  = 0x20000000;
 
     enum target_t : uint32_t {
         TARGET_HOST = 0x00,

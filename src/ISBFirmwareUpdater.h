@@ -42,7 +42,81 @@ public:
      * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
      * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
      */
-    ISBFirmwareUpdater(serial_port_t* port, uint32_t hdwId, uint32_t serialNo);
+    ISBFirmwareUpdater(fwUpdate::target_t target, serial_port_t* port = nullptr, uint32_t serialNo = -1) : FirmwareUpdateDevice(target) {
+        // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
+    }
+
+    // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
+    bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
+
+    // called by the Port receiver when we've received and parse a DID_FIRMWARE_UPDATE message; this handles parsing the internal payload.
+    bool fwUpdate_processMessage(int rxPort, const uint8_t* buffer, int buf_len);
+
+    // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
+    /**
+     * Performs a system reset of various severity per reset_flags, (ie, RESET_SOFT by informing the OS/MCU to restart the system,
+     * vs RESET_HARD, usually by pulling interfacing pins into the MCU either HIGH or LOW to force a reset state on the hardware).
+     * Note that some systems may not always be able to respond with a success before the system is reset.
+     * If a system is NOT able to perform a reset (ie UNSUPPORTED, etc), this MUST return false.
+     * @param target_id the device to reset
+     * @return true if successful, otherwise false
+     */
+    int fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) override;
+
+    // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
+    /**
+     * Internally called by fwUpdate_processMessage() when a REQ_VERSION_INFO message is received, to request version info for the target device.
+     * This is to be implemented by the concrete class.  If the target/requested device can not provide version info, this should return false.
+     * If this call returns false, the API will respond with a MSG_VERSION_INFO_RESP, with the message filled with 0xFF, indicating not-supported.
+     * NOTE that this call is passed a reference to a const dev_info_t; the base-class provides the instance which is referenced. As the implementer
+     * of this class, it is your responsibility to fill it with the appropriate data.
+     * @param a reference to a dev_info_t struct that contains the necessary version information to be returned back to the querying host.
+     * @return true if the message was received and parsed without error, false otherwise.
+     */
+    bool fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) override;
+
+    /**
+     * Initializes the system to begin receiving firmware image chunks for the target device, image slot and image size.
+     * @param msg the message which contains the request data, such as slot, file size, chunk size, md5 checksum, etc.
+     * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_startUpdate
+     * this should return "GOOD_TO_GO" on success.
+     */
+    // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
+    fwUpdate::update_status_e fwUpdate_startUpdate(const fwUpdate::payload_t& msg) override;
+
+    /**
+     * Writes data (of len bytes) as a chunk of a larger firmware image to the target and device-specific image slot, and with the specified offset
+     * @param target_id the target id
+     * @param slot_id the image slot, if applicable (otherwise 0).
+     * @param offset the offset into the slot to write this chunk
+     * @param len the number of bytes in this chunk
+     * @param data the chunk data
+     * @return an update_status_e indicating the continued state of the update process, or an error. For fwUpdate_writeImageChunk
+     * this should return "WAITING_FOR_DATA" if more chunks are expected, or an error.
+     */
+    // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
+    fwUpdate::update_status_e fwUpdate_writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) override;
+
+    /**
+     * Validated and finishes writing of the firmware image; that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization.
+     * @param target_id the target_id
+     * @param slot_id the image slot, if applicable (otherwise 0)
+     * @return
+     */
+    // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, and the device can complete the requested upgrade, and perform any device-specific finalization
+    fwUpdate::update_status_e fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) override;
+
+    /**
+     * Writes the requested data (usually a packed payload_t) out to the specified device
+     * Note that the implementation between a target and an actual interface is device-specific. In most cases,
+     * for a Device-implementation, this will typically specify TARGET_HOST, which will direct back to the
+     * controlling host.
+     * @param target
+     * @param buffer
+     * @param buff_len
+     * @return true if the data was successfully sent to the underlying communication system, otherwise false
+     */
+    bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
 private:
     typedef enum {
@@ -92,7 +166,7 @@ private:
     int m_baud;
 
     uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
-    uint16_t m_hdw;                     // Inertial Sense Hardware Type (IMX, GPX, etc)
+    uint16_t hardwareId;                // Inertial Sense Hardware Type (IMX, GPX, etc)
     uint8_t m_isb_major;                // ISB Major revision on device
     char m_isb_minor;                   // ISB Minor revision on device
     bool isb_mightUpdate;               // true if device will be updated if bootloader continues
@@ -112,11 +186,15 @@ private:
     static std::vector<uint32_t> rst_serial_list;
     static std::mutex rst_serial_list_mutex;
 
-    // typedef void (*pfnFwUpdateStatus)(void *obj, int logLevel, const char *msg, ...);
-    // typedef void (*pfnFwUpdateProgress)(void *obj, int stepNo, int totalSteps, float percent);
+    static std::mutex dfuMutex;
+    DFUDevice *curDevice;
+    std::queue<uint8_t> toDevice;         //! a data stream that is input from the host (host tx) and output to the device (device rx)
+    std::queue<uint8_t> toHost;           //! a data stream that is input from the device (device tx) and output to the host (host rx)
 
     fwUpdate::pfnProgressCb progressCb;
     fwUpdate::pfnStatusCb statusCb;
+
+    fwUpdate::target_t getTargetType();
 
     eImageSignature check_is_compatible();
     is_operation_result sync();

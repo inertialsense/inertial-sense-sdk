@@ -1210,9 +1210,9 @@ is_operation_result InertialSense::BootloadFile(
         const string& blFileName,
         bool forceBootloaderUpdate,
         int baudRate,
-        ISBootloader::pfnBootloadProgress uploadProgress,
-        ISBootloader::pfnBootloadProgress verifyProgress,
-        ISBootloader::pfnBootloadStatus infoProgress,
+        fwUpdate::pfnProgressCb uploadProgress,
+        fwUpdate::pfnProgressCb verifyProgress,
+        fwUpdate::pfnStatusCb infoProgress,
         void (*waitAction)()
 )
 {

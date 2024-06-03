@@ -109,11 +109,20 @@ static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 
 }
 
-static void fwUpdateProgress(void* obj, const std::string stepName, int step, int steps, float pct) {
+static is_operation_result fwUpdateProgress(void* obj, float pct, const std::string stepName, int step, int steps) {
+    if (obj == NULL) return IS_OP_OK;
+
+    // FIXME: Probably need to make "obj" and std::any so we can attempt to cast back to an original type
+    // cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
+    // int percent = (int)(pct * 100.0f);
+    // printf("\rUpload Progress: %d%%\r", percent);
+    // ctx->m_update_progress = percent;
+
     if (g_showProgress) {
         printf("    [%s] Step %d of %d: %5.1f %%\r", stepName.c_str(), step, steps, pct * 100.0f);
         fflush(stdout);
     }
+    return IS_OP_OK;
 }
 
 static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
@@ -135,7 +144,7 @@ static void fwUpdateStatus(void* obj, int level, const char* info, ...) {
  * @return
  */
 static int doDFUFirmwareUpdate(int argc, char* argv[]) {
-    std::vector<dfu::DFUDevice*> devices;
+    std::vector<DFUDevice*> devices;
     libusb_init(NULL);
 
     std::string imx_firmware;
@@ -159,28 +168,28 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
         }
     }
 
-    int count = dfu::ISDFUFirmwareUpdater::getAvailableDevices(devices);
+    int count = ISDFUFirmwareUpdater::getAvailableDevices(devices);
     fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "Found %d DFU devices suitable for update.", count);
 
     for (auto device : devices) {
         device->setStatusCb(fwUpdateStatus);
         device->setProgressCb(fwUpdateProgress);
-        if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32L4)) {
-            int fw_result = dfu::DFU_ERROR_NONE;
-            int bl_result = dfu::DFU_ERROR_NONE;
-            int dev_result = dfu::DFU_ERROR_NONE;
+        if (md5_matches(device->getFingerprint(), DFU_FINGERPRINT_STM32L4)) {
+            int fw_result = DFU_ERROR_NONE;
+            int bl_result = DFU_ERROR_NONE;
+            int dev_result = DFU_ERROR_NONE;
             bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!imx_firmware.empty()) {
                 fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 24576);
-                if (fw_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+                if (fw_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), device->getErrorName(-fw_result));
                 finalization_needed = true;
             }
             if (!imx_bootloader.empty()) {
                 bl_result = device->updateFirmware(imx_bootloader);
-                if (bl_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+                if (bl_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), device->getErrorName(-bl_result));
                 finalization_needed = true;
             }
 
@@ -190,23 +199,23 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
                 fwUpdateStatus(nullptr, IS_LOG_LEVEL_INFO, "(%s) Firmware update finished with status: %d\n\n", device->getDescription(), dev_result);
             }
         }
-        if (md5_matches(device->getFingerprint(), dfu::DFU_FINGERPRINT_STM32U5)) {
+        if (md5_matches(device->getFingerprint(), DFU_FINGERPRINT_STM32U5)) {
             // NOTE THAT GPX BOOTLOADER/FIRMWARE .hex files are ALWAYS configured to write to the correct memory location
-            int fw_result = dfu::DFU_ERROR_NONE;
-            int bl_result = dfu::DFU_ERROR_NONE;
-            int dev_result = dfu::DFU_ERROR_NONE;
+            int fw_result = DFU_ERROR_NONE;
+            int bl_result = DFU_ERROR_NONE;
+            int dev_result = DFU_ERROR_NONE;
             bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!gpx_firmware.empty()) {
                 fw_result = device->updateFirmware(gpx_firmware, 0x08084000); // mcu-boot SLOT 2
-                if (fw_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
+                if (fw_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), device->getErrorName(-fw_result));
                 finalization_needed = true;
             }
             if (!gpx_bootloader.empty()) {
                 bl_result = device->updateFirmware(gpx_bootloader);
-                if (bl_result != dfu::DFU_ERROR_NONE)
-                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), dfu_errors[-bl_result]);
+                if (bl_result != DFU_ERROR_NONE)
+                    fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Bootloader update finished with status: %d", device->getDescription(), device->getErrorName(-bl_result));
                 finalization_needed = true;
             }
             if (finalization_needed) {
@@ -290,9 +299,9 @@ int main(int argc, char* argv[])
                         baudRate, // baud rate
                         fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
                         commands, // vector of strings, commands to run when performing the update
-                        uploadProgress,
-                        verifyProgress,
-                        statusText,
+                        fwUpdateProgress,
+                        fwUpdateProgress,
+                        fwUpdateStatus,
                         NULL) != IS_OP_OK)
                 {
                     inertialSenseInterface.Close();

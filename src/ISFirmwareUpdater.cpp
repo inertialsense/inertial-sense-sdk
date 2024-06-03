@@ -78,33 +78,6 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
 {
     srand(time(NULL)); // get *some kind* of seed/appearance of a random number.
 
-    if (_target == fwUpdate::TARGET_DFU_FLAG) {
-        libusb_init(NULL);
-        std::vector<DFUDevice*> devices;
-        int count = ISDFUFirmwareUpdater::getAvailableDevices(devices);
-        count = ISDFUFirmwareUpdater::filterDevicesByTargetType(devices, _target);
-        pfnStatus_cb(nullptr, IS_LOG_LEVEL_INFO, "Found %d DFU devices suitable for update.", count);
-
-        for (auto device : devices) {
-            device->setStatusCb(pfnStatus_cb);
-            device->setProgressCb(pfnUploadProgress_cb);
-
-            int fw_result = DFU_ERROR_NONE;
-            int bl_result = DFU_ERROR_NONE;
-            int dev_result = DFU_ERROR_NONE;
-            bool finalization_needed = false; // true if we actually did something that needs finalizing
-
-            if (_target == fwUpdate::TARGET_IMX5) {
-                if (slot == 0) {
-                    fw_result = device->updateFirmware(filename, 0x08000000 + 24576);
-                    if (fw_result != DFU_ERROR_NONE)
-                        pfnStatus_cb(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), device->getErrorName(-fw_result));
-                    finalization_needed = true;
-                }
-            }
-        }
-    }
-
     size_t fileSize = 0;
     if (zip_archive && (filename.rfind("pkg://", 0) == 0)) {
         // check into the current archive for this file
@@ -120,6 +93,16 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     }
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
+
+    if (_target == fwUpdate::TARGET_DFU_FLAG) {
+        deviceUpdater = new ISDFUFirmwareUpdater(_target);
+    }
+
+    if (_target & fwUpdate::TARGET_ISB_FLAG) {
+        deviceUpdater = new ISBFirmwareUpdater(_target, (serial_port_t*)nullptr, (uint32_t)0);
+        // we are about to do an IMX-5 update through the IS bootloader
+    }
+
 
     // let's get the file's MD5 hash
     int hashError = (flags & fwUpdate::IMG_FLAG_useAlternateMD5)
@@ -258,10 +241,10 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
 
     if(pfnUploadProgress_cb != nullptr)
-        pfnUploadProgress_cb(this, nullptr, 0, 0, percent);
+        pfnUploadProgress_cb(this, percent, nullptr, 0, 0);
 
     if(pfnVerifyProgress_cb != nullptr)
-        pfnVerifyProgress_cb(this, nullptr, 0, 0, percent);
+        pfnVerifyProgress_cb(this, percent, nullptr, 0, 0);
 
     if(pfnStatus_cb != nullptr)
         pfnStatus_cb(this, (int)msg.data.progress.msg_level, message);
@@ -381,8 +364,8 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 }
 
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
-    if ((dfuUpdater != nullptr) && ((target & fwUpdate::TARGET_DFU_FLAG) == fwUpdate::TARGET_DFU_FLAG)) {
-        return dfuUpdater->fwUpdate_processMessage(buffer, buff_len);
+    if (deviceUpdater != nullptr) {
+        return deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
     }
 
     // TODO: This can be removed after 2.1.0 release
@@ -543,6 +526,9 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
                 flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
 
+            if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
+                target = fwUpdate::TARGET_ISB_IMX5;
+
             // any target which doesn't report version info will also expect the old MD5 digest
             if (!target_devInfo) {
                 // TODO: We should be able to remove most of this after 2.1.0 has been released
@@ -583,7 +569,12 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             }
         } else if (args[0] == "reset") {
             bool hard = (args.size() == 2 && args[1] == "hard");
-            fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
+            if (!hard) {
+                if (args.size() == 2 && args[1] == "tobl")
+                    fwUpdate_requestReset(target, fwUpdate::RESET_INTO_BOOTLOADER);
+            } else {
+                fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
+            }
             if(pfnStatus_cb != nullptr)
                 pfnStatus_cb(this, IS_LOG_LEVEL_INFO, "Issuing 'RESET'");
         } else if (args[0][0] == ':') {

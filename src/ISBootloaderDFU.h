@@ -59,9 +59,9 @@ class cISBootloaderDFU : public ISBootloader::cISBootloaderBase
 {
 public:
     cISBootloaderDFU(
-        pfnBootloadProgress upload_cb,
-        pfnBootloadProgress verify_cb,
-        pfnBootloadStatus info_cb,
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb,
         libusb_device_handle* handle
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {

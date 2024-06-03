@@ -390,7 +390,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         count += serialPortReadTimeout(s, bufPtr, 3, 100);
         bufPtr = buf + count;
 
-        if (m_update_callback(this, 0.0f) != IS_OP_OK)
+        if (m_update_callback(this, 0.0f, "Erasing Flash", 0, 0) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
         }
@@ -751,7 +751,7 @@ is_operation_result cISBootloaderISB::verify_image(std::string filename)
                 if (m_verify_callback != 0)
                 {
                     m_verify_progress = (float)totalCharCount / (float)grandTotalCharCount;
-                    if (m_verify_callback(this, m_verify_progress) != IS_OP_OK)
+                    if (m_verify_callback(this, m_verify_progress, "Verifying Flash", 0, 0) != IS_OP_OK)
                     {
                         status_update("(ISB) Firmware validate cancelled", IS_LOG_LEVEL_ERROR);
                         return IS_OP_CANCELLED;
@@ -958,7 +958,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // Try catch added m_update_callback being correupted
             try
             {
-                if (m_update_callback(this, m_update_progress) != IS_OP_OK)
+                if (m_update_callback(this, m_update_progress, "Writing Flash", 0, 0) != IS_OP_OK)
                 {
                     status_update("(ISB) Firmware update cancelled", IS_LOG_LEVEL_ERROR);
                     return IS_OP_CANCELLED;
@@ -976,7 +976,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
     if (m_update_callback != 0 && m_update_progress != 1.0f)
     {
         m_update_progress = 1.0f;
-        m_update_callback(this, m_update_progress);
+        m_update_callback(this, m_update_progress, "Writing Flash", 0, 0);
     }
 
     // Set the verify function up

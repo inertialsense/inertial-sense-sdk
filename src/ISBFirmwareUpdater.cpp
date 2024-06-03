@@ -10,6 +10,122 @@
 #include "ISBootloaderBase.h"
 
 
+// this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
+bool ISDFUFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
+    static int nextStep = 0;
+
+    if (fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED)
+        return false;
+
+#ifdef DEBUG_INFO
+    char prog_msg[256];
+        memset(prog_msg, 0, sizeof(prog_msg)); // clear any messages...
+        if (msg->hdr.msg_type == fwUpdate::MSG_UPDATE_CHUNK)
+            snprintf(prog_msg, sizeof(prog_msg), "DEV :: Received MSG %s (Chunk %d)...\n", MSG_TYPES[msg->hdr.msg_type], msg->data.chunk.chunk_id);
+        else
+            snprintf(prog_msg, sizeof(prog_msg), "DEV :: Received MSG %s...\n", MSG_TYPES[msg->hdr.msg_type]);
+        PRINTF("%s", prog_msg);
+    if (result)ISFirmware
+        sendProgress(3, (const char *)prog_msg);
+#endif // DEBUG_INFO
+
+    nextStep++;
+
+    if (nextStep > 1000 ) {
+        nextStep = 0;
+        return true;
+    }
+
+    return true;
+}
+
+/**
+ * Not quite sure what to do here just yet, since this manages its out buffer space... we don't really
+ * pass anything into here.  Basically, I can either ignore all the parameters, or I can parse the toDevice queue
+ * prior to calling this function, and then just call this function...
+ * @param rxPort
+ * @param buffer
+ * @param buf_len
+ * @return
+ */
+bool ISBFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* buffer, int buf_len) {
+
+    // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
+    int tmpBuf_size = toDevice.size();
+    uint8_t tmpBuf[tmpBuf_size];
+    uint8_t* p = tmpBuf;
+    while (toDevice.size()) {
+        *p++ = toDevice.front();
+        toDevice.pop();
+    }
+
+    return FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
+}
+
+// called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
+int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) {
+/*
+    RESET_SOFT = 0,             // typically, a software reset (start the program over, but don't remove power or clear RAM)
+    RESET_HARD = 1,             // a hard reset, in which the device is power-cycled; this may not always be possible since generally software on a device can't remove its own power
+    RESET_INTO_BOOTLOADER = 2,  // indicates that the device should reset into the bootloader (this may not always be possible)
+    RESET_CONFIG = 4,           // indicates that the device should clear its configuration before performing the reset (Ie, factory restart?)
+    RESET_UPSTREAM = 8,         // indicates that this device should reset all of its upstream devices, in addition to itself
+*/
+
+    // TODO: DFU is pretty limited in what it can do.. we really only can manage a reset by forcing a particular DFU state and/or re-initializing USB
+    //  Anything else should probably return not-supported
+    if (curDevice->getTargetType() == target_id) {
+        // curDevice->resetDevice();
+    }
+    return 0;
+}
+
+// called internally (by the receiving device) to populate the dev_info_t struct for the requested device
+bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) {
+    if (curDevice->getTargetType() == target_id) {
+        return curDevice->fillDeviceInfo(dev_info);
+    }
+    return false;
+}
+
+// this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
+fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
+    if (curDevice)
+        if (curDevice->open() == DFU_ERROR_NONE) {
+            // TODO: probably need to jump into bootloader mode, and wait for a query response.
+        }
+    return fwUpdate::READY;
+
+    return fwUpdate::ERR_NOT_ALLOWED;
+}
+
+// writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
+fwUpdate::update_status_e  ISBFirmwareUpdater::fwUpdate_writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
+    // we want write our data into a iostream that we'll also pass to the DFUDevice; it will help buffer our data
+    return fwUpdate::ERR_NOT_SUPPORTED;
+}
+
+// this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, the device can complete the requested upgrade, and perform any device-specific finalization
+fwUpdate::update_status_e  ISBFirmwareUpdater::fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) {
+    if (curDevice) {
+        curDevice->finalizeFirmware();
+        curDevice->close();
+        return fwUpdate::FINISHED;
+    }
+    return fwUpdate::ERR_INVALID_SESSION;
+}
+
+
+// called internally to transmit data to back to the host
+bool ISBFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) {
+
+    while (buff_len--)
+        toHost.push(*buffer++);
+
+    return true;
+}
+
+
 ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
 {
     uint8_t buf[14] = { 0 };
@@ -187,7 +303,7 @@ is_operation_result ISBFirmwareUpdater::erase_flash()
         count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
         bufPtr = buf + count;
 
-        if (progressCb(this, "ERASE", 0, 1, 0.0f) != IS_OP_OK)
+        if (progressCb(this, 0.0f, "Erasing Flash", 0, 1) != IS_OP_OK)
         {
             return IS_OP_CANCELLED;
         }
@@ -199,4 +315,23 @@ is_operation_result ISBFirmwareUpdater::erase_flash()
 
     if (statusCb) statusCb((void*)this, IS_LOG_LEVEL_ERROR, "(ISB) Error in erase flash");
     return IS_OP_ERROR;
+}
+
+/**
+ * Returns a fwUpdate-compatible target type (fwUpdate::target_t) appropriate for this DFU device,
+ * given the parsed hardware id, where available.
+ * @return determined fwUpdate::target_t is detectable, otherwise TARGET_UNKNOWN
+ */
+fwUpdate::target_t ISBFirmwareUpdater::getTargetType() {
+    switch (DECODE_HDW_TYPE(hardwareId)) {
+        case IS_HARDWARE_TYPE_IMX:
+            if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_IMX5;
+            // else if ((DECODE_HDW_MAJOR(hardwareId) == 5) && (DECODE_HDW_MINOR(hardwareId) == 1)) return fwUpdate::TARGET_IMX51;
+            break;
+        case IS_HARDWARE_TYPE_GPX:
+            if ((DECODE_HDW_MAJOR(hardwareId) == 1) && (DECODE_HDW_MINOR(hardwareId) == 0)) return fwUpdate::TARGET_GPX1;
+            break;
+    }
+
+    return fwUpdate::TARGET_UNKNOWN;
 }

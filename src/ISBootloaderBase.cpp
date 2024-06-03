@@ -19,19 +19,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../hw-libs/bootloader/bootloaderShared.h"
 #include "libusb.h"
 #include "ISUtilities.h"
+#include "protocol/FirmwareUpdate.h"
 
 using namespace ISBootloader;
 
 // const char* is_samx70_bootloader_needle = "bootloader-SAMx70";
 
-is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent) 
+is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps)
 {
     cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     ctx->m_update_progress = percent;
     return IS_OP_OK;
 }
 
-is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent) 
+is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps)
 {
     cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     ctx->m_verify_progress = percent;
@@ -171,9 +172,9 @@ is_operation_result cISBootloaderBase::mode_device_app
 (
     firmwares_t filenames,
     serial_port_t* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -236,9 +237,9 @@ is_operation_result cISBootloaderBase::mode_device_app
 is_operation_result cISBootloaderBase::get_device_isb_version(
     firmwares_t filenames,
     serial_port_t* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -313,9 +314,9 @@ is_operation_result cISBootloaderBase::mode_device_isb
     firmwares_t filenames,
     bool force,
     serial_port_t* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -419,9 +420,9 @@ is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
     libusb_device_handle* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context
@@ -480,9 +481,9 @@ is_operation_result cISBootloaderBase::update_device
 (
     firmwares_t filenames,
     serial_port_t* handle,
-    pfnBootloadStatus statusfn,
-    pfnBootloadProgress updateProgress,
-    pfnBootloadProgress verifyProgress,
+    fwUpdate::pfnStatusCb statusfn,
+    fwUpdate::pfnProgressCb updateProgress,
+    fwUpdate::pfnProgressCb verifyProgress,
     std::vector<cISBootloaderBase*>& contexts,
     std::mutex* addMutex,
     cISBootloaderBase** new_context,
