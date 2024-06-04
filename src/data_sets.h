@@ -4777,6 +4777,33 @@ typedef struct
         
 } port_monitor_t;
 
+/** Stores data for the event mask */
+typedef struct
+{
+    /** Prioity mask (see eEventPriority) */
+    uint8_t priorityMask;
+      
+    /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
+    uint32_t idMask;
+} did_event_mask_t;
+
+/** Sent in the data field of DID_EVENT for eEventProtocol:
+ *  EVENT_PROTOCOL_ENA_GNSS2_FILTER,
+ *  EVENT_PROTOCOL_ENA_GNSS2_FILTER,
+ *  EVENT_PROTOCOL_ENA_FILTER 
+*/
+typedef struct
+{
+    /** Serial number */
+    uint32_t targetSN;
+
+    /**target port mask 0x80 for current port other port (0x01 << TARGET_PORT) where target port is */
+    uint8_t portMask;
+
+    did_event_mask_t eventMask;
+
+} did_event_filter_t;
+
 enum eEventProtocol
 {
     EVENT_PROTOCOL_RAW              = 1,
@@ -4786,6 +4813,12 @@ enum eEventProtocol
     EVENT_PROTOCOL_RTMC3_EXT        = 13,
     EVENT_PROTOCOL_SONY_BIN_RCVR1   = 14,
     EVENT_PROTOCOL_SONY_BIN_RCVR2   = 15,
+
+    
+    EVENT_PROTOCOL_FILTER_RESPONSE  = (uint16_t)-4,
+    EVENT_PROTOCOL_ENA_GNSS1_FILTER = (uint16_t)-3,
+    EVENT_PROTOCOL_ENA_GNSS2_FILTER = (uint16_t)-2,
+    EVENT_PROTOCOL_ENA_FILTER       = (uint16_t)-1,
 };
 
 enum eEventPriority
@@ -4811,9 +4844,11 @@ typedef struct
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
     uint16_t        senderHdwId;
     
+    /** see eEventPriority */
     uint8_t         priority;
     uint8_t         res8;
 
+    /** see eEventProtocol */
     uint16_t        protocol;
     uint16_t        length;
     
