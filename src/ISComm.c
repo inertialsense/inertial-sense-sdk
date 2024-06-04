@@ -1022,7 +1022,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 {
     if (pkt->size > buf_size)
     {	// Packet doesn't fit in buffer
-        return 0;
+        return -1;
     }
 
     // Set checksum using precomputed header checksum
@@ -1030,19 +1030,19 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
      // Write packet to buffer
 #define MEMCPY_INC(dst, src, size)    memcpy((dst), (src), (size)); (dst) += (size);
-    MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));   // Header
+    MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));           // Header
     if (pkt->offset)
     {
-        MEMCPY_INC(buf, (uint8_t*)&(pkt->offset), 2);               // Offset (optional)
+        MEMCPY_INC(buf, (uint8_t*)&(pkt->offset), 2);                       // Offset (optional)
     }
     if (pkt->data.size)
     {
         // Include payload in checksum calculation
         pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
-        MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);       // Payload
+        MEMCPY_INC(buf, (uint8_t*)pkt->data.ptr, pkt->data.size);           // Payload
     }
-    MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                 // Footer (checksum)
+    MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);                         // Footer (checksum)
 
     // Increment Tx count
     comm->txPktCount++;
@@ -1096,20 +1096,14 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
 #endif
 
     }
-    n += j = portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-    if (j != 2)
-    {
-        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite footer: %d,2\n", j);
-    }
-#endif
+    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
 
     // Increment Tx count
     comm->txPktCount++;
 
-    // Check that number of bytes sent matches packet size.  Return 0 on success, -1 on failure.
-    return (n == pkt->size) ? 0 : -1;
+    // Check that number of bytes sent matches packet size.  Return number of bytes written on success or -1 on failure.
+    return (n == pkt->size) ? n : -1;
 }
 
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
@@ -1119,7 +1113,7 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     // Encode header and header checksum
     is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
 
-    // Update checksum and write packet to buffer.  Returns packet length in bytes.
+    // Update checksum and write packet to buffer.  Returns number of bytes written on success or -1 on failure.
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
@@ -1135,7 +1129,7 @@ int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* co
     // Encode header and header checksum
     is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
 
-    // Update checksum and write packet to port.  Returns 0 on success, -1 of failure.
+    // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
     return is_comm_write_isb_precomp_to_port(portWrite, port, comm, &txPkt);
 }
 

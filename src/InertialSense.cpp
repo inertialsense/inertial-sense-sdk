@@ -879,7 +879,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
                 printf("InertialSense::SetFlashConfig() failed to send flash config using comManagerSendData(): port %d, size %d, offset %d\n", pHandle, size, offset);
                 printf("  buf %p, head %p, tail %p\n", (void*)&(newCfg), (void*)head, (void*)tail);
             }
-
+            
             failure = failure || fail;
             device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
         }
