@@ -216,6 +216,27 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             print_dids();
             return false;
         }
+        else if (startsWith(a, "-evf="))
+        {
+            char* token = strtok((char*)&a[5], ",");
+            printf("EVF Target: %s\n", token);
+            g_commandLineOptions.evFCont.dest = stoi(token);
+
+            token = strtok(NULL, ",");
+            printf("EVF PortMask: %s\n", token);
+            g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
+
+            token = strtok(NULL, ",");
+            printf("EVF Priotity: %s\n", token);
+            g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask= stoi(token);
+
+            token = strtok(NULL, ",");
+            printf("EVF ID:%s\n", token);
+            g_commandLineOptions.evFCont.evFilter.eventMask.idMask = stoi(token);
+
+            printf("EVF Enabled!");
+            g_commandLineOptions.evFCont.sendEVF = true;
+        }
         else if (startsWith(a, "-did") && (i + 1) < argc)
         {
             while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"

@@ -4794,9 +4794,6 @@ typedef struct
 */
 typedef struct
 {
-    /** Serial number */
-    uint32_t targetSN;
-
     /**target port mask 0x80 for current port other port (0x01 << TARGET_PORT) where target port is */
     uint8_t portMask;
 
