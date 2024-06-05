@@ -233,24 +233,49 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 printf("EVF Target: INVALID\n", token); 
                 g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
             }
 
-            if (g_commandLineOptions.evFCont.sendEVF)
+            token = strtok(NULL, ",");
+            if (token != NULL)
             {
-                token = strtok(NULL, ",");
                 g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
                 printf("EVF PortMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.portMask);
+            }
+            else
+            {
+                printf("EVF PortMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
 
-                token = strtok(NULL, ",");
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
                 g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask = stoi(token);
                 printf("EVF PriotityMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask);
+            }
+            else
+            {
+                printf("EVF PriotityMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
 
-                token = strtok(NULL, ",");
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
                 g_commandLineOptions.evFCont.evFilter.eventMask.idMask = stoi(token);
                 printf("EVF IDMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.idMask);
-
-                printf("EVF Enabled!");
             }
+            else
+            {
+                printf("EVF IDMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            printf("EVF Enabled!");
 
         }
         else if (startsWith(a, "-did") && (i + 1) < argc)
