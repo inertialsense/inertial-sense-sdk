@@ -967,7 +967,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
+int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -979,7 +979,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
+int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 

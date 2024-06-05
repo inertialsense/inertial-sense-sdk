@@ -113,7 +113,7 @@ if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	}
 
 #if 1
-	// Ask for gps message 5 times a second (period of 200 milliseconds) - offset and size can be left at 0 unless you want to just pull a specific field from a data set
+	// Ask for gps message 5 times a second (period of 200 milliseconds) - size and offset can be left at 0 unless you want to just pull a specific field from a data set
 	messageSize = is_comm_get_data_to_buf(buffer, bufferSize, comm, _DID_GPS_NAV, 0, 0, 200);
 	if (messageSize != serialPortWrite(serialPort, comm->buffer, messageSize))
 	{

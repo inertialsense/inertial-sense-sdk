@@ -64,7 +64,7 @@ void setup()
 
     // Ask for ins_1 message 20 times per second.  Ask for the whole thing, so
     // set 0's for the offset and size
-    messageSize = is_comm_get_data_to_buf(buffer, bufferSize, &comm, DID_INS_1, 0, sizeof(ins_1_t), 1000);
+    messageSize = is_comm_get_data_to_buf(buffer, bufferSize, &comm, DID_INS_1, sizeof(ins_1_t), 0, 1000);
     Serial1.write(comm.rxBuf.start, messageSize); // Transmit the message to the inertialsense device
 }
 
