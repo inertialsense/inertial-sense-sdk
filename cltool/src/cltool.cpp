@@ -218,24 +218,40 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-evf="))
         {
+            g_commandLineOptions.evFCont.sendEVF = true;
+
             char* token = strtok((char*)&a[5], ",");
-            printf("EVF Target: %s\n", token);
             g_commandLineOptions.evFCont.dest = stoi(token);
 
-            token = strtok(NULL, ",");
-            printf("EVF PortMask: %s\n", token);
-            g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
+            if (g_commandLineOptions.evFCont.dest == 0)
+                printf("EVF Target: Primary device.\n", token);
+            else if (g_commandLineOptions.evFCont.dest == 1)
+                printf("EVF Target: device GNSS1 port.\n", token);
+            else if (g_commandLineOptions.evFCont.dest == 2)
+                printf("EVF Target: device GNSS2 port.\n", token);
+            else 
+            {
+                printf("EVF Target: INVALID\n", token); 
+                g_commandLineOptions.evFCont.sendEVF = false;
+            }
 
-            token = strtok(NULL, ",");
-            printf("EVF Priotity: %s\n", token);
-            g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask= stoi(token);
+            if (g_commandLineOptions.evFCont.sendEVF)
+            {
+                token = strtok(NULL, ",");
+                g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
+                printf("EVF PortMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.portMask);
 
-            token = strtok(NULL, ",");
-            printf("EVF ID:%s\n", token);
-            g_commandLineOptions.evFCont.evFilter.eventMask.idMask = stoi(token);
+                token = strtok(NULL, ",");
+                g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask = stoi(token);
+                printf("EVF PriotityMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask);
 
-            printf("EVF Enabled!");
-            g_commandLineOptions.evFCont.sendEVF = true;
+                token = strtok(NULL, ",");
+                g_commandLineOptions.evFCont.evFilter.eventMask.idMask = stoi(token);
+                printf("EVF IDMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.idMask);
+
+                printf("EVF Enabled!");
+            }
+
         }
         else if (startsWith(a, "-did") && (i + 1) < argc)
         {
