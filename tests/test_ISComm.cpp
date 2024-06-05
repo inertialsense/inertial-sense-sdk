@@ -1046,7 +1046,7 @@ TEST(ISComm, IsCommGetDataTest)
 	int period = 3;
 
 	// Generate packet
-	int n = is_comm_get_data(portWrite, 0, &g_comm, did, offset, size, period);
+	int n = is_comm_get_data(portWrite, 0, &g_comm, did, size, offset, period);
 
 	// Reset buffer if needed
 	is_comm_free(&g_comm);

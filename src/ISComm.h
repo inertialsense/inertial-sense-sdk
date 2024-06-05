@@ -727,20 +727,20 @@ int is_comm_free(is_comm_instance_t* instance);
  * @brief Encode a binary packet to get data from the device - puts the data ready to send into the buffer passed into is_comm_init
  * @param instance the comm instance passed to is_comm_init
  * @param dataId the data id to request (see DID_* at top of this file)
+ * @param size the length into data from offset to request. Set size and offset to 0 to request entire data structure.
  * @param offset the offset into data to request. Set offset and length to 0 for entire data structure.
- * @param length the length into data from offset to request. Set offset and length to 0 for entire data structure.
  * @param periodMultiple how often you want the data to stream out, 0 for a one time message and turn off.
  * @return int Number of bytes written on success or -1 on failure
  * @remarks pass an offset and length of 0 to request the entire data structure
  */
-int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
  * @brief Same as is_comm_get_data_to_buf() except for writing packet to serial port.
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
+int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
  * @brief Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.

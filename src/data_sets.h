@@ -1999,6 +1999,7 @@ typedef struct PACKED
 
     /** NMEA period multiple of above ISB period multiple indexed by NMEA_MSG_ID... */
     uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+
 }rmcNmea_t;
 
 /** Realtime message controller internal (RMCI). */
