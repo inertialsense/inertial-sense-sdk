@@ -17,10 +17,6 @@ static struct
     ixVector3 		velNed;
     float			speed2dMps;
     float			speed2dKnots;
-    uint32_t 		timeOfWeekMs;
-    ixVector3 		velNed;
-    float			speed2dMps;
-    float			speed2dKnots;
 } s_dataSpeed;
 
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
