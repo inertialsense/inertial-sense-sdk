@@ -730,16 +730,15 @@ int is_comm_free(is_comm_instance_t* instance);
  * @param offset the offset into data to request. Set offset and length to 0 for entire data structure.
  * @param length the length into data from offset to request. Set offset and length to 0 for entire data structure.
  * @param periodMultiple how often you want the data to stream out, 0 for a one time message and turn off.
- * @return int Number of bytes written to the comm buffer or less than 1 if error
+ * @return int Number of bytes written on success or -1 on failure
  * @remarks pass an offset and length of 0 to request the entire data structure
  */
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
 
 /**
- * @brief Same as is_comm_get_data_to_buf() except for writing packet to serial port and return value.
+ * @brief Same as is_comm_get_data_to_buf() except for writing packet to serial port.
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
- * @return int 0 on success, -1 on failure
  */
 int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple);
 
@@ -752,16 +751,15 @@ int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t*
  * @param size the number of bytes to set on the data structure on the device
  * @param offset the offset to start setting data at on the data structure on the device
  * @param data the actual data to change on the data structure on the device - this should have at least size bytes available
- * @return int Number of bytes written to the comm buffer or less than 1 if error
+ * @return int Number of bytes written on success or -1 on failure
  * @remarks pass an offset and length of 0 to set the entire data structure, in which case data needs to have the full number of bytes available for the appropriate struct matching the dataId parameter.
  */
 int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
 /**
- * @brief Same as is_comm_set_data_to_buf() except for writing packet to serial port and return value.
+ * @brief Same as is_comm_set_data_to_buf() except for writing packet to serial port.
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
- * @return int 0 on success, -1 on failure
  */
 int is_comm_set_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data);
 
@@ -801,7 +799,6 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
 
 /**
  * @brief Compute the xor 16 bit checksum for the given data array.
- * 
  * @param cksum_init initial value for the checksum.
  * @param data data array used for checksum.
  * @param size size of data arary.
@@ -818,7 +815,6 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 
 /**
  * @brief Encode InertialSense binary (ISB) packet header.
- * 
  * @param pkt Packet storage location.
  * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
  * @param did ISB data ID
@@ -830,18 +826,16 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
 
 /**
  * @brief Updates the checksum for a precomputed InertialSense binary (ISB) packet and writes it to the specified serial port.
- * 
  * @param portWrite Callback function for serial port write
  * @param port Port number for serial port
  * @param comm IS comm instance used to increment Tx packet counter statistic
  * @param pkt Pointer to precomputed ISB packet
- * @return int 0 on success, -1 on failure
+ * @return int Number of bytes written on success or -1 on failure
  */
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt);
 
 /**
  * @brief Generate InertialSense binary (ISB) packet.
- * 
  * @param buf Buffer to write to.
  * @param buf_size Available size of buffer.
  * @param comm ISComm instance
@@ -850,22 +844,14 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
  * @param data_size Size in bytes of the payload data.
  * @param offset Offset of the payload data into the data set structure.
  * @param data Pointer to payload data.
- * @return int Number of bytes written into buffer 
+ * @return int Number of bytes written on success or -1 on failure
  */
 int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 /**
- * @brief Generate InertialSense binary (ISB) packet.
- * 
+ * @brief Same as is_comm_write_to_buf() except for writing packet to serial port.
  * @param portWrite Serial port callback function used send packet.
  * @param port Serial port number packet will be written to.
- * @param comm ISComm instance.
- * @param flags ISB packet flags which includes the packet type (see eISBPacketFlags).
- * @param did ISB data ID
- * @param data_size Size in bytes of the payload data.
- * @param offset Offset of the payload data into the data set structure.
- * @param data Pointer to payload data.
- * @return int 0 on success, -1 of failure 
  */
 int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
