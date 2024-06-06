@@ -3481,6 +3481,7 @@ typedef struct PACKED
     uint8_t obs_pairs_used;
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
+
     uint8_t obs_rover_avail;
     uint8_t obs_base_avail;
     uint8_t obs_eph_avail;
