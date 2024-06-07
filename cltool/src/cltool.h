@@ -51,6 +51,13 @@ typedef struct
 	int			periodMultiple;
 } stream_did_t;
 
+typedef struct
+{
+	did_event_filter_t evFilter;
+	uint16_t dest;
+	bool sendEVF;
+} EVFContainer_t;
+
 typedef struct cmd_options_s // we need to name this to make MSVC happy, since we make default assignments in the struct below (updateFirmwareTarget, etc)
 {
 	std::string comPort; 					// -c com_port
@@ -95,6 +102,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t updateFirmwareSlot = 0;
 	uint32_t runDuration = 0;				// Run for this many millis before exiting (0 = indefinitely)
 	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
+	EVFContainer_t evFCont = {0};
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
