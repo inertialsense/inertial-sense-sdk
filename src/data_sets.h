@@ -3477,15 +3477,15 @@ typedef struct PACKED
     uint8_t obs_count_bas;
     uint8_t obs_count_rov;
 
-    uint8_t obs_pairs_filtered;
-    uint8_t obs_pairs_used;
+    uint8_t obs_pairs_filtered;  // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
+    uint8_t obs_pairs_used;      // number of observation pairs (all frequencies) used to compute the integer (fixed) solution
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
 
-    uint8_t obs_rover_avail;
-    uint8_t obs_base_avail;
-    uint8_t obs_eph_avail;
-    uint8_t obs_unhealthy;
+    uint8_t obs_rover_avail; // nu - total number of satellites with observations to rover in relpos() before selsat()
+    uint8_t obs_base_avail;  // nr - total number of satellites with observations to base in relpos() before selsat()
+    uint8_t obs_eph_avail;   // number of satellites with ephemeris available (min is 0, max is nu)
+    uint8_t obs_unhealthy;   // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
 
     uint8_t reserved[4];
 } rtk_debug_t;
