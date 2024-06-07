@@ -4789,7 +4789,7 @@ typedef struct
 } did_event_mask_t;
 
 /** Sent in the data field of DID_EVENT for eEventProtocol:
- *  EVENT_PROTOCOL_ENA_GNSS2_FILTER,
+ *  EVENT_PROTOCOL_ENA_GNSS1_FILTER,
  *  EVENT_PROTOCOL_ENA_GNSS2_FILTER,
  *  EVENT_PROTOCOL_ENA_FILTER 
 */
