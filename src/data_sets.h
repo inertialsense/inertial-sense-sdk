@@ -4802,7 +4802,7 @@ typedef struct
 
 } did_event_filter_t;
 
-enum eEventMsgID
+enum eEventMsgTypeID
 {
     EVENT_MSG_TYPE_ID_RAW               = 1,
     EVENT_MSG_TYPE_ID_ASCII             = 2,
@@ -4848,8 +4848,8 @@ typedef struct
     uint8_t         priority;
     uint8_t         res8;
 
-    /** see eEventMsgID */
-    uint16_t        msgID;
+    /** see eEventMsgTypeID */
+    uint16_t        msgTypeID;
     uint16_t        length;
     
     uint8_t data[1];
