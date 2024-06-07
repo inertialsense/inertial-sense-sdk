@@ -301,6 +301,15 @@ public:
     void SetSysCmd(const uint32_t command, int pHandle = -1);
 
     /**
+     * Sends message to device to set devices Event Filter
+     * param Target: 0 = device, 
+     *               1 = forward to device GNSS 1 port (ie GPX), 
+     *               2 = forward to device GNSS 2 port (ie GPX),
+     *               else will return  
+    */
+    void SetEventFilter(int target, uint32_t IDMask, uint8_t portMask, uint8_t priorityMask);
+
+    /**
     * Get the flash config, returns the latest flash config read from the uINS flash memory
     * @param flashCfg the flash config value
     * @param pHandle the port pHandle to get flash config for
