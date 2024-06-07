@@ -44,9 +44,18 @@ public:
 
 class ISDevice {
 public:
+    enum eHdwRunStates:uint8_t {
+        HDW_STATE_UNKNOWN,
+        HDW_STATE_BOOTLOADER,
+        HDW_STATE_APP,
+    };
+
     int portHandle = 0;
     serial_port_t serialPort = { };
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
+
+    uint16_t hdwId;                         //! hardware type and version (ie, IMX-5.0)
+    eHdwRunStates hdwRunState;                   //! state of hardware (running, bootloader, etc).
 
     dev_info_t devInfo = { };
     sys_params_t sysParams = { };
@@ -62,7 +71,29 @@ public:
 
     static ISDevice invalidRef;
 
-    ISDevice() { };
+    ISDevice() {
+        hdwId = 0;
+        hdwRunState = HDW_STATE_UNKNOWN;
+        portHandle = -1;
+        serialPort = {};
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
+    };
+
+    ISDevice(int ph, const serial_port_t & sp) {
+        hdwId = 0;
+        hdwRunState = HDW_STATE_UNKNOWN;
+        portHandle = ph;
+        serialPort = sp;
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
+    }
+
+    bool queryDeviceInfo();
+
+protected:
+    bool handshakeISB();
+    bool queryDeviceInfoISB();
+
+    bool queryDeviceInfoDFU();
 
 };
 

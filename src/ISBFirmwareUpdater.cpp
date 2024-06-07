@@ -11,7 +11,7 @@
 
 
 // this is called internally by processMessage() to do the things to do, it should also be called periodically to send status updated, etc.
-bool ISDFUFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
+bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed) {
     static int nextStep = 0;
 
     if (fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED)
@@ -56,7 +56,7 @@ bool ISBFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* buff
     uint8_t* p = tmpBuf;
     while (toDevice.size()) {
         *p++ = toDevice.front();
-        toDevice.pop();
+        toDevice.pop_front();
     }
 
     return FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
@@ -72,59 +72,52 @@ int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUp
     RESET_UPSTREAM = 8,         // indicates that this device should reset all of its upstream devices, in addition to itself
 */
 
-    // TODO: DFU is pretty limited in what it can do.. we really only can manage a reset by forcing a particular DFU state and/or re-initializing USB
-    //  Anything else should probably return not-supported
-    if (curDevice->getTargetType() == target_id) {
-        // curDevice->resetDevice();
-    }
+    rebootToISB(5, 0, false);
+
     return 0;
 }
 
 // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
 bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) {
+/*
     if (curDevice->getTargetType() == target_id) {
         return curDevice->fillDeviceInfo(dev_info);
     }
+*/
     return false;
 }
 
 // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
 fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
-    if (curDevice)
-        if (curDevice->open() == DFU_ERROR_NONE) {
-            // TODO: probably need to jump into bootloader mode, and wait for a query response.
-        }
+    session_image_size = msg.data.req_update.file_size;
+    imgBuffer = new ByteBuffer(session_image_size);
+    imgStream = new ByteBufferStream(*imgBuffer);
     return fwUpdate::READY;
-
-    return fwUpdate::ERR_NOT_ALLOWED;
 }
 
 // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
 fwUpdate::update_status_e  ISBFirmwareUpdater::fwUpdate_writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
     // we want write our data into a iostream that we'll also pass to the DFUDevice; it will help buffer our data
-    return fwUpdate::ERR_NOT_SUPPORTED;
+    imgBuffer->insert(offset, data, len);
+    return fwUpdate::IN_PROGRESS;
 }
 
 // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, the device can complete the requested upgrade, and perform any device-specific finalization
 fwUpdate::update_status_e  ISBFirmwareUpdater::fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) {
-    if (curDevice) {
-        curDevice->finalizeFirmware();
-        curDevice->close();
-        return fwUpdate::FINISHED;
-    }
-    return fwUpdate::ERR_INVALID_SESSION;
+    delete imgStream;
+    delete imgBuffer;
+    return fwUpdate::FINISHED;
+    // return fwUpdate::ERR_INVALID_SESSION;
 }
 
 
 // called internally to transmit data to back to the host
 bool ISBFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) {
-
     while (buff_len--)
-        toHost.push(*buffer++);
+        toHost.push_back(*buffer++);
 
     return true;
 }
-
 
 ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
 {
@@ -133,7 +126,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
 
     serialPortFlush(m_port);
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    sync(m_port);
+    sync();
 
     SLEEP_MS(100);
 
@@ -156,7 +149,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
         if (retry*READ_DELAY_MS > 4000)
         {   // No response
             // FIXME: m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
-            if (statusCb) statusCb(this, IS_LOG_LEVEL_INFO, "(ISB Error) (%s) check_is_compatible response missing.", m_port->port);
+            if (statusCb) statusCb(this, IS_LOG_LEVEL_INFO, "(ISB) check_is_compatible response missing.");
             return IS_IMAGE_SIGN_NONE;
         }
     }
@@ -179,7 +172,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     else
     {   // Error parsing
         char msg[200] = { 0 };
-        int n = SNPRINTF(msg, sizeof(msg), "    | (ISB Error) (%s) check_is_compatible parse error:\n 0x ", m_port->port);
+        int n = SNPRINTF(msg, sizeof(msg), "(ISB) check_is_compatible parse error:\n 0x ");
         for(int i=0; i<count; i++)
         {
             if (i%2 == 0)
@@ -215,7 +208,7 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     if (valid_signatures == 0)
     {
         // FIXME: m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
-        if (statusCb) statusCb(this, IS_LOG_LEVEL_INFO,"(ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
+        if (statusCb) statusCb(this, IS_LOG_LEVEL_INFO,"(ISB) check_is_compatible no valid signature.");
     }
 
     return (eImageSignature)valid_signatures;
@@ -255,6 +248,37 @@ is_operation_result ISBFirmwareUpdater::sync()
 
     return IS_OP_ERROR;
 }
+
+is_operation_result ISBFirmwareUpdater::rebootToISB(uint8_t major, char minor, bool force)
+{
+    (void)force;
+    (void)minor;
+    (void)major;
+
+    if (statusCb) statusCb(this, IS_LOG_LEVEL_INFO, "(APP) Rebooting to IS-bootloader mode...");
+
+    // In case we are in program mode, try and send the commands to go into bootloader mode
+    uint8_t c = 0;
+
+    for (size_t loop = 0; loop < 10; loop++)
+    {
+        if (!serialPortWriteAscii(m_port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+        if (!serialPortWriteAscii(m_port, "BLEN", 4)) break;
+        c = 0;
+        if (serialPortReadCharTimeout(m_port, &c, 13) == 1)
+        {
+            if (c == '$')
+            {
+                // done, we got into bootloader mode
+                break;
+            }
+        }
+        else serialPortFlush(m_port);
+    }
+
+    return IS_OP_OK;
+}
+
 
 int ISBFirmwareUpdater::checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum)
 {

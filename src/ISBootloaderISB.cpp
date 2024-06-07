@@ -86,9 +86,9 @@ eImageSignature cISBootloaderISB::check_is_compatible()
             break;
         }
 
-        if (retry*READ_DELAY_MS > 4000)
+        if (retry*READ_DELAY_MS > 5000)
         {   // No response
-            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
+            m_info_callback(this, IS_LOG_LEVEL_ERROR, "(ISB) Error: check_is_compatible response missing.");
             return IS_IMAGE_SIGN_NONE;
         }
     }
@@ -111,7 +111,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     else
     {   // Error parsing
         char msg[200] = { 0 };
-        int n = SNPRINTF(msg, sizeof(msg), "    | (ISB Error) (%s) check_is_compatible parse error:\n 0x ", m_port->port);
+        int n = SNPRINTF(msg, sizeof(msg), "(ISB) Error: check_is_compatible parse error:\n 0x ");
         for(int i=0; i<count; i++)
         {
             if (i%2 == 0)
@@ -145,7 +145,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     if (valid_signatures == 0)
     {
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
+        m_info_callback(this, IS_LOG_LEVEL_ERROR, "(ISB) Error: check_is_compatible no valid signature.", m_port->port);
     }
 
     return (eImageSignature)valid_signatures;

@@ -141,7 +141,7 @@ bool ISDFUFirmwareUpdater::isDFUDevice(libusb_device *usbDevice, uint16_t vid, u
  * @param device
  * @param serialNo
  */
-ISDFUFirmwareUpdater::ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device, uint32_t serialNo) : FirmwareUpdateDevice(target), imgStream(reinterpret_cast<const char*>(imgData.data()), imgData.size()) {
+ISDFUFirmwareUpdater::ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device, uint32_t serialNo) : FirmwareUpdateDevice(target) {
     // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
     libusb_init(NULL);
     std::vector<DFUDevice*> devices;
@@ -149,7 +149,7 @@ ISDFUFirmwareUpdater::ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_dev
     count = ISDFUFirmwareUpdater::filterDevicesByTargetType(devices, session_target);
     fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_INFO, "Found %d DFU devices suitable for update.", count);
 
-    if (serialNo == -1)
+    if (serialNo == UINT32_MAX)
         curDevice = devices[0];
     else {
         for (auto d : devices) {
@@ -209,7 +209,7 @@ bool ISDFUFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* bu
     uint8_t* p = tmpBuf;
     while (toDevice.size()) {
         *p++ = toDevice.front();
-        toDevice.pop();
+        toDevice.pop_front();
     }
 
     return FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
@@ -228,7 +228,7 @@ int ISDFUFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fw
     // TODO: DFU is pretty limited in what it can do.. we really only can manage a reset by forcing a particular DFU state and/or re-initializing USB
     //  Anything else should probably return not-supported
     if (curDevice->getTargetType() == target_id) {
-        // curDevice->resetDevice();
+        curDevice->reset();
     }
     return 0;
 }
@@ -253,15 +253,11 @@ fwUpdate::update_status_e ISDFUFirmwareUpdater::fwUpdate_startUpdate(const fwUpd
     if (curDevice)
         if (curDevice->open() == DFU_ERROR_NONE) {
             if ((session_target & fwUpdate::TARGET_TYPE_MASK) == fwUpdate::TARGET_IMX5) {
-                if (session_image_slot == 0) {
-                    dfu_error fw_result = curDevice->updateFirmware(imgStream, msg.data.req_update.file_size, 0x08000000 + 24576);
-                    if (fw_result != DFU_ERROR_NONE)
-                        fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", curDevice->getDescription(), curDevice->getErrorName(-fw_result));
-
-                    //finalization_needed = true;
-                    curDevice->finalizeFirmware();
-                }
+                // hopefully, we've already validated that the target device is already an IMX and there is nothing more to do.
             }
+            session_image_size = msg.data.req_update.file_size;
+            imgBuffer = new ByteBuffer(session_image_size);
+            imgStream = new ByteBufferStream(*imgBuffer);
             return fwUpdate::READY;
         }
     return fwUpdate::ERR_NOT_ALLOWED;
@@ -280,48 +276,8 @@ fwUpdate::update_status_e ISDFUFirmwareUpdater::fwUpdate_startUpdate(const fwUpd
 fwUpdate::update_status_e  ISDFUFirmwareUpdater::fwUpdate_writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
     int fw_result = DFU_ERROR_NONE;
     if ((session_target & fwUpdate::TARGET_TYPE_MASK) == fwUpdate::TARGET_IMX5) {
-        if (session_image_slot == 0) {
-            for (int i = 0; i < len; len++)
-                imgData.insert(offset + i, data[i]);
-
-
-            uint64_t address = (baseAddress ? baseAddress : segments[STM32_DFU_INTERFACE_FLASH].address);
-            uint32_t offset = address - segments[STM32_DFU_INTERFACE_FLASH].address;
-            if (statusCb) {
-                statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Updating flash with firmware \"%s\" (@ 0x%08X)", getDescription(), segments[STM32_DFU_INTERFACE_FLASH].address + offset);
-            }
-
-            ret_libusb = abort();
-            if (ret_libusb == LIBUSB_SUCCESS) {
-                if (statusCb) {
-                    statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Erasing flash memory...", getDescription());
-                }
-
-                offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
-                for (size_t i = 0; i < image_sections; i++) {
-                    //offset = image[i].address + offset;
-                    ret_dfu = eraseFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len);
-                    if (ret_dfu != DFU_ERROR_NONE) {
-                        statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Error erasing flash: %04x", getDescription(), -ret_dfu);
-                        return ret_dfu;
-                    }
-                }
-
-                if (statusCb) {
-                    statusCb(this, IS_LOG_LEVEL_INFO, "(%s) Programming flash memory...", getDescription());
-                }
-
-                offset = image[0].address - segments[STM32_DFU_INTERFACE_FLASH].address;
-                for (size_t i = 0; i < image_sections; i++) {
-                    ret_dfu = writeFlash(segments[STM32_DFU_INTERFACE_FLASH], offset, image[i].len, image[i].image);
-                    if (ret_dfu != DFU_ERROR_NONE) {
-                        statusCb(this, IS_LOG_LEVEL_ERROR, "(%s) Error writing flash: %04x", getDescription(), -ret_dfu);
-                        return ret_dfu;
-                    }
-                }
-            }
-
-
+        if ((session_image_slot == 0) && imgBuffer && imgStream) {
+            imgBuffer->insert(offset, data, len);
 
             if (fw_result != DFU_ERROR_NONE)
                 fwUpdate_sendProgressFormatted(IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", curDevice->getDescription(), curDevice->getErrorName(-fw_result));
@@ -337,6 +293,7 @@ fwUpdate::update_status_e  ISDFUFirmwareUpdater::fwUpdate_writeImageChunk(fwUpda
 // this marks the finish of the upgrade, that all image bytes have been received, the md5 sum passed, the device can complete the requested upgrade, and perform any device-specific finalization
 fwUpdate::update_status_e  ISDFUFirmwareUpdater::fwUpdate_finishUpdate(fwUpdate::target_t target_id, int slot_id, int flags) {
     if (curDevice) {
+        curDevice->updateFirmware(reinterpret_cast<std::istream &>(*imgStream));
         curDevice->finalizeFirmware();
         curDevice->close();
         return fwUpdate::FINISHED;
@@ -349,7 +306,7 @@ fwUpdate::update_status_e  ISDFUFirmwareUpdater::fwUpdate_finishUpdate(fwUpdate:
 bool ISDFUFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) {
 
     while (buff_len--)
-        toHost.push(*buffer++);
+        toHost.push_back(*buffer++);
 
     return true;
 }

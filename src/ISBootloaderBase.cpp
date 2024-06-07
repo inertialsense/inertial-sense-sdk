@@ -583,10 +583,10 @@ is_operation_result cISBootloaderBase::update_device
     device = (obj)->check_is_compatible(); 
     if (device == IS_IMAGE_SIGN_NONE)
     {
-        delete obj;
         char msg[120] = { 0 };
-        SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", handle->port);
-        statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
+        SNPRINTF(msg, sizeof(msg), "(ISB) Error: Device response missing.");
+        statusfn(obj, IS_LOG_LEVEL_ERROR, msg);
+        delete obj;
         return IS_OP_ERROR;
     }
     else if(device == IS_IMAGE_SIGN_ERROR)

@@ -53,7 +53,7 @@ public:
 
     // const ISDevice& device;
     int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
-    const char *portName = nullptr;         //! the name of the port referenced by pHandle
+    serial_port_t& serialPort;    //! the serial_port_struct associated with pHandle
     const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
 
@@ -62,9 +62,9 @@ public:
      * @param portHandle handle to the port (typically serial) to which the device is connected
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(int portHandle, const char *portName, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), portName(portName), devInfo(devInfo) { };
+    ISFirmwareUpdater(int portHandle, serial_port_t& port, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), serialPort(port), devInfo(devInfo) { };
 
-    ISFirmwareUpdater(ISDevice device) : FirmwareUpdateHost(), pHandle(device.portHandle), portName(device.serialPort.port), devInfo(&device.devInfo) { };
+    ISFirmwareUpdater(ISDevice device) : FirmwareUpdateHost(), pHandle(device.portHandle), serialPort(device.serialPort), devInfo(&device.devInfo) { };
 
     ~ISFirmwareUpdater() override {};
 

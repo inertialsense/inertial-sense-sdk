@@ -421,7 +421,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                         break;
                     }
                 }
-               
             }
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)

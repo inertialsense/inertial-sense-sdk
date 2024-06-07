@@ -265,13 +265,24 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
 
     // check for any compatible (protocol version 2) devices
-    for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-        if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
-            printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
+    for (auto& dev : inertialSenseInterface.getDevices()) {
+        if ((dev.hdwId == IS_HARDWARE_TYPE_UNKNOWN) ||
+            (dev.hdwRunState != ISDevice::HDW_STATE_APP) ||
+            (dev.devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0)) {
+            printf("ERROR: One or more discovered devices are unable to communicate.\n");
             // let's print the dev info for all connected devices (so the user can identify the errant device)
-            for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
-                printf("%s\n", devInfo.c_str());
+            for (auto& dev : inertialSenseInterface.getDevices()) {
+                switch(dev.hdwRunState) {
+                    case ISDevice::HDW_STATE_UNKNOWN:
+                        printf("%s\n", utils::string_format("SN%lu (%s-%d.%d) :: Device appears unresponsive.", dev.devInfo.serialNumber, g_isHardwareTypeNames[dev.devInfo.hardwareType], dev.devInfo.hardwareVer[0], dev.devInfo.hardwareVer[1]).c_str());
+                        break;
+                    case ISDevice::HDW_STATE_BOOTLOADER:
+                        printf("%s\n", utils::string_format("SN%lu (%s-%d.%d) :: Currently in Bootloader Mode.", dev.devInfo.serialNumber, g_isHardwareTypeNames[dev.devInfo.hardwareType], dev.devInfo.hardwareVer[0], dev.devInfo.hardwareVer[1]).c_str());
+                        break;
+                    case ISDevice::HDW_STATE_APP:
+                        printf("%s :: Incompatible protocol version (requires %d.x.x).\n", g_inertialSenseDisplay.DataToStringDevInfo(dev.devInfo, true).c_str(), PROTOCOL_VERSION_CHAR0);
+                        break;
+                }
             }
             return false;
         }
@@ -478,6 +489,8 @@ void printProgress()
         if (display == displayLast && display!=0)
         {
             printf("%d%% ", display);
+            if (display == 100)
+                printf("\r\n");
         }
         fflush(stdout);
 
@@ -534,26 +547,24 @@ void cltool_bootloadUpdateInfo(void* obj, int level, const char* str, ...)
 
     ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase *)obj;
 
-    if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
+    if ((ctx->m_sn != 0) && (ctx->m_sn != -1) && (ctx->m_port_name.size() != 0))
     {
-        printf("    | %s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
+        printf("    | %s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
     }
-    else if(ctx->m_sn != 0)
+    else if ((ctx->m_sn != 0) && (ctx->m_sn != -1))
     {
-        printf("    | (SN%d):\r", ctx->m_sn);
+        printf("    | (SN%d):", ctx->m_sn);
     }
     else if (ctx->m_port_name.size() != 0)
     {
-        printf("    | %s:\r", ctx->m_port_name.c_str());
+        printf("    | %s:", ctx->m_port_name.c_str());
     }
     else
     {
-        printf("    | SN?:\r");
+        printf("    | SN?:");
     }
 
-    if (buffer[0])
-        printf("\t%s\r\n", buffer);
-
+    printf("\t%s\r\n", buffer);
     print_mutex.unlock();
 }
 
@@ -575,7 +586,7 @@ void cltool_firmwareUpdateInfo(void* obj, int level, const char* str, ...)
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
         if (buffer[0] || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
-            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
+            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->serialPort.port, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();
                 int num = fwCtx->fwUpdate_getNextChunkID();

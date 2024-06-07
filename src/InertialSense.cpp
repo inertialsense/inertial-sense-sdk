@@ -207,8 +207,7 @@ bool InertialSense::HasReceivedDeviceInfo(size_t index)
         return false;
     }
 
-    return (
-            m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
+    return (m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
             m_comManagerState.devices[index].devInfo.manufacturer[0] != 0);
 }
 
@@ -439,7 +438,6 @@ bool InertialSense::Update()
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
-
 
 #ifdef DEBUG_CONSOLELOGGING
                         } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
@@ -946,10 +944,14 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
     }
 
     ISDevice& device = m_comManagerState.devices[pHandle];
+    device.hdwRunState = ISDevice::HDW_STATE_APP;
 
     switch (data->hdr.id)
     {
-        case DID_DEV_INFO:          device.devInfo = *(dev_info_t*)data->ptr;                               break;
+        case DID_DEV_INFO:
+            device.devInfo = *(dev_info_t*)data->ptr;
+            device.hdwId = ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo);
+            break;
         case DID_SYS_CMD:           device.sysCmd = *(system_command_t*)data->ptr;                          break;
         case DID_SYS_PARAMS:        
             copyDataPToStructP(&device.sysParams, data, sizeof(sys_params_t));      
@@ -985,12 +987,14 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
     switch (getNmeaMsgId(msg, msgSize))
     {
-	case NMEA_MSG_ID_INFO:
+    case NMEA_MSG_ID_INFO:
         {	// IMX device Info
-			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
-		}
-		break;
-	}
+            nmea_parse_info(device.devInfo, (const char*)msg, msgSize);
+            device.hdwId = ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo);
+            device.hdwRunState = ISDevice::HDW_STATE_APP;
+        }
+        break;
+    }
 }
 
 bool InertialSense::BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple)
@@ -1066,7 +1070,7 @@ is_operation_result InertialSense::updateFirmware(
     if (OpenSerialPorts(comPort.c_str(), baudRate)) {
         for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
             ISDevice& device = m_comManagerState.devices[i];
-            device.fwUpdate.fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort.port, &m_comManagerState.devices[i].devInfo);
+            device.fwUpdate.fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort, &m_comManagerState.devices[i].devInfo);
             device.fwUpdate.fwUpdater->setTarget(targetDevice);
 
             // TODO: Implement maybe
@@ -1268,7 +1272,7 @@ is_operation_result InertialSense::BootloadFile(
     }
 
     #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+    fputs("\e[?25l", stdout);	// Turn off cursor during firmware update
     #endif
 
     printf("\n\r");
@@ -1344,6 +1348,7 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
     }
 }
 
+
 bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 {
     CloseSerialPorts();
@@ -1355,7 +1360,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
     // split port on comma in case we need to open multiple serial ports
     vector<string> ports;
-    size_t maxCount = UINT32_MAX;
+    size_t maxCount = 255;
 
     // handle wildcard, auto-detect serial ports
     if (port[0] == '*')
@@ -1386,10 +1391,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         }
         else
         {
-            ISDevice device;
-            device.portHandle = i;
-            device.serialPort = serial;
-            device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
+            ISDevice device(i, serial);
             m_comManagerState.devices.push_back(device);
         }
     }
@@ -1414,6 +1416,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         unsigned int startTime = current_timeMs();
         bool removedSerials = false;
 
+        // check for Inertial-Sense App by making an NMEA request (which it should respond to)
         do {
             for (size_t i = 0; i < m_comManagerState.devices.size(); i++) {
                 if ((m_comManagerState.devices[i].serialPort.errorCode == ENOENT) ||
@@ -1433,20 +1436,50 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             }
         } while (!HasReceivedDeviceInfoFromAllDevices());
 
+        // for any ports which we still don't have a response from, see if they respond to ISbootloader or MCUboot commands...
+        startTime = current_timeMs();   // start out timer over again
+        std::vector<serial_port_t*> deadPorts;    // devices from which we can talk, but never get a response
+        do {
+            deadPorts.clear();
+            for (auto& device : m_comManagerState.devices) {
+                if (device.hdwRunState == ISDevice::HDW_STATE_APP)
+                    continue;
+
+                if (device.queryDeviceInfo() != true) {
+                    deadPorts.push_back(&device.serialPort);
+                }
+            }
+
+            SLEEP_MS(100);
+            comManagerStep();
+
+            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
+                timeoutOccurred = true;
+                break;
+            }
+        } while (deadPorts.size() > 0);
+
         // remove each failed device where communications were not received
-        std::vector<std::string> deadPorts;
-        for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
-            if (!HasReceivedDeviceInfo(i)) {
-                deadPorts.push_back(m_comManagerState.devices[i].serialPort.port);
-                RemoveDevice(i);
+
+        for (auto it = m_comManagerState.devices.begin(); it != m_comManagerState.devices.end(); it++ ) {
+            if (!it->hdwId && !it->hdwRunState && it->devInfo.serialNumber == 0 && it->devInfo.manufacturer[0] == 0) {
+                serial_port_t* port = &(it->serialPort);
+                serialPortClose(port);
+
+                if (std::find(deadPorts.begin(), deadPorts.end(), port) == deadPorts.end())
+                    deadPorts.push_back(port);
+
                 removedSerials = true;
+                it = m_comManagerState.devices.erase(it);
+                if (it == m_comManagerState.devices.end())
+                    break;
             }
         }
 
         if (timeoutOccurred) {
             fprintf(stderr, "Timeout waiting for response from ports: [");
             for (auto portItr = deadPorts.begin(); portItr != deadPorts.end(); portItr++) {
-                fprintf(stderr, "%s%s", (portItr == deadPorts.begin() ? "" : ", "), portItr->c_str());
+                fprintf(stderr, "%s%s", (portItr == deadPorts.begin() ? "" : ", "), (*portItr)->port);
             }
             fprintf(stderr, "]\n");
             fflush(stderr);
@@ -1474,7 +1507,9 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     // request extended device info for remaining connected devices...
     for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
         // but only if they are of a compatible protocol version
-        if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+        if ((m_comManagerState.devices[i].hdwId != IS_HARDWARE_TYPE_UNKNOWN) &&
+            (m_comManagerState.devices[i].hdwRunState != ISDevice::HDW_STATE_UNKNOWN) &&
+            (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0)) {
             comManagerGetData((int) i, DID_SYS_CMD, 0, 0, 0);
             comManagerGetData((int) i, DID_FLASH_CONFIG, 0, 0, 0);
             comManagerGetData((int) i, DID_EVB_FLASH_CFG, 0, 0, 0);

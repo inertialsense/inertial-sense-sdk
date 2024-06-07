@@ -19,9 +19,8 @@
 #include "protocol/FirmwareUpdate.h"
 #include "ihex.h"
 #include "ISUtilities.h"
-// #include "protocol/usb_dfu.h"
 #include "util/md5.h"
-
+#include "util/util.h"
 
 #ifdef _MSC_VER
 # pragma pack(push)
@@ -194,10 +193,11 @@ public:
      */
     dfu_error open();
     dfu_error updateFirmware(std::string filename, uint64_t baseAddress = 0);
-    dfu_error updateFirmware(std::istream& stream, uint32_t imgSize, uint64_t baseAddress = 0);
+    dfu_error updateFirmware(std::istream& stream, uint64_t baseAddress = 0);
     // dfu_error updateFirmware(std::queue<uint8_t>, uint32_t imgSize, uint64_t baseAddress = 0);
     dfu_error finalizeFirmware();
     dfu_error close();
+    int reset();
 
     const char *getDescription();
 
@@ -275,8 +275,6 @@ private:
 
     int abort();
 
-    int reset();
-
     int waitForState(dfu_state required_state, dfu_state* actual_state = nullptr );
 
     int setAddress(uint16_t& wValue, uint32_t address);
@@ -300,7 +298,7 @@ public:
      * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
      * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
      */
-    ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device = nullptr, uint32_t serialNo = -1);
+    ISDFUFirmwareUpdater(fwUpdate::target_t target, libusb_device *device = nullptr, uint32_t serialNo = UINT32_MAX);
     ~ISDFUFirmwareUpdater() { };
 
     static size_t getAvailableDevices(std::vector<DFUDevice *> &devices, uint16_t vid = 0x0000, uint16_t pid = 0x0000);
@@ -403,11 +401,11 @@ private:
         }
     };
 
-    std::vector<uint8_t> imgData;
-    imemstream imgStream;
+    ByteBuffer* imgBuffer = nullptr;
+    ByteBufferStream* imgStream = nullptr;
 
-    std::queue<uint8_t> toDevice;         //! a data stream that is input from the host (host tx) and output to the device (device rx)
-    std::queue<uint8_t> toHost;           //! a data stream that is input from the device (device tx) and output to the host (host rx)
+    std::deque<uint8_t> toDevice;         //! a data stream that is input from the host (host tx) and output to the device (device rx)
+    std::deque<uint8_t> toHost;           //! a data stream that is input from the device (device tx) and output to the host (host rx)
 
 };
 

@@ -440,13 +440,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 g_commandLineOptions.fwUpdateCmds.push_back(string("package=") + string(argv[++i]));
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
             else if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 splitString(string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }

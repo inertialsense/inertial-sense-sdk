@@ -11,13 +11,33 @@
  * @param _target
  */
 void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
+    if (_target == fwUpdate::TARGET_IMX5)
+        _target = fwUpdate::TARGET_ISB_IMX5;    // default IMX-5 targets to ISB_IMX5 (but not DFU_IMX5)
+
     session_target = target = _target;
     session_image_slot = 0;
-    
-    // request version info from the target
-    target_devInfo = nullptr;
-    fwUpdate_requestVersionInfo(target);
-    pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
+
+    if (session_target != fwUpdate::TARGET_UNKNOWN) {
+        // request version info from the target
+        target_devInfo = nullptr;
+
+        if (_target == fwUpdate::TARGET_DFU_FLAG) {
+            deviceUpdater = new ISDFUFirmwareUpdater(_target);
+        }
+
+        if (_target == fwUpdate::TARGET_IMX5) {
+            // IMX5 is ALWAYS updated using ISB
+            _target = fwUpdate::TARGET_ISB_IMX5;
+        }
+
+        if (_target & fwUpdate::TARGET_ISB_FLAG) {
+            deviceUpdater = new ISBFirmwareUpdater(_target, &serialPort);
+            // we are about to do an IMX-5 update through the IS bootloader
+        }
+
+        fwUpdate_requestVersionInfo(target);
+        pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
+    }
 }
 
 /**
@@ -98,8 +118,13 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
         deviceUpdater = new ISDFUFirmwareUpdater(_target);
     }
 
+    if (_target == fwUpdate::TARGET_IMX5) {
+        // IMX5 is ALWAYS updated using ISB
+        _target = fwUpdate::TARGET_ISB_IMX5;
+    }
+
     if (_target & fwUpdate::TARGET_ISB_FLAG) {
-        deviceUpdater = new ISBFirmwareUpdater(_target, (serial_port_t*)nullptr, (uint32_t)0);
+        deviceUpdater = new ISBFirmwareUpdater(_target, &serialPort);
         // we are about to do an IMX-5 update through the IS bootloader
     }
 
@@ -293,7 +318,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
+                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", serialPort.port, devInfo->serialNumber, startAttempts);
                             } else {
                                 printf("Error attempting to initiate Firmware Update\n");
                             }

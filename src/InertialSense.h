@@ -631,6 +631,7 @@ private:
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
+    is_operation_result handshakeISB(serial_port_t& port);
 };
 
 #endif

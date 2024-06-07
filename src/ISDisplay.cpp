@@ -1443,54 +1443,26 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
-	char buf[BUF_SIZE];
-	char* ptr = buf;
-	char* ptrEnd = buf + BUF_SIZE;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
 
-	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
-		info.serialNumber
-	);
+    // Single line format
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d", info.serialNumber );
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %s", g_isHardwareTypeNames[info.hardwareType]);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d", info.hardwareVer[0], info.hardwareVer[1], info.hardwareVer[2]);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " fw%d.%d.%d", info.firmwareVer[0], info.firmwareVer[1], info.firmwareVer[2]);
+    if (info.firmwareVer[3]) ptr += SNPRINTF(ptr, ptrEnd - ptr, ".%d", info.firmwareVer[0]);
 
-	switch (info.hardwareType)
-	{
-	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
-	case IS_HARDWARE_TYPE_UINS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
-	case IS_HARDWARE_TYPE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
-	case IS_HARDWARE_TYPE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
-	case IS_HARDWARE_TYPE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");  	break;
-	}
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %d%c", info.buildNumber, (info.buildType ? info.buildType : ' '));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %04d-%02d-%02d", info.buildYear + 2000, info.buildMonth, info.buildDay);
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
-		info.hardwareVer[0],
-		info.hardwareVer[1],
-		info.hardwareVer[2]
-	);
-
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d.%d %d%c %04d-%02d-%02d",
-		info.firmwareVer[0],
-		info.firmwareVer[1],
-		info.firmwareVer[2],
-		info.firmwareVer[3],
-		info.buildNumber,
-        (info.buildType ? info.buildType : ' '),
-		info.buildYear + 2000,
-		info.buildMonth,
-		info.buildDay
-	);
-
-	if (full)
-	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
-			info.buildHour,
-			info.buildMinute,
-			info.buildSecond,
-			info.protocolVer[0],
-			info.protocolVer[1],
-			info.protocolVer[2],
-			info.protocolVer[3],
-			info.addInfo
-		);
+    if (full)
+    {   // Spacious format
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d", info.buildHour, info.buildMinute, info.buildSecond);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " Proto-%d.%d.%d", info.protocolVer[0], info.protocolVer[1], info.protocolVer[2]);
+        if (info.protocolVer[3]) ptr += SNPRINTF(ptr, ptrEnd - ptr, ".%d", info.protocolVer[0]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " (%s)", info.addInfo);
 	}
 
 	return buf;

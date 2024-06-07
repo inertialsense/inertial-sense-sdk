@@ -255,6 +255,8 @@ int serialPortWriteAscii(serial_port_t* serialPort, const char* buffer, int buff
 	else
 	{
 		count += serialPortWrite(serialPort, (const unsigned char*)"$", 1);
+        if (serialPort->errorCode)
+            return 0;
 	}
 
     const unsigned char* ptrEnd = ptr + bufferLength;
