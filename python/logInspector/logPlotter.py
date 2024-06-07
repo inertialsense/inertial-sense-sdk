@@ -2638,7 +2638,7 @@ class logPlot:
                 ax[i].plot(time, residuals, label=self.log.serials[d])
         self.legends_add(ax[0].legend(ncol=2))
 
-    def rtkDebug(self, fig=None):
+    def rtkDebugP1(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
@@ -2648,7 +2648,8 @@ class logPlot:
         fields = list(rtkData.dtype.names)
         fields.remove('time')
         num_plots = 0
-        for field in fields:
+        for f in range(0, math.ceil(len(fields)/2)):
+            field = fields[f]
             dat = rtkData[field][0]
             if isinstance(dat, np.ndarray):
                 num_plots += len(dat)
@@ -2669,7 +2670,8 @@ class logPlot:
                 time = np.arange(0, len(time))
 
             i = 0
-            for field in fields:
+            for f in range(0, math.ceil(len(fields)/2)):
+                field = fields[f]
                 data = self.getData(d, DID_RTK_DEBUG, field)[valid]
                 if (len(data) == 0):
                     continue
@@ -2686,6 +2688,63 @@ class logPlot:
                     ax[i % rows, i // rows].plot(time[valid], data, label=self.log.serials[d])
                     i += 1
         self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+    def rtkDebugP2(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        rtkData = self.log.data[0, DID_RTK_DEBUG]
+        if rtkData.size == 0:
+            return 
+        fields = list(rtkData.dtype.names)
+        fields.remove('time')
+        num_plots = 0
+        for f in range(math.ceil(len(fields)/2), len(fields)):
+            field = fields[f]
+            dat = rtkData[field][0]
+            if isinstance(dat, np.ndarray):
+                num_plots += len(dat)
+            else:
+                num_plots += 1
+
+        cols = 4
+        rows = math.ceil(num_plots/float(cols))
+        ax = fig.subplots(rows, cols, sharex=True)
+        fig.suptitle('RTK Debug Counters - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            time = np.array(getTimeFromGTime(self.getData(d, DID_RTK_DEBUG, 'time')))
+            valid = time > datetime.datetime.strptime('2017', "%Y")
+
+            # Use index rather than time
+            if 0:
+                time = np.arange(0, len(time))
+
+            i = 0
+            for f in range(math.ceil(len(fields)/2), len(fields)):
+                field = fields[f]
+                data = self.getData(d, DID_RTK_DEBUG, field)[valid]
+                if (len(data) == 0):
+                    continue
+                if isinstance(data[0], np.ndarray):
+                    for j in range(len(data[0])):
+                        ax[ i%rows, i//rows].set_title(field + "_" + str(j))
+                        ax[ i % rows, i // rows ].plot(time[valid], data[:,j], label=self.log.serials[d])
+                        i += 1
+                else:
+                    ax[i % rows, i // rows].set_title(field)
+                    ax[i % rows, i // rows].title.set_fontsize(8)
+                    # for item in ax[i % rows, i // rows].get_yticklabels():
+                        # item.set_fontsize(8)
+                    ax[i % rows, i // rows].plot(time[valid], data, label=self.log.serials[d])
+                    i += 1
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
 
     def rtkDebug2(self, fig=None):
         if fig is None:

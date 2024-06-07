@@ -2335,6 +2335,16 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "obs_pairs_used", obs_pairs_used, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "raw_ptr_queue_overrun", raw_ptr_queue_overrun, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "raw_dat_queue_overrun", raw_dat_queue_overrun, 0, DataTypeUInt8, uint8_t, 0);
+    
+    ADD_MAP(m, totalSize, "obs_rover_avail", obs_rover_avail, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "obs_base_avail", obs_base_avail, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "obs_eph_avail", obs_eph_avail, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "obs_unhealthy", obs_unhealthy, 0, DataTypeUInt8, uint8_t, 0);
+
+    ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[3]", reserved[3], 0, DataTypeUInt8, uint8_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
