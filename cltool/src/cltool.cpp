@@ -252,12 +252,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             token = strtok(NULL, ",");
             if (token != NULL)
             {
-                g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask = stoi(token);
-                printf("EVF PriotityMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask);
+                g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel = stoi(token);
+                printf("EVF PriotityLevel: 0x%d\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
             }
             else
             {
-                printf("EVF PriotityMask: MISSING! See usage!\n");
+                printf("EVF PriotityLevel: MISSING! See usage!\n");
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
@@ -265,12 +265,12 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             token = strtok(NULL, ",");
             if (token != NULL)
             {
-                g_commandLineOptions.evFCont.evFilter.eventMask.idMask = stoi(token);
-                printf("EVF IDMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.idMask);
+                g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask = stoi(token);
+                printf("EVF msgTypeIdMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask);
             }
             else
             {
-                printf("EVF IDMask: MISSING! See usage!\n");
+                printf("EVF msgTypeIdMask: MISSING! See usage!\n");
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
@@ -642,11 +642,10 @@ void cltool_outputUsage()
     cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
     cout << "         target: t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
     cout << "         portMask: po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
-    cout << "         priorityMask: pr=[Priority ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventPriority for protocol EV_ID values]. It is recommended to mask 0xc0" << endlbOn;
-    cout << "             at all times to allow broadcast of critical errors,"  << endlbOn;
-    cout << "         idMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_ID_ASCII)" << endlbOn;
+    cout << "         priorityLevel: pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
+    cout << "             It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors,"  << endlbOn;
+    cout << "         msgTypeIdMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
+    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
     cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
