@@ -775,6 +775,47 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
     }
 }
 
+/**
+ * Sends message to device to set devices Event Filter
+ * param Target: 0 = device, 
+ *               1 = forward to device GNSS 1 port (ie GPX), 
+ *               2 = forward to device GNSS 2 port (ie GPX),
+ *               else will return  
+*/
+void InertialSense::SetEventFilter(int target, uint32_t IDMask, uint8_t portMask, uint8_t priorityMask)
+{
+    #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
+    uint8_t data[EVENT_MAX_SIZE] = {0};
+
+    did_event_t event = {
+        .time = 123,
+        .senderSN = 0,
+        .senderHdwId = 0,
+        .length = sizeof(did_event_filter_t),
+    };
+
+    did_event_filter_t filter = {
+        .portMask = portMask,
+    };
+
+    filter.eventMask.priorityMask = priorityMask;
+    filter.eventMask.idMask = IDMask;
+
+    if(target == 0)
+        event.protocol = EVENT_PROTOCOL_ENA_FILTER;
+    else if(target == 1)
+        event.protocol = EVENT_PROTOCOL_ENA_GNSS1_FILTER;
+    else if(target == 2)
+        event.protocol = EVENT_PROTOCOL_ENA_GNSS2_FILTER;
+    else 
+        return;
+
+    memcpy(data, &event, DID_EVENT_HEADER_SIZE);
+    memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
+
+    SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+}
+
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
 void InertialSense::SyncFlashConfig(unsigned int timeMs)
 {
