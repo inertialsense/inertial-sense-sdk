@@ -2341,6 +2341,11 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "obs_eph_avail", obs_eph_avail, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "obs_unhealthy", obs_unhealthy, 0, DataTypeUInt8, uint8_t, 0);
 
+    ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[3]", reserved[3], 0, DataTypeUInt8, uint8_t&, 0);
+
     ASSERT_SIZE(totalSize);
 }
 

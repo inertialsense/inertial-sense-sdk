@@ -3486,6 +3486,8 @@ typedef struct PACKED
     uint8_t obs_base_avail;
     uint8_t obs_eph_avail;
     uint8_t obs_unhealthy;
+
+    uint8_t reserved[4];
 } rtk_debug_t;
 
 POP_PACK
