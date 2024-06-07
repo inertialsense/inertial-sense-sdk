@@ -802,11 +802,11 @@ void InertialSense::SetEventFilter(int target, uint32_t IDMask, uint8_t portMask
     filter.eventMask.idMask = IDMask;
 
     if(target == 0)
-        event.protocol = EVENT_PROTOCOL_ENA_FILTER;
+        event.msgID = EVENT_MSG_ID_ENA_FILTER;
     else if(target == 1)
-        event.protocol = EVENT_PROTOCOL_ENA_GNSS1_FILTER;
+        event.msgID = EVENT_MSG_ID_ENA_GNSS1_FILTER;
     else if(target == 2)
-        event.protocol = EVENT_PROTOCOL_ENA_GNSS2_FILTER;
+        event.msgID = EVENT_MSG_ID_ENA_GNSS2_FILTER;
     else 
         return;
 

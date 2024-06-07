@@ -646,7 +646,7 @@ void cltool_outputUsage()
     cout << "             See:eEventPriority for protocol EV_ID values]. It is recommended to mask 0xc0" << endlbOn;
     cout << "             at all times to allow broadcast of critical errors,"  << endlbOn;
     cout << "         idMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_PROTOCOL_ASCII)" << endlbOn;
+    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_ID_ASCII)" << endlbOn;
     cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
