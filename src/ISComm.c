@@ -1135,8 +1135,19 @@ int is_comm_write_pkt(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t
     // Encode header and header checksum
     is_comm_encode_hdr(txPkt, flags, did, data_size, offset, data);
 
+#if 0   // Send packet in pieces to reduce buffer and memcpy
     // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
     return is_comm_write_isb_precomp_to_port(portWrite, port, comm, txPkt);
+
+#else   // Buffer and send entire packet
+    uint8_t buf[PKT_BUF_SIZE];
+
+    // Update checksum and write packet to buffer.  Returns number of bytes written on success or -1 on failure.
+    int n = is_comm_write_isb_precomp_to_buffer(buf, sizeof(buf), comm, txPkt);
+
+    // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
+    return portWrite(port, buf, n);
+#endif
 }
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)
