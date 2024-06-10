@@ -204,7 +204,7 @@ bool ISDFUFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool pr
 bool ISDFUFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* buffer, int buf_len) {
 
     // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
-    int tmpBuf_size = toDevice.size();
+    const int tmpBuf_size = toDevice.size();
     uint8_t tmpBuf[tmpBuf_size];
     uint8_t* p = tmpBuf;
     while (toDevice.size()) {
