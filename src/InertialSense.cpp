@@ -197,6 +197,17 @@ void InertialSense::DisableLogging()
 
 void InertialSense::LogRawData(ISDevice* device, int dataSize, const uint8_t* data)
 {
+    if (!m_logger.Enabled())
+        return;
+
+    if ((device->devLogger.get() == nullptr) || (dataSize < 0)) {
+        // if we are logging, but this device doesn't have a logger, go ahead and make one, if we know what the device is...
+        // TODO: This *really* isn't right... The logger should be explicitly created, and if it doesn't, just don't log, but we need a way to
+        //  to discover new devices and enable logging for those devices which have been reset
+        if ((device->hdwId != IS_HARDWARE_TYPE_UNKNOWN) && (device->hdwRunState == ISDevice::HDW_STATE_APP))
+            device->devLogger = m_logger.registerDevice(*device);
+    }
+
     m_logger.LogData(device->devLogger, dataSize, data);
 }
 

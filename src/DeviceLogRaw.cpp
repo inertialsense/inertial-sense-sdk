@@ -105,11 +105,11 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
-			case _PTYPE_UBLOX:
-				m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
-				globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-				cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-				break;
+            case _PTYPE_UBLOX:
+                m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
+                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
+                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+                break;
 
             case _PTYPE_NMEA:
                 m_comm.rxPkt.dataHdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
@@ -117,15 +117,15 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
-			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors)
-				{ 
-					if (m_comm.rxErrorCount>1) 
-					{ 
-						printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
-					}
-				}
-				break;
+            case _PTYPE_PARSE_ERROR:
+                if (m_showParseErrors)
+                {
+                    if (m_comm.rxErrorCount>1)
+                    {
+                        printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
+                    }
+                }
+                break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
@@ -170,7 +170,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
         // Save chunk to file and clear
         if (!WriteChunkToFile())
         {
-            return false;
+            return false;   // there was a error writing the chunk to disk
         }
         else if (m_fileSize >= m_maxFileSize)
         {
@@ -181,7 +181,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     // Add data header and data buffer to chunk
     if (!m_chunk.PushBack((unsigned char*)dataBuf, dataSize))
     {
-        return false;
+        return false;   // unable to push the buffer into the chunk
     }
 
     return true;
