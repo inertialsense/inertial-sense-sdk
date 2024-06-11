@@ -1144,9 +1144,16 @@ int is_comm_write_pkt(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t
 
     // Update checksum and write packet to buffer.  Returns number of bytes written on success or -1 on failure.
     int n = is_comm_write_isb_precomp_to_buffer(buf, sizeof(buf), comm, txPkt);
+    int bytes = portWrite(port, buf, n);
 
-    // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
-    return portWrite(port, buf, n);
+#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
+    if (n <= 0 || n != bytes)
+    {
+        printf("ISComm.c::is_comm_write_pkt() failed to portWrite: %d,%d\n", bytes, n);
+    }
+#endif
+
+    return bytes;
 #endif
 }
 
