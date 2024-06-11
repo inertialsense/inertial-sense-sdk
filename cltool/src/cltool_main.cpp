@@ -419,8 +419,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
 std::vector<ISBootloader::cISBootloaderBase*> firmwareProgressContexts;
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
-is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
+is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
 
 static int cltool_updateFirmware()
 {
@@ -507,7 +507,7 @@ void printProgress()
     print_mutex.unlock();
 }
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string stepName = "", int stepNo = 0, int totalSteps = 0)
+is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string& stepName = "", int stepNo = 0, int totalSteps = 0)
 {
     if(obj)
     {
@@ -517,7 +517,7 @@ is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
-is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps)
+is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
     if(obj)
     {

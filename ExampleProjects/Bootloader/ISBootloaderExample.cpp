@@ -27,7 +27,7 @@ using namespace ISBootloader;
 using namespace std;
 
 // print out upload progress
-static is_operation_result bootloaderUploadProgress(void* obj, float pct, const std::string stepName, int stepNo, int totalSteps)
+static is_operation_result bootloaderUploadProgress(void* obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
 	if (obj == NULL) return IS_OP_OK;
 
@@ -40,7 +40,7 @@ static is_operation_result bootloaderUploadProgress(void* obj, float pct, const 
 }
 
 // print out verify progress
-static is_operation_result bootloaderVerifyProgress(void* obj, float pct, const std::string stepName, int stepNo, int totalSteps)
+static is_operation_result bootloaderVerifyProgress(void* obj, float pct, const std::string& stepName, int stepNo, int totalSteps)
 {
 	if (obj == NULL) return IS_OP_OK;
 

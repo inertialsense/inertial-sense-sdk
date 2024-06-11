@@ -59,8 +59,9 @@ bool ISBFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* buff
         toDevice.pop_front();
     }
 
+    bool result = FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
     delete [] tmpBuf;
-    return FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
+    return result;
 }
 
 // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
