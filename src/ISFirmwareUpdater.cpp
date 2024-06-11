@@ -266,10 +266,10 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
 
     if(pfnUploadProgress_cb != nullptr)
-        pfnUploadProgress_cb(this, percent, nullptr, 0, 0);
+        pfnUploadProgress_cb(this, percent, std::string(), 0, 0);
 
     if(pfnVerifyProgress_cb != nullptr)
-        pfnVerifyProgress_cb(this, percent, nullptr, 0, 0);
+        pfnVerifyProgress_cb(this, percent, std::string(), 0, 0);
 
     if(pfnStatus_cb != nullptr)
         pfnStatus_cb(this, (int)msg.data.progress.msg_level, message);

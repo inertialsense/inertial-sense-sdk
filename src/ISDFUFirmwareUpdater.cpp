@@ -809,7 +809,7 @@ dfu_error DFUDevice::eraseFlash(const dfu_memory_t& mem, uint32_t& offset, uint3
 
         if (progressCb) {
             float progress = (float) bytes_erased / (float) data_len;
-            progressCb(this, progress, "Erasing Flashj", 1, 2);
+            progressCb(this, progress, "Erasing Flash", 1, 2);
         }
     } while (byteInSection < data_len - 1);
 

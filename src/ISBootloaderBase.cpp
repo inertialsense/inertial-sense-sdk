@@ -25,14 +25,14 @@ using namespace ISBootloader;
 
 // const char* is_samx70_bootloader_needle = "bootloader-SAMx70";
 
-is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps)
+is_operation_result ISBootloader::dummy_update_callback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
     cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     ctx->m_update_progress = percent;
     return IS_OP_OK;
 }
 
-is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps)
+is_operation_result ISBootloader::dummy_verify_callback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
     cISBootloaderBase* ctx = (cISBootloaderBase*)obj;
     ctx->m_verify_progress = percent;

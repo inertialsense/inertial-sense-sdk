@@ -90,8 +90,8 @@ typedef struct
 // typedef is_operation_result (*fwUpdate::pfnProgressCb)(void* obj, float percent);
 // typedef void (*fwUpdate::pfnStatusCb)(void* obj, int level, const char* infoString, ...);
 
-is_operation_result dummy_update_callback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
-is_operation_result dummy_verify_callback(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
+is_operation_result dummy_update_callback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+is_operation_result dummy_verify_callback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
 static inline void dummy_info_callback(void* obj, int level, const char* infoString, ...)
 {
     (void)obj;

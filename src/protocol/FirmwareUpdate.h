@@ -101,7 +101,7 @@ namespace fwUpdate {
  *
  */
 
-    typedef is_operation_result (*pfnProgressCb)(void* obj, float percent, const std::string stepName, int stepNo, int totalSteps);
+    typedef is_operation_result (*pfnProgressCb)(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
     typedef void (*pfnStatusCb)(void* obj, int level, const char* infoString, ...);
 
 
