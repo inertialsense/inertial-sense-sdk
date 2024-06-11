@@ -2216,29 +2216,35 @@ typedef struct PACKED
     float                   bias_cal[3];
 } inl2_mag_obs_info_t;
 
+/** Built-in Test: Input Command */
+enum eBitCommand
+{
+    BIT_CMD_NONE                                    = (int)0,       // No command
+    BIT_CMD_FULL_STATIONARY                         = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
+    BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
+    BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
+    BIT_CMD_RESERVED_2                              = (int)5,   
+    BIT_CMD_OFF                                     = (int)8,       // Stop built-in test
+};
+
 /** Built-in Test: State */
 enum eBitState
 {
-    BIT_STATE_OFF					                    = (int)0,
-    BIT_STATE_DONE				                        = (int)1,       // Test is finished
-    BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
-    BIT_STATE_CMD_BASIC_MOVING                          = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY         = (int)4,       // Same as BIT_STATE_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
-    BIT_STATE_RESERVED_2                                = (int)5,   
-    BIT_STATE_RUNNING                                   = (int)6,   
-    BIT_STATE_FINISHING                                 = (int)7,	    // Computing results
-    BIT_STATE_CMD_OFF                                   = (int)8,       // Stop built-in test
+    BIT_STATE_OFF					                = (int)0,
+    BIT_STATE_DONE				                    = (int)1,       // Test is finished
+    BIT_STATE_RUNNING                               = (int)6,
+    BIT_STATE_FINISHING                             = (int)7,	    // Computing results
 };
 
 /** Built-in Test: Test Mode */
 enum eBitTestMode
 {
-    BIT_TEST_MODE_FAILED                                = (int)98,      // Test mode ran and failed
-    BIT_TEST_MODE_DONE                                  = (int)99,      // Test mode ran and completed
-    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100,     // Simulate CNO noise
-    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101,     // Send duplicate message 
-    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW             = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW             = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    BIT_TEST_MODE_FAILED                            = (int)98,      // Test mode ran and failed
+    BIT_TEST_MODE_DONE                              = (int)99,      // Test mode ran and completed
+    BIT_TEST_MODE_SIM_GPS_NOISE                     = (int)100,     // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT             = (int)101,     // Send duplicate message 
+    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2294,11 +2300,20 @@ enum eCalBitStatusFlags
 };
 
 
-/** (DID_BIT) Built-in self-test parameters */
+/** (DID_BIT) Built-in self-test (BIT) parameters */
 typedef struct PACKED
 {
-    /** Built-in self-test state (see eBitState) */
-    uint32_t                state;
+    /** BIT input command (see eBitCommand).  Ignored when zero.  */
+    uint8_t                 command;
+
+    /** BIT last input command (see eBitCommand) */
+    uint8_t                 lastCommand;
+
+    /** BIT current state (see eBitState) */
+    uint8_t                 state;
+
+    /** Unused */
+    uint8_t                 reserved;
 
     /** Hardware BIT status (see eHdwBitStatusFlags) */
     uint32_t                hdwBitStatus;
