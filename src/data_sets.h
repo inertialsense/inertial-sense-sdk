@@ -2220,11 +2220,11 @@ typedef struct PACKED
 enum eBitCommand
 {
     BIT_CMD_NONE                                    = (int)0,       // No command
+    BIT_CMD_OFF                                     = (int)1,       // Stop built-in test
     BIT_CMD_FULL_STATIONARY                         = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
     BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
     BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
     BIT_CMD_RESERVED_2                              = (int)5,   
-    BIT_CMD_OFF                                     = (int)8,       // Stop built-in test
 };
 
 /** Built-in Test: State */
