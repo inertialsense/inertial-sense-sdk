@@ -2293,6 +2293,10 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
     GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
     GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_test_mode_SYS_FAULT_WATCH_DOG_COMM_TASK      = (int)104,     // Cause watch dog reset by stalling COMM task
+    GPXBit_test_mode_SYS_FAULT_WATCH_DOG_RTK_TASK       = (int)105,     // Cause watch dog reset by stalling RTK task
+    GPXBit_test_mode_SYS_FAULT_HARD_FAULT               = (int)106,     // Cause hard fault
+    GPXBit_test_mode_SYS_FAULT_MALLOC                   = (int)106,     // Cause malloc failure
 };
 
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
