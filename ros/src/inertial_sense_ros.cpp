@@ -85,7 +85,7 @@ void InertialSenseROS::terminate()
     IS_.CloseServerConnection();
     sdk_connected_ = false;
 
-    // ROS equivelant to shutdown advertisers, etc.
+    // ROS equivalent to shutdown advertisers, etc.
 }
 
 void InertialSenseROS::initializeIS(bool configFlashParameters) 
@@ -626,67 +626,69 @@ bool vecF64Match(double v1[], double v2[], int size=3)
 void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
+    nvm_flash_cfg_t flashCfg;
     IS_.WaitForFlashSynced();
-    nvm_flash_cfg_t current_flash_cfg;
-    IS_.FlashConfig(current_flash_cfg);
-    //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
+    IS_.FlashConfig(flashCfg);
+    nvm_flash_cfg_t curCfg = flashCfg;
+    //ROS_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", flashCfg.ioConfig, ioConfig_);
 
-    if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
+    if (flashCfg.startupNavDtMs != ins_nav_dt_ms_)
     {
-        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting IMX to make change", current_flash_cfg.startupNavDtMs, ins_nav_dt_ms_);
+        ROS_INFO("InertialSenseROS: Navigation rate change from %dms to %dms, resetting IMX to make change", flashCfg.startupNavDtMs, ins_nav_dt_ms_);
         reboot = true;
     }
-    if (setIoConfigBits_ && ioConfigBits_ != current_flash_cfg.ioConfig)
+    if (setIoConfigBits_ && flashCfg.ioConfig != ioConfigBits_)
     {
-        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting IMX to make change", current_flash_cfg.ioConfig, ioConfigBits_);
+        ROS_INFO("InertialSenseROS: ioConfig change from 0x%08X to 0x%08X, resetting IMX to make change", flashCfg.ioConfig, ioConfigBits_);
         reboot = true;
     }
     else
     {   // Don't change
-        ioConfigBits_ = current_flash_cfg.ioConfig;
+        ioConfigBits_ = flashCfg.ioConfig;
     }
-    if (setPlatformConfig_ && platformConfig_ != current_flash_cfg.platformConfig &&
-        !(current_flash_cfg.platformConfig & PLATFORM_CFG_TYPE_FROM_MANF_OTP))
+    if (setPlatformConfig_ && flashCfg.platformConfig != platformConfig_ &&
+        !(flashCfg.platformConfig & PLATFORM_CFG_TYPE_FROM_MANF_OTP))
     {
+        flashCfg.platformConfig = platformConfig_;
         reboot = true;
     }
     else
     {   // Don't change
-        platformConfig_ = current_flash_cfg.platformConfig;
+        platformConfig_ = flashCfg.platformConfig;
     }
 
-    if (!vecF32Match(current_flash_cfg.insRotation, insRotation_) ||
-        !vecF32Match(current_flash_cfg.insOffset, insOffset_) ||
-        !vecF32Match(current_flash_cfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
-        !vecF32Match(current_flash_cfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
-        (refLLA_valid && !vecF64Match(current_flash_cfg.refLla, refLla_)) ||
-        current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_ ||
-        current_flash_cfg.ioConfig != ioConfigBits_ ||
-        current_flash_cfg.gpsTimeUserDelay != gpsTimeUserDelay_ ||
-        // current_flash_cfg.magDeclination != magDeclination_ ||
-        current_flash_cfg.dynamicModel != dynamicModel_ ||
-        current_flash_cfg.platformConfig != platformConfig_
+    if (!vecF32Match(flashCfg.insRotation, insRotation_) ||
+        !vecF32Match(flashCfg.insOffset, insOffset_) ||
+        !vecF32Match(flashCfg.gps1AntOffset, rs_.gps1.antennaOffset) ||
+        !vecF32Match(flashCfg.gps2AntOffset, rs_.gps2.antennaOffset) ||
+        (refLLA_valid && !vecF64Match(flashCfg.refLla, refLla_)) ||
+        flashCfg.startupNavDtMs     != ins_nav_dt_ms_ ||
+        flashCfg.ioConfig           != ioConfigBits_ ||
+        flashCfg.gpsTimeUserDelay   != gpsTimeUserDelay_ ||
+        // flashCfg.magDeclination  != magDeclination_ ||
+        flashCfg.dynamicModel       != dynamicModel_ ||
+        flashCfg.platformConfig     != platformConfig_
         )
     {
         for (int i=0; i<3; i++)
         {
-            current_flash_cfg.insRotation[i] = insRotation_[i];
-            current_flash_cfg.insOffset[i] = insOffset_[i];
-            current_flash_cfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
-            current_flash_cfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
+            flashCfg.insRotation[i] = insRotation_[i];
+            flashCfg.insOffset[i] = insOffset_[i];
+            flashCfg.gps1AntOffset[i] = rs_.gps1.antennaOffset[i];
+            flashCfg.gps2AntOffset[i] = rs_.gps2.antennaOffset[i];
             if (refLLA_valid)
             {
-                current_flash_cfg.refLla[i] = refLla_[i];
+                flashCfg.refLla[i] = refLla_[i];
             }
         }
-        current_flash_cfg.startupNavDtMs = ins_nav_dt_ms_;
-        current_flash_cfg.ioConfig = ioConfigBits_;
-        current_flash_cfg.gpsTimeUserDelay = gpsTimeUserDelay_;
-        current_flash_cfg.magDeclination = magDeclination_;
-        current_flash_cfg.dynamicModel = dynamicModel_;
-        current_flash_cfg.platformConfig = platformConfig_;
+        flashCfg.startupNavDtMs     = ins_nav_dt_ms_;
+        flashCfg.ioConfig           = ioConfigBits_;
+        flashCfg.gpsTimeUserDelay   = gpsTimeUserDelay_;
+        flashCfg.magDeclination     = magDeclination_;
+        flashCfg.dynamicModel       = dynamicModel_;
+        flashCfg.platformConfig     = platformConfig_;
 
-        IS_.SendData(DID_FLASH_CONFIG, (uint8_t *)(&current_flash_cfg), sizeof (nvm_flash_cfg_t), 0);
+        IS_.SetFlashConfig(flashCfg);
     }
 
     if  (reboot)
@@ -808,7 +810,9 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
 void InertialSenseROS::configure_rtk()
 {
     IS_.Waitforsynced();
-    rtkConfigBits_ = 0;
+    nvm_flash_cfg_t flashCfg;
+    IS_.FlashConfig(flashCfg);
+    flashCfg.RTKCfgBits = 0;
     if (rs_.gps1.type == "F9P")
     {
         if (RTK_rover_)
@@ -817,7 +821,7 @@ void InertialSenseROS::configure_rtk()
                 ROS_INFO("InertialSenseROS: Configuring RTK Rover");
                 rs_.rtk_pos.enabled = true;
                 connect_rtk_client(*(RtkRoverCorrectionProvider_Ntrip *) RTK_rover_->correction_input);
-                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
 
@@ -827,7 +831,7 @@ void InertialSenseROS::configure_rtk()
                 ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
                 rs_.rtk_pos.enabled = true;
                 if (RTK_base_) RTK_base_->enable = false;
-                rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL;
                 SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
                 SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
             }
@@ -836,7 +840,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             rs_.rtk_cmp.enabled = true;
-            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P;
+            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING_F9P;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
@@ -844,18 +848,16 @@ void InertialSenseROS::configure_rtk()
         if (RTK_base_ && RTK_base_->enable) {
             ROS_INFO("InertialSenseROS: Configuring RTK Base");
             if (RTK_base_->source_gps__usb_) {
-                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_USB;
             }
             if (RTK_base_->source_gps__serial0_) {
-                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_RTCM3_SER2;
             }
             RtkBaseCorrectionProvider_Ntrip* ntrip_provider = (RtkBaseCorrectionProvider_Ntrip*)RTK_base_->getProvidersByType("ntrip");
             if (ntrip_provider != nullptr) {
                 start_rtk_server(*ntrip_provider);
             }
         }
-
-        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&rtkConfigBits_), sizeof(rtkConfigBits_), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
     else
     {
@@ -866,7 +868,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring Dual GNSS (compassing)");
             RTK_rover_->enable = false; // FIXME:  Is this right?  Rover is disabled when in Compassing?
-            rtkConfigBits_ |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
+            flashCfg.RTKCfgBits |= RTK_CFG_BITS_ROVER_MODE_RTK_COMPASSING;
             SET_CALLBACK(DID_GPS2_RTK_CMP_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_cmp.period);
             SET_CALLBACK(DID_GPS2_RTK_CMP_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_cmp.period);
         }
@@ -875,7 +877,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring RTK Rover with radio enabled");
             if (RTK_base_) RTK_base_->enable = false;
-            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
         }
@@ -883,7 +885,7 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configuring as RTK Rover");
             if (RTK_base_) RTK_base_->enable = false;
-            rtkConfigBits_ |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
+            flashCfg.RTKCfgBits |= (rs_.gps1.type == "F9P" ? RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING_EXTERNAL : RTK_CFG_BITS_ROVER_MODE_RTK_POSITIONING);
             connect_rtk_client((RtkRoverCorrectionProvider_Ntrip&)*RTK_rover_->correction_input);
             SET_CALLBACK(DID_GPS1_RTK_POS_MISC, gps_rtk_misc_t, RTK_Misc_callback, rs_.rtk_pos.period);
             SET_CALLBACK(DID_GPS1_RTK_POS_REL, gps_rtk_rel_t, RTK_Rel_callback, rs_.rtk_pos.period);
@@ -894,17 +896,18 @@ void InertialSenseROS::configure_rtk()
         {
             ROS_INFO("InertialSenseROS: Configured as RTK Base");
             if (RTK_base_->source_gps__serial0_)
-                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_SER0;
             if (RTK_base_->source_gps__usb_)
-                rtkConfigBits_ |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB;
+                flashCfg.RTKCfgBits |= RTK_CFG_BITS_BASE_OUTPUT_GPS1_UBLOX_USB;
 
             RtkBaseCorrectionProvider_Ntrip* ntrip_provider = (RtkBaseCorrectionProvider_Ntrip*)RTK_base_->getProvidersByType("ntrip");
             if (ntrip_provider != nullptr)
                 start_rtk_server(*ntrip_provider);
         }
-        IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&rtkConfigBits_), sizeof(rtkConfigBits_), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
-    ROS_INFO("InertialSenseROS: Setting rtkConfigBits: 0x%08x", rtkConfigBits_);
+
+    IS_.SetFlashConfig(flashCfg);
+    ROS_INFO("InertialSenseROS: Setting rtkConfigBits: 0x%08x", flashCfg.RTKCfgBits);
 }
 
 void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
@@ -2061,21 +2064,21 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
 bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
     (void)req;
-    double current_lla_[3];
-    current_lla_[0] = lla_[0];
-    current_lla_[1] = lla_[1];
-    current_lla_[2] = lla_[2];
-
-    int i = 0;
-    nvm_flash_cfg_t current_flash;
-
     IS_.WaitForFlashSynced();
-    IS_.FlashConfig(current_flash);
+    nvm_flash_cfg_t flashCfg;
+    IS_.FlashConfig(flashCfg);
 
-    if (IS_.SetFlashConfig(current_flash))
+    for (int i=0; i<3; i++)
+    {
+        flashCfg.refLla[i] = lla_[i];
+    }
+
+    if (IS_.SetFlashConfig(flashCfg))
     {
         res.success = true;
-        res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(current_lla_[0]) + "  Lon: " + std::to_string(current_lla_[1]) + "  Alt: " + std::to_string(current_lla_[2]));
+        res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(flashCfg.refLla[0]) + 
+            "  Lon: " + std::to_string(flashCfg.refLla[1]) + 
+            "  Alt: " + std::to_string(flashCfg.refLla[2]));
     }
     else
     {
@@ -2088,19 +2091,21 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request
 
 bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros::refLLAUpdate::Request &req, inertial_sense_ros::refLLAUpdate::Response &res)
 {
-    nvm_flash_cfg_t current_flash;
     IS_.WaitForFlashSynced();
-    IS_.FlashConfig(current_flash);
+    nvm_flash_cfg_t flashCfg;
+    IS_.FlashConfig(flashCfg);
 
     for (int i=0; i<3; i++)
     {
-        current_flash.refLla[i] = req.lla[i];
+        flashCfg.refLla[i] = req.lla[i];
     }
 
-    if (IS_.SetFlashConfig(current_flash))
+    if (IS_.SetFlashConfig(flashCfg))
     {
         res.success = true;
-        res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(req.lla[0]) + "  Lon: " + std::to_string(req.lla[1]) + "  Alt: " + std::to_string(req.lla[2]));
+        res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(flashCfg.refLla[0]) + 
+            "  Lon: " + std::to_string(flashCfg.refLla[1]) + 
+            "  Alt: " + std::to_string(flashCfg.refLla[2]));
     }
     else
     {
