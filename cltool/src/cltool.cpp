@@ -253,11 +253,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             if (token != NULL)
             {
                 g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel = stoi(token);
-                printf("EVF PriotityLevel: 0x%d\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
+                printf("EVF PriorityLevel: 0x%d\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
             }
             else
             {
-                printf("EVF PriotityLevel: MISSING! See usage!\n");
+                printf("EVF PriorityLevel: MISSING! See usage!\n");
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
