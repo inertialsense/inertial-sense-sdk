@@ -93,9 +93,10 @@ private:
         std::sort(initialized_ranges_.begin(), initialized_ranges_.end());
         std::vector<std::pair<std::size_t, std::size_t>> merged;
         merged.push_back(initialized_ranges_[0]);
+
         for (const auto& range : initialized_ranges_) {
             if (merged.back().second >= range.first) {
-                merged.back().second = _MAX(merged.back().second, range.second);
+                merged.back().second = (merged.back().second > range.second ? merged.back().second : range.second);
             } else {
                 merged.push_back(range);
             }
