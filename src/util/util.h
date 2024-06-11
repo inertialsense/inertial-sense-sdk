@@ -95,7 +95,7 @@ private:
         merged.push_back(initialized_ranges_[0]);
         for (const auto& range : initialized_ranges_) {
             if (merged.back().second >= range.first) {
-                merged.back().second = std::max(merged.back().second, range.second);
+                merged.back().second = _MAX(merged.back().second, range.second);
             } else {
                 merged.push_back(range);
             }
