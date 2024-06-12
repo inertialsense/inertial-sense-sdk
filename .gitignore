@@ -21,7 +21,7 @@ CMakeFiles/
 *.user
 .vs
 .vscode
-
+.venv
 .idea
 cmake-build-debug
 Makefile

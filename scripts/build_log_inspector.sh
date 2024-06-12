@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -o errexit
 
+source "$(dirname "$(realpath $0)")/lib/python_venv.sh" # Load python virtual enviroment must be ran before pushd
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 BOLD="\x1b[1m"
