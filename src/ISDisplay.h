@@ -121,6 +121,7 @@ public:
 	std::string DataToStringWheelEncoder(const wheel_encoder_t &enc, const p_data_hdr_t& hdr);
     std::string DataToStringGPXStatus(const gpx_status_t &gpxStatus, const p_data_hdr_t& hdr);
     std::string DataToStringDebugArray(const debug_array_t &debug, const p_data_hdr_t& hdr);
+    std::string DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr);
     std::string DataToStringRawHex(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
     std::string DataToStringPacket(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine, bool colorize);
 	std::string DataToStringGeneric(const p_data_t* data);
