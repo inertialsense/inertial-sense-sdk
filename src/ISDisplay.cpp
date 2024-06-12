@@ -647,8 +647,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
     case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr); break;
     case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr); break;
     case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr); break;
-    case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.imxPortMonitor, data->hdr); break;
-    case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.gpxPortMonitor, data->hdr); break;
+    case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr); break;
+    case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr); break;
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);

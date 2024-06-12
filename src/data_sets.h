@@ -5141,8 +5141,7 @@ typedef union PACKED
     gpx_status_t            gpxStatus;
     debug_array_t           imxDebugArray;
     debug_array_t           gpxDebugArray;
-    port_monitor_t          imxPortMonitor;
-    port_monitor_t          gpxPortMonitor;
+    port_monitor_t          portMonitor;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
