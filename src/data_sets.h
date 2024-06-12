@@ -2298,7 +2298,7 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_SYS_FAULT_WATCH_DOG_COMM_TASK      = (int)104,     // Cause watch dog reset by stalling COMM task
     GPXBit_test_mode_SYS_FAULT_WATCH_DOG_RTK_TASK       = (int)105,     // Cause watch dog reset by stalling RTK task
     GPXBit_test_mode_SYS_FAULT_HARD_FAULT               = (int)106,     // Cause hard fault
-    GPXBit_test_mode_SYS_FAULT_MALLOC                   = (int)106,     // Cause malloc failure
+    GPXBit_test_mode_SYS_FAULT_MALLOC                   = (int)107,     // Cause malloc failure
 };
 
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
