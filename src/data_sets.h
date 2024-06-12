@@ -4188,17 +4188,22 @@ typedef struct
 enum eGpxStatus
 {
     /** Communications parse error count */
-    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,
-    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK                 = (int)0x0000000F,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET               = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
-    /** Communications Tx buffer limited */
-    GPX_STATUS_ERR_COM_TX_LIMITED               = (int)0x00000010,
-    /** Communications Rx buffer overrun */
-    GPX_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00000020,
-
     /** Reserved */
-    GPX_STATUS_RESERVED_1                       = (int)0x01000000,    
+    GPX_STATUS_RESERVED_1                               = (int)0x00010000,
+
+    /** Fatal event */
+    GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
+    GPX_STATUS_FATAL_OFFSET                             = 24,
+    GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)1,                     
+    GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)2,
+    GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)3,
+    GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)4,
+    GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)5,
+    GPX_STATUS_FATAL_UNKNOWN                            = (int)6,
 };
 
 /** Hardware status flags */
@@ -4245,11 +4250,6 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_ERR_NO_GPS_PPS                       = (int)0x00040000,
     /** Time synchronized by GPS PPS */
     GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x00080000,
-
-    /** Communications parse error count */
-    GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK             = (int)0x00F00000,
-    GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET           = 20,
-#define GPX_HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** (BIT) Built-in self-test running */
     GPX_HDW_STATUS_BIT_RUNNING                          = (int)0x01000000,
