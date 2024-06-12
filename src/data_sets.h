@@ -4252,30 +4252,30 @@ enum eGPXHdwStatusFlags
 #define GPX_HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
     /** (BIT) Built-in self-test running */
-    GPX_HDW_STATUS_BIT_RUNNING                      = (int)0x01000000,
+    GPX_HDW_STATUS_BIT_RUNNING                          = (int)0x01000000,
     /** (BIT) Built-in self-test passed */
-    GPX_HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
+    GPX_HDW_STATUS_BIT_PASSED                           = (int)0x02000000,
     /** (BIT) Built-in self-test failure */
-    GPX_HDW_STATUS_BIT_FAULT                        = (int)0x03000000,
+    GPX_HDW_STATUS_BIT_FAULT                            = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
-    GPX_HDW_STATUS_BIT_MASK                         = (int)0x03000000,
+    GPX_HDW_STATUS_BIT_MASK                             = (int)0x03000000,
 
     /** Temperature outside spec'd operating range */
-    GPX_HDW_STATUS_ERR_TEMPERATURE                  = (int)0x04000000,
+    GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
 
     /** Fault reset cause */
-    GPX_HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
+    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE              = (int)0x10000000,
     /** Reset from Watchdog */
-    GPX_HDW_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
+    GPX_HDW_STATUS_FAULT_RESET_WATCHDOG                 = (int)0x20000000,
     /** Reset from Software */
-    GPX_HDW_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
+    GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x30000000,
     /** Reset from Hardware (NRST pin low) */
-    GPX_HDW_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+    GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
 
     /** Critical System Fault - CPU error */
-    GPX_HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+    GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
 
 typedef enum {
