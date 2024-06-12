@@ -414,7 +414,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
 #define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
  
-    GPX_HDW_STATUS_GNSS1_FAULT_FLAG                     = (int)0x00000080,
+    GPX_HDW_STATUS_FAULT_GNSS1_INIT                     = (int)0x00000080,
     GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
 
     /** GNSS 2 reset required count */
@@ -422,7 +422,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
 #define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
 
-    GPX_HDW_STATUS_GNSS2_FAULT_FLAG                     = (int)0x00000800,
+    GPX_HDW_STATUS_FAULT_GNSS2_INIT                     = (int)0x00000800,
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
 
     /** GNSS is faulting firmware update REQUIRED */
@@ -1463,7 +1463,9 @@ enum eGenFaultCodes
     GFC_INS_STATE_ORUN_ALT				= 0x00000004,
     /*! Unhandled interrupt */
     GFC_UNHANDLED_INTERRUPT				= 0x00000010,
-    /*! GNSS Tx Limited */
+    /*! GNSS system runtime fault */
+    GFC_GNSS_SYS_FAULT					= 0x00000020,
+    /*! GNSS Tx limited */
     GFC_GNSS_TX_LIMITED				    = 0x00000040,
     /*! GNSS Rx overrun */
     GFC_GNSS_RX_OVERRUN			        = 0x00000080,
@@ -1473,10 +1475,10 @@ enum eGenFaultCodes
     GFC_INIT_SPI						= 0x00000200,
     /*! Fault: SPI configuration  */
     GFC_CONFIG_SPI						= 0x00000400,
-    /*! Fault: GPS1 init  */
-    GFC_INIT_GPS1						= 0x00000800,
-    /*! Fault: GPS2 init  */
-    GFC_INIT_GPS2                       = 0x00001000,
+    /*! Fault: GNSS1 init  */
+    GFC_GNSS1_INIT						= 0x00000800,
+    /*! Fault: GNSS2 init  */
+    GFC_GNSS2_INIT						= 0x00001000,
     /*! Flash failed to load valid values */
     GFC_FLASH_INVALID_VALUES			= 0x00002000,
     /*! Flash checksum failure */
@@ -1486,7 +1488,7 @@ enum eGenFaultCodes
     /*! System Fault: general */
     GFC_SYS_FAULT_GENERAL				= 0x00010000,
     /*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
-    GFC_SYS_FAULT_CRITICAL			    = 0x00020000,
+    GFC_SYS_FAULT_CRITICAL				= 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
     /*! Fault: IMU initialization */
