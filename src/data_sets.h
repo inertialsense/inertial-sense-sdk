@@ -430,7 +430,7 @@ enum eGPXHdwStatusFlags
 
     /** System Reset is Required for proper function */
     GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
-    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
     GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
 
     /** Communications Tx buffer limited */
@@ -4276,20 +4276,6 @@ enum eGpxStatus
 
     /** Reserved */
     GPX_STATUS_RESERVED_1                       = (int)0x01000000,    
-
-    /** Fault reset cause */
-    GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
-    /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
-    /** Reset from Watchdog */
-    GPX_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
-    /** Reset from Software */
-    GPX_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
-    /** Reset from Hardware (NRST pin low) */
-    GPX_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
-
-    /** Critical System Fault - CPU error */
-    GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
 typedef enum {
@@ -4740,7 +4726,7 @@ typedef struct
 
 /**
 * (DID_SYS_FAULT) System Fault Information 
-* NOTE: If you modify these, please update crash_info_special_values in IS-src/python/src/ci_hdw/data_sets.py */
+*/
 #define SYS_FAULT_STATUS_HARDWARE_RESET                 0x00000000
 #define SYS_FAULT_STATUS_USER_RESET                     0x00000001
 #define SYS_FAULT_STATUS_ENABLE_BOOTLOADER              0x00000002
