@@ -2200,13 +2200,22 @@ enum eGPXBit_results{
 };
 
 enum eGPXBit_CMD{
-    GPXBit_CMD_NONE                         = 0,
-    GPXBit_CMD_START_MANUF_TEST             = 1,
-    GPXBit_CMD_ALERT_UART_TEST_STR          = 2,
-    GPXBit_CMD_ALERT_PPS1_RX                = 3,
-    GPXBit_CMD_ALERT_PPS2_RX                = 4,
-    GPXBit_CMD_REPORT                       = 5,
-    GPXBit_CMD_STOP                         = 6,
+    GPXBit_CMD_NONE                                     = 0,
+    GPXBit_CMD_START_MANUF_TEST                         = 1,
+    GPXBit_CMD_ALERT_UART_TEST_STR                      = 2,
+    GPXBit_CMD_ALERT_PPS1_RX                            = 3,
+    GPXBit_CMD_ALERT_PPS2_RX                            = 4,
+    GPXBit_CMD_REPORT                                   = 5,
+    GPXBit_CMD_STOP                                     = 6,
+
+    GPXBit_CMD_START_SIM_GPS_NOISE                      = 7,
+    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,     // Send duplicate message
+    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCH_DOG_COMM_TASK      = 11,     // Cause watch dog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCH_DOG_RTK_TASK       = 12,     // Cause watch dog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,     // Cause hard fault
+    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,     // Cause malloc failure
 };
 
 enum eGPXBit_test_mode{
@@ -2220,8 +2229,6 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
     GPXBit_test_mode_SYS_FAULT_WATCH_DOG_COMM_TASK      = (int)104,     // Cause watch dog reset by stalling COMM task
     GPXBit_test_mode_SYS_FAULT_WATCH_DOG_RTK_TASK       = (int)105,     // Cause watch dog reset by stalling RTK task
-    GPXBit_test_mode_SYS_FAULT_HARD_FAULT               = (int)106,     // Cause hard fault
-    GPXBit_test_mode_SYS_FAULT_MALLOC                   = (int)107,     // Cause malloc failure
 };
 
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
