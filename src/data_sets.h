@@ -4804,16 +4804,16 @@ typedef struct
 typedef struct
 {
     /** Prioity mask (see eEventPriority) */
-    uint8_t priorityMask;
+    uint8_t priorityLevel;
       
     /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
-    uint32_t idMask;
+    uint32_t msgTypeIdMask;
 } did_event_mask_t;
 
 /** Sent in the data field of DID_EVENT for eEventProtocol:
- *  EVENT_PROTOCOL_ENA_GNSS1_FILTER,
- *  EVENT_PROTOCOL_ENA_GNSS2_FILTER,
- *  EVENT_PROTOCOL_ENA_FILTER 
+ *  EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER,
+ *  EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER,
+ *  EVENT_MSG_TYPE_ID_ENA_FILTER 
 */
 typedef struct
 {
@@ -4824,32 +4824,35 @@ typedef struct
 
 } did_event_filter_t;
 
-enum eEventProtocol
+enum eEventMsgTypeID
 {
-    EVENT_PROTOCOL_RAW              = 1,
-    EVENT_PROTOCOL_ASCII            = 2,
-    EVENT_PROTOCOL_RTMC3_RCVR1      = 11,
-    EVENT_PROTOCOL_RTMC3_RCVR2      = 12,
-    EVENT_PROTOCOL_RTMC3_EXT        = 13,
-    EVENT_PROTOCOL_SONY_BIN_RCVR1   = 14,
-    EVENT_PROTOCOL_SONY_BIN_RCVR2   = 15,
+    EVENT_MSG_TYPE_ID_RAW               = 1,
+    EVENT_MSG_TYPE_ID_ASCII             = 2,
+    EVENT_MSG_TYPE_ID_RTMC3_RCVR1       = 11,
+    EVENT_MSG_TYPE_ID_RTMC3_RCVR2       = 12,
+    EVENT_MSG_TYPE_ID_RTMC3_EXT         = 13,
+    EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
+    EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
 
-    EVENT_PROTOCOL_FILTER_RESPONSE  = (uint16_t)-4,
-    EVENT_PROTOCOL_ENA_GNSS1_FILTER = (uint16_t)-3,
-    EVENT_PROTOCOL_ENA_GNSS2_FILTER = (uint16_t)-2,
-    EVENT_PROTOCOL_ENA_FILTER       = (uint16_t)-1,
+    EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
+    EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
+    EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER  = (uint16_t)-2,
+    EVENT_MSG_TYPE_ID_ENA_FILTER        = (uint16_t)-1,
 };
 
 enum eEventPriority
 {
-    EVENT_PRIORITY_NONE             = 0,
-    EVENT_PRIORITY_DBG_VERBOSE      = 1,
-    EVENT_PRIORITY_DBG              = 2,
-    EVENT_PRIORITY_INFO_VERBOSE     = 3,
-    EVENT_PRIORITY_INFO             = 4,
-    EVENT_PRIORITY_WARNING          = 5,
-    EVENT_PRIORITY_ERR              = 6,
-    EVENT_PRIORITY_FAULT            = 7,
+    EVENT_PRIORITY_FAULT            = 0,
+    EVENT_PRIORITY_ERR              = 1,
+    EVENT_PRIORITY_WARNING          = 2,
+    EVENT_PRIORITY_INFO             = 3,
+    EVENT_PRIORITY_INFO_VERBOSE     = 4,
+    EVENT_PRIORITY_DBG              = 5,
+    EVENT_PRIORITY_DBG_VERBOSE      = 6, 
+    EVENT_PRIORITY_TRIVIAL          = 7,
+    
+    // None should be used on all messages that should only be broadcast based on ID
+    EVENT_PRIORITY_NONE             = -1,
 };
 
 typedef struct
@@ -4867,8 +4870,8 @@ typedef struct
     uint8_t         priority;
     uint8_t         res8;
 
-    /** see eEventProtocol */
-    uint16_t        protocol;
+    /** see eEventMsgTypeID */
+    uint16_t        msgTypeID;
     uint16_t        length;
     
     uint8_t data[1];
