@@ -37,7 +37,11 @@ cDeviceLog::cDeviceLog() {
 
 cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
     if (dev == nullptr)
+#if PLATFORM_IS_EMBEDDED
+		while(1){}
+#else
         throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
+#endif
     m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
     m_devSerialNo = dev->devInfo.serialNumber;
     m_logStats.Clear();
@@ -243,6 +247,19 @@ bool cDeviceLog::OpenNextReadFile()
 
 string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, const char* suffix)
 {
+#if PLATFORM_IS_EMBEDDED
+	char filename[200];
+    SNPRINTF(filename, sizeof(filename), "%s/%s%d_%s_%04d%s%s", 
+        m_directory.c_str(),
+        IS_LOG_FILE_PREFIX, 
+        (int)serialNumber, 
+        m_timeStamp.c_str(), 
+        (int)(fileCount % 10000), 
+        (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str()), 
+        LogFileExtention().c_str()
+	);
+	return filename;
+#else
     return utils::string_format("%s/%s%d_%s_%04d%s%s",
         m_directory.c_str(),
         IS_LOG_FILE_PREFIX, 
@@ -252,6 +269,7 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
         (suffix == NULL || *suffix == 0 ? "" : (string("_") + suffix).c_str()), 
         LogFileExtention().c_str()
     );
+#endif
 }
 
 ISDevice* cDeviceLog::Device() {

@@ -182,7 +182,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     c->rxErrorState = 1;
 }
 
-void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
+static void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
     is_comm_parser_t *p = &(c->parser);
     p->state = 1;

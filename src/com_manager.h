@@ -128,7 +128,7 @@ typedef struct
 	// Comm instance data buffer
 	uint8_t comm_buffer[PKT_BUF_SIZE];
 
-#if ENABLE_PACKET_CONTINUATION
+#ifdef ENABLE_PACKET_CONTINUATION
 
 	// Continuation data for packets
 	p_data_t con;

@@ -462,7 +462,7 @@ namespace ISFileManager {
     std::string CurrentWorkingDirectory()
     {
         char curdir[256] = { 0 };
-        if (_GETCWD(curdir, sizeof(curdir)) != nullptr)
+        if (_GETCWD(curdir, sizeof(curdir)) != 0)
         {
             return std::string(curdir);
         }

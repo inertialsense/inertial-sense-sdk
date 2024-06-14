@@ -24,6 +24,10 @@ build_footer $?
 clean_directory "SDK_Examples"          ../ExampleProjects/build
 clean_directory "SDK_Unit_Tests"        ../tests/build
 
+build_header "EVB-2"
+./build_firmware_evb2.sh --clean
+build_footer $?
+
 
 ###############################################################################
 #  Summary

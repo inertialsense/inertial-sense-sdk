@@ -134,7 +134,7 @@ extern "C" {
     #define FREE(m) free(m)
 #endif 
 
-#if __ZEPHYR__
+#ifdef __ZEPHYR__
     // #define SNPRINTF snprintfcb
     #define SNPRINTF snprintf
     #define VSNPRINTF vsnprintf
@@ -178,7 +178,7 @@ extern "C" {
     #endif
 #endif // defined(_MSC_VER)
 
-#if __ZEPHYR__
+#ifdef __ZEPHYR__
     #include <zephyr/irq.h>
     #define BEGIN_CRITICAL_SECTION  irq_lock();
     #define END_CRITICAL_SECTION    irq_unlock(0);

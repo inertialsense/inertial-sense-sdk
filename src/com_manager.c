@@ -181,7 +181,7 @@ int initComManagerInstanceInternal
         com_manager_port_t *port = &(cmInstance->ports[i]);
         is_comm_init(&(port->comm), port->comm_buffer, MEMBERSIZE(com_manager_port_t, comm_buffer));
                     
-#if ENABLE_PACKET_CONTINUATION			
+#ifdef ENABLE_PACKET_CONTINUATION			
         // Packet data continuation
         memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
 #endif
@@ -622,7 +622,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
             data.hdr.size = _MIN(data.hdr.size, (uint8_t)size);
         }
 
-#if ENABLE_PACKET_CONTINUATION
+#ifdef ENABLE_PACKET_CONTINUATION
 
         // Consolidate datasets that were broken-up across multiple packets
         p_data_t* con = &cmInstance->ports[pHandle].con;
@@ -687,7 +687,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
             cmInstance->pstRxFnc(pHandle, &data);
         }
 
-#if ENABLE_PACKET_CONTINUATION
+#ifdef ENABLE_PACKET_CONTINUATION
 
         // Clear dataset consolidation
         con->hdr.id = con->hdr.size = con->hdr.offset = 0;

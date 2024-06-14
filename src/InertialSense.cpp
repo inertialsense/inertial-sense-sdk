@@ -1024,11 +1024,20 @@ void InertialSense::ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize)
 
     ISDevice& device = m_comManagerState.devices[pHandle];
 
-    switch (getNmeaMsgId(msg, msgSize))
-    {
+	switch (getNmeaMsgId(msg, msgSize))
+	{
 	case NMEA_MSG_ID_INFO:
-        {	// IMX device Info
-			nmea_parse_info(device.devInfo, (const char*)msg, msgSize);			
+		{	// Device Info
+			dev_info_t info;
+			nmea_parse_info(info, (const char*)msg, msgSize);
+			if (info.hardwareType == IS_HARDWARE_TYPE_EVB)
+			{
+				device.evbDevInfo = info;
+			}
+			else
+			{
+				device.devInfo = info;
+			}
 		}
 		break;
 	}

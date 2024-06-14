@@ -51,6 +51,11 @@ eImageSignature devInfoToValidSignatures(dev_info_t *devInfo)
         valid_signatures |= IS_IMAGE_SIGN_UINS_3_16K | IS_IMAGE_SIGN_UINS_3_24K;
         valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
     }
+    else if (devInfo->hardwareType == IS_HARDWARE_TYPE_EVB && devInfo->hardwareVer[0] == 2)
+    {   /** EVB-2 */
+        valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_EVB_2_24K;
+        valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+    }
 
     return (eImageSignature)valid_signatures;
 }
@@ -63,7 +68,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     is_comm_instance_t comm;
     uint8_t buffer[2048];
     is_comm_init(&comm, buffer, sizeof(buffer));
-    int messageSize, n, i;
+    int n, i;
 
     // clear the Rx serial buffer
     n = is_comm_free(&comm);
@@ -85,12 +90,6 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
             //serialPortClose(m_port);
             return IS_IMAGE_SIGN_NONE;
         }
-    }
-    messageSize = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_EVB_DEV_INFO, 0, 0, 0);
-    if (messageSize != serialPortWrite(m_port, buffer, messageSize))
-    {
-        //serialPortClose(m_port);
-        return IS_IMAGE_SIGN_NONE;
     }
 
     protocol_type_t ptype;
@@ -136,10 +135,25 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                     {	// IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
-                        memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
-                        m_sn = devInfo.serialNumber;
-                        valid_signatures = devInfoToValidSignatures(&devInfo);
-                        return (eImageSignature)valid_signatures;
+                        if (devInfo.hardwareType == IS_HARDWARE_TYPE_EVB)
+                        {   // EVB2
+                            memcpy(m_app.evb_version, devInfo.hardwareVer, 4);
+                            if (m_isEVB)
+                            {
+                                valid_signatures = devInfoToValidSignatures(&devInfo);
+                                return (eImageSignature)valid_signatures;
+                            }
+                        }
+                        else
+                        {   // IMX
+                            memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
+                            m_sn = devInfo.serialNumber;
+                            if (!m_isEVB)
+                            {
+                                valid_signatures = devInfoToValidSignatures(&devInfo);
+                                return (eImageSignature)valid_signatures;
+                            }
+                        }
                     }
                     break;
                 }
