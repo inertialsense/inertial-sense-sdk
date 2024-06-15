@@ -349,7 +349,7 @@ enum eHdwStatusFlags
     HDW_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
     HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
-    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+    /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, tipically 150-250 ms. */
     HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
 
     /** Communications Tx buffer limited */
@@ -1003,6 +1003,7 @@ enum eSatSvGnssId
     SAT_SV_GNSS_ID_GLO          = 6,	// GLONASS (Russia)	
     SAT_SV_GNSS_ID_IRN          = 7,	// IRNSS / NavIC (India)	
     SAT_SV_GNSS_ID_IME          = 8,	// IMES (Japan's Indoor Messaging System)
+    SAT_SV_GNSS_ID_COUNT        = 9,	// Number of constilation
 };
 
 /** GPS Sat Status */
@@ -1147,6 +1148,7 @@ typedef struct PACKED
     /** Satellite signal list */
 	gps_sig_sv_t			sig[MAX_NUM_SAT_SIGNALS];	
 } gps_sig_t;
+
 
 typedef uint8_t         gps_extension_ver_t[30];
 #define GPS_VER_NUM_EXTENSIONS	6
@@ -1774,7 +1776,16 @@ typedef struct PACKED
     /** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
+#define NMEA_GNGSV_FREQ_BAND1_BIT    (0x01)
+#define NMEA_GNGSV_FREQ_BAND2_BIT    (0x01 << 1)
+#define NMEA_GNGSV_FREQ_BAND3_BIT    (0x01 << 2)
+#define NMEA_GNGSV_FREQ_5_BIT    (0x01 << 3)
 
+#define NMEA_GNGSV_GPS_OFFSET    (SAT_SV_GNSS_ID_GPS << 4)
+#define NMEA_GNGSV_GAL_OFFSET    (SAT_SV_GNSS_ID_GAL << 4)
+#define NMEA_GNGSV_BEI_OFFSET    (SAT_SV_GNSS_ID_BEI << 4)
+#define NMEA_GNGSV_QZS_OFFSET    (SAT_SV_GNSS_ID_QZS << 4)
+#define NMEA_GNGSV_GLO_OFFSET    (SAT_SV_GNSS_ID_GLO << 4)
 
 enum eNmeaAsciiMsgId
 {
@@ -1807,6 +1818,85 @@ enum eNmeaAsciiMsgId
     NMEA_MSG_ID_SRST,         // "SRTS" - Software reset
     NMEA_MSG_ID_STPB,         // "STPB" - Stop broadcasts on all ports
     NMEA_MSG_ID_STPC,         // "STPC" - Stop broadcasts on current port
+
+    // Special case messages for each supported base message those with ID less than NMEA_MSG_ID_COUNT. 
+    // Each base message get a 256 range of ID's for their special cases. Example for NMEA_MSG_ID_GxGSV:
+    // NMEA_GNGSV_START = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
+    NMEA_MSG_ID_SPECIAL_CASE_START = 256,
+
+    // GxGSV special cases
+    // GNGSV - All constellations
+    NMEA_GNGSV_START    = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,
+    NMEA_GNGSV_0        = NMEA_GNGSV_START, // Clear all constellations and frequencies
+    NMEA_GNGSV_1        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_2        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),
+    NMEA_GNGSV_2_1      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_3        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT),
+    NMEA_GNGSV_3_1      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_3_2      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),
+    NMEA_GNGSV_3_2_1    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_5        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT),
+    NMEA_GNGSV_5_1      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_5_2      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),
+    NMEA_GNGSV_5_2_1    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_5_3      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT),
+    NMEA_GNGSV_5_3_1    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV_5_3_2    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),
+    NMEA_GNGSV_5_3_2_1  = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
+    NMEA_GNGSV          = NMEA_GNGSV_5_3_2_1, // Enable all constellations and frequencys
+
+    // GPGSV - GPS
+    NMEA_GPGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_GPS_OFFSET ), // Disable all GPS frequencys
+    NMEA_GPGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV_5        = (NMEA_GNGSV_5 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV_5_1      = (NMEA_GNGSV_5_1 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV_5_2      = (NMEA_GNGSV_5_2 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV_5_2_1    = (NMEA_GNGSV_5_2_1 + NMEA_GNGSV_GPS_OFFSET),
+    NMEA_GPGSV          = (NMEA_GNGSV + NMEA_GNGSV_GPS_OFFSET ), // Enable all GPS frequencys
+
+    // GAGSV - Galileo
+    NMEA_GAGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_GAL_OFFSET), // Disable all Galileo frequencys
+    NMEA_GAGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_GAL_OFFSET),
+    NMEA_GAGSV_5        = (NMEA_GNGSV_5 + NMEA_GNGSV_GAL_OFFSET),
+    NMEA_GAGSV_5_1      = (NMEA_GNGSV_5_1 + NMEA_GNGSV_GAL_OFFSET),
+    NMEA_GAGSV          = (NMEA_GNGSV + NMEA_GNGSV_GAL_OFFSET), // Enable all Galileo frequencys
+
+    // GBGSV - Beido
+    NMEA_GBGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_BEI_OFFSET), // Disable all Beidou frequencys
+    NMEA_GBGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV_3        = (NMEA_GNGSV_3 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV_3_1      = (NMEA_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV_3_2      = (NMEA_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV_3_2_1    = (NMEA_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),
+    NMEA_GBGSV          = (NMEA_GNGSV + NMEA_GNGSV_BEI_OFFSET), // Enable all Beidou frequencys
+
+    // GQGSV - QZSS
+    NMEA_GQGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_QZS_OFFSET), // Disable all QZSS frequencys
+    NMEA_GQGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV_5        = (NMEA_GNGSV_5 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV_5_1      = (NMEA_GNGSV_5_1 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV_5_2      = (NMEA_GNGSV_5_2 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV_5_2_1    = (NMEA_GNGSV_5_2_1 + NMEA_GNGSV_QZS_OFFSET),
+    NMEA_GQGSV          = (NMEA_GNGSV + NMEA_GNGSV_QZS_OFFSET), // Enable all QZSS frequencys
+
+    // GLGSV - Glonass
+    NMEA_GLGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_GLO_OFFSET), // Disable all Glonass frequencys
+    NMEA_GLGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV_3        = (NMEA_GNGSV_3 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV_3_1      = (NMEA_GNGSV_3_1 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV_3_2      = (NMEA_GNGSV_3_2 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV_3_2_1    = (NMEA_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),
+    NMEA_GLGSV          = (NMEA_GNGSV + NMEA_GNGSV_GLO_OFFSET), // Enable all Glonass frequencys
+    
+    NMEA_GNGSV_END      = NMEA_GLGSV,
 }; 
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
@@ -1834,6 +1924,7 @@ typedef struct PACKED
 
     /** NMEA period multiple of above ISB period multiple indexed by NMEA_MSG_ID... */
     uint8_t                 nmeaPeriod[NMEA_MSG_ID_COUNT];
+
 }rmcNmea_t;
 
 /** Realtime message controller internal (RMCI). */
@@ -2050,29 +2141,35 @@ typedef struct PACKED
     float                   bias_cal[3];
 } inl2_mag_obs_info_t;
 
+/** Built-in Test: Input Command */
+enum eBitCommand
+{
+    BIT_CMD_NONE                                    = (int)0,       // No command
+    BIT_CMD_OFF                                     = (int)1,       // Stop built-in test
+    BIT_CMD_FULL_STATIONARY                         = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
+    BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
+    BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
+    BIT_CMD_RESERVED_2                              = (int)5,   
+};
+
 /** Built-in Test: State */
 enum eBitState
 {
-    BIT_STATE_OFF					                    = (int)0,
-    BIT_STATE_DONE				                        = (int)1,       // Test is finished
-    BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
-    BIT_STATE_CMD_BASIC_MOVING                          = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY         = (int)4,       // Same as BIT_STATE_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
-    BIT_STATE_RESERVED_2                                = (int)5,   
-    BIT_STATE_RUNNING                                   = (int)6,   
-    BIT_STATE_FINISHING                                 = (int)7,	    // Computing results
-    BIT_STATE_CMD_OFF                                   = (int)8,       // Stop built-in test
+    BIT_STATE_OFF					                = (int)0,
+    BIT_STATE_DONE				                    = (int)1,       // Test is finished
+    BIT_STATE_RUNNING                               = (int)6,
+    BIT_STATE_FINISHING                             = (int)7,	    // Computing results
 };
 
 /** Built-in Test: Test Mode */
 enum eBitTestMode
 {
-    BIT_TEST_MODE_FAILED                                = (int)98,      // Test mode ran and failed
-    BIT_TEST_MODE_DONE                                  = (int)99,      // Test mode ran and completed
-    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100,     // Simulate CNO noise
-    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101,     // Send duplicate message 
-    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW             = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW             = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    BIT_TEST_MODE_FAILED                            = (int)98,      // Test mode ran and failed
+    BIT_TEST_MODE_DONE                              = (int)99,      // Test mode ran and completed
+    BIT_TEST_MODE_SIM_GPS_NOISE                     = (int)100,     // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT             = (int)101,     // Send duplicate message 
+    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2128,11 +2225,20 @@ enum eCalBitStatusFlags
 };
 
 
-/** (DID_BIT) Built-in self-test parameters */
+/** (DID_BIT) Built-in self-test (BIT) parameters */
 typedef struct PACKED
 {
-    /** Built-in self-test state (see eBitState) */
-    uint32_t                state;
+    /** BIT input command (see eBitCommand).  Ignored when zero.  */
+    uint8_t                 command;
+
+    /** BIT last input command (see eBitCommand) */
+    uint8_t                 lastCommand;
+
+    /** BIT current state (see eBitState) */
+    uint8_t                 state;
+
+    /** Unused */
+    uint8_t                 reserved;
 
     /** Hardware BIT status (see eHdwBitStatusFlags) */
     uint32_t                hdwBitStatus;
@@ -3322,10 +3428,17 @@ typedef struct PACKED
     uint8_t obs_count_bas;
     uint8_t obs_count_rov;
 
-    uint8_t obs_pairs_filtered;
-    uint8_t obs_pairs_used;
+    uint8_t obs_pairs_filtered;  // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
+    uint8_t obs_pairs_used;      // number of observation pairs (all frequencies) used to compute the integer (fixed) solution
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
+
+    uint8_t obs_rover_avail; // nu - total number of satellites with observations to rover in relpos() before selsat()
+    uint8_t obs_base_avail;  // nr - total number of satellites with observations to base in relpos() before selsat()
+    uint8_t obs_eph_avail;   // number of satellites with ephemeris available (min is 0, max is nu)
+    uint8_t obs_unhealthy;   // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
+
+    uint8_t reserved[4];
 } rtk_debug_t;
 
 POP_PACK
@@ -4687,27 +4800,59 @@ typedef struct
         
 } port_monitor_t;
 
-enum eEventProtocol
+/** Stores data for the event mask */
+typedef struct
 {
-    EVENT_PROTOCOL_RAW              = 1,
-    EVENT_PROTOCOL_ASCII            = 2,
-    EVENT_PROTOCOL_RTMC3_RCVR1      = 11,
-    EVENT_PROTOCOL_RTMC3_RCVR2      = 12,
-    EVENT_PROTOCOL_RTMC3_EXT        = 13,
-    EVENT_PROTOCOL_SONY_BIN_RCVR1   = 14,
-    EVENT_PROTOCOL_SONY_BIN_RCVR2   = 15,
+    /** Prioity mask (see eEventPriority) */
+    uint8_t priorityLevel;
+      
+    /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
+    uint32_t msgTypeIdMask;
+} did_event_mask_t;
+
+/** Sent in the data field of DID_EVENT for eEventProtocol:
+ *  EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER,
+ *  EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER,
+ *  EVENT_MSG_TYPE_ID_ENA_FILTER 
+*/
+typedef struct
+{
+    /**target port mask 0x80 for current port other port (0x01 << TARGET_PORT) where target port is */
+    uint8_t portMask;
+
+    did_event_mask_t eventMask;
+
+} did_event_filter_t;
+
+enum eEventMsgTypeID
+{
+    EVENT_MSG_TYPE_ID_RAW               = 1,
+    EVENT_MSG_TYPE_ID_ASCII             = 2,
+    EVENT_MSG_TYPE_ID_RTMC3_RCVR1       = 11,
+    EVENT_MSG_TYPE_ID_RTMC3_RCVR2       = 12,
+    EVENT_MSG_TYPE_ID_RTMC3_EXT         = 13,
+    EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
+    EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
+
+    EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
+    EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
+    EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER  = (uint16_t)-2,
+    EVENT_MSG_TYPE_ID_ENA_FILTER        = (uint16_t)-1,
 };
 
 enum eEventPriority
 {
-    EVENT_PRIORITY_NONE             = 0,
-    EVENT_PRIORITY_DBG_VERBOSE      = 1,
-    EVENT_PRIORITY_DBG              = 2,
-    EVENT_PRIORITY_INFO_VERBOSE     = 3,
-    EVENT_PRIORITY_INFO             = 4,
-    EVENT_PRIORITY_WARNING          = 5,
-    EVENT_PRIORITY_ERR              = 6,
-    EVENT_PRIORITY_FAULT            = 7,
+    EVENT_PRIORITY_FAULT            = 0,
+    EVENT_PRIORITY_ERR              = 1,
+    EVENT_PRIORITY_WARNING          = 2,
+    EVENT_PRIORITY_INFO             = 3,
+    EVENT_PRIORITY_INFO_VERBOSE     = 4,
+    EVENT_PRIORITY_DBG              = 5,
+    EVENT_PRIORITY_DBG_VERBOSE      = 6, 
+    EVENT_PRIORITY_TRIVIAL          = 7,
+    
+    // None should be used on all messages that should only be broadcast based on ID
+    EVENT_PRIORITY_NONE             = -1,
 };
 
 typedef struct
@@ -4721,10 +4866,12 @@ typedef struct
     /** Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see "Product Hardware ID") */
     uint16_t        senderHdwId;
     
+    /** see eEventPriority */
     uint8_t         priority;
     uint8_t         res8;
 
-    uint16_t        protocol;
+    /** see eEventMsgTypeID */
+    uint16_t        msgTypeID;
     uint16_t        length;
     
     uint8_t data[1];
