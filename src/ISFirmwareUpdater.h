@@ -52,9 +52,10 @@ public:
     };
 
     // const ISDevice& device;
-    int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
-    serial_port_t& serialPort;    //! the serial_port_struct associated with pHandle
-    const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
+    ISDevice &device;                       //! a reference to the ISDevice associated with this updater (the root device which the SDK uses to communicate with the target device).
+    // int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
+    // serial_port_t& serialPort;              //! the serial_port_struct associated with pHandle
+    // const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
 
     /**
@@ -62,9 +63,9 @@ public:
      * @param portHandle handle to the port (typically serial) to which the device is connected
      * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(int portHandle, serial_port_t& port, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), serialPort(port), devInfo(devInfo) { };
+    // ISFirmwareUpdater(int portHandle, serial_port_t& port, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), serialPort(port), devInfo(devInfo) { };
 
-    ISFirmwareUpdater(ISDevice device) : FirmwareUpdateHost(), pHandle(device.portHandle), serialPort(device.serialPort), devInfo(&device.devInfo) { };
+    ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), device(device) { };
 
     ~ISFirmwareUpdater() override {};
 
@@ -224,6 +225,8 @@ private:
     fwUpdate::pfnProgressCb pfnUploadProgress_cb = nullptr;
     fwUpdate::pfnProgressCb pfnVerifyProgress_cb = nullptr;
     fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
+
+    std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
 
     std::vector<std::string> commands;
     std::string activeCommand;          //! the name (without parameters) of the currently executing command

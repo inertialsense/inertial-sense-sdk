@@ -448,6 +448,10 @@ bool InertialSense::Update()
                         if (status < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
+                            if (status == fwUpdate::ERR_TIMEOUT) {
+                                delete device.fwUpdate.fwUpdater;
+                                device.fwUpdate.fwUpdater = nullptr;
+                            }
                         }
 
 #ifdef DEBUG_CONSOLELOGGING
@@ -1122,7 +1126,7 @@ is_operation_result InertialSense::updateFirmware(
     if (OpenSerialPorts(comPort.c_str(), baudRate)) {
         for (int i = 0; i < (int) m_comManagerState.devices.size(); i++) {
             ISDevice& device = m_comManagerState.devices[i];
-            device.fwUpdate.fwUpdater = new ISFirmwareUpdater(i, m_comManagerState.devices[i].serialPort, &m_comManagerState.devices[i].devInfo);
+            device.fwUpdate.fwUpdater = new ISFirmwareUpdater(device);
             device.fwUpdate.fwUpdater->setTarget(targetDevice);
 
             // TODO: Implement maybe
@@ -1528,7 +1532,7 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             }
         }
 
-        if (timeoutOccurred) {
+        if (timeoutOccurred && !deadPorts.empty()) {
             fprintf(stderr, "Timeout waiting for response from ports: [");
             for (auto portItr = deadPorts.begin(); portItr != deadPorts.end(); portItr++) {
                 fprintf(stderr, "%s%s", (portItr == deadPorts.begin() ? "" : ", "), (*portItr)->port);

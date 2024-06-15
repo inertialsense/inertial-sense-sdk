@@ -141,8 +141,9 @@ static void probe_serial8250_comports(vector<string>& comList, vector<string> co
  * This does not open, access, or configure the devices, nor does it make any guarantee about the availability
  * of the ports (only that the OS has registered/enumerated it).
  * @param ports a reference to a vector of strings, which will be populated with available serial ports
+ * @return the number of ports found on the host
  */
-void cISSerialPort::GetComPorts(vector<string>& ports)
+int cISSerialPort::GetComPorts(vector<string>& ports)
 {
 	ports.clear();
 
@@ -185,8 +186,10 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
                 register_comport(ports, comList8250, devicedir);
             }
             free(namelist[n]);
+            namelist[n] = nullptr;
         }
         free(namelist);
+        namelist = nullptr;
     }
 
     // Only non-serial8250 has been added to comList without any further testing
@@ -202,6 +205,7 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
         cout << ports[i] << endl;
     }
 #endif
+    return ports.size();
 }
 
 std::string cISSerialPort::ConnectionInfo()

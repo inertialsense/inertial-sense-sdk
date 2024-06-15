@@ -45,19 +45,16 @@ public:
      * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
      * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
      */
-    ISBFirmwareUpdater(fwUpdate::target_t target, serial_port_t* port, uint32_t serialNo = UINT32_MAX) : FirmwareUpdateDevice(target), m_port(port) {
+    ISBFirmwareUpdater(fwUpdate::target_t target, ISDevice& device, std::deque<uint8_t>& toHost, uint32_t serialNo = UINT32_MAX) : FirmwareUpdateDevice(target), device(device), toHost(toHost) {
         // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
         // as soon as this is instantiated, we should attempt to target and boot the device into ISB mode.
-        rebootToISB(5, 0, false);
+        // rebootToISB(5, 0, false);
     }
     ~ISBFirmwareUpdater() { };
 
 
     // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
     bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
-
-    // called by the Port receiver when we've received and parse a DID_FIRMWARE_UPDATE message; this handles parsing the internal payload.
-    bool fwUpdate_processMessage(int rxPort, const uint8_t* buffer, int buf_len);
 
     // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
     /**
@@ -169,7 +166,8 @@ private:
         IS_IMAGE_SIGN_ERROR = 0x80000000,
     } eImageSignature;
 
-    serial_port_t* m_port = nullptr;
+    ISDevice &device;
+    // serial_port_t* m_port = nullptr;
 
     uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
     uint16_t hardwareId;                // Inertial Sense Hardware Type (IMX, GPX, etc)
@@ -192,17 +190,13 @@ private:
     static std::vector<uint32_t> rst_serial_list;
     static std::mutex rst_serial_list_mutex;
 
-    // static std::mutex dfuMutex;
-    // DFUDevice *curDevice;
-    std::deque<uint8_t> toDevice;         //! a data stream that is input from the host (host tx) and output to the device (device rx)
-    std::deque<uint8_t> toHost;           //! a data stream that is input from the device (device tx) and output to the host (host rx)
-
     fwUpdate::pfnProgressCb progressCb;
     fwUpdate::pfnStatusCb statusCb;
 
     fwUpdate::target_t getTargetType();
 
     is_operation_result rebootToISB(uint8_t major, char minor, bool force);
+    is_operation_result rebootToAPP();
     is_operation_result sync();
     eImageSignature check_is_compatible();
     int checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum);
@@ -210,6 +204,8 @@ private:
 
     ByteBuffer* imgBuffer = nullptr;
     ByteBufferStream* imgStream = nullptr;
+
+    std::deque<uint8_t>& toHost;
 };
 
 #endif //IS_ISB_FIRMWAREUPDATER_H

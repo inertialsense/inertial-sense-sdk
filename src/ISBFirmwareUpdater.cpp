@@ -39,31 +39,6 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
     return true;
 }
 
-/**
- * Not quite sure what to do here just yet, since this manages its out buffer space... we don't really
- * pass anything into here.  Basically, I can either ignore all the parameters, or I can parse the toDevice queue
- * prior to calling this function, and then just call this function...
- * @param rxPort
- * @param buffer
- * @param buf_len
- * @return
- */
-bool ISBFirmwareUpdater::fwUpdate_processMessage(int rxPort, const uint8_t* buffer, int buf_len) {
-
-    // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
-    const int tmpBuf_size = toDevice.size();
-    uint8_t* tmpBuf = new uint8_t[tmpBuf_size];
-    uint8_t* p = tmpBuf;
-    while (toDevice.size()) {
-        *p++ = toDevice.front();
-        toDevice.pop_front();
-    }
-
-    bool result = FirmwareUpdateDevice::fwUpdate_processMessage(p, tmpBuf_size);
-    delete [] tmpBuf;
-    return result;
-}
-
 // called internally to perform a system reset of various severity per reset_flags (HARD, SOFT, etc)
 int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUpdate::reset_flags_e reset_flags) {
 /*
@@ -81,26 +56,37 @@ int ISBFirmwareUpdater::fwUpdate_performReset(fwUpdate::target_t target_id, fwUp
 
 // called internally (by the receiving device) to populate the dev_info_t struct for the requested device
 bool ISBFirmwareUpdater::fwUpdate_queryVersionInfo(fwUpdate::target_t target_id, dev_info_t& dev_info) {
-/*
-    if (curDevice->getTargetType() == target_id) {
-        return curDevice->fillDeviceInfo(dev_info);
+    if ((device.serialPort.handle != nullptr) && (device.hdwId != 0)) {
+        dev_info = device.devInfo;
+        return true;
     }
-*/
     return false;
 }
 
 // this initializes the system to begin receiving firmware image chunks for the target device, image slot and image size
 fwUpdate::update_status_e ISBFirmwareUpdater::fwUpdate_startUpdate(const fwUpdate::payload_t& msg) {
     session_image_size = msg.data.req_update.file_size;
-    imgBuffer = new ByteBuffer(session_image_size);
-    imgStream = new ByteBufferStream(*imgBuffer);
-    return fwUpdate::READY;
+
+    if (device.hdwRunState == ISDevice::HDW_STATE_BOOTLOADER) {
+        if (check_is_compatible()) {
+            imgBuffer = new ByteBuffer(session_image_size);
+            imgStream = new ByteBufferStream(*imgBuffer);
+            return fwUpdate::READY;
+        }
+    } else if (device.hdwRunState == ISDevice::HDW_STATE_APP) {
+        rebootToISB(5, 0, false);
+    }
+    return fwUpdate::INITIALIZING;
 }
 
 // writes the indicated block of data (of len bytes) to the target and device-specific image slot, and with the specified offset
 fwUpdate::update_status_e  ISBFirmwareUpdater::fwUpdate_writeImageChunk(fwUpdate::target_t target_id, int slot_id, int offset, int len, uint8_t *data) {
     // we want write our data into a iostream that we'll also pass to the DFUDevice; it will help buffer our data
     imgBuffer->insert(offset, data, len);
+
+    // check if we have enough to write the next page...
+
+
     return fwUpdate::IN_PROGRESS;
 }
 
@@ -126,8 +112,8 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     uint8_t buf[14] = { 0 };
     int count = 0;
 
-    serialPortFlush(m_port);
-    serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
+    serialPortFlush(&device.serialPort);
+    serialPortRead(&device.serialPort, buf, sizeof(buf));    // empty Rx buffer
     sync();
 
     SLEEP_MS(100);
@@ -135,13 +121,13 @@ ISBFirmwareUpdater::eImageSignature ISBFirmwareUpdater::check_is_compatible()
     for (int retry=0;; retry++)
     {
         // Send command
-        serialPortFlush(m_port);
-        serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-        serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
+        serialPortFlush(&device.serialPort);
+        serialPortRead(&device.serialPort, buf, sizeof(buf));    // empty Rx buffer
+        serialPortWrite(&device.serialPort, (uint8_t*)":020000041000EA", 15);
 
         // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
 #define READ_DELAY_MS   500
-        count = serialPortReadTimeout(m_port, buf, 14, READ_DELAY_MS);
+        count = serialPortReadTimeout(&device.serialPort, buf, 14, READ_DELAY_MS);
 
         if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
         {
@@ -224,12 +210,12 @@ is_operation_result ISBFirmwareUpdater::sync()
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if(serialPortWrite(m_port, &handshakerChar, 1) != 1)
+        if(serialPortWrite(&device.serialPort, &handshakerChar, 1) != 1)
         {
             return IS_OP_ERROR;
         }
 
-        if (serialPortWaitForTimeout(m_port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if (serialPortWaitForTimeout(&device.serialPort, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             return IS_OP_OK;
         }
@@ -241,7 +227,7 @@ is_operation_result ISBFirmwareUpdater::sync()
     // Attempt handshake using extended string for bootloader v5a
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
     {
-        if (serialPortWriteAndWaitForTimeout(m_port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
+        if (serialPortWriteAndWaitForTimeout(&device.serialPort, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
             return IS_OP_OK;
         }
@@ -264,10 +250,10 @@ is_operation_result ISBFirmwareUpdater::rebootToISB(uint8_t major, char minor, b
 
     for (size_t loop = 0; loop < 10; loop++)
     {
-        if (!serialPortWriteAscii(m_port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
-        if (!serialPortWriteAscii(m_port, "BLEN", 4)) break;
+        if (!serialPortWriteAscii(&device.serialPort, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
+        if (!serialPortWriteAscii(&device.serialPort, "BLEN", 4)) break;
         c = 0;
-        if (serialPortReadCharTimeout(m_port, &c, 13) == 1)
+        if (serialPortReadCharTimeout(&device.serialPort, &c, 13) == 1)
         {
             if (c == '$')
             {
@@ -275,9 +261,20 @@ is_operation_result ISBFirmwareUpdater::rebootToISB(uint8_t major, char minor, b
                 break;
             }
         }
-        else serialPortFlush(m_port);
+        else serialPortFlush(&device.serialPort);
     }
 
+    return IS_OP_OK;
+}
+
+is_operation_result ISBFirmwareUpdater::rebootToAPP() {
+    if (statusCb) statusCb(this, IS_LOG_LEVEL_INFO, "(ISB) Rebooting to APP mode...");
+
+    // send the "reboot to program mode" command and the device should start in program mode
+    serialPortWrite(&device.serialPort, (unsigned char*)":020000040300F7", 15);
+    serialPortFlush(&device.serialPort);
+    SLEEP_MS(100);
+    serialPortClose(&device.serialPort);
     return IS_OP_OK;
 }
 
@@ -313,12 +310,12 @@ is_operation_result ISBFirmwareUpdater::erase_flash()
     // Write location to erase at
     memcpy(selectFlash, ":03000006030000F4CC\0\0\0\0\0", 24);
     checksum(0, selectFlash, 1, 17, 17, 1);
-    if (serialPortWriteAndWaitForTimeout(m_port, selectFlash, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
+    if (serialPortWriteAndWaitForTimeout(&device.serialPort, selectFlash, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0) return IS_OP_ERROR;
 
     // Erase
     memcpy(selectFlash, ":0200000400FFFBCC\0", 18);
     checksum(0, selectFlash, 1, 15, 15, 1);
-    serialPortWrite(m_port, selectFlash, 17);
+    serialPortWrite(&device.serialPort, selectFlash, 17);
 
     // Check for response and allow quit (up to 60 seconds)
     uint8_t buf[128];
@@ -326,7 +323,7 @@ is_operation_result ISBFirmwareUpdater::erase_flash()
     int count = 0;
     for(size_t i = 0; i < 600; i++)
     {
-        count += serialPortReadTimeout(m_port, bufPtr, 3, 100);
+        count += serialPortReadTimeout(&device.serialPort, bufPtr, 3, 100);
         bufPtr = buf + count;
 
         if (progressCb(this, 0.0f, "Erasing Flash", 0, 1) != IS_OP_OK)

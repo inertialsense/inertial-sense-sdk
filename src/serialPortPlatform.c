@@ -278,6 +278,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     }
 
     serialPortSetPort(serialPort, port);
+    serialPort->baudRate = baudRate;
 
 #if PLATFORM_IS_WINDOWS
 

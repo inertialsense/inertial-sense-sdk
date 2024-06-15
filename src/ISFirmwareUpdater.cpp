@@ -31,7 +31,7 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
         }
 
         if (_target & fwUpdate::TARGET_ISB_FLAG) {
-            deviceUpdater = new ISBFirmwareUpdater(_target, &serialPort);
+            deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);
             // we are about to do an IMX-5 update through the IS bootloader
         }
 
@@ -124,7 +124,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     }
 
     if (_target & fwUpdate::TARGET_ISB_FLAG) {
-        deviceUpdater = new ISBFirmwareUpdater(_target, &serialPort);
+        deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);
         // we are about to do an IMX-5 update through the IS bootloader
     }
 
@@ -318,7 +318,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", serialPort.port, devInfo->serialNumber, startAttempts);
+                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", device.serialPort.port, device.devInfo.serialNumber, startAttempts);
                             } else {
                                 printf("Error attempting to initiate Firmware Update\n");
                             }
@@ -390,7 +390,28 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
 
 bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t *buffer, int buff_len) {
     if (deviceUpdater != nullptr) {
-        return deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
+        bool result = deviceUpdater->fwUpdate_processMessage(buffer, buff_len);
+
+        // check if we have data in deviceUpdater->toHost, and process any response
+
+        // pull all data from the buffer there really should only be one message at a time... :fingers-crossed:
+        const int toHost_size = toHost.size();
+        uint8_t* toHostBuf = new uint8_t[toHost_size];
+        uint8_t* p = toHostBuf;
+        while (toHost.size()) {
+            *p++ = toHost.front();
+            toHost.pop_front();
+        }
+
+        for (p = toHostBuf; p < toHostBuf + toHost_size; ) {
+            fwUpdate::payload_t *msg;
+            void *aux_data = nullptr;
+            int msg_len = fwUpdate_mapBufferToPayload(p, &msg, &aux_data);
+            if (fwUpdate_processMessage(p, msg_len))
+                p += msg_len;
+        }
+        delete [] toHostBuf;
+        return result;
     }
 
     // TODO: This can be removed after 2.1.0 release
@@ -403,7 +424,7 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     // TODO: end
 
     nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
-    int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
+    int result = comManagerSendData(device.portHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
 
@@ -551,20 +572,20 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
             if (((target & fwUpdate::TARGET_SONY_CXD5610) == fwUpdate::TARGET_SONY_CXD5610) && (slotNum == 4 || (slotNum == 2 && filename.substr(filename.find_last_of(".") + 1) == "fpk")))
                 flags |= fwUpdate::IMG_FLAG_imageNotEncrypted;
 
-            if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX))
+            if (((target & fwUpdate::TARGET_IMX5) == fwUpdate::TARGET_IMX5) && (target & fwUpdate::TARGET_ISB_FLAG) && (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX))
                 target = fwUpdate::TARGET_ISB_IMX5;
 
             // any target which doesn't report version info will also expect the old MD5 digest
             if (!target_devInfo) {
                 // TODO: We should be able to remove most of this after 2.1.0 has been released
-                if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
-                     ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX)) ) {
+                if ( ((target & fwUpdate::TARGET_IMX5) && (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)) ||
+                     ((target & fwUpdate::TARGET_GPX1) && (device.devInfo.hardwareType == IS_HARDWARE_TYPE_GPX)) ) {
                     // just copy the in the current "main" device's dev info, since they are the same device as the target
-                    remoteDevInfo = *devInfo;
+                    remoteDevInfo = device.devInfo;
                     target_devInfo = &remoteDevInfo;
-                } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
+                } else if ((target & fwUpdate::TARGET_GPX1) && (device.devInfo.hardwareType == IS_HARDWARE_TYPE_IMX)) {
                     // let's see if we can get the GPX version from the IMX dev info (it should be in addInfo)
-                    const char *gpxVInfo = strstr(devInfo->addInfo, "G2.");
+                    const char *gpxVInfo = strstr(device.devInfo.addInfo, "G2.");
                     if (gpxVInfo) {
                         int v1 = 0, v2 = 0, v3 = 0, v4 = 0, bn = 0;
                         if ((sscanf(gpxVInfo, "G%d.%d.%d.%d-%d", &v1, &v2, &v3, &v4, &bn) == 5) ||
