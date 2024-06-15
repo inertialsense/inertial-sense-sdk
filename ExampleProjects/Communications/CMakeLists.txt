@@ -20,13 +20,16 @@ target_link_libraries(ISCommunicationsExample InertialSense)
 else()	# Build only this project
 
 add_executable(ISCommunicationsExample
-    ISCommunicationsExample.c
+    ISCommunicationsExample.cpp
     ../../src/data_sets.c
     ../../src/ISComm.c
+    ../../src/ISEarth.c
     ../../src/ISMatrix.c
     ../../src/ISPose.c
+    ../../src/protocol_nmea.cpp
     ../../src/serialPort.c
     ../../src/serialPortPlatform.c
+    ../../src/time_conversion.c
 )
 
 if(NOT WIN32)

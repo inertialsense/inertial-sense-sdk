@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/ISComm.h"
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISPose.h"
+#include "../../src/protocol_nmea.h"
 
 static int running = 1;
 
