@@ -335,10 +335,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
 #else
 
-    int fd = open(port, 
-        O_RDWR |        // enable read/write
-        O_NOCTTY        // disable flow control
-    );
+    int fd = open(port, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
     if (fd < 0)
     {
         error_message("[%s] open():: Error opening port: %d\n", port, errno);
@@ -353,6 +350,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         return 0;
     }
 
+    // Disable blocking reads and writes.  Note, 
     if (set_nonblocking(fd) != 0) 
     {
         close(fd);
@@ -693,7 +691,15 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     return dwWritten;
 
 
-#elif 1
+#else
+
+    struct stat sb;
+    errno = 0;
+    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
+    {   // Serial port not open
+        serialPort->errorCode = errno;
+        return 0;
+    }
 
     int bytes_written = 0;
     while (bytes_written < writeCount) 
@@ -716,71 +722,16 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
         bytes_written += result;
     }
 
-    return bytes_written;
-
-#else
-
-    struct stat sb;
-    errno = 0;
-    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
-    {   // Serial port not open
-        serialPort->errorCode = errno;
-        return 0;
-    }
-
-    // make a quick attempt to poll WRITE availability
-    struct pollfd fds[1];
-    fds[0].fd = handle->fd;
-    fds[0].events = POLLOUT;
-    int pollrc = poll(fds, 1, 10);
-    if (pollrc <= 0 || !(fds[0].revents & POLLOUT))
-    {
-        if ((pollrc <= 0) && !(fds[0].revents & POLLOUT)) {
-            if (fds[0].revents & POLLERR) {
-                error_message("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
-                serialPort->errorCode = errno;
-                return -1; // more than a timeout occurred.
-            }
-            return 0;
-        }
-    }
-
-    int count, retry = 0;
-    do
-    {
-        count = write(handle->fd, buffer, writeCount);
-        if (count < 0) {
-            // Retry if resource temporarily unavailable (errno 11)
-            if (((errno != EAGAIN) && (errno != EWOULDBLOCK)) || (retry >= 10))
-                break;
-
-            usleep(1000); // give it a hot second to clear to buffer/error
-            retry++;
-        }
-    }
-    while (count < 0);
-
-    if (count < 0)
-    {
-        if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-            // TODO: Debug test_flash_sync, comment out later (WHJ)
-            error_message("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
-            serialPort->errorCode = errno;
-        }
-        return 0;
-    }
-
     if(handle->blocking)
-    {
+    {   // Block process until output data has been physically transmitted 
         int error = tcdrain(handle->fd);
-
         if (error != 0)
         {   // Drain error
             return 0;
         }
     }
 
-    return count;
+    return bytes_written;
 
 #endif
 
