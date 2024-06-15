@@ -704,7 +704,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     }
 
     // Ensure all data is queued by OS for sending.  Note that this only blocks for partial writes until 
-    // the OS accept all input data and does NOT block until the data is physically transmitted.
+    // the OS accepts all input data.  This does NOT block until the data is physically transmitted.
     int bytes_written = 0;
     while (bytes_written < writeCount) 
     {
