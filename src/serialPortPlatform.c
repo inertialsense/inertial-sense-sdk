@@ -144,7 +144,7 @@ static int configure_serial_port(int fd, int baudRate)
 
     if (tcgetattr(fd, &tty) != 0) 
     {
-        perror("error getting tty settings: tcgetattr");
+        error_message("error getting tty settings: tcgetattr");
         return -1;
     }
 
@@ -231,14 +231,16 @@ static int configure_serial_port(int fd, int baudRate)
 int set_nonblocking(int fd) 
 {
     int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1) {
-        perror("fcntl");
+    if (flags == -1) 
+    {
+        error_message("error fcntl F_GETFL");
         return -1;
     }
 
     flags |= O_NONBLOCK;
-    if (fcntl(fd, F_SETFL, flags) == -1) {
-        perror("fcntl");
+    if (fcntl(fd, F_SETFL, flags) == -1) 
+    {
+        error_message("error setting O_NONBLOCK");
         return -1;
     }
 
@@ -716,7 +718,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
                 continue;
             }
             // Other errors
-            perror("write");
+            error_message("error writing data");
             return -1;
         }
         bytes_written += result;
