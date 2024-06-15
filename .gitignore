@@ -29,9 +29,6 @@ CMakeCache.txt
 cmake_install.cmake
 libInertialSenseSDK.a
 scripts/.venv/
-<<<<<<< HEAD
-=======
 python/venv/
 python/logInspector/.eggs/
->>>>>>> origin/develop_1.12
 

@@ -33,7 +33,7 @@ pushd "../python/logInspector" > /dev/null
     else
         echo -e "\n\n=== Running make... (${BUILD_TYPE}) ==="
         cd ..
-        python3 -m pip install logInspector/ python3 --break-system-packages
+        python3 -m pip install logInspector/
         cd logInspector
         python3 setup.py build_ext --inplace
     fi
