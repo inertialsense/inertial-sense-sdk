@@ -352,7 +352,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         return 0;
     }
 
-    // Disable blocking reads and writes.  Note, 
+    // Disable blocking port reads and writes.
     if (set_nonblocking(fd) != 0) 
     {
         close(fd);
@@ -703,6 +703,8 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
         return 0;
     }
 
+    // Ensure all data is queued by OS for sending.  Note that this only blocks for partial writes until 
+    // the OS accept all input data and does NOT block until the data is physically transmitted.
     int bytes_written = 0;
     while (bytes_written < writeCount) 
     {
@@ -725,7 +727,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     }
 
     if(handle->blocking)
-    {   // Block process until output data has been physically transmitted 
+    {   // Block until output data has been physically transmitted 
         int error = tcdrain(handle->fd);
         if (error != 0)
         {   // Drain error
