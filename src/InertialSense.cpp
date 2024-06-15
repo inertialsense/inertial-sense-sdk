@@ -885,9 +885,6 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
-        // TODO: Debug test_flash_sync, remove later (WHJ)
-        printf("InertialSense::SetFlashConfig() no devices present.\n");
-
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
@@ -912,15 +909,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
             int size = tail-head;
             int offset = head-((uint8_t*)newCfg);
             DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
-            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);
-            
-            // TODO: Debug test_flash_sync, remove later (WHJ)
-            if (fail != 0)
-            {
-                printf("InertialSense::SetFlashConfig() failed to send flash config using comManagerSendData(): port %d, size %d, offset %d\n", pHandle, size, offset);
-                printf("  buf %p, head %p, tail %p\n", (void*)&(newCfg), (void*)head, (void*)tail);
-            }
-            
+            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);            
             failure = failure || fail;
             device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
         }
