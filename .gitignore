@@ -30,5 +30,5 @@ Makefile
 CMakeCache.txt
 cmake_install.cmake
 libInertialSenseSDK.a
-
+scripts/.venv/
 
