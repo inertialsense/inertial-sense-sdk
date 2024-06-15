@@ -113,7 +113,7 @@ static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferre
 
 #else
 
-static int get_baud_speed(int baudRate)
+static int validate_baud_rate(int baudRate)
 {
     switch (baudRate)
     {
@@ -138,25 +138,31 @@ static int get_baud_speed(int baudRate)
     }
 }
 
-static int configure_serial_port(int fd, int baudRate, int parity)
+static int configure_serial_port(int fd, int baudRate)
 {
-#if 0
-
     struct termios tty;
-    memset(&tty, 0, sizeof tty);
-    if (tcgetattr(fd, &tty) != 0)
+
+    if (tcgetattr(fd, &tty) != 0) 
     {
-        error_message("error %d from tcgetattr\n", errno);
+        perror("error getting tty settings: tcgetattr");
         return -1;
     }
 
+    // Restrict baudrate to predefined values (standard and high speed)
+    baudRate = validate_baud_rate(baudRate);    
+    if (baudRate == 0)
+    {
+        error_message("error invalid baudrate");
+        return -1;
+    }
+
+    // Set Baud Rate
 #if PLATFORM_IS_APPLE
 
-    // set a valid baudRate for MAC, serial won't open otherwise
+    // HACK: Mac will not allow higher baud rate until after set lower valid rate: e.g. 230400
     cfsetospeed(&tty, 230400);
     cfsetispeed(&tty, 230400);
-
-    // HACK: Set the actual baudRate, allows higher than 230400 baud
+    // Now baud rate can be set higher than 230400
     if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
     {
         error_message("error %d from ioctl IOSSIOSPEED", errno);
@@ -164,156 +170,64 @@ static int configure_serial_port(int fd, int baudRate, int parity)
 
 #else
 
-    baudRate = get_baud_speed(baudRate);
     cfsetospeed(&tty, baudRate);
     cfsetispeed(&tty, baudRate);
 
 #endif
 
-    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;     // 8-bit chars
-                                                    // disable IGNBRK for mismatched baudRate tests; otherwise receive break
-                                                    // as \000 chars
-    tty.c_iflag &= ~IGNBRK;         // disable break processing
-    tty.c_lflag = 0;                // no signaling chars, no echo,
-                                    // no canonical processing
-    tty.c_oflag = 0;                // no remapping, no delays
-    tty.c_cc[VMIN] = 0;             // read doesn't block
-    tty.c_cc[VTIME] = 0;            // no timeout
+    // Set 8N1 (8 data bits, No parity, 1 stop bit)
+    tty.c_cflag &= ~PARENB;                     // Clear parity bit, disabling parity (most common)
+    tty.c_cflag &= ~CSTOPB;                     // Clear stop field, only one stop bit used in communication (most common)
+    tty.c_cflag &= ~CSIZE;                      // Clear all bits that set the data size
+    tty.c_cflag |= CS8;                         // 8 bits per byte (most common)
+    tty.c_cflag &= ~CRTSCTS;                    // Disable RTS/CTS hardware flow control (most common)
+    tty.c_cflag |= CREAD | CLOCAL;              // Turn on READ & ignore model ctrl lines (CLOCAL = 1)
 
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
+    // Set in non-canonical mode
+    tty.c_lflag &= ~ICANON;
+    tty.c_lflag &= ~ECHO;                       // Disable echo
+    tty.c_lflag &= ~ECHOE;                      // Disable erasure
+    tty.c_lflag &= ~ECHONL;                     // Disable new-line echo
+    tty.c_lflag &= ~ISIG;                       // Disable interpretation of INTR, QUIT and SUSP
+    // No line processing
+    // echo off, echo newline off, canonical mode off,
+    // extended input processing off, signal chars off
+    tty.c_lflag = 0;
 
-    tty.c_cflag |= (CLOCAL | CREAD);// ignore modem controls,
-                                    // enable reading
-    tty.c_cflag &= ~(PARENB | PARODD);  // shut off parity
-    tty.c_cflag |= parity;
-    tty.c_cflag &= ~CSTOPB;
-    tty.c_cflag &= ~CRTSCTS;
-
-    if (tcsetattr(fd, TCSANOW, &tty) != 0)
-    {
-        error_message("error %d from tcsetattr\n", errno);
-        return -1;
-    }
-
-    // re-open and remove additional flags
-    memset(&tty, 0, sizeof(tty));
-
-    // Check if the file descriptor is pointing to a TTY device or not.
-    if (!isatty(fd))
-    {
-        errno = ENOTTY;
-        return -1;
-    }
-
-    // Get the current configuration of the serial interface
-    if (tcgetattr(fd, &tty) < 0)
-    {
-        return -1;
-    }
-
-    // Input flags - Turn off input processing
-    //
-    // convert break to null byte, no CR to NL translation,
+    // Disable input processing options (raw mode)
+    tty.c_iflag &= ~IGNBRK;                     // Disable break processing
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY);     // Turn off xon/xoff software flow ctrl
+    tty.c_iflag &= ~(ICRNL | INLCR);            // Disable any special handling of received bytes
+    // No convert break to null byte, no CR to NL translation,
     // no NL to CR translation, don't mark parity errors or breaks
     // no input parity check, don't strip high bit off,
     // no XON/XOFF software flow control
-    //
-    // config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
     tty.c_iflag = 0;
 
-    // Output flags - Turn off output processing
-    //
+    // Disable output processing options (raw mode)
+    tty.c_oflag &= ~OPOST;                      // Prevent special interpretation of output bytes (e.g. newline chars)
+    tty.c_oflag &= ~ONLCR;                      // Prevent conversion of newline to carriage return/line feed
     // no CR to NL translation, no NL to CR-NL translation,
     // no NL to CR translation, no column 0 CR suppression,
     // no Ctrl-D suppression, no fill characters, no case mapping,
     // no local output processing
-    //
-    // tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | ONOEOT| OFILL | OLCUC | OPOST);
-    // tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | OFILL | OLCUC | OPOST);
     tty.c_oflag = 0;
 
-    // No line processing
-    //
-    // echo off, echo newline off, canonical mode off,
-    // extended input processing off, signal chars off
-    //
-    // config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
-    tty.c_lflag = 0;
-
-    // Turn off character processing
-    //
-    // clear current char size mask, no parity checking,
-    // no output processing, force 8 bit input
-    tty.c_cflag &= ~(CSIZE | PARENB);
-    tty.c_cflag |= CS8;
-
-    // One input byte is enough to return from read()
-    // Inter-character timer off
-    tty.c_cc[VMIN] = 1;
-    tty.c_cc[VTIME] = 0;
-
-    // Communication speed (simple version, using the predefined
-    // constants)
-    //
-    // if(cfsetispeed(&config, B9600) < 0 || cfsetospeed(&config, B9600) < 0)
-    // 	return 0;
-
-    // Finally, apply the configuration
-    if (tcsetattr(fd, TCSAFLUSH, &tty) < 0)
-    {
-        return -1;
-    }
-
-#else
-
-    struct termios tty;
-
-    if (tcgetattr(fd, &tty) != 0) {
-        perror("tcgetattr");
-        return -1;
-    }
-
-    // Set Baud Rate
-    cfsetospeed(&tty, baudRate);
-    cfsetispeed(&tty, baudRate);
-
-    // Set 8N1 (8 data bits, No parity, 1 stop bit)
-    tty.c_cflag &= ~PARENB;  // Clear parity bit, disabling parity (most common)
-    tty.c_cflag &= ~CSTOPB;  // Clear stop field, only one stop bit used in communication (most common)
-    tty.c_cflag &= ~CSIZE;   // Clear all bits that set the data size
-    tty.c_cflag |= CS8;      // 8 bits per byte (most common)
-    tty.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
-    tty.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
-
-    // Set in non-canonical mode
-    tty.c_lflag &= ~ICANON;
-    tty.c_lflag &= ~ECHO;    // Disable echo
-    tty.c_lflag &= ~ECHOE;   // Disable erasure
-    tty.c_lflag &= ~ECHONL;  // Disable new-line echo
-    tty.c_lflag &= ~ISIG;    // Disable interpretation of INTR, QUIT and SUSP
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
-    tty.c_iflag &= ~(ICRNL | INLCR);        // Disable any special handling of received bytes
-
-    // Set raw mode
-    tty.c_oflag &= ~OPOST; // Prevent special interpretation of output bytes (e.g. newline chars)
-    tty.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
-
-    // Set the timeout and minimum characters
+    // Set the timeout and minimum characters.  Read doesn't block
     tty.c_cc[VMIN] = 0;
     tty.c_cc[VTIME] = 0;
 
     // Save tty settings, also checking for error
-    if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-        perror("tcsetattr");
+    if (tcsetattr(fd, TCSANOW, &tty) != 0) 
+    {
+        error_message("error saving tty settings: tcsetattr");
         return -1;
     }
-
-#endif
 
     return 0;
 }
 
-// Function to set the serial port to non-blocking mode
+// Set the serial port to non-blocking mode so read() and write() return immediately not waiting for hardware. Use modern O_NONBLOCK instead of legacy O_NDELAY.
 int set_nonblocking(int fd) 
 {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -423,33 +337,30 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
     int fd = open(port, 
         O_RDWR |        // enable read/write
-        O_NOCTTY |      // disable flow control
-        O_SYNC          // use synchronous mode, wait for data to be written to hardware 
-        // O_NONBLOCK      // what is the difference between this an O_NDELAY??  According to all the docs, we should be using O_NONBLOCK now
-        // O_NDELAY     // non-blocking read
+        O_NOCTTY        // disable flow control
     );
     if (fd < 0)
     {
-        // error_message("[%s] open():: Error opening port: %d\n", port, errno);
+        error_message("[%s] open():: Error opening port: %d\n", port, errno);
         serialPort->errorCode = errno;
         return 0;
     }
 
-    if (configure_serial_port(fd, baudRate, 0) != 0) 
+    if (configure_serial_port(fd, baudRate) != 0) 
     {
         error_message("[%s] open():: Error configuring port: %d\n", port, errno);
         serialPort->errorCode = errno;
         return 0;
     }
 
-    if (set_nonblocking(fd) == -1) 
+    if (set_nonblocking(fd) != 0) 
     {
         close(fd);
         return 0;
     }
 
-    // ioctl(fd, TIOCEXCL);    // Put device into exclusive mode
-    // flock(fd, LOCK_EX | LOCK_NB);   // Add advisory lock
+    ioctl(fd, TIOCEXCL);            // Exclusive Access Mode: prevent other processes from opening the port while its open
+    flock(fd, LOCK_EX | LOCK_NB);   // Exclusive & Non-Blocking Lock: prevent other process read/write of the fd file  
 
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
     handle->fd = fd;
@@ -750,32 +661,6 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 }
 
 
-ssize_t write_all(int fd, const void *buf, size_t count) 
-{
-    size_t bytes_written = 0;
-    const char *buffer = (const char *)buf;
-
-    while (bytes_written < count) {
-        ssize_t result = write(fd, buffer + bytes_written, count - bytes_written);
-        if (result < 0) {
-            if (errno == EINTR) {
-                // Interrupted by signal, continue writing
-                continue;
-            }
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // Non-blocking mode, and no data written, continue trying
-                continue;
-            }
-            // Other errors
-            perror("write");
-            return -1;
-        }
-        bytes_written += result;
-    }
-    return bytes_written;
-}
-
-
 static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned char* buffer, int writeCount)
 {
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
@@ -810,12 +695,28 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
 #elif 1
 
+    int bytes_written = 0;
+    while (bytes_written < writeCount) 
+    {
+        ssize_t result = write(handle->fd, buffer + bytes_written, writeCount - bytes_written);
+        if (result < 0) 
+        {
+            if (errno == EINTR) 
+            {   // Interrupted by signal, continue writing
+                continue;
+            }
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {    // Non-blocking mode, and no data written, continue trying
+                continue;
+            }
+            // Other errors
+            perror("write");
+            return -1;
+        }
+        bytes_written += result;
+    }
 
-    int count = write_all(handle->fd, buffer, writeCount);
-
-    // int count = write(handle->fd, buffer, writeCount);
-
-    return count;
+    return bytes_written;
 
 #else
 
