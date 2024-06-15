@@ -349,7 +349,7 @@ enum eHdwStatusFlags
     HDW_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
     HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
-    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
+    /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, tipically 150-250 ms. */
     HDW_STATUS_FLASH_WRITE_PENDING              = (int)0x00008000,
 
     /** Communications Tx buffer limited */
@@ -2216,29 +2216,35 @@ typedef struct PACKED
     float                   bias_cal[3];
 } inl2_mag_obs_info_t;
 
+/** Built-in Test: Input Command */
+enum eBitCommand
+{
+    BIT_CMD_NONE                                    = (int)0,       // No command
+    BIT_CMD_OFF                                     = (int)1,       // Stop built-in test
+    BIT_CMD_FULL_STATIONARY                         = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
+    BIT_CMD_BASIC_MOVING                            = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
+    BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY           = (int)4,       // Same as BIT_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
+    BIT_CMD_RESERVED_2                              = (int)5,   
+};
+
 /** Built-in Test: State */
 enum eBitState
 {
-    BIT_STATE_OFF					                    = (int)0,
-    BIT_STATE_DONE				                        = (int)1,       // Test is finished
-    BIT_STATE_CMD_FULL_STATIONARY                       = (int)2,       // (FULL) Comprehensive test.  Requires system be completely stationary without vibrations. 
-    BIT_STATE_CMD_BASIC_MOVING                          = (int)3,       // (BASIC) Ignores sensor output.  Can be run while moving.  This mode is automatically run after bootup.
-    BIT_STATE_CMD_FULL_STATIONARY_HIGH_ACCURACY         = (int)4,       // Same as BIT_STATE_CMD_FULL_STATIONARY but with higher requirements for accuracy.  In order to pass, this test may require the Infield Calibration (DID_INFIELD_CAL) to be run. 
-    BIT_STATE_RESERVED_2                                = (int)5,   
-    BIT_STATE_RUNNING                                   = (int)6,   
-    BIT_STATE_FINISHING                                 = (int)7,	    // Computing results
-    BIT_STATE_CMD_OFF                                   = (int)8,       // Stop built-in test
+    BIT_STATE_OFF					                = (int)0,
+    BIT_STATE_DONE				                    = (int)1,       // Test is finished
+    BIT_STATE_RUNNING                               = (int)6,
+    BIT_STATE_FINISHING                             = (int)7,	    // Computing results
 };
 
 /** Built-in Test: Test Mode */
 enum eBitTestMode
 {
-    BIT_TEST_MODE_FAILED                                = (int)98,      // Test mode ran and failed
-    BIT_TEST_MODE_DONE                                  = (int)99,      // Test mode ran and completed
-    BIT_TEST_MODE_SIM_GPS_NOISE                         = (int)100,     // Simulate CNO noise
-    BIT_TEST_MODE_COMMUNICATIONS_REPEAT                 = (int)101,     // Send duplicate message 
-    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW             = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW             = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    BIT_TEST_MODE_FAILED                            = (int)98,      // Test mode ran and failed
+    BIT_TEST_MODE_DONE                              = (int)99,      // Test mode ran and completed
+    BIT_TEST_MODE_SIM_GPS_NOISE                     = (int)100,     // Simulate CNO noise
+    BIT_TEST_MODE_COMMUNICATIONS_REPEAT             = (int)101,     // Send duplicate message 
+    BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW         = (int)102,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW         = (int)103,     // Cause Tx buffer overflow on current serial port by sending too much data.
 };
 
 /** Hardware built-in test (BIT) flags */
@@ -2294,11 +2300,20 @@ enum eCalBitStatusFlags
 };
 
 
-/** (DID_BIT) Built-in self-test parameters */
+/** (DID_BIT) Built-in self-test (BIT) parameters */
 typedef struct PACKED
 {
-    /** Built-in self-test state (see eBitState) */
-    uint32_t                state;
+    /** BIT input command (see eBitCommand).  Ignored when zero.  */
+    uint8_t                 command;
+
+    /** BIT last input command (see eBitCommand) */
+    uint8_t                 lastCommand;
+
+    /** BIT current state (see eBitState) */
+    uint8_t                 state;
+
+    /** Unused */
+    uint8_t                 reserved;
 
     /** Hardware BIT status (see eHdwBitStatusFlags) */
     uint32_t                hdwBitStatus;
@@ -4789,16 +4804,16 @@ typedef struct
 typedef struct
 {
     /** Prioity mask (see eEventPriority) */
-    uint8_t priorityMask;
+    uint8_t priorityLevel;
       
     /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
-    uint32_t idMask;
+    uint32_t msgTypeIdMask;
 } did_event_mask_t;
 
 /** Sent in the data field of DID_EVENT for eEventProtocol:
- *  EVENT_PROTOCOL_ENA_GNSS1_FILTER,
- *  EVENT_PROTOCOL_ENA_GNSS2_FILTER,
- *  EVENT_PROTOCOL_ENA_FILTER 
+ *  EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER,
+ *  EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER,
+ *  EVENT_MSG_TYPE_ID_ENA_FILTER 
 */
 typedef struct
 {
@@ -4809,32 +4824,35 @@ typedef struct
 
 } did_event_filter_t;
 
-enum eEventProtocol
+enum eEventMsgTypeID
 {
-    EVENT_PROTOCOL_RAW              = 1,
-    EVENT_PROTOCOL_ASCII            = 2,
-    EVENT_PROTOCOL_RTMC3_RCVR1      = 11,
-    EVENT_PROTOCOL_RTMC3_RCVR2      = 12,
-    EVENT_PROTOCOL_RTMC3_EXT        = 13,
-    EVENT_PROTOCOL_SONY_BIN_RCVR1   = 14,
-    EVENT_PROTOCOL_SONY_BIN_RCVR2   = 15,
+    EVENT_MSG_TYPE_ID_RAW               = 1,
+    EVENT_MSG_TYPE_ID_ASCII             = 2,
+    EVENT_MSG_TYPE_ID_RTMC3_RCVR1       = 11,
+    EVENT_MSG_TYPE_ID_RTMC3_RCVR2       = 12,
+    EVENT_MSG_TYPE_ID_RTMC3_EXT         = 13,
+    EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
+    EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
 
-    EVENT_PROTOCOL_FILTER_RESPONSE  = (uint16_t)-4,
-    EVENT_PROTOCOL_ENA_GNSS1_FILTER = (uint16_t)-3,
-    EVENT_PROTOCOL_ENA_GNSS2_FILTER = (uint16_t)-2,
-    EVENT_PROTOCOL_ENA_FILTER       = (uint16_t)-1,
+    EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
+    EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
+    EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER  = (uint16_t)-2,
+    EVENT_MSG_TYPE_ID_ENA_FILTER        = (uint16_t)-1,
 };
 
 enum eEventPriority
 {
-    EVENT_PRIORITY_NONE             = 0,
-    EVENT_PRIORITY_DBG_VERBOSE      = 1,
-    EVENT_PRIORITY_DBG              = 2,
-    EVENT_PRIORITY_INFO_VERBOSE     = 3,
-    EVENT_PRIORITY_INFO             = 4,
-    EVENT_PRIORITY_WARNING          = 5,
-    EVENT_PRIORITY_ERR              = 6,
-    EVENT_PRIORITY_FAULT            = 7,
+    EVENT_PRIORITY_FAULT            = 0,
+    EVENT_PRIORITY_ERR              = 1,
+    EVENT_PRIORITY_WARNING          = 2,
+    EVENT_PRIORITY_INFO             = 3,
+    EVENT_PRIORITY_INFO_VERBOSE     = 4,
+    EVENT_PRIORITY_DBG              = 5,
+    EVENT_PRIORITY_DBG_VERBOSE      = 6, 
+    EVENT_PRIORITY_TRIVIAL          = 7,
+    
+    // None should be used on all messages that should only be broadcast based on ID
+    EVENT_PRIORITY_NONE             = -1,
 };
 
 typedef struct
@@ -4852,8 +4870,8 @@ typedef struct
     uint8_t         priority;
     uint8_t         res8;
 
-    /** see eEventProtocol */
-    uint16_t        protocol;
+    /** see eEventMsgTypeID */
+    uint16_t        msgTypeID;
     uint16_t        length;
     
     uint8_t data[1];

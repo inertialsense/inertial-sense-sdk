@@ -795,7 +795,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
  *               2 = forward to device GNSS 2 port (ie GPX),
  *               else will return  
 */
-void InertialSense::SetEventFilter(int target, uint32_t IDMask, uint8_t portMask, uint8_t priorityMask)
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
@@ -811,15 +811,15 @@ void InertialSense::SetEventFilter(int target, uint32_t IDMask, uint8_t portMask
         .portMask = portMask,
     };
 
-    filter.eventMask.priorityMask = priorityMask;
-    filter.eventMask.idMask = IDMask;
+    filter.eventMask.priorityLevel = priorityLevel;
+    filter.eventMask.msgTypeIdMask = msgTypeIdMask;
 
     if(target == 0)
-        event.protocol = EVENT_PROTOCOL_ENA_FILTER;
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
     else if(target == 1)
-        event.protocol = EVENT_PROTOCOL_ENA_GNSS1_FILTER;
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
     else if(target == 2)
-        event.protocol = EVENT_PROTOCOL_ENA_GNSS2_FILTER;
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
     else 
         return;
 

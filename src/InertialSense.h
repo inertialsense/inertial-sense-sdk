@@ -307,7 +307,7 @@ public:
      *               2 = forward to device GNSS 2 port (ie GPX),
      *               else will return  
     */
-    void SetEventFilter(int target, uint32_t IDMask, uint8_t portMask, uint8_t priorityMask);
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel);
 
     /**
     * Get the flash config, returns the latest flash config read from the uINS flash memory

@@ -707,8 +707,9 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         #ifdef IMX_5
         // Forward to gpx
         if(IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
+            (((p_data_get_t*)(pkt->data.ptr))->id == DID_RTK_DEBUG || (
             (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
-            (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))
+            (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))))
         {
             comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
         }

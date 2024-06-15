@@ -739,9 +739,9 @@ static int cltool_dataStreaming()
 
             if (g_commandLineOptions.evFCont.sendEVF)
                 inertialSenseInterface.SetEventFilter(g_commandLineOptions.evFCont.dest, 
-                    g_commandLineOptions.evFCont.evFilter.eventMask.idMask,  
+                    g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask,  
                     g_commandLineOptions.evFCont.evFilter.portMask,
-                    g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask);
+                    g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
             // Main loop. Could be in separate thread if desired.
             uint32_t startTime = current_timeMs();

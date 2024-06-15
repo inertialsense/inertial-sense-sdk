@@ -308,7 +308,11 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT])
     typedef bit_t MAP_TYPE;
     map_name_to_info_t& m = mappings[DID_BIT];
     uint32_t totalSize = 0;
-    ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "command", command, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "lastCommand", lastCommand, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "state", state, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "reserved", reserved, 0, DataTypeUInt8, uint8_t, 0);
+
     ADD_MAP(m, totalSize, "hdwBitStatus", hdwBitStatus, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "calBitStatus", calBitStatus, 0, DataTypeUInt32, uint32_t, 0);
 
@@ -1105,7 +1109,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
-    ADD_MAP(m, totalSize, "Protocol", protocol, 0, DataTypeUInt16, uint16_t, 0);
+    ADD_MAP(m, totalSize, "Message ID", msgTypeID, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "Length", length, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
