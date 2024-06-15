@@ -228,6 +228,7 @@ static int configure_serial_port(int fd, int baudRate)
 }
 
 // Set the serial port to non-blocking mode so read() and write() return immediately not waiting for hardware. Use modern O_NONBLOCK instead of legacy O_NDELAY.
+// Because of non-blocking mode, we have to retry serial write() to handle partial writes until all data received by the OS.
 int set_nonblocking(int fd) 
 {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -703,8 +704,9 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
         return 0;
     }
 
-    // Ensure all data is queued by OS for sending.  Note that this only blocks for partial writes until 
-    // the OS accepts all input data.  This does NOT block until the data is physically transmitted.
+    // Ensure all data is queued by OS for sending.  This step is necessary because of O_NONBLOCK non-blocking mode. 
+    // Note that this only blocks for partial writes until the OS accepts all input data.  This does NOT block until 
+    // the data is physically transmitted.
     int bytes_written = 0;
     while (bytes_written < writeCount) 
     {
