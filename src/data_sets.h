@@ -4642,7 +4642,8 @@ enum ePortMonPortType
     PORT_MON_PORT_TYPE_USB              = (uint8_t)(2 << 4),
     PORT_MON_PORT_TYPE_SPI              = (uint8_t)(3 << 4),
     PORT_MON_PORT_TYPE_I2C              = (uint8_t)(4 << 4),
-    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),        
+    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),
+    PORT_MON_PORT_TYPE_MAX              = (uint8_t)(6 << 4)
 };
 
 /** 
@@ -5139,6 +5140,7 @@ typedef union PACKED
     gpx_status_t            gpxStatus;
     debug_array_t           imxDebugArray;
     debug_array_t           gpxDebugArray;
+    port_monitor_t          portMonitor;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
