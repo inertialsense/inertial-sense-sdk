@@ -224,14 +224,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.evFCont.dest = stoi(token);
 
             if (g_commandLineOptions.evFCont.dest == 0)
-                printf("EVF Target: Primary device.\n", token);
+                printf("EVF Target: Primary device\n");
             else if (g_commandLineOptions.evFCont.dest == 1)
-                printf("EVF Target: device GNSS1 port.\n", token);
+                printf("EVF Target: device GNSS1 port\n");
             else if (g_commandLineOptions.evFCont.dest == 2)
-                printf("EVF Target: device GNSS2 port.\n", token);
+                printf("EVF Target: device GNSS2 port\n");
             else 
             {
-                printf("EVF Target: INVALID\n", token); 
+                printf("EVF Target: INVALID\n"); 
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
