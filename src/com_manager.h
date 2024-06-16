@@ -89,8 +89,8 @@ typedef void(*pfnComManagerPostRead)(unsigned int port, p_data_t* dataRead);
 // pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
 typedef void(*pfnComManagerPostAck)(unsigned int port, p_ack_t* ack, unsigned char packetIdentifier);
 
-// disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL
-typedef void(*pfnComManagerDisableBroadcasts)(unsigned int port);
+// disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
+typedef void(*pfnComManagerDisableBroadcasts)(int port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(unsigned int port, p_data_hdr_t *dataHdr);
@@ -154,7 +154,7 @@ typedef struct
 	// Callback function pointer, used to respond to ack
 	pfnComManagerPostAck pstAckFnc;
 
-	// Callback function pointer, used when disabling all broadcast messages
+	// Callback function pointer to disable broadcasts on specified port, or all ports if port is -1
 	pfnComManagerDisableBroadcasts disableBcastFnc;
 
 	// Pointer to local data and data specific callback functions

@@ -94,7 +94,7 @@ static void postRxRead(unsigned int port, p_data_t* dataRead)
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
 }
 
-static void disableBroadcasts(unsigned int port)
+static void disableBroadcasts(int port)
 {
 }
 
