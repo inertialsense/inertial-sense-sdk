@@ -81,28 +81,28 @@ typedef void* CMHANDLE;
 typedef int(*pfnComManagerRead)(unsigned int port, unsigned char* buf, int len);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
-typedef int(*pfnComManagerSendBufferAvailableBytes)(int port);
+typedef int(*pfnComManagerSendBufferAvailableBytes)(unsigned int port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by pHandle
-typedef void(*pfnComManagerPostRead)(int port, p_data_t* dataRead);
+typedef void(*pfnComManagerPostRead)(unsigned int port, p_data_t* dataRead);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
-typedef void(*pfnComManagerPostAck)(int port, p_ack_t* ack, unsigned char packetIdentifier);
+typedef void(*pfnComManagerPostAck)(unsigned int port, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL
-typedef void(*pfnComManagerDisableBroadcasts)(int port);
+typedef void(*pfnComManagerDisableBroadcasts)(unsigned int port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
-typedef int(*pfnComManagerPreSend)(int port, p_data_hdr_t *dataHdr);
+typedef int(*pfnComManagerPreSend)(unsigned int port, p_data_hdr_t *dataHdr);
 
 // Generic message handler function, return 1 if message handled
-typedef int(*pfnComManagerGenMsgHandler)(int port, const unsigned char* msg, int msgSize);
+typedef int(*pfnComManagerGenMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
 
 // Parse error handler function, return 1 if message handled
-typedef int(*pfnComManagerParseErrorHandler)(int port, is_comm_instance_t* comm);
+typedef int(*pfnComManagerParseErrorHandler)(unsigned int port, is_comm_instance_t* comm);
 
 // broadcast message handler
-typedef int(*pfnComManagerAsapMsg)(int port, p_data_get_t* req);
+typedef int(*pfnComManagerAsapMsg)(unsigned int port, p_data_get_t* req);
 
 /* Contains callback information for a before and after send for a data structure */
 typedef struct

@@ -44,7 +44,7 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  * @param dstPort Serial port to write to.
  * @param testMode Enable test mode to perform sequential serWrite() calls back to back to test capability of the serial driver.
  */
-void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, int srcPort, int dstPort, uint32_t led, int testMode)
+void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, unsigned int srcPort, unsigned int dstPort, uint32_t led, int testMode)
 {
 #if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
     while(1)
