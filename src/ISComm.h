@@ -134,7 +134,7 @@ typedef enum
 #define MAX_MSG_LENGTH_NMEA					200
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
-typedef int(*pfnIsCommPortWrite)(int port, const uint8_t* buf, int len);
+typedef int(*pfnIsCommPortWrite)(unsigned int port, const uint8_t* buf, int len);
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1

@@ -30,7 +30,7 @@ using namespace std;
 static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
-static int staticSendData(int port, const unsigned char* buf, int len)
+static int staticSendData(unsigned int port, const unsigned char* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -39,7 +39,7 @@ static int staticSendData(int port, const unsigned char* buf, int len)
     return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadData(int port, unsigned char* buf, int len)
+static int staticReadData(unsigned int port, unsigned char* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {

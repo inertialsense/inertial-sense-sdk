@@ -67,12 +67,12 @@ static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
 
-static int portRead(int port, unsigned char* buf, int len)
+static int portRead(unsigned int port, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(int port, const unsigned char* buf, int len)
+static int portWrite(unsigned int port, const unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow

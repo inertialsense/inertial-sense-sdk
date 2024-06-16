@@ -78,7 +78,7 @@ typedef void* CMHANDLE;
 
 // com manager callback prototypes
 // readFnc read data from the serial port. Returns number of bytes read.
-typedef int(*pfnComManagerRead)(int port, unsigned char* buf, int len);
+typedef int(*pfnComManagerRead)(unsigned int port, unsigned char* buf, int len);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
 typedef int(*pfnComManagerSendBufferAvailableBytes)(int port);
