@@ -305,9 +305,11 @@ public:
      * param Target: 0 = device, 
      *               1 = forward to device GNSS 1 port (ie GPX), 
      *               2 = forward to device GNSS 2 port (ie GPX),
-     *               else will return  
+     *               else will return
+     *       pHandle: Send in target COM port. 
+     *                If arg is < 0 default port will be used 
     */
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel);
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle);
 
     /**
     * Get the flash config, returns the latest flash config read from the uINS flash memory
