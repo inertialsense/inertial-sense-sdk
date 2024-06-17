@@ -8,9 +8,9 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
 from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QItemSelectionModel
 
-
 import matplotlib
 matplotlib.use('Agg')
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
