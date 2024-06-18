@@ -647,6 +647,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
     case DID_GPX_STATUS:        str = DataToStringGPXStatus(d.gpxStatus, data->hdr); break;
     case DID_DEBUG_ARRAY:       str = DataToStringDebugArray(d.imxDebugArray, data->hdr); break;
     case DID_GPX_DEBUG_ARRAY:   str = DataToStringDebugArray(d.gpxDebugArray, data->hdr); break;
+    case DID_PORT_MONITOR:      str = DataToStringPortMonitor(d.portMonitor, data->hdr); break;
+    case DID_GPX_PORT_MONITOR:  str = DataToStringPortMonitor(d.portMonitor, data->hdr); break;
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
@@ -1656,6 +1658,53 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 }
 
 /**
+ * Formats the specified DID (of type debug_array_t) into its array components of
+ * 9 integers, 9 floats, and 3 doubles.
+ * @param debug the parsed DID struct to display
+ * @param hdr the DID header
+ * @return returns a fully formatted string
+ */
+string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &portMon, const p_data_hdr_t& hdr)
+{
+    static const char *portTypeNames[] = { "???", "SER", "USB", "SPI", "I2C", "CAN" };
+
+    (void)hdr;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:\n", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+	lastTime[i] = wheel.timeOfWeek;
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+
+    for (int pIdx = 0; pIdx < portMon.activePorts; pIdx++) {
+        if (!portMon.port[pIdx].portInfo)
+            continue; // skip unused/invalid ports
+
+        if ((portMon.port[pIdx].portInfo & 0xF0) >= PORT_MON_PORT_TYPE_MAX)
+            continue; // skip unused/invalid ports
+
+        int portTypeIdx = (portMon.port[pIdx].portInfo & 0xF0) >> 4;
+        int portId = (portMon.port[pIdx].portInfo & 0x0F);
+
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "Port \'%s.%d\' [Status: 0x%02x]\n", portTypeNames[portTypeIdx], portId, portMon.port[pIdx].status);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\trx:  %u Kbytes,  %u KB/s,  %u errors,  %u overflows\n",
+                        portMon.port[pIdx].rxBytes / 1024, portMon.port[pIdx].rxBytesPerSec / 1024, portMon.port[pIdx].rxChecksumErrors, portMon.port[pIdx].rxOverflows);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\ttx:  %u Kbytes,  %u KB/s,  %u dropped,  %u overflows\n",
+                        portMon.port[pIdx].txBytes / 1024, portMon.port[pIdx].txBytesPerSec / 1024, portMon.port[pIdx].txBytesDropped, portMon.port[pIdx].txOverflows);
+    }
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+
+    return buf;
+}
+
+/**
  * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
  * otherwise supported.
  * @param raw_data a pointer to the raw DID byte stream
@@ -1801,6 +1850,9 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	data_mapping_string_t tmp;
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 	{
+        if (it == m_editData.mapInfoEnd)
+            break;
+
 		// Print value
 		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
 		{	// Show keyboard value
@@ -1903,6 +1955,7 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 	m_editData.mapInfo = cISDataMappings::GetMapInfo(did);
 	m_editData.mapInfoSelection = m_editData.mapInfo->begin();
 	m_editData.mapInfoBegin = m_editData.mapInfo->begin();
+    m_editData.mapInfoEnd = m_editData.mapInfo->end();
 
 	// Set m_editData.mapInfoBegin to end or DATASET_VIEW_NUM_ROWSth element, whichever is smaller.
 	int i=0;

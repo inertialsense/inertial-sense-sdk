@@ -780,9 +780,11 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
  * param Target: 0 = device, 
  *               1 = forward to device GNSS 1 port (ie GPX), 
  *               2 = forward to device GNSS 2 port (ie GPX),
- *               else will return  
+ *               else will return
+ *       pHandle: Send in target COM port. 
+ *                If arg is < 0 default port will be used 
 */
-void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel)
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
@@ -813,7 +815,10 @@ void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t p
     memcpy(data, &event, DID_EVENT_HEADER_SIZE);
     memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
 
-    SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+    if(pHandle < 0)
+        SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+    else    
+        comManagerSendData(pHandle, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.

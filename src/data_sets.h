@@ -397,83 +397,6 @@ enum eHdwStatusFlags
     HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
 };
 
-/** Hardware status flags */
-enum eGPXHdwStatusFlags
-{
-    /** GNSS1 satellite signals are being received (antenna and cable are good) */
-    GPX_HDW_STATUS_GNSS1_SATELLITE_RX                   = (int)0x00000001,
-    /** GNSS2 satellite signals are being received (antenna and cable are good) */
-    GPX_HDW_STATUS_GNSS2_SATELLITE_RX                   = (int)0x00000002,
-    /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
-    GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID             = (int)0x00000004,
-    /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
-    GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID             = (int)0x00000008,
-    
-    /** GNSS 1 reset required count */
-    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
-    GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
-#define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
- 
-    GPX_HDW_STATUS_GNSS1_FAULT_FLAG                     = (int)0x00000080,
-    GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
-
-    /** GNSS 2 reset required count */
-    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
-    GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
-#define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
-
-    GPX_HDW_STATUS_GNSS2_FAULT_FLAG                     = (int)0x00000800,
-    GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
-
-    /** GNSS is faulting firmware update REQUIRED */
-    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
-
-    /** System Reset is Required for proper function */
-    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
-    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typicaly 150-250 ms. */
-    GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
-
-    /** Communications Tx buffer limited */
-    GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
-    /** Communications Rx buffer overrun */
-    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,
-    /** GPS PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GPS_PPS                       = (int)0x00040000,
-    /** Time synchronized by GPS PPS */
-    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x00080000,
-
-    /** Communications parse error count */
-    GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK             = (int)0x00F00000,
-    GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET           = 20,
-#define GPX_HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus) ((hdwStatus&GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
-
-    /** (BIT) Built-in self-test running */
-    GPX_HDW_STATUS_BIT_RUNNING                      = (int)0x01000000,
-    /** (BIT) Built-in self-test passed */
-    GPX_HDW_STATUS_BIT_PASSED                       = (int)0x02000000,
-    /** (BIT) Built-in self-test failure */
-    GPX_HDW_STATUS_BIT_FAULT                        = (int)0x03000000,
-    /** (BIT) Built-in self-test mask */
-    GPX_HDW_STATUS_BIT_MASK                         = (int)0x03000000,
-
-    /** Temperature outside spec'd operating range */
-    GPX_HDW_STATUS_ERR_TEMPERATURE                  = (int)0x04000000,
-
-    /** Fault reset cause */
-    GPX_HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
-    /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
-    /** Reset from Watchdog */
-    GPX_HDW_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
-    /** Reset from Software */
-    GPX_HDW_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
-    /** Reset from Hardware (NRST pin low) */
-    GPX_HDW_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
-
-    /** Critical System Fault - CPU error */
-    GPX_HDW_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
-};
-
 /** System status flags */
 enum eSysStatusFlags
 {
@@ -1465,7 +1388,9 @@ enum eGenFaultCodes
     GFC_INS_STATE_ORUN_ALT				= 0x00000004,
     /*! Unhandled interrupt */
     GFC_UNHANDLED_INTERRUPT				= 0x00000010,
-    /*! GNSS Tx Limited */
+    /*! GNSS system runtime fault */
+    GFC_GNSS_SYS_FAULT					= 0x00000020,
+    /*! GNSS Tx limited */
     GFC_GNSS_TX_LIMITED				    = 0x00000040,
     /*! GNSS Rx overrun */
     GFC_GNSS_RX_OVERRUN			        = 0x00000080,
@@ -1475,10 +1400,10 @@ enum eGenFaultCodes
     GFC_INIT_SPI						= 0x00000200,
     /*! Fault: SPI configuration  */
     GFC_CONFIG_SPI						= 0x00000400,
-    /*! Fault: GPS1 init  */
-    GFC_INIT_GPS1						= 0x00000800,
-    /*! Fault: GPS2 init  */
-    GFC_INIT_GPS2                       = 0x00001000,
+    /*! Fault: GNSS1 init  */
+    GFC_GNSS1_INIT						= 0x00000800,
+    /*! Fault: GNSS2 init  */
+    GFC_GNSS2_INIT						= 0x00001000,
     /*! Flash failed to load valid values */
     GFC_FLASH_INVALID_VALUES			= 0x00002000,
     /*! Flash checksum failure */
@@ -1488,7 +1413,7 @@ enum eGenFaultCodes
     /*! System Fault: general */
     GFC_SYS_FAULT_GENERAL				= 0x00010000,
     /*! System Fault: CRITICAL system fault (see DID_SYS_FAULT) */
-    GFC_SYS_FAULT_CRITICAL			    = 0x00020000,
+    GFC_SYS_FAULT_CRITICAL				= 0x00020000,
     /*! Sensor(s) saturated */
     GFC_SENSOR_SATURATION 				= 0x00040000,
     /*! Fault: IMU initialization */
@@ -2381,13 +2306,22 @@ enum eGPXBit_results{
 };
 
 enum eGPXBit_CMD{
-    GPXBit_CMD_NONE                         = 0,
-    GPXBit_CMD_START_MANUF_TEST             = 1,
-    GPXBit_CMD_ALERT_UART_TEST_STR          = 2,
-    GPXBit_CMD_ALERT_PPS1_RX                = 3,
-    GPXBit_CMD_ALERT_PPS2_RX                = 4,
-    GPXBit_CMD_REPORT                       = 5,
-    GPXBit_CMD_STOP                         = 6,
+    GPXBit_CMD_NONE                                     = 0,
+    GPXBit_CMD_START_MANUF_TEST                         = 1,
+    GPXBit_CMD_ALERT_UART_TEST_STR                      = 2,
+    GPXBit_CMD_ALERT_PPS1_RX                            = 3,
+    GPXBit_CMD_ALERT_PPS2_RX                            = 4,
+    GPXBit_CMD_REPORT                                   = 5,
+    GPXBit_CMD_STOP                                     = 6,
+
+    GPXBit_CMD_START_SIM_GPS_NOISE                      = 7,
+    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,     // Send duplicate message
+    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,     // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCH_DOG_COMM_TASK      = 11,     // Cause watch dog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCH_DOG_RTK_TASK       = 12,     // Cause watch dog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,     // Cause hard fault
+    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,     // Cause malloc failure
 };
 
 enum eGPXBit_test_mode{
@@ -2399,6 +2333,8 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
     GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
     GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_test_mode_SYS_FAULT_WATCH_DOG_COMM_TASK      = (int)104,     // Cause watch dog reset by stalling COMM task
+    GPXBit_test_mode_SYS_FAULT_WATCH_DOG_RTK_TASK       = (int)105,     // Cause watch dog reset by stalling RTK task
 };
 
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
@@ -4372,31 +4308,94 @@ typedef struct
 enum eGpxStatus
 {
     /** Communications parse error count */
-    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK         = (int)0x0000000F,
-    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET       = 0,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_MASK                 = (int)0x0000000F,
+    GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET               = 0,
 #define GPX_STATUS_COM_PARSE_ERROR_COUNT(gpxStatus) ((gpxStatus&GPX_STATUS_COM_PARSE_ERR_COUNT_MASK)>>GPX_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
 
-    /** Communications Tx buffer limited */
-    GPX_STATUS_ERR_COM_TX_LIMITED               = (int)0x00000010,
-    /** Communications Rx buffer overrun */
-    GPX_STATUS_ERR_COM_RX_OVERRUN               = (int)0x00000020,
-
     /** Reserved */
-    GPX_STATUS_RESERVED_1                       = (int)0x01000000,    
+    GPX_STATUS_RESERVED_1                               = (int)0x00010000,
+
+    /** Fatal event */
+    GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
+    GPX_STATUS_FATAL_OFFSET                             = 24,
+    GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)1,                     
+    GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)2,
+    GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)3,
+    GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)4,
+    GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)5,
+    GPX_STATUS_FATAL_UNKNOWN                            = (int)6,
+};
+
+/** Hardware status flags */
+enum eGPXHdwStatusFlags
+{
+    /** GNSS1 satellite signals are being received (antenna and cable are good) */
+    GPX_HDW_STATUS_GNSS1_SATELLITE_RX                   = (int)0x00000001,
+    /** GNSS2 satellite signals are being received (antenna and cable are good) */
+    GPX_HDW_STATUS_GNSS2_SATELLITE_RX                   = (int)0x00000002,
+    /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
+    GPX_HDW_STATUS_GNSS1_TIME_OF_WEEK_VALID             = (int)0x00000004,
+    /** GPS time of week is valid and reported.  Otherwise the timeOfWeek is local system time. */
+    GPX_HDW_STATUS_GNSS2_TIME_OF_WEEK_VALID             = (int)0x00000008,
+    
+    /** GNSS 1 reset required count */
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK               = (int)0x00000070,
+    GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
+#define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
+ 
+    GPX_HDW_STATUS_FAULT_GNSS1_INIT                     = (int)0x00000080,
+    GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
+
+    /** GNSS 2 reset required count */
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK               = (int)0x00000700,
+    GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
+#define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
+
+    GPX_HDW_STATUS_FAULT_GNSS2_INIT                     = (int)0x00000800,
+    GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
+
+    /** GNSS is faulting firmware update REQUIRED */
+    GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
+
+    /** System Reset is Required for proper function */
+    GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
+    /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
+    GPX_HDW_STATUS_FLASH_WRITE_PENDING                  = (int)0x00008000,
+
+    /** Communications Tx buffer limited */
+    GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
+    /** Communications Rx buffer overrun */
+    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,
+    /** GPS PPS timepulse signal has not been received or is in error */
+    GPX_HDW_STATUS_ERR_NO_GPS_PPS                       = (int)0x00040000,
+    /** Time synchronized by GPS PPS */
+    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x00080000,
+
+    /** (BIT) Built-in self-test running */
+    GPX_HDW_STATUS_BIT_RUNNING                          = (int)0x01000000,
+    /** (BIT) Built-in self-test passed */
+    GPX_HDW_STATUS_BIT_PASSED                           = (int)0x02000000,
+    /** (BIT) Built-in self-test failure */
+    GPX_HDW_STATUS_BIT_FAULT                            = (int)0x03000000,
+    /** (BIT) Built-in self-test mask */
+    GPX_HDW_STATUS_BIT_MASK                             = (int)0x03000000,
+
+    /** Temperature outside spec'd operating range */
+    GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
 
     /** Fault reset cause */
-    GPX_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
-    GPX_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
+    GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE              = (int)0x10000000,
     /** Reset from Watchdog */
-    GPX_STATUS_FAULT_RESET_WATCHDOG             = (int)0x20000000,
+    GPX_HDW_STATUS_FAULT_RESET_WATCHDOG                 = (int)0x20000000,
     /** Reset from Software */
-    GPX_STATUS_FAULT_RESET_SOFT                 = (int)0x30000000,
+    GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x30000000,
     /** Reset from Hardware (NRST pin low) */
-    GPX_STATUS_FAULT_RESET_HDW                  = (int)0x40000000,
+    GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
 
     /** Critical System Fault - CPU error */
-    GPX_STATUS_FAULT_SYS_CRITICAL               = (int)0x80000000,
+    GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
 
 typedef enum {
@@ -4756,7 +4755,8 @@ enum ePortMonPortType
     PORT_MON_PORT_TYPE_USB              = (uint8_t)(2 << 4),
     PORT_MON_PORT_TYPE_SPI              = (uint8_t)(3 << 4),
     PORT_MON_PORT_TYPE_I2C              = (uint8_t)(4 << 4),
-    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),        
+    PORT_MON_PORT_TYPE_CAN              = (uint8_t)(5 << 4),
+    PORT_MON_PORT_TYPE_MAX              = (uint8_t)(6 << 4)
 };
 
 /** 
@@ -4881,7 +4881,7 @@ typedef struct
 
 /**
 * (DID_SYS_FAULT) System Fault Information 
-* NOTE: If you modify these, please update crash_info_special_values in IS-src/python/src/ci_hdw/data_sets.py */
+*/
 #define SYS_FAULT_STATUS_HARDWARE_RESET                 0x00000000
 #define SYS_FAULT_STATUS_USER_RESET                     0x00000001
 #define SYS_FAULT_STATUS_ENABLE_BOOTLOADER              0x00000002
@@ -5287,6 +5287,7 @@ typedef union PACKED
     gpx_status_t            gpxStatus;
     debug_array_t           imxDebugArray;
     debug_array_t           gpxDebugArray;
+    port_monitor_t          portMonitor;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
