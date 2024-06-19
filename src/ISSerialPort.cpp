@@ -102,8 +102,9 @@ static void register_comport( vector<string>& comList, vector<string>& comList82
         if (driver == "serial8250") 
 		{	// Put serial8250-devices in a seperate list
             comList8250.push_back(devfile);
-        } else
-		{
+        }
+        else if (driver != "port")
+        {
             comList.push_back(devfile);
 		}
     }
