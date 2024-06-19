@@ -1618,7 +1618,7 @@ int nmea_gsv_gnss(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t
 
     for (int i = 0; i<numSigIds; i++)
     {
-        n += nmea_gsv_group(a, aSize, gsat, gsig, gnssId, sigIds[i]);
+        n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, sigIds[i]);
     }
 
     return n;
@@ -1636,7 +1636,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
             // printf("gnssId: %d\n", gnssId);
 
             // With CNO
-            if(aSize - n > 0)
+            if((aSize - n) > 0)
                 n += nmea_gsv_gnss(a+n, aSize - n, gsat, gsig, gnssId);
             else 
                 break;
