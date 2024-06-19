@@ -4393,6 +4393,10 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x30000000,
     /** Reset from Hardware (NRST pin low) */
     GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
+    /** Reset from brown out */
+    GPX_HDW_STATUS_FAULT_RESET_BROWN                    = (int)0x50000000,
+    /** Reset from low power */
+    GPX_HDW_STATUS_FAULT_RESET_LOW_POW                  = (int)0x60000000,
 
     /** Critical System Fault - CPU error */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
