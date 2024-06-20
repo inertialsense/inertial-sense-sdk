@@ -4318,12 +4318,16 @@ enum eGpxStatus
     /** Fatal event */
     GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
     GPX_STATUS_FATAL_OFFSET                             = 24,
-    GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)1,                     
-    GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)2,
-    GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)3,
-    GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)4,
-    GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)5,
-    GPX_STATUS_FATAL_UNKNOWN                            = (int)6,
+    GPX_STATUS_FATAL_RESET_WATCHDOG                     = (int)1,   /** Reset from Watchdog */
+    GPX_STATUS_FATAL_RESET_BROWN                        = (int)2,   /** Reset from brown out */
+    GPX_STATUS_FATAL_LOW_POW                            = (int)3,   /** Reset from low power */
+    GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)4,                     
+    GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)5,
+    GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)6,
+    GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)7,
+    GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)8,
+
+    GPX_STATUS_FATAL_UNKNOWN                            = (int)0xff,
 };
 
 /** Hardware status flags */
@@ -4387,16 +4391,10 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
     /** Reset from Backup mode (low-power state w/ CPU off) */
     GPX_HDW_STATUS_FAULT_RESET_BACKUP_MODE              = (int)0x10000000,
-    /** Reset from Watchdog */
-    GPX_HDW_STATUS_FAULT_RESET_WATCHDOG                 = (int)0x20000000,
     /** Reset from Software */
-    GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x30000000,
+    GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x20000000,
     /** Reset from Hardware (NRST pin low) */
     GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
-    /** Reset from brown out */
-    GPX_HDW_STATUS_FAULT_RESET_BROWN                    = (int)0x50000000,
-    /** Reset from low power */
-    GPX_HDW_STATUS_FAULT_RESET_LOW_POW                  = (int)0x60000000,
 
     /** Critical System Fault - CPU error */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
