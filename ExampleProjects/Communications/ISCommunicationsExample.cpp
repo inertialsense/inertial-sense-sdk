@@ -55,7 +55,7 @@ static void handleImuMessage(imu_t* imu)
 		imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
-static int portWrite(int port, const unsigned char* buf, int len)
+static int portWrite(unsigned int port, const unsigned char* buf, int len)
 {
 	return serialPortWrite(&s_serialPort, buf, len);
 }

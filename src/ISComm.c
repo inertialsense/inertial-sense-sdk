@@ -979,7 +979,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
+int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -1050,7 +1050,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
+int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt)
 {
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
@@ -1091,7 +1091,7 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
-int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
     packet_t txPkt;
 
@@ -1099,7 +1099,7 @@ int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* co
     return is_comm_write_pkt(portWrite, port, comm, &txPkt, flags, did, data_size, offset, data);
 }
 
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
     if (portWrite == NULL)
     {
