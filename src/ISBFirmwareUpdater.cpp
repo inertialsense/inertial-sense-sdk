@@ -116,28 +116,34 @@ bool ISBFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proc
             case 0: // transfer
                 if (transferProgress >= 1.0f)
                     updateStage++;
-                return fwUpdate::FINALIZING;
+                session_status = fwUpdate::FINALIZING;
+                break;
             case 1: // prepare for erase
                 get_device_info();
                 updateStage++;
-                return fwUpdate::FINALIZING;
+                session_status = fwUpdate::FINALIZING;
+                break;
             case 2: // waiting for erase to finish
                 erase_flash();
                 updateStage++;
-                return fwUpdate::FINALIZING;
+                session_status = fwUpdate::FINALIZING;
+                break;
             case 3: // prepare for write
                 select_page(0);
                 begin_program_for_current_page(m_isb_props.app_offset, FLASH_PAGE_SIZE - 1);
                 updateStage++;
-                return fwUpdate::FINALIZING;
+                session_status = fwUpdate::FINALIZING;
+                break;
             case 4: // waiting for write to finish
                 if (step_loadHex() != fwUpdate::IN_PROGRESS)
                     updateStage++;
-                return fwUpdate::FINALIZING;
+                session_status = fwUpdate::FINALIZING;
+                break;
             case 5:
                 delete imgStream;
                 delete imgBuffer;
                 rebootToAPP();
+                session_status = fwUpdate::FINALIZING;
                 break;
         }
     }

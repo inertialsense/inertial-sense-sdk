@@ -1122,11 +1122,6 @@ is_operation_result InertialSense::updateFirmware(
             device.fwUpdater = new ISFirmwareUpdater(device);
             device.fwUpdater->setTarget(targetDevice);
 
-            // TODO: Implement maybe
-            device.fwUpdater->setUploadProgressCb(fwUpdateProgress);
-            device.fwUpdater->setVerifyProgressCb(verifyProgress);
-            device.fwUpdater->setInfoProgressCb(fwUpdateStatus);
-
             device.fwUpdater->setCommands(cmds);
         }
     }
@@ -1154,11 +1149,6 @@ is_operation_result InertialSense::updateFirmware(
     EnableDeviceValidation(true);
     device.fwUpdater = new ISFirmwareUpdater(device);
     device.fwUpdater->setTarget(targetDevice);
-
-    // TODO: Implement maybe
-    device.fwUpdater->setUploadProgressCb(fwUpdateProgress);
-    device.fwUpdater->setVerifyProgressCb(verifyProgress);
-    device.fwUpdater->setInfoProgressCb(fwUpdateStatus);
 
     device.fwUpdater->setCommands(cmds);
 

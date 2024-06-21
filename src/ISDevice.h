@@ -62,7 +62,7 @@ public:
         std::vector<std::string> target_idents;
         std::vector<std::string> target_messages;
     } fwState = {};
-    ISFirmwareUpdater *fwUpdater;
+    ISFirmwareUpdater *fwUpdater = nullptr;
 
     bool fwUpdateInProgress();
     bool fwUpdate();
