@@ -1492,11 +1492,8 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
     return false;
 }
 
-int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
+int nmea_gsv_group(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
 {
-    // Apply offset to buffer
-    a += offset;
-    aSize -= offset;
     char *bufStart = a;
 
     int numSigs = nmea_gsv_num_sat_sigs(gnssId, sigId, gsig);
@@ -1549,7 +1546,6 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
         }
         nmea_sprint_footer(a, aSize, n);
 
-        offset += n;
         // Move buffer pointer
         a += n;
         aSize -= n;
@@ -1559,12 +1555,12 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 }
 
 
-int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
+int nmea_gsv_gnss(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
 {
     (void)noCno;
     if (s_protocol_version < NMEA_PROTOCOL_4P10)
     {
-        return nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId);
+        return nmea_gsv_group(a, aSize, gsat, gsig, gnssId);
     }
 
     uint8_t *sigIds;
@@ -1622,7 +1618,7 @@ int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &
 
     for (int i = 0; i<numSigIds; i++)
     {
-        n += nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId, sigIds[i]);
+        n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, sigIds[i]);
     }
 
     return n;
@@ -1630,7 +1626,7 @@ int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &
 
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 {
-    int n=0;
+    int n = 0;
 
     // eSatSvGnssId
     for (int gnssId=1; gnssId<=SAT_SV_GNSS_ID_IRN; gnssId++)
@@ -1640,7 +1636,10 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
             // printf("gnssId: %d\n", gnssId);
 
             // With CNO
-            nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId);
+            if((aSize - n) > 0)
+                n += nmea_gsv_gnss(a+n, aSize - n, gsat, gsig, gnssId);
+            else 
+                break;
 
             // Zero CNO
             // nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId, true);
