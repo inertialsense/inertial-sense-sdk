@@ -284,7 +284,8 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
                         break;
                 }
             }
-            return false;
+            if (g_commandLineOptions.fwUpdateCmds.empty())
+                return false; // only return false (and exit) if we are NOT performing an firmware update.
         }
     }
 
@@ -507,24 +508,15 @@ void printProgress()
     print_mutex.unlock();
 }
 
-is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string& stepName = "", int stepNo = 0, int totalSteps = 0)
+is_operation_result bootloadUpdateCallback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if(obj)
-    {
-        ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-        ctx->m_update_progress = percent;
-    }
+    cltool_firmwareUpdateInfo(obj, 0, "%s (%d of %d) (%d %%)", stepName.c_str(), stepNo, totalSteps, (int)percent);
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
 is_operation_result bootloadVerifyCallback(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps)
 {
-    if(obj)
-    {
-        ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
-        ctx->m_verify_progress = percent;
-    }
-
+    cltool_firmwareUpdateInfo(obj, 0, "%s (%d of %d) (%d %%)", stepName.c_str(), stepNo, totalSteps, percent);
     return g_killThreadsNow ? IS_OP_CANCELLED : IS_OP_OK;
 }
 
@@ -791,7 +783,7 @@ static int cltool_dataStreaming()
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
     if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto& device : inertialSenseInterface.getDevices()) {
-            if (device.fwUpdate.hasError) {
+            if (device.fwState.hasError) {
                 exitCode = -3;
                 break;
             }

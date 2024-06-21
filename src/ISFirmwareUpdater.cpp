@@ -4,6 +4,9 @@
 
 #include "ISFirmwareUpdater.h"
 
+#include "ISDFUFirmwareUpdater.h"
+#include "ISBFirmwareUpdater.h"
+
 /**
  * Specifies the target device that you wish to update. This will attempt an initial REQ_VERSION request of that device
  * to determine if the device is available, and what firmware it is currently running.  This is a non-blocking call,
@@ -22,6 +25,7 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
         target_devInfo = nullptr;
 
         if (_target == fwUpdate::TARGET_DFU_FLAG) {
+            if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
             deviceUpdater = new ISDFUFirmwareUpdater(_target);
         }
 
@@ -31,6 +35,7 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
         }
 
         if (_target & fwUpdate::TARGET_ISB_FLAG) {
+            if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
             deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);
             // we are about to do an IMX-5 update through the IS bootloader
         }
@@ -114,7 +119,12 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
 
     // TODO: We need to validate that this firmware file is the correct file for this target, and that its an actual update (unless 'forceUpdate' is true)
 
+/*
+ * We already do this work when we specify the target.  I don't think it needs doing again...
+ * If it does, then we probably just need to call setTarget(), rather than duplciating the code.
+
     if (_target == fwUpdate::TARGET_DFU_FLAG) {
+        if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
         deviceUpdater = new ISDFUFirmwareUpdater(_target);
     }
 
@@ -124,9 +134,11 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     }
 
     if (_target & fwUpdate::TARGET_ISB_FLAG) {
-        deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost);
+        if (deviceUpdater) delete deviceUpdater; // remove any previously allocated deviceUpdaters
+        deviceUpdater = new ISBFirmwareUpdater(_target, device, toHost, pfnUploadProgress_cb, pfnStatus_cb);
         // we are about to do an IMX-5 update through the IS bootloader
     }
+*/
 
 
     // let's get the file's MD5 hash
@@ -262,17 +274,8 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     if (session_status >= fwUpdate::NOT_STARTED)
         session_status = msg.data.progress.status; // don't overwrite an error status in the event of racing messages.
 
-    float percent = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
+    percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
-
-    if(pfnUploadProgress_cb != nullptr)
-        pfnUploadProgress_cb(this, percent, std::string(), 0, 0);
-
-    if(pfnVerifyProgress_cb != nullptr)
-        pfnVerifyProgress_cb(this, percent, std::string(), 0, 0);
-
-    if(pfnStatus_cb != nullptr)
-        pfnStatus_cb(this, (int)msg.data.progress.msg_level, message);
 
     progress_mutex.unlock();
     return true;
@@ -285,7 +288,7 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
 
 bool ISFirmwareUpdater::fwUpdate_isDone()
 {
-    return !(hasPendingCommands() || requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)));
+    return !(requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)) || hasPendingCommands());
 }
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)

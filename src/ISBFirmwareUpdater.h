@@ -45,13 +45,22 @@ public:
      * @param hdwId the hardware id (from manufacturing info) used to identify which specific hdwType + hdwVer we should be targeting (used in validation)
      * @param serialNo the device-specific unique Id (or serial number) that is used to uniquely identify a particular device (used in validation)
      */
-    ISBFirmwareUpdater(fwUpdate::target_t target, ISDevice& device, std::deque<uint8_t>& toHost, uint32_t serialNo = UINT32_MAX) : FirmwareUpdateDevice(target), device(device), toHost(toHost) {
+    ISBFirmwareUpdater(fwUpdate::target_t target, ISDevice& device, std::deque<uint8_t>& toHost) :
+    FirmwareUpdateDevice(target), device(device), toHost(toHost) {
         // uint16_t hdwId = (target & fwUpdate::TARGET_IMX5 ? ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0)  : ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2));
         // as soon as this is instantiated, we should attempt to target and boot the device into ISB mode.
         // rebootToISB(5, 0, false);
     }
     ~ISBFirmwareUpdater() { };
 
+    /**
+     * We override this in this class, because we have to do some better handling for erase/write, rather than chunks.
+     * @param level
+     * @param message
+     * @param ...
+     * @return
+     */
+    bool fwUpdate_sendProgressFormatted(int level, const char* message, ...) override;
 
     // this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
     bool fwUpdate_step(fwUpdate::msg_types_e msg_type = fwUpdate::MSG_UNKNOWN, bool processed = false) override;
@@ -122,6 +131,7 @@ public:
      */
     bool fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t* buffer, int buff_len) override;
 
+
 private:
     typedef enum {
         IS_DEV_TYPE_NONE = 0,
@@ -167,13 +177,17 @@ private:
     } eImageSignature;
 
     ISDevice &device;
-    // serial_port_t* m_port = nullptr;
 
     uint32_t m_sn;                      // Inertial Sense serial number, i.e. SN60000
     uint16_t hardwareId;                // Inertial Sense Hardware Type (IMX, GPX, etc)
     uint8_t m_isb_major;                // ISB Major revision on device
     char m_isb_minor;                   // ISB Minor revision on device
     bool isb_mightUpdate;               // true if device will be updated if bootloader continues
+
+    float transferProgress = 0.f;       // the percentage complete of the data transfer step
+    float eraseProgress = 0.f;          // the percentage complete of the erase step
+    float writeProgress = 0.f;          // the percentage complete of the write step
+    int updateStage = 0;                // 0 = not started thru 5 = finished writing
 
     struct {
         bool is_evb;                    // Available on version 6+, otherwise false
@@ -190,17 +204,27 @@ private:
     static std::vector<uint32_t> rst_serial_list;
     static std::mutex rst_serial_list_mutex;
 
-    fwUpdate::pfnProgressCb progressCb;
-    fwUpdate::pfnStatusCb statusCb;
-
     fwUpdate::target_t getTargetType();
 
-    is_operation_result rebootToISB(uint8_t major, char minor, bool force);
-    is_operation_result rebootToAPP();
+    bool rebootToISB()    ;
+    bool rebootToAPP(bool keepPortOpen = false);
+
     is_operation_result sync();
+    uint32_t get_device_info();
     eImageSignature check_is_compatible();
     int checksum(int checkSum, uint8_t* ptr, int start, int end, int checkSumPosition, int finalCheckSum);
-    is_operation_result erase_flash();
+    fwUpdate::update_status_e erase_flash();
+    is_operation_result select_page(int page);
+    is_operation_result begin_program_for_current_page(int startOffset, int endOffset);
+    int is_isb_read_line(ByteBufferStream& byteStream, char line[1024]);
+    is_operation_result upload_hex_page(unsigned char* hexData, int byteCount, int* currentOffset, int* totalBytes, int* verifyCheckSum);
+    is_operation_result upload_hex(unsigned char* hexData, int charCount, int* currentOffset, int* currentPage, int* totalBytes, int* verifyCheckSum);
+    is_operation_result fill_current_page(int* currentPage, int* currentOffset, int* totalBytes, int* verifyCheckSum);
+    is_operation_result process_hex_file(ByteBufferStream& byteStream);
+
+    fwUpdate::update_status_e step_loadHex();
+
+    is_operation_result download_data(int startOffset, int endOffset);
 
     ByteBuffer* imgBuffer = nullptr;
     ByteBufferStream* imgStream = nullptr;

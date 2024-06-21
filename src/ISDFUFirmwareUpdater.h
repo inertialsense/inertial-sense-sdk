@@ -9,8 +9,6 @@
 #ifndef IS_DFU_FIRMWAREUPDATER_H
 #define IS_DFU_FIRMWAREUPDATER_H
 
-#include "ISFirmwareUpdater.h"
-
 #include <mutex>
 #include <queue>
 

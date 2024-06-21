@@ -13,7 +13,7 @@
 
 #include "DeviceLog.h"
 #include "protocol/FirmwareUpdate.h"
-// #include "ISFirmwareUpdater.h"
+#include "ISFirmwareUpdater.h"
 
 extern "C"
 {
@@ -24,23 +24,6 @@ extern "C"
 }
 
 class ISFirmwareUpdater;
-
-class ISDeviceUpdater {
-public:
-    ISFirmwareUpdater* fwUpdater;
-    float percent;
-    bool hasError;
-    uint16_t lastSlot;
-    fwUpdate::target_t lastTarget;
-    fwUpdate::update_status_e lastStatus;
-    std::string lastMessage;
-
-    std::vector<std::string> target_idents;
-    std::vector<std::string> target_messages;
-
-    bool inProgress();
-    void update();
-};
 
 class ISDevice {
 public:
@@ -67,7 +50,22 @@ public:
 
     std::shared_ptr<cDeviceLog> devLogger;
     fwUpdate::update_status_e closeStatus = { };
-    ISDeviceUpdater fwUpdate = { };
+
+    struct {
+        float percent = 0.f;
+        bool hasError = false;
+        uint16_t lastSlot = 0;
+        fwUpdate::target_t lastTarget = fwUpdate::TARGET_UNKNOWN;
+        fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
+        std::string lastMessage;
+
+        std::vector<std::string> target_idents;
+        std::vector<std::string> target_messages;
+    } fwState = {};
+    ISFirmwareUpdater *fwUpdater;
+
+    bool fwUpdateInProgress();
+    bool fwUpdate();
 
     static ISDevice invalidRef;
 

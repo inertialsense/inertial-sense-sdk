@@ -9,54 +9,58 @@
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 
-bool ISDeviceUpdater::inProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
+#include "ISBFirmwareUpdater.h"
+#include "ISDFUFirmwareUpdater.h"
 
-void ISDeviceUpdater::update() {
+bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
+
+bool ISDevice::fwUpdate() {
     if (fwUpdater) {
+        fwUpdater->fwUpdate_step();
         if ("upload" == fwUpdater->getActiveCommand()) {
-            if (fwUpdater->fwUpdate_getSessionTarget() != lastTarget) {
-                hasError = false;
-                lastStatus = fwUpdate::NOT_STARTED;
-                lastMessage.clear();
-                lastTarget = fwUpdater->fwUpdate_getSessionTarget();
+            if (fwUpdater->fwUpdate_getSessionTarget() != fwState.lastTarget) {
+                fwState.hasError = false;
+                fwState.lastStatus = fwUpdate::NOT_STARTED;
+                fwState.lastMessage.clear();
+                fwState.lastTarget = fwUpdater->fwUpdate_getSessionTarget();
             }
-            lastSlot = fwUpdater->fwUpdate_getSessionImageSlot();
+            fwState.lastSlot = fwUpdater->fwUpdate_getSessionImageSlot();
 
             if ((fwUpdater->fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED) && fwUpdater->isWaitingResponse()) {
                 // We're just starting (no error yet, but no response either)
-                lastStatus = fwUpdate::INITIALIZING;
-                lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-            } else if ((fwUpdater->fwUpdate_getSessionStatus() != fwUpdate::NOT_STARTED) && (lastStatus != fwUpdater->fwUpdate_getSessionStatus())) {
+                fwState.lastStatus = fwUpdate::INITIALIZING;
+                fwState.lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwState.lastStatus);
+            } else if ((fwUpdater->fwUpdate_getSessionStatus() != fwUpdate::NOT_STARTED) && (fwState.lastStatus != fwUpdater->fwUpdate_getSessionStatus())) {
                 // We're got a valid status update (error or otherwise)
-                lastStatus = fwUpdater->fwUpdate_getSessionStatus();
-                lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
+                fwState.lastStatus = fwUpdater->fwUpdate_getSessionStatus();
+                fwState.lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwState.lastStatus);
 
                 // check for error
-                if (!hasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
-                    hasError = true;
+                if (!fwState.hasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
+                    fwState.hasError = true;
                 }
             }
 
             // update our upload progress
-            if ((lastStatus == fwUpdate::IN_PROGRESS)) {
-                percent = ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
+            if ((fwState.lastStatus == fwUpdate::IN_PROGRESS)) {
+                fwState.percent = fwUpdater->getPercentComplete(); // ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
             } else {
-                percent = lastStatus <= fwUpdate::READY ? 0.f : 100.f;
+                fwState.percent = fwState.lastStatus <= fwUpdate::READY ? 0.f : 100.f;
             }
         } else if ("waitfor" == fwUpdater->getActiveCommand()) {
-            lastMessage = "Waiting for response from device.";
+            fwState.lastMessage = "Waiting for response from device.";
         } else if ("reset" == fwUpdater->getActiveCommand()) {
-            lastMessage = "Resetting device.";
+            fwState.lastMessage = "Resetting device.";
         } else if ("delay" == fwUpdater->getActiveCommand()) {
-            lastMessage = "Waiting...";
+            fwState.lastMessage = "Waiting...";
         }
 
         if (!fwUpdater->hasPendingCommands()) {
-            if (!hasError) {
-                lastMessage = "Completed successfully.";
+            if (!fwState.hasError) {
+                fwState.lastMessage = "Completed successfully.";
             } else {
-                lastMessage = "Error: ";
-                lastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
+                fwState.lastMessage = "Error: ";
+                fwState.lastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwState.lastStatus);
             }
         }
 
@@ -66,8 +70,9 @@ void ISDeviceUpdater::update() {
             fwUpdater = nullptr;
         }
     } else {
-        percent = 0.0;
+        fwState.percent = 0.0;
     }
+    return fwUpdateInProgress();
 }
 
 bool ISDevice::handshakeISB() {

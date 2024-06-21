@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <deque>
 
 #include "util/md5.h"
 #include <protocol/FirmwareUpdate.h>
@@ -14,8 +15,7 @@
 #include "ISDevice.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
-#include "ISDFUFirmwareUpdater.h"
-#include "ISBFirmwareUpdater.h"
+
 #include "miniz.h"
 
 #ifndef __EMBEDDED__
@@ -30,8 +30,6 @@ extern "C"
     #include "com_manager.h"
     #include "serialPortPlatform.h"
 }
-
-class ISDFUFirmwareUpdater;
 
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
 public:
@@ -53,18 +51,12 @@ public:
 
     // const ISDevice& device;
     ISDevice &device;                       //! a reference to the ISDevice associated with this updater (the root device which the SDK uses to communicate with the target device).
-    // int pHandle = 0;                        //! a handle to the comm port which we use to talk to the device
-    // serial_port_t& serialPort;              //! the serial_port_struct associated with pHandle
-    // const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
-     * @param portHandle handle to the port (typically serial) to which the device is connected
-     * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
+     * @param device ISDevice reference to the root device that we are connecting to to manage the update (port info, etc).
      */
-    // ISFirmwareUpdater(int portHandle, serial_port_t& port, const dev_info_t *devInfo) : FirmwareUpdateHost(), pHandle(portHandle), serialPort(port), devInfo(devInfo) { };
-
     ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), device(device) { };
 
     ~ISFirmwareUpdater() override {};
@@ -72,6 +64,8 @@ public:
     void setTarget(fwUpdate::target_t _target);
 
     bool setCommands(std::vector<std::string> cmds);
+
+    float getPercentComplete() { return percentComplete; }
 
     bool addCommands(std::vector<std::string> cmds);
 
@@ -117,7 +111,7 @@ public:
      */
     // fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
 
-    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 500);
+    fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 200);
 
     /**
      * @param offset the offset into the image file to pull data from
@@ -142,12 +136,6 @@ public:
     bool fwUpdate_handleDone(const fwUpdate::payload_t &msg);
 
     bool fwUpdate_isDone();
-
-    void setUploadProgressCb(fwUpdate::pfnProgressCb pfnProgress) { pfnUploadProgress_cb = pfnProgress; }
-
-    void setVerifyProgressCb(fwUpdate::pfnProgressCb pfnProgress) { pfnVerifyProgress_cb = pfnProgress; }
-
-    void setInfoProgressCb(fwUpdate::pfnStatusCb pfnStatus) { pfnStatus_cb = pfnStatus; }
 
     /**
      * this is called internally by processMessage() to do the things; it should also be called periodically to send status updated, etc.
@@ -221,6 +209,8 @@ private:
     uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
     uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
     uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
+
+    float percentComplete = 0.f;        //! the current percent complete as reported by the device
 
     fwUpdate::pfnProgressCb pfnUploadProgress_cb = nullptr;
     fwUpdate::pfnProgressCb pfnVerifyProgress_cb = nullptr;

@@ -31,7 +31,7 @@ namespace utils {
         tt = system_clock::to_time_t(currentTime);
         auto timeinfo = localtime(&tt);
         strftime(buffer, 80, "%F %H:%M:%S", timeinfo);
-        sprintf(buffer + strlen(buffer), "%03d", (int) millis);
+        sprintf(buffer + strlen(buffer), ".%03d", (int) millis);
 
         return std::string(buffer);
     }
