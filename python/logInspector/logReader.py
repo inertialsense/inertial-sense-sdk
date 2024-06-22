@@ -529,7 +529,7 @@ class Log:
             fver    = devInfo['firmwareVer']
             buld    = devInfo['buildNumber']
             repo    = devInfo['repoRevision']
-            year    = 2000 + devInfo['buildYear']
+            year    = 2000 + int(devInfo['buildYear'])
             month   = devInfo['buildMonth']
             day     = devInfo['buildDay']
             hour    = devInfo['buildHour']
