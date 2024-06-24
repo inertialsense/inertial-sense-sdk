@@ -229,11 +229,10 @@ static int configure_serial_port(int fd, int baudRate)
             if (new_tty.c_cflag != tty.c_cflag) { error_message("config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x\n", tty.c_cflag, new_tty.c_cflag); }
             if (new_tty.c_lflag != tty.c_lflag) { error_message("config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x\n", tty.c_lflag, new_tty.c_lflag); }
             for (int i = 0; i < 32; i++)
-                if (new_tty.c_cc != tty.c_cc) { error_message("config_serial_port():: setting c_cc[%d] mismatch: expected: %x, actual: %x\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
-            if (new_tty.c_line != tty.c_line) { error_message("config_serial_port():: setting c_line mismatch: expected: %x, actual: %x\n", tty.c_line, new_tty.c_line); }
+                if (new_tty.c_cc != tty.c_cc) { error_message("config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
+            if (new_tty.c_line != tty.c_line) { error_message("config_serial_port():: setting c_line mismatch: expected: %d, actual: %d\n", tty.c_line, new_tty.c_line); }
             return -1;
         }
-
     }
 
     return 0;
