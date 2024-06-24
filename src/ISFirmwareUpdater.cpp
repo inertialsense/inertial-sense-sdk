@@ -275,7 +275,10 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
         session_status = msg.data.progress.status; // don't overwrite an error status in the event of racing messages.
 
     percentComplete = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
-    const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
+    const char* message = (msg.data.progress.msg_len > 0) ? (const char*)&msg.data.progress.message : "";
+
+    if(pfnStatus_cb != nullptr)
+        pfnStatus_cb(this, IS_LOG_LEVEL_DEBUG, message);
 
     progress_mutex.unlock();
     return true;
