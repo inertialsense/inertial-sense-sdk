@@ -140,7 +140,7 @@ static int validate_baud_rate(int baudRate)
 
 static int configure_serial_port(int fd, int baudRate)
 {
-    struct termios tty;
+    struct termios tty = {};
 
     if (tcgetattr(fd, &tty) != 0) 
     {
@@ -214,7 +214,7 @@ static int configure_serial_port(int fd, int baudRate)
         //  tcgetattr() to check that all changes have been performed successfully.
         //  Ie, we are probably not seeing this error as we think we are...
 
-        struct termios new_tty;
+        struct termios new_tty = {};
         if (tcgetattr(fd, &new_tty) != 0)
         {
             error_message("config_serial_port():: tcgetattr() : error confirming successful setting of tty settings: %s (%d)\n", strerror(errno), errno);
@@ -229,7 +229,7 @@ static int configure_serial_port(int fd, int baudRate)
             if (new_tty.c_cflag != tty.c_cflag) { error_message("config_serial_port():: setting c_cflag mismatch: expected: %x, actual: %x\n", tty.c_cflag, new_tty.c_cflag); }
             if (new_tty.c_lflag != tty.c_lflag) { error_message("config_serial_port():: setting c_lflag mismatch: expected: %x, actual: %x\n", tty.c_lflag, new_tty.c_lflag); }
             for (int i = 0; i < 32; i++)
-                if (new_tty.c_cc != tty.c_cc) { error_message("config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
+                if (new_tty.c_cc[i] != tty.c_cc[i]) { error_message("config_serial_port():: setting c_cc[%d] mismatch: expected: %d, actual: %d\n", i, tty.c_cc[i], new_tty.c_cc[i]); }
             if (new_tty.c_line != tty.c_line) { error_message("config_serial_port():: setting c_line mismatch: expected: %d, actual: %d\n", tty.c_line, new_tty.c_line); }
             return -1;
         }
@@ -358,9 +358,9 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         return 0;
     }
 
-/*
-    FIXME: This is currently disabled to work around ARMv7 issues.. THIS MUST NOT GO TO RELEASE without at least a switch
+    // FIXME: This is currently disabled to work around ARMv7 issues.. THIS MUST NOT GO TO RELEASE without at least a switch
     // Disable blocking port reads and writes.
+/*
     if (set_nonblocking(fd) != 0)
     {
         close(fd);
