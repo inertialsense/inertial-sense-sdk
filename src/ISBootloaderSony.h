@@ -33,9 +33,9 @@ class cISBootloaderSONY : public ISBootloader::cISBootloaderBase
 public:
     cISBootloaderSONY(
         std::string filename,
-        ISBootloader::pfnBootloadProgress upload_cb,
-        ISBootloader::pfnBootloadProgress verify_cb,
-        ISBootloader::pfnBootloadStatus info_cb,
+        fwUpdate::pfnProgressCb upload_cb,
+        fwUpdate::pfnProgressCb verify_cb,
+        fwUpdate::pfnStatusCb info_cb,
         serial_port_t* port
     ) : cISBootloaderBase{ filename, upload_cb, verify_cb, info_cb } 
     {

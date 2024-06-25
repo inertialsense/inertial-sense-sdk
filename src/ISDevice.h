@@ -13,7 +13,7 @@
 
 #include "DeviceLog.h"
 #include "protocol/FirmwareUpdate.h"
-// #include "ISFirmwareUpdater.h"
+#include "ISFirmwareUpdater.h"
 
 extern "C"
 {
@@ -25,28 +25,20 @@ extern "C"
 
 class ISFirmwareUpdater;
 
-class ISDeviceUpdater {
-public:
-    ISFirmwareUpdater* fwUpdater;
-    float percent;
-    bool hasError;
-    uint16_t lastSlot;
-    fwUpdate::target_t lastTarget;
-    fwUpdate::update_status_e lastStatus;
-    std::string lastMessage;
-
-    std::vector<std::string> target_idents;
-    std::vector<std::string> target_messages;
-
-    bool inProgress();
-    void update();
-};
-
 class ISDevice {
 public:
+    enum eHdwRunStates:uint8_t {
+        HDW_STATE_UNKNOWN,
+        HDW_STATE_BOOTLOADER,
+        HDW_STATE_APP,
+    };
+
     int portHandle = 0;
     serial_port_t serialPort = { };
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
+
+    uint16_t hdwId;                         //! hardware type and version (ie, IMX-5.0)
+    eHdwRunStates hdwRunState;                   //! state of hardware (running, bootloader, etc).
 
     dev_info_t devInfo = { };
     sys_params_t sysParams = { };
@@ -58,11 +50,48 @@ public:
 
     std::shared_ptr<cDeviceLog> devLogger;
     fwUpdate::update_status_e closeStatus = { };
-    ISDeviceUpdater fwUpdate = { };
+
+    struct {
+        float percent = 0.f;
+        bool hasError = false;
+        uint16_t lastSlot = 0;
+        fwUpdate::target_t lastTarget = fwUpdate::TARGET_UNKNOWN;
+        fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
+        std::string lastMessage;
+
+        std::vector<std::string> target_idents;
+        std::vector<std::string> target_messages;
+    } fwState = {};
+    ISFirmwareUpdater *fwUpdater = nullptr;
+
+    bool fwUpdateInProgress();
+    bool fwUpdate();
 
     static ISDevice invalidRef;
 
-    ISDevice() { };
+    ISDevice() {
+        hdwId = 0;
+        hdwRunState = HDW_STATE_UNKNOWN;
+        portHandle = -1;
+        serialPort = {};
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
+    };
+
+    ISDevice(int ph, const serial_port_t & sp) {
+        hdwId = 0;
+        hdwRunState = HDW_STATE_UNKNOWN;
+        portHandle = ph;
+        serialPort = sp;
+        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
+    }
+
+    bool queryDeviceInfo();
+
+protected:
+    bool handshakeISB();
+    bool queryDeviceInfoISB();
+
+    bool queryDeviceInfoDFU();
 
 };
 

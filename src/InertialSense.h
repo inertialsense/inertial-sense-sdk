@@ -486,9 +486,9 @@ public:
             const std::string& blFileName,
             bool forceBootloaderUpdate,
             int baudRate = IS_BAUDRATE_921600,
-            ISBootloader::pfnBootloadProgress uploadProgress = NULLPTR,
-            ISBootloader::pfnBootloadProgress verifyProgress = NULLPTR,
-            ISBootloader::pfnBootloadStatus infoProgress = NULLPTR,
+            fwUpdate::pfnProgressCb uploadProgress = NULLPTR,
+            fwUpdate::pfnProgressCb verifyProgress = NULLPTR,
+            fwUpdate::pfnStatusCb infoProgress = NULLPTR,
             void (*waitAction)() = NULLPTR
     );
 
@@ -511,9 +511,9 @@ public:
             int baudRate,
             fwUpdate::target_t targetDevice,
             std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress,
-            ISBootloader::pfnBootloadProgress verifyProgress,
-            ISBootloader::pfnBootloadStatus infoProgress,
+            fwUpdate::pfnProgressCb fwUpdateProgress,
+            fwUpdate::pfnProgressCb verifyProgress,
+            fwUpdate::pfnStatusCb fwUpdateStatus,
             void (*waitAction)()
     );
 
@@ -521,9 +521,9 @@ public:
             ISDevice& device,
             fwUpdate::target_t targetDevice,
             std::vector<std::string> cmds,
-            ISBootloader::pfnBootloadProgress uploadProgress,
-            ISBootloader::pfnBootloadProgress verifyProgress,
-            ISBootloader::pfnBootloadStatus infoProgress,
+            fwUpdate::pfnProgressCb fwUpdateProgress,
+            fwUpdate::pfnProgressCb verifyProgress,
+            fwUpdate::pfnStatusCb fwUpdateStatus,
             void (*waitAction)()
     );
 
@@ -642,6 +642,7 @@ private:
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
+    is_operation_result handshakeISB(serial_port_t& port);
 };
 
 #endif

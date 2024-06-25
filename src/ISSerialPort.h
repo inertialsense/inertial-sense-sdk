@@ -83,8 +83,9 @@ public:
 	/**
 	* Gets a list of com names of all connected usb ports
 	* @param ports cleared and then receives the name of each connected usb port
+	* @return the number of ports, or 0 is no ports are found (this is the same as ports.size())
 	*/
-	static void GetComPorts(std::vector<std::string>& ports);
+	static int GetComPorts(std::vector<std::string>& ports);
 
 	/**
 	* Gets information about the current connection (i.e. TCP ip address and port number or serial port name)

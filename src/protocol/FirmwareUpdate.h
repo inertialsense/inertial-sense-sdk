@@ -101,12 +101,17 @@ namespace fwUpdate {
  *
  */
 
+    typedef is_operation_result (*pfnProgressCb)(void* obj, float percent, const std::string& stepName, int stepNo, int totalSteps);
+    typedef void (*pfnStatusCb)(void* obj, int level, const char* infoString, ...);
+
+
 #define FWUPDATE__MAX_CHUNK_SIZE   512
 #define FWUPDATE__MAX_PAYLOAD_SIZE (FWUPDATE__MAX_CHUNK_SIZE + 92)
 
-    static constexpr uint32_t TARGET_TYPE_MASK = 0xFFF0;
-    static constexpr uint32_t TARGET_DFU_FLAG = 0x80000000;
-    static constexpr uint32_t TARGET_ISB_FLAG = 0x40000000;
+    static constexpr uint32_t TARGET_TYPE_MASK = 0x0000FFF0;
+    static constexpr uint32_t TARGET_DFU_FLAG  = 0x80000000;
+    static constexpr uint32_t TARGET_ISB_FLAG  = 0x40000000;
+    static constexpr uint32_t TARGET_SMP_FLAG  = 0x20000000;
 
     enum target_t : uint32_t {
         TARGET_HOST = 0x00,
@@ -115,6 +120,7 @@ namespace fwUpdate {
         TARGET_ISB_IMX5 = (TARGET_ISB_FLAG | TARGET_IMX5), // note that the IMX5 ONLY support ISB mode (it doesn't directly support ISv2)
         TARGET_GPX1 = 0x20,
         TARGET_DFU_GPX1 = (TARGET_DFU_FLAG | TARGET_GPX1),
+        TARGET_SMP_GPX1 = (TARGET_SMP_FLAG | TARGET_GPX1),
         TARGET_VPX = 0x30, // RESERVED FOR VPX
         TARGET_UBLOX_F9P = 0x110,
         TARGET_UBLOX_F9P__1 = 0x111,
@@ -564,7 +570,7 @@ namespace fwUpdate {
          * This message only include the number of chunks sent, and the total expected (sufficient for a percentage) and the
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgress();
+        virtual bool fwUpdate_sendProgress();
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -572,7 +578,7 @@ namespace fwUpdate {
          * @param message the actual message to be sent to the host
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgress(int level, const std::string message);
+        virtual bool fwUpdate_sendProgress(int level, const std::string message);
 
         /**
          * This is an internal method used to send an update message to the host system regarding the status of the update process
@@ -582,7 +588,7 @@ namespace fwUpdate {
          * @
          * @return true if the message was sent, false if there was an error
          */
-        bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
+        virtual bool fwUpdate_sendProgressFormatted(int level, const char *message, ...);
 
         /**
          * @return true if we have an active session and are updating.

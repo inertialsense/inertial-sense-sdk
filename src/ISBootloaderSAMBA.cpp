@@ -194,7 +194,7 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
             m_update_progress = (float)offset / (float)SAMBA_BOOTLOADER_SIZE_24K;
             if (m_update_callback != 0)
             {
-                m_update_callback(this, m_update_progress);
+                m_update_callback(this, m_update_progress, "Writing Flash", 0, 0);
             }
         }
         fclose(file);
@@ -444,7 +444,7 @@ is_operation_result cISBootloaderSAMBA::verify_image(std::string filename)
         m_verify_progress = (float)(address - SAMBA_FLASH_START_ADDRESS) / (float)SAMBA_BOOTLOADER_SIZE_24K;
         if (m_verify_callback != 0)
         {
-            m_verify_callback(this, m_verify_progress);
+            m_verify_callback(this, m_verify_progress, "Verifying Flash", 0, 0);
         }
     }
     if (checksum != checksum2) return IS_OP_ERROR;

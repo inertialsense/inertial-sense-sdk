@@ -16,6 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderISB.h"
 #include "ISBootloaderSAMBA.h"
 #include "ISSerialPort.h"
+#include "protocol/FirmwareUpdate.h"
 
 #include <algorithm>
 
@@ -28,9 +29,9 @@ using namespace ISBootloader;
 
 vector<cISBootloaderBase*> cISBootloaderThread::ctx;
 firmwares_t cISBootloaderThread::m_firmware;
-pfnBootloadProgress cISBootloaderThread::m_uploadProgress; 
-pfnBootloadProgress cISBootloaderThread::m_verifyProgress;
-pfnBootloadStatus cISBootloaderThread::m_infoProgress;
+fwUpdate::pfnProgressCb cISBootloaderThread::m_uploadProgress;
+fwUpdate::pfnProgressCb cISBootloaderThread::m_verifyProgress;
+fwUpdate::pfnStatusCb cISBootloaderThread::m_infoProgress;
 int cISBootloaderThread::m_baudRate;
 void (*cISBootloaderThread::m_waitAction)();
 uint32_t cISBootloaderThread::m_timeStart;
@@ -329,7 +330,7 @@ void cISBootloaderThread::update_thread_libusb(void* context)
 
 bool cISBootloaderThread::true_if_cancelled(void)
 {
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED)
+    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     {
         m_continue_update = false;
         return true;
@@ -342,9 +343,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     vector<string>&                         comPorts,
     int                                     baudRate,
     const ISBootloader::firmwares_t&        firmware,
-    ISBootloader::pfnBootloadProgress       uploadProgress, 
-    ISBootloader::pfnBootloadProgress       verifyProgress,
-    ISBootloader::pfnBootloadStatus         infoProgress,
+    fwUpdate::pfnProgressCb       uploadProgress,
+    fwUpdate::pfnProgressCb       verifyProgress,
+    fwUpdate::pfnStatusCb         infoProgress,
     void						            (*waitAction)()
 )
 {
@@ -420,7 +421,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                         break;
                     }
                 }
-               
             }
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
@@ -498,7 +498,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_thread_mutex.unlock();
     }
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -619,7 +619,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_thread_mutex.unlock();
     }
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -654,9 +654,9 @@ is_operation_result cISBootloaderThread::update(
     bool                        force_isb_update,
     int                         baudRate,
     const firmwares_t&          firmware,
-    pfnBootloadProgress         uploadProgress,
-    pfnBootloadProgress         verifyProgress,
-    pfnBootloadStatus           infoProgress,
+    fwUpdate::pfnProgressCb         uploadProgress,
+    fwUpdate::pfnProgressCb         verifyProgress,
+    fwUpdate::pfnStatusCb           infoProgress,
     void						(*waitAction)()
 )
 {
@@ -692,7 +692,7 @@ is_operation_result cISBootloaderThread::update(
         comPorts.begin(), comPorts.end(),
         back_inserter(ports_user_ignore));
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if(m_uploadProgress(NULL, 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -799,7 +799,7 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if(m_uploadProgress(NULL, 0.0f, "Writing Flash", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
@@ -934,7 +934,7 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if(m_uploadProgress(NULL, 0.0f, "", 0, 0) == IS_OP_CANCELLED)
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 

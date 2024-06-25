@@ -224,14 +224,14 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.evFCont.dest = stoi(token);
 
             if (g_commandLineOptions.evFCont.dest == 0)
-                printf("EVF Target: Primary device\n");
+                printf("EVF Target: Primary device.\n");
             else if (g_commandLineOptions.evFCont.dest == 1)
-                printf("EVF Target: device GNSS1 port\n");
+                printf("EVF Target: device GNSS1 port.\n");
             else if (g_commandLineOptions.evFCont.dest == 2)
-                printf("EVF Target: device GNSS2 port\n");
+                printf("EVF Target: device GNSS2 port.\n");
             else 
             {
-                printf("EVF Target: INVALID\n"); 
+                printf("EVF Target: INVALID '%s'\n", token);
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
@@ -502,13 +502,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             if ((strcmp(a, "-ufpkg") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 g_commandLineOptions.fwUpdateCmds.push_back(string("package=") + string(argv[++i]));
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }
             else if ((strcmp(a, "-uf-cmd") == 0) && (i + 1) < argc)
             {
-                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_GPX1;          // use the new firmware update mechanism and target the GPX specifically
+                g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_UNKNOWN;          // use the new firmware update mechanism and target the GPX specifically
                 splitString(string(argv[++i]), ',', g_commandLineOptions.fwUpdateCmds);
                 enable_display_mode(cInertialSenseDisplay::DMODE_QUIET);                    // Disable ISDisplay cInertialSenseDisplay output
             }

@@ -15,7 +15,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 
 #ifdef IMX_5
-#include "globals.h"
+    #include "globals.h"
+    #include "boards/IMX-5.h"
 #endif
 
 

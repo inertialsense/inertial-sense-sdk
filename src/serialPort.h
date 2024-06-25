@@ -80,6 +80,9 @@ struct serial_port_t
 	// the port name (do not modify directly)
 	char port[MAX_SERIAL_PORT_NAME_LENGTH + 1];
 
+    // the current (or expected) baud rate to communicate at
+    int baudRate;
+
     // latest errno that was reported from an operation on this port
     int errorCode;
 

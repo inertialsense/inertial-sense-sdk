@@ -165,13 +165,15 @@ bool cDeviceLog::OpenNewSaveFile()
 	// create directory
 	_MKDIR(m_directory.c_str());
 
+    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
+
 #if !PLATFORM_IS_EMBEDDED
+    vector<ISFileManager::file_info_t> files;
+    uint64_t spaceUsed = ISFileManager::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
 
 	// clear out space if we need to
 	if (m_maxDiskSpace != 0)
 	{
-		vector<ISFileManager::file_info_t> files;
-		uint64_t spaceUsed = ISFileManager::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
 		unsigned int index = 0;
 
 		// clear out old files until we have space
@@ -181,12 +183,25 @@ bool cDeviceLog::OpenNewSaveFile()
 			ISFileManager::DeleteFile(files[index++].name);
 		}
 	}
-	
+
+    // TODO: Locate current files with the same base name, and find the highest "m_fileCount", or start from 0.
+    std::regex pattern("LOG_SN" + std::to_string(serNum) + "_" + m_timeStamp + "_([\\d]+)\\..*$");
+    int maxFileIdx = 0;
+    for (auto file : files) {
+        std::string path, fname, ext;
+        std::smatch match;
+        ISFileManager::getPathComponents(file.name, path, fname, ext);
+        if (std::regex_match(fname, match, pattern)) {
+            maxFileIdx = std::max<int>(stoi(match[1]), maxFileIdx);
+        }
+    }
+    if (maxFileIdx > 0)
+        m_fileCount = maxFileIdx;
+
 #endif
 
 	// Open new file
 	m_fileCount++;
-	uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
 		return false;
 
