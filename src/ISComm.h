@@ -632,11 +632,13 @@ typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* 
 
 typedef struct
 {
-    pfnIsCommIsbMsgHandler          isb;        // Message handler - Inertial Sense binary (ISB) message 
+    pfnIsCommIsbMsgHandler          isbData;    // Message handler - Inertial Sense binary data (ISB) message 
+    pfnIsCommIsbMsgHandler          isbCmd;     // Message handler - Inertial Sense binary command (ISB) message 
     pfnIsCommAsapMsg                rmc;    	// Message handler - broadcast.  Called whenever we get a message broadcast request or message disable command.
     pfnIsCommGenMsgHandler          nmea;   	// Message handler - NMEA
     pfnIsCommGenMsgHandler          ublox;  	// Message handler - Ublox
     pfnIsCommGenMsgHandler          rtcm3;  	// Message handler - RTCM3
+    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
     pfnIsCommGenMsgHandler          sprtn;  	// Message handler - SPARTN
     pfnIsCommParseErrorHandler      error;	    // Error handler 
 } is_comm_callbacks_t;
