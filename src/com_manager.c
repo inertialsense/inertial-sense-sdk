@@ -40,7 +40,7 @@ int initComManagerInstanceInternal
     com_manager_t* cmInstance,
     int numPorts,
     int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
+    pfnIsCommPortRead portReadFnc,
     pfnIsCommPortWrite portWriteFnc,
     pfnComManagerSendBufferAvailableBytes txFreeFnc,
     pfnComManagerPostRead pstRxFnc,
@@ -62,14 +62,12 @@ int asciiMessageCompare(const void* elem1, const void* elem2);
 void stepComManagerSendMessages(void);
 void stepComManagerSendMessagesInstance(CMHANDLE cmInstance);
 
-static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* port, is_comm_instance_t* comm, int32_t pHandle, protocol_type_t ptype);
-
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int comManagerInit
 (	int numPorts,
     int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
+    pfnIsCommPortRead portReadFnc,
     pfnIsCommPortWrite portWriteFnc,
     pfnComManagerSendBufferAvailableBytes txFreeFnc,
     pfnComManagerPostRead pstRxFnc,
@@ -96,7 +94,7 @@ int comManagerInitInstance
 (	CMHANDLE cmHandle,
     int numPorts,
     int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
+    pfnIsCommPortRead portReadFnc,
     pfnIsCommPortWrite portWriteFnc,
     pfnComManagerSendBufferAvailableBytes txFreeFnc,
     pfnComManagerPostRead pstRxFnc,
@@ -131,7 +129,7 @@ int initComManagerInstanceInternal
 (	com_manager_t* cmInstance,
     int numPorts,
     int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
+    pfnIsCommPortRead portReadFnc,
     pfnIsCommPortWrite portWriteFnc,
     pfnComManagerSendBufferAvailableBytes txFreeFnc,
     pfnComManagerPostRead pstRxFnc,
@@ -157,9 +155,7 @@ int initComManagerInstanceInternal
     cmInstance->disableBcastFnc = disableBcastFnc;
     cmInstance->numPorts = numPorts;
     cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
-    cmInstance->cmMsgHandlerNmea = NULL;
-    cmInstance->cmMsgHandlerUblox = NULL;
-    cmInstance->cmMsgHandlerRtcm3 = NULL;
+    memset(&(cmInstance->callbacks), 0, sizeof(is_comm_callbacks_t));
 
     if (buffers == NULL || cmPorts == NULL)
     {
@@ -265,84 +261,10 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
     {
         com_manager_port_t *cmPort = &(cmInstance->ports[port]);
         is_comm_instance_t *comm = &(cmPort->comm);
-        protocol_type_t ptype = _PTYPE_NONE;
 
-        // Read data directly into comm buffer
-        // Here there lie dragons - is_comm_free() modifies comm->rxBuf pointers, so make sure you call here first!!
-        int free_size = is_comm_free(comm);
-        int n = cmInstance->portRead(port, comm->rxBuf.tail, free_size);
-        if (n > 0)
-        {
-            // Update comm buffer tail pointer
-            comm->rxBuf.tail += n;
-
-            // Search comm buffer for valid packets
-            while ((ptype = is_comm_parse_timeout(comm, timeMs)) != _PTYPE_NONE)
-            {
-                int error = comManagerStepRxInstanceHandler(cmInstance, cmPort, comm, port, ptype);		
-                if(error == CM_ERROR_FORWARD_OVERRUN) 
-                {
-                    break;	// Stop parsing and continue in outer loop
-                }
-            }
-        }
+        // Read data directly into comm buffer and call callback functions
+        is_comm_read_parse_messages(cmInstance->portRead, port, comm, &(cmInstance->callbacks));
     }
-}
-
-static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
-{
-    int error = 0;
-    uint8_t *data = comm->rxPkt.data.ptr + comm->rxPkt.offset;
-    uint16_t size = comm->rxPkt.data.size;
-
-    switch (ptype)
-    {
-    case _PTYPE_PARSE_ERROR:
-        if (cmInstance->cmMsgHandlerError)
-        {
-            cmInstance->cmMsgHandlerError(port, comm);
-        }
-        error = 1;
-        break;
-
-    case _PTYPE_INERTIAL_SENSE_DATA:
-    case _PTYPE_INERTIAL_SENSE_CMD:
-        error = processBinaryRxPacket(cmInstance, port, &(comm->rxPkt));
-        break;
-
-    case _PTYPE_UBLOX:
-        if (cmInstance->cmMsgHandlerUblox)
-        {
-            error = cmInstance->cmMsgHandlerUblox(port, data, size);
-        }
-        break;
-
-    case _PTYPE_RTCM3:
-        if (cmInstance->cmMsgHandlerRtcm3)
-        {
-            error = cmInstance->cmMsgHandlerRtcm3(port, data, size);
-        }
-        break;
-
-    case _PTYPE_NMEA:
-        if (cmInstance->cmMsgHandlerNmea)
-        {
-            error = cmInstance->cmMsgHandlerNmea(port, data, size);
-        }
-        break;
-
-    case _PTYPE_SPARTN:
-        if (cmInstance->cmMsgHandlerSpartn)
-        {
-            error = cmInstance->cmMsgHandlerSpartn(port, data, size);
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return error;
 }
 
 void comManagerStepTxInstance(CMHANDLE cmInstance_)
@@ -399,32 +321,32 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
 }
 
 void comManagerSetCallbacks(
-    pfnComManagerAsapMsg handlerRmc,
-    pfnComManagerGenMsgHandler handlerAscii,
-    pfnComManagerGenMsgHandler handlerUblox, 
-    pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn,
-    pfnComManagerParseErrorHandler handlerError)
+    pfnIsCommAsapMsg handlerRmc,
+    pfnIsCommGenMsgHandler handlerAscii,
+    pfnIsCommGenMsgHandler handlerUblox, 
+    pfnIsCommGenMsgHandler handlerRtcm3,
+    pfnIsCommGenMsgHandler handlerSpartn,
+    pfnIsCommParseErrorHandler handlerError)
 {
     comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn, handlerError);
 }
 
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-    pfnComManagerAsapMsg handlerRmc,
-    pfnComManagerGenMsgHandler handlerAscii,
-    pfnComManagerGenMsgHandler handlerUblox,
-    pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn,
-    pfnComManagerParseErrorHandler handlerError)
+    pfnIsCommAsapMsg handlerRmc,
+    pfnIsCommGenMsgHandler handlerAscii,
+    pfnIsCommGenMsgHandler handlerUblox,
+    pfnIsCommGenMsgHandler handlerRtcm3,
+    pfnIsCommGenMsgHandler handlerSpartn,
+    pfnIsCommParseErrorHandler handlerError)
 {
     if (cmInstance != 0)
     {
-        ((com_manager_t*)cmInstance)->cmMsgHandlerRmc = handlerRmc;
-        ((com_manager_t*)cmInstance)->cmMsgHandlerNmea = handlerAscii;
-        ((com_manager_t*)cmInstance)->cmMsgHandlerUblox = handlerUblox;
-        ((com_manager_t*)cmInstance)->cmMsgHandlerRtcm3 = handlerRtcm3;
-        ((com_manager_t*)cmInstance)->cmMsgHandlerSpartn = handlerSpartn;
-        ((com_manager_t*)cmInstance)->cmMsgHandlerError = handlerError;        
+        ((com_manager_t*)cmInstance)->callbacks.rmc = handlerRmc;
+        ((com_manager_t*)cmInstance)->callbacks.nmea = handlerAscii;
+        ((com_manager_t*)cmInstance)->callbacks.ublox = handlerUblox;
+        ((com_manager_t*)cmInstance)->callbacks.rtcm3 = handlerRtcm3;
+        ((com_manager_t*)cmInstance)->callbacks.sprtn = handlerSpartn;
+        ((com_manager_t*)cmInstance)->callbacks.error = handlerError;        
     }
 }
 
@@ -794,7 +716,7 @@ int comManagerGetDataRequestInstance(CMHANDLE _cmInstance, int pHandle, p_data_g
         return -1;
     }
     // Call RealtimeMessageController (RMC) handler
-    else if (cmInstance->cmMsgHandlerRmc && (cmInstance->cmMsgHandlerRmc(pHandle, req) == 0))
+    else if (cmInstance->callbacks.rmc && (cmInstance->callbacks.rmc(pHandle, req) == 0))
     {
         // Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
         return 0;
@@ -970,14 +892,14 @@ void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did)
     }
     
     // Call global broadcast handler to disable message control
-    if (cmInstance->cmMsgHandlerRmc)
+    if (cmInstance->callbacks.rmc)
     {
         p_data_get_t req;
         req.id = did;
         req.size = 0;
         req.offset = 0;
         req.period = 0;
-        cmInstance->cmMsgHandlerRmc(pHandle, &req);
+        cmInstance->callbacks.rmc(pHandle, &req);
     }
 }
 

@@ -30,7 +30,7 @@ using namespace std;
 static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
-static int staticSendData(unsigned int port, const unsigned char* buf, int len)
+static int staticSendData(unsigned int port, const uint8_t* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -39,7 +39,7 @@ static int staticSendData(unsigned int port, const unsigned char* buf, int len)
     return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadData(unsigned int port, unsigned char* buf, int len)
+static int staticReadData(unsigned int port, uint8_t* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -116,12 +116,12 @@ static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int 
 
 
 InertialSense::InertialSense(
-        pfnHandleBinaryData        handlerIsb,
-        pfnComManagerAsapMsg       handlerRmc,
-        pfnComManagerGenMsgHandler handlerNmea,
-        pfnComManagerGenMsgHandler handlerUblox,
-        pfnComManagerGenMsgHandler handlerRtcm3,
-        pfnComManagerGenMsgHandler handlerSpartn ) : m_tcpServer(this)
+        pfnHandleBinaryData    handlerIsb,
+        pfnIsCommAsapMsg       handlerRmc,
+        pfnIsCommGenMsgHandler handlerNmea,
+        pfnIsCommGenMsgHandler handlerUblox,
+        pfnIsCommGenMsgHandler handlerRtcm3,
+        pfnIsCommGenMsgHandler handlerSpartn ) : m_tcpServer(this)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;

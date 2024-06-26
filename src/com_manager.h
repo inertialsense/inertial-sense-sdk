@@ -77,9 +77,6 @@ Since most messages use the RMC (real-time message controller) now, this can be 
 typedef void* CMHANDLE;
 
 // com manager callback prototypes
-// readFnc read data from the serial port. Returns number of bytes read.
-typedef int(*pfnComManagerRead)(unsigned int port, unsigned char* buf, int len);
-
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
 typedef int(*pfnComManagerSendBufferAvailableBytes)(unsigned int port);
 
@@ -94,15 +91,6 @@ typedef void(*pfnComManagerDisableBroadcasts)(int port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(unsigned int port, p_data_hdr_t *dataHdr);
-
-// Generic message handler function, return 1 if message handled
-typedef int(*pfnComManagerGenMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
-
-// Parse error handler function, return 1 if message handled
-typedef int(*pfnComManagerParseErrorHandler)(unsigned int port, is_comm_instance_t* comm);
-
-// broadcast message handler
-typedef int(*pfnComManagerAsapMsg)(unsigned int port, p_data_get_t* req);
 
 /* Contains callback information for a before and after send for a data structure */
 typedef struct
@@ -140,7 +128,7 @@ typedef struct
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
-	pfnComManagerRead portRead;
+	pfnIsCommPortRead portRead;
 
 	// write data to the destination (usually a serial port)
 	pfnIsCommPortWrite portWrite;
@@ -174,23 +162,8 @@ typedef struct
 	// user defined pointer
 	void* userPointer;
 
-	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
-	pfnComManagerAsapMsg cmMsgHandlerRmc;
-
-	// Message handler - NMEA
-	pfnComManagerGenMsgHandler cmMsgHandlerNmea;
-
-	// Message handler - Ublox
-	pfnComManagerGenMsgHandler cmMsgHandlerUblox;
-
-	// Message handler - RTCM3
-	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
-	
-	// Message handler - SPARTN
-	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
-
-	// Error handler 
-	pfnComManagerParseErrorHandler cmMsgHandlerError;
+	// Message handlers
+	is_comm_callbacks_t callbacks;
 
 } com_manager_t;
 
@@ -222,7 +195,7 @@ CMHANDLE comManagerGetGlobal(void);
 int comManagerInit
 (	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
+	pfnIsCommPortRead readFnc,
 	pfnIsCommPortWrite sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
@@ -237,7 +210,7 @@ int comManagerInitInstance
 (	CMHANDLE cmHandle,
 	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
+	pfnIsCommPortRead readFnc,
 	pfnIsCommPortWrite sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
@@ -488,19 +461,19 @@ void comManagerRegisterInstance(CMHANDLE cmInstance, uint16_t did, pfnComManager
 * @param handlerError handler for parse errors.
 */
 void comManagerSetCallbacks(
-	pfnComManagerAsapMsg rmcHandler,
-	pfnComManagerGenMsgHandler asciiHandler,
-	pfnComManagerGenMsgHandler ubloxHandler, 
-	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler,
-	pfnComManagerParseErrorHandler handlerError);
+	pfnIsCommAsapMsg rmcHandler,
+	pfnIsCommGenMsgHandler asciiHandler,
+	pfnIsCommGenMsgHandler ubloxHandler, 
+	pfnIsCommGenMsgHandler rtcm3Handler,
+	pfnIsCommGenMsgHandler spartnHandler,
+	pfnIsCommParseErrorHandler handlerError);
 void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-	pfnComManagerAsapMsg rmcHandler,
-	pfnComManagerGenMsgHandler asciiHandler,
-	pfnComManagerGenMsgHandler ubloxHandler,
-	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler,
-	pfnComManagerParseErrorHandler handlerError);
+	pfnIsCommAsapMsg rmcHandler,
+	pfnIsCommGenMsgHandler asciiHandler,
+	pfnIsCommGenMsgHandler ubloxHandler,
+	pfnIsCommGenMsgHandler rtcm3Handler,
+	pfnIsCommGenMsgHandler spartnHandler,
+	pfnIsCommParseErrorHandler handlerError);
 
 /**
 * Attach user defined data to a com manager instance
