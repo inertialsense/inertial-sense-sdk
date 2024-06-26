@@ -967,32 +967,6 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-#if 0
-void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, pfnIsCommParseMsgHandler msgHandler)
-{
-    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, so call it first before using comm.
-    int bytesFree = is_comm_free(comm);
-
-    int n = portRead(port, comm->rxBuf.tail, bytesFree);
-
-    if (n <= 0)
-    {   // No update
-        return _PTYPE_NONE;
-    }
-
-    // Update comm buffer tail pointer
-    comm->rxBuf.tail += n;
-
-    // Search comm buffer for valid packets
-    protocol_type_t ptype;
-    while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
-    {
-        msgHandler(port, )
-
-    }
-}
-#endif
-
 void is_comm_read_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
 {
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, so call it first before using comm.
