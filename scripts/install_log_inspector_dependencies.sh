@@ -13,12 +13,7 @@ python3 -m pip install -U pip # update pip3 to latest version
 
 ./install_pybind.sh
 
-pushd ../python > /dev/null
-pip3 install logInspector/
-pushd logInspector > /dev/null
-python3 setup.py build_ext --inplace
-popd > /dev/null
-popd > /dev/null
+./build_log_inspector.sh
 
 source ~/.bashrc
 
