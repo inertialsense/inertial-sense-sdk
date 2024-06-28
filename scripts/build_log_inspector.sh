@@ -23,6 +23,19 @@ for i in "$@"; do
     esac
 done
 
+# Get the Python version
+PYTHON_VERSION=$(python3 --version 2>&1)
+# Extract the major and minor version numbers
+PYTHON_MAJOR_VERSION=$(echo $PYTHON_VERSION | awk '{print $2}' | cut -d. -f1)
+PYTHON_MINOR_VERSION=$(echo $PYTHON_VERSION | awk '{print $2}' | cut -d. -f2)
+# Define your pip install command
+PIP_INSTALL_COMMAND="pip3 install logInspector/"
+# Check if the Python version is 3.11 or higher
+if [[ $PYTHON_MAJOR_VERSION -eq 3 && $PYTHON_MINOR_VERSION -ge 11 ]] || [[ $PYTHON_MAJOR_VERSION -gt 3 ]]; then
+    # If Python version is 3.11 or higher, use --break-system-packages option
+    PIP_INSTALL_COMMAND="$PIP_INSTALL_COMMAND --break-system-packages"
+fi
+
 pushd "../python/logInspector" > /dev/null
     if [ -n "${clean}" ]; then
         echo -e "\n\n=== Running make clean... ==="
@@ -32,7 +45,8 @@ pushd "../python/logInspector" > /dev/null
     else
         echo -e "\n\n=== Running make... ==="
         cd ..
-        python3 -m pip install logInspector/ python3 --break-system-packages
+        echo "$PIP_INSTALL_COMMAND"
+        $PIP_INSTALL_COMMAND
         cd logInspector
         python3 setup.py build_ext --inplace
     fi
