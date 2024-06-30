@@ -360,9 +360,6 @@ pybind11::list LogReader::protocolVersion()
 #pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR2: ", PROTOCOL_VERSION_CHAR2)
 #pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR3: ", PROTOCOL_VERSION_CHAR3)
 
-#warning "PROTOCOL_VERSION_CHAR0"
-#warning "The value of MY_VALUE = " STRINGIZE_VALUE_OF(PROTOCOL_VERSION_CHAR0)
-
     vector<int> version;
     version.push_back(PROTOCOL_VERSION_CHAR0);
     version.push_back(PROTOCOL_VERSION_CHAR1);
