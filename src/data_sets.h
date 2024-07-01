@@ -18,11 +18,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <time.h>
 #include <string.h>
 #include "ISConstants.h"
+#include "serialPort.h"
 #include "rtk_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 // *****************************************************************************
 // ****** InertialSense binary message Data Identification Numbers (DIDs) ****** 
@@ -487,7 +489,7 @@ typedef struct PACKED
     // _ 3 4
     // _ _ 5
 
-}pos_measurement_t;
+} pos_measurement_t;
 
 /***
  * Product Hardware ID Mask  [6:4:6]
@@ -4416,7 +4418,7 @@ typedef enum {
     kFwUpdate,  // ready and able to accept code injections
     kError,
     kShutdown,
-}eGPXGnssRunState;
+} eGPXGnssRunState;
 
 /**
 * (DID_GPX_STATUS) GPX status.

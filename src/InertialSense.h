@@ -621,8 +621,8 @@ private:
 
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
-    com_manager_init_t m_cmInit;
-    com_manager_port_t *m_cmPorts;
+    // com_manager_init_t m_cmInit;
+    // com_manager_port_t *m_cmPorts;
     is_comm_instance_t m_gpComm;
     uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
     mul_msg_stats_t m_serverMessageStats = {};

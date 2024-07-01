@@ -5,7 +5,7 @@
 
 
 #if PLATFORM_IS_EMBEDDED
-void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, unsigned int srcPort, unsigned int dstPort, uint32_t led=0, int testMode=1);
+void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, port_handle_t srcPort, port_handle_t dstPort, uint32_t led=0, int testMode=1);
 #endif
 int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequence=true);
 int test_serial_generate_ordered_data(uint8_t buf[], int bufSize);

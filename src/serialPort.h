@@ -24,6 +24,21 @@ extern "C" {
 
 extern int SERIAL_PORT_DEFAULT_TIMEOUT;
 
+
+#define PORT_TYPE__UART     0x01
+#define PORT_TYPE__USB      0x02
+#define PORT_TYPE__SPI      0x03
+#define PORT_TYPE__CAN      0x04
+
+#define PORT_TYPE__COMM     0x40   // bit indicates that this port has an ISComm associated with it
+#define PORT_TYPE__HDW      0x80    // bit indicates that this port is static/hardware-defined
+
+typedef struct base_port_s {
+    unsigned int pnum;              //! an identifier for a specific port that belongs to this device
+    uint8_t ptype;                  //! an indicator of the type of port
+} base_port_t;
+typedef base_port_t* port_handle_t;
+
 #define MAX_SERIAL_PORT_NAME_LENGTH 63
 
 // Standard Baud Rates - FTDI Functional.	// Bit period = 1/baudrate, Actual baud (FTDI,AVR,ARM)

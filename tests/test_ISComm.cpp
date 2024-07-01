@@ -92,7 +92,7 @@ static int portWrite(unsigned int pHandle, const unsigned char* buf, int len)
 }
 
 // return 1 on success, 0 on failure
-int msgHandlerNmea2(int pHandle, const uint8_t* msg, int msgSize)
+int msgHandlerNmea2(port_handle_t port, const uint8_t* msg, int msgSize)
 {
 // 	comWrite(pHandle, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
@@ -102,15 +102,15 @@ int msgHandlerNmea2(int pHandle, const uint8_t* msg, int msgSize)
 		switch (getNmeaMsgId(msg, msgSize))
 		{
 		case NMEA_MSG_ID_ASCE:	// query NMEA message broadcast rates
-		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
+		// 		writeNmeaBcastPeriod(cmHandle, port, NULLPTR);
 			break;
 
 		case NMEA_MSG_ID_STPB: // stop all broadcasts on all ports
-			// disableBroadcasts(cmHandle, -1);
+			// disableBroadcasts(cmHandle, NULL);
 			break;
 
 		case NMEA_MSG_ID_STPC: // stop all broadcasts on current port
-			// disableBroadcasts(cmHandle, pHandle);
+			// disableBroadcasts(cmHandle, port);
 			break;
 
 		case NMEA_MSG_ID_BLEN: // bootloader enable
