@@ -3445,10 +3445,10 @@ typedef struct PACKED
     uint8_t obs_pairs_used_float; // number of satellite pairs used to compute the float solution
     uint8_t obs_pairs_used_ar;    // number of satellite pairs used to compute the fixed solution
 
-    uint8_t obs_eph_avail;   // number of satellites with ephemeris available (min is 0, max is nu)
-    uint8_t obs_low_snr_rover;
-    uint8_t obs_low_snr_base;
-    uint8_t obs_high_snr_parity;
+    uint8_t obs_eph_avail;       // number of satellites with ephemeris available (min is 0, max is nu)
+    uint8_t obs_low_snr_rover;   // number of satellites with low snr at rover
+    uint8_t obs_low_snr_base;    // number of satellites with low snr at base
+    uint8_t obs_high_snr_parity; // number of satellites with high difference between snr at rover and snr at base
 
     //uint8_t reserved[4];
 } rtk_debug_t;
