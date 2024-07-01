@@ -67,12 +67,12 @@ static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
 
-static int portRead(unsigned int port, unsigned char* buf, int len)
+static int portRead(port_handle_t port, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(unsigned int port, const unsigned char* buf, int len)
+static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
@@ -82,7 +82,7 @@ static int portWrite(unsigned int port, const unsigned char* buf, int len)
 	return len;
 }
 
-static void postRxRead(unsigned int port, p_data_t* dataRead)
+static void postRxRead(port_handle_t port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -94,21 +94,21 @@ static void postRxRead(unsigned int port, p_data_t* dataRead)
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
 }
 
-static void disableBroadcasts(int port)
+static void disableBroadcasts(port_handle_t port)
 {
 }
 
-int prepDevInfo(unsigned int port, p_data_hdr_t* dataHdr)
+int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(unsigned int port, p_data_t* data)
+void writeNvrUserpageFlashCfg(port_handle_t port, p_data_t* data)
 {
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
+static int msgHandlerNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 {
 // 	comWrite(pHandle, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
@@ -168,7 +168,7 @@ static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerUblox(unsigned int port, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox(port_handle_t port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -206,7 +206,7 @@ static int msgHandlerUblox(unsigned int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerRtcm3(unsigned int port, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm3(port_handle_t port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -244,7 +244,7 @@ static int msgHandlerRtcm3(unsigned int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerError(unsigned int port, is_comm_instance_t* comm)
+static int msgHandlerError(port_handle_t port, is_comm_instance_t* comm)
 {
 	return 0;
 }

@@ -1,6 +1,8 @@
 #ifndef PROTOCOL_NMEA_H_
 #define PROTOCOL_NMEA_H_
 
+#include <vector>
+
 #include "data_sets.h"
 #include "time_conversion.h"
 
@@ -76,8 +78,10 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
-uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
+//uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci);
+//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci);
 // NMEA standard messages
 int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);
 int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);

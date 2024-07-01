@@ -134,7 +134,7 @@ typedef enum
 #define MAX_MSG_LENGTH_NMEA					200
 
 /** Send data to the serial port.  Returns number of bytes written. */ 
-typedef int(*pfnIsCommPortWrite)(unsigned int port, const uint8_t* buf, int len);
+typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1
@@ -608,6 +608,14 @@ typedef struct
 
 } is_comm_instance_t;
 
+typedef struct {
+    base_port_t base;
+    port_monitor_set_t* stats;          //! stats associated with this port
+    is_comm_instance_t comm;            //! Comm instance
+    uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
+} comm_port_t;
+
+
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */
 POP_PACK
 
@@ -735,13 +743,13 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
  * @param portWrite Serial port callback function used send packet.
  * @param port Serial port number packet will be written to.
  */
-int is_comm_write(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write(pfnIsCommPortWrite portWrite, port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 /**
  * @brief Same as is_comm_write() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 /**
  * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
@@ -767,7 +775,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
+int is_comm_get_data(pfnIsCommPortWrite portWrite, port_handle_t port,uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
  * @brief Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
@@ -791,9 +799,9 @@ static inline int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_co
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-static inline int is_comm_set_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_set_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_SET_DATA, did, size, offset, data);
+    return is_comm_write(portWrite, port, PKT_TYPE_SET_DATA, did, size, offset, data);
 }    
 
 /**
@@ -807,18 +815,18 @@ static inline int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_i
 /**
  * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
  */
-static inline int is_comm_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_DATA, did, size, offset, data);
+    return is_comm_write(portWrite, port, PKT_TYPE_DATA, did, size, offset, data);
 }    
 
 /**
  * @brief Same as is_comm_data() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write_pkt(portWrite, port, comm, txPkt, PKT_TYPE_DATA, did, size, offset, data);
+    return is_comm_write_pkt(portWrite, port, txPkt, PKT_TYPE_DATA, did, size, offset, data);
 }    
 
 /**
@@ -826,9 +834,9 @@ static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, unsigned int po
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm)
+static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, port_handle_t port)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
+    return is_comm_write(portWrite, port, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
 }
 
 /**
@@ -836,9 +844,9 @@ static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm)
+static inline int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, port_handle_t port)
 {
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
+    return is_comm_write(portWrite, port, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
 }
 
 /**
@@ -886,7 +894,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
  * @param pkt Pointer to precomputed ISB packet
  * @return int Number of bytes written on success or -1 on failure
  */
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt);
+int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *pkt);
 
 unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);

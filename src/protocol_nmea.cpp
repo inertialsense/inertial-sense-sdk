@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <cctype>
+#include <vector>
 #include "protocol_nmea.h"
 #include "time_conversion.h"
 #include "ISPose.h"
@@ -2055,7 +2056,7 @@ int parseASCE_GSV(int inId)
     return NMEA_MSG_ID_GxGSV;
 }
 
-uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci)
 {
     (void)aSize;
 
@@ -2064,7 +2065,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
     uint32_t ports;
     uint8_t period;
 
-    if(pHandle >= NUM_COM_PORTS)
+    if (!port)
     {
         return 0;
     }
@@ -2118,14 +2119,19 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         // Copy tmp to corresponding port(s)
         switch (ports)
         {	
-        case RMC_OPTIONS_PORT_CURRENT:	nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period); break;
-        case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); } break;
-            
-        default:	// Current port
-            if (ports & RMC_OPTIONS_PORT_SER0)     { nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period); }
-            if (ports & RMC_OPTIONS_PORT_SER1)     { nmea_enable_stream(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, id, period); }
-            if (ports & RMC_OPTIONS_PORT_SER2)     { nmea_enable_stream(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, id, period); }
-            if (ports & RMC_OPTIONS_PORT_USB)      { nmea_enable_stream(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, id, period); }
+        case RMC_OPTIONS_PORT_CURRENT:
+            nmea_enable_stream(rmci[port->pnum]->rmcNmea.nmeaBits, rmci[port->pnum]->rmcNmea.nmeaPeriod, id, period);
+            break;
+        case RMC_OPTIONS_PORT_ALL:
+            for (int i=0; i<NUM_COM_PORTS; i++) {
+                nmea_enable_stream(rmci[i]->rmcNmea.nmeaBits, rmci[i]->rmcNmea.nmeaPeriod, id,  period);
+            }
+            break;
+        default:	// Specified port
+            if (ports & RMC_OPTIONS_PORT_SER0)     { nmea_enable_stream(rmci[0]->rmcNmea.nmeaBits, rmci[0]->rmcNmea.nmeaPeriod, id, period); }
+            if (ports & RMC_OPTIONS_PORT_SER1)     { nmea_enable_stream(rmci[1]->rmcNmea.nmeaBits, rmci[1]->rmcNmea.nmeaPeriod, id, period); }
+            if (ports & RMC_OPTIONS_PORT_SER2)     { nmea_enable_stream(rmci[2]->rmcNmea.nmeaBits, rmci[2]->rmcNmea.nmeaPeriod, id, period); }
+            if (ports & RMC_OPTIONS_PORT_USB)      { nmea_enable_stream(rmci[3]->rmcNmea.nmeaBits, rmci[3]->rmcNmea.nmeaPeriod, id, period); }
             break;
         }
     }
@@ -2133,7 +2139,13 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
     return options;
 }
 
-uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) {
+    nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
+    grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+}
+
+//uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci)
 {
     (void)aSize;
 
@@ -2142,7 +2154,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
     uint32_t ports;
     uint8_t period;
 
-    if(pHandle >= NUM_COM_PORTS)
+    if (!port)
         return 0;
     
     char *ptr = (char*)&a[6];				// $ASCE
@@ -2194,40 +2206,22 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         // Copy tmp to corresponding port(s)
         switch (ports)
         {	
-        case RMC_OPTIONS_PORT_CURRENT:	
-            nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period);
-            rmci[pHandle].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+        case RMC_OPTIONS_PORT_CURRENT:
+            nmea_configure_grmci(grmci, port->pnum, id, period, options);
             break;
         
         case RMC_OPTIONS_PORT_ALL:		
             for(int i=0; i<NUM_COM_PORTS; i++) 
-            { 
-                nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); 
-                rmci[i].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
-            } 
+            {
+                nmea_configure_grmci(grmci, i, id, period, options);
+            }
             break;
             
         default:	// Current port
-            if (ports & RMC_OPTIONS_PORT_SER0)     
-            { 
-                nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period);
-                rmci[0].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
-            }
-            if (ports & RMC_OPTIONS_PORT_SER1)    
-            { 
-                nmea_enable_stream(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, id, period);
-                rmci[1].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
-            }
-            if (ports & RMC_OPTIONS_PORT_SER2)     
-            { 
-                nmea_enable_stream(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, id, period);
-                rmci[2].rmc.options |= (options & RMC_OPTIONS_PERSISTENT); 
-            }
-            if (ports & RMC_OPTIONS_PORT_USB)      
-            { 
-                nmea_enable_stream(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, id, period);
-                rmci[3].rmc.options |= (options & RMC_OPTIONS_PERSISTENT); 
-            }
+            if (ports & RMC_OPTIONS_PORT_SER0)  nmea_configure_grmci(grmci, 0, id, period, options);
+            if (ports & RMC_OPTIONS_PORT_SER1)  nmea_configure_grmci(grmci, 1, id, period, options);
+            if (ports & RMC_OPTIONS_PORT_SER2)  nmea_configure_grmci(grmci, 2, id, period, options);
+            if (ports & RMC_OPTIONS_PORT_USB)   nmea_configure_grmci(grmci, 3, id, period, options);
             break;
         }
     }

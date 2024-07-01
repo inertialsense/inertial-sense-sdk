@@ -30,32 +30,36 @@ using namespace std;
 static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
-static int staticSendData(unsigned int port, const unsigned char* buf, int len)
+static int staticSendData(port_handle_t port, const unsigned char* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
         return 0;
     }
-    return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
+    // return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
+    return s_cm_state->devices[port].writeTo(buf, len);
 }
 
-static int staticReadData(unsigned int port, unsigned char* buf, int len)
+static int staticReadData(port_handle_t port, unsigned char* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
         return 0;
     }
+/*
     int bytesRead = serialPortReadTimeout(&s_cm_state->devices[port].serialPort, buf, len, 1);
 
 	if (s_is)
 	{	// Save raw data to ISlogger
 		s_is->LogRawData(&s_cm_state->devices[port], bytesRead, buf);
 	}
-
+*/
+    int bytesRead = s_cm_state->devices[port].readFrom(buf, len);
     return bytesRead;
 }
 
-static void staticProcessRxData(unsigned int port, p_data_t* data)
+[[deprecated("Use ISDevice::processRxData() instead.")]]
+static void staticProcessRxData(port_handle_t port, p_data_t* data)
 {
     if (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData)))
     {
@@ -102,7 +106,8 @@ static void staticProcessRxData(unsigned int port, p_data_t* data)
     }
 }
 
-static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int msgSize)
+[[deprecated("Use ISDevice::processRxNmea() instead.")]]
+static int staticProcessRxNmea(port_handle_t port, const unsigned char* msg, int msgSize)
 {
     if ((size_t)port > s_cm_state->devices.size())
     {
@@ -1430,17 +1435,17 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
     // [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
     // serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
-    if (m_cmPorts) { delete[] m_cmPorts; }
-    m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
+    // if (m_cmPorts) { delete[] m_cmPorts; }
+    // m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
 
-    if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
-    m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
-    m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
+    // if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
+    // m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
+    // m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
     if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1) {    // Error
         return false;
     }
 
-    // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+    // Register message handler callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
     comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
 
     bool timeoutOccurred = false;
@@ -1520,10 +1525,9 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
 void InertialSense::CloseSerialPorts()
 {
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-    {
-        serialPortClose(&m_comManagerState.devices[i].serialPort);
-    }
+    for (auto& dev : m_comManagerState.devices)
+        dev.close();
+
     m_comManagerState.devices.clear();
 }
 
