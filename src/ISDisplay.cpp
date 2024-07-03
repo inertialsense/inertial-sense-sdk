@@ -1456,7 +1456,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 
 	switch (info.hardwareType)
 	{
-	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
+	default:						ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 		break;
 	case IS_HARDWARE_TYPE_UINS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
 	case IS_HARDWARE_TYPE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
 	case IS_HARDWARE_TYPE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
@@ -1469,21 +1469,44 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 		info.hardwareVer[2]
 	);
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d.%d %d%c %04d-%02d-%02d",
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d",
 		info.firmwareVer[0],
 		info.firmwareVer[1],
-		info.firmwareVer[2],
-		info.firmwareVer[3],
-		info.buildNumber,
-        (info.buildType ? info.buildType : ' '),
-		info.buildYear + 2000,
-		info.buildMonth,
-		info.buildDay
+		info.firmwareVer[2]
+	);
+
+    switch(info.buildType) {
+        case 'a': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-alpha");		break;
+        case 'b': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-beta");		break;
+        case 'c': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-rc");			break;
+        case 's': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snapshot");	break;
+        case 'd': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-develop");	break;
+        case '*': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-develop");	break;
+        default : break;
+    }
+
+    if (info.firmwareVer[3] > 0 ) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, ".%d", info.firmwareVer[3]);
+    }
+
+    char dirty = 0;
+    if (info.buildType == '*') {
+        dirty = '*';
+    }
+
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %08x%c (%05X.%d)",
+        info.repoRevision,
+        dirty,
+        ((info.buildNumber >> 12) & 0xFFFFF),
+        (info.buildNumber & 0xFFF)
 	);
 
 	if (full)
 	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %04d-%02d-%02d %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
+            info.buildYear + 2000,
+            info.buildMonth,
+            info.buildDay,
 			info.buildHour,
 			info.buildMinute,
 			info.buildSecond,
