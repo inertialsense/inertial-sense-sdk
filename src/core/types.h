@@ -9,6 +9,8 @@
 #ifndef IS_CORE_TYPES_H
 #define IS_CORE_TYPES_H
 
+#include <inttypes.h>
+
 /**
  * Port definitions used across the entire product line & SDK.
  */

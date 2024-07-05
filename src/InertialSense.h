@@ -595,7 +595,7 @@ public:
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    // ISDevice* ComManagerDevice(port_handle_t port=0) { if (port->pnum >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[port->pnum]); }
+    // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);

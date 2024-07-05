@@ -1377,8 +1377,8 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
     m_serialPorts.insert(m_serialPorts.cbegin(), serialPort);
     port = (port_handle_t)&m_serialPorts[0];
 
-    // FIXME:  port->pnum = m_serialPorts.size();
-    // FIXME:  port->ptype = PORT_TYPE__UART | PORT_TYPE__COMM;
+    // FIXME:  portId(port) = m_serialPorts.size();
+    // FIXME:  portType(port) = PORT_TYPE__UART | PORT_TYPE__COMM;
     serialPortPlatformInit(port);
     return port;
 }

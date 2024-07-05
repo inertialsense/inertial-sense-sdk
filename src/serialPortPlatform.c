@@ -810,16 +810,14 @@ static int serialPortSleepPlatform(int sleepMilliseconds)
     return 1;
 }
 
-int serialPortPlatformInit(port_handle_t port)
+int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
     serial_port_t* serialPort = (serial_port_t*)port;
 	// very important - the serial port must be initialized to zeros
     base_port_t tmp = { .pnum = serialPort->pnum, .ptype = serialPort->ptype };
-
 	memset(serialPort, 0, sizeof(serial_port_t));
 
-    serialPort->pnum = tmp.pnum;
-    serialPort->ptype = tmp.ptype;
+    serialPort->base = tmp;
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;
@@ -827,9 +825,9 @@ int serialPortPlatformInit(port_handle_t port)
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
     serialPort->pfnRead = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
-    serialPort->pfnWrite = serialPortWritePlatform;
-    serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
-    serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+    serialPort->pfnWrite = serialPort->base.portWrite = serialPortWritePlatform;
+    serialPort->pfnGetByteCountAvailableToRead = serialPort->base.portAvailable = serialPortGetByteCountAvailableToReadPlatform;
+    serialPort->pfnGetByteCountAvailableToWrite = serialPort->base.portFree = serialPortGetByteCountAvailableToWritePlatform;
     serialPort->pfnSleep = serialPortSleepPlatform;
     return 0;
 }

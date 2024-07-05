@@ -77,9 +77,10 @@ typedef int(*pfnSerialPortSleep)(int sleepMilliseconds);
 struct serial_port_s
 {
     // base "implementation"
-    unsigned int pnum;              //! an identifier for a specific port that belongs to this device
-
-    uint8_t ptype;                  //! an indicator of the type of port
+    union {
+        base_port_t base;
+        comm_port_t comm;
+    };
 
 	// platform specific handle
 	void* handle;
