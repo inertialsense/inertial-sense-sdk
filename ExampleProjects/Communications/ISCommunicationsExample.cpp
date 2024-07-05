@@ -55,7 +55,7 @@ static void handleImuMessage(imu_t* imu)
 		imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
-static int portWrite(unsigned int port, const unsigned char* buf, int len)
+static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 {
 	return serialPortWrite(&s_serialPort, buf, len);
 }
@@ -65,7 +65,7 @@ static int portRead(int port, unsigned char* buf, int len)
 	return serialPortRead(&s_serialPort, buf, len);
 }
 
-int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
+int set_configuration(port_handle_t port, is_comm_instance_t *comm)
 {
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
@@ -79,7 +79,7 @@ int set_configuration(serial_port_t *serialPort, is_comm_instance_t *comm)
 }
 
 
-int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int stop_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	// Stop all broadcasts on the device
 	if (is_comm_stop_broadcasts_all_ports(portWrite, 0, comm) < 0)
@@ -91,7 +91,7 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 
-int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm)
+int save_persistent_messages(port_handle_t port, is_comm_instance_t *comm)
 {
 	system_command_t cfg;
 	cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
@@ -106,7 +106,7 @@ int save_persistent_messages(serial_port_t *serialPort, is_comm_instance_t *comm
 }
 
 
-int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
 	if (is_comm_get_data(portWrite, 0, comm, DID_INS_1, 0, 0, 10) < 0)

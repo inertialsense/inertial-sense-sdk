@@ -32,7 +32,7 @@ public:
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        serial_port_t* port
+        port_handle_t port
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
@@ -71,7 +71,7 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    static is_operation_result sync(serial_port_t* s);
+    static is_operation_result sync(port_handle_t port);
 
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 

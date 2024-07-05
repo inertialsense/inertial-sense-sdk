@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
 #include <vector>
+
 #include "ISEarth.h"
 #include "protocol_nmea.h"
-#include "test_data_utils.h"
 #include "time_conversion.h"
+
+#include "test_serial_utils.h"
+#include "test_data_utils.h"
 #include "gtest_helpers.h"
 
 using namespace std;
@@ -65,9 +68,7 @@ TEST(protocol_nmea, nmea_parse_asce)
 {
 	PRINT_TEST_DESCRIPTION("Tests the $ASCE parser function nmea_parse_asce().");
 
-    rmci_t rmci[NUM_COM_PORTS] = {};
-    int port = 1;
-    rmci_t &r = rmci[port];
+    rmci_t &r = TEST0_PORT->rmci;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS1] = 2;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU] = 1;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA] = 1;
@@ -92,14 +93,15 @@ TEST(protocol_nmea, nmea_parse_asce)
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
     cout << a << endl;
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    uint32_t outOptions = nmea_parse_asce(port, a, n, outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3], &rmci[4], &rmci[5] };
+    uint32_t outOptions = nmea_parse_asce(TEST0_PORT, a, n, outRmci);
 
     ASSERT_EQ( options, outOptions );
     for (int i=0; i<NUM_COM_PORTS; i++)
     {
         rmci_t &a = rmci[i];
-        rmci_t &b = outRmci[i];
+        rmci_t &b = *outRmci[i];
         ASSERT_EQ( a.rmc.bits, b.rmc.bits );
          
         // cout << "I: " << i << " a: " << a.rmcNmea.nmeaBits << " b: " <<  b.rmcNmea.nmeaBits << "\n"; 
@@ -755,8 +757,9 @@ TEST(protocol_nmea, GSV_binary_GSV)
 
    buf = "$ASCE,0,GxGSV,1*44\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
     buf =  "$GPGSV,6,1,23" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"      "*7C\r\n";
@@ -803,8 +806,9 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
 
     string buf = "$ASCE,0,GxGSV,1*44\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     // GPS & SBAS        #msgs,msg#,numSV,  svid,elv,azm,cno, ..., signalId*checksum
     buf = "$GPGSV,4,1,14" ",02,40,310,43" ",08,07,324,31" ",10,48,267,45" ",15,37,053,45"  ",1" "*67\r\n";
@@ -856,8 +860,9 @@ TEST(protocol_nmea, binary_GSV_binary)
 
     string buf = "$ASCE,0,GNGSV,1*72\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
@@ -967,8 +972,9 @@ TEST(protocol_nmea, GPGSV)
 
     string buf = "$ASCE,0,GPGSV,1*6C\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
@@ -1041,8 +1047,9 @@ TEST(protocol_nmea, GAGSV)
 
     string buf = "$ASCE,0,GAGSV,1*7D\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
@@ -1115,8 +1122,9 @@ TEST(protocol_nmea, GBGSV)
 
     string buf = "$ASCE,0,GBGSV,1*7E\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
@@ -1189,8 +1197,9 @@ TEST(protocol_nmea, GLGSV)
 
     string buf = "$ASCE,0,GLGSV,1*70\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
-    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
 
     {   // Test NMEA protocol 2.3
         nmea_set_protocol_version(NMEA_PROTOCOL_2P3);

@@ -44,8 +44,8 @@ public:
 
 class ISDevice {
 public:
-    int portHandle = 0;
-    serial_port_t serialPort = { };
+    // port_handle_t port = 0;
+    port_handle_t port = { };
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
     dev_info_t devInfo = { };

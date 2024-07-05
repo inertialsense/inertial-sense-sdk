@@ -497,8 +497,12 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, const uint8_t *dataBuf)
 {
     // This method is ONLY for LOGTYPE_RAW
-    if (!m_enabled || (deviceLog == nullptr) || (m_logType != LOGTYPE_RAW)) {
+    if (!m_enabled || (m_logType != LOGTYPE_RAW)) {
         return false;
+    }
+
+    if ((deviceLog == NULL) && !m_devices.empty()) {
+        deviceLog = m_devices.begin()->second;
     }
 
     if (deviceLog == NULL || dataSize <= 0 || dataBuf == NULL)

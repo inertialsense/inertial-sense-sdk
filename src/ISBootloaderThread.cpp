@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISSerialPort.h"
 
 #include <algorithm>
+#include <vector>
 
 #if !PLATFORM_IS_WINDOWS
 #include <unistd.h>
@@ -128,16 +129,16 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
 
     SLEEP_MS(100);
 
-    serial_port_t port;
-    serialPortPlatformInit(&port);
+    port_handle_t port = (port_handle_t)&(thread_info->serialPort);
+    serialPortPlatformInit(port);
     m_serial_thread_mutex.lock();
-    const char* serial_name = thread_info->serial_name;
+    const char* serial_name = thread_info->serialPort.portName;
     m_serial_thread_mutex.unlock();
 
-    serialPortSetPort(&port, serial_name);
-    if (!serialPortOpenRetry(&port, serial_name, m_baudRate, 1))
+    serialPortSetPort(port, serial_name);
+    if (!serialPortOpenRetry(port, serial_name, m_baudRate, 1))
     {
-        serialPortClose(&port);
+        serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
         thread_info->reuse_port = true;
@@ -145,10 +146,10 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
         return;
     }
 
-    cISBootloaderBase::mode_device_app(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    cISBootloaderBase::mode_device_app(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
-    serialPortFlush(&port);
-    serialPortClose(&port);
+    serialPortFlush(port);
+    serialPortClose(port);
 
     m_serial_thread_mutex.lock();
     thread_info->reuse_port = false;
@@ -163,16 +164,16 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
 
     SLEEP_MS(100);
 
-    serial_port_t port;
-    serialPortPlatformInit(&port);
+    port_handle_t port = (port_handle_t)&(thread_info->serialPort);
+    serialPortPlatformInit(port);
     m_serial_thread_mutex.lock();
-    const char* serial_name = thread_info->serial_name;
+    const char* serial_name = thread_info->serialPort.portName;
     m_serial_thread_mutex.unlock();
 
-    serialPortSetPort(&port, serial_name);
-    if (!serialPortOpenRetry(&port, serial_name, m_baudRate, 1))
+    serialPortSetPort(port, serial_name);
+    if (!serialPortOpenRetry(port, serial_name, m_baudRate, 1))
     {
-        serialPortClose(&port);
+        serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
         thread_info->reuse_port = true;
@@ -180,10 +181,10 @@ void cISBootloaderThread::get_device_isb_version_thread(void* context)
         return;
     }
 
-    cISBootloaderBase::get_device_isb_version(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    cISBootloaderBase::get_device_isb_version(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
-    serialPortFlush(&port);
-    serialPortClose(&port);
+    serialPortFlush(port);
+    serialPortClose(port);
 
     m_serial_thread_mutex.lock();
     thread_info->reuse_port = true;
@@ -198,16 +199,16 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
 
     SLEEP_MS(2500);     // Wait for all other threads to start
 
-    serial_port_t port;
-    serialPortPlatformInit(&port);
+    port_handle_t port = (port_handle_t)&(thread_info->serialPort);
+    serialPortPlatformInit(port);
     m_serial_thread_mutex.lock();
-    const char* serial_name = thread_info->serial_name;
+    const char* serial_name = thread_info->serialPort.portName;
     m_serial_thread_mutex.unlock();
 
-    serialPortSetPort(&port, serial_name);
-    if (!serialPortOpenRetry(&port, serial_name, m_baudRate, 1))
+    serialPortSetPort(port, serial_name);
+    if (!serialPortOpenRetry(port, serial_name, m_baudRate, 1))
     {
-        serialPortClose(&port);
+        serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
         thread_info->reuse_port = true;
@@ -215,10 +216,10 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
         return;
     }
 
-    cISBootloaderBase::mode_device_isb(m_firmware, thread_info->force_isb, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
+    cISBootloaderBase::mode_device_isb(m_firmware, thread_info->force_isb, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context);
 
-    serialPortFlush(&port);
-    serialPortClose(&port);
+    serialPortFlush(port);
+    serialPortClose(port);
 
     m_serial_thread_mutex.lock();
     thread_info->reuse_port = true;
@@ -233,31 +234,31 @@ void cISBootloaderThread::update_thread_serial(void* context)
 
     SLEEP_MS(100);
 
-    serial_port_t port;
-    serialPortPlatformInit(&port);
+    port_handle_t port = (port_handle_t)&(thread_info->serialPort);
+    serialPortPlatformInit(port);
     m_serial_thread_mutex.lock();
-    const char* serial_name = thread_info->serial_name;
+    const char* serial_name = thread_info->serialPort.portName;
     thread_info->reuse_port = false;
     m_serial_thread_mutex.unlock();
 
     // Start at 115200 always, we will switch to user specified rate after we check for SAM-BA devices
-    serialPortSetPort(&port, serial_name);
-    if (!serialPortOpenRetry(&port, serial_name, BAUDRATE_115200, 1))
+    serialPortSetPort(port, serial_name);
+    if (!serialPortOpenRetry(port, serial_name, BAUDRATE_115200, 1))
     {
-        serialPortClose(&port);
+        serialPortClose(port);
         m_serial_thread_mutex.lock();
         thread_info->done = true;
         m_serial_thread_mutex.unlock();
         return;
     }
 
-    is_operation_result result = cISBootloaderBase::update_device(m_firmware, &port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
+    is_operation_result result = cISBootloaderBase::update_device(m_firmware, port, m_infoProgress, m_uploadProgress, m_verifyProgress, ctx, &m_ctx_mutex, &new_context, m_baudRate);
 
     if (result == IS_OP_OK)
     {   
         // Device is updated, add it to the ctx list so we can reset it later
         m_ctx_mutex.lock();
-        new_context->m_port_name = string(thread_info->serial_name);
+        new_context->m_port_name = string(thread_info->serialPort.portName);
         new_context->m_finished_flash = true;
         m_ctx_mutex.unlock();
 
@@ -283,8 +284,8 @@ void cISBootloaderThread::update_thread_serial(void* context)
 
     SLEEP_MS(1000);
 
-    serialPortFlush(&port);
-    serialPortClose(&port);
+    serialPortFlush(port);
+    serialPortClose(port);
 
     m_serial_thread_mutex.lock();
     thread_info->done = true;
@@ -407,7 +408,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             for (size_t j = 0; j < m_serial_threads.size(); j++)
             {
-                if (string(m_serial_threads[j]->serial_name) == ports[i])
+                if (string(m_serial_threads[j]->serialPort.portName) == ports[i])
                 {
                     if (!m_serial_threads[j]->done)    //(m_serial_threads[j]->ctx != NULL || 
                     {   // Thread hasn't finished
@@ -435,12 +436,12 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                memset(new_thread->serial_name, 0, 100);
-                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
+                // memset(new_thread->serial_name, 0, sizeof(new_thread->serialPort.portName));
+                // strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
 
-                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Discovered device on port %s", new_thread->serial_name);
+                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Discovered device on port %s", new_thread->serialPort.portName);
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
 
@@ -530,7 +531,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             for (size_t j = 0; j < m_serial_threads.size(); j++)
             {
-                if (string(m_serial_threads[j]->serial_name) == ports[i])
+                if (string(m_serial_threads[j]->serialPort.portName) == ports[i])
                 {
                     if (!m_serial_threads[j]->done)    //(m_serial_threads[j]->ctx != NULL || 
                     {   // Thread hasn't finished
@@ -558,8 +559,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                memset(new_thread->serial_name, 0, 100);
-                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(), 100));
+                // memset(new_thread->serial_name, 0, sizeof(new_thread->serialPort.portName));
+                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(), sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 m_serial_threads.push_back(new_thread);
@@ -722,7 +723,7 @@ is_operation_result cISBootloaderThread::update(
 
             for (size_t j = 0; j < m_serial_threads.size(); j++)
             {
-                if (string(m_serial_threads[j]->serial_name) == ports[i])
+                if (string(m_serial_threads[j]->serialPort.portName) == ports[i])
                 {
                     found = true;
                     break;
@@ -741,8 +742,8 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                memset(new_thread->serial_name, 0, 100);
-                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
+                // memset(new_thread->serial_name, 0, sizeof(new_thread->serialPort.portName));
+                //strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 new_thread->force_isb = force_isb_update;
@@ -857,7 +858,7 @@ is_operation_result cISBootloaderThread::update(
 
             for (size_t j = 0; j < m_serial_threads.size(); j++)
             {
-                if (string(m_serial_threads[j]->serial_name) == ports[i])
+                if (string(m_serial_threads[j]->serialPort.portName) == ports[i])
                 {
                     if (!m_serial_threads[j]->done)    //(m_serial_threads[j]->ctx != NULL || 
                     {   // Thread hasn't finished
@@ -885,8 +886,8 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                memset(new_thread->serial_name, 0, 100);
-                strncpy(new_thread->serial_name, ports[i].c_str(), _MIN(ports[i].size(),100));
+                //memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
+                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 new_thread->force_isb = force_isb_update;
@@ -948,19 +949,20 @@ is_operation_result cISBootloaderThread::update(
     {
         if(!ctx[i]->m_port_name.empty())
         {
-            serial_port_t port;
-            serialPortPlatformInit(&port);
-            if (!serialPortOpenRetry(&port, ctx[i]->m_port_name.c_str(), m_baudRate, 1))
+            serial_port_t serialPort;
+            port_handle_t port = (port_handle_t)&serialPort;
+            serialPortPlatformInit(port);
+            if (!serialPortOpenRetry(port, ctx[i]->m_port_name.c_str(), m_baudRate, 1))
             {
                 continue;
             }
 
-            ctx[i]->m_port = &port;
+            ctx[i]->m_port = port;
 
             if (ctx[i] && ctx[i]->m_finished_flash) ctx[i]->reboot_up();
 
-            serialPortFlush(&port);
-            serialPortClose(&port);
+            serialPortFlush(port);
+            serialPortClose(port);
         }
 
         if (m_waitAction) m_waitAction();

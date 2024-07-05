@@ -13,10 +13,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef COM_MANAGER_H
 #define COM_MANAGER_H
 
+
+#ifdef __cplusplus
+#include <array>
 #include <vector>
 #include <map>
 
-#ifdef __cplusplus
 extern "C" {
 #endif
     
@@ -78,9 +80,6 @@ Since most messages use the RMC (real-time message controller) now, this can be 
 // Convenience macros for creating Com Manager buffers
 #define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
 
-// com manager instance / handle is a void*
-typedef void* CMHANDLE;
-
 // com manager callback prototypes
 // readFnc read data from the serial port. Returns number of bytes read.
 typedef int(*pfnComManagerRead)(port_handle_t port, unsigned char* buf, int len);
@@ -105,6 +104,9 @@ typedef int(*pfnComManagerGenMsgHandler)(port_handle_t port, const unsigned char
 
 // Parse error handler function, return 1 if message handled
 typedef int(*pfnComManagerParseErrorHandler)(port_handle_t port, is_comm_instance_t* comm);
+
+// "Global" handler for any Binary Data which does not have an explicit handler (registerDid)
+typedef int(*pfnComManagerBinaryDataHandler)(port_handle_t port, p_data_t* data);
 
 // broadcast message handler
 typedef int(*pfnComManagerAsapMsg)(port_handle_t port, p_data_get_t* req);
@@ -144,6 +146,7 @@ typedef struct
 } com_manager_port_t;
 */
 
+typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
@@ -165,7 +168,7 @@ typedef struct
 	pfnComManagerDisableBroadcasts disableBcastFnc;
 
 	// Pointer to local data and data specific callback functions  ::  NOTE: https://howardhinnant.github.io/stack_alloc.html  if using this in embedded environments and dynamic allocation is a concern
-	std::map<int, registered_data_t> regData;
+	std::map<int, registered_data_t> didRegistrationMap;
 	
 	// Array of port
     std::vector<port_handle_t> ports;
@@ -174,13 +177,16 @@ typedef struct
 	// Number of communication ports
 	// int32_t numPorts;
 
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
+    broadcast_msg_array_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
 
 	// processing interval
 	int32_t stepPeriodMilliseconds;
 
 	// user defined pointer
 	void* userPointer;
+
+    // "Global" handler for any Binary Data which does not have an explicit handler (registerDid)
+    pfnComManagerBinaryDataHandler cmMsgHandleDID;
 
 	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
 	pfnComManagerAsapMsg cmMsgHandlerRmc;
@@ -197,20 +203,17 @@ typedef struct
 	// Message handler - SPARTN
 	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
 
-	// Error handler 
+    // Error handler
 	pfnComManagerParseErrorHandler cmMsgHandlerError;
 
 } com_manager_t;
 
 
-// get the global instance of the com manager - this is only needed if you are working with multiple com managers and need to compare instances
-CMHANDLE comManagerGetGlobal(void);
-
 /**
 * Initializes the default global com manager. This is generally only called once on program start.
 * The global com manager is used by the functions that do not have the Instance suffix and first parameter of void* cmInstance.
 * The instance functions can be ignored, unless you have a reason to have two com managers in the same process.
-* 
+*
 * @param numPorts the max number of serial ports possible
 * @param stepPeriodMilliseconds how many milliseconds you are waiting in between calls to comManagerStep
 * @param readFnc read data from the serial port represented by pHandle
@@ -221,117 +224,101 @@ CMHANDLE comManagerGetGlobal(void);
 * @param disableBcastFnc mostly for internal use, this can be left as 0 or NULL
 * @param timeMs pointer to current time in milliseconds, used for parser state timeout.  Leave NULL if timeout feature is not used.
 * @return 0 on success, -1 on failure
-* 
+*
 * Example:
 * @code
 * comManagerInit(20, 20, 10, 25, staticReadData, staticSendData, NULL, staticProcessRxData, staticProcessAck, 0);
 * @endcode
 */
 int comManagerInit(
-	port_handle_t port,
-	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
-	pfnIsCommPortWrite sendFnc,
-	pfnComManagerSendBufferAvailableBytes txFreeFnc,
-	pfnComManagerPostRead pstRxFnc,
-	pfnComManagerPostAck pstAckFnc,
-	pfnComManagerDisableBroadcasts disableBcastFnc,
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
-
-// Initialize an instance to a com manager that can be passed to instance functions and can later be freed with freeComManagerInstance
-// this function may be called multiple times.  Return 0 on success, -1 on failure.
-int comManagerInitInstance(
-	CMHANDLE cmHandle,
-    port_handle_t port,
-	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
-	pfnIsCommPortWrite sendFnc,
-	pfnComManagerSendBufferAvailableBytes txFreeFnc,
-	pfnComManagerPostRead pstRxFnc,
-	pfnComManagerPostAck pstAckFnc,
-	pfnComManagerDisableBroadcasts disableBcastFnc,
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+        port_handle_t port,
+        int stepPeriodMilliseconds,
+        pfnComManagerRead readFnc,
+        pfnIsCommPortWrite sendFnc,
+        pfnComManagerSendBufferAvailableBytes txFreeFnc,
+        pfnComManagerPostRead pstRxFnc,
+        pfnComManagerPostAck pstAckFnc,
+        pfnComManagerDisableBroadcasts disableBcastFnc,
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
 
 /**
 * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
-* 
-* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.  
+* @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.
 */
-void comManagerStep(void);
 void comManagerStepTimeout(uint32_t timeMs);
-void comManagerStepInstance(CMHANDLE cmInstance_);
-void comManagerStepRxInstance(CMHANDLE cmInstance, uint32_t timeMs);
-void comManagerStepTxInstance(CMHANDLE cmInstance);
+
+void comManagerStep();
+
+void stepSendMessages(void);
+
+
 
 /**
 * Make a request to a port handle to broadcast a piece of data at a set interval.
-* 
+*
 * @param pHandle the port handle to request broadcast data from
 * @param dataId the data id to broadcast
 * @param size number of bytes in the data structure from offset to broadcast - pass size and offset of 0 to receive the entire data set
 * @param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
 * @param periodMultiple the data broadcast period in multiples of the base update period
-* 
+*
 * Example that makes a request to receive the device info just once:
 * @code
 * comManagerGetData(0, DID_DEV_INFO, 0, 0, 0);
 * @endcode
-* 
+*
 * Example that broadcasts INS data every 50 milliseconds:
 * @code
 * comManagerGetData(0, DID_INS_1, 0, 0, 50);
 * @endcode
 */
 void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
-void comManagerGetDataInstance(CMHANDLE cmInstance, port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
 
 /**
 * Make a request to a port handle to broadcast a piece of data at a set interval.
-* 
+*
 * @param pHandle the port handle to request broadcast data from
 * @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
-* @param RMC options to enable data streaming on ports other than the current port. 
+* @param RMC options to enable data streaming on ports other than the current port.
 * @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
 * @param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
 * @param periodMultiple the data broadcast period in multiples of the base update period
-* 
+*
 * Example that enables streaming of all data messages necessary for post processing:
 * @code
 * comManagerGetDataRmc(pHandle, RMC_PRESET_PPD_BITS, 0);
 * @endcode
-* 
+*
 * Example that broadcasts INS and GPS data at full rate:
 * @code
 * comManagerGetDataRmc(pHandle, RMC_PRESET_INS_BITS, 0);
 * @endcode
 */
 void comManagerGetDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions);
-void comManagerGetDataRmcInstance(CMHANDLE cmInstance, port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions);
 
 /**
 * Disable a broadcast for a specified port handle and data identifier
-* 
+*
 * @param pHandle the port handle to disable a broadcast for
 * @param dataId the data id to disable boradcast for
 * @return 0 if success, anything else if failure
-* 
+*
 * Example:
 * @code
 * comManagerDisableData(0, DID_INS_1);
 * @endcode
 */
 int comManagerDisableData(port_handle_t port, uint16_t did);
-int comManagerDisableDataInstance(CMHANDLE cmInstance, port_handle_t port, uint16_t did);
 
 /**
 * Send a packet to a port handle
-* 
+*
 * @param pHandle the port handle to send the packet to
 * @param pktInfo the type of packet (PID)
 * @param bodyHdr optional, can contain information about the actual data of the body (txData), usually the data id, offset and size
 * @param txData optional, the actual body of the packet
 * @return 0 if success, anything else if failure
-* 
+*
 * Example:
 * @code
 * p_data_get_t request;
@@ -346,30 +333,28 @@ int comManagerDisableDataInstance(CMHANDLE cmInstance, port_handle_t port, uint1
 * @endcode
 */
 int comManagerSend(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
-int comManagerSendInstance(CMHANDLE cmInstance, port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
 * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
-* 
+*
 * @param pHandle the port handle to send data to
 * @param dataId the data id of the data to send
 * @param dataPtr pointer to the data structure to send
 * @param dataSize number of bytes to send
 * @param dataOffset offset into dataPtr to send at
 * @return 0 if success, anything else if failure
-* 
+*
 * Example:
 * @code
 * comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 * @endcode
 */
 int comManagerSendData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
-int comManagerSendDataInstance(CMHANDLE cmInstance, port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
 
 // INTERNAL FUNCTIONS...
 /**
 * Same as comManagerSend, except that no retry is attempted
-* 
+*
 * @param pHandle the port handle to send the packet to
 * @param dataId Data structure ID number.
 * @param dataPtr Pointer to actual data.
@@ -379,94 +364,75 @@ int comManagerSendDataInstance(CMHANDLE cmInstance, port_handle_t port, void* da
 * @return 0 if success, anything else if failure
 */
 int comManagerSendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset);
-int comManagerSendDataNoAckInstance(CMHANDLE cmInstance, port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
-* Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required. 
+* Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
 * No byte swapping occurs.
-* 
+*
 * @param pHandle the port handle to send data to
 * @param dataId the data id of the data to send
 * @param dataPtr pointer to the data structure to send
 * @param dataSize number of bytes to send
 * @param dataOffset offset into dataPtr to send at
 * @return 0 if success, anything else if failure
-* 
+*
 * Example:
 * @code
 * comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 * @endcode
 */
 int comManagerSendRawData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
-int comManagerSendRawDataInstance(CMHANDLE cmInstance, port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
 * Write bare data directly to the serial port.
-* 
+*
 * @param pHandle the port handle to send data to
 * @param dataPtr pointer to the data structure to send
 * @param dataSize number of bytes to send
 * @return 0 if success, anything else if failure
-* 
+*
 * Example:
 * @code
 * comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
 * @endcode
 */
 int comManagerSendRaw(port_handle_t port, void* dataPtr, int dataSize);
-int comManagerSendRawInstance(CMHANDLE cmInstance, port_handle_t port, void* dataPtr, int dataSize);
 
-/**
-* Write bare data directly to the serial port.
-* 
-* @param pHandle the port handle to send data to
-* @param dataPtr pointer to the data structure to send
-* @param dataSize number of bytes to send
-* @return 0 if success, anything else if failure
-* 
-* Example:
-* @code
-* comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
-* @endcode
-*/
-int comManagerSendRaw(port_handle_t port, void* dataPtr, int dataSize);
-int comManagerSendRawInstance(CMHANDLE cmInstance, port_handle_t port, void* dataPtr, int dataSize);
 
 /**
 * Disables broadcasts of all messages on specified port, or all ports if phandle == -1.
 * @param pHandle the pHandle to disable broadcasts on, -1 for all
 */
 void comManagerDisableBroadcasts(port_handle_t port);
-void comManagerDisableBroadcastsInstance(CMHANDLE cmInstance, port_handle_t port);
+
 
 /**
-* Get the ISComm structure. 
-* 
+* Get the ISComm structure.
+*
 * @return com manager ISComm structure, this pointer is owned by the com manager
 */
 is_comm_instance_t* comManagerGetIsComm(port_handle_t port);
-is_comm_instance_t* comManagerGetIsCommInstance(CMHANDLE cmInstance, port_handle_t port);
+
 
 /**
 * Internal use mostly, get data info for a the specified pre-registered dataId
-* 
+*
 * @return 0 on failure, pointer on success
 */
 bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did);
-bufTxRxPtr_t* comManagerGetRegisteredDataInfoInstance(CMHANDLE cmInstance, uint16_t did);
+
 
 /**
 * Internal use mostly, process a get data request for a message that needs to be broadcasted
-* 
+*
 * @return 0 on success, anything else is failure
 */
 int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req);
-int comManagerGetDataRequestInstance(CMHANDLE cmInstance, port_handle_t port, p_data_get_t* req);
 
 /**
 * Register message handling function for a received data id (binary). This is mostly an internal use function,
 * but can be used if you are implementing your own receiver on a device.
-* 
+*
 * @param dataId the data id to register the handler for
 * @param txFnc called right before the data is sent
 * @param pstRxFnc called after data is received for the data id
@@ -474,18 +440,17 @@ int comManagerGetDataRequestInstance(CMHANDLE cmInstance, port_handle_t port, p_
 * @param rxDataPtr a pointer to the structure in memory to copy received data to
 * @param dataSize size of the data structure in txDataPtr and rxDataPtr
 * @param pktFlags packet flags, usually 0
-* 
+*
 * Example:
 * @code
 * registerComManager(DID_INS_1, prepMsgINS, writeMsgINS, &g_insData, &g_insData, sizeof(ins_1_t));
 * @endcode
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
-void comManagerRegisterInstance(CMHANDLE cmInstance, uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
 /**
 * Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
-* 
+*
 * @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
 * @param asciiHandler handler for NMEA messages.
 * @param ubloxHandler handler for ublox messages.
@@ -494,39 +459,330 @@ void comManagerRegisterInstance(CMHANDLE cmInstance, uint16_t did, pfnComManager
 * @param handlerError handler for parse errors.
 */
 void comManagerSetCallbacks(
-	pfnComManagerAsapMsg rmcHandler,
-	pfnComManagerGenMsgHandler asciiHandler,
-	pfnComManagerGenMsgHandler ubloxHandler, 
-	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler,
-	pfnComManagerParseErrorHandler handlerError);
-void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-	pfnComManagerAsapMsg rmcHandler,
-	pfnComManagerGenMsgHandler asciiHandler,
-	pfnComManagerGenMsgHandler ubloxHandler,
-	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler,
-	pfnComManagerParseErrorHandler handlerError);
+        pfnComManagerAsapMsg rmcHandler,
+        pfnComManagerGenMsgHandler asciiHandler,
+        pfnComManagerGenMsgHandler ubloxHandler,
+        pfnComManagerGenMsgHandler rtcm3Handler,
+        pfnComManagerGenMsgHandler spartnHandler,
+        pfnComManagerParseErrorHandler handlerError);
 
-/**
-* Attach user defined data to a com manager instance
-*/
-void comManagerAssignUserPointer(CMHANDLE cmInstance, void* userPointer);
-
-/**
-* Get user defined data to from a com manager instance
-*/
-void* comManagerGetUserPointer(CMHANDLE cmInstance);
-
-/**
-* Ensure baudrate is valid for InertialSense hardware
-* @param baudRate the baud rate to check
-* @return 0 if baud rate is valid, -1 if not
-*/
-int comManagerValidateBaudRate(unsigned int baudRate);
+void comManagerSetBinaryDataCallback(
+        pfnComManagerBinaryDataHandler binaryDataHandler);
 
 #ifdef __cplusplus
 }
 #endif
+
+
+class ISComManager : com_manager_t {
+public:
+    void step();
+    void stepRx(uint32_t timeMs);
+    int stepRxHandler(comm_port_t* port, protocol_type_t ptype);
+
+    void stepTx();
+
+
+    /**
+    * Initializes the default global com manager. This is generally only called once on program start.
+    * The global com manager is used by the functions that do not have the Instance suffix and first parameter of void* cmInstance.
+    * The instance functions can be ignored, unless you have a reason to have two com managers in the same process.
+    *
+    * @param numPorts the max number of serial ports possible
+    * @param stepPeriodMilliseconds how many milliseconds you are waiting in between calls to comManagerStep
+    * @param readFnc read data from the serial port represented by pHandle
+    * @param sendFnc send data to the serial port represented by pHandle
+    * @param txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
+    * @param pstRxFnc optional, called after new data is available (successfully parsed and checksum passed) from the serial port represented by pHandle
+    * @param pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
+    * @param disableBcastFnc mostly for internal use, this can be left as 0 or NULL
+    * @param timeMs pointer to current time in milliseconds, used for parser state timeout.  Leave NULL if timeout feature is not used.
+    * @return 0 on success, -1 on failure
+    *
+    * Example:
+    * @code
+    * comManagerInit(20, 20, 10, 25, staticReadData, staticSendData, NULL, staticProcessRxData, staticProcessAck, 0);
+    * @endcode
+    */
+    int init(
+            port_handle_t port,
+            int stepPeriodMilliseconds,
+            pfnComManagerRead readFnc,
+            pfnIsCommPortWrite sendFnc,
+            pfnComManagerSendBufferAvailableBytes txFreeFnc,
+            pfnComManagerPostRead pstRxFnc,
+            pfnComManagerPostAck pstAckFnc,
+            pfnComManagerDisableBroadcasts disableBcastFnc,
+            std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+
+    /**
+    * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
+    * @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.
+    */
+    void stepTimeout(uint32_t timeMs);
+
+
+    /**
+    * Make a request to a port handle to broadcast a piece of data at a set interval.
+    *
+    * @param pHandle the port handle to request broadcast data from
+    * @param dataId the data id to broadcast
+    * @param size number of bytes in the data structure from offset to broadcast - pass size and offset of 0 to receive the entire data set
+    * @param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
+    * @param periodMultiple the data broadcast period in multiples of the base update period
+    *
+    * Example that makes a request to receive the device info just once:
+    * @code
+    * comManagerGetData(0, DID_DEV_INFO, 0, 0, 0);
+    * @endcode
+    *
+    * Example that broadcasts INS data every 50 milliseconds:
+    * @code
+    * comManagerGetData(0, DID_INS_1, 0, 0, 50);
+    * @endcode
+    */
+    void getData(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
+
+    /**
+    * Make a request to a port handle to broadcast a piece of data at a set interval.
+    *
+    * @param pHandle the port handle to request broadcast data from
+    * @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
+    * @param RMC options to enable data streaming on ports other than the current port.
+    * @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
+    * @param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
+    * @param periodMultiple the data broadcast period in multiples of the base update period
+    *
+    * Example that enables streaming of all data messages necessary for post processing:
+    * @code
+    * comManagerGetDataRmc(pHandle, RMC_PRESET_PPD_BITS, 0);
+    * @endcode
+    *
+    * Example that broadcasts INS and GPS data at full rate:
+    * @code
+    * comManagerGetDataRmc(pHandle, RMC_PRESET_INS_BITS, 0);
+    * @endcode
+    */
+    void getDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions);
+
+    /**
+    * Disable a broadcast for a specified port handle and data identifier
+    *
+    * @param pHandle the port handle to disable a broadcast for
+    * @param dataId the data id to disable boradcast for
+    * @return 0 if success, anything else if failure
+    *
+    * Example:
+    * @code
+    * comManagerDisableData(0, DID_INS_1);
+    * @endcode
+    */
+    int disableData(port_handle_t port, uint16_t did);
+
+    /**
+    * Send a packet to a port handle
+    *
+    * @param pHandle the port handle to send the packet to
+    * @param pktInfo the type of packet (PID)
+    * @param bodyHdr optional, can contain information about the actual data of the body (txData), usually the data id, offset and size
+    * @param txData optional, the actual body of the packet
+    * @return 0 if success, anything else if failure
+    *
+    * Example:
+    * @code
+    * p_data_get_t request;
+    * bufPtr_t data;
+    * request.id = DID_INS_1;
+    * request.offset = 0;
+    * request.size = sizeof(ins_1_t);
+    * request.bc_period_ms = 50;
+    * data.ptr = (uint8_t*)&request;
+    * data.size = sizeof(request);
+    * comManagerSend(pHandle, PKT_TYPE_GET_DATA, 0, &data)
+    * @endcode
+    */
+    int send(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
+
+    /**
+    * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
+    *
+    * @param pHandle the port handle to send data to
+    * @param dataId the data id of the data to send
+    * @param dataPtr pointer to the data structure to send
+    * @param dataSize number of bytes to send
+    * @param dataOffset offset into dataPtr to send at
+    * @return 0 if success, anything else if failure
+    *
+    * Example:
+    * @code
+    * comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
+    * @endcode
+    */
+    int sendData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
+
+    // INTERNAL FUNCTIONS...
+    /**
+    * Same as comManagerSend, except that no retry is attempted
+    *
+    * @param pHandle the port handle to send the packet to
+    * @param dataId Data structure ID number.
+    * @param dataPtr Pointer to actual data.
+    * @param dataSize Size of data to send in number of bytes.
+    * @param dataOffset Offset into data structure where copied data starts.
+    * @param pFlags Additional packet flags if needed.
+    * @return 0 if success, anything else if failure
+    */
+    int sendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset);
+
+    /**
+    * Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
+    * No byte swapping occurs.
+    *
+    * @param pHandle the port handle to send data to
+    * @param dataId the data id of the data to send
+    * @param dataPtr pointer to the data structure to send
+    * @param dataSize number of bytes to send
+    * @param dataOffset offset into dataPtr to send at
+    * @return 0 if success, anything else if failure
+    *
+    * Example:
+    * @code
+    * comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
+    * @endcode
+    */
+    int sendRawData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
+
+    /**
+    * Write bare data directly to the serial port.
+    *
+    * @param pHandle the port handle to send data to
+    * @param dataPtr pointer to the data structure to send
+    * @param dataSize number of bytes to send
+    * @return 0 if success, anything else if failure
+    *
+    * Example:
+    * @code
+    * comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
+    * @endcode
+    */
+    int sendRaw(port_handle_t port, void* dataPtr, int dataSize);
+
+
+    /**
+    * Disables broadcasts of all messages on specified port, or all ports if phandle == -1.
+    * @param pHandle the pHandle to disable broadcasts on, -1 for all
+    */
+    void disableBroadcasts(port_handle_t port);
+
+
+    /**
+    * Get the ISComm structure.
+    *
+    * @return com manager ISComm structure, this pointer is owned by the com manager
+    */
+    is_comm_instance_t* getIsComm(port_handle_t port);
+
+
+    /**
+    * Internal use mostly, get data info for a the specified pre-registered dataId
+    *
+    * @return 0 on failure, pointer on success
+    */
+    bufTxRxPtr_t* getRegisteredDataInfo(uint16_t did);
+
+
+    /**
+    * Internal use mostly, process a get data request for a message that needs to be broadcasted
+    *
+    * @return 0 on success, anything else is failure
+    */
+    int getDataRequest(port_handle_t port, p_data_get_t* req);
+
+
+    /**
+    * Register message handling function for a received data id (binary). This is mostly an internal use function,
+    * but can be used if you are implementing your own receiver on a device.
+    *
+    * @param dataId the data id to register the handler for
+    * @param txFnc called right before the data is sent
+    * @param pstRxFnc called after data is received for the data id
+    * @param txDataPtr a pointer to the structure in memory of the data to send
+    * @param rxDataPtr a pointer to the structure in memory to copy received data to
+    * @param dataSize size of the data structure in txDataPtr and rxDataPtr
+    * @param pktFlags packet flags, usually 0
+    *
+    * Example:
+    * @code
+    * registerComManager(DID_INS_1, prepMsgINS, writeMsgINS, &g_insData, &g_insData, sizeof(ins_1_t));
+    * @endcode
+    */
+    void registerDid(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
+
+
+    /**
+    * Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
+    *
+    * @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
+    * @param asciiHandler handler for NMEA messages.
+    * @param ubloxHandler handler for ublox messages.
+    * @param rtcm3Handler handler for RTCM3 messages.
+    * @param spartnHandler handler for SPARTN messages.
+    * @param handlerError handler for parse errors.
+    */
+    void setCallbacks(
+            pfnComManagerAsapMsg rmcHandler,
+            pfnComManagerGenMsgHandler asciiHandler,
+            pfnComManagerGenMsgHandler ubloxHandler,
+            pfnComManagerGenMsgHandler rtcm3Handler,
+            pfnComManagerGenMsgHandler spartnHandler,
+            pfnComManagerParseErrorHandler handlerError);
+
+    void setBinaryDataCallback(
+            pfnComManagerBinaryDataHandler binaryDataHandler);
+
+    /**
+    * Attach user defined data to a com manager instance
+    */
+    void assignUserPointer(void* userPointer);
+
+
+    /**
+    * Get user defined data to from a com manager instance
+    */
+    void* getUserPointer();
+
+
+
+    void stepSendMessages(void);
+
+
+    /**
+    * Ensure baudrate is valid for InertialSense hardware
+    * @param baudRate the baud rate to check
+    * @return 0 if baud rate is valid, -1 if not
+    */
+    int validateBaudRate(unsigned int baudRate);
+
+private:
+// int processAsciiRxPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* start, int count);
+// void parseAsciiPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* buf, int count);
+    int processBinaryRxPacket(port_handle_t port, packet_t *pkt);
+    void enableBroadcastMsg(broadcast_msg_t *msg, int periodMultiple);
+    void disableBroadcastMsg(broadcast_msg_t *msg);
+    void disableDidBroadcast(port_handle_t port, uint16_t did);
+    int sendDataPacket(port_handle_t port, packet_t *pkt);
+    void sendAck(port_handle_t port, packet_t *pkt, uint8_t pTypeFlags);
+
+    int findAsciiMessage(const void * a, const void * b);
+    int asciiMessageCompare(const void* elem1, const void* elem2);
+};
+
+extern ISComManager s_cm;
+
+// com manager instance / handle is a void*
+typedef ISComManager* CMHANDLE;
+
+// get the global instance of the com manager - this is only needed if you are working with multiple com managers and need to compare instances
+CMHANDLE comManagerGetGlobal(void);
 
 #endif // COM_MANAGER_H

@@ -34,17 +34,17 @@ PUSH_PACK_1
 
 struct sChunkHeader 
 {
-	uint32_t	marker;				//!< Chunk marker (0xFC05EA32)
-	uint16_t	version;			//!< Chunk Version
-	uint16_t	classification;		//!< Chunk classification
-	char		name[4];			//!< Chunk name
-	char		invName[4];			//!< Bitwise inverse of chunk name
-	uint32_t	dataSize;			//!< Chunk data length in bytes
-	uint32_t	invDataSize;		//!< Bitwise inverse of chunk data length
-	uint32_t	grpNum;				//!< Chunk Group Number: 0 = serial data, 1 = sorted data...
-	uint32_t	devSerialNum;		//!< Device serial number
-	uint32_t	pHandle;			//!< Device port handle
-	uint32_t	reserved;			//!< Unused
+	uint32_t	    marker;				//!< Chunk marker (0xFC05EA32)
+	uint16_t	    version;			//!< Chunk Version
+	uint16_t	    classification;		//!< Chunk classification
+	char		    name[4];			//!< Chunk name
+	char		    invName[4];			//!< Bitwise inverse of chunk name
+	uint32_t	    dataSize;			//!< Chunk data length in bytes
+	uint32_t	    invDataSize;		//!< Bitwise inverse of chunk data length
+	uint32_t	    grpNum;				//!< Chunk Group Number: 0 = serial data, 1 = sorted data...
+	uint32_t	    devSerialNum;		//!< Device serial number
+	port_handle_t	port;			    //!< Device port handle
+	uint32_t	    reserved;			//!< Unused
 
 #if LOG_CHUNK_STATS
 	void print()

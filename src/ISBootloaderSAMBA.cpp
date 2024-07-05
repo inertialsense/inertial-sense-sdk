@@ -73,7 +73,7 @@ is_operation_result cISBootloaderSAMBA::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -128,7 +128,7 @@ is_operation_result cISBootloaderSAMBA::reboot_up()
 
 is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 {
-    serial_port_t* port = m_port;
+    // serial_port_t* port = (serial_port_t*)m_port;
 
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
@@ -139,12 +139,12 @@ is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
     // try non-USB and then USB mode (0 and 1)
     for(int isUSB = 0; isUSB < 2; isUSB++)
     {
-        serialPortSleep(port, 250);
-        serialPortFlush(port);
+        serialPortSleep(m_port, 250);
+        serialPortFlush(m_port);
 
         // flush
-        serialPortWrite(port, (const uint8_t*)"#", 2);
-        serialPortReadTimeout(port, buf, sizeof(buf), 100);
+        serialPortWrite(m_port, (const uint8_t*)"#", 2);
+        serialPortReadTimeout(m_port, buf, sizeof(buf), 100);
 
         FILE* file;
 #ifdef _MSC_VER
@@ -230,15 +230,15 @@ is_operation_result cISBootloaderSAMBA::erase_flash()
 
 uint32_t cISBootloaderSAMBA::get_device_info()
 {
-    serial_port_t* port = m_port;
+    // serial_port_t* port = m_port;
     uint8_t buf[SAMBA_PAGE_SIZE];
 
     // Flush the bootloader command buffer
-    serialPortWrite(port, (const uint8_t*)"#", 2);
-    int count = serialPortReadTimeout(port, buf, sizeof(buf), 100);
+    serialPortWrite(m_port, (const uint8_t*)"#", 2);
+    int count = serialPortReadTimeout(m_port, buf, sizeof(buf), 100);
 
     // Set non-interactive mode and wait for response
-    count = serialPortWriteAndWaitFor(port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
+    count = serialPortWriteAndWaitFor(m_port, (const uint8_t*)"N#", 2, (const uint8_t*)"\n\r", 2);
     if (!count)
     {   // Failed to handshake with bootloader
         // serialPortClose(port);

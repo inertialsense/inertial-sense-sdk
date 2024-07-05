@@ -18,7 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-static serial_port_t s_serialPort;
+static comm_port_t s_serialPort = {};
 
 
 /**
@@ -28,18 +28,18 @@ static serial_port_t s_serialPort;
  */
 void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0) 
 {
-	is_comm_instance_t comm = {};
+//	is_comm_instance_t comm = {};
 	uint8_t buf[64];
-	is_comm_init(&comm, buf, sizeof(buf));
+	is_comm_init(&s_serialPort.comm, buf, sizeof(buf));
 
 	rmc_t rmc;
 	rmc.bits = bits;
 	rmc.options = options;
 
-	int len = is_comm_data_to_buf(buf, sizeof(buf), &comm, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
+	int len = is_comm_data_to_buf(buf, sizeof(buf), &s_serialPort.comm, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
 
 	// Write command to serial port
-	serialPortWrite(&s_serialPort, buf, len);
+	serialPortWrite((port_handle_t)&s_serialPort, buf, len);
 }
 
 
@@ -58,11 +58,12 @@ int main(int argc, char* argv[])
     // Setup and enable logger.  Select the LOGTYPE (i.e. dat, raw, csv)
     cISLogger logger;
     logger.InitSave(cISLogger::eLogType::LOGTYPE_RAW, logPath);
+    logger.registerDevice(IS_HARDWARE_TYPE_IMX, 12345);
     logger.EnableLogging(true);
 
     // Open serial port
-	serialPortPlatformInit(&s_serialPort);
-	if (serialPortOpen(&s_serialPort, portName.c_str(), baudrate, 0) == 0)
+	serialPortPlatformInit((port_handle_t)&s_serialPort);
+	if (serialPortOpen((port_handle_t)&s_serialPort, portName.c_str(), baudrate, 0) == 0)
 	{
 		cout << "Failed to open port: " << portName;
 		return -1;
@@ -81,7 +82,7 @@ int main(int argc, char* argv[])
     	SLEEP_MS(1);
 
 		uint8_t buf[512];
-		if (int len = serialPortRead(&s_serialPort, buf, sizeof(buf)))
+		if (int len = serialPortRead((port_handle_t)&s_serialPort, buf, sizeof(buf)))
 		{
 			// Log serial port data to file
 			logger.LogData(0, len, buf);

@@ -27,7 +27,7 @@ using namespace std;
 static cISStream *s_clientStream;
 
 
-int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int stop_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	uint8_t buf[1024];
 	// Stop all broadcasts on the device
@@ -42,7 +42,7 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 
-int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	uint8_t buf[1024];
 	int n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_POS, 0, 0, 1);
@@ -120,7 +120,7 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 }
 
 
-void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+void read_uINS_data(port_handle_t port, is_comm_instance_t *comm, cISStream *clientStream)
 {
 	protocol_type_t ptype;
 
@@ -145,7 +145,7 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 }
 
 
-void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+void read_RTK_base_data(port_handle_t port, is_comm_instance_t *comm, cISStream *clientStream)
 {
 	protocol_type_t ptype;
 

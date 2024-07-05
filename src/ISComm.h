@@ -612,8 +612,14 @@ typedef struct {
     base_port_t base;
     port_monitor_set_t* stats;          //! stats associated with this port
     is_comm_instance_t comm;            //! Comm instance
+#if defined(GPX_1)
+    #define COM_BUFFER_SIZE 2800
+    uint8_t buffer[COM_BUFFER_SIZE];       //! Comm instance data buffer
+#else
     uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
+#endif
 } comm_port_t;
+#define COMM_PORT(n)    ((comm_port_t*)(n))
 
 
 /** Pop off the packing argument, we can safely allow packing and shifting in memory at this point */

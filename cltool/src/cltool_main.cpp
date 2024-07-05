@@ -138,7 +138,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
         printf("\nLogging %.2f KB to: %s\n", logSize * 0.001f, logger.LogDirectory().c_str());
 }
 
-static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
+static int cltool_errorCallback(port_handle_t port, is_comm_instance_t* comm)
 {
     #define BUF_SIZE    8192
     #define BLACK   "\u001b[30m"
@@ -233,7 +233,7 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 }
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
-static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
     if (g_commandLineOptions.outputOnceDid) {
         if (data->hdr.id != g_commandLineOptions.outputOnceDid)
@@ -242,7 +242,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     }
 
     (void)i;
-    (void)pHandle;
+    (void)port;
 
     // Print data to terminal - but only if we aren't doing a firmware update...
     if (g_devicesUpdating)
@@ -258,19 +258,23 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
     inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
 
+    if (inertialSenseInterface.DeviceCount() <= 0)
+        return false;
+
     if (g_commandLineOptions.asciiMessages.size() != 0)
     {
-        serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
+        ISDevice &device = inertialSenseInterface.getDevices()[0];
+        serialPortWriteAscii(device.port, g_commandLineOptions.asciiMessages.c_str(), (int) g_commandLineOptions.asciiMessages.size());
         return true;
     }
 
     // check for any compatible (protocol version 2) devices
-    for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-        if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
+    for (auto& device : inertialSenseInterface.getDevices()) {
+        if (device.devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
             printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
             // let's print the dev info for all connected devices (so the user can identify the errant device)
-            for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
+            for (auto& device : inertialSenseInterface.getDevices()) {
+                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(device.devInfo, true);
                 printf("%s\n", devInfo.c_str());
             }
             return false;
@@ -665,23 +669,23 @@ static int cltool_dataStreaming()
         };
         std::map<std::string, std::string, nat_cmp> portDevices;
         int maxPortLen = 0;
-        for (auto d : inertialSenseInterface.getDevices()) {
-            if (ENCODE_DEV_INFO_TO_HDW_ID(d.devInfo) != 0) {
-                std::string port(d.serialPort.port);
-                if (d.devInfo.firmwareVer[3] == 0) {
-                    portDevices[port] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d %d%c)",
-                                                                          d.devInfo.serialNumber,
-                                                                          g_isHardwareTypeNames[d.devInfo.hardwareType], d.devInfo.hardwareVer[0], d.devInfo.hardwareVer[1],
-                                                                          d.devInfo.firmwareVer[0], d.devInfo.firmwareVer[1], d.devInfo.firmwareVer[2],
-                                                                          d.devInfo.buildNumber, d.devInfo.buildType);
+        for (auto& device : inertialSenseInterface.getDevices()) {
+            if (ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo) != 0) {
+                std::string portName(((serial_port_t*)device.port)->portName);
+                if (device.devInfo.firmwareVer[3] == 0) {
+                    portDevices[portName] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d %d%c)",
+                                                                 device.devInfo.serialNumber,
+                                                                          g_isHardwareTypeNames[device.devInfo.hardwareType], device.devInfo.hardwareVer[0], device.devInfo.hardwareVer[1],
+                                                                 device.devInfo.firmwareVer[0], device.devInfo.firmwareVer[1], device.devInfo.firmwareVer[2],
+                                                                 device.devInfo.buildNumber, device.devInfo.buildType);
                 } else {
-                    portDevices[port] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d.%d %d%c)",
-                                                                          d.devInfo.serialNumber,
-                                                                          g_isHardwareTypeNames[d.devInfo.hardwareType], d.devInfo.hardwareVer[0], d.devInfo.hardwareVer[1],
-                                                                          d.devInfo.firmwareVer[0], d.devInfo.firmwareVer[1], d.devInfo.firmwareVer[2], d.devInfo.firmwareVer[3],
-                                                                          d.devInfo.buildNumber, d.devInfo.buildType);
+                    portDevices[portName] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d.%d %d%c)",
+                                                                 device.devInfo.serialNumber,
+                                                                          g_isHardwareTypeNames[device.devInfo.hardwareType], device.devInfo.hardwareVer[0], device.devInfo.hardwareVer[1],
+                                                                 device.devInfo.firmwareVer[0], device.devInfo.firmwareVer[1], device.devInfo.firmwareVer[2], device.devInfo.firmwareVer[3],
+                                                                 device.devInfo.buildNumber, device.devInfo.buildType);
                 }
-                maxPortLen = std::max<int>(maxPortLen, (int)strlen(d.serialPort.port));
+                maxPortLen = std::max<int>(maxPortLen, portName.length());
             }
         }
         for (auto i : portDevices) {
@@ -833,16 +837,18 @@ static int inertialSenseMain()
     }
     else if (g_commandLineOptions.asciiMessages.size() != 0)
     {
-        serial_port_t serialForAscii;
-        serialPortPlatformInit(&serialForAscii);
-        serialPortOpen(&serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
-        serialPortWriteAscii(&serialForAscii, "STPB", 4);
-        serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
+        serial_port_t tempPort;
+        port_handle_t serialForAscii = (port_handle_t)&tempPort;
+
+        serialPortPlatformInit(serialForAscii);
+        serialPortOpen(serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
+        serialPortWriteAscii(serialForAscii, "STPB", 4);
+        serialPortWriteAscii(serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
         unsigned char line[512];
         unsigned char* asciiData;
         while (!g_inertialSenseDisplay.ExitProgram())
         {
-            int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
+            int count = serialPortReadAsciiTimeout(serialForAscii, line, sizeof(line), 100, &asciiData);
             if (count > 0)
             {
                 printf("%s", (char*)asciiData);

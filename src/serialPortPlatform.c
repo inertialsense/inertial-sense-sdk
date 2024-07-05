@@ -88,8 +88,8 @@ typedef struct
 
 } serialPortHandle;
 
-static int serialPortFlushPlatform(serial_port_t* serialPort);
-static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
+static int serialPortFlushPlatform(port_handle_t port);
+static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
 #if PLATFORM_IS_WINDOWS
@@ -100,7 +100,7 @@ typedef struct
 {
     OVERLAPPED ov;
     pfnSerialPortAsyncReadCompletion externalCompletion;
-    serial_port_t* serialPort;
+    port_handle_t port;
     unsigned char* buffer;
 } readFileExCompletionStruct;
 
@@ -251,8 +251,9 @@ int set_nonblocking(int fd)
 #endif
 
 // Return 1 on success, 0 on failure
-static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, int baudRate, int blocking)
+static int serialPortOpenPlatform(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     if (serialPort->handle != 0)
     {
         // FIXME: Should we be closing the port and then reopen??
@@ -261,7 +262,7 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
         return 0;
     }
 
-    serialPortSetPort(serialPort, port);
+    serialPortSetPort(port, portName);
 
 #if PLATFORM_IS_WINDOWS
 
@@ -338,17 +339,17 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
 #else
 
-    int fd = open(port, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
+    int fd = open(portName, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        error_message("[%s] open():: Error opening port: %d\n", port, errno);
+        error_message("[%s] open():: Error opening port: %d\n", portName, errno);
         serialPort->errorCode = errno;
         return 0;
     }
 
     if (configure_serial_port(fd, baudRate) != 0) 
     {
-        error_message("[%s] open():: Error configuring port: %d\n", port, errno);
+        error_message("[%s] open():: Error configuring port: %d\n", portName, errno);
         serialPort->errorCode = errno;
         return 0;
     }
@@ -370,9 +371,9 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
 
     // we're doing a quick and dirty check to make sure we can even attempt to read data successfully.  Some bad devices will fail here if they aren't initialized correctly
     uint8_t tmp;
-    if (serialPortReadTimeoutPlatform(serialPort, &tmp, 1, 10) < 0) {
+    if (serialPortReadTimeoutPlatform(port, &tmp, 1, 10) < 0) {
         if (serialPort->errorCode == ENOENT) {
-            serialPortClose(serialPort);
+            serialPortClose(port);
             return 0;
         }
     }
@@ -382,8 +383,9 @@ static int serialPortOpenPlatform(serial_port_t* serialPort, const char* port, i
     return 1;	// success
 }
 
-static int serialPortIsOpenPlatform(serial_port_t* serialPort)
+static int serialPortIsOpenPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     if (!serialPort->handle)
         return 0;
 
@@ -406,8 +408,9 @@ static int serialPortIsOpenPlatform(serial_port_t* serialPort)
 
 }
 
-static int serialPortClosePlatform(serial_port_t* serialPort)
+static int serialPortClosePlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (handle == 0)
     {
@@ -416,7 +419,7 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
     }
 
     // When closing, let's flush any pending data, as this could potentially hang the close()
-    serialPortFlushPlatform(serialPort);
+    serialPortFlushPlatform(port);
 
 #if PLATFORM_IS_WINDOWS
 
@@ -450,8 +453,9 @@ static int serialPortClosePlatform(serial_port_t* serialPort)
     return 1;
 }
 
-static int serialPortFlushPlatform(serial_port_t* serialPort)
+static int serialPortFlushPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
 
 #if PLATFORM_IS_WINDOWS
@@ -599,8 +603,9 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
 
 #endif
 
-static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds)
+static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
@@ -619,15 +624,16 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("Error reading from %s : %s (%d)\n", serialPort->port, strerror(errno), errno);
+        error_message("Error reading from %s : %s (%d)\n", serialPort->portName, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
     } else
         serialPort->errorCode = 0; // clear any previous errorcode
     return result;
 }
 
-static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
+static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
@@ -654,7 +660,7 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
     if (n < 0)
         serialPort->errorCode = errno;
 
-    completion(serialPort, buffer, (n < 0 ? 0 : n), (n >= 0 ? 0 : n));
+    completion(port, buffer, (n < 0 ? 0 : n), (n >= 0 ? 0 : n));
 
 #endif
 
@@ -662,8 +668,9 @@ static int serialPortAsyncReadPlatform(serial_port_t* serialPort, unsigned char*
 }
 
 
-static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned char* buffer, int writeCount)
+static int serialPortWritePlatform(port_handle_t port, const unsigned char* buffer, int writeCount)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
@@ -743,8 +750,9 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
 }
 
-static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPort)
+static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
 
 
@@ -769,8 +777,9 @@ static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPo
 
 }
 
-static int serialPortGetByteCountAvailableToWritePlatform(serial_port_t* serialPort)
+static int serialPortGetByteCountAvailableToWritePlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     // serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     (void)serialPort;
 
@@ -801,10 +810,16 @@ static int serialPortSleepPlatform(int sleepMilliseconds)
     return 1;
 }
 
-int serialPortPlatformInit(serial_port_t* serialPort)
+int serialPortPlatformInit(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
 	// very important - the serial port must be initialized to zeros
+    base_port_t tmp = { .pnum = serialPort->pnum, .ptype = serialPort->ptype };
+
 	memset(serialPort, 0, sizeof(serial_port_t));
+
+    serialPort->pnum = tmp.pnum;
+    serialPort->ptype = tmp.ptype;
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;

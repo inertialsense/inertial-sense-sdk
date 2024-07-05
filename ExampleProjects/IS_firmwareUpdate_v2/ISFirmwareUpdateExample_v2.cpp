@@ -98,7 +98,7 @@ static void statusText(void* obj, eLogLevel level, const char* info, ...)
 }
 
 // [C++ COMM INSTRUCTION] Handle received data 
-static void example_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
+static void example_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
 
     (void)i;

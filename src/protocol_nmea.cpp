@@ -2120,10 +2120,10 @@ uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vec
         switch (ports)
         {	
         case RMC_OPTIONS_PORT_CURRENT:
-            nmea_enable_stream(rmci[port->pnum]->rmcNmea.nmeaBits, rmci[port->pnum]->rmcNmea.nmeaPeriod, id, period);
+            nmea_enable_stream(rmci[portId(port)]->rmcNmea.nmeaBits, rmci[portId(port)]->rmcNmea.nmeaPeriod, id, period);
             break;
         case RMC_OPTIONS_PORT_ALL:
-            for (int i=0; i<NUM_COM_PORTS; i++) {
+            for (int i=0; i < NUM_SERIAL_PORTS; i++) {
                 nmea_enable_stream(rmci[i]->rmcNmea.nmeaBits, rmci[i]->rmcNmea.nmeaPeriod, id,  period);
             }
             break;
@@ -2144,7 +2144,7 @@ inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint
     grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
 }
 
-//uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
 uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci)
 {
     (void)aSize;
@@ -2207,7 +2207,7 @@ uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, st
         switch (ports)
         {	
         case RMC_OPTIONS_PORT_CURRENT:
-            nmea_configure_grmci(grmci, port->pnum, id, period, options);
+            nmea_configure_grmci(grmci, portId(port), id, period, options);
             break;
         
         case RMC_OPTIONS_PORT_ALL:		

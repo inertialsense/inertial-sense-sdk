@@ -73,7 +73,7 @@
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
     IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
-                            [this](InertialSense *i, p_data_t *data, int pHandle)           \
+                            [this](InertialSense *i, p_data_t *data, port_handle_t port)           \
                             {                                                               \
                                 /* ROS_INFO("Got message %d", DID);*/                       \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->ptr)); \

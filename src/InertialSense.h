@@ -52,8 +52,8 @@ extern "C"
 
 class InertialSense;
 
-typedef std::function<void(InertialSense* i, p_data_t* data, int pHandle)> pfnHandleBinaryData;
-typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pHandle);
+typedef std::function<void(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, port_handle_t port);
 
 /**
 * Inertial Sense C++ interface
@@ -280,25 +280,32 @@ public:
     void SendRaw(uint8_t* data, uint32_t length);
 
     /**
+     * Locates the device associated with the specified port
+     * @param port
+     * @return ISDevice* which is connected to port, otherwise NULL
+     */
+    ISDevice* DeviceByPort(port_handle_t port = 0);
+
+    /**
     * Get the device info
     * @param pHandle the pHandle to get device info for
     * @return the device info
     */
-    const dev_info_t DeviceInfo(int pHandle = 0);
+    const dev_info_t DeviceInfo(port_handle_t port = 0);
 
     /**
     * Get current device system command
     * @param pHandle the pHandle to get sysCmd for
     * @return current device system command
     */
-    system_command_t GetSysCmd(int pHandle = 0);
+    system_command_t GetSysCmd(port_handle_t port = 0);
 
     /**
     * Set device configuration
     * @param pHandle the pHandle to set sysCmd for
     * @param command system command value (see eSystemCommand)
     */
-    void SetSysCmd(const uint32_t command, int pHandle = -1);
+    void SetSysCmd(const uint32_t command, port_handle_t port = 0);
 
     /**
      * Sends message to device to set devices Event Filter
@@ -309,7 +316,7 @@ public:
      *       pHandle: Send in target COM port. 
      *                If arg is < 0 default port will be used 
     */
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle = -1);
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port = 0);
 
     /**
     * Get the flash config, returns the latest flash config read from the uINS flash memory
@@ -317,23 +324,23 @@ public:
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
     */
-    bool FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
 
     /**
     * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized.
     */
-    bool FlashConfigSynced(int pHandle = 0) 
+    bool FlashConfigSynced(port_handle_t port = 0)
     { 
         if (m_comManagerState.devices.size() == 0)
         {   // No devices
             return false;
         }
 
-        ISDevice& device = m_comManagerState.devices[pHandle];
+        ISDevice& device = m_comManagerState.devices[portId(port)];
         return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
-                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(pHandle); 
+                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(port);
     }
 
     /**
@@ -342,14 +349,14 @@ public:
      * @param pHandle the port pHandle to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
-    bool FlashConfigUploadFailure(int pHandle = 0)
+    bool FlashConfigUploadFailure(port_handle_t port = 0)
     { 
         if (m_comManagerState.devices.size() == 0)
         {   // No devices
             return true;
         }
 
-        ISDevice& device = m_comManagerState.devices[pHandle];
+        ISDevice& device = m_comManagerState.devices[portId(port)];
         return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
     } 
 
@@ -359,7 +366,7 @@ public:
     * @param pHandle the pHandle to set flash config for
     * @return true if success
     */
-    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
 
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
@@ -367,10 +374,10 @@ public:
      * @param pHandle the port pHandle
      * @return false When failed to synchronize
      */
-    bool WaitForFlashSynced(int pHandle = 0);
+    bool WaitForFlashSynced(port_handle_t port = 0);
 
-    void ProcessRxData(int pHandle, p_data_t* data);
-    void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
+    void ProcessRxData(port_handle_t port, p_data_t* data);
+    void ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize);
 
     /**
      * Request a specific device broadcast binary data
@@ -379,7 +386,7 @@ public:
      * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
      * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
      */
-    bool BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple);
+    bool BroadcastBinaryData(port_handle_t port, uint32_t dataId, int periodMultiple);
 
     /**
     * Broadcast binary data
@@ -434,9 +441,9 @@ public:
         uint8_t buf[10];
         for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
         {
-            if (!serialPortIsOpen(&m_comManagerState.devices[i].serialPort))
+            if (!serialPortIsOpen(m_comManagerState.devices[i].port))
             {
-                while (serialPortReadTimeout(&(m_comManagerState.devices[i].serialPort), buf, sizeof(buf), 0));
+                while (serialPortReadTimeout(m_comManagerState.devices[i].port, buf, sizeof(buf), 0));
             }
         }
     }
@@ -446,13 +453,18 @@ public:
     * @param pHandle the pHandle to get the serial port for
     * @return the serial port
     */
-    serial_port_t* SerialPort(int pHandle = 0)
+    [[ deprecated ]]
+    serial_port_t* SerialPort(port_handle_t port = 0)
     {
-        if ((size_t)pHandle >= m_comManagerState.devices.size())
-        {
-            return NULL;
+        if (port) {
+            return (serial_port_t*)(port);
         }
-        return &(m_comManagerState.devices[pHandle].serialPort);
+        // if no argument are passed, return the first device's port...
+        if (!m_comManagerState.devices.empty())
+            return (serial_port_t*)(m_comManagerState.devices[0].port);
+
+        // or nullptr if there are no devices
+        return nullptr;
     }
 
     /**
@@ -569,21 +581,21 @@ public:
      * @param pHandle - Handle of current device
      * @return -1 for failure to upload file, 0 for success.
      */
-    int LoadFlashConfig(std::string path, int pHandle = 0);
+    int LoadFlashConfig(std::string path, port_handle_t port = 0);
 
     /**
      * @brief SaveFlashConfigFile
      * @param path - Path to YAML flash config file
      * @param pHandle - Handle of current device
      */
-    void SaveFlashConfigFile(std::string path, int pHandle = 0);
+    void SaveFlashConfigFile(std::string path, port_handle_t port = 0);
 
     std::string ServerMessageStatsSummary() { return messageStatsSummary(m_serverMessageStats); }
     std::string ClientMessageStatsSummary() { return messageStatsSummary(m_clientMessageStats); }
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+    // ISDevice* ComManagerDevice(port_handle_t port=0) { if (port->pnum >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[port->pnum]); }
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -604,7 +616,7 @@ private:
     cISLogger m_logger;
     void* m_logThread;
     cMutex m_logMutex;
-    std::map<int, std::vector<p_data_buf_t>> m_logPackets;
+    std::map<port_handle_t, std::vector<p_data_buf_t>> m_logPackets;
     time_t m_lastLogReInit;
 
     char m_clientBuffer[512];
@@ -612,7 +624,7 @@ private:
     bool m_forwardGpgga;
 
     cISTcpServer m_tcpServer;
-    cISSerialPort m_serialServer;
+    //cISSerialPort m_serialServer;
     cISStream* m_clientStream;				// Our client connection to a server
     uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
@@ -628,6 +640,12 @@ private:
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
 
+    std::vector<serial_port_t> m_serialPorts;   //! actual initialized serial ports
+    std::vector<port_handle_t> m_Ports;         //! port_handle's to those serial ports
+    port_handle_t allocateSerialPort(int ptype);
+
+    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
+
     // returns false if logger failed to open
     bool UpdateServer();
     bool UpdateClient();
@@ -636,10 +654,11 @@ private:
     bool HasReceivedDeviceInfo(size_t index);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
+    void RemoveDevice(ISDevice& device);
     bool OpenSerialPorts(const char* port, int baudRate);
     void CloseSerialPorts();
     static void LoggerThread(void* info);
-    static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
+    static void StepLogger(InertialSense* i, const p_data_t* data, port_handle_t port);
     static void BootloadStatusUpdate(void* obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
 };

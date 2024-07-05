@@ -18,15 +18,15 @@ using namespace std;
 
 
 cmd_options_t g_commandLineOptions = {};
-serial_port_t g_serialPort;
+port_handle_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
 
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend)
 {
     (void)cmHandle;
-    (void)pHandle;
-    return serialPortWrite(&g_serialPort, bufferToSend->buf, bufferToSend->size);
+    (void)port;
+    return serialPortWrite(g_serialPort, bufferToSend->buf, bufferToSend->size);
 }
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)

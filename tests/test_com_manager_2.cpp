@@ -66,32 +66,32 @@ static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 	return sendCount;
 }
 
-static int txFreeFnc(CMHANDLE cmHandle, int pHandle)
+static int txFreeFnc(CMHANDLE cmHandle, port_handle_t port)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->txFreeFncCallCount++;
 	return (BUFFER_SIZE - t->bufferSize);
 }
 
-static void pstRxFnc(CMHANDLE cmHandle, int pHandle, p_data_t* dataRead)
+static void pstRxFnc(CMHANDLE cmHandle, port_handle_t port, p_data_t* dataRead)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->pstRxFncCallCount++;
 }
 
-static void pstAckFnc(CMHANDLE cmHandle, int pHandle, p_ack_t* ack, unsigned char packetIdentifier)
+static void pstAckFnc(CMHANDLE cmHandle, port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->pstAckFncCallCount++;
 }
 
-static void disableBcastFnc(CMHANDLE cmHandle, int pHandle)
+static void disableBcastFnc(CMHANDLE cmHandle, port_handle_t port)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->disableBcastFncCallCount++;
 }
 
-static int asciiMessageHandler(CMHANDLE cmHandle, int pHandle, unsigned char* messageId, unsigned char* line, int lineLength)
+static int asciiMessageHandler(CMHANDLE cmHandle, port_handle_t port, unsigned char* messageId, unsigned char* line, int lineLength)
 {
 	// comWrite(ASCII_COM_USART_NUM, line, lineLength); // echo back
 

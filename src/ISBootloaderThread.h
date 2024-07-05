@@ -70,7 +70,8 @@ public:
     typedef struct 
     {
         void* thread;
-        char serial_name[100];
+        serial_port_t serialPort;
+        // char serial_name[100];
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
         bool reuse_port;

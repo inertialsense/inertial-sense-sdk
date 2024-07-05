@@ -23,15 +23,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cISSerialPort::cISSerialPort(serial_port_t* serial) : cISStream()
+cISSerialPort::cISSerialPort(port_handle_t port_) : cISStream()
 {
-	if (serial != NULLPTR)
+	if (port_ != NULLPTR)
 	{
-		m_serial = *serial;
+		port = port_;
 	}
 	else
 	{
-		serialPortPlatformInit(&m_serial);
+		serialPortPlatformInit(port);
 	}
 	Close();
 }
@@ -45,22 +45,22 @@ bool cISSerialPort::Open(const std::string& portName, int baudRate, int timeout,
 {
 	m_timeout = timeout;
 	m_blocking = blocking;
-    return (serialPortOpen(&m_serial, portName.c_str(), baudRate, (int)m_blocking) != 0);
+    return (serialPortOpen(port, portName.c_str(), baudRate, (int)m_blocking) != 0);
 }
 
 int cISSerialPort::Close()
 {
-	return serialPortClose(&m_serial);
+	return serialPortClose(port);
 }
 
 int cISSerialPort::Read(void* data, int dataLength)
 {
-	return serialPortReadTimeout(&m_serial, (unsigned char*)data, dataLength, m_timeout);
+	return serialPortReadTimeout(port, (unsigned char*)data, dataLength, m_timeout);
 }
 
 int cISSerialPort::Write(const void* data, int dataLength)
 {
-	return serialPortWrite(&m_serial, (const unsigned char*)data, dataLength);
+	return serialPortWrite(port, (const unsigned char*)data, dataLength);
 }
 
 
@@ -207,5 +207,5 @@ void cISSerialPort::GetComPorts(vector<string>& ports)
 
 std::string cISSerialPort::ConnectionInfo()
 {
-	return string(m_serial.port);
+	return string(((serial_port_t*)port)->portName);
 }

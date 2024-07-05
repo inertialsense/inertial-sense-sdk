@@ -1052,7 +1052,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *pkt)
 {
-    if ((portWrite == NULL) || (port == NULL) || !(port->ptype & PORT_TYPE__COMM))
+    if ((portWrite == NULL) || (port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
     {
         return -1;  // can't write if we don't have a valid port, or the port isn't an ISComm
     }
@@ -1106,7 +1106,7 @@ int is_comm_write(pfnIsCommPortWrite portWrite, port_handle_t port, uint8_t flag
 
 int is_comm_write_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
-    if ((portWrite == NULL) || (port == NULL) || !(port->ptype & PORT_TYPE__COMM))
+    if ((portWrite == NULL) || (port == NULL) || !(portType(port) & PORT_TYPE__COMM))
     {
         return -1;
     }
