@@ -141,7 +141,7 @@ void enable_bootloader(port_handle_t port)
     RTC->BKP4R = PORT_SEL_KEY_SYS_GPBR_4;
     RTC->BKP5R = PORT_SEL_KEY_SYS_GPBR_5;
     RTC->BKP6R = PORT_SEL_KEY_SYS_GPBR_6;
-    RTC->BKP7R = port->pnum; // serPortId(port); // FIXME:
+    RTC->BKP7R = portId(port);
 #endif
 
     // reset processor
