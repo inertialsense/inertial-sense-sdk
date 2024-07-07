@@ -172,9 +172,9 @@ void ISComManager::registerDid(uint16_t did, pfnComManagerPreSend txFnc, pfnComM
     };
 }
 
-void comManagerStep()
-{
-    s_cm.stepRx(0);
+
+void comManagerStepTimeout(uint32_t timeMs) {
+    s_cm.stepRx(timeMs);
     s_cm.stepTx();
 }
 
@@ -182,6 +182,12 @@ void ISComManager::stepTimeout(uint32_t timeMs)
 {
     stepRx(timeMs);
     stepTx();
+}
+
+void comManagerStep()
+{
+    s_cm.stepRx(0);
+    s_cm.stepTx();
 }
 
 void ISComManager::step()
@@ -541,7 +547,9 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
         data.hdr.size = pkt->data.size;
         data.ptr = pkt->data.ptr;
 
-        if (!didRegistrationMap.contains(hdr->id)) {
+        // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivalent
+        //  if (!didRegistrationMap.contains(hdr->id)) {
+        if (auto search = didRegistrationMap.find(hdr->id); search != didRegistrationMap.end()) {
             if (cmMsgHandleDID) cmMsgHandleDID(port, &data);
             return 0;
         }
@@ -650,7 +658,7 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
             (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
             (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))))
         {
-            comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
+            comManagerGetData(COM0_PORT, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
         }
         
         #endif
@@ -703,9 +711,11 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did)
 
 bufTxRxPtr_t* ISComManager::getRegisteredDataInfo(uint16_t did)
 {
-    // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivelant
-    if (didRegistrationMap.contains(did))
+    // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivalent
+    //  if (!didRegistrationMap.contains(did)) {
+    if (auto search = didRegistrationMap.find(did); search != didRegistrationMap.end()) {
         return &didRegistrationMap[did].dataSet;
+    }
 
     return 0;
 }

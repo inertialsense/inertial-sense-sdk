@@ -149,6 +149,7 @@ public:
      * @return
      */
     ISDevice& getDevice(uint32_t index);
+    ISDevice& getDevice(port_handle_t port);
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.

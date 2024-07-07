@@ -404,6 +404,10 @@ ISDevice& InertialSense::getDevice(uint32_t deviceIndex) {
     return m_comManagerState.devices[deviceIndex];
 }
 
+ISDevice& InertialSense::getDevice(port_handle_t port) {
+    return m_comManagerState.devices[portId(port)];
+}
+
 bool InertialSense::Update()
 {
     m_timeMs = current_timeMs();

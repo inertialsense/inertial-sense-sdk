@@ -814,7 +814,7 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 {
     serial_port_t* serialPort = (serial_port_t*)port;
 	// very important - the serial port must be initialized to zeros
-    base_port_t tmp = { .pnum = serialPort->pnum, .ptype = serialPort->ptype };
+    base_port_t tmp = { .pnum = portId(port), .ptype = portType(port) };
 	memset(serialPort, 0, sizeof(serial_port_t));
 
     serialPort->base = tmp;

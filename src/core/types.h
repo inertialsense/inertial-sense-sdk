@@ -52,5 +52,4 @@ static int portWrite(port_handle_t port, const uint8_t* buf, int len) { return (
 static int portFree(port_handle_t port) { return ((base_port_t*)port)->portFree ? ((base_port_t*)port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED; }
 static int portAvailable(port_handle_t port) { return ((base_port_t*)port)->portAvailable ? ((base_port_t*)port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED; }
 
-
-#endif //IS_SDK_UNIT_TESTS_TYPES_H
+#endif //IS_CORE_TYPES_H

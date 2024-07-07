@@ -18,8 +18,8 @@ int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
 
 void serialPortInit(port_handle_t port, int id, int type) {
     serial_port_t* serialPort = (serial_port_t*)port;
-    serialPort->pnum = id;
-    serialPort->ptype = type;
+    serialPort->base.pnum = id;
+    serialPort->base.ptype = type;
 }
 
 void serialPortSetOptions(port_handle_t port, uint32_t options)
