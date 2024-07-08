@@ -3435,7 +3435,8 @@ typedef struct PACKED
     uint8_t obs_count_bas;
     uint8_t obs_count_rov;
 
-    uint8_t obs_pairs_filtered;   // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
+    //uint8_t obs_pairs_filtered;   // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
+    uint8_t reserved2;
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
     uint8_t obs_unhealthy;   // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
@@ -3450,7 +3451,12 @@ typedef struct PACKED
     uint8_t obs_low_snr_base;    // number of satellites with low snr at base
     uint8_t obs_high_snr_parity; // number of satellites with high difference between snr at rover and snr at base
 
-    //uint8_t reserved[4];
+    uint8_t obs_zero_L1_rover;   // number of satellites with zero L1 pseudorange or phase at rover
+    uint8_t obs_zero_L1_base;    // number of satellites with zero L1 pseudorange or phase at base
+    uint8_t obs_low_elev_rover;  // number of satellites with low elevation at rover
+    uint8_t obs_low_elev_base;   // number of satellites with low elevation at base
+
+    uint8_t reserved[4];
 } rtk_debug_t;
 
 POP_PACK
