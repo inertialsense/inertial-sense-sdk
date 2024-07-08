@@ -44,6 +44,8 @@ public:
 
 class ISDevice {
 public:
+    static ISDevice invalidRef;
+
     // port_handle_t port = 0;
     port_handle_t port = { };
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
@@ -60,10 +62,7 @@ public:
     fwUpdate::update_status_e closeStatus = { };
     ISDeviceUpdater fwUpdate = { };
 
-    static ISDevice invalidRef;
-
     ISDevice() { };
-
 };
 
 

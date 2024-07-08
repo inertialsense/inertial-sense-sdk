@@ -148,8 +148,8 @@ public:
      * Returns a reference to an is_device_t struct that contains information about the specified device
      * @return
      */
-    ISDevice& getDevice(uint32_t index);
-    ISDevice& getDevice(port_handle_t port);
+    ISDevice* getDevice(uint32_t index);
+    ISDevice* getDevice(port_handle_t port);
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -334,14 +334,12 @@ public:
     */
     bool FlashConfigSynced(port_handle_t port = 0)
     { 
-        if (m_comManagerState.devices.size() == 0)
-        {   // No devices
-            return false;
-        }
+        ISDevice* device = getDevice(port);
+        if (device != NULL)
+            return  (device->flashCfg.checksum == device->sysParams.flashCfgChecksum) &&
+                    (device->flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(port);
 
-        ISDevice& device = m_comManagerState.devices[portId(port)];
-        return  (device.flashCfg.checksum == device.sysParams.flashCfgChecksum) && 
-                (device.flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(port);
+        return false;
     }
 
     /**
@@ -352,13 +350,10 @@ public:
      */
     bool FlashConfigUploadFailure(port_handle_t port = 0)
     { 
-        if (m_comManagerState.devices.size() == 0)
-        {   // No devices
-            return true;
-        }
-
-        ISDevice& device = m_comManagerState.devices[portId(port)];
-        return device.flashCfgUploadChecksum && (device.flashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
+        ISDevice* device = getDevice(port);
+        if (device != NULL)
+            return device->flashCfgUploadChecksum && (device->flashCfgUploadChecksum != device->sysParams.flashCfgChecksum);
+        return true;
     } 
 
     /**
@@ -645,7 +640,7 @@ private:
     std::vector<port_handle_t> m_Ports;         //! port_handle's to those serial ports
     port_handle_t allocateSerialPort(int ptype);
 
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
+    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg = {}; // [MAX_NUM_BCAST_MSGS];
 
     // returns false if logger failed to open
     bool UpdateServer();

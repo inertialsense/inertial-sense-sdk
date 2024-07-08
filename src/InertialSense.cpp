@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "yaml-cpp/yaml.h"
 #include "protocol_nmea.h"
 #include "InertialSense.h"
+#include "ISDevice.h"
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "protocol/FirmwareUpdate.h"
@@ -47,18 +48,13 @@ static int staticReadData(port_handle_t port, unsigned char* buf, int len)
 
 static void staticProcessRxData(port_handle_t port, p_data_t* data)
 {
-    if (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData)))
+    if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
     {
         return;
     }
 
     pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
     s_cm_state->stepLogFunction(s_cm_state->inertialSenseInterface, data, port);
-
-    if ((size_t)port > s_cm_state->devices.size())
-    {
-        return;
-    }
 
     if (handler != NULLPTR)
     {
@@ -94,13 +90,10 @@ static void staticProcessRxData(port_handle_t port, p_data_t* data)
 
 static int staticProcessRxNmea(port_handle_t port, const unsigned char* msg, int msgSize)
 {
-    if ((size_t)port > s_cm_state->devices.size())
+    if (port)
     {
-        return 0;
+        s_cm_state->inertialSenseInterface->ProcessRxNmea(port, msg, msgSize);
     }
-
-    s_cm_state->inertialSenseInterface->ProcessRxNmea(port, msg, msgSize);
-
     return 0;
 }
 
@@ -400,12 +393,16 @@ std::vector<ISDevice>& InertialSense::getDevices() {
     return m_comManagerState.devices;
 }
 
-ISDevice& InertialSense::getDevice(uint32_t deviceIndex) {
-    return m_comManagerState.devices[deviceIndex];
+ISDevice* InertialSense::getDevice(uint32_t deviceIndex) {
+    return &m_comManagerState.devices[deviceIndex];
 }
 
-ISDevice& InertialSense::getDevice(port_handle_t port) {
-    return m_comManagerState.devices[portId(port)];
+ISDevice* InertialSense::getDevice(port_handle_t port) {
+    for (ISDevice& device : m_comManagerState.devices)
+        if (device.port == port)
+            return &device;
+
+    return NULL;
 }
 
 bool InertialSense::Update()
@@ -871,12 +868,13 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
 
 bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
 {
-    if (!port)
-    {
-        return false;
+    ISDevice* device = NULL;
+    if (!port) {
+        device = &m_comManagerState.devices[0];
+    } else {
+        device = DeviceByPort(port);
     }
 
-    ISDevice* device = DeviceByPort(port);
     if (!device)
         return false;
 
@@ -889,15 +887,11 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
 
 bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
 {
-    if (!port)
-    {
-        return 0;
-    }
-
-    ISDevice* device = DeviceByPort(port);
-    if (!device)
-    {
-        return 0;
+    ISDevice* device = NULL;
+    if (!port) {
+        device = &m_comManagerState.devices[0];
+    } else {
+        device = DeviceByPort(port);
     }
 
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
@@ -950,8 +944,15 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
 
 bool InertialSense::WaitForFlashSynced(port_handle_t port)
 {
+    ISDevice* device = NULL;
+    if (!port) {
+        device = &m_comManagerState.devices[0];
+    } else {
+        device = DeviceByPort(port);
+    }
+
     unsigned int startMs = current_timeMs();
-    while(!FlashConfigSynced(port))
+    while(!FlashConfigSynced(device->port))
     {   // Request and wait for flash config
         Update();
         SLEEP_MS(100);
@@ -1376,13 +1377,12 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
 
 port_handle_t InertialSense::allocateSerialPort(int ptype) {
     serial_port_t serialPort = {};
-    port_handle_t port = NULL;
+    serialPort.base.pnum = m_serialPorts.size();
+    serialPort.base.ptype = (ptype | PORT_TYPE__UART);
 
     m_serialPorts.insert(m_serialPorts.cbegin(), serialPort);
-    port = (port_handle_t)&m_serialPorts[0];
+    port_handle_t port = (port_handle_t)&m_serialPorts[0];
 
-    // FIXME:  portId(port) = m_serialPorts.size();
-    // FIXME:  portType(port) = PORT_TYPE__UART | PORT_TYPE__COMM;
     serialPortPlatformInit(port);
     return port;
 }
@@ -1417,9 +1417,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         splitString(port, ',', ports);
     }
 
-    // Register message handler callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
-
     // open serial ports
     for (size_t i = 0; i < ports.size(); i++)
     {
@@ -1429,7 +1426,10 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             // failed to open
             serialPortClose(port);
         }
-        else if (comManagerInit(port, 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmBufBcastMsg) != -1) {    // Error
+        else if (comManagerInit(port, 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmBufBcastMsg) != -1) {    // If successful, finish setting up device & callbacks
+            // Register message handler callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
+            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+
             ISDevice device;
             device.port = port;
             device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event

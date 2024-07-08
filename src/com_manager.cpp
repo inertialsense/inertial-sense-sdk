@@ -96,35 +96,35 @@ int comManagerInit(
 
 int ISComManager::init
 (	port_handle_t port,
-    int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
-    pfnIsCommPortWrite portWriteFnc,
-    pfnComManagerSendBufferAvailableBytes txFreeFnc,
-    pfnComManagerPostRead pstRxFnc,
-    pfnComManagerPostAck pstAckFnc,
-    pfnComManagerDisableBroadcasts disableBcastFnc,
-    broadcast_msg_array_t* buffers)   //! was: com_manager_init_t *buffers,
+    int stepPeriodMillis,
+    pfnComManagerRead portReadFncCb,
+    pfnIsCommPortWrite portWriteFncCb,
+    pfnComManagerSendBufferAvailableBytes txFreeFncCb,
+    pfnComManagerPostRead pstRxFncCb,
+    pfnComManagerPostAck pstAckFncCb,
+    pfnComManagerDisableBroadcasts disableBcastFncCb,
+    broadcast_msg_array_t* bcastBuffers)   //! was: com_manager_init_t *buffers,
 {
-    if ((port == NULL) || (buffers == NULL))
+    if ((port == NULL) || (bcastBuffers == NULL))
     {
         return -1;
     }
 
     // assign new variables
-    portRead = portReadFnc;
-    portWrite = portWriteFnc;
-    txFree = txFreeFnc;
-    pstRxFnc = pstRxFnc;
-    pstAckFnc = pstAckFnc;
-    disableBcastFnc = disableBcastFnc;
+    portRead = portReadFncCb;
+    portWrite = portWriteFncCb;
+    txFree = txFreeFncCb;
+    pstRxFnc = pstRxFncCb;
+    pstAckFnc = pstAckFncCb;
+    disableBcastFnc = disableBcastFncCb;
     // cmInstance->numPorts = numPorts;
-    stepPeriodMilliseconds = stepPeriodMilliseconds;
+    stepPeriodMilliseconds = stepPeriodMillis;
     cmMsgHandlerNmea = NULL;
     cmMsgHandlerUblox = NULL;
     cmMsgHandlerRtcm3 = NULL;
 
     // Buffer: message broadcasts
-    broadcastMessages = buffers;
+    broadcastMessages = bcastBuffers;
 
     // Initialize IScomm instance, for serial reads / writes
     comm_port_t* comm = (comm_port_t*)port;
@@ -300,6 +300,9 @@ void stepSendMessages(void)
 __attribute__((optimize("O0")))
 void ISComManager::stepSendMessages()
 {
+    if (broadcastMessages == NULL)
+        return;
+
     // Send data (if necessary)
     broadcast_msg_array_t broadcastMsgArray = *(broadcastMessages);
     for (auto& bc : broadcastMsgArray)
@@ -550,11 +553,14 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
         // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivalent
         //  if (!didRegistrationMap.contains(hdr->id)) {
         if (auto search = didRegistrationMap.find(hdr->id); search != didRegistrationMap.end()) {
-            if (cmMsgHandleDID) cmMsgHandleDID(port, &data);
-            return 0;
+            // NOTE we do the find() above to see if its exists, because making the following call will insert an empty regData into
+            // the map, if ones not already there..
+            regData = &didRegistrationMap[hdr->id];
+        } else {
+            // only call the global handler if no DID handler is registered
+            if (cmMsgHandleDID)
+                cmMsgHandleDID(port, &data);
         }
-
-        regData = &didRegistrationMap[hdr->id];
 
         // Validate and constrain Rx data size to fit within local data struct
         if (regData && regData->dataSet.size && ((uint32_t)(data.hdr.offset + data.hdr.size) > regData->dataSet.size))

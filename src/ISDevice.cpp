@@ -9,6 +9,8 @@
 #include "ISDevice.h"
 #include "ISFirmwareUpdater.h"
 
+ISDevice ISDevice::invalidRef;
+
 bool ISDeviceUpdater::inProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
 
 void ISDeviceUpdater::update() {
