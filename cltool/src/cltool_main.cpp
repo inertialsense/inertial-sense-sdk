@@ -138,7 +138,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
         printf("\nLogging %.2f KB to: %s\n", logSize * 0.001f, logger.LogDirectory().c_str());
 }
 
-static int cltool_errorCallback(int port, is_comm_instance_t* comm)
+static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 {
     #define BUF_SIZE    8192
     #define BLACK   "\u001b[30m"
@@ -725,6 +725,12 @@ static int cltool_dataStreaming()
                     return -1;
                 };
             }
+
+            if (g_commandLineOptions.evFCont.sendEVF)
+                inertialSenseInterface.SetEventFilter(g_commandLineOptions.evFCont.dest, 
+                    g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask,  
+                    g_commandLineOptions.evFCont.evFilter.portMask,
+                    g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
             // Main loop. Could be in separate thread if desired.
             uint32_t startTime = current_timeMs();

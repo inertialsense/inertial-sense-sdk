@@ -81,7 +81,7 @@ static int portRead(int pHandle, unsigned char* buf, int len)
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(int pHandle, const unsigned char* buf, int len)
+static int portWrite(unsigned int pHandle, const unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
@@ -1046,7 +1046,7 @@ TEST(ISComm, IsCommGetDataTest)
 	int period = 3;
 
 	// Generate packet
-	int n = is_comm_get_data(portWrite, 0, &g_comm, did, offset, size, period);
+	int n = is_comm_get_data(portWrite, 0, &g_comm, did, size, offset, period);
 
 	// Reset buffer if needed
 	is_comm_free(&g_comm);

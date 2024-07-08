@@ -253,6 +253,68 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 return false;
             }
         }
+        else if (startsWith(a, "-evf="))
+        {
+            g_commandLineOptions.evFCont.sendEVF = true;
+
+            char* token = strtok((char*)&a[5], ",");
+            g_commandLineOptions.evFCont.dest = stoi(token);
+
+            if (g_commandLineOptions.evFCont.dest == 0)
+                printf("EVF Target: Primary device\n");
+            else if (g_commandLineOptions.evFCont.dest == 1)
+                printf("EVF Target: device GNSS1 port\n");
+            else if (g_commandLineOptions.evFCont.dest == 2)
+                printf("EVF Target: device GNSS2 port\n");
+            else
+            {
+                printf("EVF Target: INVALID\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
+                g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
+                printf("EVF PortMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.portMask);
+            }
+            else
+            {
+                printf("EVF PortMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
+                g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel = stoi(token);
+                printf("EVF PriorityLevel: 0x%d\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
+            }
+            else
+            {
+                printf("EVF PriorityLevel: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
+                g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask = stoi(token);
+                printf("EVF msgTypeIdMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask);
+            }
+            else
+            {
+                printf("EVF msgTypeIdMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            printf("EVF Enabled!");
+
+        }
         else if (startsWith(a, "-factoryReset"))
         {
             g_commandLineOptions.sysCommand = SYS_CMD_MANF_FACTORY_RESET;
@@ -576,7 +638,15 @@ void cltool_outputUsage()
 	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
 	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
 	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
-	cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
+    cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
+    cout << "         target: t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
+    cout << "         portMask: po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
+    cout << "         priorityLevel: pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
+    cout << "             It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors,"  << endlbOn;
+    cout << "         msgTypeIdMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
+    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
+    cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;

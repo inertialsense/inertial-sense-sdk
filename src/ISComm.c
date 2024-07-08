@@ -967,7 +967,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
+int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -979,7 +979,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t offset, uint32_t size, uint32_t periodMultiple)
+int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -1050,35 +1050,17 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
+int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt)
 {
-    // TODO: Debug test_flash_sync, remove later (WHJ)
-    int j;
-
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
     // Write packet to port
-    int n = j = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-    if (j != sizeof(packet_hdr_t))
-    {
-        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite header: %d,%d\n", j, (int)sizeof(packet_hdr_t));
-    }
-#endif
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
 
     if (pkt->offset)
     {
-        n += j = portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
-
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-        if (j != 2)
-        {
-            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite optional offset: %d,2\n", j);
-        }
-#endif
-
+        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
     }
 
     if (pkt->data.size)
@@ -1086,15 +1068,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
         // Include payload in checksum calculation
         pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
-        n += j = portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
-
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-        if (j != (int)(pkt->data.size))
-        {
-            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite payload: %d,%d\n", j, pkt->data.size);
-        }
-#endif
-
+        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
     }
 
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
@@ -1117,50 +1091,26 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
-int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+{
+    packet_t txPkt;
+
+    // Encode header and header checksum.  Update checksum and write packet to buffer.  Returns number of bytes written on success or -1 on failure.
+    return is_comm_write_pkt(portWrite, port, comm, &txPkt, flags, did, data_size, offset, data);
+}
+
+int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
     if (portWrite == NULL)
     {
         return -1;
     }
 
-    packet_t txPkt;
-
     // Encode header and header checksum
-    is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
+    is_comm_encode_hdr(txPkt, flags, did, data_size, offset, data);
 
     // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
-    return is_comm_write_isb_precomp_to_port(portWrite, port, comm, &txPkt);
-}
-
-int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
-{
-    return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_SET_DATA, did, size, offset, data);    
-}    
-
-int is_comm_set_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
-{
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_SET_DATA, did, size, offset, data);
-}    
-
-int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
-{
-    return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_DATA, did, size, offset, data);    
-}    
-
-int is_comm_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint16_t did, uint16_t size, uint16_t offset, void* data)
-{
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_DATA, did, size, offset, data);
-}    
-
-int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm)
-{
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
-}
-
-int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm)
-{
-    return is_comm_write(portWrite, port, comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
+    return is_comm_write_isb_precomp_to_port(portWrite, port, comm, txPkt);
 }
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)

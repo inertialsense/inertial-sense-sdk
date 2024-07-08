@@ -30,7 +30,7 @@ using namespace std;
 static InertialSense *s_is;
 static InertialSense::com_manager_cpp_state_t *s_cm_state;
 
-static int staticSendData(int port, const unsigned char* buf, int len)
+static int staticSendData(unsigned int port, const unsigned char* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -39,7 +39,7 @@ static int staticSendData(int port, const unsigned char* buf, int len)
     return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadData(int port, unsigned char* buf, int len)
+static int staticReadData(unsigned int port, unsigned char* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -55,7 +55,7 @@ static int staticReadData(int port, unsigned char* buf, int len)
     return bytesRead;
 }
 
-static void staticProcessRxData(int port, p_data_t* data)
+static void staticProcessRxData(unsigned int port, p_data_t* data)
 {
     if (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData)))
     {
@@ -102,7 +102,7 @@ static void staticProcessRxData(int port, p_data_t* data)
     }
 }
 
-static int staticProcessRxNmea(int port, const unsigned char* msg, int msgSize)
+static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int msgSize)
 {
     if ((size_t)port > s_cm_state->devices.size())
     {
@@ -775,6 +775,52 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
     }
 }
 
+/**
+ * Sends message to device to set devices Event Filter
+ * param Target: 0 = device, 
+ *               1 = forward to device GNSS 1 port (ie GPX), 
+ *               2 = forward to device GNSS 2 port (ie GPX),
+ *               else will return
+ *       pHandle: Send in target COM port. 
+ *                If arg is < 0 default port will be used 
+*/
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle)
+{
+    #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
+    uint8_t data[EVENT_MAX_SIZE] = {0};
+
+    did_event_t event = {
+        .time = 123,
+        .senderSN = 0,
+        .senderHdwId = 0,
+        .length = sizeof(did_event_filter_t),
+    };
+
+    did_event_filter_t filter = {
+        .portMask = portMask,
+    };
+
+    filter.eventMask.priorityLevel = priorityLevel;
+    filter.eventMask.msgTypeIdMask = msgTypeIdMask;
+
+    if(target == 0)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
+    else if(target == 1)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
+    else if(target == 2)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
+    else 
+        return;
+
+    memcpy(data, &event, DID_EVENT_HEADER_SIZE);
+    memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
+
+    if(pHandle < 0)
+        SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+    else    
+        comManagerSendData(pHandle, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
+}
+
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
 void InertialSense::SyncFlashConfig(unsigned int timeMs)
 {
@@ -844,9 +890,6 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
-        // TODO: Debug test_flash_sync, remove later (WHJ)
-        printf("InertialSense::SetFlashConfig() no devices present.\n");
-
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
@@ -871,15 +914,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
             int size = tail-head;
             int offset = head-((uint8_t*)newCfg);
             DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
-            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);
-            
-            // TODO: Debug test_flash_sync, remove later (WHJ)
-            if (fail != 0)
-            {
-                printf("InertialSense::SetFlashConfig() failed to send flash config using comManagerSendData(): port %d, size %d, offset %d\n", pHandle, size, offset);
-                printf("  buf %p, head %p, tail %p\n", (void*)&(newCfg), (void*)head, (void*)tail);
-            }
-            
+            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);            
             failure = failure || fail;
             device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
         }

@@ -20,7 +20,7 @@ include_directories(
 link_directories(${IS_SDK_DIR})
 
 # Define the executable
-add_executable(${PROJECT_NAME} ISCommunicationsExample.c)
+add_executable(${PROJECT_NAME} ISCommunicationsExample.cpp)
 
 # Link InertialSenseSDK static library to the executable
 target_link_libraries(${PROJECT_NAME} InertialSenseSDK)

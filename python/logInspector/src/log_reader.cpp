@@ -1,6 +1,11 @@
 #include "convert_ins.h"
 #include "log_reader.h"
 
+#define STRINGIZE(x) #x
+#define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
+#define MESSAGE_VALUE(x) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " #x " = " STRINGIZE_VALUE_OF(x))
+#define CONCAT_MESSAGE(text, value) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " text " = " STRINGIZE_VALUE_OF(value))
+
 using namespace std;
 
 static py::object g_python_parent;  // Including this inside LogReader class causes problems w/ garbage collection.
@@ -76,6 +81,12 @@ void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& ve
 
 bool LogReader::init(py::object python_class, std::string log_directory, py::list serials)
 {
+    printf("SDK Protocol: %d.%d.%d.%d\n", 
+        PROTOCOL_VERSION_CHAR0,
+        PROTOCOL_VERSION_CHAR1,
+        PROTOCOL_VERSION_CHAR2,
+        PROTOCOL_VERSION_CHAR3);
+
     vector<string> stl_serials = serials.cast<vector<string>>();
     cout << "Loading from: " << log_directory << endl;
     cout << "Serial numbers: ";
@@ -319,6 +330,8 @@ void LogReader::forwardData(int device_id)
 
 bool LogReader::load()
 {
+    printf("LogReader::load() ");
+
     std::vector<std::shared_ptr<cDeviceLog>> devices = logger_.DeviceLogs();
     for (int i = 0; i < (int)devices.size(); i++)
     {
@@ -341,7 +354,12 @@ pybind11::list LogReader::getSerialNumbers()
 }
 
 pybind11::list LogReader::protocolVersion()
-{ 
+{
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR0: ", PROTOCOL_VERSION_CHAR0)
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR1: ", PROTOCOL_VERSION_CHAR1)
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR2: ", PROTOCOL_VERSION_CHAR2)
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR3: ", PROTOCOL_VERSION_CHAR3)
+
     vector<int> version;
     version.push_back(PROTOCOL_VERSION_CHAR0);
     version.push_back(PROTOCOL_VERSION_CHAR1);
