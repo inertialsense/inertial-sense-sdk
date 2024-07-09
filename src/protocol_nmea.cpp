@@ -1835,7 +1835,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
     unsigned int year, month, day;
     SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
     info.buildType = ' ';
-    info.buildYear = (uint8_t)(year - 2000);
+    info.buildYear = (uint8_t)(year >= 2000 ? (year - 2000):year);
     info.buildMonth = (uint8_t)(month);
     info.buildDay = (uint8_t)(day);
     ptr = ASCII_find_next_field(ptr);
