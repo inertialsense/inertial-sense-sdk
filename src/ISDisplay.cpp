@@ -695,6 +695,24 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 		(hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
 		(hdwStatus & HDW_STATUS_BIT_FAULT) != 0);
 
+    // ptr += SNPRINTF(ptr, ptrEnd - ptr, "\thdwStatus: 0x%x", hdwStatus);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tFlags (0x%08X)", hdwStatus);
+    std::string statusStr;
+    if (hdwStatus & HDW_STATUS_SYSTEM_RESET_REQUIRED) {
+        statusStr = statusStr + (statusStr.length() > 0 ? " | " : "") + "RESET REQUIRED";
+    }
+    if (hdwStatus & HDW_STATUS_ERR_COM_TX_LIMITED) {
+        statusStr = statusStr + (statusStr.length() > 0 ? " | " : "") + "TX LIMITED";
+    }
+    if (hdwStatus & HDW_STATUS_ERR_COM_RX_OVERRUN) {
+        statusStr = statusStr + (statusStr.length() > 0 ? " | " : "") + "RX OVERRUN";
+    }
+
+    if (statusStr.length() > 0) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " :: *** %s ***", statusStr.c_str());
+    }
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+
 	return ptr;
 }
 
@@ -1374,13 +1392,14 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, ",%d,%d,%d\n", sys.imuSamplePeriodMs, sys.navOutputPeriodMs, sys.genFaultCode);
 
-	if (m_displayMode == DMODE_PRETTY)
+    if (m_displayMode == DMODE_PRETTY)
 	{
 		ptr = StatusToString(ptr, ptrEnd, sys.insStatus, sys.hdwStatus);
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C\tBaro %4.1f C\tMCU %4.1f C\tUpTime %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C   Baro %4.1f C   MCU %4.1f C   UpTime: %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
 	}
 
-	return buf;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X", sys.flashCfgChecksum);
+    return buf;
 }
 
 string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensors, const p_data_hdr_t& hdr)
@@ -1420,7 +1439,7 @@ string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensor
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 	}
 
-	return buf;
+    return buf;
 }
 
 string cInertialSenseDisplay::DataToStringRTOS(const rtos_info_t& info, const p_data_hdr_t& hdr)
