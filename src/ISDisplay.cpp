@@ -1464,57 +1464,80 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
-	char buf[BUF_SIZE];
-	char* ptr = buf;
-	char* ptrEnd = buf + BUF_SIZE;
+    char buf[BUF_SIZE];
+    char* ptr = buf;
+    char* ptrEnd = buf + BUF_SIZE;
 
-	// Single line format
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
-		info.serialNumber
-	);
+    // Single line format
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
+        info.serialNumber
+    );
 
-	switch (info.hardwareType)
-	{
-	default:							ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?"); 	break;
-	case IS_HARDWARE_TYPE_UINS:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS"); 	break;
-	case IS_HARDWARE_TYPE_EVB:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");  	break;
-	case IS_HARDWARE_TYPE_IMX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");  	break;
-	case IS_HARDWARE_TYPE_GPX:		ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");  	break;
-	}
+    switch (info.hardwareType)
+    {
+        default:                        ptr += SNPRINTF(ptr, ptrEnd - ptr, " Hw?");     break;
+        case IS_HARDWARE_TYPE_UINS:     ptr += SNPRINTF(ptr, ptrEnd - ptr, " uINS");    break;
+        case IS_HARDWARE_TYPE_EVB:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " EVB");     break;
+        case IS_HARDWARE_TYPE_IMX:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " IMX");     break;
+        case IS_HARDWARE_TYPE_GPX:      ptr += SNPRINTF(ptr, ptrEnd - ptr, " GPX");     break;
+    }
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
-		info.hardwareVer[0],
-		info.hardwareVer[1],
-		info.hardwareVer[2]
-	);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "-%d.%d.%d",
+        info.hardwareVer[0],
+        info.hardwareVer[1],
+        info.hardwareVer[2]
+    );
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d.%d %d%c %04d-%02d-%02d",
-		info.firmwareVer[0],
-		info.firmwareVer[1],
-		info.firmwareVer[2],
-		info.firmwareVer[3],
-		info.buildNumber,
-        (info.buildType ? info.buildType : ' '),
-		info.buildYear + 2000,
-		info.buildMonth,
-		info.buildDay
-	);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " Fw-%d.%d.%d",
+        info.firmwareVer[0],
+        info.firmwareVer[1],
+        info.firmwareVer[2]
+    );
 
-	if (full)
-	{	// Spacious format
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, " %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
-			info.buildHour,
-			info.buildMinute,
-			info.buildSecond,
-			info.protocolVer[0],
-			info.protocolVer[1],
-			info.protocolVer[2],
-			info.protocolVer[3],
-			info.addInfo
-		);
-	}
+    switch(info.buildType) {
+        case 'a': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-alpha");     break;
+        case 'b': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-beta");      break;
+        case 'c': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-rc");        break;
+        case 'd': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-devel");     break;
+        case 's': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
+        case '*': ptr += SNPRINTF(ptr, ptrEnd - ptr, "-snap");      break;
+        default : break;
+    }
 
-	return buf;
+    if (info.firmwareVer[3] > 0 ) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, ".%d", info.firmwareVer[3]);
+    }
+
+    char dirty = 0;
+    if (info.buildType == '*') {
+        dirty = '*';
+    }
+
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %08x%c (%05X.%d)",
+        info.repoRevision,
+        dirty,
+        ((info.buildNumber >> 12) & 0xFFFFF),
+        (info.buildNumber & 0xFFF)
+    );
+
+    if (full)
+    {	// Spacious format
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %04d-%02d-%02d %02d:%02d:%02d Proto-%d.%d.%d.%d (%s)",
+            info.buildYear + 2000,
+            info.buildMonth,
+            info.buildDay,
+            info.buildHour,
+            info.buildMinute,
+            info.buildSecond,
+            info.protocolVer[0],
+            info.protocolVer[1],
+            info.protocolVer[2],
+            info.protocolVer[3],
+            info.addInfo
+        );
+    }
+
+    return buf;
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
