@@ -148,7 +148,7 @@ setup(
     long_description='',
     ext_modules=ext_modules,
     install_requires=[
-        'allantools',
+        'allantools<=2019.9',
         'matplotlib', 
         'numpy', 
         'pandas',

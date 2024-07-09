@@ -216,6 +216,43 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             print_dids();
             return false;
         }
+        else if (startsWith(a, "-did") && (i + 1) < argc)
+        {
+            while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"
+            {
+                if (g_commandLineOptions.outputOnceDid)
+                {
+                    i++;
+                }
+                else
+                {
+                    stream_did_t dataset = {};
+                    if (read_did_argument(&dataset, argv[++i]))    // use next argument
+                    {
+                        if (dataset.periodMultiple == 0)
+                        {
+                            g_commandLineOptions.outputOnceDid = dataset.did;
+                            g_commandLineOptions.datasets.clear();
+                        }
+                        g_commandLineOptions.datasets.push_back(dataset);
+                    }
+                }
+            }
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-edit"))
+        {
+            stream_did_t dataset = {};
+            if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))    // use next argument
+            {
+                g_commandLineOptions.datasetEdit = dataset;
+            }
+            else
+            {   // Invalid argument
+                print_dids();
+                return false;
+            }
+        }
         else if (startsWith(a, "-evf="))
         {
             g_commandLineOptions.evFCont.sendEVF = true;
@@ -229,9 +266,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 printf("EVF Target: device GNSS1 port\n");
             else if (g_commandLineOptions.evFCont.dest == 2)
                 printf("EVF Target: device GNSS2 port\n");
-            else 
+            else
             {
-                printf("EVF Target: INVALID\n"); 
+                printf("EVF Target: INVALID\n");
                 g_commandLineOptions.evFCont.sendEVF = false;
                 continue;
             }
@@ -277,43 +314,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
 
             printf("EVF Enabled!");
 
-        }
-        else if (startsWith(a, "-did") && (i + 1) < argc)
-        {
-            while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"
-            {
-                if (g_commandLineOptions.outputOnceDid)
-                {
-                    i++;
-                }
-                else
-                {
-                    stream_did_t dataset = {};
-                    if (read_did_argument(&dataset, argv[++i]))    // use next argument
-                    {
-                        if (dataset.periodMultiple == 0)
-                        {
-                            g_commandLineOptions.outputOnceDid = dataset.did;
-                            g_commandLineOptions.datasets.clear();
-                        }
-                        g_commandLineOptions.datasets.push_back(dataset);
-                    }
-                }
-            }
-            enable_display_mode();
-        }
-        else if (startsWith(a, "-edit"))
-        {
-            stream_did_t dataset = {};
-            if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))    // use next argument
-            {
-                g_commandLineOptions.datasetEdit = dataset;
-            }
-            else
-            {   // Invalid argument
-                print_dids();
-                return false;
-            }
         }
         else if (startsWith(a, "-factoryReset"))
         {
