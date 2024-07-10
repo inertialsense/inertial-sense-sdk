@@ -507,8 +507,12 @@ class logPlot:
     def getGpsNedVel(self, d):
         velNed = None
         velDid = DID_GPS2_VEL if self.getData(d, DID_GPS1_VEL, 'status').size == 0 else DID_GPS1_VEL
-        status = self.getData(d, velDid, 'status')[0]
-        if (status & 0x00008000):
+        status = self.getData(d, velDid, 'status')
+        if not status.size:
+            print("GpsNedVel: No 'status' field was found in any DID_GPS1_VEL or DID_GPS2_VEL messages.")
+            return velNed
+
+        if (status[0] & 0x00008000):
             velNed = self.getData(d, velDid, 'vel')    # NED velocity
         else:
             velEcef = self.getData(d, velDid, 'vel')   # ECEF velocity
@@ -782,7 +786,11 @@ class logPlot:
 
     def gpx1Heading(self):
         filepath = self.log.directory + "/enu.out"
-        df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+        try:
+            df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+        except:
+            print(f"gpx1Heading:: Unable to open '{filepath}'")
+            return None
 
         df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
         df['datetime'] = pd.to_datetime(df['datetime'] , format = '%Y/%m/%d %H:%M:%S.%f')
@@ -803,7 +811,7 @@ class logPlot:
         baselineNED = baselineNED[n:,:]
 
         gpxHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
-        return gpxTime, baselineNED, gpxHeading, 
+        return [gpxTime, baselineNED, gpxHeading]
 
 
     def heading(self, fig=None):
@@ -1273,17 +1281,22 @@ class logPlot:
             gpsLla = self.getData(d, DID_GPS1_POS, 'lla')
             baseToRoverECEF = self.getData(d, relDid, 'baseToRoverVector')
 
-            qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
-            baselineNED = quatConjRot(qe2n, baseToRoverECEF)
-            # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+            if rtkRelTime.size:
+                qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
+                baselineNED = quatConjRot(qe2n, baseToRoverECEF)
+                # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
 
-            ax[0].plot(rtkRelTime, baselineNED[:,0])
-            ax[1].plot(rtkRelTime, baselineNED[:,1])
+                ax[0].plot(rtkRelTime, baselineNED[:,0])
+                ax[1].plot(rtkRelTime, baselineNED[:,1])
 
-            gpxTime, gpxBaselineNED, gpxHeading = self.gpx1Heading()
+            heading = self.gpx1Heading()
+            if heading is not None:
+                gpxTime = heading[0]
+                gpxBaselineNED = heading[1]
+                gpxHeading = heading[2]
 
-            ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
-            ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
+                ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
+                ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
 
             self.legends_add(ax[0].legend(ncol=2))
 

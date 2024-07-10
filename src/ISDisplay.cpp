@@ -1398,7 +1398,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C   Baro %4.1f C   MCU %4.1f C   UpTime: %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
 	}
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X", sys.flashCfgChecksum);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X\n", sys.flashCfgChecksum);
     return buf;
 }
 
