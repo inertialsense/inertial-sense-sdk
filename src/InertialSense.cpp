@@ -880,7 +880,7 @@ void InertialSense::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg)
 
     if (platformCfgUpdateIoConfig)
     {   // Update ioConfig
-        platformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, flashCfg.platformConfig);
+        imxPlatformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, flashCfg.platformConfig);
     }
 
     // Update checksum

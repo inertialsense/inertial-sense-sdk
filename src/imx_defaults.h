@@ -29,15 +29,14 @@ extern "C" {
 #define tNAV_DEFAULT_PERIOD_MS              4      // Reliable / safe period for operation
 #endif
 
-int platformConfigTypeValid(uint32_t platformConfig);
-void platformConfigErrorCheck(uint32_t *platformConfig);
-void platformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig);
-void platformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformType);
-uint32_t platformConfigTypeToDefaultPlatformConfig(uint32_t platformType);
-uint32_t platformConfigTypeToDefaultPlatformPreset(uint32_t platformType);
+int imxPlatformConfigTypeValid(uint32_t platformConfig);
+void imxPlatformConfigErrorCheck(uint32_t *platformConfig);
+void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig);
+void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformType);
+uint32_t imxPlatformConfigTypeToDefaultPlatformConfig(uint32_t platformType);
+uint32_t imxPlatformConfigTypeToDefaultPlatformPreset(uint32_t platformType);
 
-uint32_t minNavOutputMs(nvm_flash_cfg_t *cfg);
-void setNavOutputRateMs(nvm_flash_cfg_t *cfg, sys_params_t *sysParams, uint32_t dtMs);
+uint32_t imxMinNavOutputMs(nvm_flash_cfg_t *cfg);
 
 
 #ifdef __cplusplus

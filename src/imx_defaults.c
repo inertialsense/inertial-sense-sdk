@@ -4,13 +4,13 @@
 
 
 // Return 0 if not valid.  Zero is not a valid platform type.
-int platformConfigTypeValid(uint32_t platformConfig)
+int imxPlatformConfigTypeValid(uint32_t platformConfig)
 {
     uint32_t platformType = platformConfig&PLATFORM_CFG_TYPE_MASK;
     return (platformType > 0) && (platformType < PLATFORM_CFG_TYPE_COUNT);
 }
 
-void platformConfigErrorCheck(uint32_t *platformConfig)
+void imxPlatformConfigErrorCheck(uint32_t *platformConfig)
 {
     uint32_t type = *platformConfig & PLATFORM_CFG_TYPE_MASK;
     uint32_t preset = (*platformConfig & PLATFORM_CFG_PRESET_MASK) >> PLATFORM_CFG_PRESET_OFFSET;
@@ -46,8 +46,8 @@ void platformConfigErrorCheck(uint32_t *platformConfig)
     *platformConfig |= type | preset << PLATFORM_CFG_PRESET_OFFSET;
 }
 
-void platformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig);
-void platformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig)
+void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig);
+void imxPlatformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig)
 {
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
     uint32_t preset = (platformConfig&PLATFORM_CFG_PRESET_MASK)>>PLATFORM_CFG_PRESET_OFFSET;
@@ -142,7 +142,7 @@ void platformConfigToRug3FlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformC
     SET_IO_CFG_GPS2_TYPE(*ioConfig, IO_CONFIG_GPS_TYPE_UBX_F9P);
 }
 
-void platformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig)
+void imxPlatformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfig)
 {
     uint32_t type = platformConfig&PLATFORM_CFG_TYPE_MASK;
 
@@ -189,7 +189,7 @@ void platformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfi
     case PLATFORM_CFG_TYPE_RUG2_1_G2:
     case PLATFORM_CFG_TYPE_RUG3_G1:
     case PLATFORM_CFG_TYPE_RUG3_G2:
-        platformConfigToRug3FlashCfgIoConfig(ioConfig, platformConfig);
+        imxPlatformConfigToRug3FlashCfgIoConfig(ioConfig, platformConfig);
         break;
 
     case PLATFORM_CFG_TYPE_IG1_G1:
@@ -272,19 +272,19 @@ void platformConfigToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformConfi
     }
 }
 
-void platformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformType)
+void imxPlatformConfigTypeToFlashCfgIoConfig(uint32_t *ioConfig, uint32_t platformType)
 {
-    platformConfigToFlashCfgIoConfig(ioConfig, platformConfigTypeToDefaultPlatformConfig(platformType));
+    imxPlatformConfigToFlashCfgIoConfig(ioConfig, imxPlatformConfigTypeToDefaultPlatformConfig(platformType));
 }
 
 // Return default platformConfig based on platformType
-uint32_t platformConfigTypeToDefaultPlatformConfig(uint32_t platformType)
+uint32_t imxPlatformConfigTypeToDefaultPlatformConfig(uint32_t platformType)
 {
-    return platformType | (platformConfigTypeToDefaultPlatformPreset(platformType) << PLATFORM_CFG_PRESET_OFFSET);
+    return platformType | (imxPlatformConfigTypeToDefaultPlatformPreset(platformType) << PLATFORM_CFG_PRESET_OFFSET);
 }
 
 // Return default platform preset based on platformType
-uint32_t platformConfigTypeToDefaultPlatformPreset(uint32_t platformType)
+uint32_t imxPlatformConfigTypeToDefaultPlatformPreset(uint32_t platformType)
 {
     switch (platformType)
     {
@@ -303,7 +303,7 @@ uint32_t platformConfigTypeToDefaultPlatformPreset(uint32_t platformType)
     }
 }
 
-uint32_t minNavOutputMs(nvm_flash_cfg_t *cfg)
+uint32_t imxMinNavOutputMs(nvm_flash_cfg_t *cfg)
 {
     if (cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_INS_EKF)
     {
@@ -322,20 +322,6 @@ uint32_t minNavOutputMs(nvm_flash_cfg_t *cfg)
     else
     {   // VRS: no GPS or magnetometer
         return tNAV_MIN_PERIOD_MS_VRS_MODE;
-    }
-}
-
-void setNavOutputRateMs(nvm_flash_cfg_t *cfg, sys_params_t *sysParams, uint32_t dtMs)
-{
-    // Limit based on enabled features
-    uint32_t minNavOutput = minNavOutputMs(cfg);
-    uint32_t minNavUpdate = (cfg->sysCfgBits & SYS_CFG_BITS_DISABLE_INS_EKF ? minNavOutput : 2 * minNavOutput);
-
-    // Apply limits
-    sysParams->navUpdatePeriodMs = sysParams->navOutputPeriodMs = _MAX(dtMs, minNavOutput);
-    while (sysParams->navUpdatePeriodMs < minNavUpdate)
-    {   // Set update as multiple of period
-        sysParams->navUpdatePeriodMs += sysParams->navOutputPeriodMs;
     }
 }
 
