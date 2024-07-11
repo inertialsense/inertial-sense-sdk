@@ -140,65 +140,139 @@ void serialPortInit(port_handle_t, int id, int type);
 // set the port name for a serial port, in case you are opening it later
 void serialPortSetPort(port_handle_t port, const char* portName);
 
-// open a serial port
-// port is null terminated, i.e. COM1\0, COM2\0, etc.
-// use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
-// uses such as a boot loader where a write would then require n bytes to be read in a single operation.
-// blocking simply determines the default timeout value of the serialPortRead function
-// returns 1 if success, 0 if failure
+/**
+ * returns the name associated with this port (this is usually the OS's identifier)
+ * @param port
+ * @return returns the name associated with this port (this is usually the OS's identifier)
+ */
+const char *serialPortName(port_handle_t port);
+
+/**
+ * open a serial port
+ * port is null terminated, i.e. COM1\0, COM2\0, etc.
+ * use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
+ * uses such as a boot loader where a write would then require n bytes to be read in a single operation.
+ * blocking simply determines the default timeout value of the serialPortRead function
+ * @param port
+ * @param portName
+ * @param baudRate
+ * @param blocking
+ * @return 1 if success, 0 if failure
+ */
 int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int blocking);
 
-// open a serial port with retry
-// port is null terminated, i.e. COM1\0, COM2\0, etc.
-// use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
-// uses such as a boot loader where a write would then require n bytes to be read in a single operation.
-// blocking simply determines the default timeout value of the serialPortRead function
-// returns 1 if success, 0 if failure
+
+/**
+ * open a serial port with retry
+ * port is null terminated, i.e. COM1\0, COM2\0, etc.
+ * use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
+ * uses such as a boot loader where a write would then require n bytes to be read in a single operation.
+ * blocking simply determines the default timeout value of the serialPortRead function
+ * @param port
+ * @param portName
+ * @param baudRate
+ * @param blocking
+ * @return 1 if success, 0 if failure
+ */
 int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, int blocking);
 
-// check if the port is open
-// returns 1 if open, 0 if not open
+/**
+ * check if the port is open
+ * @param port
+ * @return 1 if open, 0 if not open
+ */
 int serialPortIsOpen(port_handle_t port);
 
-// close the serial port - this object can be re-used by calling open again, returns 1 if closed and returns 0 if the port was not closed
+/**
+ * close the serial port - this object can be re-used by calling open again
+ * @param port
+ * @return 1 if closed, 0 if the port was not closed
+ */
 int serialPortClose(port_handle_t port);
 
-// clear all buffers and pending reads and writes - returns 1 if success, 0 if failure
+/**
+ * clear all buffers and pending reads and writes
+ * @param port
+ * @return 1 if success, 0 if failure
+ */
 int serialPortFlush(port_handle_t port);
 
-// read up to readCount bytes into buffer
-// call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking.  Returns number of bytes read which is less than or equal to readCount.
+/**
+ * read up to readCount bytes into buffer
+ * call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking.
+ * @param port
+ * @param buffer
+ * @param readCount
+ * @return number of bytes read which is less than or equal to readCount.
+ */
 int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount);
 
-// read up to thue number of bytes requested, returns number of bytes read which is less than or equal to readCount
+/**
+ * read up to thue number of bytes requested
+ * @param port
+ * @param buffer
+ * @param readCount
+ * @param timeoutMilliseconds
+ * @return number of bytes read which is less than or equal to readCount
+ */
 int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
-// start an async read - not all platforms will support an async read and may call the callback function immediately
-// reads up to readCount bytes into buffer
-// buffer must exist until callback is executed, if it needs to be freed, free it in the callback or later
-// returns 1 if success, 0 if failed to start async operation
+/**
+ * start an async read - not all platforms will support an async read and may call the callback function immediately
+ * reads up to readCount bytes into buffer
+ * buffer must exist until callback is executed, if it needs to be freed, free it in the callback or later
+ * @param port
+ * @param buffer
+ * @param readCount
+ * @param callback
+ * @return 1 if success, 0 if failed to start async operation
+ */
 int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion callback);
 
-// read up until a \r\n sequence has been read
-// buffer will not contain \r\n sequence
-// returns number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
+/**
+ * read up until a \r\n sequence has been read
+ * buffer will not contain \r\n sequence
+ * @param port
+ * @param buffer
+ * @param bufferLength
+ * @return number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
+ */
 int serialPortReadLine(port_handle_t port, unsigned char* buffer, int bufferLength);
 
-// read up until a \r\n sequence has been read
-// result will not contain \r\n sequence
-// returns number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
+/**
+ * read up until a \r\n sequence has been read
+ * result will not contain \r\n sequence
+ * @param port
+ * @param buffer
+ * @param bufferLength
+ * @param timeoutMilliseconds
+ * @return number of bytes read or -1 if timeout or buffer overflow, count does not include the null terminator
+ */
 int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, int bufferLength, int timeoutMilliseconds);
 
-// read ASCII data (starts with $ and ends with \r\n, based on NMEA format)
-// will ignore data that fails checksum
-// asciiData gets set to start of ASCII data
-// return -1 if timeout or buffer overflow or checksum failure
+/**
+ * read ASCII data (starts with $ and ends with \r\n, based on NMEA format)
+ * will ignore data that fails checksum
+ * asciiData gets set to start of ASCII data
+ * @param port
+ * @param buffer
+ * @param bufferLength
+ * @param asciiData
+ * @return -1 if timeout or buffer overflow or checksum failure
+ */
 int serialPortReadAscii(port_handle_t port, unsigned char* buffer, int bufferLength, unsigned char** asciiData);
 
-// read ASCII data (starts with $ and ends with \r\n, based on NMEA format)
-// will ignore data that fails checksum
-// asciiData gets set to start of ASCII data
-// return -1 if timeout or buffer overflow or checksum failure
+/**
+ * read ASCII data (starts with $ and ends with \r\n, based on NMEA format)
+ * will ignore data that fails checksum
+ * asciiData gets set to start of ASCII data
+ * @param port
+ * @param buffer
+ * @param bufferLength
+ * @param timeoutMilliseconds
+ * @param asciiData
+ * @return -1 if timeout or buffer overflow or checksum failure
+ */
 int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, int bufferLength, int timeoutMilliseconds, unsigned char** asciiData);
 
 // read one char, waiting SERIAL_PORT_DEFAULT_TIMEOUT milliseconds to get a char
