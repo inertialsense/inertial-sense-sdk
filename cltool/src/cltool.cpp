@@ -315,6 +315,29 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             printf("EVF Enabled!");
 
         }
+        else if (startsWith(a, "-evo"))
+        {
+            if ((i + 3) < argc)
+            {
+                g_commandLineOptions.evOCont.extractEv = true;
+
+                g_commandLineOptions.evOCont.inFile = argv[++i];
+                g_commandLineOptions.evOCont.logType = argv[++i];
+                g_commandLineOptions.evOCont.outFile = argv[++i];
+
+                printf("EVO src file: %s\n", g_commandLineOptions.evOCont.inFile.c_str());
+                printf("EVO src file type: %s\n", g_commandLineOptions.evOCont.logType.c_str());
+                printf("EVO dest file: %s\n", g_commandLineOptions.evOCont.outFile.c_str());
+                printf("EVO Enabled!\n");
+            }
+            else if ((i + 1) < argc)
+                printf("EVO destination file: MISSING! See usage!\n"); 
+            else if ((i + 2) < argc)
+                printf("EVO SRC file type: MISSING! See usage!\n");
+            else
+                printf("EVO SRC file: MISSING! See usage!\n");
+
+        }
         else if (startsWith(a, "-factoryReset"))
         {
             g_commandLineOptions.sysCommand = SYS_CMD_MANF_FACTORY_RESET;
@@ -447,13 +470,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
             enable_display_mode();
         }
-        else if (startsWith(a, "-rpEv") && (i + 1) < argc)
-        {
-            g_commandLineOptions.replayDataLog = true;
-            g_commandLineOptions.logPath = argv[++i];    // use next argument
-            enable_display_mode();
-
-         }
         else if (startsWith(a, "-reset"))
         {
             g_commandLineOptions.softwareReset = true;
@@ -596,6 +612,49 @@ bool cltool_replayDataLog()
         while (((data = logger.ReadData(dl)) != NULL) && !g_inertialSenseDisplay.ExitProgram())
         {
             p_data_t d = {data->hdr, data->buf};
+            g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
+            g_inertialSenseDisplay.PrintData();
+        }
+    }
+
+    cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
+    g_inertialSenseDisplay.Goodbye();
+    return true;
+}
+
+bool cltool_extractEventData()
+{
+    if (g_commandLineOptions.evOCont.inFile.length() == 0)
+    {
+        cout << "Please specify the parse log path!" << endl;
+        return false;
+    }
+
+    if (g_commandLineOptions.evOCont.outFile.length() == 0)
+    {
+        cout << "Please specify the output log path!" << endl;
+        return false;
+    }
+
+    cISLogger logger;
+    if (!logger.LoadFromDirectory(g_commandLineOptions.evOCont.inFile, cISLogger::ParseLogType(g_commandLineOptions.evOCont.logType), { "ALL" }))
+    {
+        cout << "Failed to load log files: " << g_commandLineOptions.evOCont.inFile << endl;
+        return false;
+    }
+
+    cout << "Parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
+    p_data_buf_t* data;
+    // for (int d=0; d<logger.DeviceCount(); d++)
+    for (auto dl : logger.DeviceLogs())
+    {
+        if (logger.DeviceCount() > 1)
+        {
+            printf("Device SN%d: \n", dl->SerialNumber());
+        }
+        while (((data = logger.ReadData(dl)) != NULL) && !g_inertialSenseDisplay.ExitProgram())
+        {
+            p_data_t d = { data->hdr, data->buf };
             g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
             g_inertialSenseDisplay.PrintData();
         }

@@ -810,13 +810,22 @@ static int inertialSenseMain()
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
 
+    
+
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)
     {
         // [REPLAY INSTRUCTION] 1.) Replay data log
         return cltool_replayDataLog();
     }
-        // if app firmware was specified on the command line, do that now and return
+    
+    // if event parsing return after completeing
+    else if (g_commandLineOptions.evOCont.extractEv)
+    {
+        return cltool_extractEventData();
+    }
+
+    // if app firmware was specified on the command line, do that now and return
     else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
     {
         // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)
