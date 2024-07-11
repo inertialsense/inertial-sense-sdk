@@ -1,0 +1,36 @@
+{
+  "type_description_msg": {
+    "type_description": {
+      "type_name": "inertial_sense_ros2/msg/GTime",
+      "fields": [
+        {
+          "name": "time",
+          "type": {
+            "type_id": 8,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        },
+        {
+          "name": "sec",
+          "type": {
+            "type_id": 11,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        }
+      ]
+    },
+    "referenced_type_descriptions": []
+  },
+  "type_hashes": [
+    {
+      "type_name": "inertial_sense_ros2/msg/GTime",
+      "hash_string": "RIHS01_4e164623ff6e2b230dd7a94b6265ed898f1ace3c8e124b1650db7ab3c2b5a1a9"
+    }
+  ]
+}

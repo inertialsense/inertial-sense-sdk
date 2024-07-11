@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/opt/ros/jazzy/lib/rosidl_generator_type_description/rosidl_generator_type_description", line 50, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/ros/jazzy/lib/rosidl_generator_type_description/rosidl_generator_type_description", line 46, in main
+    generate_type_hash(args.generator_arguments_file)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_generator_type_description/__init__.py", line 160, in generate_type_hash
+    pkg_dir = include_map[pkg]
+              ~~~~~~~~~~~^^^^^
+KeyError: 'geometry_msgs'
+gmake[2]: *** [CMakeFiles/inertial_sense_ros2__rosidl_generator_type_description.dir/build.make:81: rosidl_generator_type_description/inertial_sense_ros2/msg/GTime.json] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:215: CMakeFiles/inertial_sense_ros2__rosidl_generator_type_description.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

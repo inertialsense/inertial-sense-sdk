@@ -1,0 +1,151 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/GNSSEphemeris.msg
+// generated code does not contain a copyright notice
+
+#include "inertial_sense_ros2/msg/GTime.idl"
+#include "std_msgs/msg/Header.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    typedef double double__4[4];
+    struct GNSSEphemeris {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "satellite number")
+      int32 sat;
+
+      @verbatim (language="comment", text=
+        "IODE Issue of Data, Ephemeris (ephemeris version)")
+      int32 iode;
+
+      @verbatim (language="comment", text=
+        "IODC Issue of Data, Clock (clock version)")
+      int32 iodc;
+
+      @verbatim (language="comment", text=
+        "SV accuracy (URA index) IRN-IS-200H p.97")
+      int32 sva;
+
+      @verbatim (language="comment", text=
+        "SV health GPS/QZS (0:ok)")
+      int32 svh;
+
+      @verbatim (language="comment", text=
+        "GPS/QZS: gps week, GAL: galileo week")
+      int32 week;
+
+      @verbatim (language="comment", text=
+        "GPS/QZS: code on L2 * (00=Invalid, 01 = P Code ON, 11 = C/A code ON, 11 = Invalid) * GAL/CMP: data sources")
+      int32 code;
+
+      @verbatim (language="comment", text=
+        "GPS/QZS: L2 P data flag (indicates that the NAV data stream was commanded OFF on the P-code of the in-phase component of the L2 channel) *  CMP: nav type")
+      int32 flag;
+
+      @verbatim (language="comment", text=
+        "Toe")
+      inertial_sense_ros2::msg::GTime toe;
+
+      @verbatim (language="comment", text=
+        "clock data reference time (s) (20.3.4.5)")
+      inertial_sense_ros2::msg::GTime toc;
+
+      @verbatim (language="comment", text=
+        "T_trans")
+      inertial_sense_ros2::msg::GTime ttr;
+
+      @verbatim (language="comment", text=
+        "Semi-Major Axis m")
+      double a;
+
+      @verbatim (language="comment", text=
+        "Eccentricity (no units)")
+      double e;
+
+      @verbatim (language="comment", text=
+        "Inclination Angle at Reference Time (rad)")
+      double i0;
+
+      @verbatim (language="comment", text=
+        "Longitude of Ascending Node of Orbit Plane at Weekly Epoch (rad)")
+      double omg_0;
+
+      @verbatim (language="comment", text=
+        "Argument of Perigee (rad)")
+      double omg;
+
+      @verbatim (language="comment", text=
+        "Mean Anomaly at Reference Time (rad)")
+      double m_0;
+
+      @verbatim (language="comment", text=
+        "Mean Motion Difference From Computed Value (rad)")
+      double deln;
+
+      @verbatim (language="comment", text=
+        "Rate of Right Ascension (rad/s)")
+      double omg_d;
+
+      @verbatim (language="comment", text=
+        "Rate of Inclination Angle (rad/s)")
+      double idot;
+
+      @verbatim (language="comment", text=
+        "Amplitude of the Cosine Harmonic Correction Term to the Orbit Radius")
+      double crc;
+
+      @verbatim (language="comment", text=
+        "Amplitude of the Sine Harmonic Correction Term to the Orbit Radius (m)")
+      double crs;
+
+      @verbatim (language="comment", text=
+        "Amplitude of the Cosine Harmonic Correction Term to the Argument of Latitude (rad)")
+      double cuc;
+
+      @verbatim (language="comment", text=
+        "Amplitude of the Sine Harmonic Correction Term to the Argument of Latitude (rad)")
+      double cus;
+
+      @verbatim (language="comment", text=
+        "Amplitude of the Cosine Harmonic Correction Term to the Angle of Inclination (rad)")
+      double cic;
+
+      @verbatim (language="comment", text=
+        "Amplitude of the Sine Harmonic Correction Term to the Angle of Inclination (rad)")
+      double cis;
+
+      @verbatim (language="comment", text=
+        "Reference Time Ephemeris in week (s)")
+      double toes;
+
+      @verbatim (language="comment", text=
+        "fit interval (h) (0: 4 hours, 1:greater than 4 hours)")
+      double fit;
+
+      @verbatim (language="comment", text=
+        "SV clock parameters - af0")
+      double f0;
+
+      @verbatim (language="comment", text=
+        "SV clock parameters - af1")
+      double f1;
+
+      @verbatim (language="comment", text=
+        "SV clock parameters - af2")
+      double f2;
+
+      @verbatim (language="comment", text=
+        "group delay parameters: GPS/QZS:tgd[0]=TGD (IRN-IS-200H p.103) * GAL:tgd[0]=BGD E5a/E1,tgd[1]=BGD E5b/E1 * CMP :tgd[0]=BGD1,tgd[1]=BGD2")
+      double__4 tgd;
+
+      @verbatim (language="comment", text=
+        "Adot for CNAV")
+      double a_dot;
+
+      @verbatim (language="comment", text=
+        "ndot for CNAV")
+      double ndot;
+    };
+  };
+};

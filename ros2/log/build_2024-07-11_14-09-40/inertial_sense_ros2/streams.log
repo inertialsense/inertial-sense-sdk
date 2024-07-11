@@ -1,0 +1,315 @@
+[0.141s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[0.560s] -- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+[1.729s] -- Found rosidl_generator_c: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[1.791s] -- Found rosidl_generator_cpp: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[1.862s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.940s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.075s] -- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[2.140s] -- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)
+[2.373s] -- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[2.381s] -- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[3.010s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[3.498s] -- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)
+[3.501s] -- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[3.667s] -- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)
+[3.800s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[3.903s] -- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[7.212s] -- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[10.904s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[12.373s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[12.390s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[15.136s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[15.666s] -- Configuring done (15.2s)
+[16.421s] -- Generating done (0.6s)
+[16.488s] -- Build files have been written to: /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[17.067s] [  1%] [34m[1mGenerating type hashes for ROS interfaces[0m
+[17.229s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[19.328s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[19.511s] [  2%] [34m[1mGenerating C code for ROS interfaces[0m
+[19.592s] running egg_info
+[19.686s] [  4%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[19.824s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[19.828s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[19.830s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[20.531s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[20.538s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[20.762s] [  4%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[23.245s] [  4%] Built target inertial_sense_ros2__cpp
+[24.006s] [  5%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/g_time__description.c.o[0m
+[24.035s] [  6%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/g_time__type_support.c.o[0m
+[24.059s] [  9%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/sat_info__description.c.o[0m
+[24.060s] [  9%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/g_time__functions.c.o[0m
+[24.062s] [ 10%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/gps__description.c.o[0m
+[24.063s] [ 12%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/sat_info__functions.c.o[0m
+[24.087s] [ 13%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/sat_info__type_support.c.o[0m
+[24.089s] [ 14%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/gps__functions.c.o[0m
+[24.128s] [ 16%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/gps__type_support.c.o[0m
+[24.134s] [ 17%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/gps_info__description.c.o[0m
+[24.158s] [ 18%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/gps_info__functions.c.o[0m
+[24.181s] [ 20%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/gps_info__type_support.c.o[0m
+[24.224s] [ 21%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/pimu__functions.c.o[0m
+[24.225s] [ 22%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/pimu__description.c.o[0m
+[24.877s] [ 24%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/pimu__type_support.c.o[0m
+[25.734s] [ 25%] [32m[1mLinking C shared library libinertial_sense_ros2__rosidl_generator_c.so[0m
+[26.479s] [ 25%] Built target inertial_sense_ros2__rosidl_generator_c
+[26.663s] [ 27%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[26.672s] [ 28%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[26.686s] [ 29%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[26.689s] [ 31%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[26.692s] [ 32%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[26.693s] [ 33%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[30.099s] [ 35%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/sat_info__type_support.cpp.o[0m
+[30.135s] [ 36%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/g_time__type_support.cpp.o[0m
+[30.197s] [ 37%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/g_time__type_support.cpp.o[0m
+[30.281s] [ 39%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/gps_info__type_support.cpp.o[0m
+[30.283s] [ 40%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/gps__type_support.cpp.o[0m
+[30.332s] [ 41%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/sat_info__type_support.cpp.o[0m
+[30.339s] [ 43%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/pimu__type_support.cpp.o[0m
+[30.371s] [ 44%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/gps__type_support.cpp.o[0m
+[30.730s] [ 45%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/gps_info__type_support.cpp.o[0m
+[30.877s] [ 47%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/g_time__type_support.c.o[0m
+[30.937s] [ 48%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/pimu__type_support.cpp.o[0m
+[30.985s] [ 50%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/g_time__type_support.cpp.o[0m
+[31.220s] [ 51%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/gps__type_support.cpp.o[0m
+[31.228s] [ 52%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/sat_info__type_support.cpp.o[0m
+[31.997s] [ 54%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/g_time__type_support.cpp.o[0m
+[32.114s] [ 55%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/gps_info__type_support.cpp.o[0m
+[32.420s] [ 56%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/sat_info__type_support.c.o[0m
+[32.489s] [ 58%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/pimu__type_support.cpp.o[0m
+[32.571s] [ 59%] [32m[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_c.so[0m
+[32.695s] [ 60%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/gps__type_support.c.o[0m
+[32.821s] [ 62%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/sat_info__type_support.cpp.o[0m
+[33.640s] [ 63%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/g_time__type_support_c.cpp.o[0m
+[34.492s] [ 64%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/gps_info__type_support.c.o[0m
+[35.103s] [ 66%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/pimu__type_support.c.o[0m
+[35.114s] [ 66%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[35.509s] [ 67%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/gps__type_support.cpp.o[0m
+[36.390s] [ 68%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/sat_info__type_support_c.cpp.o[0m
+[37.523s] [ 70%] [32m[1mLinking C shared library libinertial_sense_ros2__rosidl_typesupport_introspection_c.so[0m
+[39.275s] [ 71%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/gps_info__type_support.cpp.o[0m
+[39.712s] [ 71%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[40.125s] [ 72%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/pimu__type_support.cpp.o[0m
+[40.191s] [ 74%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/gps__type_support_c.cpp.o[0m
+[40.237s] [ 75%] [32m[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_cpp.so[0m
+[40.243s] [ 77%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/gps_info__type_support_c.cpp.o[0m
+[40.299s] [ 78%] [32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/pimu__type_support_c.cpp.o[0m
+[41.879s] [ 79%] [32m[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_introspection_cpp.so[0m
+[42.525s] [ 79%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[44.056s] [ 79%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[47.775s] [ 81%] [32m[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.so[0m
+[47.779s] [ 82%] [32m[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_fastrtps_c.so[0m
+[48.850s] [ 82%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[48.893s] [ 82%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[49.195s] [ 82%] Built target inertial_sense_ros2
+[49.530s] [ 83%] [34m[1mGenerating Python code for ROS interfaces[0m
+[53.849s] [ 83%] Built target inertial_sense_ros2__py
+[54.356s] [ 85%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_g_time_s.c.o[0m
+[54.357s] [ 86%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_sat_info_s.c.o[0m
+[54.361s] [ 87%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gps_s.c.o[0m
+[54.364s] [ 89%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_pimu_s.c.o[0m
+[54.366s] [ 90%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gps_info_s.c.o[0m
+[56.806s] [ 91%] [32m[1mLinking C shared library libinertial_sense_ros2__rosidl_generator_py.so[0m
+[57.704s] [ 91%] Built target inertial_sense_ros2__rosidl_generator_py
+[58.113s] [ 93%] [32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[58.119s] [ 94%] [32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[58.124s] [ 95%] [32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_c.c.o[0m
+[60.050s] [ 97%] [32m[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so[0m
+[60.065s] [ 98%] [32m[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so[0m
+[60.250s] [100%] [32m[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so[0m
+[60.742s] [100%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[60.762s] [100%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[60.983s] [100%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+[61.158s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[64.933s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[65.055s] -- Install configuration: ""
+[65.059s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/ament_index/resource_index/rosidl_interfaces/inertial_sense_ros2
+[65.061s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GTime.json
+[65.064s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/SatInfo.json
+[65.066s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GPS.json
+[65.068s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GPSInfo.json
+[65.069s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/PIMU.json
+[65.073s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2
+[65.075s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg
+[65.078s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/sat_info.h
+[65.081s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/gps_info.h
+[65.083s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/g_time.h
+[65.086s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/gps.h
+[65.089s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/pimu.h
+[65.091s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_generator_c__visibility_control.h
+[65.092s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail
+[65.094s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__struct.h
+[65.095s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__struct.h
+[65.098s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__functions.c
+[65.100s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__type_support.h
+[65.103s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__type_support.h
+[65.105s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.h
+[65.107s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__type_support.c
+[65.108s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__functions.c
+[65.110s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__struct.h
+[65.112s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.c
+[65.115s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__description.c
+[65.117s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.h
+[65.118s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__struct.h
+[65.120s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__type_support.c
+[65.121s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__functions.h
+[65.123s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__struct.h
+[65.126s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__functions.c
+[65.130s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__description.c
+[65.133s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__type_support.c
+[65.135s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__functions.c
+[65.137s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__functions.h
+[65.139s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__description.c
+[65.140s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__functions.c
+[65.142s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__description.c
+[65.146s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__description.c
+[65.147s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__functions.h
+[65.149s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__type_support.h
+[65.151s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__functions.h
+[65.153s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__functions.h
+[65.154s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.c
+[65.156s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/library_path.sh
+[65.158s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/library_path.dsv
+[65.160s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_c.so
+[65.177s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_c.so" to ""
+[65.183s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2
+[65.186s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg
+[65.189s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[65.190s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail
+[65.192s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_fastrtps_c.h
+[65.193s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__rosidl_typesupport_fastrtps_c.h
+[65.195s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__rosidl_typesupport_fastrtps_c.h
+[65.197s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_fastrtps_c.h
+[65.201s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__rosidl_typesupport_fastrtps_c.h
+[65.204s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_c.so
+[65.214s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_c.so" to ""
+[65.215s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2
+[65.217s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg
+[65.218s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/gps.hpp
+[65.220s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_generator_cpp__visibility_control.hpp
+[65.221s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/sat_info.hpp
+[65.225s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/g_time.hpp
+[65.226s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/pimu.hpp
+[65.227s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/gps_info.hpp
+[65.230s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail
+[65.233s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__struct.hpp
+[65.234s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__builder.hpp
+[65.236s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__struct.hpp
+[65.237s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__type_support.hpp
+[65.239s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__builder.hpp
+[65.240s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__traits.hpp
+[65.243s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__builder.hpp
+[65.246s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.hpp
+[65.247s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__builder.hpp
+[65.248s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__struct.hpp
+[65.250s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.hpp
+[65.253s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__traits.hpp
+[65.254s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__traits.hpp
+[65.257s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__traits.hpp
+[65.259s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__traits.hpp
+[65.261s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__struct.hpp
+[65.263s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__type_support.hpp
+[65.264s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__builder.hpp
+[65.267s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__type_support.hpp
+[65.271s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__struct.hpp
+[65.272s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2
+[65.275s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg
+[65.277s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[65.278s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail
+[65.282s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_fastrtps_cpp.hpp
+[65.284s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/dds_fastrtps
+[65.285s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__rosidl_typesupport_fastrtps_cpp.hpp
+[65.287s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__rosidl_typesupport_fastrtps_cpp.hpp
+[65.288s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_fastrtps_cpp.hpp
+[65.290s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__rosidl_typesupport_fastrtps_cpp.hpp
+[65.293s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.so
+[65.312s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.so" to ""
+[65.315s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2
+[65.316s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg
+[65.319s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[65.321s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail
+[65.324s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__rosidl_typesupport_introspection_c.h
+[65.325s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__rosidl_typesupport_introspection_c.h
+[65.328s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__type_support.c
+[65.330s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_introspection_c.h
+[65.332s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.c
+[65.335s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_introspection_c.h
+[65.336s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__type_support.c
+[65.337s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__type_support.c
+[65.339s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__rosidl_typesupport_introspection_c.h
+[65.342s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.c
+[65.348s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_c.so
+[65.366s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_c.so" to ""
+[65.372s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_c.so
+[65.388s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_c.so" to ""
+[65.391s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2
+[65.392s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg
+[65.394s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail
+[65.395s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__type_support.cpp
+[65.396s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__type_support.cpp
+[65.397s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/pimu__rosidl_typesupport_introspection_cpp.hpp
+[65.398s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__rosidl_typesupport_introspection_cpp.hpp
+[65.401s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps_info__rosidl_typesupport_introspection_cpp.hpp
+[65.403s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_introspection_cpp.hpp
+[65.406s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.cpp
+[65.408s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.cpp
+[65.409s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_introspection_cpp.hpp
+[65.410s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/gps__type_support.cpp
+[65.416s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_cpp.so
+[65.432s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_cpp.so" to ""
+[65.442s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_cpp.so
+[65.462s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_cpp.so" to ""
+[65.466s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/pythonpath.sh
+[65.469s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/pythonpath.dsv
+[65.472s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info
+[65.473s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/SOURCES.txt
+[65.476s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/PKG-INFO
+[65.479s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/dependency_links.txt
+[65.482s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/top_level.txt
+[65.485s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2
+[65.487s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/__init__.py
+[65.489s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so
+[65.491s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_introspection_c.c
+[65.496s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg
+[65.498s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_g_time_s.c
+[65.501s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/__init__.py
+[65.503s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_pimu_s.c
+[65.505s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_gps_info_s.c
+[65.506s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_gps_info.py
+[65.508s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_gps_s.c
+[65.511s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_sat_info.py
+[65.513s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_pimu.py
+[65.515s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_g_time.py
+[65.519s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_sat_info_s.c
+[65.521s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_gps.py
+[65.524s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so
+[65.526s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so
+[65.529s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_fastrtps_c.c
+[65.532s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_c.c
+[66.059s] Listing '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2'...
+[66.061s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/__init__.py'...
+[66.062s] Listing '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg'...
+[66.064s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/__init__.py'...
+[66.065s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_g_time.py'...
+[66.066s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_gps.py'...
+[66.068s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_gps_info.py'...
+[66.069s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_pimu.py'...
+[66.071s] Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_sat_info.py'...
+[66.099s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so
+[66.122s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so" to ""
+[66.134s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so
+[66.155s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so" to ""
+[66.165s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so
+[66.186s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so" to ""
+[66.198s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_py.so
+[66.227s] -- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_py.so" to ""
+[66.230s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GTime.idl
+[66.237s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/SatInfo.idl
+[66.240s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GPS.idl
+[66.244s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GPSInfo.idl
+[66.245s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/PIMU.idl
+[66.247s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GTime.msg
+[66.250s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/SatInfo.msg
+[66.251s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GPS.msg
+[66.253s] -- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GPSInfo.msg
+[66.255s] -- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/PIMU.msg
+[66.274s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2

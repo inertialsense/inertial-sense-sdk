@@ -1,0 +1,36 @@
+{
+  "type_description_msg": {
+    "type_description": {
+      "type_name": "inertial_sense_ros2/msg/SatInfo",
+      "fields": [
+        {
+          "name": "sat_id",
+          "type": {
+            "type_id": 7,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        },
+        {
+          "name": "cno",
+          "type": {
+            "type_id": 7,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": ""
+          },
+          "default_value": ""
+        }
+      ]
+    },
+    "referenced_type_descriptions": []
+  },
+  "type_hashes": [
+    {
+      "type_name": "inertial_sense_ros2/msg/SatInfo",
+      "hash_string": "RIHS01_98b35c79682bcb05ed1c966c0b96c09d56d71cabc063c355f94663d7f330166e"
+    }
+  ]
+}

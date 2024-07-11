@@ -1,0 +1,689 @@
+[0.000000] (-) TimerEvent: {}
+[0.001538] (inertial_sense_ros2) JobQueued: {'identifier': 'inertial_sense_ros2', 'dependencies': OrderedDict()}
+[0.002099] (inertial_sense_ros2) JobStarted: {'identifier': 'inertial_sense_ros2'}
+[0.091674] (-) TimerEvent: {}
+[0.117868] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'cmake'}
+[0.133483] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'build'}
+[0.134650] (inertial_sense_ros2) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', '--', '-j16', '-l16'], 'cwd': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'env': OrderedDict({'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 's', 'XDG_SESSION_TYPE': 'wayland', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/s', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'DBUS_STARTER_BUS_TYPE': 'session', 'SYSTEMD_EXEC_PID': '2269', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus,guid=db52c9453fbc1ea0fca5a71c66900915', 'COLORTERM': 'truecolor', '_colcon_cd_root': '/opt/ros/jazzy/', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 's', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome\\x2dsession\\x2dmanager.slice/gnome-session-manager@ubuntu.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 's', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/s-VMware-Virtual-Platform:@/tmp/.ICE-unix/2269,unix/s-VMware-Virtual-Platform:/tmp/.ICE-unix/2269', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/76a96508_ca45_4b3e_8012_dcd1b6375d17', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.R0SYQ2', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'GNOME_TERMINAL_SERVICE': ':1.253', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '0', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'DBUS_STARTER_ADDRESS': 'unix:path=/run/user/1000/bus,guid=db52c9453fbc1ea0fca5a71c66900915', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'QTWEBENGINE_DICTIONARIES_PATH': '/usr/share/hunspell-bdic/', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'VTE_VERSION': '7600', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.192883] (-) TimerEvent: {}
+[0.295671] (-) TimerEvent: {}
+[0.397935] (-) TimerEvent: {}
+[0.500671] (-) TimerEvent: {}
+[0.575762] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)\n'}
+[0.601729] (-) TimerEvent: {}
+[0.703623] (-) TimerEvent: {}
+[0.805724] (-) TimerEvent: {}
+[0.871558] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.907015] (-) TimerEvent: {}
+[1.009616] (-) TimerEvent: {}
+[1.111953] (-) TimerEvent: {}
+[1.214711] (-) TimerEvent: {}
+[1.316984] (-) TimerEvent: {}
+[1.419665] (-) TimerEvent: {}
+[1.521902] (-) TimerEvent: {}
+[1.624766] (-) TimerEvent: {}
+[1.646809] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[1.725888] (-) TimerEvent: {}
+[1.828832] (-) TimerEvent: {}
+[1.931560] (-) TimerEvent: {}
+[2.033942] (-) TimerEvent: {}
+[2.136629] (-) TimerEvent: {}
+[2.157680] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[2.237975] (-) TimerEvent: {}
+[2.340591] (-) TimerEvent: {}
+[2.442680] (-) TimerEvent: {}
+[2.519783] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)\n'}
+[2.544605] (-) TimerEvent: {}
+[2.550755] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)\n'}
+[2.645622] (-) TimerEvent: {}
+[2.747925] (-) TimerEvent: {}
+[2.850692] (-) TimerEvent: {}
+[2.953702] (-) TimerEvent: {}
+[3.056695] (-) TimerEvent: {}
+[3.157464] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)\n'}
+[3.158976] (-) TimerEvent: {}
+[3.174637] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)\n'}
+[3.260517] (-) TimerEvent: {}
+[3.362778] (-) TimerEvent: {}
+[3.465896] (-) TimerEvent: {}
+[3.568785] (-) TimerEvent: {}
+[3.671625] (-) TimerEvent: {}
+[3.773925] (-) TimerEvent: {}
+[3.876890] (-) TimerEvent: {}
+[3.888562] (inertial_sense_ros2) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[3.977843] (-) TimerEvent: {}
+[4.080556] (-) TimerEvent: {}
+[4.182945] (-) TimerEvent: {}
+[4.285621] (-) TimerEvent: {}
+[4.388010] (-) TimerEvent: {}
+[4.413673] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)\n'}
+[4.417099] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)\n'}
+[4.489570] (-) TimerEvent: {}
+[4.524658] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)\n'}
+[4.590614] (-) TimerEvent: {}
+[4.692872] (-) TimerEvent: {}
+[4.795718] (-) TimerEvent: {}
+[4.831600] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)\n'}
+[4.896858] (-) TimerEvent: {}
+[4.999686] (-) TimerEvent: {}
+[5.101902] (-) TimerEvent: {}
+[5.204644] (-) TimerEvent: {}
+[5.306589] (-) TimerEvent: {}
+[5.408985] (-) TimerEvent: {}
+[5.511595] (-) TimerEvent: {}
+[5.614754] (-) TimerEvent: {}
+[5.716915] (-) TimerEvent: {}
+[5.820039] (-) TimerEvent: {}
+[5.922684] (-) TimerEvent: {}
+[6.025781] (-) TimerEvent: {}
+[6.128599] (-) TimerEvent: {}
+[6.230835] (-) TimerEvent: {}
+[6.333611] (-) TimerEvent: {}
+[6.435845] (-) TimerEvent: {}
+[6.538611] (-) TimerEvent: {}
+[6.640875] (-) TimerEvent: {}
+[6.743862] (-) TimerEvent: {}
+[6.846722] (-) TimerEvent: {}
+[6.948911] (-) TimerEvent: {}
+[7.051515] (-) TimerEvent: {}
+[7.153885] (-) TimerEvent: {}
+[7.256561] (-) TimerEvent: {}
+[7.358554] (-) TimerEvent: {}
+[7.460837] (-) TimerEvent: {}
+[7.563556] (-) TimerEvent: {}
+[7.665845] (-) TimerEvent: {}
+[7.768836] (-) TimerEvent: {}
+[7.870977] (-) TimerEvent: {}
+[7.921440] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)\n'}
+[7.971974] (-) TimerEvent: {}
+[8.074816] (-) TimerEvent: {}
+[8.176868] (-) TimerEvent: {}
+[8.279692] (-) TimerEvent: {}
+[8.381944] (-) TimerEvent: {}
+[8.484833] (-) TimerEvent: {}
+[8.587520] (-) TimerEvent: {}
+[8.689782] (-) TimerEvent: {}
+[8.792672] (-) TimerEvent: {}
+[8.894901] (-) TimerEvent: {}
+[8.997620] (-) TimerEvent: {}
+[9.099996] (-) TimerEvent: {}
+[9.202728] (-) TimerEvent: {}
+[9.305711] (-) TimerEvent: {}
+[9.408774] (-) TimerEvent: {}
+[9.510908] (-) TimerEvent: {}
+[9.611123] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[9.612903] (-) TimerEvent: {}
+[9.715595] (-) TimerEvent: {}
+[9.817816] (-) TimerEvent: {}
+[9.920722] (-) TimerEvent: {}
+[10.022838] (-) TimerEvent: {}
+[10.125518] (-) TimerEvent: {}
+[10.227883] (-) TimerEvent: {}
+[10.330719] (-) TimerEvent: {}
+[10.433006] (-) TimerEvent: {}
+[10.535631] (-) TimerEvent: {}
+[10.638082] (-) TimerEvent: {}
+[10.740946] (-) TimerEvent: {}
+[10.844085] (-) TimerEvent: {}
+[10.946558] (-) TimerEvent: {}
+[11.049818] (-) TimerEvent: {}
+[11.151826] (-) TimerEvent: {}
+[11.254763] (-) TimerEvent: {}
+[11.356790] (-) TimerEvent: {}
+[11.459896] (-) TimerEvent: {}
+[11.562671] (-) TimerEvent: {}
+[11.664799] (-) TimerEvent: {}
+[11.767743] (-) TimerEvent: {}
+[11.862563] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[11.869087] (-) TimerEvent: {}
+[11.882509] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)\n'}
+[11.970666] (-) TimerEvent: {}
+[12.072916] (-) TimerEvent: {}
+[12.175533] (-) TimerEvent: {}
+[12.278720] (-) TimerEvent: {}
+[12.380923] (-) TimerEvent: {}
+[12.483681] (-) TimerEvent: {}
+[12.586829] (-) TimerEvent: {}
+[12.688803] (-) TimerEvent: {}
+[12.791649] (-) TimerEvent: {}
+[12.893910] (-) TimerEvent: {}
+[12.996693] (-) TimerEvent: {}
+[13.098901] (-) TimerEvent: {}
+[13.201833] (-) TimerEvent: {}
+[13.303878] (-) TimerEvent: {}
+[13.406544] (-) TimerEvent: {}
+[13.508879] (-) TimerEvent: {}
+[13.611813] (-) TimerEvent: {}
+[13.714610] (-) TimerEvent: {}
+[13.817540] (-) TimerEvent: {}
+[13.921046] (-) TimerEvent: {}
+[14.023790] (-) TimerEvent: {}
+[14.126591] (-) TimerEvent: {}
+[14.228913] (-) TimerEvent: {}
+[14.331627] (-) TimerEvent: {}
+[14.433779] (-) TimerEvent: {}
+[14.535947] (-) TimerEvent: {}
+[14.638613] (-) TimerEvent: {}
+[14.741527] (-) TimerEvent: {}
+[14.776903] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed \n'}
+[14.842932] (-) TimerEvent: {}
+[14.945546] (-) TimerEvent: {}
+[15.047807] (-) TimerEvent: {}
+[15.150886] (-) TimerEvent: {}
+[15.164704] (inertial_sense_ros2) StdoutLine: {'line': b'-- Configuring done (14.6s)\n'}
+[15.252671] (-) TimerEvent: {}
+[15.355562] (-) TimerEvent: {}
+[15.457814] (-) TimerEvent: {}
+[15.559572] (-) TimerEvent: {}
+[15.662871] (-) TimerEvent: {}
+[15.765696] (-) TimerEvent: {}
+[15.815862] (inertial_sense_ros2) StdoutLine: {'line': b'-- Generating done (0.5s)\n'}
+[15.867887] (-) TimerEvent: {}
+[15.886593] (inertial_sense_ros2) StdoutLine: {'line': b'-- Build files have been written to: /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2\n'}
+[15.969018] (-) TimerEvent: {}
+[16.071961] (-) TimerEvent: {}
+[16.174753] (-) TimerEvent: {}
+[16.277559] (-) TimerEvent: {}
+[16.379898] (-) TimerEvent: {}
+[16.471726] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] \x1b[34m\x1b[1mGenerating type hashes for ROS interfaces\x1b[0m\n'}
+[16.480788] (-) TimerEvent: {}
+[16.583609] (-) TimerEvent: {}
+[16.619774] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] Built target ament_cmake_python_copy_inertial_sense_ros2\n'}
+[16.685903] (-) TimerEvent: {}
+[16.788561] (-) TimerEvent: {}
+[16.890856] (-) TimerEvent: {}
+[16.993740] (-) TimerEvent: {}
+[17.096621] (-) TimerEvent: {}
+[17.199611] (-) TimerEvent: {}
+[17.301936] (-) TimerEvent: {}
+[17.404716] (-) TimerEvent: {}
+[17.507646] (-) TimerEvent: {}
+[17.610658] (-) TimerEvent: {}
+[17.712856] (-) TimerEvent: {}
+[17.815557] (-) TimerEvent: {}
+[17.917839] (-) TimerEvent: {}
+[18.020661] (-) TimerEvent: {}
+[18.123505] (-) TimerEvent: {}
+[18.133585] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] Built target inertial_sense_ros2__rosidl_generator_type_description\n'}
+[18.224705] (-) TimerEvent: {}
+[18.328090] (-) TimerEvent: {}
+[18.332600] (inertial_sense_ros2) StdoutLine: {'line': b'[  4%] \x1b[34m\x1b[1mGenerating C code for ROS interfaces\x1b[0m\n'}
+[18.429791] (-) TimerEvent: {}
+[18.502444] (inertial_sense_ros2) StdoutLine: {'line': b'[  6%] \x1b[34m\x1b[1mGenerating C++ code for ROS interfaces\x1b[0m\n'}
+[18.531606] (-) TimerEvent: {}
+[18.633574] (-) TimerEvent: {}
+[18.735068] (-) TimerEvent: {}
+[18.837730] (-) TimerEvent: {}
+[18.940675] (-) TimerEvent: {}
+[19.042972] (-) TimerEvent: {}
+[19.152599] (-) TimerEvent: {}
+[19.256700] (-) TimerEvent: {}
+[19.361080] (inertial_sense_ros2) StdoutLine: {'line': b'running egg_info\n'}
+[19.364897] (-) TimerEvent: {}
+[19.468742] (-) TimerEvent: {}
+[19.574864] (-) TimerEvent: {}
+[19.632754] (inertial_sense_ros2) StdoutLine: {'line': b'writing inertial_sense_ros2.egg-info/PKG-INFO\n'}
+[19.642647] (inertial_sense_ros2) StdoutLine: {'line': b'writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt\n'}
+[19.647442] (inertial_sense_ros2) StdoutLine: {'line': b'writing top-level names to inertial_sense_ros2.egg-info/top_level.txt\n'}
+[19.677650] (-) TimerEvent: {}
+[19.780907] (-) TimerEvent: {}
+[19.886523] (-) TimerEvent: {}
+[19.988665] (-) TimerEvent: {}
+[20.090866] (-) TimerEvent: {}
+[20.199704] (-) TimerEvent: {}
+[20.305745] (-) TimerEvent: {}
+[20.435923] (-) TimerEvent: {}
+[20.544119] (-) TimerEvent: {}
+[20.610067] (inertial_sense_ros2) StdoutLine: {'line': b"reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'\n"}
+[20.625676] (inertial_sense_ros2) StdoutLine: {'line': b"writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'\n"}
+[20.645702] (-) TimerEvent: {}
+[20.749962] (-) TimerEvent: {}
+[20.806705] (inertial_sense_ros2) StdoutLine: {'line': b'[  6%] Built target inertial_sense_ros2__cpp\n'}
+[20.853630] (-) TimerEvent: {}
+[20.860521] (inertial_sense_ros2) StdoutLine: {'line': b'[  6%] Built target ament_cmake_python_build_inertial_sense_ros2_egg\n'}
+[20.949891] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/g_time__description.c.o\x1b[0m\n'}
+[20.958652] (inertial_sense_ros2) StdoutLine: {'line': b'[ 11%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/g_time__type_support.c.o\x1b[0m\n'}
+[20.960524] (-) TimerEvent: {}
+[20.961714] (inertial_sense_ros2) StdoutLine: {'line': b'[ 13%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/g_time__functions.c.o\x1b[0m\n'}
+[20.990697] (inertial_sense_ros2) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/sat_info__description.c.o\x1b[0m\n'}
+[20.997591] (inertial_sense_ros2) StdoutLine: {'line': b'[ 18%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/sat_info__functions.c.o\x1b[0m\n'}
+[21.038124] (inertial_sense_ros2) StdoutLine: {'line': b'[ 20%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_c.dir/rosidl_generator_c/inertial_sense_ros2/msg/detail/sat_info__type_support.c.o\x1b[0m\n'}
+[21.072801] (-) TimerEvent: {}
+[21.183840] (-) TimerEvent: {}
+[21.291656] (-) TimerEvent: {}
+[21.412561] (-) TimerEvent: {}
+[21.518838] (-) TimerEvent: {}
+[21.622821] (-) TimerEvent: {}
+[21.725711] (-) TimerEvent: {}
+[21.816920] (inertial_sense_ros2) StdoutLine: {'line': b'[ 22%] \x1b[32m\x1b[1mLinking C shared library libinertial_sense_ros2__rosidl_generator_c.so\x1b[0m\n'}
+[21.827611] (-) TimerEvent: {}
+[21.930938] (-) TimerEvent: {}
+[22.033934] (-) TimerEvent: {}
+[22.136609] (-) TimerEvent: {}
+[22.238682] (-) TimerEvent: {}
+[22.341477] (-) TimerEvent: {}
+[22.443773] (-) TimerEvent: {}
+[22.498646] (inertial_sense_ros2) StdoutLine: {'line': b'[ 22%] Built target inertial_sense_ros2__rosidl_generator_c\n'}
+[22.545761] (-) TimerEvent: {}
+[22.652596] (-) TimerEvent: {}
+[22.681764] (inertial_sense_ros2) StdoutLine: {'line': b'[ 27%] \x1b[34m\x1b[1mGenerating C++ type support dispatch for ROS interfaces\x1b[0m\n'}
+[22.685106] (inertial_sense_ros2) StdoutLine: {'line': b'[ 27%] \x1b[34m\x1b[1mGenerating C type support for eProsima Fast-RTPS\x1b[0m\n'}
+[22.687423] (inertial_sense_ros2) StdoutLine: {'line': b'[ 29%] \x1b[34m\x1b[1mGenerating C introspection for ROS interfaces\x1b[0m\n'}
+[22.693811] (inertial_sense_ros2) StdoutLine: {'line': b'[ 31%] \x1b[34m\x1b[1mGenerating C++ type support for eProsima Fast-RTPS\x1b[0m\n'}
+[22.702598] (inertial_sense_ros2) StdoutLine: {'line': b'[ 34%] \x1b[34m\x1b[1mGenerating C type support dispatch for ROS interfaces\x1b[0m\n'}
+[22.707817] (inertial_sense_ros2) StdoutLine: {'line': b'[ 36%] \x1b[34m\x1b[1mGenerating C++ introspection for ROS interfaces\x1b[0m\n'}
+[22.755581] (-) TimerEvent: {}
+[22.866476] (-) TimerEvent: {}
+[22.968627] (-) TimerEvent: {}
+[23.073073] (-) TimerEvent: {}
+[23.175634] (-) TimerEvent: {}
+[23.278719] (-) TimerEvent: {}
+[23.385591] (-) TimerEvent: {}
+[23.487625] (-) TimerEvent: {}
+[23.590517] (-) TimerEvent: {}
+[23.694604] (-) TimerEvent: {}
+[23.797836] (-) TimerEvent: {}
+[23.908988] (-) TimerEvent: {}
+[24.023058] (-) TimerEvent: {}
+[24.133829] (-) TimerEvent: {}
+[24.240939] (-) TimerEvent: {}
+[24.363933] (-) TimerEvent: {}
+[24.467884] (-) TimerEvent: {}
+[24.580995] (-) TimerEvent: {}
+[24.695682] (-) TimerEvent: {}
+[24.806087] (-) TimerEvent: {}
+[24.809854] (inertial_sense_ros2) StdoutLine: {'line': b'[ 38%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/g_time__type_support.cpp.o\x1b[0m\n'}
+[24.812664] (inertial_sense_ros2) StdoutLine: {'line': b'[ 40%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_c.dir/rosidl_typesupport_c/inertial_sense_ros2/msg/sat_info__type_support.cpp.o\x1b[0m\n'}
+[24.824871] (inertial_sense_ros2) StdoutLine: {'line': b'[ 43%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/g_time__type_support.cpp.o\x1b[0m\n'}
+[24.826700] (inertial_sense_ros2) StdoutLine: {'line': b'[ 45%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/inertial_sense_ros2/msg/sat_info__type_support.cpp.o\x1b[0m\n'}
+[24.924737] (-) TimerEvent: {}
+[24.981838] (inertial_sense_ros2) StdoutLine: {'line': b'[ 47%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/g_time__type_support.cpp.o\x1b[0m\n'}
+[25.001710] (inertial_sense_ros2) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/sat_info__type_support.c.o\x1b[0m\n'}
+[25.003688] (inertial_sense_ros2) StdoutLine: {'line': b'[ 52%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/inertial_sense_ros2/msg/detail/g_time__type_support.c.o\x1b[0m\n'}
+[25.051625] (inertial_sense_ros2) StdoutLine: {'line': b'[ 54%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/inertial_sense_ros2/msg/detail/sat_info__type_support.cpp.o\x1b[0m\n'}
+[25.053095] (-) TimerEvent: {}
+[25.158912] (-) TimerEvent: {}
+[25.192050] (inertial_sense_ros2) StdoutLine: {'line': b'[ 56%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/g_time__type_support.cpp.o\x1b[0m\n'}
+[25.209578] (inertial_sense_ros2) StdoutLine: {'line': b'[ 59%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/g_time__type_support_c.cpp.o\x1b[0m\n'}
+[25.211489] (inertial_sense_ros2) StdoutLine: {'line': b'[ 61%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/inertial_sense_ros2/msg/detail/sat_info__type_support_c.cpp.o\x1b[0m\n'}
+[25.212769] (inertial_sense_ros2) StdoutLine: {'line': b'[ 63%] \x1b[32mBuilding CXX object CMakeFiles/inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/inertial_sense_ros2/msg/detail/dds_fastrtps/sat_info__type_support.cpp.o\x1b[0m\n'}
+[25.273062] (-) TimerEvent: {}
+[25.436618] (-) TimerEvent: {}
+[25.555490] (-) TimerEvent: {}
+[25.661846] (-) TimerEvent: {}
+[25.774090] (-) TimerEvent: {}
+[25.895093] (-) TimerEvent: {}
+[26.049702] (-) TimerEvent: {}
+[26.154844] (-) TimerEvent: {}
+[26.250057] (inertial_sense_ros2) StdoutLine: {'line': b'[ 65%] \x1b[32m\x1b[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_c.so\x1b[0m\n'}
+[26.275548] (inertial_sense_ros2) StdoutLine: {'line': b'[ 68%] \x1b[32m\x1b[1mLinking C shared library libinertial_sense_ros2__rosidl_typesupport_introspection_c.so\x1b[0m\n'}
+[26.277089] (-) TimerEvent: {}
+[26.389070] (-) TimerEvent: {}
+[26.517943] (-) TimerEvent: {}
+[26.623663] (-) TimerEvent: {}
+[26.739508] (-) TimerEvent: {}
+[26.879882] (-) TimerEvent: {}
+[26.983436] (-) TimerEvent: {}
+[27.093130] (-) TimerEvent: {}
+[27.210765] (-) TimerEvent: {}
+[27.320617] (-) TimerEvent: {}
+[27.386557] (inertial_sense_ros2) StdoutLine: {'line': b'[ 68%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c\n'}
+[27.423441] (-) TimerEvent: {}
+[27.544892] (-) TimerEvent: {}
+[27.648968] (-) TimerEvent: {}
+[27.759484] (-) TimerEvent: {}
+[27.866509] (-) TimerEvent: {}
+[27.875523] (inertial_sense_ros2) StdoutLine: {'line': b'[ 68%] Built target inertial_sense_ros2__rosidl_typesupport_c\n'}
+[27.973877] (-) TimerEvent: {}
+[28.086709] (-) TimerEvent: {}
+[28.189761] (-) TimerEvent: {}
+[28.297834] (-) TimerEvent: {}
+[28.401636] (-) TimerEvent: {}
+[28.527942] (-) TimerEvent: {}
+[28.631000] (-) TimerEvent: {}
+[28.744043] (-) TimerEvent: {}
+[28.858678] (-) TimerEvent: {}
+[28.972768] (-) TimerEvent: {}
+[29.106769] (-) TimerEvent: {}
+[29.221872] (-) TimerEvent: {}
+[29.335591] (-) TimerEvent: {}
+[29.464733] (-) TimerEvent: {}
+[29.585537] (-) TimerEvent: {}
+[29.700784] (-) TimerEvent: {}
+[29.818550] (-) TimerEvent: {}
+[29.927584] (-) TimerEvent: {}
+[30.045923] (-) TimerEvent: {}
+[30.171788] (-) TimerEvent: {}
+[30.299045] (-) TimerEvent: {}
+[30.405016] (-) TimerEvent: {}
+[30.514807] (-) TimerEvent: {}
+[30.608624] (inertial_sense_ros2) StdoutLine: {'line': b'[ 70%] \x1b[32m\x1b[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_cpp.so\x1b[0m\n'}
+[30.633616] (-) TimerEvent: {}
+[30.637637] (inertial_sense_ros2) StdoutLine: {'line': b'[ 72%] \x1b[32m\x1b[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_introspection_cpp.so\x1b[0m\n'}
+[30.755807] (-) TimerEvent: {}
+[30.859721] (-) TimerEvent: {}
+[30.962979] (-) TimerEvent: {}
+[31.067054] (-) TimerEvent: {}
+[31.171729] (-) TimerEvent: {}
+[31.276559] (-) TimerEvent: {}
+[31.383684] (-) TimerEvent: {}
+[31.486817] (-) TimerEvent: {}
+[31.590099] (-) TimerEvent: {}
+[31.693530] (-) TimerEvent: {}
+[31.797583] (-) TimerEvent: {}
+[31.870746] (inertial_sense_ros2) StdoutLine: {'line': b'[ 72%] Built target inertial_sense_ros2__rosidl_typesupport_cpp\n'}
+[31.896975] (inertial_sense_ros2) StdoutLine: {'line': b'[ 72%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp\n'}
+[31.899613] (-) TimerEvent: {}
+[32.002690] (-) TimerEvent: {}
+[32.105591] (-) TimerEvent: {}
+[32.207808] (-) TimerEvent: {}
+[32.310858] (-) TimerEvent: {}
+[32.413646] (-) TimerEvent: {}
+[32.516575] (-) TimerEvent: {}
+[32.553770] (inertial_sense_ros2) StdoutLine: {'line': b'[ 75%] \x1b[32m\x1b[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_fastrtps_c.so\x1b[0m\n'}
+[32.606762] (inertial_sense_ros2) StdoutLine: {'line': b'[ 77%] \x1b[32m\x1b[1mLinking CXX shared library libinertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.so\x1b[0m\n'}
+[32.618098] (-) TimerEvent: {}
+[32.720938] (-) TimerEvent: {}
+[32.823759] (-) TimerEvent: {}
+[32.926616] (-) TimerEvent: {}
+[33.029090] (-) TimerEvent: {}
+[33.130890] (-) TimerEvent: {}
+[33.233774] (-) TimerEvent: {}
+[33.336632] (-) TimerEvent: {}
+[33.438949] (-) TimerEvent: {}
+[33.541740] (-) TimerEvent: {}
+[33.644610] (-) TimerEvent: {}
+[33.727617] (inertial_sense_ros2) StdoutLine: {'line': b'[ 77%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c\n'}
+[33.745686] (-) TimerEvent: {}
+[33.766494] (inertial_sense_ros2) StdoutLine: {'line': b'[ 77%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp\n'}
+[33.847536] (-) TimerEvent: {}
+[33.949812] (-) TimerEvent: {}
+[34.052544] (-) TimerEvent: {}
+[34.124603] (inertial_sense_ros2) StdoutLine: {'line': b'[ 77%] Built target inertial_sense_ros2\n'}
+[34.153547] (-) TimerEvent: {}
+[34.255838] (-) TimerEvent: {}
+[34.358763] (-) TimerEvent: {}
+[34.461628] (-) TimerEvent: {}
+[34.491698] (inertial_sense_ros2) StdoutLine: {'line': b'[ 79%] \x1b[34m\x1b[1mGenerating Python code for ROS interfaces\x1b[0m\n'}
+[34.562826] (-) TimerEvent: {}
+[34.665679] (-) TimerEvent: {}
+[34.767892] (-) TimerEvent: {}
+[34.870622] (-) TimerEvent: {}
+[34.972899] (-) TimerEvent: {}
+[35.075816] (-) TimerEvent: {}
+[35.177877] (-) TimerEvent: {}
+[35.280581] (-) TimerEvent: {}
+[35.382878] (-) TimerEvent: {}
+[35.485532] (-) TimerEvent: {}
+[35.587879] (-) TimerEvent: {}
+[35.690529] (-) TimerEvent: {}
+[35.792728] (-) TimerEvent: {}
+[35.895744] (-) TimerEvent: {}
+[35.997860] (-) TimerEvent: {}
+[36.100732] (-) TimerEvent: {}
+[36.203625] (-) TimerEvent: {}
+[36.305865] (-) TimerEvent: {}
+[36.414952] (-) TimerEvent: {}
+[36.517593] (-) TimerEvent: {}
+[36.619885] (-) TimerEvent: {}
+[36.634637] (inertial_sense_ros2) StdoutLine: {'line': b'[ 79%] Built target inertial_sense_ros2__py\n'}
+[36.721661] (-) TimerEvent: {}
+[36.824440] (-) TimerEvent: {}
+[36.926711] (-) TimerEvent: {}
+[37.028877] (-) TimerEvent: {}
+[37.069966] (inertial_sense_ros2) StdoutLine: {'line': b'[ 84%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_g_time_s.c.o\x1b[0m\n'}
+[37.071897] (inertial_sense_ros2) StdoutLine: {'line': b'[ 84%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_sat_info_s.c.o\x1b[0m\n'}
+[37.130666] (-) TimerEvent: {}
+[37.232734] (-) TimerEvent: {}
+[37.334727] (-) TimerEvent: {}
+[37.436950] (-) TimerEvent: {}
+[37.539636] (-) TimerEvent: {}
+[37.641821] (-) TimerEvent: {}
+[37.744503] (-) TimerEvent: {}
+[37.846704] (-) TimerEvent: {}
+[37.949464] (-) TimerEvent: {}
+[38.051778] (-) TimerEvent: {}
+[38.153933] (-) TimerEvent: {}
+[38.256637] (-) TimerEvent: {}
+[38.358803] (-) TimerEvent: {}
+[38.461534] (-) TimerEvent: {}
+[38.563702] (-) TimerEvent: {}
+[38.666638] (-) TimerEvent: {}
+[38.769496] (-) TimerEvent: {}
+[38.871979] (-) TimerEvent: {}
+[38.974688] (-) TimerEvent: {}
+[39.076809] (-) TimerEvent: {}
+[39.179516] (-) TimerEvent: {}
+[39.281670] (-) TimerEvent: {}
+[39.300587] (inertial_sense_ros2) StdoutLine: {'line': b'[ 86%] \x1b[32m\x1b[1mLinking C shared library libinertial_sense_ros2__rosidl_generator_py.so\x1b[0m\n'}
+[39.383491] (-) TimerEvent: {}
+[39.485739] (-) TimerEvent: {}
+[39.588747] (-) TimerEvent: {}
+[39.690956] (-) TimerEvent: {}
+[39.793545] (-) TimerEvent: {}
+[39.895814] (-) TimerEvent: {}
+[39.998577] (-) TimerEvent: {}
+[40.101641] (-) TimerEvent: {}
+[40.105449] (inertial_sense_ros2) StdoutLine: {'line': b'[ 86%] Built target inertial_sense_ros2__rosidl_generator_py\n'}
+[40.202968] (-) TimerEvent: {}
+[40.305601] (-) TimerEvent: {}
+[40.407902] (-) TimerEvent: {}
+[40.509507] (inertial_sense_ros2) StdoutLine: {'line': b'[ 88%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_fastrtps_c.c.o\x1b[0m\n'}
+[40.510945] (-) TimerEvent: {}
+[40.518837] (inertial_sense_ros2) StdoutLine: {'line': b'[ 90%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_introspection_c.c.o\x1b[0m\n'}
+[40.523442] (inertial_sense_ros2) StdoutLine: {'line': b'[ 93%] \x1b[32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_c.c.o\x1b[0m\n'}
+[40.612485] (-) TimerEvent: {}
+[40.714676] (-) TimerEvent: {}
+[40.817741] (-) TimerEvent: {}
+[40.919862] (-) TimerEvent: {}
+[41.022084] (-) TimerEvent: {}
+[41.124597] (-) TimerEvent: {}
+[41.226840] (-) TimerEvent: {}
+[41.329634] (-) TimerEvent: {}
+[41.431874] (-) TimerEvent: {}
+[41.534589] (-) TimerEvent: {}
+[41.636755] (-) TimerEvent: {}
+[41.739744] (-) TimerEvent: {}
+[41.842594] (-) TimerEvent: {}
+[41.944696] (-) TimerEvent: {}
+[42.046877] (-) TimerEvent: {}
+[42.149753] (-) TimerEvent: {}
+[42.252507] (-) TimerEvent: {}
+[42.268610] (inertial_sense_ros2) StdoutLine: {'line': b'[ 95%] \x1b[32m\x1b[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so\x1b[0m\n'}
+[42.353806] (-) TimerEvent: {}
+[42.367811] (inertial_sense_ros2) StdoutLine: {'line': b'[ 97%] \x1b[32m\x1b[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so\x1b[0m\n'}
+[42.454739] (-) TimerEvent: {}
+[42.556770] (-) TimerEvent: {}
+[42.558887] (inertial_sense_ros2) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so\x1b[0m\n'}
+[42.657682] (-) TimerEvent: {}
+[42.761848] (-) TimerEvent: {}
+[42.864855] (-) TimerEvent: {}
+[42.928647] (inertial_sense_ros2) StdoutLine: {'line': b'[100%] Built target inertial_sense_ros2_s__rosidl_typesupport_c\n'}
+[42.965817] (-) TimerEvent: {}
+[43.047024] (inertial_sense_ros2) StdoutLine: {'line': b'[100%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c\n'}
+[43.066889] (-) TimerEvent: {}
+[43.169803] (-) TimerEvent: {}
+[43.266554] (inertial_sense_ros2) StdoutLine: {'line': b'[100%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c\n'}
+[43.271081] (-) TimerEvent: {}
+[43.373588] (-) TimerEvent: {}
+[43.431000] (inertial_sense_ros2) CommandEnded: {'returncode': 0}
+[43.474789] (-) TimerEvent: {}
+[43.577753] (-) TimerEvent: {}
+[43.679840] (-) TimerEvent: {}
+[43.782012] (-) TimerEvent: {}
+[43.884844] (-) TimerEvent: {}
+[43.986851] (-) TimerEvent: {}
+[44.090508] (-) TimerEvent: {}
+[44.193721] (-) TimerEvent: {}
+[44.296441] (-) TimerEvent: {}
+[44.398613] (-) TimerEvent: {}
+[44.501652] (-) TimerEvent: {}
+[44.603945] (-) TimerEvent: {}
+[44.706842] (-) TimerEvent: {}
+[44.809687] (-) TimerEvent: {}
+[44.912750] (-) TimerEvent: {}
+[45.016733] (-) TimerEvent: {}
+[45.118927] (-) TimerEvent: {}
+[45.223540] (-) TimerEvent: {}
+[45.325954] (-) TimerEvent: {}
+[45.429005] (-) TimerEvent: {}
+[45.531791] (-) TimerEvent: {}
+[45.555568] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'install'}
+[45.633569] (-) TimerEvent: {}
+[45.695667] (inertial_sense_ros2) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2'], 'cwd': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'env': OrderedDict({'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 's', 'XDG_SESSION_TYPE': 'wayland', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/s', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'DBUS_STARTER_BUS_TYPE': 'session', 'SYSTEMD_EXEC_PID': '2269', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus,guid=db52c9453fbc1ea0fca5a71c66900915', 'COLORTERM': 'truecolor', '_colcon_cd_root': '/opt/ros/jazzy/', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 's', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome\\x2dsession\\x2dmanager.slice/gnome-session-manager@ubuntu.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 's', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/s-VMware-Virtual-Platform:@/tmp/.ICE-unix/2269,unix/s-VMware-Virtual-Platform:/tmp/.ICE-unix/2269', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/76a96508_ca45_4b3e_8012_dcd1b6375d17', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.R0SYQ2', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'GNOME_TERMINAL_SERVICE': ':1.253', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '0', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'DBUS_STARTER_ADDRESS': 'unix:path=/run/user/1000/bus,guid=db52c9453fbc1ea0fca5a71c66900915', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'QTWEBENGINE_DICTIONARIES_PATH': '/usr/share/hunspell-bdic/', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'VTE_VERSION': '7600', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[45.734677] (-) TimerEvent: {}
+[45.831761] (inertial_sense_ros2) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[45.836007] (-) TimerEvent: {}
+[45.838610] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/ament_index/resource_index/rosidl_interfaces/inertial_sense_ros2\n'}
+[45.840498] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GTime.json\n'}
+[45.845466] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/SatInfo.json\n'}
+[45.847095] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2\n'}
+[45.851552] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg\n'}
+[45.853477] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/sat_info.h\n'}
+[45.856434] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/g_time.h\n'}
+[45.857920] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_generator_c__visibility_control.h\n'}
+[45.859679] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail\n'}
+[45.861599] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__struct.h\n'}
+[45.867471] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.h\n'}
+[45.869805] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__functions.c\n'}
+[45.871937] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.c\n'}
+[45.876088] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.h\n'}
+[45.878769] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__functions.h\n'}
+[45.881441] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__struct.h\n'}
+[45.883663] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__functions.c\n'}
+[45.887727] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__description.c\n'}
+[45.889849] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__functions.h\n'}
+[45.891647] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__description.c\n'}
+[45.894759] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.c\n'}
+[45.896967] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/library_path.sh\n'}
+[45.898658] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/library_path.dsv\n'}
+[45.901971] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_c.so\n'}
+[45.920427] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_c.so" to ""\n'}
+[45.922643] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2\n'}
+[45.926644] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg\n'}
+[45.929584] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_typesupport_fastrtps_c__visibility_control.h\n'}
+[45.930915] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail\n'}
+[45.932529] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_fastrtps_c.h\n'}
+[45.933808] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_fastrtps_c.h\n'}
+[45.936673] (-) TimerEvent: {}
+[45.939525] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_c.so\n'}
+[45.960642] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_c.so" to ""\n'}
+[45.963469] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2\n'}
+[45.966003] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg\n'}
+[45.968786] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_typesupport_introspection_c__visibility_control.h\n'}
+[45.972589] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail\n'}
+[45.976703] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_introspection_c.h\n'}
+[45.980637] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.c\n'}
+[45.982675] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_introspection_c.h\n'}
+[45.984637] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.c\n'}
+[45.987653] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_c.so\n'}
+[46.007427] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_c.so" to ""\n'}
+[46.015628] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_c.so\n'}
+[46.034619] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_c.so" to ""\n'}
+[46.038684] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2\n'}
+[46.039985] (-) TimerEvent: {}
+[46.042478] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg\n'}
+[46.045785] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_generator_cpp__visibility_control.hpp\n'}
+[46.047708] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/sat_info.hpp\n'}
+[46.049913] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/g_time.hpp\n'}
+[46.052051] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail\n'}
+[46.053701] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__struct.hpp\n'}
+[46.055736] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__builder.hpp\n'}
+[46.059634] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__builder.hpp\n'}
+[46.061006] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.hpp\n'}
+[46.063516] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.hpp\n'}
+[46.064944] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__traits.hpp\n'}
+[46.067035] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__traits.hpp\n'}
+[46.068709] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__struct.hpp\n'}
+[46.072121] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2\n'}
+[46.074692] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg\n'}
+[46.077520] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h\n'}
+[46.080698] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail\n'}
+[46.082521] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[46.083913] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/dds_fastrtps\n'}
+[46.085516] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[46.092518] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.so\n'}
+[46.113571] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_fastrtps_cpp.so" to ""\n'}
+[46.118943] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2\n'}
+[46.120888] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg\n'}
+[46.124522] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail\n'}
+[46.127018] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__rosidl_typesupport_introspection_cpp.hpp\n'}
+[46.129810] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/sat_info__type_support.cpp\n'}
+[46.131029] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__type_support.cpp\n'}
+[46.132734] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/include/inertial_sense_ros2/inertial_sense_ros2/msg/detail/g_time__rosidl_typesupport_introspection_cpp.hpp\n'}
+[46.139454] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_cpp.so\n'}
+[46.140852] (-) TimerEvent: {}
+[46.159685] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_introspection_cpp.so" to ""\n'}
+[46.168537] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_cpp.so\n'}
+[46.190630] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_typesupport_cpp.so" to ""\n'}
+[46.193536] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/pythonpath.sh\n'}
+[46.197047] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/environment/pythonpath.dsv\n'}
+[46.199051] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info\n'}
+[46.201026] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/SOURCES.txt\n'}
+[46.203642] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/PKG-INFO\n'}
+[46.206043] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/dependency_links.txt\n'}
+[46.208956] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2-1.1.1-py3.12.egg-info/top_level.txt\n'}
+[46.210678] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2\n'}
+[46.212865] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/__init__.py\n'}
+[46.214648] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so\n'}
+[46.217067] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_introspection_c.c\n'}
+[46.218743] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg\n'}
+[46.220707] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_g_time_s.c\n'}
+[46.223825] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/__init__.py\n'}
+[46.227701] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_sat_info.py\n'}
+[46.229500] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_g_time.py\n'}
+[46.232011] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_sat_info_s.c\n'}
+[46.236715] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so\n'}
+[46.238027] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so\n'}
+[46.240106] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_fastrtps_c.c\n'}
+[46.241852] (-) TimerEvent: {}
+[46.243551] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_c.c\n'}
+[46.342803] (-) TimerEvent: {}
+[46.445773] (-) TimerEvent: {}
+[46.548623] (-) TimerEvent: {}
+[46.650991] (-) TimerEvent: {}
+[46.671463] (inertial_sense_ros2) StdoutLine: {'line': b"Listing '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2'...\n"}
+[46.673068] (inertial_sense_ros2) StdoutLine: {'line': b"Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/__init__.py'...\n"}
+[46.674701] (inertial_sense_ros2) StdoutLine: {'line': b"Listing '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg'...\n"}
+[46.676073] (inertial_sense_ros2) StdoutLine: {'line': b"Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/__init__.py'...\n"}
+[46.677705] (inertial_sense_ros2) StdoutLine: {'line': b"Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_g_time.py'...\n"}
+[46.679050] (inertial_sense_ros2) StdoutLine: {'line': b"Compiling '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/msg/_sat_info.py'...\n"}
+[46.709805] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so\n'}
+[46.731755] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so" to ""\n'}
+[46.744482] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so\n'}
+[46.751915] (-) TimerEvent: {}
+[46.764656] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so" to ""\n'}
+[46.774791] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so\n'}
+[46.794784] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so" to ""\n'}
+[46.806560] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_py.so\n'}
+[46.832879] (inertial_sense_ros2) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/libinertial_sense_ros2__rosidl_generator_py.so" to ""\n'}
+[46.834816] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GTime.idl\n'}
+[46.836693] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/SatInfo.idl\n'}
+[46.841603] (inertial_sense_ros2) StdoutLine: {'line': b'-- Up-to-date: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/GTime.msg\n'}
+[46.843058] (inertial_sense_ros2) StdoutLine: {'line': b'-- Installing: /home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/msg/SatInfo.msg\n'}
+[46.852954] (-) TimerEvent: {}
+[46.867557] (inertial_sense_ros2) CommandEnded: {'returncode': 0}
+[46.953908] (-) TimerEvent: {}
+[47.056696] (-) TimerEvent: {}
+[47.158968] (-) TimerEvent: {}
+[47.261629] (-) TimerEvent: {}
+[47.363792] (-) TimerEvent: {}
+[47.466760] (-) TimerEvent: {}
+[47.569565] (-) TimerEvent: {}
+[47.671811] (-) TimerEvent: {}
+[47.774628] (-) TimerEvent: {}
+[47.877837] (-) TimerEvent: {}
+[47.981035] (-) TimerEvent: {}
+[48.083790] (-) TimerEvent: {}
+[48.186517] (-) TimerEvent: {}
+[48.288699] (-) TimerEvent: {}
+[48.390869] (-) TimerEvent: {}
+[48.493545] (-) TimerEvent: {}
+[48.595616] (-) TimerEvent: {}
+[48.697912] (-) TimerEvent: {}
+[48.800663] (-) TimerEvent: {}
+[48.903486] (-) TimerEvent: {}
+[49.004726] (-) TimerEvent: {}
+[49.107563] (-) TimerEvent: {}
+[49.122001] (inertial_sense_ros2) JobEnded: {'identifier': 'inertial_sense_ros2', 'rc': 0}
+[49.134852] (-) EventReactorShutdown: {}

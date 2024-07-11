@@ -1,0 +1,66 @@
+[0.160s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[0.648s] -- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.945s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[2.005s] -- Found rosidl_generator_c: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[2.119s] -- Found rosidl_generator_cpp: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[2.250s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[2.406s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.659s] -- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[2.785s] -- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)
+[3.245s] -- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[3.260s] -- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[3.929s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[4.411s] -- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)
+[4.416s] -- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[4.573s] -- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)
+[4.703s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[4.807s] -- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[6.635s] [31mCMake Error at /opt/ros/jazzy/share/rosidl_adapter/cmake/rosidl_adapt_interfaces.cmake:57 (message):
+[6.637s]   execute_process(/usr/bin/python3 -m rosidl_adapter --package-name
+[6.639s]   inertial_sense_ros2 --arguments-file
+[6.642s]   /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter__arguments__inertial_sense_ros2.json
+[6.644s]   --output-dir
+[6.645s]   /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter/inertial_sense_ros2
+[6.647s]   --output-file
+[6.648s]   /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter/inertial_sense_ros2.idls)
+[6.650s]   returned error code 1:
+[6.651s] 
+[6.653s]   Traceback (most recent call last):
+[6.654s] 
+[6.656s]     File "<frozen runpy>", line 198, in _run_module_as_main
+[6.658s]     File "<frozen runpy>", line 88, in _run_code
+[6.659s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/__main__.py", line 19, in <module>
+[6.661s]       sys.exit(main())
+[6.663s]                ^^^^^^
+[6.666s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/main.py", line 53, in main
+[6.667s]       abs_idl_file = convert_to_idl(
+[6.669s]                      ^^^^^^^^^^^^^^^
+[6.670s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/__init__.py", line 24, in convert_to_idl
+[6.672s]       return convert_srv_to_idl(
+[6.674s]              ^^^^^^^^^^^^^^^^^^^
+[6.675s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/srv/__init__.py", line 28, in convert_srv_to_idl
+[6.677s]       srv = parse_service_string(package_name, input_file.stem, content)
+[6.678s]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[6.680s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 860, in parse_service_string
+[6.681s]       request_message = parse_message_string(
+[6.683s]                         ^^^^^^^^^^^^^^^^^^^^^
+[6.685s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 545, in parse_message_string
+[6.686s]       msg = MessageSpecification(pkg_name, msg_name, fields, constants)
+[6.687s]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[6.689s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 389, in __init__
+[6.691s]       self.base_type = BaseType(
+[6.692s]                        ^^^^^^^^^
+[6.694s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 206, in __init__
+[6.695s]       raise InvalidResourceName(
+[6.696s] 
+[6.698s]   rosidl_adapter.parser.InvalidResourceName: 'refLLAUpdate_Request' is an
+[6.700s]   invalid message name.  It should have the pattern '^[A-Z][A-Za-z0-9]*$'
+[6.701s] 
+[6.703s] Call Stack (most recent call first):
+[6.704s]   /opt/ros/jazzy/share/rosidl_cmake/cmake/rosidl_generate_interfaces.cmake:132 (rosidl_adapt_interfaces)
+[6.706s]   CMakeLists.txt:16 (rosidl_generate_interfaces)
+[6.707s] 
+[6.709s] [0m
+[6.710s] -- Configuring incomplete, errors occurred!
+[6.758s] gmake: *** [Makefile:4865: cmake_check_build_system] Error 1
+[6.784s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16

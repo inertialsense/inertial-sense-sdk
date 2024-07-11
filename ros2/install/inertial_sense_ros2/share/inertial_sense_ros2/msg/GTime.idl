@@ -1,0 +1,14 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/GTime.msg
+// generated code does not contain a copyright notice
+
+
+module inertial_sense_ros2 {
+  module msg {
+    struct GTime {
+      int64 time;
+
+      double sec;
+    };
+  };
+};

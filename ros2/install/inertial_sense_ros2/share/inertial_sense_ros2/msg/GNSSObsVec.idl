@@ -1,0 +1,23 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/GNSSObsVec.msg
+// generated code does not contain a copyright notice
+
+#include "inertial_sense_ros2/msg/GNSSObservation.idl"
+#include "inertial_sense_ros2/msg/GTime.idl"
+#include "std_msgs/msg/Header.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    struct GNSSObsVec {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "time of all contained observations (UTC Time w/o Leap Seconds)")
+      inertial_sense_ros2::msg::GTime time;
+
+      @verbatim (language="comment", text=
+        "Vector of observations")
+      sequence<inertial_sense_ros2::msg::GNSSObservation> obs;
+    };
+  };
+};

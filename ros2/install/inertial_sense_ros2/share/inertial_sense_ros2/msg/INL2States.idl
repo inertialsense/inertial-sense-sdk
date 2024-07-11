@@ -1,0 +1,49 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/INL2States.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Quaternion.idl"
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    struct INL2States {
+      @verbatim (language="comment", text=
+        "GPS time of week (since Sunday morning) in seconds")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "Quaternion body rotation with respect to ECEF")
+      geometry_msgs::msg::Quaternion quat_ecef;
+
+      @verbatim (language="comment", text=
+        "(m/s) Velocity in ECEF frame")
+      geometry_msgs::msg::Vector3 vel_ecef;
+
+      @verbatim (language="comment", text=
+        "(m) Position in ECEF frame")
+      geometry_msgs::msg::Vector3 pos_ecef;
+
+      @verbatim (language="comment", text=
+        "(rad/s) Gyro bias")
+      geometry_msgs::msg::Vector3 gyro_bias;
+
+      @verbatim (language="comment", text=
+        "(m/s^2) Accelerometer bias")
+      geometry_msgs::msg::Vector3 accel_bias;
+
+      @verbatim (language="comment", text=
+        "(m) Barometer bias")
+      float baro_bias;
+
+      @verbatim (language="comment", text=
+        "(rad) Magnetic declination")
+      float mag_dec;
+
+      @verbatim (language="comment", text=
+        "(rad) Magnetic inclination")
+      float mag_inc;
+    };
+  };
+};

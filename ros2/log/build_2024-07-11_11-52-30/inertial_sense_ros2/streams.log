@@ -1,0 +1,61 @@
+[0.160s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[0.573s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[0.873s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[1.616s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[2.090s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.452s] -- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[2.482s] -- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)
+[3.082s] -- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[3.097s] -- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[3.795s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[4.295s] -- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)
+[4.299s] -- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+[4.408s] -- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[4.719s] -- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)
+[6.388s] [31mCMake Error at /opt/ros/jazzy/share/rosidl_adapter/cmake/rosidl_adapt_interfaces.cmake:57 (message):
+[6.390s]   execute_process(/usr/bin/python3 -m rosidl_adapter --package-name
+[6.391s]   inertial_sense_ros2 --arguments-file
+[6.394s]   /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter__arguments__inertial_sense_ros2.json
+[6.397s]   --output-dir
+[6.400s]   /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter/inertial_sense_ros2
+[6.403s]   --output-file
+[6.405s]   /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter/inertial_sense_ros2.idls)
+[6.407s]   returned error code 1:
+[6.409s] 
+[6.412s]   Error processing 'geometry_msgs/Vector3 posEcef' of
+[6.413s]   'inertial_sense_ros2/GPS': ''posEcef' is an invalid field name.  It should
+[6.415s]   have the pattern '^(?!.*__)(?!.*_$)[a-z][a-z0-9_]*$''
+[6.416s] 
+[6.418s]   Traceback (most recent call last):
+[6.419s] 
+[6.421s]     File "<frozen runpy>", line 198, in _run_module_as_main
+[6.423s]     File "<frozen runpy>", line 88, in _run_code
+[6.424s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/__main__.py", line 19, in <module>
+[6.426s]       sys.exit(main())
+[6.427s]                ^^^^^^
+[6.429s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/main.py", line 53, in main
+[6.430s]       abs_idl_file = convert_to_idl(
+[6.432s]                      ^^^^^^^^^^^^^^^
+[6.435s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/__init__.py", line 19, in convert_to_idl
+[6.436s]       return convert_msg_to_idl(
+[6.438s]              ^^^^^^^^^^^^^^^^^^^
+[6.440s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/msg/__init__.py", line 28, in convert_msg_to_idl
+[6.442s]       msg = parse_message_string(package_name, input_file.stem, content)
+[6.443s]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[6.445s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 520, in parse_message_string
+[6.446s]       fields.append(Field(
+[6.448s]                     ^^^^^^
+[6.449s]     File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 355, in __init__
+[6.451s]       raise NameError(
+[6.452s] 
+[6.453s]   NameError: 'posEcef' is an invalid field name.  It should have the pattern
+[6.455s]   '^(?!.*__)(?!.*_$)[a-z][a-z0-9_]*$'
+[6.456s] 
+[6.458s] Call Stack (most recent call first):
+[6.459s]   /opt/ros/jazzy/share/rosidl_cmake/cmake/rosidl_generate_interfaces.cmake:132 (rosidl_adapt_interfaces)
+[6.461s]   CMakeLists.txt:16 (rosidl_generate_interfaces)
+[6.463s] 
+[6.465s] [0m
+[6.466s] -- Configuring incomplete, errors occurred!
+[6.519s] gmake: *** [Makefile:1085: cmake_check_build_system] Error 1
+[6.549s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16

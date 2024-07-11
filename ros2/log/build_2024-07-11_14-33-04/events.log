@@ -1,0 +1,213 @@
+[0.000000] (-) TimerEvent: {}
+[0.001874] (inertial_sense_ros2) JobQueued: {'identifier': 'inertial_sense_ros2', 'dependencies': OrderedDict()}
+[0.002470] (inertial_sense_ros2) JobStarted: {'identifier': 'inertial_sense_ros2'}
+[0.087491] (-) TimerEvent: {}
+[0.122454] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'cmake'}
+[0.136072] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'build'}
+[0.141983] (inertial_sense_ros2) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', '--', '-j16', '-l16'], 'cwd': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'env': OrderedDict({'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 's', 'XDG_SESSION_TYPE': 'wayland', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/s', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'DBUS_STARTER_BUS_TYPE': 'session', 'SYSTEMD_EXEC_PID': '2269', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus,guid=db52c9453fbc1ea0fca5a71c66900915', 'COLORTERM': 'truecolor', '_colcon_cd_root': '/opt/ros/jazzy/', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 's', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome\\x2dsession\\x2dmanager.slice/gnome-session-manager@ubuntu.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 's', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/s-VMware-Virtual-Platform:@/tmp/.ICE-unix/2269,unix/s-VMware-Virtual-Platform:/tmp/.ICE-unix/2269', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/7ac31424_88b4_46f8_917d_0a297fe0804a', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.R0SYQ2', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'GNOME_TERMINAL_SERVICE': ':1.253', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '0', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'DBUS_STARTER_ADDRESS': 'unix:path=/run/user/1000/bus,guid=db52c9453fbc1ea0fca5a71c66900915', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'QTWEBENGINE_DICTIONARIES_PATH': '/usr/share/hunspell-bdic/', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'VTE_VERSION': '7600', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.188453] (-) TimerEvent: {}
+[0.291165] (-) TimerEvent: {}
+[0.394012] (-) TimerEvent: {}
+[0.499127] (-) TimerEvent: {}
+[0.598181] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)\n'}
+[0.600112] (-) TimerEvent: {}
+[0.702290] (-) TimerEvent: {}
+[0.804913] (-) TimerEvent: {}
+[0.896371] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.905836] (-) TimerEvent: {}
+[1.008037] (-) TimerEvent: {}
+[1.110353] (-) TimerEvent: {}
+[1.213100] (-) TimerEvent: {}
+[1.314954] (-) TimerEvent: {}
+[1.417312] (-) TimerEvent: {}
+[1.519960] (-) TimerEvent: {}
+[1.622327] (-) TimerEvent: {}
+[1.724973] (-) TimerEvent: {}
+[1.827254] (-) TimerEvent: {}
+[1.930040] (-) TimerEvent: {}
+[1.957951] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_generator_c: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)\n'}
+[2.031217] (-) TimerEvent: {}
+[2.072135] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)\n'}
+[2.132788] (-) TimerEvent: {}
+[2.202209] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[2.233921] (-) TimerEvent: {}
+[2.336284] (-) TimerEvent: {}
+[2.351067] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[2.437300] (-) TimerEvent: {}
+[2.540216] (-) TimerEvent: {}
+[2.608497] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)\n'}
+[2.641254] (-) TimerEvent: {}
+[2.730464] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)\n'}
+[2.742342] (-) TimerEvent: {}
+[2.844883] (-) TimerEvent: {}
+[2.947159] (-) TimerEvent: {}
+[3.049405] (-) TimerEvent: {}
+[3.151973] (-) TimerEvent: {}
+[3.181158] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)\n'}
+[3.195930] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)\n'}
+[3.253424] (-) TimerEvent: {}
+[3.356086] (-) TimerEvent: {}
+[3.458418] (-) TimerEvent: {}
+[3.561190] (-) TimerEvent: {}
+[3.664311] (-) TimerEvent: {}
+[3.766374] (-) TimerEvent: {}
+[3.869100] (-) TimerEvent: {}
+[3.887255] (inertial_sense_ros2) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[3.970138] (-) TimerEvent: {}
+[4.073159] (-) TimerEvent: {}
+[4.175237] (-) TimerEvent: {}
+[4.278086] (-) TimerEvent: {}
+[4.373516] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)\n'}
+[4.376438] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)\n'}
+[4.378957] (-) TimerEvent: {}
+[4.481158] (-) TimerEvent: {}
+[4.562082] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)\n'}
+[4.582274] (-) TimerEvent: {}
+[4.685158] (-) TimerEvent: {}
+[4.698007] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)\n'}
+[4.786300] (-) TimerEvent: {}
+[4.801864] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)\n'}
+[4.888055] (-) TimerEvent: {}
+[4.990367] (-) TimerEvent: {}
+[5.092903] (-) TimerEvent: {}
+[5.195030] (-) TimerEvent: {}
+[5.297441] (-) TimerEvent: {}
+[5.399870] (-) TimerEvent: {}
+[5.501914] (-) TimerEvent: {}
+[5.604219] (-) TimerEvent: {}
+[5.706377] (-) TimerEvent: {}
+[5.808977] (-) TimerEvent: {}
+[5.912077] (-) TimerEvent: {}
+[6.014296] (-) TimerEvent: {}
+[6.117202] (-) TimerEvent: {}
+[6.219379] (-) TimerEvent: {}
+[6.321987] (-) TimerEvent: {}
+[6.424424] (-) TimerEvent: {}
+[6.527231] (-) TimerEvent: {}
+[6.614279] (inertial_sense_ros2) StderrLine: {'line': b'\x1b[31mCMake Error at /opt/ros/jazzy/share/rosidl_adapter/cmake/rosidl_adapt_interfaces.cmake:57 (message):\n'}
+[6.616475] (inertial_sense_ros2) StderrLine: {'line': b'  execute_process(/usr/bin/python3 -m rosidl_adapter --package-name\n'}
+[6.618259] (inertial_sense_ros2) StderrLine: {'line': b'  inertial_sense_ros2 --arguments-file\n'}
+[6.619881] (inertial_sense_ros2) StderrLine: {'line': b'  /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter__arguments__inertial_sense_ros2.json\n'}
+[6.622141] (inertial_sense_ros2) StderrLine: {'line': b'  --output-dir\n'}
+[6.623918] (inertial_sense_ros2) StderrLine: {'line': b'  /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter/inertial_sense_ros2\n'}
+[6.625439] (inertial_sense_ros2) StderrLine: {'line': b'  --output-file\n'}
+[6.627173] (inertial_sense_ros2) StderrLine: {'line': b'  /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_adapter/inertial_sense_ros2.idls)\n'}
+[6.628444] (-) TimerEvent: {}
+[6.629996] (inertial_sense_ros2) StderrLine: {'line': b'  returned error code 1:\n'}
+[6.631447] (inertial_sense_ros2) StderrLine: {'line': b'\n'}
+[6.633396] (inertial_sense_ros2) StderrLine: {'line': b'  Traceback (most recent call last):\n'}
+[6.635256] (inertial_sense_ros2) StderrLine: {'line': b'\n'}
+[6.637101] (inertial_sense_ros2) StderrLine: {'line': b'    File "<frozen runpy>", line 198, in _run_module_as_main\n'}
+[6.638539] (inertial_sense_ros2) StderrLine: {'line': b'    File "<frozen runpy>", line 88, in _run_code\n'}
+[6.640286] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/__main__.py", line 19, in <module>\n'}
+[6.641940] (inertial_sense_ros2) StderrLine: {'line': b'      sys.exit(main())\n'}
+[6.643365] (inertial_sense_ros2) StderrLine: {'line': b'               ^^^^^^\n'}
+[6.645160] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/main.py", line 53, in main\n'}
+[6.647188] (inertial_sense_ros2) StderrLine: {'line': b'      abs_idl_file = convert_to_idl(\n'}
+[6.649065] (inertial_sense_ros2) StderrLine: {'line': b'                     ^^^^^^^^^^^^^^^\n'}
+[6.650529] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/__init__.py", line 19, in convert_to_idl\n'}
+[6.654302] (inertial_sense_ros2) StderrLine: {'line': b'      return convert_msg_to_idl(\n'}
+[6.656232] (inertial_sense_ros2) StderrLine: {'line': b'             ^^^^^^^^^^^^^^^^^^^\n'}
+[6.658028] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/msg/__init__.py", line 28, in convert_msg_to_idl\n'}
+[6.659874] (inertial_sense_ros2) StderrLine: {'line': b'      msg = parse_message_string(package_name, input_file.stem, content)\n'}
+[6.662384] (inertial_sense_ros2) StderrLine: {'line': b'            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n'}
+[6.664111] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 545, in parse_message_string\n'}
+[6.665485] (inertial_sense_ros2) StderrLine: {'line': b'      msg = MessageSpecification(pkg_name, msg_name, fields, constants)\n'}
+[6.667117] (inertial_sense_ros2) StderrLine: {'line': b'            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n'}
+[6.668440] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 389, in __init__\n'}
+[6.670068] (inertial_sense_ros2) StderrLine: {'line': b'      self.base_type = BaseType(\n'}
+[6.671328] (inertial_sense_ros2) StderrLine: {'line': b'                       ^^^^^^^^^\n'}
+[6.672899] (inertial_sense_ros2) StderrLine: {'line': b'    File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_adapter/parser.py", line 206, in __init__\n'}
+[6.674184] (inertial_sense_ros2) StderrLine: {'line': b'      raise InvalidResourceName(\n'}
+[6.675529] (inertial_sense_ros2) StderrLine: {'line': b'\n'}
+[6.677234] (inertial_sense_ros2) StderrLine: {'line': b"  rosidl_adapter.parser.InvalidResourceName: 'DID_INS2' is an invalid message\n"}
+[6.678502] (inertial_sense_ros2) StderrLine: {'line': b"  name.  It should have the pattern '^[A-Z][A-Za-z0-9]*$'\n"}
+[6.680140] (inertial_sense_ros2) StderrLine: {'line': b'\n'}
+[6.681482] (inertial_sense_ros2) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[6.683107] (inertial_sense_ros2) StderrLine: {'line': b'  /opt/ros/jazzy/share/rosidl_cmake/cmake/rosidl_generate_interfaces.cmake:132 (rosidl_adapt_interfaces)\n'}
+[6.684876] (inertial_sense_ros2) StderrLine: {'line': b'  CMakeLists.txt:16 (rosidl_generate_interfaces)\n'}
+[6.686300] (inertial_sense_ros2) StderrLine: {'line': b'\n'}
+[6.687989] (inertial_sense_ros2) StderrLine: {'line': b'\x1b[0m\n'}
+[6.689294] (inertial_sense_ros2) StdoutLine: {'line': b'-- Configuring incomplete, errors occurred!\n'}
+[6.729495] (-) TimerEvent: {}
+[6.742108] (inertial_sense_ros2) StderrLine: {'line': b'gmake: *** [Makefile:3785: cmake_check_build_system] Error 1\n'}
+[6.768151] (inertial_sense_ros2) CommandEnded: {'returncode': 2}
+[6.830501] (-) TimerEvent: {}
+[6.933289] (-) TimerEvent: {}
+[7.035422] (-) TimerEvent: {}
+[7.138139] (-) TimerEvent: {}
+[7.241199] (-) TimerEvent: {}
+[7.343383] (-) TimerEvent: {}
+[7.447151] (-) TimerEvent: {}
+[7.549830] (-) TimerEvent: {}
+[7.652114] (-) TimerEvent: {}
+[7.754320] (-) TimerEvent: {}
+[7.856894] (-) TimerEvent: {}
+[7.959028] (-) TimerEvent: {}
+[8.061267] (-) TimerEvent: {}
+[8.165321] (-) TimerEvent: {}
+[8.268241] (-) TimerEvent: {}
+[8.370940] (-) TimerEvent: {}
+[8.473232] (-) TimerEvent: {}
+[8.576038] (-) TimerEvent: {}
+[8.678038] (-) TimerEvent: {}
+[8.781088] (-) TimerEvent: {}
+[8.884193] (-) TimerEvent: {}
+[8.987070] (-) TimerEvent: {}
+[9.089995] (-) TimerEvent: {}
+[9.192509] (-) TimerEvent: {}
+[9.295987] (-) TimerEvent: {}
+[9.402097] (-) TimerEvent: {}
+[9.504131] (-) TimerEvent: {}
+[9.607309] (-) TimerEvent: {}
+[9.710146] (-) TimerEvent: {}
+[9.813021] (-) TimerEvent: {}
+[9.916056] (-) TimerEvent: {}
+[10.019067] (-) TimerEvent: {}
+[10.123081] (-) TimerEvent: {}
+[10.226002] (-) TimerEvent: {}
+[10.329118] (-) TimerEvent: {}
+[10.431329] (-) TimerEvent: {}
+[10.533946] (-) TimerEvent: {}
+[10.637975] (-) TimerEvent: {}
+[10.741219] (-) TimerEvent: {}
+[10.847314] (-) TimerEvent: {}
+[10.950445] (-) TimerEvent: {}
+[11.052933] (-) TimerEvent: {}
+[11.157814] (-) TimerEvent: {}
+[11.260034] (-) TimerEvent: {}
+[11.362274] (-) TimerEvent: {}
+[11.467128] (-) TimerEvent: {}
+[11.569372] (-) TimerEvent: {}
+[11.672024] (-) TimerEvent: {}
+[11.774242] (-) TimerEvent: {}
+[11.877120] (-) TimerEvent: {}
+[11.979931] (-) TimerEvent: {}
+[12.082093] (-) TimerEvent: {}
+[12.184917] (-) TimerEvent: {}
+[12.286958] (-) TimerEvent: {}
+[12.389198] (-) TimerEvent: {}
+[12.492048] (-) TimerEvent: {}
+[12.594400] (-) TimerEvent: {}
+[12.700368] (-) TimerEvent: {}
+[12.803439] (-) TimerEvent: {}
+[12.906197] (-) TimerEvent: {}
+[13.009204] (-) TimerEvent: {}
+[13.111332] (-) TimerEvent: {}
+[13.214009] (-) TimerEvent: {}
+[13.317240] (-) TimerEvent: {}
+[13.419964] (-) TimerEvent: {}
+[13.522202] (-) TimerEvent: {}
+[13.624436] (-) TimerEvent: {}
+[13.727095] (-) TimerEvent: {}
+[13.829291] (-) TimerEvent: {}
+[13.931457] (-) TimerEvent: {}
+[14.034140] (-) TimerEvent: {}
+[14.137218] (-) TimerEvent: {}
+[14.240169] (-) TimerEvent: {}
+[14.344196] (-) TimerEvent: {}
+[14.447033] (-) TimerEvent: {}
+[14.549370] (-) TimerEvent: {}
+[14.652263] (-) TimerEvent: {}
+[14.660897] (inertial_sense_ros2) JobEnded: {'identifier': 'inertial_sense_ros2', 'rc': 2}
+[14.676087] (-) EventReactorShutdown: {}

@@ -1,0 +1,30 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/DIDINS2.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    typedef float float__4[4];
+    typedef float float__3[3];
+    typedef double double__3[3];
+    struct DIDINS2 {
+      std_msgs::msg::Header header;
+
+      uint32 week;
+
+      double time_of_week;
+
+      uint32 ins_status;
+
+      uint32 hdw_status;
+
+      float__4 qn2b;
+
+      float__3 uvw;
+
+      double__3 lla;
+    };
+  };
+};

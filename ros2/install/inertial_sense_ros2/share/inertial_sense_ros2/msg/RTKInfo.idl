@@ -1,0 +1,42 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/RTKInfo.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    typedef float float__3[3];
+    struct RTKInfo {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "base position in lat-lon-altitude (deg, deg, m)")
+      float__3 base_lla;
+
+      @verbatim (language="comment", text=
+        "number of cycle slips detected")
+      uint32 cycle_slip_count;
+
+      @verbatim (language="comment", text=
+        "number of observations from rover (GPS, Glonass, Gallileo, Beidou, Qzs)")
+      uint32 rover_obs;
+
+      @verbatim (language="comment", text=
+        "number of observations from base (GPS, Glonass, Gallileo, Beidou, Qzs)")
+      uint32 base_obs;
+
+      @verbatim (language="comment", text=
+        "number of ephemeris messages from rover (GPS, Glonass, Gallileo, Beidou, Qzs)")
+      uint32 rover_eph;
+
+      @verbatim (language="comment", text=
+        "number of ephemeris messages from rover (GPS, Glonass, Gallileo, Beidou, Qzs)")
+      uint32 base_eph;
+
+      @verbatim (language="comment", text=
+        "number of base station antenna position measurements")
+      uint32 base_ant_count;
+    };
+  };
+};

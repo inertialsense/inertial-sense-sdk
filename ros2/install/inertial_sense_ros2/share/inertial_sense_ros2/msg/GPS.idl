@@ -1,0 +1,70 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/GPS.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    struct GPS {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "GPS number of weeks since January 6th, 1980")
+      uint32 week;
+
+      @verbatim (language="comment", text=
+        "Number of satellites used in solution")
+      int8 num_sat;
+
+      @verbatim (language="comment", text=
+        "Fix type and status flags.  See GPS_STATUS_FIX_... and GPS_STATUS_FLAGS_... in sdk data_sets.h")
+      uint32 status;
+
+      @verbatim (language="comment", text=
+        "Average of all non-zero satellite carrier to noise ratios, signal strengths (dBHz)")
+      int32 cno;
+
+      @verbatim (language="comment", text=
+        "Latitude (degrees)")
+      double latitude;
+
+      @verbatim (language="comment", text=
+        "Longitude (degrees)")
+      double longitude;
+
+      @verbatim (language="comment", text=
+        "Height above ellipsoid (not MSL) (m)")
+      double altitude;
+
+      @verbatim (language="comment", text=
+        "Position (m) in ECEF")
+      geometry_msgs::msg::Vector3 pos_ecef;
+
+      @verbatim (language="comment", text=
+        "Velocity (m/s) in ECEF")
+      geometry_msgs::msg::Vector3 vel_ecef;
+
+      @verbatim (language="comment", text=
+        "Height above MSL")
+      float hmsl;
+
+      @verbatim (language="comment", text=
+        "Horizontal accuracy")
+      float hacc;
+
+      @verbatim (language="comment", text=
+        "Vertical accuracy")
+      float vacc;
+
+      @verbatim (language="comment", text=
+        "Speed accuracy (m/s)")
+      float sacc;
+
+      @verbatim (language="comment", text=
+        "Position Dilution of Precision (m)")
+      float pdop;
+    };
+  };
+};

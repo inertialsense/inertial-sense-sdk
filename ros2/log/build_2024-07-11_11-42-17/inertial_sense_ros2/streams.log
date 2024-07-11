@@ -1,0 +1,70 @@
+[0.151s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/s/Inertial_Sense/imx/SDK/ros2 -DCMAKE_INSTALL_PREFIX=/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2
+[1.061s] -- The C compiler identification is GNU 13.2.0
+[1.956s] -- The CXX compiler identification is GNU 13.2.0
+[2.238s] -- Detecting C compiler ABI info
+[3.701s] -- Detecting C compiler ABI info - done
+[3.756s] -- Check for working C compiler: /usr/bin/cc - skipped
+[3.759s] -- Detecting C compile features
+[3.762s] -- Detecting C compile features - done
+[3.920s] -- Detecting CXX compiler ABI info
+[5.493s] -- Detecting CXX compiler ABI info - done
+[5.551s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[5.555s] -- Detecting CXX compile features
+[5.558s] -- Detecting CXX compile features - done
+[5.588s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[7.333s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[8.159s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[9.256s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[9.810s] -- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[9.891s] -- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)
+[10.653s] -- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[10.691s] -- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[11.875s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[12.064s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[12.330s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[12.970s] -- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)
+[12.993s] -- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+[13.125s] -- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[13.473s] -- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)
+[13.584s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[14.970s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[14.993s] -- Found Threads: TRUE  
+[21.144s] -- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[26.578s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[33.730s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[33.770s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[35.308s] -- Found PythonExtra: /usr/bin/python3  
+[40.025s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[40.682s] -- Configuring done (40.4s)
+[41.294s] -- Generating done (0.5s)
+[41.331s] -- Build files have been written to: /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[41.447s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/s/Inertial_Sense/imx/SDK/ros2 -DCMAKE_INSTALL_PREFIX=/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2
+[41.461s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[42.314s] [  1%] [34m[1mGenerating type hashes for ROS interfaces[0m
+[42.440s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[44.870s] running egg_info
+[44.876s] creating inertial_sense_ros2.egg-info
+[45.108s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[45.112s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[45.115s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[45.116s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[45.835s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[45.839s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[46.066s] [  1%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[56.326s] Traceback (most recent call last):
+[56.331s]   File "/opt/ros/jazzy/lib/rosidl_generator_type_description/rosidl_generator_type_description", line 50, in <module>
+[56.333s]     sys.exit(main())
+[56.335s]              ^^^^^^
+[56.337s]   File "/opt/ros/jazzy/lib/rosidl_generator_type_description/rosidl_generator_type_description", line 46, in main
+[56.339s]     generate_type_hash(args.generator_arguments_file)
+[56.343s]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rosidl_generator_type_description/__init__.py", line 162, in generate_type_hash
+[56.346s]     with include_path.open('r') as include_file:
+[56.350s]          ^^^^^^^^^^^^^^^^^^^^^^
+[56.351s]   File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+[56.353s]     return io.open(self, mode, buffering, encoding, errors, newline)
+[56.354s]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[56.356s] FileNotFoundError: [Errno 2] No such file or directory: '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2/rosidl_generator_type_description/inertial_sense_ros2/msg/SatInfo.json'
+[56.660s] gmake[2]: *** [CMakeFiles/inertial_sense_ros2__rosidl_generator_type_description.dir/build.make:79: rosidl_generator_type_description/inertial_sense_ros2/msg/GTime.json] Error 1
+[56.667s] gmake[1]: *** [CMakeFiles/Makefile2:215: CMakeFiles/inertial_sense_ros2__rosidl_generator_type_description.dir/all] Error 2
+[56.669s] gmake: *** [Makefile:146: all] Error 2
+[56.693s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16

@@ -1,0 +1,68 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/GlonassEphemeris.msg
+// generated code does not contain a copyright notice
+
+#include "inertial_sense_ros2/msg/GTime.idl"
+
+module inertial_sense_ros2 {
+  module msg {
+    typedef double double__3[3];
+    struct GlonassEphemeris {
+      @verbatim (language="comment", text=
+        "satellite number")
+      int32 sat;
+
+      @verbatim (language="comment", text=
+        "IODE (0-6 bit of tb field)")
+      int32 iode;
+
+      @verbatim (language="comment", text=
+        "satellite frequency number")
+      int32 frq;
+
+      @verbatim (language="comment", text=
+        "satellite health")
+      int32 svh;
+
+      @verbatim (language="comment", text=
+        "satellite accuracy")
+      int32 sva;
+
+      @verbatim (language="comment", text=
+        "satellite age of operation")
+      int32 age;
+
+      @verbatim (language="comment", text=
+        "epoch of epherides (gpst)")
+      inertial_sense_ros2::msg::GTime toe;
+
+      @verbatim (language="comment", text=
+        "message frame time (gpst)")
+      inertial_sense_ros2::msg::GTime tof;
+
+      @verbatim (language="comment", text=
+        "satellite position (ecef) (m)")
+      double__3 pos;
+
+      @verbatim (language="comment", text=
+        "satellite velocity (ecef) (m/s)")
+      double__3 vel;
+
+      @verbatim (language="comment", text=
+        "satellite acceleration (ecef) (m/s^2)")
+      double__3 acc;
+
+      @verbatim (language="comment", text=
+        "SV clock bias (s)")
+      double taun;
+
+      @verbatim (language="comment", text=
+        "relative freq bias")
+      double gamn;
+
+      @verbatim (language="comment", text=
+        "delay between L1 and L2 (s)")
+      double dtaun;
+    };
+  };
+};

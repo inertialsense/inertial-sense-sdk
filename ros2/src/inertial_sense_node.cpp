@@ -45,7 +45,7 @@ int main(int argc, char**argv)
     }
 
     thing->initialize();
-    while (ros2::ok())
+    while (rclcpp::ok())
     {
         rclcpp::spin_some(node);
         thing->update();

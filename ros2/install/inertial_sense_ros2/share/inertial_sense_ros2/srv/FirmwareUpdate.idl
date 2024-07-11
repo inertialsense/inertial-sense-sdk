@@ -1,0 +1,17 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from inertial_sense_ros2/srv/FirmwareUpdate.srv
+// generated code does not contain a copyright notice
+
+
+module inertial_sense_ros2 {
+  module srv {
+    struct FirmwareUpdate_Request {
+      string filename;
+    };
+    struct FirmwareUpdate_Response {
+      boolean success;
+
+      string message;
+    };
+  };
+};

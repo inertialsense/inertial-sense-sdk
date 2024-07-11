@@ -1,0 +1,18 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from inertial_sense_ros2/msg/SatInfo.msg
+// generated code does not contain a copyright notice
+
+
+module inertial_sense_ros2 {
+  module msg {
+    struct SatInfo {
+      @verbatim (language="comment", text=
+        "sattelite id")
+      uint32 sat_id;
+
+      @verbatim (language="comment", text=
+        "Carrier to noise ratio")
+      uint32 cno;
+    };
+  };
+};
