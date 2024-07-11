@@ -642,6 +642,7 @@ private:
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
+    void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
 };
 
 #endif
