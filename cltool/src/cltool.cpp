@@ -434,6 +434,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_RAW_PARSE;
         }
+
         else if (startsWith(a, "-rp") && (i + 1) < argc)
         {
             g_commandLineOptions.replayDataLog = true;
@@ -446,6 +447,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.replaySpeed = (float)atof(&a[4]);
             enable_display_mode();
         }
+        else if (startsWith(a, "-rpEv") && (i + 1) < argc)
+        {
+            g_commandLineOptions.replayDataLog = true;
+            g_commandLineOptions.logPath = argv[++i];    // use next argument
+            enable_display_mode();
+
+         }
         else if (startsWith(a, "-reset"))
         {
             g_commandLineOptions.softwareReset = true;
