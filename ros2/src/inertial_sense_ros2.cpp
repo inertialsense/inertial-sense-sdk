@@ -26,6 +26,8 @@
 #include <ISPose.h>
 //#include <duration.hpp>
 #include <ISEarth.h>
+#include <memory>
+
 #include "ISMatrix.h"
 #include "ISEarth.h"
 
@@ -122,6 +124,7 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
 void InertialSenseROS::initializeROS() 
 {
+        auto nh_ = rclcpp::Node::make_shared("inertial_sense_node");
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = nh_.advertiseService("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA, this);
@@ -134,64 +137,64 @@ void InertialSenseROS::initializeROS()
 
     //////////////////////////////////////////////////////////
     // Publishers
-    strobe_pub_ = nh_.advertise<std_msgs::msg::Header>(rs_.strobe_in.topic, 1);
+    strobe_pub_ = this->create_publisher<std_msgs::msg::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_.advertise<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
-    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_.advertise<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
-    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_.advertise<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
-    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_.advertise<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
-    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_.advertise<nav_msgs::msg::Odometry>(rs_.odom_ins_enu.topic, 1); }
-    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_.advertise<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
-    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_.advertise<inertial_sense_ros2::msg::INL2States>(rs_.inl2_states.topic, 1); }
+    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
+    if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
+    if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
+    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
+    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_enu.topic, 1); }
+    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
+    if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States>(rs_.inl2_states.topic, 1); }
 
-    if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_.advertise<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
-    if (rs_.imu.enabled)                    { rs_.imu.pub = nh_.advertise<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
-    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_.advertise<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
-    if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_.advertise<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
+    if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
+    if (rs_.imu.enabled)                    { rs_.imu.pub = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
+    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
+    if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
 
-    if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_.advertise<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
-    if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub = nh_.advertise<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
-    if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_.advertise<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
+    if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
+    if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
+    if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
 
-    if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_.advertise<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
-    if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_.advertise<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
-    if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_.advertise<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
+    if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
+    if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
+    if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
 
     if (RTK_rover_ && RTK_rover_->positioning_enable )
     {
-        rs_.rtk_pos.pubInfo = nh_.advertise<inertial_sense_ros2::msg::RTKInfo>("RTK_pos/info", 10);
-        rs_.rtk_pos.pubRel = nh_.advertise<inertial_sense_ros2::msg::RTKRel>("RTK_pos/rel", 10);
+        rs_.rtk_pos.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_pos/info", 10);
+        rs_.rtk_pos.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_pos/rel", 10);
     }
     if (GNSS_Compass_)
     {
-        rs_.rtk_cmp.pubInfo = nh_.advertise<inertial_sense_ros2::msg::RTKInfo>("RTK_cmp/info", 10);
-        rs_.rtk_cmp.pubRel = nh_.advertise<inertial_sense_ros2::msg::RTKRel>("RTK_cmp/rel", 10);
+        rs_.rtk_cmp.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_cmp/info", 10);
+        rs_.rtk_cmp.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_cmp/rel", 10);
     }
 
     if (rs_.gps1_raw.enabled)
     {
-        rs_.gps1_raw.pubObs = nh_.advertise<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", 50);
-        rs_.gps1_raw.pubEph = nh_.advertise<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", 50);
-        rs_.gps1_raw.pubGEp = nh_.advertise<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", 50);
+        rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", 50);
+        rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", 50);
+        rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", 50);
         obs_bundle_timer_ = nh_.createTimer(rclcpp::Duration(0.001,0), InertialSenseROS::GPS_obs_bundle_timer_callback, this);
     }
     if (rs_.gps2_raw.enabled)
     {
-        rs_.gps2_raw.pubObs = nh_.advertise<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", 50);
-        rs_.gps2_raw.pubEph = nh_.advertise<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", 50);
-        rs_.gps2_raw.pubGEp = nh_.advertise<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", 50);
+        rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", 50);
+        rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", 50);
+        rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", 50);
         obs_bundle_timer_ = nh_.createTimer(rclcpp::Duration(0.001,0), InertialSenseROS::GPS_obs_bundle_timer_callback, this);
     }
     if (rs_.gpsbase_raw.enabled)
     {
-        rs_.gpsbase_raw.pubObs = nh_.advertise<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
-        rs_.gpsbase_raw.pubEph = nh_.advertise<inertial_sense_ros2::msg::GNSSEphemeris>("gps/base_eph", 50);
-        rs_.gpsbase_raw.pubGEp = nh_.advertise<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
+        rs_.gpsbase_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
+        rs_.gpsbase_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>("gps/base_eph", 50);
+        rs_.gpsbase_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
         obs_bundle_timer_ = nh_.createTimer(rclcpp::Duration(0.001,0), InertialSenseROS::GPS_obs_bundle_timer_callback, this);
     }
     if (rs_.diagnostics.enabled)
     {
-        rs_.diagnostics.pub = nh_.advertise<diagnostic_msgs::DiagnosticArray>("diagnostics", 1);
+        rs_.diagnostics.pub = nh_->create_publisher<diagnostic_msgs::DiagnosticArray>("diagnostics", 1);
         diagnostics_timer_ = nh_.createTimer(rclcpp::Duration(0.5,0), &InertialSenseROS::diagnostics_callback, this); // 2 Hz
     }
 
@@ -1966,7 +1969,7 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
     }
     // Create diagnostic objects
     diagnostic_msgs::DiagnosticArray diag_array;
-    diag_array.header.stamp = ros::Time::now();
+    diag_array.header.stamp = rclcpp::Time::now();
 
     //Create Status
     diagnostic_msgs::DiagnosticStatus rtkDiagnostics;

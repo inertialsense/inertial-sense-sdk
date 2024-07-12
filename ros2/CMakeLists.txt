@@ -93,4 +93,4 @@ add_executable(new_target
         src/serial.cpp
         include/TopicHelper.cpp
 )
-ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs std_srvs)
+ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs std_srvs)
