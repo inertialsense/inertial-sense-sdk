@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <yaml-cpp/yaml.h>
 #include <chrono>
+#include <memory>
 
 
 
@@ -60,7 +61,7 @@
 #include "msg/didins2.hpp"
 #include "msg/didins1.hpp"
 #include "msg/didins4.hpp"
-#include "nav_msgs/nav_msgs/msg/odometry.h"
+#include "nav_msgs/nav_msgs/msg/odometry.hpp"
 #include "std_srvs/std_srvs/srv/trigger.hpp"
 #include "std_msgs/std_msgs/msg/header.hpp"
 #include "geometry_msgs/geometry_msgs/msg/vector3_stamped.hpp"
@@ -159,6 +160,7 @@ public:
    // } ltcf;
 
     //ros::Publisher did_ins_1_pub_;
+
 	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr did_ins_1_pub_;
     //ros::Publisher did_ins_2_pub_;
    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr did_ins_2_pub_;
@@ -170,13 +172,13 @@ public:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr odom_ins_enu_pub_;
     //ros::Publisher strobe_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr strobe_pub_;
-    rclcpp::Timer obs_bundle_timer_;
+    rclcpp::Time obs_bundle_timer_;
     rclcpp::Time last_obs_time_1_;
     rclcpp::Time last_obs_time_2_;
     rclcpp::Time last_obs_time_base_;
-    rclcpp::Timer data_stream_timer_;
-    rclcpp::Timer diagnostics_timer_;
-    inertial_sense_ros2::GNSSObsVec gps1_obs_Vec_;
+    rclcpp::TimerBase::SharedPtr data_stream_timer_;
+    rclcpp::TimerBase::SharedPtr diagnostics_timer_;
+    msg::GNSSObsVec gps1_obs_Vec_;
     inertial_sense_ros2::GNSSObsVec gps2_obs_Vec_;
     inertial_sense_ros2::GNSSObsVec base_obs_Vec_;
 
@@ -186,7 +188,7 @@ public:
 
     bool GNSS_Compass_ = false;
 
-    rclcpp::Timer rtk_connectivity_watchdog_timer_;
+    rclcpp::TimerBase::SharedPtr rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
     void stop_rtk_connectivity_watchdog_timer();
     void rtk_connectivity_watchdog_timer_callback(const rclcpp::TimerEvent &timer_event);
@@ -270,11 +272,11 @@ public:
     //ros::ServiceServer firmware_update_srv_;
     //ros::ServiceServer refLLA_set_current_srv_;
     //ros::ServiceServer refLLA_set_value_srv_;
-    bool set_current_position_as_refLLA(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool set_refLLA_to_value(inertial_sense_ros2::refLLAUpdate::Request &req, inertial_sense_ros::refLLAUpdate::Response &res);
-    bool perform_mag_cal_srv_callback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
-    bool update_firmware_srv_callback(inertial_sense_ros::FirmwareUpdate::Request &req, inertial_sense_ros::FirmwareUpdate::Response &res);
+    bool set_current_position_as_refLLA(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+    bool set_refLLA_to_value(inertial_sense_ros2::refLLAUpdate::Request &req, inertial_sense_ros2::refLLAUpdate::Response &res);
+    bool perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+    bool perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+    bool update_firmware_srv_callback(inertial_sense_ros2::FirmwareUpdate::Request &req, inertial_sense_ros2::FirmwareUpdate::Response &res);
 
     void publishGPS1();
     void publishGPS2();
@@ -328,7 +330,7 @@ public:
      */
     rclcpp::Time ros_time_from_tow(const double tow);
 
-    double tow_from_ros_time(const ros::Time &rt);
+    double tow_from_ros_time(const rclcpp::Time &rt);
     rclcpp::Time ros_time_from_gtime(const uint64_t sec, double subsec);
 
     double GPS_towOffset_ = 0; // The offset between GPS time-of-week and local time on the uINS
@@ -389,26 +391,26 @@ public:
     // Data to hold on to in between callbacks
     double lla_[3];
     double ecef_[3];
-    inertial_sense_ros::DID_INS1 msg_did_ins1;
-    inertial_sense_ros::DID_INS2 msg_did_ins2;
-    inertial_sense_ros::DID_INS4 msg_did_ins4;
-    nav_msgs::Odometry msg_odom_ned;
-    nav_msgs::Odometry msg_odom_ecef;
-    nav_msgs::Odometry msg_odom_enu;
-    inertial_sense_ros::INL2States msg_inl2_states;
-    sensor_msgs::Imu msg_imu;
-    inertial_sense_ros::PIMU msg_pimu;
-    inertial_sense_ros::GPS msg_gps1;
-    inertial_sense_ros::GPS msg_gps2;
-    sensor_msgs::NavSatFix msg_NavSatFix;
+    inertial_sense_ros2::DID_INS1 msg_did_ins1;
+    inertial_sense_ros2::DID_INS2 msg_did_ins2;
+    inertial_sense_ros222::DID_INS4 msg_did_ins4;
+    nav_msgs::msg::Odometry msg_odom_ned;
+    nav_msgs::msg::Odometry msg_odom_ecef;
+    nav_msgs::msg::Odometry msg_odom_enu;
+    inertial_sense_ros2::INL2States msg_inl2_states;
+    sensor_msgs::msg::Imu msg_imu;
+    inertial_sense_ros2::PIMU msg_pimu;
+    inertial_sense_ros2::GPS msg_gps1;
+    inertial_sense_ros2::GPS msg_gps2;
+    sensor_msgs::msg::NavSatFix msg_NavSatFix;
     gps_pos_t gps1_pos;
     gps_pos_t gps2_pos;
     gps_vel_t gps1_vel;
     gps_vel_t gps2_vel;
-    geometry_msgs::Vector3Stamped gps1_velEcef;
-    geometry_msgs::Vector3Stamped gps2_velEcef;
-    inertial_sense_ros::GPSInfo msg_gps1_info;
-    inertial_sense_ros::GPSInfo msg_gps2_info;
+    geometry_msgs::msg::Vector3Stamped gps1_velEcef;
+    geometry_msgs::msg::Vector3Stamped gps2_velEcef;
+    inertial_sense_ros2::GPSInfo msg_gps1_info;
+    inertial_sense_ros2::GPSInfo msg_gps2_info;
     
     float poseCov_[36], twistCov_[36];
 

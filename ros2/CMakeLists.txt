@@ -2,13 +2,16 @@ set(CMAKE_CXX_STANDARD 17)
 cmake_minimum_required(VERSION 3.10.0)
 project(inertial_sense_ros2)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
+#find_package(msg REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(Threads)
@@ -36,7 +39,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 ament_export_include_directories(include)
 ament_export_libraries(inertial_sense_ros2)
-ament_export_dependencies(rclcpp sensor_msgs geometry_msgs)
+ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs)
 
 # We don't need the example projects
 set(IGNORE_EXAMPLE_PROJECTS 1)
@@ -48,7 +51,7 @@ include_directories(include
   ../src/libusb/libusb
   ../src/libusb/linux
   ../src/yaml-cpp
-        /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2
+  /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2
   /opt/ros/jazzy/include
   /opt/ros/jazzy/include/sensor_msgs
 )
@@ -57,7 +60,7 @@ include_directories(include
 #    src/ParamHelper.cpp
 #    src/RtkRover.cpp
 #    src/RtkBase.cpp
-#    src/inertial_sense_ros.cpp
+#    src/inertial_sense_ros2.cpp
 #)
 
 # Build using C11 and CXX20
@@ -83,9 +86,11 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLA
 # catkin_add_gtest(test_client_reconnect test/test_client_reconnect.cpp)
 # target_link_libraries(test_client_reconnect ${PROJECT_NAME})
 
-add_executable(new_target src/inertial_sense_ros.cpp
+add_executable(new_target src/inertial_sense_ros2.cpp
         src/inertial_sense_node.cpp
         src/ParamHelper.cpp
         src/serial.cpp
         include/TopicHelper.cpp
+        src/inertial_sense_ros2.cpp
 )
+ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs std_srvs)
