@@ -51,7 +51,7 @@ include_directories(include
   ../src/libusb/libusb
   ../src/libusb/linux
   ../src/yaml-cpp
-  /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2
+  /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/
   /opt/ros/jazzy/include
   /opt/ros/jazzy/include/sensor_msgs
 )
@@ -86,11 +86,11 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLA
 # catkin_add_gtest(test_client_reconnect test/test_client_reconnect.cpp)
 # target_link_libraries(test_client_reconnect ${PROJECT_NAME})
 
-add_executable(new_target src/inertial_sense_ros2.cpp
+add_executable(new_target
+        src/inertial_sense_ros2.cpp
         src/inertial_sense_node.cpp
         src/ParamHelper.cpp
         src/serial.cpp
         include/TopicHelper.cpp
-        src/inertial_sense_ros2.cpp
 )
 ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs std_srvs)

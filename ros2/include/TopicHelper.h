@@ -20,8 +20,8 @@
 #define INERTIAL_SENSE_IMX_TOPICHELPER_H
 
 #include "InertialSense.h"
-#include "ros/ros.h"
-
+#include "rclcpp/rclcpp/rclcpp.hpp"
+#include "inertial_sense_ros2.h"
 
 
 class TopicHelper
@@ -37,7 +37,7 @@ public:
         if (!stream)
         {
             stream = true;
-            ROS_DEBUG("%s response received", cISDataMappings::GetDataSetName(did));
+            RCLCPP_DEBUG(rclcpp::get_logger("str"),"%s response received", cISDataMappings::GetDataSetName(did)); //???
         }
     }
 
@@ -45,7 +45,7 @@ public:
     bool enabled = false;
     bool streaming = false;
     int period = 1;             // Period multiple (data rate divisor)
-    ros::Publisher pub;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub;
 };
 
 class TopicHelperGps: public TopicHelper
@@ -62,8 +62,8 @@ class TopicHelperGpsRtk: public TopicHelper
 public:
     bool streamingMisc = false;
     bool streamingRel = false;
-    ros::Publisher pubInfo;
-    ros::Publisher pubRel;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubInfo;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubRel;
 };
 
 class TopicHelperGpsRaw: public TopicHelper
@@ -72,11 +72,11 @@ public:
     std::string topicObs;
     std::string topicEph;
     std::string topicGEp;
-    ros::Publisher pubObs;
-    ros::Publisher pubEph;
-    ros::Publisher pubGEp;
-    ros::Timer obs_bundle_timer;
-    ros::Time last_obs_time;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubObs;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubEph;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubGEp;
+    rclcpp::TimerBase::SharedPtr obs_bundle_timer;
+    rclcpp::Time last_obs_time;
 };
 
 

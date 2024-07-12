@@ -24,8 +24,8 @@ inertial_sense_ros2__msg__GNSSObsVec__get_type_hash(
 
 // Include directives for referenced types
 #include "builtin_interfaces/msg/detail/time__functions.h"
-#include "inertial_sense_ros2/msg/detail/g_time__functions.h"
 #include "inertial_sense_ros2/msg/detail/gnss_observation__functions.h"
+#include "inertial_sense_ros2/msg/detail/g_time__functions.h"
 #include "std_msgs/msg/detail/header__functions.h"
 
 // Hashes for external referenced types

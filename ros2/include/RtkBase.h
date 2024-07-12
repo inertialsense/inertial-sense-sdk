@@ -19,7 +19,7 @@
 #ifndef INERTIAL_SENSE_IMX_RTKBASE_H
 #define INERTIAL_SENSE_IMX_RTKBASE_H
 
-#include "ros/ros.h"
+#include "rclcpp/rclcpp/rclcpp.hpp"
 
 #include "ParamHelper.h"
 
@@ -47,7 +47,7 @@ public:
 
     RtkBaseCorrectionProvider_Ntrip(YAML::Node& node, std::string proto) : RtkBaseCorrectionProvider(node, "ntrip"), protocol_(proto) { configure(node); }
     virtual void configure(YAML::Node& node);
-    void validate_credentials() { ROS_WARN("NOT IMPLEMENTED"); }
+    //void validate_credentials() { RCLCPP_WARN(YAML::Node  ,"NOT IMPLEMENTED"); }
     std::string get_connection_string();
 };
 
@@ -121,7 +121,7 @@ public:
             else if (type == "ros_topic") return new RtkBaseCorrectionProvider_ROS(node);
             else if (type == "evb") return new RtkBaseCorrectionProvider_EVB(node);
         } else {
-            ROS_ERROR("Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined.");
+           // RCLCPP_ERROR(node get_logger(),"Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined.");
         }
         return nullptr;
     }

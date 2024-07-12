@@ -64,7 +64,7 @@ public:
    * \param port Name of the serial port (e.g. "/dev/ttyUSB0")
    * \param baud_rate Serial communication baud rate
    */
-  Serial(std::__cxx11::string port, int baud_rate);
+  Serial(std::string port, int baud_rate);
 
   /**
    * \brief Stops communication and closes the serial port before the object is destroyed

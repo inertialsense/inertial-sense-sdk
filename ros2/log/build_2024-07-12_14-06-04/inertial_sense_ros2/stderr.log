@@ -1,0 +1,53 @@
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:32[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:23:10:[m[K [01;31m[Kfatal error: [m[Kros/ros.h: No such file or directory
+   23 | #include [01;31m[K"ros/ros.h"[m[K
+      |          [01;31m[K^~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/ParamHelper.h:24[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:23:10:[m[K [01;31m[Kfatal error: [m[Kros/ros.h: No such file or directory
+   23 | #include [01;31m[K"ros/ros.h"[m[K
+      |          [01;31m[K^~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/src/ParamHelper.cpp.o] Error 1
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:23:10:[m[K [01;31m[Kfatal error: [m[Kros/ros.h: No such file or directory
+   23 | #include [01;31m[K"ros/ros.h"[m[K
+      |          [01;31m[K^~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:32[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:23:10:[m[K [01;31m[Kfatal error: [m[Kros/ros.h: No such file or directory
+   23 | #include [01;31m[K"ros/ros.h"[m[K
+      |          [01;31m[K^~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:132: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Error 1
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:38[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/serial.h:67:30:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K)[m[K’ before ‘[01m[Kport[m[K’
+   67 |   Serial[34m[K([m[Kstd::__cxx11::string[01;31m[K [m[K[32m[Kport[m[K, int baud_rate);
+      |         [34m[K~[m[K                    [01;31m[K^[m[K[32m[K~~~~[m[K
+      |                              [32m[K)[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:43:1:[m[K [01;31m[Kerror: [m[Kno declaration matches ‘[01m[KSerial::[01;32m[KSerial[m[K(std::string, int)[m[K’
+   43 | [01;31m[KSerial[m[K::Serial(std::string port, int baud_rate) :
+      | [01;31m[K^~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/serial.h:58:7:[m[K [01;36m[Knote: [m[Kcandidates are: ‘[01m[KSerial::[01;32m[KSerial[m[K(const Serial&)[m[K’
+   58 | class [01;36m[KSerial[m[K
+      |       [01;36m[K^~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/serial.h:58:7:[m[K [01;36m[Knote: [m[K                ‘[01m[KSerial::[01;32m[KSerial[m[K()[m[K’
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/serial.h:58:7:[m[K [01;36m[Knote: [m[K‘[01m[Kclass Serial[m[K’ defined here
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:[m[K In member function ‘[01m[Kvoid Serial::[01;32m[Kasync_write_end[m[K(const boost::system::error_code&, std::size_t)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:172:10:[m[K [01;31m[Kerror: [m[K‘[01m[Kcerr[m[K’ is not a member of ‘[01m[Kstd[m[K’
+  172 |     std::[01;31m[Kcerr[m[K << error.message() << std::endl;
+      |          [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:39:1:[m[K [01;36m[Knote: [m[K‘[01m[Kstd::cerr[m[K’ is defined in header ‘[01m[K<iostream>[m[K’; did you forget to ‘[01m[K#include <iostream>[m[K’?
+   38 | #include <serial.h>
+  +++ |+[32m[K#include <iostream>[m[K
+   39 | 
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:118: CMakeFiles/new_target.dir/src/serial.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+gmake: *** [Makefile:146: all] Error 2

@@ -45,22 +45,22 @@
 #include "sensor_msgs/msg/fluid_pressure.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "sensor_msgs/msg/nav_sat_fix.hpp"
-#include "msg/gps.hpp"
+#include "inertial_sense_ros2/msg/gps.hpp"
 #include "data_sets.h"
-#include "msg/gps_info.hpp"
-#include "msg/pimu.hpp"
-#include "srv/firmware_update.hpp"
-#include "srv/ref_lla_update.hpp"
-#include "msg/rtk_rel.hpp"
-#include "msg/rtk_info.hpp"
-#include "msg/gnss_ephemeris.hpp"
-#include "msg/glonass_ephemeris.hpp"
-#include "msg/gnss_observation.hpp"
-#include "msg/gnss_obs_vec.hpp"
-#include "msg/inl2_states.hpp"
-#include "msg/didins2.hpp"
-#include "msg/didins1.hpp"
-#include "msg/didins4.hpp"
+#include "inertial_sense_ros2/msg/gps_info.hpp"
+#include "inertial_sense_ros2/msg/pimu.hpp"
+#include "inertial_sense_ros2/srv/firmware_update.hpp"
+#include "inertial_sense_ros2/srv/ref_lla_update.hpp"
+#include "inertial_sense_ros2/msg/rtk_rel.hpp"
+#include "inertial_sense_ros2/msg/rtk_info.hpp"
+#include "inertial_sense_ros2/msg/gnss_ephemeris.hpp"
+#include "inertial_sense_ros2/msg/glonass_ephemeris.hpp"
+#include "inertial_sense_ros2/msg/gnss_observation.hpp"
+#include "inertial_sense_ros2/msg/gnss_obs_vec.hpp"
+#include "inertial_sense_ros2/msg/inl2_states.hpp"
+#include "inertial_sense_ros2/msg/didins2.hpp"
+#include "inertial_sense_ros2/msg/didins1.hpp"
+#include "inertial_sense_ros2/msg/didins4.hpp"
 #include "nav_msgs/nav_msgs/msg/odometry.hpp"
 #include "std_srvs/std_srvs/srv/trigger.hpp"
 #include "std_msgs/std_msgs/msg/header.hpp"
@@ -178,9 +178,9 @@ public:
     rclcpp::Time last_obs_time_base_;
     rclcpp::TimerBase::SharedPtr data_stream_timer_;
     rclcpp::TimerBase::SharedPtr diagnostics_timer_;
-    msg::GNSSObsVec gps1_obs_Vec_;
-    inertial_sense_ros2::GNSSObsVec gps2_obs_Vec_;
-    inertial_sense_ros2::GNSSObsVec base_obs_Vec_;
+    inertial_sense_ros2::msg::GNSSObsVec gps1_obs_Vec_;
+    inertial_sense_ros2::msg::GNSSObsVec gps2_obs_Vec_;
+    inertial_sense_ros2::msg::GNSSObsVec base_obs_Vec_;
 
 
     RtkRoverProvider* RTK_rover_;
@@ -273,10 +273,10 @@ public:
     //ros::ServiceServer refLLA_set_current_srv_;
     //ros::ServiceServer refLLA_set_value_srv_;
     bool set_current_position_as_refLLA(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
-    bool set_refLLA_to_value(inertial_sense_ros2::refLLAUpdate::Request &req, inertial_sense_ros2::refLLAUpdate::Response &res);
+    bool set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request &req, inertial_sense_ros2::srv::RefLLAUpdate::Response &res);
     bool perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
     bool perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
-    bool update_firmware_srv_callback(inertial_sense_ros2::FirmwareUpdate::Request &req, inertial_sense_ros2::FirmwareUpdate::Response &res);
+    bool update_firmware_srv_callback(inertial_sense_ros2::srv::FirmwareUpdate::Request &req, inertial_sense_ros2::srv::FirmwareUpdate::Response &res);
 
     void publishGPS1();
     void publishGPS2();
@@ -391,17 +391,17 @@ public:
     // Data to hold on to in between callbacks
     double lla_[3];
     double ecef_[3];
-    inertial_sense_ros2::DID_INS1 msg_did_ins1;
-    inertial_sense_ros2::DID_INS2 msg_did_ins2;
-    inertial_sense_ros222::DID_INS4 msg_did_ins4;
+    inertial_sense_ros2::msg::DIDINS1 msg_did_ins1;
+    inertial_sense_ros2::msg::DIDINS2 msg_did_ins2;
+    inertial_sense_ros2::msg::DIDINS4 msg_did_ins4;
     nav_msgs::msg::Odometry msg_odom_ned;
     nav_msgs::msg::Odometry msg_odom_ecef;
     nav_msgs::msg::Odometry msg_odom_enu;
-    inertial_sense_ros2::INL2States msg_inl2_states;
+    inertial_sense_ros2::msg::INL2States msg_inl2_states;
     sensor_msgs::msg::Imu msg_imu;
-    inertial_sense_ros2::PIMU msg_pimu;
-    inertial_sense_ros2::GPS msg_gps1;
-    inertial_sense_ros2::GPS msg_gps2;
+    inertial_sense_ros2::msg::PIMU msg_pimu;
+    inertial_sense_ros2::msg::GPS msg_gps1;
+    inertial_sense_ros2::msg::GPS msg_gps2;
     sensor_msgs::msg::NavSatFix msg_NavSatFix;
     gps_pos_t gps1_pos;
     gps_pos_t gps2_pos;
@@ -409,8 +409,8 @@ public:
     gps_vel_t gps2_vel;
     geometry_msgs::msg::Vector3Stamped gps1_velEcef;
     geometry_msgs::msg::Vector3Stamped gps2_velEcef;
-    inertial_sense_ros2::GPSInfo msg_gps1_info;
-    inertial_sense_ros2::GPSInfo msg_gps2_info;
+    inertial_sense_ros2::msg::GPSInfo msg_gps1_info;
+    inertial_sense_ros2::msg::GPSInfo msg_gps2_info;
     
     float poseCov_[36], twistCov_[36];
 
