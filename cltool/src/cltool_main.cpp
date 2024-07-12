@@ -540,23 +540,25 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
 
     if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
     {
-        printf("    | %s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
+        printf("    | %s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
     }
     else if(ctx->m_sn != 0)
     {
-        printf("    | (SN%d):\r", ctx->m_sn);
+        printf("    | (SN%d):", ctx->m_sn);
     }
     else if (ctx->m_port_name.size() != 0)
     {
-        printf("    | %s:\r", ctx->m_port_name.c_str());
+        printf("    | %s:", ctx->m_port_name.c_str());
     }
     else
     {
-        printf("    | SN?:\r");
+        printf("    | SN?:");
     }
 
     if (buffer[0])
-        printf("\t%s\r\n", buffer);
+        printf(" %s", buffer);
+
+    printf("\r\n");
 
     print_mutex.unlock();
 }
