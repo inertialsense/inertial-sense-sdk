@@ -989,7 +989,9 @@ typedef struct PACKED
 
     /** (see eSatSvStatus) */
     uint16_t				status;
-
+    
+    /** (TOW of last ephem) */
+    uint32_t                lastEphem;
 } gps_sat_sv_t;
 
 /** Sat SV - GNSS System ID */
@@ -3439,24 +3441,25 @@ typedef struct PACKED
     uint8_t reserved2;
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
-    uint8_t obs_unhealthy;   // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
+    uint8_t obs_unhealthy;          // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
 
-    uint8_t obs_rover_avail; // nu - total number of satellites with observations to rover in relpos() before selsat()
-    uint8_t obs_base_avail;  // nr - total number of satellites with observations to base in relpos() before selsat()
-    uint8_t obs_pairs_used_float; // number of satellite pairs used to compute the float solution
-    uint8_t obs_pairs_used_ar;    // number of satellite pairs used to compute the fixed solution
+    uint8_t obs_rover_avail;        // nu - total number of satellites with observations to rover in relpos() before selsat()
+    uint8_t obs_base_avail;         // nr - total number of satellites with observations to base in relpos() before selsat()
+    uint8_t obs_pairs_used_float;   // number of satellite pairs used to compute the float solution
+    uint8_t obs_pairs_used_ar;      // number of satellite pairs used to compute the fixed solution
 
-    uint8_t obs_eph_avail;       // number of satellites with ephemeris available (min is 0, max is nu)
-    uint8_t obs_low_snr_rover;   // number of satellites with low snr at rover
-    uint8_t obs_low_snr_base;    // number of satellites with low snr at base
-    uint8_t obs_high_snr_parity; // number of satellites with high difference between snr at rover and snr at base
+    uint8_t obs_eph_avail;          // number of satellites with ephemeris available (min is 0, max is nu)
+    uint8_t obs_low_snr_rover;      // number of satellites with low snr at rover
+    uint8_t obs_low_snr_base;       // number of satellites with low snr at base
+    uint8_t obs_high_snr_parity;    // number of satellites with high difference between snr at rover and snr at base
 
-    uint8_t obs_zero_L1_rover;   // number of satellites with zero L1 pseudorange or phase at rover
-    uint8_t obs_zero_L1_base;    // number of satellites with zero L1 pseudorange or phase at base
-    uint8_t obs_low_elev_rover;  // number of satellites with low elevation at rover
-    uint8_t obs_low_elev_base;   // number of satellites with low elevation at base
+    uint8_t obs_zero_L1_rover;      // number of satellites with zero L1 pseudorange or phase at rover
+    uint8_t obs_zero_L1_base;       // number of satellites with zero L1 pseudorange or phase at base
+    uint8_t obs_low_elev_rover;     // number of satellites with low elevation at rover
+    uint8_t obs_low_elev_base;      // number of satellites with low elevation at base
 
-    uint8_t reserved[4];
+    uint16_t ephRxCnt;              // total ephem recieved before RTCM3 parse
+    uint8_t reserved[2];
 } rtk_debug_t;
 
 POP_PACK
