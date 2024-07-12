@@ -95,9 +95,13 @@ class logPlot:
             fig.savefig(os.path.join(directory + "/" + name + '.' + self.format), bbox_inches='tight')
             fig.set_size_inches(restoreSize)
 
-    def getData(self, dev, DID, field):
+    def getData(self, dev, DID, field, removeLeadingZeros=0):
         try:
-            return self.log.data[dev, DID][field][::self.d]
+            data = self.log.data[dev, DID][field][::self.d]
+            if removeLeadingZeros:
+                startIdx = np.nonzero(data)[0][0]
+                data[0:startIdx] = data[startIdx]
+            return data
         except:
             return []
 
@@ -127,36 +131,37 @@ class logPlot:
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
-                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-                    refLla = self.getData(d, DID_INS_2, 'lla')[0]
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek', True))
+                    refLla = self.getData(d, DID_INS_2, 'lla', True)[0]
                     continue
             # If 'Ref INS' is not available, use GPS as reference
             if refTime is None:
                 for d in self.active_devs:
-                    refTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-                    refLla = self.getData(d, DID_GPS1_POS, 'lla')[0]
-                    refNed = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+                    refTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
+                    refLla = self.getData(d, DID_GPS1_POS, 'lla', True)[0]
+                    refNed = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
                     continue
 
         for d in self.active_devs:
             if refLla is None:
-                refLla = self.getData(d, DID_INS_2, 'lla')[0]
-            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                refLla = self.getData(d, DID_INS_2, 'lla', True)[0]
+            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla', True))
+            tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
+            time = getTimeFromTow(tow)
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
             ax[2,0].plot(time, ned[:,2])
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
-                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
                 ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
                 ax[1,0].plot(timeGPS, nedGps[:, 1])
                 ax[2,0].plot(timeGPS, nedGps[:, 2])
 
             if(np.shape(self.active_devs)[0]==1 or (SHOW_GPS_W_INS and SHOW_GPS2)):
-                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs'))
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS2_POS, 'timeOfWeekMs', True))
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
                 ax[0,0].plot(timeGPS, nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
                 ax[1,0].plot(timeGPS, nedGps[:, 1])
                 ax[2,0].plot(timeGPS, nedGps[:, 2])
@@ -212,25 +217,25 @@ class logPlot:
         fig.suptitle('NED Map - ' + os.path.basename(os.path.normpath(self.log.directory)))
         refLla = None
         for d in self.active_devs:
-            lla = self.getData(d, DID_INS_2, 'lla')
+            lla = self.getData(d, DID_INS_2, 'lla', True)
             if len(lla) == 0:
                 continue
             if refLla is None:
                 refLla = lla[0]
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla'))
-            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek', True))
+            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla', True))
+            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b', True))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
 
             if(np.shape(self.active_devs)[0]==1 or SHOW_GPS_W_INS):
                 if (np.shape(self.active_devs)[0]==1):
                     self.drawNEDMapArrow(ax, time, ned, euler[:, 2])
 
-                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla'))
+                nedGps = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
                 ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS1" % (self.log.serials[d])))
 
                 if SHOW_GPS2:
-                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla'))
+                    nedGps = lla2ned(refLla, self.getData(d, DID_GPS2_POS, 'lla', True))
                     ax.plot(nedGps[:, 1], nedGps[:, 0], label=("%s GPS2" % (self.log.serials[d])))
 
         ax.set_aspect('equal', 'datalim')
