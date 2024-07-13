@@ -166,11 +166,12 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	printf("\n");
 }
 
-void TestParseFileName(string filename, int rSerialNum, string rDate, string rTime, int rIndex)
+void TestParseFileName(string filename, int rSerialNum, string rDate, string rTime, int rIndex, bool rResults=true)
 {
 	int serialNum, index; 
 	string date, time;
-	cISLogger::ParseFilename(filename, serialNum, date, time, index);
+	bool results = cISLogger::ParseFilename(filename, serialNum, date, time, index);
+	EXPECT_EQ(results, rResults);
 	EXPECT_EQ(serialNum, rSerialNum);
 	EXPECT_EQ(date, rDate);
 	EXPECT_EQ(time, rTime);
@@ -182,16 +183,16 @@ void TestParseFileName(string filename, int rSerialNum, string rDate, string rTi
 
 TEST(ISLogger, parse_filename)
 {
-	TestParseFileName("base_station.raw", 0, "", "", -1);
+	TestParseFileName("base_station.raw", 0, "", "", -1, false);
 	TestParseFileName("LOG_SN60339_20240311_132545_0000.RAW", 60339, "20240311", "132545", 0);
 	TestParseFileName("LOG_SN60339_20240311_132545_0001.RAW", 60339, "20240311", "132545", 1);
 	TestParseFileName("LOG_SN60339_20240311_132545_0002.raw", 60339, "20240311", "132545", 2);
 	TestParseFileName("LOG_SN60339123_20240311_132545_0992.raw", 60339123, "20240311", "132545", 992);
-	TestParseFileName("LOG_SN60339_20240311_214365.raw", 60339, "20240311", "214365", -1);
-	TestParseFileName("LOG_SN60339_20240311_0007.raw", 60339, "20240311", "0007", -1);
-	TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1);
-	TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1);
-	TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1);
+	TestParseFileName("LOG_SN60339_20240311_214365.raw", 60339, "20240311", "214365", -1, false);
+	TestParseFileName("LOG_SN60339_20240311_0007.raw", 60339, "20240311", "0007", -1, false);
+	TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1, false);
+	TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1, false);
+	TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1, false);
 	TestParseFileName("00000000.RAW", 0, "", "", 0);
 	TestParseFileName("00000001.RAW", 0, "", "", 1);
 	TestParseFileName("00000002.raw", 0, "", "", 2);
