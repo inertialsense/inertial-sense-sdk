@@ -979,7 +979,8 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-__attribute__((unused)) int is_comm_get_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
+[[maybe_unused]]
+int is_comm_get_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
