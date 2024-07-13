@@ -57,7 +57,7 @@ class sChuckHdr(ct.Structure):
                 ('invDataSize',     ct.c_uint32),
                 ('grpNum',          ct.c_uint32),
                 ('serialNum',       ct.c_uint32),
-                ('pHandle',         ct.c_uint32),
+                ('port',         ct.c_uint32),
                 ('reserved',        ct.c_uint32)]
 
 class sDataHdr(ct.Structure):

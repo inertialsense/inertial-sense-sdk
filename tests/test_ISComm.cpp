@@ -97,7 +97,7 @@ static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 // return 1 on success, 0 on failure
 int msgHandlerNmea2(port_handle_t port, const uint8_t* msg, int msgSize)
 {
-// 	comWrite(pHandle, line, lineLength); // echo back
+// 	comWrite(port, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
 
 	if (msgSize == 10)

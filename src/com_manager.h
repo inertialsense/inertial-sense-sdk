@@ -81,13 +81,13 @@ enum eComManagerErrorType
 // readFnc read data from the serial port. Returns number of bytes read.
 typedef int(*pfnComManagerRead)(port_handle_t port, unsigned char* buf, int len);
 
-// txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
+// txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by port
 typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
 
-// pstRxFnc optional, called after data is sent to the serial port represented by pHandle
+// pstRxFnc optional, called after data is sent to the serial port represented by port
 typedef void(*pfnComManagerPostRead)(port_handle_t port, p_data_t* dataRead);
 
-// pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
+// pstAckFnc optional, called after an ACK is received by the serial port represented by port
 typedef void(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
@@ -210,13 +210,13 @@ typedef struct
 * The global com manager is used by the functions that do not have the Instance suffix and first parameter of void* cmInstance.
 * The instance functions can be ignored, unless you have a reason to have two com managers in the same process.
 *
-* @param numPorts the max number of serial ports possible
+* @param a port to initialize with (maybe NULL if no ports are available yet)
 * @param stepPeriodMilliseconds how many milliseconds you are waiting in between calls to comManagerStep
-* @param readFnc read data from the serial port represented by pHandle
-* @param sendFnc send data to the serial port represented by pHandle
-* @param txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
-* @param pstRxFnc optional, called after new data is available (successfully parsed and checksum passed) from the serial port represented by pHandle
-* @param pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
+* @param readFnc read data from the serial port represented by port
+* @param sendFnc send data to the serial port represented by port
+* @param txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by port
+* @param pstRxFnc optional, called after new data is available (successfully parsed and checksum passed) from the serial port represented by port
+* @param pstAckFnc optional, called after an ACK is received by the serial port represented by port
 * @param disableBcastFnc mostly for internal use, this can be left as 0 or NULL
 * @param timeMs pointer to current time in milliseconds, used for parser state timeout.  Leave NULL if timeout feature is not used.
 * @return 0 on success, -1 on failure
@@ -250,9 +250,9 @@ void stepSendMessages(void);
 
 
 /**
-* Make a request to a port handle to broadcast a piece of data at a set interval.
+* Make a request to a port to broadcast a piece of data at a set interval.
 *
-* @param pHandle the port handle to request broadcast data from
+* @param port the port to request broadcast data from
 * @param dataId the data id to broadcast
 * @param size number of bytes in the data structure from offset to broadcast - pass size and offset of 0 to receive the entire data set
 * @param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
@@ -273,7 +273,7 @@ void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t
 /**
 * Make a request to a port handle to broadcast a piece of data at a set interval.
 *
-* @param pHandle the port handle to request broadcast data from
+* @param port the port handle to request broadcast data from
 * @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
 * @param RMC options to enable data streaming on ports other than the current port.
 * @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
@@ -282,12 +282,12 @@ void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t
 *
 * Example that enables streaming of all data messages necessary for post processing:
 * @code
-* comManagerGetDataRmc(pHandle, RMC_PRESET_PPD_BITS, 0);
+* comManagerGetDataRmc(port, RMC_PRESET_PPD_BITS, 0);
 * @endcode
 *
 * Example that broadcasts INS and GPS data at full rate:
 * @code
-* comManagerGetDataRmc(pHandle, RMC_PRESET_INS_BITS, 0);
+* comManagerGetDataRmc(port, RMC_PRESET_INS_BITS, 0);
 * @endcode
 */
 void comManagerGetDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions);
@@ -295,7 +295,7 @@ void comManagerGetDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOpti
 /**
 * Disable a broadcast for a specified port handle and data identifier
 *
-* @param pHandle the port handle to disable a broadcast for
+* @param port the port handle to disable a broadcast for
 * @param dataId the data id to disable boradcast for
 * @return 0 if success, anything else if failure
 *
@@ -309,7 +309,7 @@ int comManagerDisableData(port_handle_t port, uint16_t did);
 /**
 * Send a packet to a port handle
 *
-* @param pHandle the port handle to send the packet to
+* @param port the port handle to send the packet to
 * @param pktInfo the type of packet (PID)
 * @param bodyHdr optional, can contain information about the actual data of the body (txData), usually the data id, offset and size
 * @param txData optional, the actual body of the packet
@@ -325,7 +325,7 @@ int comManagerDisableData(port_handle_t port, uint16_t did);
 * request.bc_period_ms = 50;
 * data.ptr = (uint8_t*)&request;
 * data.size = sizeof(request);
-* comManagerSend(pHandle, PKT_TYPE_GET_DATA, 0, &data)
+* comManagerSend(port, PKT_TYPE_GET_DATA, 0, &data)
 * @endcode
 */
 int comManagerSend(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
@@ -333,7 +333,7 @@ int comManagerSend(port_handle_t port, uint8_t pFlags, void *data, uint16_t did,
 /**
 * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
 *
-* @param pHandle the port handle to send data to
+* @param port the port handle to send data to
 * @param dataId the data id of the data to send
 * @param dataPtr pointer to the data structure to send
 * @param dataSize number of bytes to send
@@ -351,7 +351,7 @@ int comManagerSendData(port_handle_t port, void* data, uint16_t did, uint16_t si
 /**
 * Same as comManagerSend, except that no retry is attempted
 *
-* @param pHandle the port handle to send the packet to
+* @param port the port handle to send the packet to
 * @param dataId Data structure ID number.
 * @param dataPtr Pointer to actual data.
 * @param dataSize Size of data to send in number of bytes.
@@ -365,7 +365,7 @@ int comManagerSendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16
 * Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
 * No byte swapping occurs.
 *
-* @param pHandle the port handle to send data to
+* @param port the port handle to send data to
 * @param dataId the data id of the data to send
 * @param dataPtr pointer to the data structure to send
 * @param dataSize number of bytes to send
@@ -382,7 +382,7 @@ int comManagerSendRawData(port_handle_t port, void* data, uint16_t did, uint16_t
 /**
 * Write bare data directly to the serial port.
 *
-* @param pHandle the port handle to send data to
+* @param port the port handle to send data to
 * @param dataPtr pointer to the data structure to send
 * @param dataSize number of bytes to send
 * @return 0 if success, anything else if failure
@@ -397,7 +397,7 @@ int comManagerSendRaw(port_handle_t port, void* dataPtr, int dataSize);
 
 /**
 * Disables broadcasts of all messages on specified port, or all ports if phandle == -1.
-* @param pHandle the pHandle to disable broadcasts on, -1 for all
+* @param port the port to disable broadcasts on, -1 for all
 */
 void comManagerDisableBroadcasts(port_handle_t port);
 
@@ -481,11 +481,11 @@ public:
     *
     * @param numPorts the max number of serial ports possible
     * @param stepPeriodMilliseconds how many milliseconds you are waiting in between calls to comManagerStep
-    * @param readFnc read data from the serial port represented by pHandle
-    * @param sendFnc send data to the serial port represented by pHandle
-    * @param txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
-    * @param pstRxFnc optional, called after new data is available (successfully parsed and checksum passed) from the serial port represented by pHandle
-    * @param pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
+    * @param readFnc read data from the serial port represented by port
+    * @param sendFnc send data to the serial port represented by port
+    * @param txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by port
+    * @param pstRxFnc optional, called after new data is available (successfully parsed and checksum passed) from the serial port represented by port
+    * @param pstAckFnc optional, called after an ACK is received by the serial port represented by port
     * @param disableBcastFnc mostly for internal use, this can be left as 0 or NULL
     * @param timeMs pointer to current time in milliseconds, used for parser state timeout.  Leave NULL if timeout feature is not used.
     * @return 0 on success, -1 on failure
@@ -516,7 +516,7 @@ public:
     /**
     * Make a request to a port handle to broadcast a piece of data at a set interval.
     *
-    * @param pHandle the port handle to request broadcast data from
+    * @param port the port handle to request broadcast data from
     * @param dataId the data id to broadcast
     * @param size number of bytes in the data structure from offset to broadcast - pass size and offset of 0 to receive the entire data set
     * @param offset offset into the structure for the data id to broadcast - pass size and offset of 0 to receive the entire data set
@@ -537,7 +537,7 @@ public:
     /**
     * Make a request to a port handle to broadcast a piece of data at a set interval.
     *
-    * @param pHandle the port handle to request broadcast data from
+    * @param port the port handle to request broadcast data from
     * @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
     * @param RMC options to enable data streaming on ports other than the current port.
     * @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
@@ -546,12 +546,12 @@ public:
     *
     * Example that enables streaming of all data messages necessary for post processing:
     * @code
-    * comManagerGetDataRmc(pHandle, RMC_PRESET_PPD_BITS, 0);
+    * comManagerGetDataRmc(port, RMC_PRESET_PPD_BITS, 0);
     * @endcode
     *
     * Example that broadcasts INS and GPS data at full rate:
     * @code
-    * comManagerGetDataRmc(pHandle, RMC_PRESET_INS_BITS, 0);
+    * comManagerGetDataRmc(port, RMC_PRESET_INS_BITS, 0);
     * @endcode
     */
     void getDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions);
@@ -559,7 +559,7 @@ public:
     /**
     * Disable a broadcast for a specified port handle and data identifier
     *
-    * @param pHandle the port handle to disable a broadcast for
+    * @param port the port handle to disable a broadcast for
     * @param dataId the data id to disable boradcast for
     * @return 0 if success, anything else if failure
     *
@@ -573,7 +573,7 @@ public:
     /**
     * Send a packet to a port handle
     *
-    * @param pHandle the port handle to send the packet to
+    * @param port the port handle to send the packet to
     * @param pktInfo the type of packet (PID)
     * @param bodyHdr optional, can contain information about the actual data of the body (txData), usually the data id, offset and size
     * @param txData optional, the actual body of the packet
@@ -589,7 +589,7 @@ public:
     * request.bc_period_ms = 50;
     * data.ptr = (uint8_t*)&request;
     * data.size = sizeof(request);
-    * comManagerSend(pHandle, PKT_TYPE_GET_DATA, 0, &data)
+    * comManagerSend(port, PKT_TYPE_GET_DATA, 0, &data)
     * @endcode
     */
     int send(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
@@ -597,7 +597,7 @@ public:
     /**
     * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
     *
-    * @param pHandle the port handle to send data to
+    * @param port the port handle to send data to
     * @param dataId the data id of the data to send
     * @param dataPtr pointer to the data structure to send
     * @param dataSize number of bytes to send
@@ -615,7 +615,7 @@ public:
     /**
     * Same as comManagerSend, except that no retry is attempted
     *
-    * @param pHandle the port handle to send the packet to
+    * @param port the port handle to send the packet to
     * @param dataId Data structure ID number.
     * @param dataPtr Pointer to actual data.
     * @param dataSize Size of data to send in number of bytes.
@@ -629,7 +629,7 @@ public:
     * Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
     * No byte swapping occurs.
     *
-    * @param pHandle the port handle to send data to
+    * @param port the port handle to send data to
     * @param dataId the data id of the data to send
     * @param dataPtr pointer to the data structure to send
     * @param dataSize number of bytes to send
@@ -646,7 +646,7 @@ public:
     /**
     * Write bare data directly to the serial port.
     *
-    * @param pHandle the port handle to send data to
+    * @param port the port handle to send data to
     * @param dataPtr pointer to the data structure to send
     * @param dataSize number of bytes to send
     * @return 0 if success, anything else if failure
@@ -661,7 +661,7 @@ public:
 
     /**
     * Disables broadcasts of all messages on specified port, or all ports if phandle == -1.
-    * @param pHandle the pHandle to disable broadcasts on, -1 for all
+    * @param port the port to disable broadcasts on, -1 for all
     */
     void disableBroadcasts(port_handle_t port);
 

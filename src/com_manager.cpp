@@ -504,9 +504,9 @@ int ISComManager::disableData(port_handle_t port, uint16_t did)
     return send(port, PKT_TYPE_STOP_DID_BROADCAST, NULL, did, 0, 0);
 }
 
-int comManagerSend(port_handle_t pHandle, uint8_t pFlags, void* data, uint16_t did, uint16_t size, uint16_t offset)
+int comManagerSend(port_handle_t port, uint8_t pFlags, void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
-    return s_cm.send(pHandle, pFlags, data, did, size, offset);
+    return s_cm.send(port, pFlags, data, did, size, offset);
 }
 
 int ISComManager::send(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
@@ -775,7 +775,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
         req->size = dataSetPtr->size;
     }
 
-    // Search for matching message (i.e. matches pHandle, id, size, and offset)...
+    // Search for matching message (i.e. matches port, id, size, and offset)...
     // for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
     for (auto& bc : *(broadcastMessages))
     {

@@ -135,7 +135,7 @@ void enable_bootloader(port_handle_t port)
 	GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
 	GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
 	GPBR->SYS_GPBR[6] = PORT_SEL_KEY_SYS_GPBR_6;
-	GPBR->SYS_GPBR[7] = pHandle;
+	GPBR->SYS_GPBR[7] = portId(port);
 #else
     RTC->BKP3R = PORT_SEL_KEY_SYS_GPBR_3;
     RTC->BKP4R = PORT_SEL_KEY_SYS_GPBR_4;

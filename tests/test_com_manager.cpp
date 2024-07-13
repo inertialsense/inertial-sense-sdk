@@ -124,7 +124,7 @@ static int msgHandlerBinaryData(port_handle_t port, p_data_t* msg)
 // return 1 on success, 0 on failure
 static int msgHandlerNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 {
-// 	comWrite(pHandle, line, lineLength); // echo back
+// 	comWrite(port, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
 
 	if (msgSize == 10)
@@ -132,7 +132,7 @@ static int msgHandlerNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 		switch (getNmeaMsgId(msg, msgSize))
 		{
 		case NMEA_MSG_ID_ASCE:	// query NMEA message broadcast rates
-		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
+		// 		writeNmeaBcastPeriod(cmHandle, port, NULLPTR);
 			break;
 
 		case NMEA_MSG_ID_STPB: // stop all broadcasts on all ports
@@ -162,7 +162,7 @@ static int msgHandlerNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 		// {
 		// case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 // 			if (msgSize == 22 &&	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-// 				(pHandle == COM0_PORT_NUM || pHandle == USB_PORT_NUM) &&
+// 				(port == COM0_PORT_NUM || port == USB_PORT_NUM) &&
 // 				strncmp((const char*)(msg + 6), "!!SAM-BA!!", 6) == 0)
 // 			{
 // 			}

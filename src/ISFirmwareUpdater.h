@@ -93,7 +93,7 @@ public:
 
     // const ISDevice& device;
     port_handle_t port = 0;                        //! a handle to the comm port which we use to talk to the device
-    const char *portName = nullptr;         //! the name of the port referenced by pHandle
+    const char *portName = nullptr;         //! the name of the port referenced by port
     const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
 

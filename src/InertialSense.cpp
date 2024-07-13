@@ -278,7 +278,7 @@ void InertialSense::LoggerThread(void* info)
                     }
                 }
 
-                // clear all log data for this pHandle
+                // clear all log data for this port
                 i->second.clear();
             }
         }
@@ -785,7 +785,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
  *               1 = forward to device GNSS 1 port (ie GPX), 
  *               2 = forward to device GNSS 2 port (ie GPX),
  *               else will return
- *       pHandle: Send in target COM port. 
+ *       port: Send in target COM port.
  *                If arg is < 0 default port will be used 
 */
 void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port)
@@ -1812,7 +1812,7 @@ int InertialSense::LoadFlashConfig(std::string path, port_handle_t port)
 
 /**
 * Get the device info
-* @param pHandle the pHandle to get device info for
+* @param port the port to get device info for
 * @return the device info
 */
 const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
@@ -1826,7 +1826,7 @@ const dev_info_t InertialSense::DeviceInfo(port_handle_t port)
 
 /**
 * Get current device system command
-* @param pHandle the pHandle to get sysCmd for
+* @param port the port to get sysCmd for
 * @return current device system command
 */
 system_command_t InertialSense::GetSysCmd(port_handle_t port)

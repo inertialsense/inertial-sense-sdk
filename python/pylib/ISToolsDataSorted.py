@@ -244,7 +244,7 @@ class cDevice:
             ('invDataSize', u32),
             ('grpNum', u32),
             ('devSerialNum', u32),
-            ('pHandle', u32),
+            ('port', u32),
             ('reserved', u32),
         ])
 

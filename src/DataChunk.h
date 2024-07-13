@@ -59,7 +59,7 @@ struct sChunkHeader
 		logStats( "    invDataSize:  %d\n", invDataSize );
 		logStats( "         grpNum:  %d\n", grpNum );
 		logStats( "   devSerialNum:  %d\n", devSerialNum );
-		logStats( "        pHandle:  %d\n", pHandle );
+		logStats( "        port:  %d\n", port );
 		logStats( "       reserved:  %d\n", reserved );
 	}
 #endif

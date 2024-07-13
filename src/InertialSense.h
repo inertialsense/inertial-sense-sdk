@@ -200,7 +200,7 @@ public:
 	/**
 	 * @brief Log raw data directly to ISLogger
 	 * 
-	 * @param device Index of device (pHandle) for raw data.
+	 * @param device device associated with this raw data.
 	 * @param dataSize Number of bytes of raw data.
 	 * @param data Pointer to raw data.
 	 */
@@ -289,21 +289,21 @@ public:
 
     /**
     * Get the device info
-    * @param pHandle the pHandle to get device info for
+    * @param device device to get device info for.
     * @return the device info
     */
     const dev_info_t DeviceInfo(port_handle_t port = 0);
 
     /**
     * Get current device system command
-    * @param pHandle the pHandle to get sysCmd for
+    * @param port the port to get sysCmd for
     * @return current device system command
     */
     system_command_t GetSysCmd(port_handle_t port = 0);
 
     /**
     * Set device configuration
-    * @param pHandle the pHandle to set sysCmd for
+    * @param port the port to set sysCmd for
     * @param command system command value (see eSystemCommand)
     */
     void SetSysCmd(const uint32_t command, port_handle_t port = 0);
@@ -314,7 +314,7 @@ public:
      *               1 = forward to device GNSS 1 port (ie GPX), 
      *               2 = forward to device GNSS 2 port (ie GPX),
      *               else will return
-     *       pHandle: Send in target COM port. 
+     *       port: Send in target COM port.
      *                If arg is < 0 default port will be used 
     */
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port = 0);
@@ -322,14 +322,14 @@ public:
     /**
     * Get the flash config, returns the latest flash config read from the uINS flash memory
     * @param flashCfg the flash config value
-    * @param pHandle the port pHandle to get flash config for
+    * @param port the port to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
     */
     bool FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
 
     /**
     * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
-    * @param pHandle the port pHandle to get flash config for
+    * @param port the port to get flash config for
     * @return bool whether the flash config is valid, currently synchronized.
     */
     bool FlashConfigSynced(port_handle_t port = 0)
@@ -345,7 +345,7 @@ public:
     /**
      * @brief Failed to upload flash configuration for any reason.   
      * 
-     * @param pHandle the port pHandle to get flash config for
+     * @param port the port to get flash config for
      * @return true Flash config upload was either not received or rejected.
      */
     bool FlashConfigUploadFailure(port_handle_t port = 0)
@@ -359,7 +359,7 @@ public:
     /**
     * Set the flash config and update flash config on the uINS flash memory
     * @param flashCfg the flash config
-    * @param pHandle the pHandle to set flash config for
+    * @param port the port to set flash config for
     * @return true if success
     */
     bool SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port = 0);
@@ -367,7 +367,7 @@ public:
     /**
      * @brief Blocking wait calling Update() and SLEEP(10ms) until the flash config has been synchronized. 
      * 
-     * @param pHandle the port pHandle
+     * @param port the port
      * @return false When failed to synchronize
      */
     bool WaitForFlashSynced(port_handle_t port = 0);
@@ -377,7 +377,7 @@ public:
 
     /**
      * Request a specific device broadcast binary data
-     * @param pHandle the device's pHandle to request data from
+     * @param port the device's port to request data from
      * @param dataId the data id (DID_* - see data_sets.h) to broadcast
      * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
      * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
@@ -446,7 +446,7 @@ public:
 
     /**
     * Get access to the underlying serial port
-    * @param pHandle the pHandle to get the serial port for
+    * @param port the port to get the serial port for
     * @return the serial port
     */
     [[ deprecated ]]
@@ -574,7 +574,7 @@ public:
     /**
      * @brief LoadFlashConfig
      * @param path - Path to YAML flash config file
-     * @param pHandle - Handle of current device
+     * @param port - Handle of current device
      * @return -1 for failure to upload file, 0 for success.
      */
     int LoadFlashConfig(std::string path, port_handle_t port = 0);
@@ -582,7 +582,7 @@ public:
     /**
      * @brief SaveFlashConfigFile
      * @param path - Path to YAML flash config file
-     * @param pHandle - Handle of current device
+     * @param port - Handle of current device
      */
     void SaveFlashConfigFile(std::string path, port_handle_t port = 0);
 
