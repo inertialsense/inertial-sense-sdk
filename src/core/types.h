@@ -53,6 +53,6 @@ static int portRead(port_handle_t port, uint8_t* buf, int len) { return ((base_p
 static int portWrite(port_handle_t port, const uint8_t* buf, int len) { return ((base_port_t*)port)->portWrite ? ((base_port_t*)port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED; }
 static int portFree(port_handle_t port) { return ((base_port_t*)port)->portFree ? ((base_port_t*)port)->portFree(port) : PORT_ERROR__NOT_SUPPORTED; }
 static int portAvailable(port_handle_t port) { return ((base_port_t*)port)->portAvailable ? ((base_port_t*)port)->portAvailable(port) : PORT_ERROR__NOT_SUPPORTED; }
-static const char *portName(port_handle_t port) { return ((base_port_t*)port)->portName ? ((base_port_t*)port)->portName(port) : nullptr; }
+static const char *portName(port_handle_t port) { return ((base_port_t*)port)->portName ? ((base_port_t*)port)->portName(port) : (const char *)0; }
 
 #endif //IS_CORE_TYPES_H

@@ -636,7 +636,7 @@ private:
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
 
-    std::vector<serial_port_t> m_serialPorts;   //! actual initialized serial ports
+    std::vector<serial_port_t*> m_serialPorts;  //! actual initialized serial ports
     std::vector<port_handle_t> m_Ports;         //! port_handle's to those serial ports
     port_handle_t allocateSerialPort(int ptype);
 
@@ -647,7 +647,7 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
     void DisableLogging();
-    bool HasReceivedDeviceInfo(size_t index);
+    bool HasReceivedDeviceInfo(ISDevice& device);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
     void RemoveDevice(ISDevice& device);

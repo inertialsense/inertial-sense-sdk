@@ -13,19 +13,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef COM_MANAGER_H
 #define COM_MANAGER_H
 
-
-#ifdef __cplusplus
 #include <array>
 #include <vector>
 #include <map>
 
-extern "C" {
-#endif
-    
 #include <stdint.h>
 #include "ISComm.h"
 #include "linked_list.h"
 
+/** Maximum number of messages that may be broadcast simultaneously, per port.
+Since most messages use the RMC (real-time message controller) now, this can be fairly low */
+#define MAX_NUM_BCAST_MSGS 12
+
+// Convenience macros for creating Com Manager buffers
+#define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
 
 /* Contains data that determines what messages are being broadcast */
 typedef struct
@@ -41,6 +42,8 @@ typedef struct
 	/* Port to broadcast on. */
 	port_handle_t           port;
 } broadcast_msg_t;
+
+typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
 
 /** Contains status for the com manager */
 typedef struct  
@@ -73,12 +76,6 @@ enum eComManagerErrorType
 	CM_ERROR_RX_PARSE = -2,
 };
 
-/** Maximum number of messages that may be broadcast simultaneously, per port.
-Since most messages use the RMC (real-time message controller) now, this can be fairly low */
-#define MAX_NUM_BCAST_MSGS 12
-
-// Convenience macros for creating Com Manager buffers
-#define COM_MANAGER_BUF_SIZE_BCAST_MSG(max_num_bcast_msgs)		((max_num_bcast_msgs)*sizeof(broadcast_msg_t))
 
 // com manager callback prototypes
 // readFnc read data from the serial port. Returns number of bytes read.
@@ -146,7 +143,6 @@ typedef struct
 } com_manager_port_t;
 */
 
-typedef std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> broadcast_msg_array_t;
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
@@ -468,11 +464,6 @@ void comManagerSetCallbacks(
 
 void comManagerSetBinaryDataCallback(
         pfnComManagerBinaryDataHandler binaryDataHandler);
-
-#ifdef __cplusplus
-}
-#endif
-
 
 class ISComManager : com_manager_t {
 public:

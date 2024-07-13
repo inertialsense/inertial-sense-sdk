@@ -10,6 +10,9 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <algorithm>
+#include <vector>
+
 #include "protocol_nmea.h"
 #include "yaml-cpp/yaml.h"
 #include "protocol_nmea.h"
@@ -181,19 +184,13 @@ void InertialSense::DisableLogging()
 
 void InertialSense::LogRawData(ISDevice* device, int dataSize, const uint8_t* data)
 {
-    m_logger.LogData(device->devLogger, dataSize, data);
+    if (device && device->devLogger)
+        m_logger.LogData(device->devLogger, dataSize, data);
 }
 
-bool InertialSense::HasReceivedDeviceInfo(size_t index)
+bool InertialSense::HasReceivedDeviceInfo(ISDevice& device)
 {
-    if (index >= m_comManagerState.devices.size())
-    {
-        return false;
-    }
-
-    return (
-            m_comManagerState.devices[index].devInfo.serialNumber != 0 &&
-            m_comManagerState.devices[index].devInfo.manufacturer[0] != 0);
+    return ((device.devInfo.serialNumber != 0) && (device.devInfo.manufacturer[0] != 0));
 }
 
 bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
@@ -203,9 +200,9 @@ bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
         return false;
     }
 
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    for (auto& device : m_comManagerState.devices)
     {
-        if (!HasReceivedDeviceInfo(i))
+        if (!HasReceivedDeviceInfo(device))
         {
             return false;
         }
@@ -227,6 +224,14 @@ void InertialSense::RemoveDevice(size_t index)
 void InertialSense::RemoveDevice(ISDevice& device)
 {
     serialPortClose(device.port);
+
+    for (std::vector<serial_port_s*>::size_type i = 0; i < m_serialPorts.size(); i++) {
+        if (m_serialPorts[i] == device.port) {
+            m_serialPorts.erase(m_serialPorts.begin() + i);
+            delete (serial_port_t*)device.port;
+            device.port = NULL;
+        }
+    }
     // TODO: remove from m_Ports
     // TODO: remove from m_serialPorts;
 }
@@ -911,7 +916,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
         device = DeviceByPort(port);
     }
 
-    device.flashCfg.checksum = flashChecksum32(&device.flashCfg, sizeof(nvm_flash_cfg_t));
+    device->flashCfg.checksum = flashChecksum32(&device->flashCfg, sizeof(nvm_flash_cfg_t));
 
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
@@ -1406,9 +1411,19 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
 }
 
 port_handle_t InertialSense::allocateSerialPort(int ptype) {
-    serial_port_t serialPort = {};
-    serialPort.base.pnum = m_serialPorts.size();
-    serialPort.base.ptype = (ptype | PORT_TYPE__UART);
+    serial_port_t* serialPort = new serial_port_t;
+    serialPort->base.pnum = m_serialPorts.size();
+    serialPort->base.ptype = (ptype | PORT_TYPE__UART);
+
+    m_serialPorts.push_back(serialPort);
+    port_handle_t port = (port_handle_t)serialPort;
+
+    serialPortPlatformInit(port);
+    return port;
+}
+
+/*
+void InertialSense::freeSerialPort(port_handle_t port) {
 
     m_serialPorts.insert(m_serialPorts.cbegin(), serialPort);
     port_handle_t port = (port_handle_t)&m_serialPorts[0];
@@ -1416,6 +1431,7 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
     serialPortPlatformInit(port);
     return port;
 }
+*/
 
 bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 {
@@ -1503,10 +1519,10 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
         // remove each failed device where communications were not received
         std::vector<std::string> deadPorts;
-        for (int i = ((int) m_comManagerState.devices.size() - 1); i >= 0; i--) {
-            if (!HasReceivedDeviceInfo(i)) {
-                deadPorts.push_back(((serial_port_t*)m_comManagerState.devices[i].port)->portName);
-                RemoveDevice(i);
+        for (auto& device : m_comManagerState.devices) {
+            if (!HasReceivedDeviceInfo(device)) {
+                deadPorts.push_back(((serial_port_t*)device.port)->portName);
+                RemoveDevice(device);
                 removedSerials = true;
             }
         }

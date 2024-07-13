@@ -105,7 +105,7 @@ int ISComManager::init
     pfnComManagerDisableBroadcasts disableBcastFncCb,
     broadcast_msg_array_t* bcastBuffers)   //! was: com_manager_init_t *buffers,
 {
-    if ((port == NULL) || (bcastBuffers == NULL))
+    if (bcastBuffers == NULL)
     {
         return -1;
     }
@@ -127,15 +127,17 @@ int ISComManager::init
     broadcastMessages = bcastBuffers;
 
     // Initialize IScomm instance, for serial reads / writes
-    comm_port_t* comm = (comm_port_t*)port;
-    is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer));
+    if (port && (portType(port) & PORT_TYPE__COMM)) {
+        comm_port_t* comm = COMM_PORT(port);
+        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer));
 
 #if ENABLE_PACKET_CONTINUATION
-    // Packet data continuation
-    memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
+        // Packet data continuation
+        memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
 #endif
 
-    ports.push_back(port);
+        ports.push_back(port);
+    }
 
     return 0;
 }
@@ -203,15 +205,19 @@ void ISComManager::stepRx(uint32_t timeMs)
         return;
     }
         
-    for (auto& port : ports)
+    for (port_handle_t port : ports)
     {
         // com_manager_port_t *cmPort = &(cmInstance->ports[port]);
-        is_comm_instance_t *comm = &((comm_port_t *)port)->comm;
+        comm_port_t* commPort = COMM_PORT(port);
+        is_comm_instance_t *comm = &commPort->comm;
         protocol_type_t ptype = _PTYPE_NONE;
 
         // Read data directly into comm buffer
         // Here there lie dragons - is_comm_free() modifies comm->rxBuf pointers, so make sure you call here first!!
         int free_size = is_comm_free(comm);
+        if (free_size < 0 || free_size > 4096)
+            break;
+
         int n = portRead(port, comm->rxBuf.tail, free_size);
         if (n > 0)
         {
