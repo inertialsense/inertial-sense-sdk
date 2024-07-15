@@ -633,7 +633,11 @@ void event_outputEvToFile(string fileName, uint8_t* data, int len)
 
 bool cltool_extractEventData()
 {
+    is_comm_instance_t c;
     uint8_t evScratch[1028 + DID_EVENT_HEADER_SIZE];
+    c.rxBuf.start = evScratch;
+    c.rxBuf.size = 1028 + DID_EVENT_HEADER_SIZE;
+    
     std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     if (g_commandLineOptions.evOCont.inFile.length() == 0)
@@ -729,9 +733,20 @@ bool cltool_extractEventData()
 
                 switch (ev->msgTypeID)
                 {
-                case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
+                    case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
                     case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
-                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1: fileName = deviceFolder + "/rcvr1.rtcm"; break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1: 
+                        fileName = deviceFolder + "/rcvr1.rtcm"; 
+                        c.rxBuf.size = ev->length;
+                        c.rxBuf.head = evScratch;
+                        c.rxBuf.end = evScratch + ev->length;
+                        c.rxBuf.tail = evScratch + ev->length;
+                        c.rxBuf.scan = evScratch;
+                        
+                        c.processPkt = nullptr;
+
+                        is_comm_parse_timeout(&c, 0);
+                        break;
                     case EVENT_MSG_TYPE_ID_RTMC3_RCVR2: fileName = deviceFolder + "/rcvr2.rtcm";  break;
                     case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
                     case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
