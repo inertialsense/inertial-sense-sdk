@@ -35,11 +35,11 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/DIDINS4.msg"
         "srv/FirmwareUpdate.srv"
         "srv/RefLLAUpdate.srv"
-        DEPENDENCIES std_msgs geometry_msgs
+        DEPENDENCIES std_msgs geometry_msgs diagnostic_msgs
 )
 ament_export_include_directories(include)
 ament_export_libraries(inertial_sense_ros2)
-ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs)
+ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs diagnostic_msgs)
 
 # We don't need the example projects
 set(IGNORE_EXAMPLE_PROJECTS 1)

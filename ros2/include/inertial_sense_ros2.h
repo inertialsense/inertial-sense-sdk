@@ -123,7 +123,7 @@ public:
     void start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config);
 
     void configure_data_streams(bool firstrun);
-    //void configure_data_streams(const rclcpp::TimerBase<callback(.)& event);
+    void configure_data_streams(/*const rclcpp::TimerBase<callback(.)& event */);
     void configure_ascii_output();
     void start_log();
 
@@ -171,8 +171,8 @@ public:
     //ros::Publisher odom_ins_enu_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr odom_ins_enu_pub_;
     //ros::Publisher strobe_pub_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr strobe_pub_;
-    rclcpp::Time obs_bundle_timer_;
+    rclcpp::Publisher<std_msgs::msg::Header>::SharedPtr strobe_pub_;
+    rclcpp::TimerBase::SharedPtr obs_bundle_timer_;
     rclcpp::Time last_obs_time_1_;
     rclcpp::Time last_obs_time_2_;
     rclcpp::Time last_obs_time_base_;
@@ -191,7 +191,7 @@ public:
     rclcpp::TimerBase::SharedPtr rtk_connectivity_watchdog_timer_;
     void start_rtk_connectivity_watchdog_timer();
     void stop_rtk_connectivity_watchdog_timer();
-    void rtk_connectivity_watchdog_timer_callback(const rclcpp::TimerEvent &timer_event);
+    void rtk_connectivity_watchdog_timer_callback();
 
     void INS1_callback(eDataIDs DID, const ins_1_t *const msg);
     void INS2_callback(eDataIDs DID, const ins_2_t *const msg);
@@ -206,20 +206,20 @@ public:
     void baro_callback(eDataIDs DID, const barometer_t *const msg);
     void preint_IMU_callback(eDataIDs DID, const pimu_t *const msg);
     void strobe_in_time_callback(eDataIDs DID, const strobe_in_time_t *const msg);
-    void diagnostics_callback(const rclcpp::TimerEvent &event);
+    void diagnostics_callback();
     void GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg);
     void GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg);
     void GPS_raw_callback(eDataIDs DID, const gps_raw_t *const msg);
     void GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, int nObs);
-    void GPS_obs_bundle_timer_callback(const rclcpp::TimerEvent &e);
+    void GPS_obs_bundle_timer_callback();
     void GPS_eph_callback(eDataIDs DID, const eph_t *const msg);
     void GPS_geph_callback(eDataIDs DID, const geph_t *const msg);
     void RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *const msg);
     void RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg);
 
 
-    //ros::NodeHandle nh_;
-    //ros::NodeHandle nh_private_;
+    auto nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+    auto nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
 
     struct
     {
@@ -267,11 +267,12 @@ public:
     bool data_streams_enabled_ = false;
 
     // Services
-    //::ServiceServer mag_cal_srv_;
-    //ros::ServiceServer multi_mag_cal_srv_;
-    //ros::ServiceServer firmware_update_srv_;
-    //ros::ServiceServer refLLA_set_current_srv_;
-    //ros::ServiceServer refLLA_set_value_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>:: SharedPtr mag_cal_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>:: SharedPtr multi_mag_cal_srv_;
+    rclcpp::Service<inertial_sense_ros2::srv::FirmwareUpdate> firmware_update_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger> refLLA_set_current_srv_;
+    rclcpp::Service<inertial_sense_ros2::srv::RefLLAUpdate> refLLA_set_value_srv_;
+
     bool set_current_position_as_refLLA(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
     bool set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request &req, inertial_sense_ros2::srv::RefLLAUpdate::Response &res);
     bool perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
