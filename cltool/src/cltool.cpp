@@ -622,8 +622,20 @@ bool cltool_replayDataLog()
     return true;
 }
 
+void event_outputEvToFile(string fileName, uint8_t* data, int len)
+{
+    std::ofstream outfile;
+
+    outfile.open(fileName, std::ios_base::app | std::ios_base::binary); // append instead of overwrite
+    outfile.write((const char*)data, len);
+    outfile.close();
+}
+
 bool cltool_extractEventData()
 {
+    uint8_t evScratch[1028 + DID_EVENT_HEADER_SIZE];
+    std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
     if (g_commandLineOptions.evOCont.inFile.length() == 0)
     {
         cout << "Please specify the parse log path!" << endl;
@@ -643,25 +655,102 @@ bool cltool_extractEventData()
         return false;
     }
 
+
+    // time do handle our output dir
+    // does it exist?
+    struct stat info;
+    if (stat(g_commandLineOptions.evOCont.outFile.c_str(), &info) == 0)
+    {
+        if (info.st_mode & S_IFDIR)
+            cout << "Found output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+        else
+        {
+            cout << "Output dir not a folder: " << g_commandLineOptions.evOCont.outFile << endl;
+            return false;
+        }
+    }
+    else
+    {
+        // the folder does not exist try to create it
+        // creating output files
+        if (mkdir(g_commandLineOptions.evOCont.outFile.c_str()) == 0)
+            cout << "Created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+        else
+        {
+            cout << "Failed to created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+            return false;
+        }
+    }
+
     cout << "Parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
+
     p_data_buf_t* data;
     // for (int d=0; d<logger.DeviceCount(); d++)
     for (auto dl : logger.DeviceLogs())
     {
-        if (logger.DeviceCount() > 1)
+
+        string deviceFolder = g_commandLineOptions.evOCont.outFile + "/SN-" + std::to_string(dl->SerialNumber());
+        
+        if (stat(deviceFolder.c_str(), &info) == 0)
         {
-            printf("Device SN%d: \n", dl->SerialNumber());
+            if (!(info.st_mode & S_IFDIR))
+            {
+                cout << "Output dir not a folder skipping: " << deviceFolder << endl;
+                continue;
+            }
         }
-        while (((data = logger.ReadData(dl)) != NULL) && !g_inertialSenseDisplay.ExitProgram())
+        else
+        {
+            // the folder does not exist try to create it
+            // creating output files
+            if (mkdir(deviceFolder.c_str()) == 0)
+                cout << "Created output dir: " << deviceFolder << endl;
+            else
+            {
+                cout << "Failed to created output dir: " << deviceFolder << endl;
+                continue;
+            }
+        }
+
+        int count = 0;
+
+        // cycle through data
+        while (((data = logger.ReadData(dl)) != NULL))
         {
             p_data_t d = { data->hdr, data->buf };
-            g_inertialSenseDisplay.ProcessData(&d, g_commandLineOptions.replayDataLog, g_commandLineOptions.replaySpeed);
-            g_inertialSenseDisplay.PrintData();
+
+            if (d.hdr.id == DID_EVENT)
+            {
+                did_event_t* ev = (did_event_t*)data->buf;
+                memset(evScratch, 0, 1028 + DID_EVENT_HEADER_SIZE);
+                memcpy(evScratch, ev->data, ev->length);
+
+                string fileName;
+
+                switch (ev->msgTypeID)
+                {
+                case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
+                    case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1: fileName = deviceFolder + "/rcvr1.rtcm"; break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR2: fileName = deviceFolder + "/rcvr2.rtcm";  break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
+                    case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
+                    case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
+                    default: 
+                        fileName = deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
+                        printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, fileName.c_str());
+                        break;
+                }
+                event_outputEvToFile(fileName, evScratch, ev->length);
+            }
+
+            if(++count % 5000 == 0)
+                printf("Read %d msgs from SN-%d\n", count, dl->SerialNumber());
+
         }
     }
 
-    cout << "Done replaying log files: " << g_commandLineOptions.logPath << endl;
-    g_inertialSenseDisplay.Goodbye();
+    cout << "Done parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
     return true;
 }
 
