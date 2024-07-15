@@ -122,14 +122,14 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
 void InertialSenseROS::initializeROS() 
 {
-       // auto nh_ = rclcpp::Node::make_shared("inertial_sense_node");
+
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_current_srv_         = nh_->create_service<std_srvs::srv::Trigger>("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA);
     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate>("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
     mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger>("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
     multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger>("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
-    //firmware_update_srv_          = nh_.advertiseService("firmware_update", &InertialSenseROS::update_firmware_srv_callback, this);
+    firmware_update_srv_            = nh_.advertiseService("firmware_update", &InertialSenseROS::update_firmware_srv_callback, this);
 
     SET_CALLBACK(DID_STROBE_IN_TIME, strobe_in_time_t, strobe_in_time_callback, 0); // we always want the strobe
 
@@ -193,10 +193,10 @@ void InertialSenseROS::initializeROS()
     if (rs_.diagnostics.enabled)
     {
         rs_.diagnostics.pub = nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1);
-        diagnostics_timer_ = nh_->create_timer(rclcpp::Duration(0.5,0), &InertialSenseROS::diagnostics_callback, this); // 2 Hz
+        diagnostics_timer_ = nh_->create_timer(0.5s, &InertialSenseROS::diagnostics_callback, this); // 2 Hz
     }
 
-    data_stream_timer_ = nh_.createTimer(rclcpp::Duration(1,0), configure_data_streams, this);
+    data_stream_timer_ = nh_.create_wall_timer(1s, configure_data_streams, this);
 }
 
 void InertialSenseROS::load_params(YAML::Node &node)
@@ -496,7 +496,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (!firstrun)
     {
         data_streams_enabled_ = true;
-        data_stream_timer_.stop();
+        data_stream_timer_->cancel();
         RCLCPP_INFO(rclcpp::get_logger("data_streams_enabled"),"InertialSenseROS: All data streams successfully enabled");
         return;
     }
@@ -530,7 +530,7 @@ void InertialSenseROS::configure_ascii_output()
  */
 bool InertialSenseROS::connect(float timeout)
 {
-    uint32_t end_time = rclcpp::Time::now().toSec() + timeout;
+    uint32_t end_time = nh_.now().toSec() + timeout;
     auto ports_iterator = ports_.begin();
 
     do {
@@ -550,7 +550,7 @@ bool InertialSenseROS::connect(float timeout)
             ports_iterator++;
         else
             ports_iterator = ports_.begin(); // just keep looping until we timeout below
-    } while (rclcpp::Time::now().toSec() < end_time);
+    } while (nh_.now().toSec() < end_time);
 
     return sdk_connected_;
 }
@@ -721,7 +721,8 @@ void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& conf
         } else {
             RCLCPP_ERROR_STREAM(rclcpp::get_logger("unable_to_connect_giveup"),"InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Giving up.");
         }
-        rclcpp::Duration(sleep_duration,0).sleep(); // we will always sleep on a failure...
+        //rclcpp::Duration(sleep_duration,0).sleep(); // we will always sleep on a failure...
+        rclcpp::Rate r(sleep_duration); r.sleep();
     }
 
     config.connecting_ = false;
@@ -746,7 +747,7 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback()
         if (config.data_transmission_interruption_count_ >= config.data_transmission_interruption_limit_)
         {
             if (config.traffic_time > 0.0)
-                RCLCPP_WARN_STREAM(rclcpp::get_logger("rtk_correction_try_again"),"Last received RTK correction data was " << (rclcpp::Time::now().toSec() - config.traffic_time) << " seconds ago. Attempting to re-establish connection.");
+                RCLCPP_WARN_STREAM(rclcpp::get_logger("rtk_correction_try_again"),"Last received RTK correction data was " << (nh_.now().toSec() - config.traffic_time) << " seconds ago. Attempting to re-establish connection.");
             connect_rtk_client(config);
             if (config.connected_) {
                 config.traffic_total_byte_count_ = latest_byte_count;
@@ -754,12 +755,12 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback()
             }
         } else {
             if (config.traffic_time > 0.0)
-                RCLCPP_WARN_STREAM(rclcpp::get_logger("rtk_correction"),"Last received RTK correction data was " << (rclcpp::Time::now().toSec() - config.traffic_time) << " seconds ago.");
+                RCLCPP_WARN_STREAM(rclcpp::get_logger("rtk_correction"),"Last received RTK correction data was " << (nh_.now().toSec() - config.traffic_time) << " seconds ago.");
         }
     }
     else
     {
-        config.traffic_time = rclcpp::Time::now().toSec();
+        config.traffic_time = nh_.now().toSec();
         config.traffic_total_byte_count_ = latest_byte_count;
         config.data_transmission_interruption_count_ = 0;
     }
@@ -775,16 +776,16 @@ void InertialSenseROS::start_rtk_connectivity_watchdog_timer()
         return;
     }
 
-    if (!rtk_connectivity_watchdog_timer_.isValid()) {
+    if (!rtk_connectivity_watchdog_timer_->is_canceled() == false) {
         rtk_connectivity_watchdog_timer_ = nh_.createTimer(rclcpp::Duration(config.connectivity_watchdog_timer_frequency_,0), InertialSenseROS::rtk_connectivity_watchdog_timer_callback, this);
     }
 
-    rtk_connectivity_watchdog_timer_.start();
+    rtk_connectivity_watchdog_timer_->reset();
 }
 
 void InertialSenseROS::stop_rtk_connectivity_watchdog_timer()
 {
-    rtk_connectivity_watchdog_timer_.stop();
+    rtk_connectivity_watchdog_timer_->cancel();
     if ((RTK_rover_ != nullptr) && (RTK_rover_->correction_input != nullptr) && (RTK_rover_->correction_input->type_ != "ntrip")) {
         RtkRoverCorrectionProvider_Ntrip& config = *(RtkRoverCorrectionProvider_Ntrip*)(RTK_rover_->correction_input);
         config.traffic_total_byte_count_ = 0;
@@ -857,8 +858,8 @@ void InertialSenseROS::configure_rtk()
     }
     else
     {
-        RCLCPP_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
-        ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
+        //RCLCPP_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+        //ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
         if (GNSS_Compass_)
         {
@@ -1783,7 +1784,7 @@ void InertialSenseROS::GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, i
             (msg[0].time.time != gps1_obs_Vec_.obs[0].time.time ||
             msg[0].time.sec != gps1_obs_Vec_.obs[0].time.sec))
         {
-            GPS_obs_bundle_timer_callback(ros::TimerEvent());
+            GPS_obs_bundle_timer_callback(/*ros::TimerEvent()*/);
         }
         break;
 
@@ -1792,7 +1793,7 @@ void InertialSenseROS::GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, i
             (msg[0].time.time != gps2_obs_Vec_.obs[0].time.time ||
             msg[0].time.sec != gps2_obs_Vec_.obs[0].time.sec))
         {
-            GPS_obs_bundle_timer_callback(ros::TimerEvent());
+            GPS_obs_bundle_timer_callback(/*ros::TimerEvent()*/);
         }
         break;
 
@@ -1801,7 +1802,7 @@ void InertialSenseROS::GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, i
             (msg[0].time.time != base_obs_Vec_.obs[0].time.time ||
             msg[0].time.sec != base_obs_Vec_.obs[0].time.sec))
         {
-            GPS_obs_bundle_timer_callback(ros::TimerEvent());
+            GPS_obs_bundle_timer_callback(/*ros::TimerEvent()*/);
         }
         break;
     }
@@ -1826,25 +1827,25 @@ void InertialSenseROS::GPS_obs_callback(eDataIDs DID, const obsd_t *const msg, i
         {
         case DID_GPS1_RAW:
             gps1_obs_Vec_.obs.push_back(obs);
-            last_obs_time_1_ = rclcpp::Time::now();
+            last_obs_time_1_ = nh_.now();
             break;
         case DID_GPS2_RAW:
             gps2_obs_Vec_.obs.push_back(obs);
-            last_obs_time_2_ = rclcpp::Time::now();
+            last_obs_time_2_ = nh_.now();
             break;
         case DID_GPS_BASE_RAW:
             base_obs_Vec_.obs.push_back(obs);
-            last_obs_time_base_ = rclcpp::Time::now();
+            last_obs_time_base_ = nh_.now();
             break;
         }
     }
 }
 
-void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
+void InertialSenseROS::GPS_obs_bundle_timer_callback()
 {
     if (gps1_obs_Vec_.obs.size() != 0)
     {
-        if (abs((rclcpp::Time::now() - last_obs_time_1_).toSec()) > 1e-2)
+        if (abs((nh_.now() - last_obs_time_1_).toSec()) > 1e-2)
         {
             gps1_obs_Vec_.header.stamp = ros_time_from_gtime(gps1_obs_Vec_.obs[0].time.time, gps1_obs_Vec_.obs[0].time.sec);
             gps1_obs_Vec_.time = gps1_obs_Vec_.obs[0].time;
@@ -1854,7 +1855,7 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
     }
     if (gps2_obs_Vec_.obs.size() != 0)
     {
-        if (abs((rclcpp::Time::now() - last_obs_time_2_).toSec()) > 1e-2)
+        if (abs((nh_.now() - last_obs_time_2_).toSec()) > 1e-2)
         {
             gps2_obs_Vec_.header.stamp = ros_time_from_gtime(gps2_obs_Vec_.obs[0].time.time, gps2_obs_Vec_.obs[0].time.sec);
             gps2_obs_Vec_.time = gps2_obs_Vec_.obs[0].time;
@@ -1864,7 +1865,7 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
     }
     if (base_obs_Vec_.obs.size() != 0)
     {
-        if (abs((rclcpp::Time::now() - last_obs_time_base_).toSec()) > 1e-2)
+        if (abs((nh_.now() - last_obs_time_base_).toSec()) > 1e-2)
         {
             base_obs_Vec_.header.stamp = ros_time_from_gtime(base_obs_Vec_.obs[0].time.time, base_obs_Vec_.obs[0].time.sec);
             base_obs_Vec_.time = base_obs_Vec_.obs[0].time;
@@ -1958,7 +1959,7 @@ void InertialSenseROS::GPS_geph_callback(eDataIDs DID, const geph_t *const msg)
     }
 }
 
-void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
+void InertialSenseROS::diagnostics_callback(/*const ros::TimerEvent &event */)
 {
     if (!diagnosticsStreaming_)
     {
@@ -1967,7 +1968,7 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
     }
     // Create diagnostic objects
     diagnostic_msgs::msg::DiagnosticArray diag_array;
-    diag_array.header.stamp = rclcpp::Time::now();
+    diag_array.header.stamp = nh_.now();
 
     //Create Status
     diagnostic_msgs::msg::DiagnosticStatus rtkDiagnostics;
@@ -2239,11 +2240,11 @@ rclcpp::Time InertialSenseROS::ros_time_from_week_and_tow(const uint32_t week, c
         if (!got_first_message_)
         {
             got_first_message_ = true;
-            INS_local_offset_ = rclcpp::Time::now().toSec() - timeOfWeek;
+            INS_local_offset_ = nh_.now().toSec() - timeOfWeek;
         }
         else // low-pass filter offset to account for drift
         {
-            double y_offset = rclcpp::Time::now().toSec() - timeOfWeek;
+            double y_offset = nh_.now().toSec() - timeOfWeek;
             INS_local_offset_ = 0.005 * y_offset + 0.995 * INS_local_offset_;
         }
         // Publish with ROS time
@@ -2270,11 +2271,11 @@ rclcpp::Time InertialSenseROS::ros_time_from_start_time(const double time)
         if (!got_first_message_)
         {
             got_first_message_ = true;
-            INS_local_offset_ = rclcpp::Time::now().toSec() - time;
+            INS_local_offset_ = nh_.now().toSec() - time;
         }
         else // low-pass filter offset to account for drift
         {
-            double y_offset = rclcpp::Time::now().toSec() - time;
+            double y_offset = nh_.now().toSec() - time;
             INS_local_offset_ = 0.005 * y_offset + 0.995 * INS_local_offset_;
         }
         // Publish with ROS time
@@ -2290,14 +2291,16 @@ rclcpp::Time InertialSenseROS::ros_time_from_tow(const double tow)
 
 double InertialSenseROS::tow_from_ros_time(const rclcpp::Time &rt)
 {
-    return ((uint64_t)rt.sec - UNIX_TO_GPS_OFFSET - GPS_week_ * 604800) + rt.nsec * 1.0e-9;
+    return ((uint64_t)rt.seconds() - UNIX_TO_GPS_OFFSET - GPS_week_ * 604800) + rt.nanoseconds() * 1.0e-9;
 }
 
 rclcpp::Time InertialSenseROS::ros_time_from_gtime(const uint64_t sec, double subsec)
 {
-    rclcpp::Time out;
-    out.sec = sec - LEAP_SECONDS;
-    out.nsec = subsec * 1e9;
+    int32_t seconds = sec - LEAP_SECONDS;
+    uint32_t nanosec = subsec * 1e9;
+    rclcpp::Time out(seconds, nanosec);
+
+
     return out;
 }
 
