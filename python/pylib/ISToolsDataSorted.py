@@ -60,21 +60,37 @@ def setGpsWeek(week):
     GPS_start_Time = datetime.datetime.strptime('6/Jan/1980', "%d/%b/%Y")
     WEEK_TIME = GPS_start_Time + (datetime.timedelta(weeks=int(week)))
 
-def getTimeFromTowMs(ms):
+def getTimeFromTowMs(ms, fixTimeBeforeGnss=0):
     global WEEK_TIME
+    if len(ms) == 0:
+        return ms
     if "WEEK_TIME" in locals():
         # GPS time available
         return [WEEK_TIME + datetime.timedelta(milliseconds=int(i)) for i in ms]
     else:   
         # GPS time is NOT available
+        if fixTimeBeforeGnss:
+            # Backpropagate first available GNSS time to convert time since start to GNSS time
+            dms = np.diff(ms)
+            ind = np.flatnonzero(abs(dms - dms[-1]) > 0.1)
+            for i in reversed(ind):
+                ms[i] = ms[i+1] - dms[-1]
         return ms * 0.001
 
-def getTimeFromTow(s):
+def getTimeFromTow(s, fixTimeBeforeGnss=0):
     global WEEK_TIME
+    if len(s) == 0:
+        return s
     if "WEEK_TIME" in locals():
         # GPS time available
         return [WEEK_TIME + datetime.timedelta(seconds=float(i)) for i in s]
-    else:   
+    else:
+        if fixTimeBeforeGnss:
+            # Backpropagate first available GNSS time to convert time since start to GNSS time
+            ds = np.diff(s)
+            ind = np.flatnonzero(abs(ds - ds[-1]) > 0.1)
+            for i in reversed(ind):
+                s[i] = s[i+1] - ds[-1]
         return s
 
 def getTimeFromGTime(gtime):
