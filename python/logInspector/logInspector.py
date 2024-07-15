@@ -124,7 +124,7 @@ def dateTimeArrayToString(info):
     hour   = info['buildHour']
     minute = info['buildMinute']
     second = info['buildSecond']
-    return str(year+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
+    return str(int(year)+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
 
 class DeviceInfoDialog(QDialog):
 
