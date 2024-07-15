@@ -809,7 +809,7 @@ void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
 
 void InertialSenseROS::configure_rtk()
 {
-    IS_.Waitforsynced();
+    IS_.WaitForFlashSynced();
     nvm_flash_cfg_t flashCfg;
     IS_.FlashConfig(flashCfg);
     flashCfg.RTKCfgBits = 0;
