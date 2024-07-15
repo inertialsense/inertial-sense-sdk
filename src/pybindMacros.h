@@ -35,7 +35,7 @@ PYBIND11_NUMPY_DTYPE(sys_sensors_t, time, temp, pqr, acc, mag, bar, barTemp, msl
 PYBIND11_NUMPY_DTYPE(nvm_flash_cfg_t, size, checksum, key, startupImuDtMs, startupNavDtMs, ser0BaudRate, ser1BaudRate, insRotation, insOffset, gps1AntOffset, dynamicModel, debug, gnssSatSigConst, sysCfgBits, refLla, lastLla, lastLlaTimeOfWeekMs, lastLlaWeek, lastLlaUpdateDistance, ioConfig, platformConfig, gps2AntOffset, zeroVelRotation, zeroVelOffset, gpsTimeUserDelay, magDeclination, gpsTimeSyncPeriodMs, startupGPSDtMs, RTKCfgBits, sensorConfig, gpsMinimumElevation, ser2BaudRate, wheelConfig, magInterferenceThreshold, magCalibrationQualityThreshold);
 PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, reserved);
 PYBIND11_NUMPY_DTYPE(gps_vel_t, timeOfWeekMs, vel, sAcc, status);
-PYBIND11_NUMPY_DTYPE(gps_sat_t, timeOfWeekMs, numSats, sat);
+PYBIND11_NUMPY_DTYPE(gps_sat_t, timeOfWeekMs, numSats, sat, lastEphem);
 PYBIND11_NUMPY_DTYPE(gps_sig_t, timeOfWeekMs, numSigs, sig);
 PYBIND11_NUMPY_DTYPE(gps_version_t, swVersion, hwVersion, extension);
 PYBIND11_NUMPY_DTYPE(mag_cal_t, state, progress, declination);
@@ -79,7 +79,18 @@ PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);
 PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id);
 PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);
-PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, rover_position_error, reset_bias, start_relpos, end_relpos, start_rtkpos, pnt_pos_error, no_base_obs_data, diff_age_error, moveb_time_sync_error, waiting_for_rover_packet, waiting_for_base_packet, lsq_error, lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, /*obs_pairs_filtered*/ reserved2, raw_ptr_queue_overrun, raw_dat_queue_overrun, obs_unhealthy, obs_rover_avail, obs_base_avail, obs_pairs_used_float, obs_pairs_used_ar, obs_eph_avail, obs_low_snr_rover, obs_low_snr_base, obs_high_snr_parity, obs_zero_L1_rover, obs_zero_L1_base, obs_low_elev_rover, obs_low_elev_base, reserved);
+PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, 
+                        phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, 
+                        outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, rover_position_error, 
+                        reset_bias, start_relpos, end_relpos, start_rtkpos, pnt_pos_error, no_base_obs_data, diff_age_error, 
+                        moveb_time_sync_error, waiting_for_rover_packet, waiting_for_base_packet, lsq_error, 
+                        lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, 
+                        solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, 
+                        warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, 
+                        /*obs_pairs_filtered*/ reserved2, raw_ptr_queue_overrun, raw_dat_queue_overrun, 
+                        obs_unhealthy, obs_rover_avail, obs_base_avail, obs_pairs_used_float, obs_pairs_used_ar, 
+                        obs_eph_avail, obs_low_snr_rover, obs_low_snr_base, obs_high_snr_parity, obs_zero_L1_rover, 
+                        obs_zero_L1_base, obs_low_elev_rover, obs_low_elev_base, eph1RxCnt, eph2RxCnt, reserved);
 
 PYBIND11_NUMPY_DTYPE(obsd_t, time, sat, rcv, SNR, LLI, code, qualL, qualP, reserved, L, P, D);
 
