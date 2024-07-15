@@ -581,7 +581,7 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
         if (buffer[0] || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
-            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
+            printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwCtx->port), fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();
                 int num = fwCtx->fwUpdate_getNextChunkID();
