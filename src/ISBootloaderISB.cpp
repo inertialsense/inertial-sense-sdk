@@ -51,7 +51,7 @@ is_operation_result cISBootloaderISB::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, portName(m_port), 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -88,7 +88,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
         if (retry*READ_DELAY_MS > 4000)
         {   // No response
-            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", ((serial_port_t*)m_port)->portName);
+            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", portName(m_port));
             return IS_IMAGE_SIGN_NONE;
         }
     }

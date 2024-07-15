@@ -86,53 +86,53 @@ struct serial_port_s
     uint8_t rmciUPMcnt[DID_COUNT];
     uint8_t rmciNMEAcnt[NMEA_MSG_ID_COUNT];
 
-	// platform specific handle
-	void* handle;
+    // platform specific handle
+    void* handle;
 
-	// the port name (do not modify directly)
-	char portName[MAX_SERIAL_PORT_NAME_LENGTH + 1];
+    // the port name (do not modify directly)
+    char portName[MAX_SERIAL_PORT_NAME_LENGTH + 1];
 
     // latest errno that was reported from an operation on this port
     int errorCode;
 
     // optional error buffer to store errors
-	char* error;
+    char* error;
 
-	// length of error
-	int errorLength;
+    // length of error
+    int errorLength;
 
-	// Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
+    // Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
     uint32_t options;
 
-	// open the serial port
-	pfnSerialPortOpen pfnOpen;
+    // open the serial port
+    pfnSerialPortOpen pfnOpen;
 
-	// is the serial port open?
-	pfnSerialPortIsOpen pfnIsOpen;
+    // is the serial port open?
+    pfnSerialPortIsOpen pfnIsOpen;
 
-	// read data synchronously
-	pfnSerialPortRead pfnRead;
+    // read data synchronously
+    pfnSerialPortRead pfnRead;
 
-	// read data asynchronously
-	pfnSerialPortAsyncRead pfnAsyncRead;
+    // read data asynchronously
+    pfnSerialPortAsyncRead pfnAsyncRead;
 
-	// write data synchronously
-	pfnSerialPortWrite pfnWrite;
+    // write data synchronously
+    pfnSerialPortWrite pfnWrite;
 
-	// close the serial port
-	pfnSerialPortClose pfnClose;
+    // close the serial port
+    pfnSerialPortClose pfnClose;
 
-	// remove all data from all buffers
-	pfnSerialPortFlush pfnFlush;
+    // remove all data from all buffers
+    pfnSerialPortFlush pfnFlush;
 
-	// get number of bytes in the receive buffer that can be read
-	pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
+    // get number of bytes in the receive buffer that can be read
+    pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
 
-	// get the number of available bytes in the send buffer
-	pfnSerialPortGetByteCountAvailableToWrite pfnGetByteCountAvailableToWrite;
+    // get the number of available bytes in the send buffer
+    pfnSerialPortGetByteCountAvailableToWrite pfnGetByteCountAvailableToWrite;
 
-	// sleep for a specified number of milliseconds
-	pfnSerialPortSleep pfnSleep;
+    // sleep for a specified number of milliseconds
+    pfnSerialPortSleep pfnSleep;
 };
 
 void serialPortInit(port_handle_t, int id, int type);

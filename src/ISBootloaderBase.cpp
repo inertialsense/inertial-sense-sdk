@@ -195,7 +195,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     // Tell device to stop broadcasting
     serialPortWriteAscii(obj->m_port, "STPB", 4);
 
-    (obj)->m_port_name = std::string(((serial_port_t*)port)->portName); // FIXME: get the port name if available
+    (obj)->m_port_name = std::string(portName(port)); // FIXME: get the port name if available
     device = (obj)->check_is_compatible();
     if(device)
     {   
@@ -259,7 +259,7 @@ is_operation_result cISBootloaderBase::get_device_isb_version(
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path, &major, &minor)  & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
-    (obj)->m_port_name = std::string(((serial_port_t*)port)->portName);  // FIXME: get the port name if available
+    (obj)->m_port_name = std::string(portName(port));
     device = (obj)->check_is_compatible(); 
     if(device == IS_IMAGE_SIGN_ERROR)
     {
@@ -339,7 +339,7 @@ is_operation_result cISBootloaderBase::mode_device_isb
     uint32_t bl_EVB_2  = get_image_signature(filenames.bl_EVB_2.path,  &major, &minor) & (IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K);
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
-    //(obj)->m_port_name = std::string(handle->port); // FIXME: get the port name if available
+    (obj)->m_port_name = std::string(portName(port));
     device = (obj)->check_is_compatible(); 
     if(device == IS_IMAGE_SIGN_ERROR)
     {
@@ -502,7 +502,7 @@ is_operation_result cISBootloaderBase::update_device
     if(bl_EVB_2 || bl_uINS_3)
     {
         obj = new cISBootloaderSAMBA(updateProgress, verifyProgress, statusfn, port);
-        obj->m_port_name = std::string(((serial_port_t*)port)->portName); // FIXME: get the port name if available
+        obj->m_port_name = std::string(portName(port));
         device = obj->check_is_compatible();
         if (device)
         {
@@ -567,24 +567,23 @@ is_operation_result cISBootloaderBase::update_device
         }
     }
 
-    char* name = ((serial_port_t*)port)->portName;
     serialPortClose(port);
-    if (!serialPortOpenRetry(port, name, baud, 1))
+    if (!serialPortOpenRetry(port, portName(port), baud, 1))
     {
         char msg[120] = { 0 };
-        SNPRINTF(msg, sizeof(msg), "    | (%s) Unable to open port at %d baud", ((serial_port_t*)port)->portName, baud);
+        SNPRINTF(msg, sizeof(msg), "    | (%s) Unable to open port at %d baud", portName(port), baud);
         statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
         return IS_OP_ERROR;
     }
 
     obj = new cISBootloaderISB(updateProgress, verifyProgress, statusfn, port);
-    (obj)->m_port_name = std::string(((serial_port_t*)port)->portName);
+    (obj)->m_port_name = std::string(portName(port));
     device = (obj)->check_is_compatible(); 
     if (device == IS_IMAGE_SIGN_NONE)
     {
         delete obj;
         char msg[120] = { 0 };
-        SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", ((serial_port_t*)port)->portName);
+        SNPRINTF(msg, sizeof(msg), "    | (%s) Device response missing.", portName(port));
         statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
         return IS_OP_ERROR;
     }
@@ -695,7 +694,7 @@ is_operation_result cISBootloaderBase::update_device
     }
 
     char msg[120] = {0};
-    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device selected", ((serial_port_t*)port)->portName);
+    SNPRINTF(msg, sizeof(msg), "    | (%s) Incompatible device selected", portName(port));
     statusfn(NULL, IS_LOG_LEVEL_ERROR, msg);
     return IS_OP_ERROR;
 }

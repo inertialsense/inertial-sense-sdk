@@ -436,8 +436,8 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                // memset(new_thread->serial_name, 0, sizeof(new_thread->serialPort.portName));
-                // strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
+                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
+                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
 
@@ -559,7 +559,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                // memset(new_thread->serial_name, 0, sizeof(new_thread->serialPort.portName));
+                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
                 strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(), sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -742,8 +742,8 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                // memset(new_thread->serial_name, 0, sizeof(new_thread->serialPort.portName));
-                //strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
+                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
+                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;
                 new_thread->force_isb = force_isb_update;
@@ -886,7 +886,7 @@ is_operation_result cISBootloaderThread::update(
             if (!found)
             {
                 thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                //memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
+                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
                 strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(),sizeof(new_thread->serialPort.portName)));
                 new_thread->ctx = NULL;
                 new_thread->done = false;

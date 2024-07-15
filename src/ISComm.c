@@ -49,7 +49,7 @@ const unsigned int g_validBaudRates[IS_BAUDRATE_COUNT] = {
 * @param len the number of bytes to calculate the CRC for
 * @return the CRC value
 */
-unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len)
+unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len)
 {
     static const unsigned int TABLE_CRC24Q[] =
     {
@@ -131,7 +131,7 @@ unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsi
     unsigned int bits = 0;
     for (unsigned int i = pos; i < pos + len; i++)
     {
-        bits = (bits << 1) + ((buffer[i / 8] >> (7 - i % 8)) & 1u);
+        bits = (bits << 1) + ((buffer[i / 8] >> (7 - i % 8)) & 1U);
     }
     return bits;
 }
@@ -234,7 +234,7 @@ static protocol_type_t processIsbPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
@@ -378,7 +378,7 @@ static protocol_type_t processNmeaPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
@@ -458,7 +458,7 @@ static protocol_type_t processUbloxPkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
@@ -528,7 +528,7 @@ static protocol_type_t processRtcm3Pkt(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
+    int numBytes = 0;
 
     switch (p->state)
     {
@@ -623,12 +623,12 @@ static const uint8_t u8CRC_4_TABLE[] = {
 static uint8_t computeCrc4Ccitt(const uint8_t *buf, const uint32_t numBytes)
 {
     // Initialize local variables
-    uint8_t tableRemainder;
-    uint8_t remainder = 0U; // Initial remainder
+    uint8_t tableRemainder = 0;
+    uint8_t remainder = 0; // Initial remainder
 
     // Compute the CRC value
     // Divide each byte of the message by the corresponding polynomial
-    for (uint32_t ctr = 0U; ctr < numBytes; ctr++)
+    for (uint32_t ctr = 0; ctr < numBytes; ctr++)
     {
         tableRemainder = buf[ctr] ^ remainder;
         remainder = u8CRC_4_TABLE[tableRemainder];
@@ -641,8 +641,8 @@ static protocol_type_t processSonyByte(void* v)
 {
     is_comm_instance_t* c = (is_comm_instance_t*)v;
     is_comm_parser_t* p = &(c->parser);
-    int numBytes;
-    uint8_t checksum;
+    int numBytes = 0;
+    uint8_t checksum = 0;
 
     switch (p->state)
     {

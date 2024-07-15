@@ -49,7 +49,7 @@ void cDeviceLogRaw::InitDeviceForWriting(std::string timestamp, std::string dire
 {
 //     m_chunk.Init(chunkSize);
     m_chunk.Clear();
-    m_chunk.m_hdr.port = (device != nullptr ? device->port : NULL);
+    m_chunk.m_hdr.port = (device != NULL ? device->port : NULL);
 
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }

@@ -53,7 +53,7 @@ public:
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
-        void						            (*waitAction)()
+        void                                    (*waitAction)()
     );
 
     static is_operation_result update(
@@ -64,14 +64,13 @@ public:
         ISBootloader::pfnBootloadProgress       uploadProgress, 
         ISBootloader::pfnBootloadProgress       verifyProgress,
         ISBootloader::pfnBootloadStatus         infoProgress,
-        void						            (*waitAction)()
+        void                                    (*waitAction)()
     );
 
     typedef struct 
     {
         void* thread;
         serial_port_t serialPort;
-        // char serial_name[100];
         ISBootloader::cISBootloaderBase* ctx;
         bool done;
         bool reuse_port;

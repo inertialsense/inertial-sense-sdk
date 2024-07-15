@@ -13,7 +13,6 @@
 
 #include "DeviceLog.h"
 #include "protocol/FirmwareUpdate.h"
-// #include "ISFirmwareUpdater.h"
 
 extern "C"
 {

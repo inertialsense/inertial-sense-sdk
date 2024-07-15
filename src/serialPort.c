@@ -44,7 +44,7 @@ void serialPortSetPort(port_handle_t port, const char* portName)
 
 const char *serialPortName(port_handle_t port) {
     serial_port_t* serialPort = (serial_port_t*)port;
-    if ((serialPort != NULL) && (portName != NULL)) {
+    if (serialPort != NULL) {
         return serialPort->portName;
     }
     return NULLPTR;

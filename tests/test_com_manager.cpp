@@ -96,9 +96,9 @@ static void postRxRead(port_handle_t port, p_data_t* dataRead)
 
 	DEBUG_PRINTF("[%2d] postRxRead() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), td.did, td.size);
 
-	EXPECT_EQ(td.did, dataRead->hdr.id);
-	EXPECT_EQ(td.size, dataRead->hdr.size);
-	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
+	EXPECT_EQ(td.did, dataRead->hdr.id) << "Parsed DID " << dataRead->hdr.id << " but expected DID " << td.did << "." << std::endl;
+	EXPECT_EQ(td.size, dataRead->hdr.size) << "Parsed packet size " << dataRead->hdr.size << " but expected " << td.size << "." << std::endl;
+	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0) << "Packet contents did not match expected contents." << std::endl;
 }
 
 static void disableBroadcasts(port_handle_t port)
@@ -300,7 +300,7 @@ static bool initComManager(test_data_t &t)
 	t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
     t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
-    t.cm.setBinaryDataCallback(msgHandlerBinaryData);
+    // t.cm.setBinaryDataCallback(msgHandlerBinaryData);
 	t.cm.setCallbacks(NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR, msgHandlerError);
 
 	// Enable/disable protocols

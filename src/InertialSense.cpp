@@ -1149,7 +1149,7 @@ is_operation_result InertialSense::updateFirmware(
     EnableDeviceValidation(true);
     if (OpenSerialPorts(comPort.c_str(), baudRate)) {
         for (auto& device : m_comManagerState.devices) {
-            device.fwUpdate.fwUpdater = new ISFirmwareUpdater(device.port, ((serial_port_t*)device.port)->portName, &device.devInfo);
+            device.fwUpdate.fwUpdater = new ISFirmwareUpdater(device.port, &device.devInfo);
             device.fwUpdate.fwUpdater->setTarget(targetDevice);
 
             // TODO: Implement maybe

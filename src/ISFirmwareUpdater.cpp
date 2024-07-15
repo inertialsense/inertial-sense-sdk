@@ -282,7 +282,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
+                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName(port), devInfo->serialNumber, startAttempts);
                             } else {
                                 printf("Error attempting to initiate Firmware Update\n");
                             }

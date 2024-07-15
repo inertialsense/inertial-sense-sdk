@@ -20,8 +20,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 extern "C" {
 #endif
 
-
-
 /**
  *	DEFINITIONS AND CONVENTIONS
  *	
@@ -904,7 +902,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
  */
 int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *pkt);
 
-unsigned int calculate24BitCRCQ(unsigned char* buffer, unsigned int len);
+unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);
 
 int validateBaudRate(unsigned int baudRate);

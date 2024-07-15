@@ -73,7 +73,7 @@ is_operation_result cISBootloaderSAMBA::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, portName(m_port), 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -128,8 +128,6 @@ is_operation_result cISBootloaderSAMBA::reboot_up()
 
 is_operation_result cISBootloaderSAMBA::download_image(std::string filename)
 {
-    // serial_port_t* port = (serial_port_t*)m_port;
-
     // https://github.com/atmelcorp/sam-ba/tree/master/src/plugins/connection/serial
     // https://sourceforge.net/p/lejos/wiki-nxt/SAM-BA%20Protocol/
     uint8_t buf[SAMBA_PAGE_SIZE];
@@ -230,7 +228,6 @@ is_operation_result cISBootloaderSAMBA::erase_flash()
 
 uint32_t cISBootloaderSAMBA::get_device_info()
 {
-    // serial_port_t* port = m_port;
     uint8_t buf[SAMBA_PAGE_SIZE];
 
     // Flush the bootloader command buffer
