@@ -544,6 +544,7 @@ class LogInspectorWindow(QMainWindow):
         downsampleLabel = QLabel()
         downsampleLabel.setText("DS")
         self.downSampleInput = QSpinBox()
+        self.downSampleInput.setMinimum(1)
         self.downSampleInput.setValue(self.downsample)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
@@ -572,7 +573,7 @@ class LogInspectorWindow(QMainWindow):
         self.plotter.save = False
 
     def changeDownSample(self, val):
-        self.downsample = val
+        self.downsample = max(val, 1)
         self.plotter.setDownSample(self.downsample)
         self.updatePlot()
 

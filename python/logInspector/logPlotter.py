@@ -99,6 +99,8 @@ class logPlot:
         try:
             data = self.log.data[dev, DID][field][::self.d]
             if removeLeadingZeros:
+                # Copy the first nonzero data entry to leading zeros 
+                # (e.g. first position initialized from GNSS to the initial default position in AHRS)
                 startIdx = np.nonzero(data)[0][0]
                 data[0:startIdx] = data[startIdx]
             return data
@@ -131,23 +133,35 @@ class logPlot:
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
-                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek', True))
-                    refLla = self.getData(d, DID_INS_2, 'lla', True)[0]
+                    refLla = self.getData(d, DID_INS_2, 'lla', True)
+                    if len(refLla) == 0:
+                        # No position data: AHRS?
+                        continue
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
+                    refLla = refLla[0]
                     continue
             # If 'Ref INS' is not available, use GPS as reference
-            if refTime is None:
+            if refTime is None or refLla is None:
                 for d in self.active_devs:
+                    lla = self.getData(d, DID_GPS1_POS, 'lla', True)
+                    if len(refLla) == 0:
+                        # No position data: AHRS?
+                        continue
+                    refLla = lla[0]
                     refTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs', True))
-                    refLla = self.getData(d, DID_GPS1_POS, 'lla', True)[0]
-                    refNed = lla2ned(refLla, self.getData(d, DID_GPS1_POS, 'lla', True))
+                    refNed = lla2ned(refLla, lla)
                     continue
 
         for d in self.active_devs:
+            lla = self.getData(d, DID_INS_2, 'lla', True)
+            if len(lla) == 0:
+                # No position data: AHRS?
+                continue
             if refLla is None:
-                refLla = self.getData(d, DID_INS_2, 'lla', True)[0]
-            ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla', True))
+                refLla = lla[0]
+            ned = lla2ned(refLla, lla)
             tow = self.getData(d, DID_INS_2, 'timeOfWeek', True)
-            time = getTimeFromTow(tow)
+            time = getTimeFromTow(tow, True)
             ax[0,0].plot(time, ned[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, ned[:,1])
             ax[2,0].plot(time, ned[:,2])
@@ -222,7 +236,7 @@ class logPlot:
                 continue
             if refLla is None:
                 refLla = lla[0]
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek', True))
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek', True), True)
             ned = lla2ned(refLla, self.getData(d, DID_INS_2, 'lla', True))
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b', True))
             ax.plot(ned[:,1], ned[:,0], label=self.log.serials[d])
@@ -289,10 +303,10 @@ class logPlot:
         self.configureSubplot(ax[2], 'Altitude', 'm')
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            ax[0].plot(time, self.getData(d, DID_INS_2, 'lla')[:,0], label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, DID_INS_2, 'lla')[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla')[:,2])
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            ax[0].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,0], label=self.log.serials[d])
+            ax[1].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,1])
+            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,2])
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -461,7 +475,8 @@ class logPlot:
             # Use 'Ref INS' if available
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
-                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+                    # TODO: does the ref INS store velNED in lla or is it a copy/paste bug?
                     refVelNed = self.getData(d, DID_INS_2, 'lla')[0]
                     continue
             # If 'Ref INS' is not available, use GPS as reference
@@ -475,7 +490,7 @@ class logPlot:
         for d in self.active_devs:
             if refLla is None:
                 refLla = self.getData(d, DID_INS_2, 'lla')[-1]
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
             insVelNorm = np.linalg.norm(insVelNed, axis=1)
             ax[0,0].plot(time, insVelNed[:,0], label=self.log.serials[d])
@@ -571,14 +586,14 @@ class logPlot:
             self.configureSubplot(ax[2,1], 'Vel W Residual', 'm/s')
             for d in self.active_devs:
                if self.log.serials[d] == 'Ref INS':
-                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
                     refUvw = self.getData(d, DID_INS_2, 'uvw')
                     continue
 
             # Reference INS does not exist.  Compute reference from average INS.
             if refTime is None:
                 for d in self.active_devs:
-                    time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
 
                     # Adjust data for attitude bias
                     uvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
@@ -597,7 +612,7 @@ class logPlot:
                 refUvw += sumDelta / sumCount
 
         for d in self.active_devs:
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             # Adjust data for attitude bias
             uvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
             ax[0,0].plot(time, uvw[:,0], label=self.log.serials[d])
@@ -643,12 +658,12 @@ class logPlot:
                 if self.log.serials[d] == 'Ref INS':
                     quat = self.getData(d, DID_INS_2, 'qn2b')
                     refEuler = self.vec3_wrap(quat2euler(quat))
-                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    refTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
 
             # Reference INS does not exist.  Compute reference from average INS.
             if refTime is None:
                 for d in self.active_devs:
-                    time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                    time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
                     # Adjust data for attitude bias
                     quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
                     euler = quat2euler(quat)
@@ -671,7 +686,7 @@ class logPlot:
             # Adjust data for attitude bias
             quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
             euler = quat2euler(quat)
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1,0].plot(time, euler[:,1]*RAD2DEG)
             ax[2,0].plot(time, euler[:,2]*RAD2DEG)
@@ -710,9 +725,9 @@ class logPlot:
             self.configureSubplot(ax[1,1], 'Heading Residual: RTK - INS', 'deg')
 
         for d in self.active_devs:
-            magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'))
+            magTime = getTimeFromTowMs(self.getData(d, DID_INL2_MAG_OBS_INFO, 'timeOfWeekMs'), True)
             gpsTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_REL, 'timeOfWeekMs'))
-            insTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+            insTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
             euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
@@ -752,7 +767,7 @@ class logPlot:
             for d in self.active_devs:
                 r = d == self.active_devs[0]    # plot text w/ first device
                 cnt = 0
-                instime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                instime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
                 iStatus = self.getData(d, DID_INS_2, 'insStatus')
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000001) != 0))
@@ -855,7 +870,7 @@ class logPlot:
             for d in self.active_devs:
                 r = d == self.active_devs[0]    # plot text w/ first device
                 cnt = 0
-                instime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
+                instime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
                 hStatus = self.getData(d, DID_INS_2, 'hdwStatus')
 
                 ax.plot(instime, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
@@ -1176,7 +1191,7 @@ class logPlot:
         else:
             time = self.getData(device, DID_REFERENCE_PIMU, 'time')
 
-            if time.size: # DID_REFERENCE_PIMU
+            if time.size > 5: # DID_REFERENCE_PIMU, ignore data if there are just a few RefIMU data points (logging bug?)
                 dt = self.getData(device, DID_REFERENCE_PIMU, 'dt')
                 if accelSensor == 0:
                     # Gyro
@@ -1251,7 +1266,8 @@ class logPlot:
         refPqr = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if np.any(refTime_):
+            # Ignore data if there are just a few RefIMU data points (logging bug?)
+            if refTime_.size > 5:
                 refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refPqr.append(refTheta / refDt[:,None])
@@ -1325,7 +1341,7 @@ class logPlot:
         refAcc = []
         for d in self.active_devs:
             refTime_ = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if np.any(refTime_):
+            if refTime_.size > 5:
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc.append(refVel / refDt[:,None])
@@ -1570,7 +1586,7 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, acc0, acc1, acc2, accCount) = self.loadAccels(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if np.any(refTime):
+            if refTime.size > 5:
                 refVel = self.getData(d, DID_REFERENCE_PIMU, 'vel')
                 refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
                 refAcc = refVel / refDt[:,None]
@@ -1620,10 +1636,10 @@ class logPlot:
         for d in self.active_devs:
             (time, dt, pqr0, pqr1, pqr2, pqrCount) = self.loadGyros(d)
             refTime = self.getData(d, DID_REFERENCE_PIMU, 'time')
-            if np.any(refTime):
-                refImu = self.getData(d, DID_REFERENCE_PIMU, 'I')
-                refImu = refImu
-                refAcc = refImu['acc']
+            if refTime.size > 5:
+                refTheta = self.getData(d, DID_REFERENCE_PIMU, 'theta')
+                refDt = self.getData(d, DID_REFERENCE_PIMU, 'dt')
+                refGyr = refTheta / refDt[:,None]
 
             N = time.size
             Nhalf = N // 2 + 1
@@ -1676,8 +1692,8 @@ class logPlot:
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             altGps = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
-            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            altIns = self.getData(d, DID_INS_2, 'lla')[:, 2]
+            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            altIns = self.getData(d, DID_INS_2, 'lla', True)[:, 2]
 
             if np.shape(towOffset)[0] != 0:
                 timeBar = timeBar + towOffset[-1]
@@ -1709,8 +1725,8 @@ class logPlot:
             mslBar  = self.getData(d, DID_BAROMETER, 'mslBar')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             altGps  = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
-            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'))
-            altIns = self.getData(d, DID_INS_2, 'lla')[:, 2]
+            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            altIns = self.getData(d, DID_INS_2, 'lla', True)[:, 2]
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if len(towOffset) > 0:
                 timeBar = timeBar + towOffset[-1]
@@ -1810,7 +1826,7 @@ class logPlot:
             self.configureSubplot(ax[2], 'MCU Temperature (C)')
 
             for d in self.active_devs:
-                time = getTimeFromTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'))
+                time = getTimeFromTowMs(self.getData(d, DID_SYS_PARAMS, 'timeOfWeekMs'), True)
                 tempImu = self.getData(d, DID_SYS_PARAMS, 'imuTemp')
                 tempBar = self.getData(d, DID_SYS_PARAMS, 'baroTemp')
                 tempMcu = self.getData(d, DID_SYS_PARAMS, 'mcuTemp')
@@ -1893,7 +1909,7 @@ class logPlot:
         self.configureSubplot(ax[1], 'Inclination', 'deg')
 
         for d in self.active_devs:
-            time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'))
+            time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'), True)
             mag_declination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magDec')
             mag_inclination = 180.0/np.pi * self.getData(d, DID_INL2_STATES, 'magInc')
             ax[0].plot(time, mag_declination, label=self.log.serials[d])
@@ -1927,7 +1943,7 @@ class logPlot:
         for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
             dtIns = dtIns / self.d
-            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek')[1:])
+            timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek')[1:], True)
 
             dtGps = 0.001*(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[1:] - self.getData(d, DID_GPS1_POS, 'timeOfWeekMs')[0:-1])
             dtGps = dtGps / self.d
@@ -2100,7 +2116,7 @@ class logPlot:
         self.configureSubplot(ax[2,1], 'bias acc Z', 'm/s^2')
         fig.suptitle('EKF Biases - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
-            time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'))
+            time = getTimeFromTow(self.getData(d, DID_INL2_STATES, 'timeOfWeek'), True)
             ax[0,0].plot(time, self.getData(d, DID_INL2_STATES, 'biasPqr')[:, 0]*180.0/np.pi, label=self.log.serials[d])
             ax[1,0].plot(time, self.getData(d, DID_INL2_STATES, 'biasPqr')[:, 1]*180.0/np.pi)
             ax[2,0].plot(time, self.getData(d, DID_INL2_STATES, 'biasPqr')[:, 2]*180.0/np.pi)
@@ -2335,7 +2351,10 @@ class logPlot:
         fields = ['theta_l', 'theta_r', 'omega_l', 'omega_r']
 
         for d in self.active_devs:
-            time = np.array(getTimeFromTow(self.getData(d, DID_WHEEL_ENCODER, 'timeOfWeek')))
+            time = getTimeFromTow(self.getData(d, DID_WHEEL_ENCODER, 'timeOfWeek'), True)
+            if len(time) == 0:
+                # No sensor data in the log
+                continue
             for i, a in enumerate(ax):
                 a.plot(time, self.getData(d, DID_WHEEL_ENCODER, fields[i]), label=self.log.serials[d])
                 if i == 0:
@@ -2346,44 +2365,77 @@ class logPlot:
             a.set_title(titles[i])
             a.grid(True)
 
+    def groundVehicleStatus(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        ax = fig.subplots(3, 2, sharex=True)
+
+        ax[0,0].set_title('Learning Enabled')
+        ax[0,1].set_title('Dead Reckoning')
+        ax[1,0].set_title('Kinematic Calibration Good')
+        ax[1,1].set_title('Learning Converged')
+        ax[2,0].set_title('Learning Needed')
+        ax[2,1].set_title('Mode')
+
+        for d in self.active_devs:
+            time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'), True)
+            if len(time) == 0:
+                # No sensor data in the log
+                continue
+            wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
+            iStatus = self.getData(d, DID_GROUND_VEHICLE, 'status')
+            ax[0,0].plot(time, (iStatus & 0x00000001) != 0) # Kinematic learing is solving for the translation from IMU to wheel (wheel_config)
+            ax[0,1].plot(time, (iStatus & 0x01000000) != 0) # Navigation is running without GPS input
+            ax[1,0].plot(time, (iStatus & 0x02000000) != 0) # Vehicle kinematic parameters agree with GPS
+            ax[1,1].plot(time, (iStatus & 0x04000000) != 0) # Vehicle kinematic learning has converged and is complete
+            ax[2,0].plot(time, (iStatus & 0x08000000) != 0) # Vehicle kinematic learning data (wheel_config_t) is missing
+            ax[2,1].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+
+        # Show serial numbers
+        ax[0,0].legend(ncol=2)
+
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
     def groundVehicle(self, fig=None):
         if fig is None:
             fig = plt.figure()
 
         fig.suptitle('Ground Vehicle - ' + os.path.basename(os.path.normpath(self.log.directory)))
-        ax = fig.subplots(8, 2, sharex=True)
+        ax = fig.subplots(7, 2, sharex=True)
 
-        ax[0,0].set_title('Status')
-        ax[0,1].set_title('Mode')
-        ax[1,0].set_title('e_b2w')
-        ax[1,1].set_title('e_b2w_sigma')
-        ax[4,0].set_title('t_b2w')
-        ax[4,1].set_title('t_b2w_sigma')
-        ax[7,0].set_title('Radius')
-        ax[7,1].set_title('Track Width')
+        ax[0,0].set_title('e_b2w')
+        ax[0,1].set_title('e_b2w_sigma')
+        ax[3,0].set_title('t_b2w')
+        ax[3,1].set_title('t_b2w_sigma')
+        ax[6,0].set_title('Radius')
+        ax[6,1].set_title('Track Width')
 
         for d in self.active_devs:
-            time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'))
+            time = getTimeFromTowMs(self.getData(d, DID_GROUND_VEHICLE, 'timeOfWeekMs'), True)
+            if len(time) == 0:
+                # No sensor data in the log
+                continue
             wheelConfig = self.getData(d, DID_GROUND_VEHICLE, 'wheelConfig')
-            ax[0,0].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'status'))
-            ax[0,1].plot(time, self.getData(d, DID_GROUND_VEHICLE, 'mode'))
+            ax[0,0].plot(time, wheelConfig['transform']['e_b2w'][:, 0], label=self.log.serials[d])
+            ax[1,0].plot(time, wheelConfig['transform']['e_b2w'][:, 1])
+            ax[2,0].plot(time, wheelConfig['transform']['e_b2w'][:, 2])
+            ax[0,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[1,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 1])
+            ax[2,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 2])
 
-            ax[1,0].plot(time, wheelConfig['transform']['e_b2w'][:, 0], label=self.log.serials[d])
-            ax[2,0].plot(time, wheelConfig['transform']['e_b2w'][:, 1])
-            ax[3,0].plot(time, wheelConfig['transform']['e_b2w'][:, 2])
-            ax[1,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 0], label=self.log.serials[d])
-            ax[2,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 1])
-            ax[3,1].plot(time, wheelConfig['transform']['e_b2w_sigma'][:, 2])
+            ax[3,0].plot(time, wheelConfig['transform']['t_b2w'][:, 0], label=self.log.serials[d])
+            ax[4,0].plot(time, wheelConfig['transform']['t_b2w'][:, 1])
+            ax[5,0].plot(time, wheelConfig['transform']['t_b2w'][:, 2])
+            ax[3,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 0], label=self.log.serials[d])
+            ax[4,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 1])
+            ax[5,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 2])
 
-            ax[4,0].plot(time, wheelConfig['transform']['t_b2w'][:, 0], label=self.log.serials[d])
-            ax[5,0].plot(time, wheelConfig['transform']['t_b2w'][:, 1])
-            ax[6,0].plot(time, wheelConfig['transform']['t_b2w'][:, 2])
-            ax[4,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 0], label=self.log.serials[d])
-            ax[5,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 1])
-            ax[6,1].plot(time, wheelConfig['transform']['t_b2w_sigma'][:, 2])
-
-            ax[7,0].plot(time, wheelConfig['radius'])
-            ax[7,1].plot(time, wheelConfig['track_width'])
+            ax[6,0].plot(time, wheelConfig['radius'])
+            ax[6,1].plot(time, wheelConfig['track_width'])
 
         # Show serial numbers
         ax[0,0].legend(ncol=2)
@@ -2406,6 +2458,9 @@ class logPlot:
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
+            if len(time) == 0:
+                # No data
+                continue
             effAct_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
             effAct_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
             vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
@@ -2435,38 +2490,34 @@ class logPlot:
 
         for d in self.active_devs:
             time = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'timeMs') * 0.001
-            if np.any(time):
-                eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
-                eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
-                vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
-                vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
-
-                actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
-                actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
-
-                eff_l -= actuatorTrim_l
-                eff_r -= actuatorTrim_r
-
-                # deadbandDuty_l = 0.045
-                deadbandDuty_r = 0.0335
-                deadbandDuty_l = deadbandDuty_r # match left and right
-                deadbandVel = 0.05
-
-                c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
-                c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
-
-                # string = []
-                # for element in c_l:
-                #     string.append("{:.9f}".format(element))
-                # string = "[" + ", ".join(string) + "]"
-                # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
-
-                print("\nADD TO MODEL FILE:")
-                print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
-                print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
-                print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
-                print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
-                print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
+            if len(time) == 0:
+                # No data
+                continue
+            eff_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_l')
+            eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
+            vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
+            vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
+            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+            actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
+            eff_l -= actuatorTrim_l
+            eff_r -= actuatorTrim_r
+            # deadbandDuty_l = 0.045
+            deadbandDuty_r = 0.0335
+            deadbandDuty_l = deadbandDuty_r # match left and right
+            deadbandVel = 0.05
+            c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
+            c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
+            # string = []
+            # for element in c_l:
+            #     string.append("{:.9f}".format(element))
+            # string = "[" + ", ".join(string) + "]"
+            # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
+            print("\nADD TO MODEL FILE:")
+            print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
+            print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
+            print("  actuatorDeadbandDuty_l: %.9f # (duty) Left  control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_l))
+            print("  actuatorDeadbandDuty_r: %.9f # (duty) Right control effort angle from zero (trim) before wheels start spinning." % (deadbandDuty_r))
+            print("  actuatorDeadbandVel: %.9f    # (rad/s) Commanded velocity" % (deadbandVel))
 
         for a in ax:
             a.grid(True)
@@ -2498,6 +2549,7 @@ class logPlot:
             ax.plot(velLin, effEst, 'r')
 
             return c
+
     def sensorCompGyrTemp(self, fig=None):
         if fig is None:
             fig = plt.figure()
