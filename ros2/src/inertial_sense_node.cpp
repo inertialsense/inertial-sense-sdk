@@ -21,7 +21,7 @@
 int main(int argc, char**argv)
 {
     InertialSenseROS* thing;
-    rclcpp::init(argc, argv, "inertial_sense_node");
+    rclcpp::init(argc, argv);
     if (argc > 1)
     {
         std::string paramYamlPath = argv[1];
