@@ -271,7 +271,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     {
         // don't modify the originally requested port value, just create a new value that Windows needs for COM10 and above
         char tmpPort[MAX_SERIAL_PORT_NAME_LENGTH];
-        sprintf_s(tmpPort, sizeof(tmpPort), "\\\\.\\%s", port);
+        sprintf_s(tmpPort, sizeof(tmpPort), "\\\\.\\%s", portName);
         platformHandle = CreateFileA(tmpPort, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, blocking ? FILE_FLAG_OVERLAPPED : 0, 0);
         if (platformHandle == INVALID_HANDLE_VALUE)
         {
