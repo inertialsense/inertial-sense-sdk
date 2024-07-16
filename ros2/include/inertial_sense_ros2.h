@@ -103,7 +103,7 @@ public:
     } NMEA_message_config_t;
 
     InertialSenseROS(YAML::Node paramNode = YAML::Node(YAML::NodeType::Undefined), bool configFlashParameters = true);
-    ~InertialSenseROS() { terminate(); }
+   // ~InertialSenseROS() { terminate(); }
 
     void initializeIS(bool configFlashParameters = true);
     void initializeROS();
@@ -267,11 +267,11 @@ public:
     bool data_streams_enabled_ = false;
 
     // Services
-    rclcpp::Service<std_srvs::srv::Trigger>:: SharedPtr mag_cal_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger>:: SharedPtr multi_mag_cal_srv_;
-    rclcpp::Service<inertial_sense_ros2::srv::FirmwareUpdate> firmware_update_srv_;
-    rclcpp::Service<std_srvs::srv::Trigger> refLLA_set_current_srv_;
-    rclcpp::Service<inertial_sense_ros2::srv::RefLLAUpdate> refLLA_set_value_srv_;
+   rclcpp::Service<std_srvs::srv::Trigger>:: SharedPtr mag_cal_srv_;
+   rclcpp::Service<std_srvs::srv::Trigger>:: SharedPtr multi_mag_cal_srv_;
+   rclcpp::Service<inertial_sense_ros2::srv::FirmwareUpdate>::SharedPtr firmware_update_srv_;
+   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr refLLA_set_current_srv_;
+   rclcpp::Service<inertial_sense_ros2::srv::RefLLAUpdate>::SharedPtr refLLA_set_value_srv_;
 
     bool set_current_position_as_refLLA(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
     bool set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request &req, inertial_sense_ros2::srv::RefLLAUpdate::Response &res);

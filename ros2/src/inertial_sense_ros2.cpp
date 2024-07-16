@@ -31,7 +31,7 @@
 
 #include "ParamHelper.h"
 
-#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; RCLCPP_DEBUGros("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
+#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
 
 /**
@@ -129,7 +129,7 @@ void InertialSenseROS::initializeROS()
     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate>("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
     mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger>("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
     multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger>("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
-    firmware_update_srv_            = nh_.advertiseService("firmware_update", &InertialSenseROS::update_firmware_srv_callback, this);
+    //firmware_update_srv_            = nh_.advertiseService("firmware_update", &InertialSenseROS::update_firmware_srv_callback, this);
 
     SET_CALLBACK(DID_STROBE_IN_TIME, strobe_in_time_t, strobe_in_time_callback, 0); // we always want the strobe
 
@@ -196,7 +196,7 @@ void InertialSenseROS::initializeROS()
         diagnostics_timer_ = nh_->create_timer(0.5s, &InertialSenseROS::diagnostics_callback, this); // 2 Hz
     }
 
-    data_stream_timer_ = nh_.create_wall_timer(1s, configure_data_streams, this);
+    data_stream_timer_ = nh_.create_timer(1s, configure_data_streams, this);
 }
 
 void InertialSenseROS::load_params(YAML::Node &node)
@@ -1491,7 +1491,7 @@ void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg
 
 void InertialSenseROS::publishGPS1()
 {
-    double dt = (gps1_velEcef.header.stamp - msg_gps1.header.stamp).toSec();
+    double dt = (gps1_velEcef.header.stamp.sec - msg_gps1.header.stamp.sec);
     if (abs(dt) < 2.0e-3)
     {
         msg_gps1.vel_ecef = gps1_velEcef.vector;
@@ -1503,7 +1503,7 @@ void InertialSenseROS::publishGPS1()
 
 void InertialSenseROS::publishGPS2()
 {
-    double dt = (gps2_velEcef.header.stamp - msg_gps2.header.stamp).toSec();
+    double dt = (gps2_velEcef.header.stamp.sec - msg_gps2.header.stamp.sec);
     if (abs(dt) < 2.0e-3)
     {
         msg_gps2.vel_ecef = gps2_velEcef.vector;

@@ -19,6 +19,8 @@
 #ifndef INERTIAL_SENSE_IMX_TOPICHELPER_H
 #define INERTIAL_SENSE_IMX_TOPICHELPER_H
 
+#include <std_msgs/msg/detail/string__struct.hpp>
+
 #include "InertialSense.h"
 #include "rclcpp/rclcpp/rclcpp.hpp"
 #include "inertial_sense_ros2.h"
@@ -37,7 +39,7 @@ public:
         if (!stream)
         {
             stream = true;
-            RCLCPP_DEBUG(rclcpp::get_logger("str"),"%s response received", cISDataMappings::GetDataSetName(did)); //???
+            RCLCPP_DEBUG(rclcpp::get_logger("stream_check"),"%s response received", cISDataMappings::GetDataSetName(did)); //???
         }
     }
 

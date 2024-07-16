@@ -17,7 +17,7 @@
  ***************************************************************************************/
 
 #include "inertial_sense_ros2.h"
-
+#include "inertial_sense_ros2.cpp"
 int main(int argc, char**argv)
 {
     InertialSenseROS* thing;
@@ -47,7 +47,7 @@ int main(int argc, char**argv)
     thing->initialize();
     while (rclcpp::ok())
     {
-        rclcpp::spin_some(node);
+        rclcpp::spin_some(thing->nh_);
         thing->update();
     }
     return 0;
