@@ -163,11 +163,9 @@ void ISComManager::registerDid(uint16_t did, pfnComManagerPreSend txFnc, pfnComM
     }
 
     auto& entry = didRegistrationMap[did];
-    entry.dataSet = {
-        .txPtr = (unsigned char*)txDataPtr,     // Pointer to data struct for Tx
-        .rxPtr = (unsigned char*)rxDataPtr,     // Pointer to data struct for Rx
-        .size = size,                           // Size of data struct
-    };
+    entry.dataSet.txPtr = (unsigned char*)txDataPtr;     // Pointer to data struct for Tx
+    entry.dataSet.rxPtr = (unsigned char*)rxDataPtr;     // Pointer to data struct for Rx
+    entry.dataSet.size = size;                           // Size of data struct
     entry.preTxFnc = txFnc;                              // Function called to update struct before data is sent
     entry.pstRxFnc = pstRxFnc;                           // Function called after data is received and struct is updated
     entry.pktFlags = pktFlags;                           // Packet flags
@@ -557,14 +555,14 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
 
         // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivalent
         //  if (!didRegistrationMap.contains(hdr->id)) {
-        if (auto search = didRegistrationMap.find(hdr->id); search != didRegistrationMap.end()) {
-            // NOTE we do the find() above to see if its exists, because making the following call will insert an empty regData into
-            // the map, if ones not already there..
-            regData = &didRegistrationMap[hdr->id];
-        } else {
+        if (didRegistrationMap.find(hdr->id) == didRegistrationMap.end()) {
             // only call the global handler if no DID handler is registered
             if (cmMsgHandleDID)
                 cmMsgHandleDID(port, &data);
+        } else {
+            // NOTE we do the find() above to see if its exists, because making the following call will insert an empty regData into
+            // the map, if ones not already there..
+            regData = &didRegistrationMap[hdr->id];
         }
 
         // Validate and constrain Rx data size to fit within local data struct
