@@ -989,9 +989,6 @@ typedef struct PACKED
 
     /** (see eSatSvStatus) */
     uint16_t				status;
-    
-    /** (TOW of last ephem) */
-    uint32_t                lastEphem;
 } gps_sat_sv_t;
 
 /** Sat SV - GNSS System ID */
@@ -1027,6 +1024,8 @@ enum eSatSvStatus
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,	
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
 
+    SAT_SV_STATUS_RTK_EPH_PULSE                     = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
+
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
     // SAT_SV_STATUS_DIFFCORR                          = 0x00000040,
@@ -1048,6 +1047,8 @@ typedef struct PACKED
 	uint32_t				numSats;					
     /** Satellite information list */
 	gps_sat_sv_t			sat[MAX_NUM_SATELLITES];	
+    /** Last ephem time stamp (index matachs sat) */
+    int                     lastEphem[MAX_NUM_SATELLITES];
 } gps_sat_t;
 
 enum eSatSvSigId
@@ -3458,7 +3459,8 @@ typedef struct PACKED
     uint8_t obs_low_elev_rover;     // number of satellites with low elevation at rover
     uint8_t obs_low_elev_base;      // number of satellites with low elevation at base
 
-    uint16_t ephRxCnt;              // total ephem recieved before RTCM3 parse
+    uint8_t eph1RxCnt;              // total ephem recieved for reciever 1 before RTCM3 parse per period
+    uint8_t eph2RxCnt;              // total ephem recieved for reciever 2 before RTCM3 parse per period
     uint8_t reserved[2];
 } rtk_debug_t;
 
