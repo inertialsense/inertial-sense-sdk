@@ -28,7 +28,7 @@ protected:
     ParamHelper ph_;
     InertialSense* is_;
     //ros::NodeHandle* nh_;
-    auto nh_ = rclcpp::Node::make_shared("rtkrover");
+    rclcpp::Node::SharedPtr nh_;
 
 public:
     std::string type_;
@@ -97,7 +97,7 @@ protected:
     ParamHelper ph_;
     InertialSense* is_;
     //ros::NodeHandle* nh_;
-    auto nh_ = rclcpp::Node::make_shared("rtkrover");
+   rclcpp::Node::SharedPtr nh_;
 
 public:
     bool enable = true;                 // Enables/Disables the entire provider - enabled until explicitly disabled

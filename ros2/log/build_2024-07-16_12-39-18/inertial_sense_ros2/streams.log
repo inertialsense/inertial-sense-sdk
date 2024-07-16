@@ -1,0 +1,87 @@
+[0.055s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[0.191s] -- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.286s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.618s] -- Found rosidl_generator_c: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.648s] -- Found rosidl_generator_cpp: 4.6.2 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.687s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.734s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.825s] -- Found std_srvs: 5.3.5 (/opt/ros/jazzy/share/std_srvs/cmake)
+[0.937s] -- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[0.993s] -- Found rclcpp: 28.1.2 (/opt/ros/jazzy/share/rclcpp/cmake)
+[1.118s] -- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[1.123s] -- Found rmw_fastrtps_cpp: 8.4.0 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[1.343s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.555s] -- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)
+[1.556s] -- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[1.641s] -- Found nav_msgs: 5.3.5 (/opt/ros/jazzy/share/nav_msgs/cmake)
+[1.735s] -- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)
+[1.795s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[1.823s] -- Found rosidl_adapter: 4.6.2 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[1.828s] -- Found tf2: 0.36.4 (/opt/ros/jazzy/share/tf2/cmake)
+[3.065s] -- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[4.188s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[4.640s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[4.645s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[5.491s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[5.676s] -- Configuring done (5.5s)
+[6.020s] -- Generating done (0.3s)
+[6.047s] -- Build files have been written to: /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[6.221s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[6.222s] [  1%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o[0m
+[6.228s] [  1%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o[0m
+[6.298s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[6.384s] [  1%] Built target inertial_sense_ros2__cpp
+[6.521s] [ 27%] Built target inertial_sense_ros2__rosidl_generator_c
+[6.823s] [ 37%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[6.823s] [ 46%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[6.847s] [ 56%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[6.861s] [ 66%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[6.863s] [ 75%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[6.876s] [ 85%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[6.996s] [ 85%] Built target inertial_sense_ros2
+[7.110s] [ 86%] Built target inertial_sense_ros2__py
+[7.369s] running egg_info
+[7.369s] [ 87%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_g_time_s.c.o[0m
+[7.369s] [ 87%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_sat_info_s.c.o[0m
+[7.370s] [ 88%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gps_s.c.o[0m
+[7.370s] [ 88%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gps_info_s.c.o[0m
+[7.400s] [ 88%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_rtk_info_s.c.o[0m
+[7.401s] [ 89%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_pimu_s.c.o[0m
+[7.410s] [ 90%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_rtk_rel_s.c.o[0m
+[7.410s] [ 90%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_glonass_ephemeris_s.c.o[0m
+[7.457s] [ 90%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gnss_observation_s.c.o[0m
+[7.458s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[7.480s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[7.480s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[7.481s] [ 91%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gnss_ephemeris_s.c.o[0m
+[7.720s] [ 92%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_inl2_states_s.c.o[0m
+[7.736s] [ 93%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_gnss_obs_vec_s.c.o[0m
+[7.780s] [ 93%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_didins2_s.c.o[0m
+[7.948s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[7.951s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[8.113s] [ 93%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[8.177s] [ 94%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_didins1_s.c.o[0m
+[8.504s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:72[m[K,
+[8.504s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+[8.505s] [01m[K/opt/ros/jazzy/include/tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.hpp:56:10:[m[K [01;31m[Kfatal error: [m[Ktf2/convert.h: No such file or directory
+[8.505s]    56 | #include [01;31m[K"tf2/convert.h"[m[K
+[8.506s]       |          [01;31m[K^~~~~~~~~~~~~~~[m[K
+[8.506s] compilation terminated.
+[8.518s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+[8.519s] gmake[2]: *** Waiting for unfinished jobs....
+[8.565s] [ 94%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/msg/_didins4_s.c.o[0m
+[8.566s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:72[m[K,
+[8.566s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+[8.566s] [01m[K/opt/ros/jazzy/include/tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.hpp:56:10:[m[K [01;31m[Kfatal error: [m[Ktf2/convert.h: No such file or directory
+[8.566s]    56 | #include [01;31m[K"tf2/convert.h"[m[K
+[8.567s]       |          [01;31m[K^~~~~~~~~~~~~~~[m[K
+[8.567s] compilation terminated.
+[8.594s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+[8.596s] gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+[8.596s] gmake[1]: *** Waiting for unfinished jobs....
+[8.644s] [ 95%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/srv/_firmware_update_s.c.o[0m
+[9.128s] [ 95%] [32mBuilding C object CMakeFiles/inertial_sense_ros2__rosidl_generator_py.dir/rosidl_generator_py/inertial_sense_ros2/srv/_ref_lla_update_s.c.o[0m
+[9.877s] [ 96%] [32m[1mLinking C shared library libinertial_sense_ros2__rosidl_generator_py.so[0m
+[10.212s] [ 96%] Built target inertial_sense_ros2__rosidl_generator_py
+[10.217s] gmake: *** [Makefile:146: all] Error 2
+[10.226s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16

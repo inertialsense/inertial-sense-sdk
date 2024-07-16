@@ -89,8 +89,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLA
 add_executable(new_target
         src/inertial_sense_ros2.cpp
         src/inertial_sense_node.cpp
-        src/ParamHelper.cpp
-        src/serial.cpp
+        #src/ParamHelper.cpp
+       # src/serial.cpp
         include/TopicHelper.cpp
+        include/TopicHelper.h
 )
 ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs std_srvs)

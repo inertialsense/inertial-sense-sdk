@@ -26,7 +26,8 @@
 #include <yaml-cpp/yaml.h>
 #include <chrono>
 #include <memory>
-
+#include <TopicHelper.h>
+#include <TopicHelper.h>
 
 
 #include "TopicHelper.h"
@@ -69,7 +70,7 @@
 #include "diagnostic_msgs/diagnostic_msgs/msg/diagnostic_array.hpp"
 //#include <tf2_ros/tf2_ros/transform_broadcaster.h>
 //#include <tf2_ros/tf2_ros/>
-#include <tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+//#include <tf2_geometry_msgs/tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 //#include "ISConstants.h"
 //#include "geometry/xform.h"
 using namespace std::chrono_literals;
@@ -218,8 +219,8 @@ public:
     void RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const msg);
 
 
-    auto nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
-    auto nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+    rclcpp::Node::SharedPtr nh_;
+    rclcpp::Node::SharedPtr nh_private_;
 
     struct
     {
@@ -377,7 +378,7 @@ public:
         std::string rtkPos_fixType = "";
         float rtkPos_hdgBaseToRov = 0;
         float rtkPos_distanceToRover = 0;
-        
+
         uint32_t rtkCmp_timeStamp = 0;
         float rtkCmp_arRatio = 0;
         float rtkCmp_diffAge = 0;
@@ -387,7 +388,7 @@ public:
 
     } diagnostics_container;
 
-    diagnostics_container diagnostics_;    
+    diagnostics_container diagnostics_;
 
     // Data to hold on to in between callbacks
     double lla_[3];
@@ -412,7 +413,7 @@ public:
     geometry_msgs::msg::Vector3Stamped gps2_velEcef;
     inertial_sense_ros2::msg::GPSInfo msg_gps1_info;
     inertial_sense_ros2::msg::GPSInfo msg_gps2_info;
-    
+
     float poseCov_[36], twistCov_[36];
 
     // Connection to the uINS
@@ -442,7 +443,7 @@ public:
         int cb_preset;
         int cb_options;
     } evb_ = {};
-    
+
 };
 
 

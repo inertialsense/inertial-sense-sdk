@@ -1,0 +1,1017 @@
+[  0%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[  0%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o[0m
+[  1%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o[0m
+[  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[  1%] Built target inertial_sense_ros2__cpp
+[ 27%] Built target inertial_sense_ros2__rosidl_generator_c
+[ 36%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[ 45%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[ 55%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[ 65%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[ 75%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[ 85%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[ 85%] Built target inertial_sense_ros2
+[ 86%] Built target inertial_sense_ros2__py
+[ 96%] Built target inertial_sense_ros2__rosidl_generator_py
+[ 96%] [32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[ 96%] [32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_c.c.o[0m
+[ 96%] [32mBuilding C object CMakeFiles/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/inertial_sense_ros2/_inertial_sense_ros2_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+running egg_info
+writing inertial_sense_ros2.egg-info/PKG-INFO
+writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[ 96%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[ 97%] [32m[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_introspection_c.so[0m
+[ 98%] [32m[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_c.so[0m
+[ 99%] [32m[1mLinking C shared module rosidl_generator_py/inertial_sense_ros2/inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c.so[0m
+[ 99%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[ 99%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[ 99%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:32[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:45:[m[K   required from here
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+   84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+      |                                               [01;31m[K^~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<std_msgs::msg::String_<std::allocator<void> > >::value[m[K’ evaluates to false
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:35[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:31:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+   31 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+      |     [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:100:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+  100 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+      |     [01;31m[K^~~~[m[K
+In file included from [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/string.hpp:9[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:42[m[K:
+[01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/string__traits.hpp:107:8:[m[K [01;31m[Kerror: [m[Kspecialization of ‘[01m[Krosidl_generator_traits::is_message<std_msgs::msg::String_<std::allocator<void> > >[m[K’ after instantiation
+  107 | struct [01;31m[Kis_message<std_msgs::msg::String>[m[K
+      |        [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/string__traits.hpp:107:8:[m[K [01;31m[Kerror: [m[Kredefinition of ‘[01m[Kstruct rosidl_generator_traits::is_message<std_msgs::msg::String_<std::allocator<void> > >[m[K’
+In file included from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/detail/list_parameters__traits.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/list_parameters.hpp:9[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171[m[K:
+[01m[K/opt/ros/jazzy/include/rosidl_runtime_cpp/rosidl_runtime_cpp/traits.hpp:165:8:[m[K [01;36m[Knote: [m[Kprevious definition of ‘[01m[Kstruct rosidl_generator_traits::is_message<std_msgs::msg::String_<std::allocator<void> > >[m[K’
+  165 | struct [01;36m[Kis_message[m[K : std::false_type {};
+      |        [01;36m[K^~~~~~~~~~[m[K
+In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:32[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:45:[m[K   required from here
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+   84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+      |                                               [01;31m[K^~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<std_msgs::msg::String_<std::allocator<void> > >::value[m[K’ evaluates to false
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:35[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:31:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+   31 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+      |     [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:100:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+  100 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+      |     [01;31m[K^~~~[m[K
+In file included from [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/string.hpp:9[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:42[m[K:
+[01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/string__traits.hpp:107:8:[m[K [01;31m[Kerror: [m[Kspecialization of ‘[01m[Krosidl_generator_traits::is_message<std_msgs::msg::String_<std::allocator<void> > >[m[K’ after instantiation
+  107 | struct [01;31m[Kis_message<std_msgs::msg::String>[m[K
+      |        [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/string__traits.hpp:107:8:[m[K [01;31m[Kerror: [m[Kredefinition of ‘[01m[Kstruct rosidl_generator_traits::is_message<std_msgs::msg::String_<std::allocator<void> > >[m[K’
+In file included from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/detail/list_parameters__traits.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/list_parameters.hpp:9[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171[m[K:
+[01m[K/opt/ros/jazzy/include/rosidl_runtime_cpp/rosidl_runtime_cpp/traits.hpp:165:8:[m[K [01;36m[Knote: [m[Kprevious definition of ‘[01m[Kstruct rosidl_generator_traits::is_message<std_msgs::msg::String_<std::allocator<void> > >[m[K’
+  165 | struct [01;36m[Kis_message[m[K : std::false_type {};
+      |        [01;36m[K^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:221:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+  221 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+      |     [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:222:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+  222 |     [01;31m[Kauto[m[K nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+      |     [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:221:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+  221 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+      |     [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:222:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+  222 |     [01;31m[Kauto[m[K nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+      |     [01;31m[K^~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KinitializeROS[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:128:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  128 |     refLLA_set_current_srv_         = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA);
+      |                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:129:97:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  129 |     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate[01;31m[K>[m[K("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
+      |                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  130 |     mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
+      |                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:131:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  131 |     multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
+      |                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:138:62:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  138 |     strobe_pub_ = nh_->create_publisher<std_msgs::msg::Header[01;31m[K>[m[K(rs_.strobe_in.topic, 1);
+      |                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:140:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  140 |     if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1[01;31m[K>[m[K(rs_.did_ins1.topic, 1); }
+      |                                                                                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:141:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  141 |     if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2[01;31m[K>[m[K(rs_.did_ins2.topic, 1); }
+      |                                                                                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:142:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  142 |     if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4[01;31m[K>[m[K(rs_.did_ins4.topic, 1); }
+      |                                                                                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:143:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  143 |     if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ned.topic, 1); }
+      |                                                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:144:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  144 |     if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_enu.topic, 1); }
+      |                                                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:145:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  145 |     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ecef.topic, 1); }
+      |                                                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:146:129:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  146 |     if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States[01;31m[K>[m[K(rs_.inl2_states.topic, 1); }
+      |                                                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:148:114:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  148 |     if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_->create_publisher<inertial_sense_ros2::msg::PIMU[01;31m[K>[m[K(rs_.pimu.topic, 1); }
+      |                                                                                                                  [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:149:104:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  149 |     if (rs_.imu.enabled)                    { rs_.imu.pub = nh_->create_publisher<sensor_msgs::msg::Imu[01;31m[K>[m[K(rs_.imu.topic, 1); }
+      |                                                                                                        [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:150:123:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  150 |     if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_->create_publisher<sensor_msgs::msg::MagneticField[01;31m[K>[m[K(rs_.magnetometer.topic, 1); }
+      |                                                                                                                           [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:151:120:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  151 |     if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_->create_publisher<sensor_msgs::msg::FluidPressure[01;31m[K>[m[K(rs_.barometer.topic, 1); }
+      |                                                                                                                        [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:153:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  153 |     if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps1.topic, 1); }
+      |                                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:154:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  154 |     if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps1_navsatfix.topic, 1); }
+      |                                                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:155:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  155 |     if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps1_info.topic, 1); }
+      |                                                                                                                          [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:157:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  157 |     if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps2.topic, 1); }
+      |                                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:158:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  158 |     if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps2_navsatfix.topic, 1); }
+      |                                                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:159:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  159 |     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps2_info.topic, 1); }
+      |                                                                                                                          [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:163:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  163 |         rs_.rtk_pos.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_pos/info", 10);
+      |                                                                                      [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:164:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  164 |         rs_.rtk_pos.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_pos/rel", 10);
+      |                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:168:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  168 |         rs_.rtk_cmp.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_cmp/info", 10);
+      |                                                                                      [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:169:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  169 |         rs_.rtk_cmp.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_cmp/rel", 10);
+      |                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  174 |         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps1_raw.topic + "/obs", 50);
+      |                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  174 |         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", [01;35m[K50[m[K);
+      |                                                                                                                        [01;35m[K^~[m[K
+In file included from [01m[K/usr/include/c++/13/string:54[m[K,
+                 from [01m[K/usr/include/c++/13/bits/locale_classes.h:40[m[K,
+                 from [01m[K/usr/include/c++/13/bits/ios_base.h:41[m[K,
+                 from [01m[K/usr/include/c++/13/ios:44[m[K,
+                 from [01m[K/usr/include/c++/13/ostream:40[m[K,
+                 from [01m[K/usr/include/c++/13/iostream:41[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:22[m[K:
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  175 |         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/eph", 50);
+      |                                                                                            [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  175 |         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", [01;35m[K50[m[K);
+      |                                                                                                                           [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  176 |         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/geph", 50);
+      |                                                                                               [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  176 |         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", [01;35m[K50[m[K);
+      |                                                                                                                               [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  181 |         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps2_raw.topic + "/obs", 50);
+      |                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  181 |         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", [01;35m[K50[m[K);
+      |                                                                                                                        [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  182 |         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/eph", 50);
+      |                                                                                            [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  182 |         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", [01;35m[K50[m[K);
+      |                                                                                                                           [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  183 |         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/geph", 50);
+      |                                                                                               [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  183 |         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", [01;35m[K50[m[K);
+      |                                                                                                                               [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:188:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  188 |         rs_.gpsbase_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+      |                                                                                                  [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:189:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  189 |         rs_.gpsbase_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K("gps/base_eph", 50);
+      |                                                                                               [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:190:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  190 |         rs_.gpsbase_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+      |                                                                                                  [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:195:90:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  195 |         rs_.diagnostics.pub = nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray[01;31m[K>[m[K("diagnostics", 1);
+      |                                                                                          [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kbool InertialSenseROS::[01;32m[Kfirmware_compatiblity_check[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:568:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+  568 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K protocol_fault = rclcpp::Logger::Level::Debug; // none
+      |                            [01;31m[K^~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:569:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  569 |     if (diff_protocol[0] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Fatal; // major protocol changes -- BREAKING
+      |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:570:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  570 |     else if (diff_protocol[1] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Error; // minor protocol changes -- New parameters/features
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                     [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:571:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  571 |     else if (diff_protocol[2] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                     [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:572:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  572 |     else if (diff_protocol[3] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Info; // this is essentially trivial, but good to know.
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                     [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:574:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+  574 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K firmware_fault = rclcpp::Logger::Level::Debug; // none
+      |                            [01;31m[K^~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:575:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+  575 |     if (diff_firmware[0] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Fatal;  // major protocol changes -- BREAKING
+      |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:20[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KinitializeROS[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:128:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  128 |     refLLA_set_current_srv_         = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA);
+      |                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:129:97:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  129 |     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate[01;31m[K>[m[K("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
+      |                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  130 |     mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
+      |                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:131:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  131 |     multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
+      |                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:576:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+  576 |     else if (diff_firmware[1] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Error;  // minor protocol changes -- New parameters/features
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:138:62:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  138 |     strobe_pub_ = nh_->create_publisher<std_msgs::msg::Header[01;31m[K>[m[K(rs_.strobe_in.topic, 1);
+      |                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:140:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  140 |     if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1[01;31m[K>[m[K(rs_.did_ins1.topic, 1); }
+      |                                                                                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:141:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  141 |     if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2[01;31m[K>[m[K(rs_.did_ins2.topic, 1); }
+      |                                                                                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:142:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  142 |     if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4[01;31m[K>[m[K(rs_.did_ins4.topic, 1); }
+      |                                                                                                                              [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:143:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  143 |     if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ned.topic, 1); }
+      |                                                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:144:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  144 |     if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_enu.topic, 1); }
+      |                                                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:145:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  145 |     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ecef.topic, 1); }
+      |                                                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:146:129:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  146 |     if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States[01;31m[K>[m[K(rs_.inl2_states.topic, 1); }
+      |                                                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:148:114:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  148 |     if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_->create_publisher<inertial_sense_ros2::msg::PIMU[01;31m[K>[m[K(rs_.pimu.topic, 1); }
+      |                                                                                                                  [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:149:104:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  149 |     if (rs_.imu.enabled)                    { rs_.imu.pub = nh_->create_publisher<sensor_msgs::msg::Imu[01;31m[K>[m[K(rs_.imu.topic, 1); }
+      |                                                                                                        [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:150:123:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  150 |     if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_->create_publisher<sensor_msgs::msg::MagneticField[01;31m[K>[m[K(rs_.magnetometer.topic, 1); }
+      |                                                                                                                           [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:151:120:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  151 |     if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_->create_publisher<sensor_msgs::msg::FluidPressure[01;31m[K>[m[K(rs_.barometer.topic, 1); }
+      |                                                                                                                        [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:153:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  153 |     if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps1.topic, 1); }
+      |                                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:154:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  154 |     if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps1_navsatfix.topic, 1); }
+      |                                                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:155:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  155 |     if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps1_info.topic, 1); }
+      |                                                                                                                          [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:157:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  157 |     if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps2.topic, 1); }
+      |                                                                                                                 [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:158:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  158 |     if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps2_navsatfix.topic, 1); }
+      |                                                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:159:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  159 |     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps2_info.topic, 1); }
+      |                                                                                                                          [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:163:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  163 |         rs_.rtk_pos.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_pos/info", 10);
+      |                                                                                      [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:164:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  164 |         rs_.rtk_pos.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_pos/rel", 10);
+      |                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:168:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  168 |         rs_.rtk_cmp.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_cmp/info", 10);
+      |                                                                                      [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:169:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  169 |         rs_.rtk_cmp.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_cmp/rel", 10);
+      |                                                                                    [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  174 |         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps1_raw.topic + "/obs", 50);
+      |                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  174 |         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", [01;35m[K50[m[K);
+      |                                                                                                                        [01;35m[K^~[m[K
+In file included from [01m[K/usr/include/c++/13/string:54[m[K,
+                 from [01m[K/usr/include/c++/13/bits/locale_classes.h:40[m[K,
+                 from [01m[K/usr/include/c++/13/bits/ios_base.h:41[m[K,
+                 from [01m[K/usr/include/c++/13/ios:44[m[K,
+                 from [01m[K/usr/include/c++/13/ostream:40[m[K,
+                 from [01m[K/usr/include/c++/13/iostream:41[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:22[m[K:
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  175 |         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/eph", 50);
+      |                                                                                            [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  175 |         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", [01;35m[K50[m[K);
+      |                                                                                                                           [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  176 |         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/geph", 50);
+      |                                                                                               [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  176 |         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", [01;35m[K50[m[K);
+      |                                                                                                                               [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  181 |         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps2_raw.topic + "/obs", 50);
+      |                                                                                         [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  181 |         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", [01;35m[K50[m[K);
+      |                                                                                                                        [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  182 |         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/eph", 50);
+      |                                                                                            [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  182 |         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", [01;35m[K50[m[K);
+      |                                                                                                                           [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  183 |         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/geph", 50);
+      |                                                                                               [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+  183 |         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", [01;35m[K50[m[K);
+      |                                                                                                                               [01;35m[K^~[m[K
+[01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+ 3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:188:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  188 |         rs_.gpsbase_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+      |                                                                                                  [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:189:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  189 |         rs_.gpsbase_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K("gps/base_eph", 50);
+      |                                                                                               [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:190:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  190 |         rs_.gpsbase_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+      |                                                                                                  [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:195:90:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+  195 |         rs_.diagnostics.pub = nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray[01;31m[K>[m[K("diagnostics", 1);
+      |                                                                                          [01;31m[K^[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:577:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+  577 |     else if (diff_firmware[2] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:579:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+  579 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K final_fault = std::max(firmware_fault, protocol_fault);
+      |                            [01;31m[K^~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:599:12:[m[K [01;31m[Kerror: [m[K‘[01m[Kfinal_fault[m[K’ was not declared in this scope
+  599 |     return [01;31m[Kfinal_fault[m[K == rclcpp::Logger::Level::Debug; // true if they match, false if they don't.
+      |            [01;31m[K^~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS1_callback[m[K(eDataIDs, const ins_1_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:954:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+  954 |         if (rs_.did_ins1.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                              [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::publish(inertial_sense_ros2::msg::DIDINS1&)[m[K’
+  955 |             [01;31m[Krs_.did_ins1.pub->publish(msg_did_ins1)[m[K;
+      |             [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::ros_message_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::ros_message_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  239 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, ROSMessageTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  955 |             [01;36m[Krs_.did_ins1.pub->publish(msg_did_ins1)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  289 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+In file included from [01m[K/usr/include/c++/13/bits/move.h:37[m[K,
+                 from [01m[K/usr/include/c++/13/bits/exception_ptr.h:41[m[K,
+                 from [01m[K/usr/include/c++/13/exception:164[m[K,
+                 from [01m[K/usr/include/c++/13/ios:41[m[K:
+/usr/include/c++/13/type_traits: In substitution of ‘[01m[Ktemplate<bool _Cond, class _Tp> using std::enable_if_t = typename std::enable_if::type [35m[K[with bool _Cond = false; _Tp = void][m[K[m[K’:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K   required by substitution of ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, std_msgs::msg::String_<std::allocator<void> > >::value), void> rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::[01;32m[Kpublish[m[K(const T&) [35m[K[with T = inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >][m[K[m[K’
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K   required from here
+[01m[K/usr/include/c++/13/type_traits:2610:11:[m[K [01;31m[Kerror: [m[Kno type named ‘[01m[Ktype[m[K’ in ‘[01m[Kstruct std::enable_if<false, void>[m[K’
+ 2610 |     using [01;31m[Kenable_if_t[m[K = typename enable_if<_Cond, _Tp>::type;
+      |           [01;31m[K^~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::custom_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::custom_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  319 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, PublishedTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  955 |             [01;36m[Krs_.did_ins1.pub->publish(msg_did_ins1)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  366 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rcl_serialized_message_t&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; rcl_serialized_message_t = rcutils_uint8_array_s][m[K[m[K’
+  384 |   [01;36m[Kpublish[m[K(const rcl_serialized_message_t & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS1[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rcl_serialized_message_t&[m[K’ {aka ‘[01m[Kconst rcutils_uint8_array_s&[m[K’}
+  384 |   publish([01;36m[Kconst rcl_serialized_message_t & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rclcpp::SerializedMessage&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  390 |   [01;36m[Kpublish[m[K(const SerializedMessage & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:37:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS1[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rclcpp::SerializedMessage&[m[K’
+  390 |   publish([01;36m[Kconst SerializedMessage & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(rclcpp::LoanedMessage<typename rclcpp::TypeAdapter<MessageT>::ros_message_type, AllocatorT>&&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; typename rclcpp::TypeAdapter<MessageT>::ros_message_type = std_msgs::msg::String_<std::allocator<void> >][m[K[m[K’
+  404 |   [01;36m[Kpublish[m[K(rclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:64:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS1[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’} to ‘[01m[Krclcpp::LoanedMessage<std_msgs::msg::String_<std::allocator<void> >, std::allocator<void> >&&[m[K’
+  404 |   publish([01;36m[Krclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS2_callback[m[K(eDataIDs, const ins_2_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:981:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+  981 |         if (rs_.did_ins2.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                              [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:38:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::publish(inertial_sense_ros2::msg::DIDINS2&)[m[K’
+  982 |             [01;31m[Krs_.did_ins2.pub->publish(msg_did_ins2)[m[K;
+      |             [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::ros_message_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::ros_message_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  239 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, ROSMessageTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  982 |             [01;36m[Krs_.did_ins2.pub->publish(msg_did_ins2)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  289 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::custom_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::custom_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  319 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, PublishedTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  982 |             [01;36m[Krs_.did_ins2.pub->publish(msg_did_ins2)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  366 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rcl_serialized_message_t&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; rcl_serialized_message_t = rcutils_uint8_array_s][m[K[m[K’
+  384 |   [01;36m[Kpublish[m[K(const rcl_serialized_message_t & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS2[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rcl_serialized_message_t&[m[K’ {aka ‘[01m[Kconst rcutils_uint8_array_s&[m[K’}
+  384 |   publish([01;36m[Kconst rcl_serialized_message_t & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rclcpp::SerializedMessage&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  390 |   [01;36m[Kpublish[m[K(const SerializedMessage & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:37:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS2[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rclcpp::SerializedMessage&[m[K’
+  390 |   publish([01;36m[Kconst SerializedMessage & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(rclcpp::LoanedMessage<typename rclcpp::TypeAdapter<MessageT>::ros_message_type, AllocatorT>&&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; typename rclcpp::TypeAdapter<MessageT>::ros_message_type = std_msgs::msg::String_<std::allocator<void> >][m[K[m[K’
+  404 |   [01;36m[Kpublish[m[K(rclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:64:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS2[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’} to ‘[01m[Krclcpp::LoanedMessage<std_msgs::msg::String_<std::allocator<void> >, std::allocator<void> >&&[m[K’
+  404 |   publish([01;36m[Krclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS4_callback[m[K(eDataIDs, const ins_4_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1008:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1008 |         if (rs_.did_ins4.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                              [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:38:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::publish(inertial_sense_ros2::msg::DIDINS4&)[m[K’
+ 1009 |             [01;31m[Krs_.did_ins4.pub->publish(msg_did_ins4)[m[K;
+      |             [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::ros_message_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::ros_message_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  239 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, ROSMessageTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+ 1009 |             [01;36m[Krs_.did_ins4.pub->publish(msg_did_ins4)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  289 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::custom_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::custom_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  319 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, PublishedTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+ 1009 |             [01;36m[Krs_.did_ins4.pub->publish(msg_did_ins4)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  366 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rcl_serialized_message_t&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; rcl_serialized_message_t = rcutils_uint8_array_s][m[K[m[K’
+  384 |   [01;36m[Kpublish[m[K(const rcl_serialized_message_t & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS4[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rcl_serialized_message_t&[m[K’ {aka ‘[01m[Kconst rcutils_uint8_array_s&[m[K’}
+  384 |   publish([01;36m[Kconst rcl_serialized_message_t & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rclcpp::SerializedMessage&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  390 |   [01;36m[Kpublish[m[K(const SerializedMessage & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:37:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS4[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rclcpp::SerializedMessage&[m[K’
+  390 |   publish([01;36m[Kconst SerializedMessage & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(rclcpp::LoanedMessage<typename rclcpp::TypeAdapter<MessageT>::ros_message_type, AllocatorT>&&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; typename rclcpp::TypeAdapter<MessageT>::ros_message_type = std_msgs::msg::String_<std::allocator<void> >][m[K[m[K’
+  404 |   [01;36m[Kpublish[m[K(rclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:64:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS4[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’} to ‘[01m[Krclcpp::LoanedMessage<std_msgs::msg::String_<std::allocator<void> >, std::allocator<void> >&&[m[K’
+  404 |   publish([01;36m[Krclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1078:35:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1078 |             rs_.odom_ins_ecef.pub.[01;31m[Kpublish[m[K(msg_odom_ecef);
+      |                                   [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1165:38:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1165 |                 rs_.odom_ins_ned.pub.[01;31m[Kpublish[m[K(msg_odom_ned);
+      |                                      [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1259:38:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1259 |                 rs_.odom_ins_enu.pub.[01;31m[Kpublish[m[K(msg_odom_enu);
+      |                                      [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINL2_states_callback[m[K(eDataIDs, const inl2_states_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1311:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1311 |         if (rs_.inl2_states.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                                 [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1312:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1312 |             rs_.inl2_states.pub.[01;31m[Kpublish[m[K(msg_inl2_states);
+      |                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_pos_callback[m[K(eDataIDs, const gps_pos_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1455:36:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1455 |             rs_.gps1_navsatfix.pub.[01;31m[Kpublish[m[K(msg_NavSatFix);
+      |                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS1[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1499:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1499 |         if (rs_.gps1.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                          [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1500:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1500 |             rs_.gps1.pub.[01;31m[Kpublish[m[K(msg_gps1);
+      |                          [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS2[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1511:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1511 |         if (rs_.gps2.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                          [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1512:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1512 |             rs_.gps2.pub.[01;31m[Kpublish[m[K(msg_gps2);
+      |                          [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_info_callback[m[K(eDataIDs, const gps_sat_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1569:43:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1569 |     case DID_GPS1_SAT:  rs_.gps1_info.pub.[01;31m[Kpublish[m[K(msg_gps1_info);    break;
+      |                                           [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1570:43:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1570 |     case DID_GPS2_SAT:  rs_.gps2_info.pub.[01;31m[Kpublish[m[K(msg_gps1_info);    break;
+      |                                           [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kmag_callback[m[K(eDataIDs, const magnetometer_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1588:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1588 |     rs_.magnetometer.pub.[01;31m[Kpublish[m[K(mag_msg);
+      |                          [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kbaro_callback[m[K(eDataIDs, const barometer_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1604:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1604 |     rs_.barometer.pub.[01;31m[Kpublish[m[K(baro_msg);
+      |                       [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kpreint_IMU_callback[m[K(eDataIDs, const pimu_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1623:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1623 |         rs_.pimu.pub.[01;31m[Kpublish[m[K(msg_pimu);
+      |                      [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1640:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1640 |             rs_.imu.pub.[01;31m[Kpublish[m[K(msg_imu);
+      |                         [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Misc_callback[m[K(eDataIDs, const gps_rtk_misc_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1667:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1667 |         rs_.rtk_pos.pubInfo.[01;31m[Kpublish[m[K(rtk_info);
+      |                             [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1672:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1672 |         rs_.rtk_cmp.pubInfo.[01;31m[Kpublish[m[K(rtk_info);
+      |                             [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Rel_callback[m[K(eDataIDs, const gps_rtk_rel_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1724:28:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1724 |         rs_.rtk_pos.pubRel.[01;31m[Kpublish[m[K(rtk_rel);
+      |                            [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1737:28:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1737 |         rs_.rtk_cmp.pubRel.[01;31m[Kpublish[m[K(rtk_rel);
+      |                            [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_obs_bundle_timer_callback[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1852:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1852 |             rs_.gps1_raw.pubObs.[01;31m[Kpublish[m[K(gps1_obs_Vec_);
+      |                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1862:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1862 |             rs_.gps2_raw.pubObs.[01;31m[Kpublish[m[K(gps2_obs_Vec_);
+      |                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1872:36:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1872 |             rs_.gpsbase_raw.pubObs.[01;31m[Kpublish[m[K(base_obs_Vec_);
+      |                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_eph_callback[m[K(eDataIDs, const eph_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1923:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1923 |     case DID_GPS1_RAW:      rs_.gps1_raw.pubEph.[01;31m[Kpublish[m[K(eph);        break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1924:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1924 |     case DID_GPS2_RAW:      rs_.gps2_raw.pubEph.[01;31m[Kpublish[m[K(eph);        break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1925:52:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1925 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubEph.[01;31m[Kpublish[m[K(eph);    break;
+      |                                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_geph_callback[m[K(eDataIDs, const geph_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1956:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1956 |     case DID_GPS1_RAW:      rs_.gps1_raw.pubGEp.[01;31m[Kpublish[m[K(geph);       break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1957:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1957 |     case DID_GPS2_RAW:      rs_.gps2_raw.pubGEp.[01;31m[Kpublish[m[K(geph);       break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1958:52:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1958 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubGEp.[01;31m[Kpublish[m[K(geph);   break;
+      |                                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kbool InertialSenseROS::[01;32m[Kfirmware_compatiblity_check[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:568:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+  568 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K protocol_fault = rclcpp::Logger::Level::Debug; // none
+      |                            [01;31m[K^~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kdiagnostics_callback[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:2058:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 2058 |     rs_.diagnostics.pub.[01;31m[Kpublish[m[K(diag_array);
+      |                         [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:569:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  569 |     if (diff_protocol[0] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Fatal; // major protocol changes -- BREAKING
+      |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:570:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  570 |     else if (diff_protocol[1] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Error; // minor protocol changes -- New parameters/features
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                     [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:571:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  571 |     else if (diff_protocol[2] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                     [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:572:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+  572 |     else if (diff_protocol[3] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Info; // this is essentially trivial, but good to know.
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+      |                                     [32m[Kprotocol_type_t[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:574:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+  574 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K firmware_fault = rclcpp::Logger::Level::Debug; // none
+      |                            [01;31m[K^~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:575:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+  575 |     if (diff_firmware[0] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Fatal;  // major protocol changes -- BREAKING
+      |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:576:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+  576 |     else if (diff_firmware[1] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Error;  // minor protocol changes -- New parameters/features
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:577:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+  577 |     else if (diff_firmware[2] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+      |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:579:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+  579 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K final_fault = std::max(firmware_fault, protocol_fault);
+      |                            [01;31m[K^~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:599:12:[m[K [01;31m[Kerror: [m[K‘[01m[Kfinal_fault[m[K’ was not declared in this scope
+  599 |     return [01;31m[Kfinal_fault[m[K == rclcpp::Logger::Level::Debug; // true if they match, false if they don't.
+      |            [01;31m[K^~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS1_callback[m[K(eDataIDs, const ins_1_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:954:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+  954 |         if (rs_.did_ins1.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                              [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::publish(inertial_sense_ros2::msg::DIDINS1&)[m[K’
+  955 |             [01;31m[Krs_.did_ins1.pub->publish(msg_did_ins1)[m[K;
+      |             [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::ros_message_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::ros_message_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  239 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, ROSMessageTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  955 |             [01;36m[Krs_.did_ins1.pub->publish(msg_did_ins1)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  289 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+In file included from [01m[K/usr/include/c++/13/bits/move.h:37[m[K,
+                 from [01m[K/usr/include/c++/13/bits/exception_ptr.h:41[m[K,
+                 from [01m[K/usr/include/c++/13/exception:164[m[K,
+                 from [01m[K/usr/include/c++/13/ios:41[m[K:
+/usr/include/c++/13/type_traits: In substitution of ‘[01m[Ktemplate<bool _Cond, class _Tp> using std::enable_if_t = typename std::enable_if::type [35m[K[with bool _Cond = false; _Tp = void][m[K[m[K’:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K   required by substitution of ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, std_msgs::msg::String_<std::allocator<void> > >::value), void> rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::[01;32m[Kpublish[m[K(const T&) [35m[K[with T = inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >][m[K[m[K’
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K   required from here
+[01m[K/usr/include/c++/13/type_traits:2610:11:[m[K [01;31m[Kerror: [m[Kno type named ‘[01m[Ktype[m[K’ in ‘[01m[Kstruct std::enable_if<false, void>[m[K’
+ 2610 |     using [01;31m[Kenable_if_t[m[K = typename enable_if<_Cond, _Tp>::type;
+      |           [01;31m[K^~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::custom_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::custom_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  319 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, PublishedTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  955 |             [01;36m[Krs_.did_ins1.pub->publish(msg_did_ins1)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  366 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rcl_serialized_message_t&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; rcl_serialized_message_t = rcutils_uint8_array_s][m[K[m[K’
+  384 |   [01;36m[Kpublish[m[K(const rcl_serialized_message_t & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS1[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rcl_serialized_message_t&[m[K’ {aka ‘[01m[Kconst rcutils_uint8_array_s&[m[K’}
+  384 |   publish([01;36m[Kconst rcl_serialized_message_t & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rclcpp::SerializedMessage&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  390 |   [01;36m[Kpublish[m[K(const SerializedMessage & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:37:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS1[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rclcpp::SerializedMessage&[m[K’
+  390 |   publish([01;36m[Kconst SerializedMessage & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(rclcpp::LoanedMessage<typename rclcpp::TypeAdapter<MessageT>::ros_message_type, AllocatorT>&&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; typename rclcpp::TypeAdapter<MessageT>::ros_message_type = std_msgs::msg::String_<std::allocator<void> >][m[K[m[K’
+  404 |   [01;36m[Kpublish[m[K(rclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:64:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS1[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS1_<std::allocator<void> >[m[K’} to ‘[01m[Krclcpp::LoanedMessage<std_msgs::msg::String_<std::allocator<void> >, std::allocator<void> >&&[m[K’
+  404 |   publish([01;36m[Krclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS2_callback[m[K(eDataIDs, const ins_2_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:981:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+  981 |         if (rs_.did_ins2.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                              [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:38:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::publish(inertial_sense_ros2::msg::DIDINS2&)[m[K’
+  982 |             [01;31m[Krs_.did_ins2.pub->publish(msg_did_ins2)[m[K;
+      |             [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::ros_message_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::ros_message_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  239 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, ROSMessageTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  982 |             [01;36m[Krs_.did_ins2.pub->publish(msg_did_ins2)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  289 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::custom_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::custom_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  319 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, PublishedTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+  982 |             [01;36m[Krs_.did_ins2.pub->publish(msg_did_ins2)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  366 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rcl_serialized_message_t&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; rcl_serialized_message_t = rcutils_uint8_array_s][m[K[m[K’
+  384 |   [01;36m[Kpublish[m[K(const rcl_serialized_message_t & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS2[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rcl_serialized_message_t&[m[K’ {aka ‘[01m[Kconst rcutils_uint8_array_s&[m[K’}
+  384 |   publish([01;36m[Kconst rcl_serialized_message_t & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rclcpp::SerializedMessage&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  390 |   [01;36m[Kpublish[m[K(const SerializedMessage & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:37:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS2[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rclcpp::SerializedMessage&[m[K’
+  390 |   publish([01;36m[Kconst SerializedMessage & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(rclcpp::LoanedMessage<typename rclcpp::TypeAdapter<MessageT>::ros_message_type, AllocatorT>&&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; typename rclcpp::TypeAdapter<MessageT>::ros_message_type = std_msgs::msg::String_<std::allocator<void> >][m[K[m[K’
+  404 |   [01;36m[Kpublish[m[K(rclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:64:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS2[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS2_<std::allocator<void> >[m[K’} to ‘[01m[Krclcpp::LoanedMessage<std_msgs::msg::String_<std::allocator<void> >, std::allocator<void> >&&[m[K’
+  404 |   publish([01;36m[Krclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS4_callback[m[K(eDataIDs, const ins_4_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1008:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1008 |         if (rs_.did_ins4.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                              [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:38:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::publish(inertial_sense_ros2::msg::DIDINS4&)[m[K’
+ 1009 |             [01;31m[Krs_.did_ins4.pub->publish(msg_did_ins4)[m[K;
+      |             [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::ros_message_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::ros_message_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::ros_message_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  239 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, ROSMessageTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:239:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+ 1009 |             [01;36m[Krs_.did_ins4.pub->publish(msg_did_ins4)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(rosidl_generator_traits::is_message<T>::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::ros_message_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  289 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:289:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(std::unique_ptr<T, typename std::conditional<std::is_same<typename std::allocator_traits<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type>::rebind_alloc<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>, std::allocator<typename rclcpp::TypeAdapter<MessageT>::custom_type> >::value, std::default_delete<typename rclcpp::TypeAdapter<MessageT>::custom_type>, rclcpp::allocator::AllocatorDeleter<typename std::allocator_traits<_Allocator>::rebind_traits<typename rclcpp::TypeAdapter<MessageT, void, void>::custom_type>::allocator_type> >::type>) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  319 |   [01;36m[Kpublish[m[K(std::unique_ptr<T, PublishedTypeDeleter> msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:319:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:38:[m[K [01;36m[Knote: [m[K  ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’ is not derived from ‘[01m[Kstd::unique_ptr<T, std::default_delete<std_msgs::msg::String_<std::allocator<void> > > >[m[K’
+ 1009 |             [01;36m[Krs_.did_ins4.pub->publish(msg_did_ins4)[m[K;
+      |             [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T> std::enable_if_t<(typename rclcpp::TypeAdapter<MessageT>::is_specialized::value && std::is_same<T, typename rclcpp::TypeAdapter<MessageT>::custom_type>::value)> rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const T&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  366 |   [01;36m[Kpublish[m[K(const T & msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:366:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rcl_serialized_message_t&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; rcl_serialized_message_t = rcutils_uint8_array_s][m[K[m[K’
+  384 |   [01;36m[Kpublish[m[K(const rcl_serialized_message_t & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:384:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS4[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rcl_serialized_message_t&[m[K’ {aka ‘[01m[Kconst rcutils_uint8_array_s&[m[K’}
+  384 |   publish([01;36m[Kconst rcl_serialized_message_t & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(const rclcpp::SerializedMessage&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>][m[K[m[K’
+  390 |   [01;36m[Kpublish[m[K(const SerializedMessage & serialized_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:390:37:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS4[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’} to ‘[01m[Kconst rclcpp::SerializedMessage&[m[K’
+  390 |   publish([01;36m[Kconst SerializedMessage & serialized_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::Publisher<MessageT, AllocatorT>::[01;32m[Kpublish[m[K(rclcpp::LoanedMessage<typename rclcpp::TypeAdapter<MessageT>::ros_message_type, AllocatorT>&&) [35m[K[with MessageT = std_msgs::msg::String_<std::allocator<void> >; AllocatorT = std::allocator<void>; typename rclcpp::TypeAdapter<MessageT>::ros_message_type = std_msgs::msg::String_<std::allocator<void> >][m[K[m[K’
+  404 |   [01;36m[Kpublish[m[K(rclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg)
+      |   [01;36m[K^~~~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:404:64:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kinertial_sense_ros2::msg::DIDINS4[m[K’ {aka ‘[01m[Kinertial_sense_ros2::msg::DIDINS4_<std::allocator<void> >[m[K’} to ‘[01m[Krclcpp::LoanedMessage<std_msgs::msg::String_<std::allocator<void> >, std::allocator<void> >&&[m[K’
+  404 |   publish([01;36m[Krclcpp::LoanedMessage<ROSMessageType, AllocatorT> && loaned_msg[m[K)
+      |           [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1078:35:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1078 |             rs_.odom_ins_ecef.pub.[01;31m[Kpublish[m[K(msg_odom_ecef);
+      |                                   [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1165:38:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1165 |                 rs_.odom_ins_ned.pub.[01;31m[Kpublish[m[K(msg_odom_ned);
+      |                                      [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1259:38:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1259 |                 rs_.odom_ins_enu.pub.[01;31m[Kpublish[m[K(msg_odom_enu);
+      |                                      [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINL2_states_callback[m[K(eDataIDs, const inl2_states_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1311:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1311 |         if (rs_.inl2_states.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                                 [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1312:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1312 |             rs_.inl2_states.pub.[01;31m[Kpublish[m[K(msg_inl2_states);
+      |                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_pos_callback[m[K(eDataIDs, const gps_pos_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1455:36:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1455 |             rs_.gps1_navsatfix.pub.[01;31m[Kpublish[m[K(msg_NavSatFix);
+      |                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS1[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1499:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1499 |         if (rs_.gps1.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                          [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1500:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1500 |             rs_.gps1.pub.[01;31m[Kpublish[m[K(msg_gps1);
+      |                          [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS2[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1511:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[KgetNumSubscribers[m[K’
+ 1511 |         if (rs_.gps2.pub.[01;31m[KgetNumSubscribers[m[K() > 0)
+      |                          [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1512:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1512 |             rs_.gps2.pub.[01;31m[Kpublish[m[K(msg_gps2);
+      |                          [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_info_callback[m[K(eDataIDs, const gps_sat_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1569:43:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1569 |     case DID_GPS1_SAT:  rs_.gps1_info.pub.[01;31m[Kpublish[m[K(msg_gps1_info);    break;
+      |                                           [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1570:43:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1570 |     case DID_GPS2_SAT:  rs_.gps2_info.pub.[01;31m[Kpublish[m[K(msg_gps1_info);    break;
+      |                                           [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kmag_callback[m[K(eDataIDs, const magnetometer_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1588:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1588 |     rs_.magnetometer.pub.[01;31m[Kpublish[m[K(mag_msg);
+      |                          [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kbaro_callback[m[K(eDataIDs, const barometer_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1604:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1604 |     rs_.barometer.pub.[01;31m[Kpublish[m[K(baro_msg);
+      |                       [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kpreint_IMU_callback[m[K(eDataIDs, const pimu_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1623:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1623 |         rs_.pimu.pub.[01;31m[Kpublish[m[K(msg_pimu);
+      |                      [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1640:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1640 |             rs_.imu.pub.[01;31m[Kpublish[m[K(msg_imu);
+      |                         [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Misc_callback[m[K(eDataIDs, const gps_rtk_misc_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1667:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1667 |         rs_.rtk_pos.pubInfo.[01;31m[Kpublish[m[K(rtk_info);
+      |                             [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1672:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1672 |         rs_.rtk_cmp.pubInfo.[01;31m[Kpublish[m[K(rtk_info);
+      |                             [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Rel_callback[m[K(eDataIDs, const gps_rtk_rel_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1724:28:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1724 |         rs_.rtk_pos.pubRel.[01;31m[Kpublish[m[K(rtk_rel);
+      |                            [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1737:28:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1737 |         rs_.rtk_cmp.pubRel.[01;31m[Kpublish[m[K(rtk_rel);
+      |                            [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_obs_bundle_timer_callback[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1852:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1852 |             rs_.gps1_raw.pubObs.[01;31m[Kpublish[m[K(gps1_obs_Vec_);
+      |                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1862:33:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1862 |             rs_.gps2_raw.pubObs.[01;31m[Kpublish[m[K(gps2_obs_Vec_);
+      |                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1872:36:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1872 |             rs_.gpsbase_raw.pubObs.[01;31m[Kpublish[m[K(base_obs_Vec_);
+      |                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_eph_callback[m[K(eDataIDs, const eph_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1923:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1923 |     case DID_GPS1_RAW:      rs_.gps1_raw.pubEph.[01;31m[Kpublish[m[K(eph);        break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1924:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1924 |     case DID_GPS2_RAW:      rs_.gps2_raw.pubEph.[01;31m[Kpublish[m[K(eph);        break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1925:52:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1925 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubEph.[01;31m[Kpublish[m[K(eph);    break;
+      |                                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_geph_callback[m[K(eDataIDs, const geph_t*)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1956:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1956 |     case DID_GPS1_RAW:      rs_.gps1_raw.pubGEp.[01;31m[Kpublish[m[K(geph);       break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1957:49:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1957 |     case DID_GPS2_RAW:      rs_.gps2_raw.pubGEp.[01;31m[Kpublish[m[K(geph);       break;
+      |                                                 [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1958:52:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 1958 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubGEp.[01;31m[Kpublish[m[K(geph);   break;
+      |                                                    [01;31m[K^~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kdiagnostics_callback[m[K()[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:2058:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kusing rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > >::SharedPtr = class std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’ {aka ‘[01m[Kclass std::shared_ptr<rclcpp::Publisher<std_msgs::msg::String_<std::allocator<void> > > >[m[K’} has no member named ‘[01m[Kpublish[m[K’
+ 2058 |     rs_.diagnostics.pub.[01;31m[Kpublish[m[K(diag_array);
+      |                         [01;31m[K^~~~~~~[m[K
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

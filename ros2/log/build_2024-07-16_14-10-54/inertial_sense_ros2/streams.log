@@ -1,0 +1,1379 @@
+[0.049s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
+[0.323s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[0.376s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[0.425s] [  1%] Built target inertial_sense_ros2__cpp
+[0.464s] [ 27%] Built target inertial_sense_ros2__rosidl_generator_c
+[0.548s] [ 27%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o[0m
+[0.571s] [ 28%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o[0m
+[0.593s] [ 28%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/ParamHelper.cpp.o[0m
+[0.614s] [ 37%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[0.614s] [ 37%] [32mBuilding CXX object CMakeFiles/new_target.dir/include/TopicHelper.cpp.o[0m
+[0.615s] [ 38%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/serial.cpp.o[0m
+[0.637s] [ 47%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[0.637s] [ 57%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[0.673s] [ 66%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[0.674s] [ 76%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[0.680s] [ 86%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[0.778s] [ 86%] Built target inertial_sense_ros2
+[0.869s] [ 87%] Built target inertial_sense_ros2__py
+[1.005s] [ 96%] Built target inertial_sense_ros2__rosidl_generator_py
+[1.188s] [ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+[1.194s] [ 98%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[1.194s] [ 99%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[1.209s] running egg_info
+[1.285s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[1.286s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[1.287s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[1.510s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.512s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.608s] [ 99%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[12.542s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:33[m[K,
+[12.543s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:26[m[K,
+[12.543s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.cpp:19[m[K:
+[12.544s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/ParamHelper.h:36:20:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ has not been declared
+[12.544s]    36 |     bool msgParams([01;31m[KTopicHelper[m[K &th, std::string key, std::string topicDefault="", bool enabledDefault=true, int periodDefault=1, bool implicitEnable=false);
+[12.544s]       |                    [01;31m[K^~~~~~~~~~~[m[K
+[12.545s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/ParamHelper.h:37:28:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ has not been declared
+[12.545s]    37 |     bool msgParamsImplicit([01;31m[KTopicHelper[m[K &th, std::string key, std::string topicDefault, bool enabledDefault=true, int periodDefault=1);
+[12.545s]       |                            [01;31m[K^~~~~~~~~~~[m[K
+[12.638s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:35[m[K:
+[12.639s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:31:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[12.639s]    31 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[12.639s]       |     [01;31m[K^~~~[m[K
+[12.649s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:100:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[12.650s]   100 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[12.650s]       |     [01;31m[K^~~~[m[K
+[12.735s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:34[m[K,
+[12.736s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:26[m[K,
+[12.736s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/ParamHelper.h:24[m[K,
+[12.737s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:19[m[K:
+[12.737s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:29:5:[m[K [01;31m[Kerror: [m[K‘[01m[KParamHelper[m[K’ does not name a type
+[12.737s]    29 |     [01;31m[KParamHelper[m[K ph_;
+[12.738s]       |     [01;31m[K^~~~~~~~~~~[m[K
+[12.738s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:[m[K In constructor ‘[01m[KRtkBaseCorrectionProvider::[01;32m[KRtkBaseCorrectionProvider[m[K(YAML::Node&, const std::string&)[m[K’:
+[12.738s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:33:73:[m[K [01;31m[Kerror: [m[Kclass ‘[01m[KRtkBaseCorrectionProvider[m[K’ does not have any field named ‘[01m[Kph_[m[K’
+[12.739s]    33 |     RtkBaseCorrectionProvider(YAML::Node& node, const std::string& t) : [01;31m[Kph_[m[K(node), type_(t) { };
+[12.739s]       |                                                                         [01;31m[K^~~[m[K
+[12.761s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:[m[K At global scope:
+[12.761s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:78:5:[m[K [01;31m[Kerror: [m[K‘[01m[KParamHelper[m[K’ does not name a type
+[12.761s]    78 |     [01;31m[KParamHelper[m[K ph_;
+[12.762s]       |     [01;31m[K^~~~~~~~~~~[m[K
+[12.792s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:[m[K In constructor ‘[01m[KRtkBaseProvider::[01;32m[KRtkBaseProvider[m[K(YAML::Node)[m[K’:
+[12.792s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkBase.h:103:40:[m[K [01;31m[Kerror: [m[Kclass ‘[01m[KRtkBaseProvider[m[K’ does not have any field named ‘[01m[Kph_[m[K’
+[12.793s]   103 |     RtkBaseProvider(YAML::Node node) : [01;31m[Kph_[m[K((YAML::Node &) node) { configure(node); }
+[12.793s]       |                                        [01;31m[K^~~[m[K
+[12.795s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:35[m[K:
+[12.795s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:[m[K At global scope:
+[12.796s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:28:5:[m[K [01;31m[Kerror: [m[K‘[01m[KParamHelper[m[K’ does not name a type
+[12.796s]    28 |     [01;31m[KParamHelper[m[K ph_;
+[12.796s]       |     [01;31m[K^~~~~~~~~~~[m[K
+[12.797s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:31:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[12.797s]    31 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[12.797s]       |     [01;31m[K^~~~[m[K
+[12.798s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:[m[K In constructor ‘[01m[KRtkRoverCorrectionProvider::[01;32m[KRtkRoverCorrectionProvider[m[K(YAML::Node&, const std::string&)[m[K’:
+[12.798s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:36:74:[m[K [01;31m[Kerror: [m[Kclass ‘[01m[KRtkRoverCorrectionProvider[m[K’ does not have any field named ‘[01m[Kph_[m[K’
+[12.798s]    36 |     RtkRoverCorrectionProvider(YAML::Node& node, const std::string& t) : [01;31m[Kph_[m[K(node), type_(t) { };
+[12.799s]       |                                                                          [01;31m[K^~~[m[K
+[12.804s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:32[m[K,
+[12.805s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+[12.805s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kdiagnostic_msgs[m[K’ was not declared in this scope
+[12.805s]    50 |     rclcpp::Publisher<[01;31m[Kdiagnostic_msgs[m[K::msg::DiagnosticArray>::SharedPtr pub;
+[12.809s]       |                       [01;31m[K^~~~~~~~~~~~~~~[m[K
+[12.810s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:60:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[12.810s]    50 |     rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray[01;31m[K>[m[K::SharedPtr pub;
+[12.810s]       |                                                            [01;31m[K^[m[K
+[12.811s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:63:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[12.812s]    50 |   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::[01;31m[KSharedPtr[m[K pub;
+[12.812s]       |                                                             [01;31m[K^~~~~~~~~[m[K
+[12.812s]       |                                                                      [32m[K;[m[K
+[12.813s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:73:[m[K [01;31m[Kerror: [m[K‘[01m[Kpub[m[K’ does not name a type
+[12.814s]    50 | clcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr [01;31m[Kpub[m[K;
+[12.814s]       |                                                                    [01;31m[K^~~[m[K
+[12.815s] 
+[12.828s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:[m[K At global scope:
+[12.829s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:97:5:[m[K [01;31m[Kerror: [m[K‘[01m[KParamHelper[m[K’ does not name a type
+[12.829s]    97 |     [01;31m[KParamHelper[m[K ph_;
+[12.830s]       |     [01;31m[K^~~~~~~~~~~[m[K
+[12.830s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:100:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[12.830s]   100 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[12.831s]       |     [01;31m[K^~~~[m[K
+[12.831s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:[m[K In constructor ‘[01m[KRtkRoverProvider::[01;32m[KRtkRoverProvider[m[K(YAML::Node)[m[K’:
+[12.831s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:108:41:[m[K [01;31m[Kerror: [m[Kclass ‘[01m[KRtkRoverProvider[m[K’ does not have any field named ‘[01m[Kph_[m[K’
+[12.832s]   108 |     RtkRoverProvider(YAML::Node node) : [01;31m[Kph_[m[K((YAML::Node&)node) { configure(node); }
+[12.832s]       |                                         [01;31m[K^~~[m[K
+[12.882s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[12.882s]    67 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::RTKInfo>::SharedPtr pubInfo;
+[12.883s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[12.883s]       |                       [32m[KInertialSense[m[K
+[12.883s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:56:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[12.884s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K::SharedPtr pubInfo;
+[12.885s]       |                                                        [01;31m[K^[m[K
+[12.885s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:59:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[12.885s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::[01;31m[KSharedPtr[m[K pubInfo;
+[12.886s]       |                                                           [01;31m[K^~~~~~~~~[m[K
+[12.887s]       |                                                                    [32m[K;[m[K
+[12.887s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:69:[m[K [01;31m[Kerror: [m[K‘[01m[KpubInfo[m[K’ does not name a type
+[12.887s]    67 | clcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::SharedPtr [01;31m[KpubInfo[m[K;
+[12.888s]       |                                                                [01;31m[K^~~~~~~[m[K
+[12.889s] 
+[12.940s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[12.941s]    68 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::RTKRel>::SharedPtr pubRel;
+[12.941s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[12.942s]       |                       [32m[KInertialSense[m[K
+[12.942s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:55:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[12.943s]    68 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K::SharedPtr pubRel;
+[12.943s]       |                                                       [01;31m[K^[m[K
+[12.944s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:58:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[12.944s]    68 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel>::[01;31m[KSharedPtr[m[K pubRel;
+[12.945s]       |                                                          [01;31m[K^~~~~~~~~[m[K
+[12.945s]       |                                                                   [32m[K;[m[K
+[12.946s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:58:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint TopicHelperGpsRtk::SharedPtr[m[K’
+[12.946s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:59:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint TopicHelperGpsRtk::SharedPtr[m[K’
+[12.946s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::[01;36m[KSharedPtr[m[K pubInfo;
+[12.947s]       |                                                           [01;36m[K^~~~~~~~~[m[K
+[12.951s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:68:[m[K [01;31m[Kerror: [m[K‘[01m[KpubRel[m[K’ does not name a type
+[12.951s]    68 |  rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel>::SharedPtr [01;31m[KpubRel[m[K;
+[12.952s]       |                                                                 [01;31m[K^~~~~~[m[K
+[12.952s] 
+[13.023s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.024s]    77 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::GNSSObsVec>::SharedPtr pubObs;
+[13.024s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.025s]       |                       [32m[KInertialSense[m[K
+[13.025s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:59:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.026s]    77 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K::SharedPtr pubObs;
+[13.026s]       |                                                           [01;31m[K^[m[K
+[13.026s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:62:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.027s]    77 |    rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::[01;31m[KSharedPtr[m[K pubObs;
+[13.028s]       |                                                             [01;31m[K^~~~~~~~~[m[K
+[13.028s]       |                                                                      [32m[K;[m[K
+[13.032s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:72:[m[K [01;31m[Kerror: [m[K‘[01m[KpubObs[m[K’ does not name a type
+[13.033s]    77 | cpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::SharedPtr [01;31m[KpubObs[m[K;
+[13.034s]       |                                                                 [01;31m[K^~~~~~[m[K
+[13.034s] 
+[13.104s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.105s]    78 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::GNSSEphemeris>::SharedPtr pubEph;
+[13.105s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.106s]       |                       [32m[KInertialSense[m[K
+[13.107s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:62:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.107s]    78 |    rclcpp::Publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K::SharedPtr pubEph;
+[13.108s]       |                                                             [01;31m[K^[m[K
+[13.108s] 
+[13.109s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:65:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.109s]    78 | rclcpp::Publisher<inertial_sense_ros2::msg::GNSSEphemeris>::[01;31m[KSharedPtr[m[K pubEph;
+[13.110s]       |                                                             [01;31m[K^~~~~~~~~[m[K
+[13.110s]       |                                                                      [32m[K;[m[K
+[13.111s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:65:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.111s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:62:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.111s]    77 |    rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::[01;36m[KSharedPtr[m[K pubObs;
+[13.112s]       |                                                             [01;36m[K^~~~~~~~~[m[K
+[13.112s] 
+[13.113s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:75:[m[K [01;31m[Kerror: [m[K‘[01m[KpubEph[m[K’ does not name a type
+[13.113s]    78 | ::Publisher<inertial_sense_ros2::msg::GNSSEphemeris>::SharedPtr [01;31m[KpubEph[m[K;
+[13.114s]       |                                                                 [01;31m[K^~~~~~[m[K
+[13.114s] 
+[13.136s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:32[m[K,
+[13.137s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+[13.137s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kdiagnostic_msgs[m[K’ was not declared in this scope
+[13.137s]    50 |     rclcpp::Publisher<[01;31m[Kdiagnostic_msgs[m[K::msg::DiagnosticArray>::SharedPtr pub;
+[13.138s]       |                       [01;31m[K^~~~~~~~~~~~~~~[m[K
+[13.138s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:60:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.138s]    50 |     rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray[01;31m[K>[m[K::SharedPtr pub;
+[13.139s]       |                                                            [01;31m[K^[m[K
+[13.139s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:63:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.139s]    50 |     rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::[01;31m[KSharedPtr[m[K pub;
+[13.140s]       |                                                               [01;31m[K^~~~~~~~~[m[K
+[13.140s]       |                                                                        [32m[K;[m[K
+[13.149s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:50:73:[m[K [01;31m[Kerror: [m[K‘[01m[Kpub[m[K’ does not name a type
+[13.149s]    50 |     rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr [01;31m[Kpub[m[K;
+[13.150s]       |                                                                         [01;31m[K^~~[m[K
+[13.162s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.162s]    79 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::GlonassEphemeris>::SharedPtr pubGEp;
+[13.163s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.163s]       |                       [32m[KInertialSense[m[K
+[13.164s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:65:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.164s]    79 | rclcpp::Publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K::SharedPtr pubGEp;
+[13.164s]       |                                                             [01;31m[K^[m[K
+[13.165s] 
+[13.165s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:68:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.165s]    79 | cpp::Publisher<inertial_sense_ros2::msg::GlonassEphemeris>::[01;31m[KSharedPtr[m[K pubGEp;
+[13.166s]       |                                                             [01;31m[K^~~~~~~~~[m[K
+[13.166s]       |                                                                      [32m[K;[m[K
+[13.167s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:68:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.167s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:62:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.167s]    77 |    rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::[01;36m[KSharedPtr[m[K pubObs;
+[13.168s]       |                                                             [01;36m[K^~~~~~~~~[m[K
+[13.168s] 
+[13.173s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:78:[m[K [01;31m[Kerror: [m[K‘[01m[KpubGEp[m[K’ does not name a type
+[13.173s]    79 | ublisher<inertial_sense_ros2::msg::GlonassEphemeris>::SharedPtr [01;31m[KpubGEp[m[K;
+[13.174s]       |                                                                 [01;31m[K^~~~~~[m[K
+[13.174s] 
+[13.199s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.200s]    67 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::RTKInfo>::SharedPtr pubInfo;
+[13.200s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.201s]       |                       [32m[KInertialSense[m[K
+[13.201s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:56:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.201s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K::SharedPtr pubInfo;
+[13.202s]       |                                                        [01;31m[K^[m[K
+[13.202s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:59:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.202s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::[01;31m[KSharedPtr[m[K pubInfo;
+[13.203s]       |                                                           [01;31m[K^~~~~~~~~[m[K
+[13.203s]       |                                                                    [32m[K;[m[K
+[13.207s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:69:[m[K [01;31m[Kerror: [m[K‘[01m[KpubInfo[m[K’ does not name a type
+[13.208s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::SharedPtr [01;31m[KpubInfo[m[K;
+[13.208s]       |                                                                     [01;31m[K^~~~~~~[m[K
+[13.252s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:35[m[K:
+[13.252s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:31:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[13.252s]    31 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[13.253s]       |     [01;31m[K^~~~[m[K
+[13.260s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:100:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[13.261s]   100 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[13.261s]       |     [01;31m[K^~~~[m[K
+[13.274s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.274s]    68 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::RTKRel>::SharedPtr pubRel;
+[13.275s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.275s]       |                       [32m[KInertialSense[m[K
+[13.276s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:55:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.277s]    68 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K::SharedPtr pubRel;
+[13.277s]       |                                                       [01;31m[K^[m[K
+[13.278s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:58:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.278s]    68 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel>::[01;31m[KSharedPtr[m[K pubRel;
+[13.279s]       |                                                          [01;31m[K^~~~~~~~~[m[K
+[13.279s]       |                                                                   [32m[K;[m[K
+[13.279s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:58:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint TopicHelperGpsRtk::SharedPtr[m[K’
+[13.280s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:67:59:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint TopicHelperGpsRtk::SharedPtr[m[K’
+[13.280s]    67 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::[01;36m[KSharedPtr[m[K pubInfo;
+[13.280s]       |                                                           [01;36m[K^~~~~~~~~[m[K
+[13.285s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:68:68:[m[K [01;31m[Kerror: [m[K‘[01m[KpubRel[m[K’ does not name a type
+[13.286s]    68 |     rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel>::SharedPtr [01;31m[KpubRel[m[K;
+[13.286s]       |                                                                    [01;31m[K^~~~~~[m[K
+[13.343s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.343s]    77 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::GNSSObsVec>::SharedPtr pubObs;
+[13.344s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.344s]       |                       [32m[KInertialSense[m[K
+[13.345s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:59:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.345s]    77 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K::SharedPtr pubObs;
+[13.346s]       |                                                           [01;31m[K^[m[K
+[13.346s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:62:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.346s]    77 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::[01;31m[KSharedPtr[m[K pubObs;
+[13.347s]       |                                                              [01;31m[K^~~~~~~~~[m[K
+[13.347s]       |                                                                       [32m[K;[m[K
+[13.357s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:72:[m[K [01;31m[Kerror: [m[K‘[01m[KpubObs[m[K’ does not name a type
+[13.358s]    77 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::SharedPtr [01;31m[KpubObs[m[K;
+[13.358s]       |                                                                        [01;31m[K^~~~~~[m[K
+[13.412s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.412s]    78 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::GNSSEphemeris>::SharedPtr pubEph;
+[13.412s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.413s]       |                       [32m[KInertialSense[m[K
+[13.413s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:62:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.414s]    78 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K::SharedPtr pubEph;
+[13.414s]       |                                                              [01;31m[K^[m[K
+[13.415s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:65:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.415s]    78 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSEphemeris>::[01;31m[KSharedPtr[m[K pubEph;
+[13.415s]       |                                                                 [01;31m[K^~~~~~~~~[m[K
+[13.416s]       |                                                                          [32m[K;[m[K
+[13.416s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:65:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.416s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:62:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.417s]    77 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::[01;36m[KSharedPtr[m[K pubObs;
+[13.417s]       |                                                              [01;36m[K^~~~~~~~~[m[K
+[13.424s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:78:75:[m[K [01;31m[Kerror: [m[K‘[01m[KpubEph[m[K’ does not name a type
+[13.424s]    78 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSEphemeris>::SharedPtr [01;31m[KpubEph[m[K;
+[13.425s]       |                                                                           [01;31m[K^~~~~~[m[K
+[13.477s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:23:[m[K [01;31m[Kerror: [m[K‘[01m[Kinertial_sense_ros2[m[K’ was not declared in this scope; did you mean ‘[01m[KInertialSense[m[K’?
+[13.477s]    79 |     rclcpp::Publisher<[01;31m[Kinertial_sense_ros2[m[K::msg::GlonassEphemeris>::SharedPtr pubGEp;
+[13.478s]       |                       [01;31m[K^~~~~~~~~~~~~~~~~~~[m[K
+[13.479s]       |                       [32m[KInertialSense[m[K
+[13.479s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:65:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+[13.480s]    79 |     rclcpp::Publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K::SharedPtr pubGEp;
+[13.480s]       |                                                                 [01;31m[K^[m[K
+[13.481s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:68:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K;[m[K’ at end of member declaration
+[13.481s]    79 |     rclcpp::Publisher<inertial_sense_ros2::msg::GlonassEphemeris>::[01;31m[KSharedPtr[m[K pubGEp;
+[13.481s]       |                                                                    [01;31m[K^~~~~~~~~[m[K
+[13.482s]       |                                                                             [32m[K;[m[K
+[13.482s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:68:[m[K [01;31m[Kerror: [m[Kredeclaration of ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.482s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:77:62:[m[K [01;36m[Knote: [m[Kprevious declaration ‘[01m[Kint TopicHelperGpsRaw::SharedPtr[m[K’
+[13.483s]    77 |     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::[01;36m[KSharedPtr[m[K pubObs;
+[13.483s]       |                                                              [01;36m[K^~~~~~~~~[m[K
+[13.493s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:79:78:[m[K [01;31m[Kerror: [m[K‘[01m[KpubGEp[m[K’ does not name a type
+[13.493s]    79 |     rclcpp::Publisher<inertial_sense_ros2::msg::GlonassEphemeris>::SharedPtr [01;31m[KpubGEp[m[K;
+[13.494s]       |                                                                              [01;31m[K^~~~~~[m[K
+[13.579s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:35[m[K:
+[13.579s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:31:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[13.579s]    31 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[13.580s]       |     [01;31m[K^~~~[m[K
+[13.590s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/RtkRover.h:100:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[13.590s]   100 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("rtkrover");
+[13.591s]       |     [01;31m[K^~~~[m[K
+[14.479s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:221:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[14.480s]   221 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[14.480s]       |     [01;31m[K^~~~[m[K
+[14.481s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:222:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[14.492s]   222 |     [01;31m[Kauto[m[K nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[14.492s]       |     [01;31m[K^~~~[m[K
+[14.502s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:231:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.502s]   231 |         [01;31m[KTopicHelper[m[K did_ins1;
+[14.503s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.515s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:232:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.516s]   232 |         [01;31m[KTopicHelper[m[K did_ins2;
+[14.517s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.522s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:233:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.523s]   233 |         [01;31m[KTopicHelper[m[K did_ins4;
+[14.523s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.524s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:234:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.524s]   234 |         [01;31m[KTopicHelper[m[K odom_ins_ned;
+[14.525s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.533s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:235:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.533s]   235 |         [01;31m[KTopicHelper[m[K odom_ins_ecef;
+[14.534s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.545s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:236:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.545s]   236 |         [01;31m[KTopicHelper[m[K odom_ins_enu;
+[14.545s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.607s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:237:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.608s]   237 |         [01;31m[KTopicHelper[m[K inl2_states;
+[14.608s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.609s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:239:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.609s]   239 |         [01;31m[KTopicHelper[m[K imu;
+[14.610s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.610s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:240:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.614s]   240 |         [01;31m[KTopicHelper[m[K pimu;
+[14.614s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.670s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:241:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.670s]   241 |         [01;31m[KTopicHelper[m[K magnetometer;
+[14.671s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.671s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:242:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.671s]   242 |         [01;31m[KTopicHelper[m[K barometer;
+[14.672s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.672s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:243:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.673s]   243 |         [01;31m[KTopicHelper[m[K strobe_in;
+[14.673s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.691s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:245:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGps[m[K’ does not name a type
+[14.691s]   245 |         [01;31m[KTopicHelperGps[m[K gps1;
+[14.692s]       |         [01;31m[K^~~~~~~~~~~~~~[m[K
+[14.709s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:246:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGps[m[K’ does not name a type
+[14.710s]   246 |         [01;31m[KTopicHelperGps[m[K gps2;
+[14.710s]       |         [01;31m[K^~~~~~~~~~~~~~[m[K
+[14.710s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:247:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.711s]   247 |         [01;31m[KTopicHelper[m[K gps1_navsatfix;
+[14.711s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.712s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:248:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.712s]   248 |         [01;31m[KTopicHelper[m[K gps2_navsatfix;
+[14.712s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.722s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:249:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.742s]   249 |         [01;31m[KTopicHelper[m[K gps1_info;
+[14.743s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.743s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:250:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.744s]   250 |         [01;31m[KTopicHelper[m[K gps2_info;
+[14.744s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.757s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:251:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRaw[m[K’ does not name a type
+[14.758s]   251 |         [01;31m[KTopicHelperGpsRaw[m[K gps1_raw;
+[14.758s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[14.785s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:252:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRaw[m[K’ does not name a type
+[14.786s]   252 |         [01;31m[KTopicHelperGpsRaw[m[K gps2_raw;
+[14.786s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[14.804s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:253:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRaw[m[K’ does not name a type
+[14.805s]   253 |         [01;31m[KTopicHelperGpsRaw[m[K gpsbase_raw;
+[14.805s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[14.821s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:[m[K In member function ‘[01m[Kvoid Serial::[01;32m[Kasync_write_end[m[K(const boost::system::error_code&, std::size_t)[m[K’:
+[14.821s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:172:10:[m[K [01;31m[Kerror: [m[K‘[01m[Kcerr[m[K’ is not a member of ‘[01m[Kstd[m[K’
+[14.822s]   172 |     std::[01;31m[Kcerr[m[K << error.message() << std::endl;
+[14.822s]       |          [01;31m[K^~~~[m[K
+[14.823s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/serial.cpp:39:1:[m[K [01;36m[Knote: [m[K‘[01m[Kstd::cerr[m[K’ is defined in header ‘[01m[K<iostream>[m[K’; did you forget to ‘[01m[K#include <iostream>[m[K’?
+[14.823s]    38 | #include <serial.h>
+[14.824s]   +++ |+[32m[K#include <iostream>[m[K
+[14.824s]    39 | 
+[14.825s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:254:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRtk[m[K’ does not name a type
+[14.825s]   254 |         [01;31m[KTopicHelperGpsRtk[m[K rtk_pos;
+[14.826s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[14.836s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:[m[K At global scope:
+[14.836s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:221:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[14.837s]   221 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[14.837s]       |     [01;31m[K^~~~[m[K
+[14.838s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:222:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[14.840s]   222 |     [01;31m[Kauto[m[K nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[14.841s]       |     [01;31m[K^~~~[m[K
+[14.841s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:255:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRtk[m[K’ does not name a type
+[14.842s]   255 |         [01;31m[KTopicHelperGpsRtk[m[K rtk_cmp;
+[14.843s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[14.861s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:257:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.862s]   257 |         [01;31m[KTopicHelper[m[K diagnostics;
+[14.862s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.863s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:231:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.863s]   231 |         [01;31m[KTopicHelper[m[K did_ins1;
+[14.864s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.877s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:232:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.877s]   232 |         [01;31m[KTopicHelper[m[K did_ins2;
+[14.878s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.878s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:233:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.879s]   233 |         [01;31m[KTopicHelper[m[K did_ins4;
+[14.879s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.895s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:234:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.896s]   234 |         [01;31m[KTopicHelper[m[K odom_ins_ned;
+[14.896s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.901s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:235:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.902s]   235 |         [01;31m[KTopicHelper[m[K odom_ins_ecef;
+[14.903s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.914s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:236:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.914s]   236 |         [01;31m[KTopicHelper[m[K odom_ins_enu;
+[14.915s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.924s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:237:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.925s]   237 |         [01;31m[KTopicHelper[m[K inl2_states;
+[14.925s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.933s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:239:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.934s]   239 |         [01;31m[KTopicHelper[m[K imu;
+[14.934s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.943s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:240:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.943s]   240 |         [01;31m[KTopicHelper[m[K pimu;
+[14.943s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.954s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:241:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.955s]   241 |         [01;31m[KTopicHelper[m[K magnetometer;
+[14.955s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.967s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:242:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.967s]   242 |         [01;31m[KTopicHelper[m[K barometer;
+[14.968s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.979s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:243:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[14.980s]   243 |         [01;31m[KTopicHelper[m[K strobe_in;
+[14.980s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[14.992s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:245:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGps[m[K’ does not name a type
+[14.993s]   245 |         [01;31m[KTopicHelperGps[m[K gps1;
+[14.993s]       |         [01;31m[K^~~~~~~~~~~~~~[m[K
+[15.005s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:246:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGps[m[K’ does not name a type
+[15.006s]   246 |         [01;31m[KTopicHelperGps[m[K gps2;
+[15.007s]       |         [01;31m[K^~~~~~~~~~~~~~[m[K
+[15.020s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:247:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[15.020s]   247 |         [01;31m[KTopicHelper[m[K gps1_navsatfix;
+[15.021s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[15.030s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:248:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[15.031s]   248 |         [01;31m[KTopicHelper[m[K gps2_navsatfix;
+[15.031s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[15.044s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:249:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[15.045s]   249 |         [01;31m[KTopicHelper[m[K gps1_info;
+[15.045s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[15.052s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:250:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[15.052s]   250 |         [01;31m[KTopicHelper[m[K gps2_info;
+[15.053s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[15.083s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:251:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRaw[m[K’ does not name a type
+[15.084s]   251 |         [01;31m[KTopicHelperGpsRaw[m[K gps1_raw;
+[15.084s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[15.104s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:252:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRaw[m[K’ does not name a type
+[15.105s]   252 |         [01;31m[KTopicHelperGpsRaw[m[K gps2_raw;
+[15.105s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[15.125s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:253:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRaw[m[K’ does not name a type
+[15.126s]   253 |         [01;31m[KTopicHelperGpsRaw[m[K gpsbase_raw;
+[15.126s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[15.167s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:254:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRtk[m[K’ does not name a type
+[15.168s]   254 |         [01;31m[KTopicHelperGpsRtk[m[K rtk_pos;
+[15.168s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[15.188s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:255:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelperGpsRtk[m[K’ does not name a type
+[15.189s]   255 |         [01;31m[KTopicHelperGpsRtk[m[K rtk_cmp;
+[15.190s]       |         [01;31m[K^~~~~~~~~~~~~~~~~[m[K
+[15.190s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:257:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTopicHelper[m[K’ does not name a type
+[15.191s]   257 |         [01;31m[KTopicHelper[m[K diagnostics;
+[15.191s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[15.239s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:221:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[15.240s]   221 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[15.240s]       |     [01;31m[K^~~~[m[K
+[15.240s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:222:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[15.241s]   222 |     [01;31m[Kauto[m[K nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[15.241s]       |     [01;31m[K^~~~[m[K
+[15.582s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:221:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[15.582s]   221 |     [01;31m[Kauto[m[K nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[15.583s]       |     [01;31m[K^~~~[m[K
+[15.584s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:222:5:[m[K [01;31m[Kerror: [m[Knon-static data member declared with placeholder ‘[01m[Kauto[m[K’
+[15.584s]   222 |     [01;31m[Kauto[m[K nh_private_ = rclcpp::Node::make_shared("inertial_sense_ros2");
+[15.585s]       |     [01;31m[K^~~~[m[K
+[15.655s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KinitializeROS[m[K()[m[K’:
+[15.655s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:128:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.656s]   128 | nt_srv_         = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA);
+[15.656s]       |                                                             [01;31m[K^[m[K
+[15.656s] 
+[15.662s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:129:97:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.662s]   129 | = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate[01;31m[K>[m[K("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
+[15.663s]       |                                                             [01;31m[K^[m[K
+[15.664s] 
+[15.664s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.665s]   130 |                 = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
+[15.667s]       |                                                             [01;31m[K^[m[K
+[15.668s] 
+[15.668s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:131:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.670s]   131 | v_              = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
+[15.672s]       |                                                             [01;31m[K^[m[K
+[15.673s] 
+[15.673s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:138:62:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.673s]   138 |    strobe_pub_ = nh_->create_publisher<std_msgs::msg::Header[01;31m[K>[m[K(rs_.strobe_in.topic, 1);
+[15.674s]       |                                                             [01;31m[K^[m[K
+[15.674s] 
+[15.675s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:140:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.675s]   140 |     if (rs_.did_ins1.enabled)               { rs_.did_ins1.[01;31m[Kpub[m[K      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
+[15.676s]       |                                                            [01;31m[K^~~[m[K
+[15.676s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:140:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.676s]   140 |    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1[01;31m[K>[m[K(rs_.did_ins1.topic, 1); }
+[15.678s]       |                                                             [01;31m[K^[m[K
+[15.679s] 
+[15.679s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:141:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.680s]   141 |     if (rs_.did_ins2.enabled)               { rs_.did_ins2.[01;31m[Kpub[m[K      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
+[15.680s]       |                                                            [01;31m[K^~~[m[K
+[15.680s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:141:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.681s]   141 |    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2[01;31m[K>[m[K(rs_.did_ins2.topic, 1); }
+[15.681s]       |                                                             [01;31m[K^[m[K
+[15.681s] 
+[15.682s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:142:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.682s]   142 |     if (rs_.did_ins4.enabled)               { rs_.did_ins4.[01;31m[Kpub[m[K      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
+[15.683s]       |                                                            [01;31m[K^~~[m[K
+[15.683s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:142:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.683s]   142 |    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4[01;31m[K>[m[K(rs_.did_ins4.topic, 1); }
+[15.684s]       |                                                             [01;31m[K^[m[K
+[15.684s] 
+[15.684s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:143:64:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.685s]   143 |  if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.[01;31m[Kpub[m[K  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
+[15.685s]       |                                                             [01;31m[K^~~[m[K
+[15.686s] 
+[15.686s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:143:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.687s]   143 | ins_ned.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ned.topic, 1); }
+[15.687s]       |                                                             [01;31m[K^[m[K
+[15.687s] 
+[15.688s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:144:64:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.688s]   144 |  if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.[01;31m[Kpub[m[K  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_enu.topic, 1); }
+[15.688s]       |                                                             [01;31m[K^~~[m[K
+[15.689s] 
+[15.689s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:144:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.689s]   144 | ins_enu.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_enu.topic, 1); }
+[15.690s]       |                                                             [01;31m[K^[m[K
+[15.690s] 
+[15.697s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:145:65:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.697s]   145 | if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.[01;31m[Kpub[m[K = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
+[15.698s]       |                                                             [01;31m[K^~~[m[K
+[15.698s] 
+[15.698s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:145:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.699s]   145 | ins_ecef.pub = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ecef.topic, 1); }
+[15.699s]       |                                                             [01;31m[K^[m[K
+[15.701s] 
+[15.702s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:146:63:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.702s]   146 |   if (rs_.inl2_states.enabled)            { rs_.inl2_states.[01;31m[Kpub[m[K   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States>(rs_.inl2_states.topic, 1); }
+[15.702s]       |                                                             [01;31m[K^~~[m[K
+[15.703s] 
+[15.703s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:146:129:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.704s]   146 | = nh_->create_publisher<inertial_sense_ros2::msg::INL2States[01;31m[K>[m[K(rs_.inl2_states.topic, 1); }
+[15.704s]       |                                                             [01;31m[K^[m[K
+[15.705s] 
+[15.709s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:148:56:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.710s]   148 |     if (rs_.pimu.enabled)                   { rs_.pimu.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
+[15.710s]       |                                                        [01;31m[K^~~[m[K
+[15.711s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:148:114:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.711s]   148 | u.pub = nh_->create_publisher<inertial_sense_ros2::msg::PIMU[01;31m[K>[m[K(rs_.pimu.topic, 1); }
+[15.712s]       |                                                             [01;31m[K^[m[K
+[15.712s] 
+[15.713s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:149:55:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.713s]   149 |     if (rs_.imu.enabled)                    { rs_.imu.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
+[15.714s]       |                                                       [01;31m[K^~~[m[K
+[15.715s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:149:104:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.715s]   149 |  { rs_.imu.pub = nh_->create_publisher<sensor_msgs::msg::Imu[01;31m[K>[m[K(rs_.imu.topic, 1); }
+[15.715s]       |                                                             [01;31m[K^[m[K
+[15.716s] 
+[15.716s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:150:64:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.717s]   150 |  if (rs_.magnetometer.enabled)           { rs_.magnetometer.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
+[15.717s]       |                                                             [01;31m[K^~~[m[K
+[15.718s] 
+[15.718s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:150:123:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.718s]   150 | .pub = nh_->create_publisher<sensor_msgs::msg::MagneticField[01;31m[K>[m[K(rs_.magnetometer.topic, 1); }
+[15.719s]       |                                                             [01;31m[K^[m[K
+[15.719s] 
+[15.720s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:151:61:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.724s]   151 |     if (rs_.barometer.enabled)              { rs_.barometer.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
+[15.725s]       |                                                             [01;31m[K^~~[m[K
+[15.725s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:151:120:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.726s]   151 | .pub = nh_->create_publisher<sensor_msgs::msg::FluidPressure[01;31m[K>[m[K(rs_.barometer.topic, 1); }
+[15.726s]       |                                                             [01;31m[K^[m[K
+[15.727s] 
+[15.727s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:153:56:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.727s]   153 |     if (rs_.gps1.enabled)                   { rs_.gps1.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
+[15.728s]       |                                                        [01;31m[K^~~[m[K
+[15.728s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:153:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.729s]   153 | s1.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps1.topic, 1); }
+[15.729s]       |                                                             [01;31m[K^[m[K
+[15.729s] 
+[15.730s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:154:66:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.730s]   154 | f (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
+[15.730s]       |                                                             [01;31m[K^~~[m[K
+[15.731s] 
+[15.731s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:154:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.731s]   154 | tfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps1_navsatfix.topic, 1); }
+[15.732s]       |                                                             [01;31m[K^[m[K
+[15.733s] 
+[15.733s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:155:61:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.734s]   155 |     if (rs_.gps1_info.enabled)              { rs_.gps1_info.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
+[15.735s]       |                                                             [01;31m[K^~~[m[K
+[15.738s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:155:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.738s]   155 | ub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps1_info.topic, 1); }
+[15.739s]       |                                                             [01;31m[K^[m[K
+[15.739s] 
+[15.739s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:157:56:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.740s]   157 |     if (rs_.gps2.enabled)                   { rs_.gps2.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
+[15.740s]       |                                                        [01;31m[K^~~[m[K
+[15.740s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:157:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.741s]   157 | s2.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps2.topic, 1); }
+[15.742s]       |                                                             [01;31m[K^[m[K
+[15.742s] 
+[15.743s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:158:66:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.743s]   158 | f (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
+[15.743s]       |                                                             [01;31m[K^~~[m[K
+[15.744s] 
+[15.744s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:158:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.745s]   158 | tfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps2_navsatfix.topic, 1); }
+[15.745s]       |                                                             [01;31m[K^[m[K
+[15.745s] 
+[15.746s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:159:61:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.746s]   159 |     if (rs_.gps2_info.enabled)              { rs_.gps2_info.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
+[15.746s]       |                                                             [01;31m[K^~~[m[K
+[15.747s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:159:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.747s]   159 | ub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps2_info.topic, 1); }
+[15.747s]       |                                                             [01;31m[K^[m[K
+[15.748s] 
+[15.748s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:163:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[15.748s]   163 |         rs_.rtk_pos.[01;31m[KpubInfo[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_pos/info", 10);
+[15.749s]       |                     [01;31m[K^~~~~~~[m[K
+[15.749s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:163:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.749s]   163 | fo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_pos/info", 10);
+[15.750s]       |                                                             [01;31m[K^[m[K
+[15.750s] 
+[15.751s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:164:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[15.751s]   164 |         rs_.rtk_pos.[01;31m[KpubRel[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_pos/rel", 10);
+[15.751s]       |                     [01;31m[K^~~~~~[m[K
+[15.752s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:164:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.752s]   164 | Rel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_pos/rel", 10);
+[15.752s]       |                                                             [01;31m[K^[m[K
+[15.759s] 
+[15.760s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:168:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[15.760s]   168 |         rs_.rtk_cmp.[01;31m[KpubInfo[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_cmp/info", 10);
+[15.761s]       |                     [01;31m[K^~~~~~~[m[K
+[15.761s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:168:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.761s]   168 | fo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_cmp/info", 10);
+[15.762s]       |                                                             [01;31m[K^[m[K
+[15.762s] 
+[15.762s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:169:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[15.763s]   169 |         rs_.rtk_cmp.[01;31m[KpubRel[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_cmp/rel", 10);
+[15.763s]       |                     [01;31m[K^~~~~~[m[K
+[15.764s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:169:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.764s]   169 | Rel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_cmp/rel", 10);
+[15.764s]       |                                                             [01;31m[K^[m[K
+[15.765s] 
+[15.765s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[15.765s]   174 |         rs_.gps1_raw.[01;31m[KpubObs[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", 50);
+[15.766s]       |                      [01;31m[K^~~~~~[m[K
+[15.766s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.766s]   174 | = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps1_raw.topic + "/obs", 50);
+[15.767s]       |                                                             [01;31m[K^[m[K
+[15.767s] 
+[15.768s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[15.768s]   174 | inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", [01;35m[K50[m[K);
+[15.768s]       |                                                                    [01;35m[K^~[m[K
+[15.769s] 
+[15.769s] In file included from [01m[K/usr/include/c++/13/string:54[m[K,
+[15.769s]                  from [01m[K/usr/include/c++/13/bits/locale_classes.h:40[m[K,
+[15.769s]                  from [01m[K/usr/include/c++/13/bits/ios_base.h:41[m[K,
+[15.770s]                  from [01m[K/usr/include/c++/13/ios:44[m[K,
+[15.770s]                  from [01m[K/usr/include/c++/13/ostream:40[m[K,
+[15.771s]                  from [01m[K/usr/include/c++/13/iostream:41[m[K,
+[15.771s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:22[m[K:
+[15.771s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[15.772s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[15.772s]       |     [01;36m[K^~~~~~~~[m[K
+[15.772s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[15.773s]   175 |         rs_.gps1_raw.[01;31m[KpubEph[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", 50);
+[15.773s]       |                      [01;31m[K^~~~~~[m[K
+[15.773s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.774s]   175 | h_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/eph", 50);
+[15.774s]       |                                                             [01;31m[K^[m[K
+[15.774s] 
+[15.775s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[15.775s]   175 | rtial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", [01;35m[K50[m[K);
+[15.776s]       |                                                                    [01;35m[K^~[m[K
+[15.776s] 
+[15.776s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[15.777s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[15.777s]       |     [01;36m[K^~~~~~~~[m[K
+[15.778s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[15.778s]   176 |         rs_.gps1_raw.[01;31m[KpubGEp[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", 50);
+[15.779s]       |                      [01;31m[K^~~~~~[m[K
+[15.779s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.779s]   176 | >create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/geph", 50);
+[15.780s]       |                                                             [01;31m[K^[m[K
+[15.780s] 
+[15.781s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[15.784s]   176 | l_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", [01;35m[K50[m[K);
+[15.785s]       |                                                                    [01;35m[K^~[m[K
+[15.785s] 
+[15.786s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[15.788s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[15.788s]       |     [01;36m[K^~~~~~~~[m[K
+[15.789s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[15.789s]   181 |         rs_.gps2_raw.[01;31m[KpubObs[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", 50);
+[15.789s]       |                      [01;31m[K^~~~~~[m[K
+[15.790s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.790s]   181 | = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps2_raw.topic + "/obs", 50);
+[15.791s]       |                                                             [01;31m[K^[m[K
+[15.791s] 
+[15.792s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[15.792s]   181 | inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", [01;35m[K50[m[K);
+[15.792s]       |                                                                    [01;35m[K^~[m[K
+[15.793s] 
+[15.793s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[15.793s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[15.794s]       |     [01;36m[K^~~~~~~~[m[K
+[15.794s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[15.795s]   182 |         rs_.gps2_raw.[01;31m[KpubEph[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", 50);
+[15.795s]       |                      [01;31m[K^~~~~~[m[K
+[15.796s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.796s]   182 | h_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/eph", 50);
+[15.796s]       |                                                             [01;31m[K^[m[K
+[15.797s] 
+[15.797s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[15.798s]   182 | rtial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", [01;35m[K50[m[K);
+[15.803s]       |                                                                    [01;35m[K^~[m[K
+[15.803s] 
+[15.803s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[15.804s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[15.804s]       |     [01;36m[K^~~~~~~~[m[K
+[15.805s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[15.805s]   183 |         rs_.gps2_raw.[01;31m[KpubGEp[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", 50);
+[15.806s]       |                      [01;31m[K^~~~~~[m[K
+[15.806s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.806s]   183 | >create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/geph", 50);
+[15.807s]       |                                                             [01;31m[K^[m[K
+[15.807s] 
+[15.807s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[15.808s]   183 | l_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", [01;35m[K50[m[K);
+[15.808s]       |                                                                    [01;35m[K^~[m[K
+[15.808s] 
+[15.809s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[15.809s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[15.809s]       |     [01;36m[K^~~~~~~~[m[K
+[15.810s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:188:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[15.810s]   188 |         rs_.gpsbase_raw.[01;31m[KpubObs[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
+[15.810s]       |                         [01;31m[K^~~~~~[m[K
+[15.811s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:188:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.811s]   188 | >create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+[15.812s]       |                                                             [01;31m[K^[m[K
+[15.812s] 
+[15.813s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:189:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[15.813s]   189 |         rs_.gpsbase_raw.[01;31m[KpubEph[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>("gps/base_eph", 50);
+[15.813s]       |                         [01;31m[K^~~~~~[m[K
+[15.814s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:189:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.814s]   189 | h_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K("gps/base_eph", 50);
+[15.814s]       |                                                             [01;31m[K^[m[K
+[15.815s] 
+[15.815s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:190:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[15.816s]   190 |         rs_.gpsbase_raw.[01;31m[KpubGEp[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
+[15.816s]       |                         [01;31m[K^~~~~~[m[K
+[15.816s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:190:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.817s]   190 | >create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+[15.817s]       |                                                             [01;31m[K^[m[K
+[15.817s] 
+[15.818s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:195:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.818s]   195 |         rs_.diagnostics.[01;31m[Kpub[m[K = nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1);
+[15.818s]       |                         [01;31m[K^~~[m[K
+[15.819s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:195:90:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.819s]   195 |  nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray[01;31m[K>[m[K("diagnostics", 1);
+[15.820s]       |                                                             [01;31m[K^[m[K
+[15.820s] 
+[15.820s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:63:29:[m[K [01;31m[Kerror: [m[K‘[01m[KXmlRpc[m[K’ has not been declared
+[15.821s]    63 | YAML::Node xmlRpcToYamlNode([01;31m[KXmlRpc[m[K::XmlRpcValue &v)
+[15.821s]       |                             [01;31m[K^~~~~~[m[K
+[15.821s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:63:50:[m[K [01;31m[Kerror: [m[K‘[01m[Kv[m[K’ was not declared in this scope
+[15.822s]    63 | YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &[01;31m[Kv[m[K)
+[15.822s]       |                                                  [01;31m[K^[m[K
+[15.822s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:64:1:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K,[m[K’ or ‘[01m[K;[m[K’ before ‘[01m[K{[m[K’ token
+[15.823s]    64 | [01;31m[K{[m[K
+[15.823s]       | [01;31m[K^[m[K
+[15.824s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:[m[K In static member function ‘[01m[Kstatic bool ParamHelper::[01;32m[KparamServerToYamlNode[m[K(YAML::Node&, std::string, std::string)[m[K’:
+[15.824s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:86:5:[m[K [01;31m[Kerror: [m[K‘[01m[Kros[m[K’ has not been declared
+[15.824s]    86 |     [01;31m[Kros[m[K::NodeHandle nh;
+[15.825s]       |     [01;31m[K^~~[m[K
+[15.829s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:89:5:[m[K [01;31m[Kerror: [m[K‘[01m[Knh[m[K’ was not declared in this scope
+[15.829s]    89 |     [01;31m[Knh[m[K.getParamNames(nhKeyList);
+[15.830s]       |     [01;31m[K^~[m[K
+[15.830s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:105:13:[m[K [01;31m[Kerror: [m[K‘[01m[KXmlRpc[m[K’ has not been declared
+[15.831s]   105 |             [01;31m[KXmlRpc[m[K::XmlRpcValue v;
+[15.831s]       |             [01;31m[K^~~~~~[m[K
+[15.858s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/ParamHelper.cpp:106:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kv[m[K’ was not declared in this scope
+[15.859s]   106 |             if (nh.getParam(key, [01;31m[Kv[m[K))
+[15.859s]       |                                  [01;31m[K^[m[K
+[15.953s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kbool InertialSenseROS::[01;32m[Kfirmware_compatiblity_check[m[K()[m[K’:
+[15.953s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:568:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+[15.953s]   568 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K protocol_fault = rclcpp::Logger::Level::Debug; // none
+[15.953s]       |                            [01;31m[K^~~~~[m[K
+[15.969s] In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:20[m[K:
+[15.969s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KinitializeROS[m[K()[m[K’:
+[15.970s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:128:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.970s]   128 |     refLLA_set_current_srv_         = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("set_refLLA_current", &InertialSenseROS::set_current_position_as_refLLA);
+[15.970s]       |                                                                                 [01;31m[K^[m[K
+[15.970s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:129:97:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.971s]   129 |     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate[01;31m[K>[m[K("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
+[15.971s]       |                                                                                                 [01;31m[K^[m[K
+[15.971s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.971s]   130 |     mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
+[15.971s]       |                                                                                 [01;31m[K^[m[K
+[15.972s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:131:81:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.972s]   131 |     multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger[01;31m[K>[m[K("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
+[15.972s]       |                                                                                 [01;31m[K^[m[K
+[15.977s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:138:62:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.977s]   138 |     strobe_pub_ = nh_->create_publisher<std_msgs::msg::Header[01;31m[K>[m[K(rs_.strobe_in.topic, 1);
+[15.978s]       |                                                              [01;31m[K^[m[K
+[15.978s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:140:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.979s]   140 |     if (rs_.did_ins1.enabled)               { rs_.did_ins1.[01;31m[Kpub[m[K      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
+[15.979s]       |                                                            [01;31m[K^~~[m[K
+[15.982s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:140:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.982s]   140 |     if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1[01;31m[K>[m[K(rs_.did_ins1.topic, 1); }
+[15.982s]       |                                                                                                                              [01;31m[K^[m[K
+[15.983s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:141:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.983s]   141 |     if (rs_.did_ins2.enabled)               { rs_.did_ins2.[01;31m[Kpub[m[K      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
+[15.983s]       |                                                            [01;31m[K^~~[m[K
+[15.983s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:141:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.984s]   141 |     if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2[01;31m[K>[m[K(rs_.did_ins2.topic, 1); }
+[15.984s]       |                                                                                                                              [01;31m[K^[m[K
+[15.984s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:142:60:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.984s]   142 |     if (rs_.did_ins4.enabled)               { rs_.did_ins4.[01;31m[Kpub[m[K      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
+[15.985s]       |                                                            [01;31m[K^~~[m[K
+[15.985s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:142:126:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.985s]   142 |     if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4[01;31m[K>[m[K(rs_.did_ins4.topic, 1); }
+[15.986s]       |                                                                                                                              [01;31m[K^[m[K
+[15.986s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:143:64:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.987s]   143 |     if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.[01;31m[Kpub[m[K  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
+[15.987s]       |                                                                [01;31m[K^~~[m[K
+[15.987s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:143:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.988s]   143 |     if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ned.topic, 1); }
+[15.988s]       |                                                                                                                    [01;31m[K^[m[K
+[15.990s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:144:64:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.990s]   144 |     if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.[01;31m[Kpub[m[K  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_enu.topic, 1); }
+[15.990s]       |                                                                [01;31m[K^~~[m[K
+[15.990s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:144:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.990s]   144 |     if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub  = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_enu.topic, 1); }
+[15.991s]       |                                                                                                                    [01;31m[K^[m[K
+[15.992s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:145:65:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.992s]   145 |     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.[01;31m[Kpub[m[K = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
+[15.993s]       |                                                                 [01;31m[K^~~[m[K
+[15.993s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:145:116:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.993s]   145 |     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub = nh_->create_publisher<nav_msgs::msg::Odometry[01;31m[K>[m[K(rs_.odom_ins_ecef.topic, 1); }
+[15.994s]       |                                                                                                                    [01;31m[K^[m[K
+[15.994s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:146:63:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.994s]   146 |     if (rs_.inl2_states.enabled)            { rs_.inl2_states.[01;31m[Kpub[m[K   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States>(rs_.inl2_states.topic, 1); }
+[15.994s]       |                                                               [01;31m[K^~~[m[K
+[15.994s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:146:129:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.995s]   146 |     if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States[01;31m[K>[m[K(rs_.inl2_states.topic, 1); }
+[15.995s]       |                                                                                                                                 [01;31m[K^[m[K
+[15.995s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:148:56:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.995s]   148 |     if (rs_.pimu.enabled)                   { rs_.pimu.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
+[15.996s]       |                                                        [01;31m[K^~~[m[K
+[15.996s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:148:114:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.996s]   148 |     if (rs_.pimu.enabled)                   { rs_.pimu.pub = nh_->create_publisher<inertial_sense_ros2::msg::PIMU[01;31m[K>[m[K(rs_.pimu.topic, 1); }
+[15.996s]       |                                                                                                                  [01;31m[K^[m[K
+[15.997s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:149:55:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.997s]   149 |     if (rs_.imu.enabled)                    { rs_.imu.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
+[15.997s]       |                                                       [01;31m[K^~~[m[K
+[15.997s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:149:104:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[15.997s]   149 |     if (rs_.imu.enabled)                    { rs_.imu.pub = nh_->create_publisher<sensor_msgs::msg::Imu[01;31m[K>[m[K(rs_.imu.topic, 1); }
+[15.998s]       |                                                                                                        [01;31m[K^[m[K
+[15.998s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:150:64:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[15.998s]   150 |     if (rs_.magnetometer.enabled)           { rs_.magnetometer.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
+[15.998s]       |                                                                [01;31m[K^~~[m[K
+[15.998s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:150:123:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.000s]   150 |     if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub = nh_->create_publisher<sensor_msgs::msg::MagneticField[01;31m[K>[m[K(rs_.magnetometer.topic, 1); }
+[16.000s]       |                                                                                                                           [01;31m[K^[m[K
+[16.001s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:151:61:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.001s]   151 |     if (rs_.barometer.enabled)              { rs_.barometer.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
+[16.001s]       |                                                             [01;31m[K^~~[m[K
+[16.002s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:151:120:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.002s]   151 |     if (rs_.barometer.enabled)              { rs_.barometer.pub = nh_->create_publisher<sensor_msgs::msg::FluidPressure[01;31m[K>[m[K(rs_.barometer.topic, 1); }
+[16.002s]       |                                                                                                                        [01;31m[K^[m[K
+[16.003s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:153:56:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.003s]   153 |     if (rs_.gps1.enabled)                   { rs_.gps1.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
+[16.003s]       |                                                        [01;31m[K^~~[m[K
+[16.004s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:153:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.004s]   153 |     if (rs_.gps1.enabled)                   { rs_.gps1.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps1.topic, 1); }
+[16.004s]       |                                                                                                                 [01;31m[K^[m[K
+[16.009s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:154:66:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.009s]   154 |     if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
+[16.010s]       |                                                                  [01;31m[K^~~[m[K
+[16.010s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:569:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.010s]   569 |     if (diff_protocol[0] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Fatal; // major protocol changes -- BREAKING
+[16.011s]       |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.011s]       |                                [32m[Kprotocol_type_t[m[K
+[16.011s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:154:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.011s]   154 |     if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps1_navsatfix.topic, 1); }
+[16.011s]       |                                                                                                                         [01;31m[K^[m[K
+[16.012s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:155:61:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.012s]   155 |     if (rs_.gps1_info.enabled)              { rs_.gps1_info.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
+[16.012s]       |                                                             [01;31m[K^~~[m[K
+[16.012s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:155:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.012s]   155 |     if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps1_info.topic, 1); }
+[16.013s]       |                                                                                                                          [01;31m[K^[m[K
+[16.013s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:157:56:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.013s]   157 |     if (rs_.gps2.enabled)                   { rs_.gps2.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
+[16.013s]       |                                                        [01;31m[K^~~[m[K
+[16.013s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:157:113:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.014s]   157 |     if (rs_.gps2.enabled)                   { rs_.gps2.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPS[01;31m[K>[m[K(rs_.gps2.topic, 1); }
+[16.014s]       |                                                                                                                 [01;31m[K^[m[K
+[16.014s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:158:66:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.014s]   158 |     if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.[01;31m[Kpub[m[K = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
+[16.014s]       |                                                                  [01;31m[K^~~[m[K
+[16.015s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:158:121:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.015s]   158 |     if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix[01;31m[K>[m[K(rs_.gps2_navsatfix.topic, 1); }
+[16.015s]       |                                                                                                                         [01;31m[K^[m[K
+[16.015s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:159:61:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.015s]   159 |     if (rs_.gps2_info.enabled)              { rs_.gps2_info.[01;31m[Kpub[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
+[16.016s]       |                                                             [01;31m[K^~~[m[K
+[16.016s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:159:122:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.016s]   159 |     if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo[01;31m[K>[m[K(rs_.gps2_info.topic, 1); }
+[16.016s]       |                                                                                                                          [01;31m[K^[m[K
+[16.017s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:163:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[16.017s]   163 |         rs_.rtk_pos.[01;31m[KpubInfo[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_pos/info", 10);
+[16.017s]       |                     [01;31m[K^~~~~~~[m[K
+[16.017s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:163:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.018s]   163 |         rs_.rtk_pos.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_pos/info", 10);
+[16.018s]       |                                                                                      [01;31m[K^[m[K
+[16.018s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:164:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[16.018s]   164 |         rs_.rtk_pos.[01;31m[KpubRel[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_pos/rel", 10);
+[16.019s]       |                     [01;31m[K^~~~~~[m[K
+[16.019s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:164:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.019s]   164 |         rs_.rtk_pos.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_pos/rel", 10);
+[16.019s]       |                                                                                    [01;31m[K^[m[K
+[16.020s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:168:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[16.020s]   168 |         rs_.rtk_cmp.[01;31m[KpubInfo[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_cmp/info", 10);
+[16.020s]       |                     [01;31m[K^~~~~~~[m[K
+[16.020s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:168:86:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.020s]   168 |         rs_.rtk_cmp.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo[01;31m[K>[m[K("RTK_cmp/info", 10);
+[16.021s]       |                                                                                      [01;31m[K^[m[K
+[16.021s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:169:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[16.021s]   169 |         rs_.rtk_cmp.[01;31m[KpubRel[m[K = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel>("RTK_cmp/rel", 10);
+[16.021s]       |                     [01;31m[K^~~~~~[m[K
+[16.021s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:169:84:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.022s]   169 |         rs_.rtk_cmp.pubRel = nh_->create_publisher<inertial_sense_ros2::msg::RTKRel[01;31m[K>[m[K("RTK_cmp/rel", 10);
+[16.022s]       |                                                                                    [01;31m[K^[m[K
+[16.022s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.022s]   174 |         rs_.gps1_raw.[01;31m[KpubObs[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", 50);
+[16.023s]       |                      [01;31m[K^~~~~~[m[K
+[16.023s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.023s]   174 |         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps1_raw.topic + "/obs", 50);
+[16.023s]       |                                                                                         [01;31m[K^[m[K
+[16.023s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:174:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[16.024s]   174 |         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", [01;35m[K50[m[K);
+[16.024s]       |                                                                                                                        [01;35m[K^~[m[K
+[16.024s] In file included from [01m[K/usr/include/c++/13/string:54[m[K,
+[16.024s]                  from [01m[K/usr/include/c++/13/bits/locale_classes.h:40[m[K,
+[16.025s]                  from [01m[K/usr/include/c++/13/bits/ios_base.h:41[m[K,
+[16.025s]                  from [01m[K/usr/include/c++/13/ios:44[m[K,
+[16.025s]                  from [01m[K/usr/include/c++/13/ostream:40[m[K,
+[16.025s]                  from [01m[K/usr/include/c++/13/iostream:41[m[K,
+[16.026s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:22[m[K:
+[16.026s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[16.026s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[16.026s]       |     [01;36m[K^~~~~~~~[m[K
+[16.027s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.027s]   175 |         rs_.gps1_raw.[01;31m[KpubEph[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", 50);
+[16.027s]       |                      [01;31m[K^~~~~~[m[K
+[16.027s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.027s]   175 |         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/eph", 50);
+[16.028s]       |                                                                                            [01;31m[K^[m[K
+[16.028s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:175:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[16.028s]   175 |         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", [01;35m[K50[m[K);
+[16.028s]       |                                                                                                                           [01;35m[K^~[m[K
+[16.028s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[16.029s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[16.029s]       |     [01;36m[K^~~~~~~~[m[K
+[16.029s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.029s]   176 |         rs_.gps1_raw.[01;31m[KpubGEp[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", 50);
+[16.029s]       |                      [01;31m[K^~~~~~[m[K
+[16.030s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.030s]   176 |         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps1_raw.topic + "/geph", 50);
+[16.030s]       |                                                                                               [01;31m[K^[m[K
+[16.030s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:176:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[16.030s]   176 |         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", [01;35m[K50[m[K);
+[16.031s]       |                                                                                                                               [01;35m[K^~[m[K
+[16.031s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[16.032s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[16.033s]       |     [01;36m[K^~~~~~~~[m[K
+[16.033s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.034s]   181 |         rs_.gps2_raw.[01;31m[KpubObs[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", 50);
+[16.034s]       |                      [01;31m[K^~~~~~[m[K
+[16.034s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:89:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.035s]   181 |         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec[01;31m[K>[m[K(rs_.gps2_raw.topic + "/obs", 50);
+[16.035s]       |                                                                                         [01;31m[K^[m[K
+[16.035s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:181:120:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[16.036s]   181 |         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", [01;35m[K50[m[K);
+[16.036s]       |                                                                                                                        [01;35m[K^~[m[K
+[16.036s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[16.037s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[16.037s]       |     [01;36m[K^~~~~~~~[m[K
+[16.037s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.038s]   182 |         rs_.gps2_raw.[01;31m[KpubEph[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", 50);
+[16.038s]       |                      [01;31m[K^~~~~~[m[K
+[16.038s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:92:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.039s]   182 |         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/eph", 50);
+[16.039s]       |                                                                                            [01;31m[K^[m[K
+[16.039s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:182:123:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[16.040s]   182 |         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", [01;35m[K50[m[K);
+[16.040s]       |                                                                                                                           [01;35m[K^~[m[K
+[16.040s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[16.040s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[16.041s]       |     [01;36m[K^~~~~~~~[m[K
+[16.041s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.042s]   183 |         rs_.gps2_raw.[01;31m[KpubGEp[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", 50);
+[16.042s]       |                      [01;31m[K^~~~~~[m[K
+[16.042s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.042s]   183 |         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K(rs_.gps2_raw.topic + "/geph", 50);
+[16.043s]       |                                                                                               [01;31m[K^[m[K
+[16.043s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:183:127:[m[K [01;35m[Kwarning: [m[Kignoring return value of ‘[01m[Kstd::__cxx11::basic_string<_CharT, _Traits, _Allocator> std::[01;32m[Koperator+[m[K(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*) [35m[K[with _CharT = char; _Traits = char_traits<char>; _Alloc = allocator<char>][m[K[m[K’, declared with attribute ‘[01m[Knodiscard[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-result-Wunused-result]8;;[m[K]
+[16.043s]   183 |         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", [01;35m[K50[m[K);
+[16.044s]       |                                                                                                                               [01;35m[K^~[m[K
+[16.044s] [01m[K/usr/include/c++/13/bits/basic_string.h:3607:5:[m[K [01;36m[Knote: [m[Kdeclared here
+[16.044s]  3607 |     [01;36m[Koperator[m[K+(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+[16.045s]       |     [01;36m[K^~~~~~~~[m[K
+[16.045s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:188:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.045s]   188 |         rs_.gpsbase_raw.[01;31m[KpubObs[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
+[16.045s]       |                         [01;31m[K^~~~~~[m[K
+[16.046s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:188:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.046s]   188 |         rs_.gpsbase_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+[16.047s]       |                                                                                                  [01;31m[K^[m[K
+[16.047s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:189:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.047s]   189 |         rs_.gpsbase_raw.[01;31m[KpubEph[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>("gps/base_eph", 50);
+[16.048s]       |                         [01;31m[K^~~~~~[m[K
+[16.048s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:189:95:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.049s]   189 |         rs_.gpsbase_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris[01;31m[K>[m[K("gps/base_eph", 50);
+[16.049s]       |                                                                                               [01;31m[K^[m[K
+[16.049s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:190:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.050s]   190 |         rs_.gpsbase_raw.[01;31m[KpubGEp[m[K = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
+[16.050s]       |                         [01;31m[K^~~~~~[m[K
+[16.051s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:190:98:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.051s]   190 |         rs_.gpsbase_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris[01;31m[K>[m[K("gps/base_geph", 50);
+[16.051s]       |                                                                                                  [01;31m[K^[m[K
+[16.052s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:195:25:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.052s]   195 |         rs_.diagnostics.[01;31m[Kpub[m[K = nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1);
+[16.052s]       |                         [01;31m[K^~~[m[K
+[16.053s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:195:90:[m[K [01;31m[Kerror: [m[Kexpected primary-expression before ‘[01m[K>[m[K’ token
+[16.053s]   195 |         rs_.diagnostics.pub = nh_->create_publisher<diagnostic_msgs::msg::DiagnosticArray[01;31m[K>[m[K("diagnostics", 1);
+[16.054s]       |                                                                                          [01;31m[K^[m[K
+[16.054s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:570:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.055s]   570 |     else if (diff_protocol[1] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Error; // minor protocol changes -- New parameters/features
+[16.055s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.056s]       |                                     [32m[Kprotocol_type_t[m[K
+[16.056s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:571:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.056s]   571 |     else if (diff_protocol[2] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+[16.057s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.057s]       |                                     [32m[Kprotocol_type_t[m[K
+[16.105s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:572:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.106s]   572 |     else if (diff_protocol[3] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Info; // this is essentially trivial, but good to know.
+[16.106s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.107s]       |                                     [32m[Kprotocol_type_t[m[K
+[16.108s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:574:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+[16.109s]   574 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K firmware_fault = rclcpp::Logger::Level::Debug; // none
+[16.109s]       |                            [01;31m[K^~~~~[m[K
+[16.159s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:575:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+[16.159s]   575 |     if (diff_firmware[0] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Fatal;  // major protocol changes -- BREAKING
+[16.160s]       |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.218s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kbool InertialSenseROS::[01;32m[Kfirmware_compatiblity_check[m[K()[m[K’:
+[16.218s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:568:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+[16.219s]   568 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K protocol_fault = rclcpp::Logger::Level::Debug; // none
+[16.219s]       |                            [01;31m[K^~~~~[m[K
+[16.227s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:576:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+[16.227s]   576 |     else if (diff_firmware[1] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Error;  // minor protocol changes -- New parameters/features
+[16.228s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.253s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:569:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.255s]   569 |     if (diff_protocol[0] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Fatal; // major protocol changes -- BREAKING
+[16.256s]       |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.256s]       |                                [32m[Kprotocol_type_t[m[K
+[16.266s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:577:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+[16.270s]   577 |     else if (diff_firmware[2] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+[16.270s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.271s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:579:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+[16.272s]   579 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K final_fault = std::max(firmware_fault, protocol_fault);
+[16.272s]       |                            [01;31m[K^~~~~[m[K
+[16.298s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:570:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.298s]   570 |     else if (diff_protocol[1] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Error; // minor protocol changes -- New parameters/features
+[16.298s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.299s]       |                                     [32m[Kprotocol_type_t[m[K
+[16.309s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:599:12:[m[K [01;31m[Kerror: [m[K‘[01m[Kfinal_fault[m[K’ was not declared in this scope
+[16.309s]   599 |     return [01;31m[Kfinal_fault[m[K == rclcpp::Logger::Level::Debug; // true if they match, false if they don't.
+[16.310s]       |            [01;31m[K^~~~~~~~~~~[m[K
+[16.342s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:571:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.343s]   571 |     else if (diff_protocol[2] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+[16.343s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.343s]       |                                     [32m[Kprotocol_type_t[m[K
+[16.384s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:572:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kprotocol_fault[m[K’ was not declared in this scope; did you mean ‘[01m[Kprotocol_type_t[m[K’?
+[16.387s]   572 |     else if (diff_protocol[3] != 0) [01;31m[Kprotocol_fault[m[K = rclcpp::Logger::Level::Info; // this is essentially trivial, but good to know.
+[16.387s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.387s]       |                                     [32m[Kprotocol_type_t[m[K
+[16.388s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:574:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+[16.388s]   574 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K firmware_fault = rclcpp::Logger::Level::Debug; // none
+[16.389s]       |                            [01;31m[K^~~~~[m[K
+[16.434s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:575:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+[16.434s]   575 |     if (diff_firmware[0] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Fatal;  // major protocol changes -- BREAKING
+[16.435s]       |                                [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.467s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS1_callback[m[K(eDataIDs, const ins_1_t*)[m[K’:
+[16.467s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:954:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.468s]   954 |         if (rs_.did_ins1.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.469s]       |                          [01;31m[K^~~[m[K
+[16.469s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.469s]   955 |             rs_.did_ins1.[01;31m[Kpub[m[K->publish(msg_did_ins1);
+[16.470s]       |                          [01;31m[K^~~[m[K
+[16.481s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS2_callback[m[K(eDataIDs, const ins_2_t*)[m[K’:
+[16.482s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:981:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.482s]   981 |         if (rs_.did_ins2.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.482s]       |                          [01;31m[K^~~[m[K
+[16.483s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.483s]   982 |             rs_.did_ins2.[01;31m[Kpub[m[K->publish(msg_did_ins2);
+[16.483s]       |                          [01;31m[K^~~[m[K
+[16.484s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS4_callback[m[K(eDataIDs, const ins_4_t*)[m[K’:
+[16.484s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1008:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.485s]  1008 |         if (rs_.did_ins4.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.485s]       |                          [01;31m[K^~~[m[K
+[16.485s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.486s]  1009 |             rs_.did_ins4.[01;31m[Kpub[m[K->publish(msg_did_ins4);
+[16.486s]       |                          [01;31m[K^~~[m[K
+[16.487s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1078:31:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.487s]  1078 |             rs_.odom_ins_ecef.[01;31m[Kpub[m[K.publish(msg_odom_ecef);
+[16.488s]       |                               [01;31m[K^~~[m[K
+[16.489s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1165:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.489s]  1165 |                 rs_.odom_ins_ned.[01;31m[Kpub[m[K.publish(msg_odom_ned);
+[16.490s]       |                                  [01;31m[K^~~[m[K
+[16.495s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1259:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.495s]  1259 |                 rs_.odom_ins_enu.[01;31m[Kpub[m[K.publish(msg_odom_enu);
+[16.496s]       |                                  [01;31m[K^~~[m[K
+[16.496s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:576:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+[16.497s]   576 |     else if (diff_firmware[1] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Error;  // minor protocol changes -- New parameters/features
+[16.497s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.498s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINL2_states_callback[m[K(eDataIDs, const inl2_states_t*)[m[K’:
+[16.498s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1311:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.498s]  1311 |         if (rs_.inl2_states.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.499s]       |                             [01;31m[K^~~[m[K
+[16.499s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1312:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.499s]  1312 |             rs_.inl2_states.[01;31m[Kpub[m[K.publish(msg_inl2_states);
+[16.500s]       |                             [01;31m[K^~~[m[K
+[16.513s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_pos_callback[m[K(eDataIDs, const gps_pos_t*)[m[K’:
+[16.513s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1455:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.514s]  1455 |             rs_.gps1_navsatfix.[01;31m[Kpub[m[K.publish(msg_NavSatFix);
+[16.514s]       |                                [01;31m[K^~~[m[K
+[16.523s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS1[m[K()[m[K’:
+[16.523s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1499:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.524s]  1499 |         if (rs_.gps1.[01;31m[Kpub[m[K->get_subscription_count() > 0)
+[16.524s]       |                      [01;31m[K^~~[m[K
+[16.524s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1500:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.525s]  1500 |             rs_.gps1.[01;31m[Kpub[m[K->publish(msg_gps1);
+[16.525s]       |                      [01;31m[K^~~[m[K
+[16.525s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS2[m[K()[m[K’:
+[16.526s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1511:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.526s]  1511 |         if (rs_.gps2.[01;31m[Kpub[m[K->get_subscription_count() > 0)
+[16.526s]       |                      [01;31m[K^~~[m[K
+[16.527s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1512:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.527s]  1512 |             rs_.gps2.[01;31m[Kpub[m[K->publish(msg_gps2);
+[16.528s]       |                      [01;31m[K^~~[m[K
+[16.528s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_info_callback[m[K(eDataIDs, const gps_sat_t*)[m[K’:
+[16.529s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1569:39:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.529s]  1569 |     case DID_GPS1_SAT:  rs_.gps1_info.[01;31m[Kpub[m[K->publish();    break;
+[16.530s]       |                                       [01;31m[K^~~[m[K
+[16.530s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1570:39:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.530s]  1570 |     case DID_GPS2_SAT:  rs_.gps2_info.[01;31m[Kpub[m[K->publish(msg_gps1_info);    break;
+[16.531s]       |                                       [01;31m[K^~~[m[K
+[16.531s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kmag_callback[m[K(eDataIDs, const magnetometer_t*)[m[K’:
+[16.531s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1588:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.532s]  1588 |     rs_.magnetometer.[01;31m[Kpub[m[K->publish(mag_msg);
+[16.532s]       |                      [01;31m[K^~~[m[K
+[16.533s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kbaro_callback[m[K(eDataIDs, const barometer_t*)[m[K’:
+[16.533s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1604:19:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.533s]  1604 |     rs_.barometer.[01;31m[Kpub[m[K.publish(baro_msg);
+[16.534s]       |                   [01;31m[K^~~[m[K
+[16.534s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kpreint_IMU_callback[m[K(eDataIDs, const pimu_t*)[m[K’:
+[16.534s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1623:18:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.535s]  1623 |         rs_.pimu.[01;31m[Kpub[m[K.publish(msg_pimu);
+[16.535s]       |                  [01;31m[K^~~[m[K
+[16.536s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1640:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.536s]  1640 |             rs_.imu.[01;31m[Kpub[m[K.publish(msg_imu);
+[16.536s]       |                     [01;31m[K^~~[m[K
+[16.537s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Misc_callback[m[K(eDataIDs, const gps_rtk_misc_t*)[m[K’:
+[16.537s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1667:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[16.538s]  1667 |         rs_.rtk_pos.[01;31m[KpubInfo[m[K->publish(rtk_info);
+[16.538s]       |                     [01;31m[K^~~~~~~[m[K
+[16.538s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1672:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[16.539s]  1672 |         rs_.rtk_cmp.[01;31m[KpubInfo[m[K.publish(rtk_info);
+[16.544s]       |                     [01;31m[K^~~~~~~[m[K
+[16.544s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Rel_callback[m[K(eDataIDs, const gps_rtk_rel_t*)[m[K’:
+[16.545s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1724:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[16.545s]  1724 |         rs_.rtk_pos.[01;31m[KpubRel[m[K->publish(rtk_rel);
+[16.546s]       |                     [01;31m[K^~~~~~[m[K
+[16.546s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1737:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[16.547s]  1737 |         rs_.rtk_cmp.[01;31m[KpubRel[m[K.publish(rtk_rel);
+[16.547s]       |                     [01;31m[K^~~~~~[m[K
+[16.548s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_obs_bundle_timer_callback[m[K()[m[K’:
+[16.548s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1852:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.548s]  1852 |             rs_.gps1_raw.[01;31m[KpubObs[m[K->publish(gps1_obs_Vec_);
+[16.549s]       |                          [01;31m[K^~~~~~[m[K
+[16.549s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1862:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.550s]  1862 |             rs_.gps2_raw.[01;31m[KpubObs[m[K.publish(gps2_obs_Vec_);
+[16.550s]       |                          [01;31m[K^~~~~~[m[K
+[16.550s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1872:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.551s]  1872 |             rs_.gpsbase_raw.[01;31m[KpubObs[m[K.publish(base_obs_Vec_);
+[16.551s]       |                             [01;31m[K^~~~~~[m[K
+[16.551s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_eph_callback[m[K(eDataIDs, const eph_t*)[m[K’:
+[16.552s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1923:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.552s]  1923 |     case DID_GPS1_RAW:      rs_.gps1_raw.[01;31m[KpubEph[m[K->publish(eph);        break;
+[16.552s]       |                                          [01;31m[K^~~~~~[m[K
+[16.555s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1924:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.555s]  1924 |     case DID_GPS2_RAW:      rs_.gps2_raw.[01;31m[KpubEph[m[K->publish(eph);        break;
+[16.555s]       |                                          [01;31m[K^~~~~~[m[K
+[16.556s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1925:45:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.556s]  1925 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.[01;31m[KpubEph[m[K->publish(eph);    break;
+[16.557s]       |                                             [01;31m[K^~~~~~[m[K
+[16.557s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_geph_callback[m[K(eDataIDs, const geph_t*)[m[K’:
+[16.557s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1956:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.558s]  1956 |     case DID_GPS1_RAW:      rs_.gps1_raw.[01;31m[KpubGEp[m[K->publish(geph);       break;
+[16.558s]       |                                          [01;31m[K^~~~~~[m[K
+[16.558s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1957:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.559s]  1957 |     case DID_GPS2_RAW:      rs_.gps2_raw.[01;31m[KpubGEp[m[K->publish(geph);       break;
+[16.560s]       |                                          [01;31m[K^~~~~~[m[K
+[16.560s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1958:45:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.561s]  1958 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.[01;31m[KpubGEp[m[K->publish(geph);   break;
+[16.561s]       |                                             [01;31m[K^~~~~~[m[K
+[16.562s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kdiagnostics_callback[m[K()[m[K’:
+[16.562s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:2058:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.562s]  2058 |     rs_.diagnostics.[01;31m[Kpub[m[K->publish(diag_array);
+[16.563s]       |                     [01;31m[K^~~[m[K
+[16.563s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:577:37:[m[K [01;31m[Kerror: [m[K‘[01m[Kfirmware_fault[m[K’ was not declared in this scope
+[16.564s]   577 |     else if (diff_firmware[2] != 0) [01;31m[Kfirmware_fault[m[K = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
+[16.564s]       |                                     [01;31m[K^~~~~~~~~~~~~~[m[K
+[16.564s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:579:28:[m[K [01;31m[Kerror: [m[K‘[01m[KLevel[m[K’ is not a member of ‘[01m[Krclcpp::Logger::Level[m[K’
+[16.565s]   579 |     rclcpp::Logger::Level::[01;31m[KLevel[m[K final_fault = std::max(firmware_fault, protocol_fault);
+[16.565s]       |                            [01;31m[K^~~~~[m[K
+[16.592s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:599:12:[m[K [01;31m[Kerror: [m[K‘[01m[Kfinal_fault[m[K’ was not declared in this scope
+[16.593s]   599 |     return [01;31m[Kfinal_fault[m[K == rclcpp::Logger::Level::Debug; // true if they match, false if they don't.
+[16.593s]       |            [01;31m[K^~~~~~~~~~~[m[K
+[16.759s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS1_callback[m[K(eDataIDs, const ins_1_t*)[m[K’:
+[16.759s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:954:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.760s]   954 |         if (rs_.did_ins1.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.760s]       |                          [01;31m[K^~~[m[K
+[16.761s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:955:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.761s]   955 |             rs_.did_ins1.[01;31m[Kpub[m[K->publish(msg_did_ins1);
+[16.761s]       |                          [01;31m[K^~~[m[K
+[16.766s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS2_callback[m[K(eDataIDs, const ins_2_t*)[m[K’:
+[16.767s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:981:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.767s]   981 |         if (rs_.did_ins2.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.767s]       |                          [01;31m[K^~~[m[K
+[16.768s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:982:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.773s]   982 |             rs_.did_ins2.[01;31m[Kpub[m[K->publish(msg_did_ins2);
+[16.774s]       |                          [01;31m[K^~~[m[K
+[16.774s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINS4_callback[m[K(eDataIDs, const ins_4_t*)[m[K’:
+[16.775s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1008:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.775s]  1008 |         if (rs_.did_ins4.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.775s]       |                          [01;31m[K^~~[m[K
+[16.776s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1009:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.776s]  1009 |             rs_.did_ins4.[01;31m[Kpub[m[K->publish(msg_did_ins4);
+[16.777s]       |                          [01;31m[K^~~[m[K
+[16.777s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1078:31:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.777s]  1078 |             rs_.odom_ins_ecef.[01;31m[Kpub[m[K.publish(msg_odom_ecef);
+[16.778s]       |                               [01;31m[K^~~[m[K
+[16.778s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1165:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.778s]  1165 |                 rs_.odom_ins_ned.[01;31m[Kpub[m[K.publish(msg_odom_ned);
+[16.779s]       |                                  [01;31m[K^~~[m[K
+[16.780s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1259:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.780s]  1259 |                 rs_.odom_ins_enu.[01;31m[Kpub[m[K.publish(msg_odom_enu);
+[16.780s]       |                                  [01;31m[K^~~[m[K
+[16.781s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KINL2_states_callback[m[K(eDataIDs, const inl2_states_t*)[m[K’:
+[16.781s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1311:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.781s]  1311 |         if (rs_.inl2_states.[01;31m[Kpub[m[K.getNumSubscribers() > 0)
+[16.782s]       |                             [01;31m[K^~~[m[K
+[16.782s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1312:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.782s]  1312 |             rs_.inl2_states.[01;31m[Kpub[m[K.publish(msg_inl2_states);
+[16.783s]       |                             [01;31m[K^~~[m[K
+[16.831s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_pos_callback[m[K(eDataIDs, const gps_pos_t*)[m[K’:
+[16.832s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1455:32:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.832s]  1455 |             rs_.gps1_navsatfix.[01;31m[Kpub[m[K.publish(msg_NavSatFix);
+[16.833s]       |                                [01;31m[K^~~[m[K
+[16.833s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS1[m[K()[m[K’:
+[16.833s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1499:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.834s]  1499 |         if (rs_.gps1.[01;31m[Kpub[m[K->get_subscription_count() > 0)
+[16.834s]       |                      [01;31m[K^~~[m[K
+[16.842s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1500:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.843s]  1500 |             rs_.gps1.[01;31m[Kpub[m[K->publish(msg_gps1);
+[16.843s]       |                      [01;31m[K^~~[m[K
+[16.843s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KpublishGPS2[m[K()[m[K’:
+[16.844s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1511:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.844s]  1511 |         if (rs_.gps2.[01;31m[Kpub[m[K->get_subscription_count() > 0)
+[16.845s]       |                      [01;31m[K^~~[m[K
+[16.845s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1512:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGps[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.846s]  1512 |             rs_.gps2.[01;31m[Kpub[m[K->publish(msg_gps2);
+[16.846s]       |                      [01;31m[K^~~[m[K
+[16.847s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_info_callback[m[K(eDataIDs, const gps_sat_t*)[m[K’:
+[16.847s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1569:39:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.847s]  1569 |     case DID_GPS1_SAT:  rs_.gps1_info.[01;31m[Kpub[m[K->publish();    break;
+[16.848s]       |                                       [01;31m[K^~~[m[K
+[16.848s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1570:39:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.848s]  1570 |     case DID_GPS2_SAT:  rs_.gps2_info.[01;31m[Kpub[m[K->publish(msg_gps1_info);    break;
+[16.849s]       |                                       [01;31m[K^~~[m[K
+[16.849s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kmag_callback[m[K(eDataIDs, const magnetometer_t*)[m[K’:
+[16.850s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1588:22:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.850s]  1588 |     rs_.magnetometer.[01;31m[Kpub[m[K->publish(mag_msg);
+[16.850s]       |                      [01;31m[K^~~[m[K
+[16.851s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kbaro_callback[m[K(eDataIDs, const barometer_t*)[m[K’:
+[16.851s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1604:19:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.851s]  1604 |     rs_.barometer.[01;31m[Kpub[m[K.publish(baro_msg);
+[16.852s]       |                   [01;31m[K^~~[m[K
+[16.852s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kpreint_IMU_callback[m[K(eDataIDs, const pimu_t*)[m[K’:
+[16.853s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1623:18:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.853s]  1623 |         rs_.pimu.[01;31m[Kpub[m[K.publish(msg_pimu);
+[16.853s]       |                  [01;31m[K^~~[m[K
+[16.854s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1640:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.854s]  1640 |             rs_.imu.[01;31m[Kpub[m[K.publish(msg_imu);
+[16.854s]       |                     [01;31m[K^~~[m[K
+[16.855s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Misc_callback[m[K(eDataIDs, const gps_rtk_misc_t*)[m[K’:
+[16.855s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1667:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[16.856s]  1667 |         rs_.rtk_pos.[01;31m[KpubInfo[m[K->publish(rtk_info);
+[16.856s]       |                     [01;31m[K^~~~~~~[m[K
+[16.857s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1672:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubInfo[m[K’
+[16.857s]  1672 |         rs_.rtk_cmp.[01;31m[KpubInfo[m[K.publish(rtk_info);
+[16.857s]       |                     [01;31m[K^~~~~~~[m[K
+[16.858s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KRTK_Rel_callback[m[K(eDataIDs, const gps_rtk_rel_t*)[m[K’:
+[16.858s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1724:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[16.859s]  1724 |         rs_.rtk_pos.[01;31m[KpubRel[m[K->publish(rtk_rel);
+[16.859s]       |                     [01;31m[K^~~~~~[m[K
+[16.859s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1737:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRtk[m[K’ has no member named ‘[01m[KpubRel[m[K’
+[16.860s]  1737 |         rs_.rtk_cmp.[01;31m[KpubRel[m[K.publish(rtk_rel);
+[16.860s]       |                     [01;31m[K^~~~~~[m[K
+[16.860s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_obs_bundle_timer_callback[m[K()[m[K’:
+[16.861s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1852:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.861s]  1852 |             rs_.gps1_raw.[01;31m[KpubObs[m[K->publish(gps1_obs_Vec_);
+[16.861s]       |                          [01;31m[K^~~~~~[m[K
+[16.862s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1862:26:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.862s]  1862 |             rs_.gps2_raw.[01;31m[KpubObs[m[K.publish(gps2_obs_Vec_);
+[16.862s]       |                          [01;31m[K^~~~~~[m[K
+[16.863s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1872:29:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubObs[m[K’
+[16.863s]  1872 |             rs_.gpsbase_raw.[01;31m[KpubObs[m[K.publish(base_obs_Vec_);
+[16.863s]       |                             [01;31m[K^~~~~~[m[K
+[16.864s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_eph_callback[m[K(eDataIDs, const eph_t*)[m[K’:
+[16.864s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1923:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.864s]  1923 |     case DID_GPS1_RAW:      rs_.gps1_raw.[01;31m[KpubEph[m[K->publish(eph);        break;
+[16.865s]       |                                          [01;31m[K^~~~~~[m[K
+[16.865s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1924:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.865s]  1924 |     case DID_GPS2_RAW:      rs_.gps2_raw.[01;31m[KpubEph[m[K->publish(eph);        break;
+[16.866s]       |                                          [01;31m[K^~~~~~[m[K
+[16.866s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1925:45:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubEph[m[K’
+[16.866s]  1925 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.[01;31m[KpubEph[m[K->publish(eph);    break;
+[16.867s]       |                                             [01;31m[K^~~~~~[m[K
+[16.867s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[KGPS_geph_callback[m[K(eDataIDs, const geph_t*)[m[K’:
+[16.867s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1956:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.868s]  1956 |     case DID_GPS1_RAW:      rs_.gps1_raw.[01;31m[KpubGEp[m[K->publish(geph);       break;
+[16.868s]       |                                          [01;31m[K^~~~~~[m[K
+[16.869s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1957:42:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.869s]  1957 |     case DID_GPS2_RAW:      rs_.gps2_raw.[01;31m[KpubGEp[m[K->publish(geph);       break;
+[16.870s]       |                                          [01;31m[K^~~~~~[m[K
+[16.870s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:1958:45:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelperGpsRaw[m[K’ has no member named ‘[01m[KpubGEp[m[K’
+[16.870s]  1958 |     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.[01;31m[KpubGEp[m[K->publish(geph);   break;
+[16.871s]       |                                             [01;31m[K^~~~~~[m[K
+[16.871s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In member function ‘[01m[Kvoid InertialSenseROS::[01;32m[Kdiagnostics_callback[m[K()[m[K’:
+[16.874s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:2058:21:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass TopicHelper[m[K’ has no member named ‘[01m[Kpub[m[K’
+[16.875s]  2058 |     rs_.diagnostics.[01;31m[Kpub[m[K->publish(diag_array);
+[16.875s]       |                     [01;31m[K^~~[m[K
+[17.228s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:118: CMakeFiles/new_target.dir/src/serial.cpp.o] Error 1
+[17.228s] gmake[2]: *** Waiting for unfinished jobs....
+[19.829s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:132: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Error 1
+[20.445s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/src/ParamHelper.cpp.o] Error 1
+[22.159s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+[22.631s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+[22.632s] gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+[22.633s] gmake: *** [Makefile:146: all] Error 2
+[22.642s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j16 -l16
