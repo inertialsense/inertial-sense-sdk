@@ -47,7 +47,7 @@ const char *serialPortName(port_handle_t port) {
     if (serialPort != NULL) {
         return serialPort->portName;
     }
-    return NULLPTR;
+    return NULL;
 }
 
 int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int blocking)

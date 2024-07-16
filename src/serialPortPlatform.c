@@ -97,7 +97,6 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #define WINDOWS_OVERLAPPED_BUFFER_SIZE 8192
 
 typedef struct
-{
     OVERLAPPED ov;
     pfnSerialPortAsyncReadCompletion externalCompletion;
     port_handle_t port;
@@ -107,7 +106,7 @@ typedef struct
 static void CALLBACK readFileExCompletion(DWORD errorCode, DWORD bytesTransferred, LPOVERLAPPED ov)
 {
     readFileExCompletionStruct* c = (readFileExCompletionStruct*)ov;
-    c->externalCompletion(c->serialPort, c->buffer, bytesTransferred, errorCode);
+    c->externalCompletion(c->port, c->buffer, bytesTransferred, errorCode);
     free(c);
 }
 
@@ -312,19 +311,19 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
         serialParams.fRtsControl = RTS_CONTROL_ENABLE;
         if (!SetCommState(platformHandle, &serialParams))
         {
-            serialPortClose(serialPort);
+            serialPortClose(port);
             return 0;
         }
     }
     else
     {
-        serialPortClose(serialPort);
+        serialPortClose(port);
         return 0;
     }
     COMMTIMEOUTS timeouts = { (blocking ? 1 : MAXDWORD), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 1 : 0), (blocking ? 10 : 0) };
     if (!SetCommTimeouts(platformHandle, &timeouts))
     {
-        serialPortClose(serialPort);
+        serialPortClose(port);
         return 0;
     }
     serialPortHandle* handle = (serialPortHandle*)calloc(sizeof(serialPortHandle), 1);
@@ -399,7 +398,7 @@ static int serialPortIsOpenPlatform(port_handle_t port)
 #else
 
     struct stat sb;
-    if (fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0) {
+    if (fstat(((serialPortHandle*)(serialPort->handle))->fd, &sb) != 0) {
         serialPort->errorCode = errno;
         return 0;
     }
@@ -644,7 +643,7 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
 	readFileExCompletionStruct c;
 	c.externalCompletion = completion;
-    c.serialPort = serialPort;
+    c.port = port;
     c.buffer = buffer;
     memset(&(c.ov), 0, sizeof(c.ov));
 
