@@ -647,7 +647,7 @@ protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* instance, uint8_t
 * @param byte the byte to decode
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
 * @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-  For example usage, see comManagerStepRxInstance() in com_manager.c.
+  For example usage, see comManagerStepRxInstance() in com_manager.cpp.
 
 	// Read one byte (simple method)
 	uint8_t c;
@@ -692,7 +692,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
 * @param instance the comm instance passed to is_comm_init
 * @return protocol type when complete valid data is found, otherwise _PTYPE_NONE (0) (see protocol_type_t)
 * @remarks when data is available, you can cast the comm instance dataPtr into the appropriate data structure pointer (see binary messages above and data_sets.h)
-  For example usage, see comManagerStepRxInstance() in com_manager.c.
+  For example usage, see comManagerStepRxInstance() in com_manager.cpp.
 
 	// Read a set of bytes (fast method)
 	protocol_type_t ptype;
