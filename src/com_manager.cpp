@@ -162,16 +162,15 @@ void ISComManager::registerDid(uint16_t did, pfnComManagerPreSend txFnc, pfnComM
         return;
     }
 
-    didRegistrationMap[did] = {
-            .dataSet = {
-                    .txPtr = (unsigned char*)txDataPtr,     // Pointer to data struct for Tx
-                    .rxPtr = (unsigned char*)rxDataPtr,     // Pointer to data struct for Rx
-                    .size = size,                           // Size of data struct
-            },
-            .preTxFnc = txFnc,                              // Function called to update struct before data is sent
-            .pstRxFnc = pstRxFnc,                           // Function called after data is received and struct is updated
-            .pktFlags = pktFlags                            // Packet flags
+    auto& entry = didRegistrationMap[did];
+    entry.dataSet = {
+        .txPtr = (unsigned char*)txDataPtr,     // Pointer to data struct for Tx
+        .rxPtr = (unsigned char*)rxDataPtr,     // Pointer to data struct for Rx
+        .size = size,                           // Size of data struct
     };
+    entry.preTxFnc = txFnc;                              // Function called to update struct before data is sent
+    entry.pstRxFnc = pstRxFnc;                           // Function called after data is received and struct is updated
+    entry.pktFlags = pktFlags;                           // Packet flags
 }
 
 

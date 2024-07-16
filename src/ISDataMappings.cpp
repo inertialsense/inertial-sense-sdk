@@ -2907,43 +2907,43 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
     switch (dataType)
     {
     case DataTypeInt8:
-        protectUnalignedAssign<int8_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
+        protectUnalignedAssign<int8_t>((void*)dataBuffer, (int8_t)strtol(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt16:
-        protectUnalignedAssign<int16_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
+        protectUnalignedAssign<int16_t>((void*)dataBuffer, (int16_t)strtol(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt32:
-        protectUnalignedAssign<int32_t>((void*)dataBuffer, strtol(stringBuffer, NULL, radix));
+        protectUnalignedAssign<int32_t>((void*)dataBuffer, (int32_t)strtol(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt8:
-        protectUnalignedAssign<uint8_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
+        protectUnalignedAssign<uint8_t>((void*)dataBuffer, (uint8_t)strtoul(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt16:
-        protectUnalignedAssign<uint16_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
+        protectUnalignedAssign<uint16_t>((void*)dataBuffer, (uint16_t)strtoul(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt32:
-        protectUnalignedAssign<uint32_t>((void*)dataBuffer, strtoul(stringBuffer, NULL, radix));
+        protectUnalignedAssign<uint32_t>((void*)dataBuffer, (uint32_t)strtoul(stringBuffer, NULL, radix));
         break;
 
     case DataTypeInt64:
-        protectUnalignedAssign<int64_t>((void*)dataBuffer, strtoll(stringBuffer, NULL, radix));
+        protectUnalignedAssign<int64_t>((void*)dataBuffer, (int64_t)strtoll(stringBuffer, NULL, radix));
         break;
 
     case DataTypeUInt64:
-        protectUnalignedAssign<uint64_t>((void*)dataBuffer, strtoull(stringBuffer, NULL, radix));
+        protectUnalignedAssign<uint64_t>((void*)dataBuffer, (uint64_t)strtoull(stringBuffer, NULL, radix));
         break;
 
     case DataTypeFloat:
-        protectUnalignedAssign<float>((void*)dataBuffer, strtod(stringBuffer, NULL));
+        protectUnalignedAssign<float>((void*)dataBuffer, (float)strtod(stringBuffer, NULL));
         break;
 
     case DataTypeDouble:
-        protectUnalignedAssign<double>((void*)dataBuffer, strtod(stringBuffer, NULL));
+        protectUnalignedAssign<double>((void*)dataBuffer, (double)strtod(stringBuffer, NULL));
         break;
 
     case DataTypeString:
