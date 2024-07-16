@@ -73,8 +73,9 @@ def getTimeFromTowMs(ms, fixTimeBeforeGnss=0):
             # Backpropagate first available GNSS time to convert time since start to GNSS time
             dms = np.diff(ms)
             ind = np.flatnonzero(abs(dms - dms[-1]) > 0.1)
-            for i in reversed(ind):
-                ms[i] = ms[i+1] - dms[-1]
+            if len(ind) > 0:
+                for i in reversed(range(ind[-1]+1)):
+                    ms[i] = ms[i+1] - dms[-1]
         return ms * 0.001
 
 def getTimeFromTow(s, fixTimeBeforeGnss=0):
@@ -89,8 +90,9 @@ def getTimeFromTow(s, fixTimeBeforeGnss=0):
             # Backpropagate first available GNSS time to convert time since start to GNSS time
             ds = np.diff(s)
             ind = np.flatnonzero(abs(ds - ds[-1]) > 0.1)
-            for i in reversed(ind):
-                s[i] = s[i+1] - ds[-1]
+            if len(ind) > 0:
+                for i in reversed(range(ind[-1]+1)):
+                    s[i] = s[i+1] - ds[-1]
         return s
 
 def getTimeFromGTime(gtime):
