@@ -314,7 +314,7 @@ TEST(protocol_nmea, PGPSP_sweep_operating_range)
         //     // pos.ecef[i] = 20.0f+i;   // Not in full conversion
         //     vel.vel[i] = -OPERATING_LIMIT_MPS + 2*OPERATING_LIMIT_MPS*scale;
         // }
-        pos.hMSL = -100 + 50000 * scale;
+        pos.hMSL = (float)(-100 + 50000 * scale);
         pos.lla[0] =  -90.0 + 180.0 * scale;
         pos.lla[1] = -180.0 + 230.0 * scale;
         pos.lla[2] = pos.hMSL - 18.8;
@@ -401,7 +401,7 @@ TEST(protocol_nmea, GGA_sweep_operating_range)
             GPS_STATUS_FLAGS_DGPS_USED |
             GPS_STATUS_FIX_DGPS |
             GPS_STATUS_FLAGS_GPS_NMEA_DATA;
-        pos.hMSL = -100 + 50000 * scale;
+        pos.hMSL = (float)(-100 + 50000 * scale);
         pos.lla[0] =  -90.0 + 180.0 * scale;
         pos.lla[1] = -180.0 + 230.0 * scale;
         pos.lla[2] = pos.hMSL - 18.8;
