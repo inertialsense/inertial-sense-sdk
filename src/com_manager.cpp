@@ -722,11 +722,10 @@ bufTxRxPtr_t* ISComManager::getRegisteredDataInfo(uint16_t did)
 {
     // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivalent
     //  if (!didRegistrationMap.contains(did)) {
-    if (auto search = didRegistrationMap.find(did); search != didRegistrationMap.end()) {
-        return &didRegistrationMap[did].dataSet;
+    if (didRegistrationMap.find(did) == didRegistrationMap.end()) {
+        return 0;
     }
-
-    return 0;
+    return &didRegistrationMap[did].dataSet;
 }
 
 // 0 on success. -1 on failure.
