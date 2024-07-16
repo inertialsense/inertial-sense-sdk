@@ -159,7 +159,7 @@ static int loopbackPortRead(port_handle_t port, unsigned char* buf, int len)
 static int loopbackPortWrite(port_handle_t port, const unsigned char* buf, int len)
 {
     if (ringBufWrite(&((test_port_t*)port)->loopbackPortBuf, (unsigned char*)buf, len))
-    {	// Buffer overflow
+    {   // Buffer overflow
         throw new std::out_of_range(utils::string_format("loopbackPortWrite ring buffer overflow: %d !!!\n", ringBufUsed(&((test_port_t*)port)->loopbackPortBuf) + len));
     }
     return len;
