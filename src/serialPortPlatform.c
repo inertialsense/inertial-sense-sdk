@@ -96,7 +96,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 
 #define WINDOWS_OVERLAPPED_BUFFER_SIZE 8192
 
-typedef struct
+typedef struct {
     OVERLAPPED ov;
     pfnSerialPortAsyncReadCompletion externalCompletion;
     port_handle_t port;
