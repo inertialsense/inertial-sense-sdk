@@ -45,7 +45,7 @@ void cDeviceLogSerial::InitDeviceForWriting(std::string timestamp, std::string d
     m_chunk.Clear();
     if (device != nullptr) {
         m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
-        m_chunk.m_hdr.port = (device != NULL ? device->port : NULL);
+        m_chunk.m_hdr.portId = portId(device->port);
     }
 
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
