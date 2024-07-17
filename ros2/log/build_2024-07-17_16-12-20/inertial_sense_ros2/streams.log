@@ -1,0 +1,116 @@
+[0.049s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j6 -l6
+[0.298s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[0.361s] [  1%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o[0m
+[0.365s] [  2%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o[0m
+[0.367s] [  2%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[0.370s] [  3%] [32mBuilding CXX object CMakeFiles/new_target.dir/include/TopicHelper.cpp.o[0m
+[0.401s] [  3%] Built target inertial_sense_ros2__cpp
+[0.444s] [ 29%] Built target inertial_sense_ros2__rosidl_generator_c
+[0.591s] [ 39%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[0.596s] [ 49%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[0.729s] [ 59%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[0.783s] [ 68%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[0.866s] [ 77%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[0.939s] [ 86%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[1.054s] [ 86%] Built target inertial_sense_ros2
+[1.183s] [ 87%] Built target inertial_sense_ros2__py
+[1.245s] running egg_info
+[1.323s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[1.323s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[1.323s] [ 96%] Built target inertial_sense_ros2__rosidl_generator_py
+[1.324s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[1.447s] [ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[1.467s] [ 98%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+[1.544s] [ 99%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[1.556s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.558s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.647s] [ 99%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[14.192s] In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+[14.193s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+[14.193s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+[14.193s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+[14.194s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+[14.197s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+[14.197s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+[14.198s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+[14.198s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+[14.199s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+[14.203s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+[14.204s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.cpp:19[m[K:
+[14.205s] /opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’:
+[14.209s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:70:57:[m[K   required from here
+[14.209s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+[14.209s]    84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+[14.213s]       |                                               [01;31m[K^~~~~[m[K
+[14.214s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >::value[m[K’ evaluates to false
+[17.634s] In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+[17.639s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+[17.641s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+[17.643s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+[17.644s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+[17.645s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+[17.645s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+[17.649s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+[17.649s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+[17.651s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+[17.655s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+[17.656s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:31[m[K,
+[17.658s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+[17.659s] /opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’:
+[17.659s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:70:57:[m[K   required from here
+[17.660s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+[17.668s]    84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+[17.669s]       |                                               [01;31m[K^~~~~[m[K
+[17.670s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >::value[m[K’ evaluates to false
+[17.798s] In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+[17.798s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+[17.799s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+[17.799s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+[17.800s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+[17.800s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+[17.801s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+[17.801s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+[17.802s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+[17.802s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+[17.803s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+[17.803s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:31[m[K,
+[17.803s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+[17.804s] /opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’:
+[17.804s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:70:57:[m[K   required from here
+[17.805s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+[17.805s]    84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+[17.806s]       |                                               [01;31m[K^~~~~[m[K
+[17.807s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >::value[m[K’ evaluates to false
+[20.147s] In file included from [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/didins1.hpp:9[m[K,
+[20.148s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:65[m[K:
+[20.149s] [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kspecialization of ‘[01m[Krosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’ after instantiation
+[20.150s]   330 | struct [01;31m[Kis_message<inertial_sense_ros2::msg::DIDINS1>[m[K
+[20.152s]       |        [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[20.153s] [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kredefinition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+[20.153s] In file included from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/detail/list_parameters__traits.hpp:18[m[K,
+[20.154s]                  from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/list_parameters.hpp:9[m[K,
+[20.154s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:21[m[K,
+[20.154s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171[m[K:
+[20.155s] [01m[K/opt/ros/jazzy/include/rosidl_runtime_cpp/rosidl_runtime_cpp/traits.hpp:165:8:[m[K [01;36m[Knote: [m[Kprevious definition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+[20.156s]   165 | struct [01;36m[Kis_message[m[K : std::false_type {};
+[20.156s]       |        [01;36m[K^~~~~~~~~~[m[K
+[20.253s] In file included from [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/didins1.hpp:9[m[K,
+[20.253s]                  from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:65[m[K:
+[20.254s] [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kspecialization of ‘[01m[Krosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’ after instantiation
+[20.254s]   330 | struct [01;31m[Kis_message<inertial_sense_ros2::msg::DIDINS1>[m[K
+[20.255s]       |        [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[20.257s] [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kredefinition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+[20.258s] In file included from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/detail/list_parameters__traits.hpp:18[m[K,
+[20.259s]                  from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/list_parameters.hpp:9[m[K,
+[20.262s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:21[m[K,
+[20.262s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171[m[K:
+[20.263s] [01m[K/opt/ros/jazzy/include/rosidl_runtime_cpp/rosidl_runtime_cpp/traits.hpp:165:8:[m[K [01;36m[Knote: [m[Kprevious definition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+[20.264s]   165 | struct [01;36m[Kis_message[m[K : std::false_type {};
+[20.267s]       |        [01;36m[K^~~~~~~~~~[m[K
+[22.849s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Error 1
+[22.850s] gmake[2]: *** Waiting for unfinished jobs....
+[40.162s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+[40.252s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+[40.253s] gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+[40.254s] gmake: *** [Makefile:146: all] Error 2
+[40.260s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j6 -l6

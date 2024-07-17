@@ -1,0 +1,444 @@
+[0.000000] (-) TimerEvent: {}
+[0.002126] (inertial_sense_ros2) JobQueued: {'identifier': 'inertial_sense_ros2', 'dependencies': OrderedDict()}
+[0.002331] (inertial_sense_ros2) JobStarted: {'identifier': 'inertial_sense_ros2'}
+[0.035203] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'cmake'}
+[0.038814] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'build'}
+[0.041734] (inertial_sense_ros2) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', '--', '-j6', '-l6'], 'cwd': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'env': OrderedDict({'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 's', 'XDG_SESSION_TYPE': 'wayland', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/s', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'DBUS_STARTER_BUS_TYPE': 'session', 'SYSTEMD_EXEC_PID': '2214', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus,guid=f924f768626b8f5ddd4065286697eb5b', 'COLORTERM': 'truecolor', '_colcon_cd_root': '/opt/ros/jazzy/', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 's', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome\\x2dsession\\x2dmanager.slice/gnome-session-manager@ubuntu.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 's', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/s-VMware-Virtual-Platform:@/tmp/.ICE-unix/2214,unix/s-VMware-Virtual-Platform:/tmp/.ICE-unix/2214', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/ee79ed63_56cc_414c_b474_a4da542e6115', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.MAC8Q2', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'GNOME_TERMINAL_SERVICE': ':1.120', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '0', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'DBUS_STARTER_ADDRESS': 'unix:path=/run/user/1000/bus,guid=f924f768626b8f5ddd4065286697eb5b', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'QTWEBENGINE_DICTIONARIES_PATH': '/usr/share/hunspell-bdic/', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'VTE_VERSION': '7600', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.099053] (-) TimerEvent: {}
+[0.199594] (-) TimerEvent: {}
+[0.296937] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target inertial_sense_ros2__rosidl_generator_type_description\n'}
+[0.301629] (-) TimerEvent: {}
+[0.346223] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target ament_cmake_python_copy_inertial_sense_ros2\n'}
+[0.393753] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target inertial_sense_ros2__cpp\n'}
+[0.401965] (-) TimerEvent: {}
+[0.430864] (inertial_sense_ros2) StdoutLine: {'line': b'[ 27%] Built target inertial_sense_ros2__rosidl_generator_c\n'}
+[0.431774] (inertial_sense_ros2) StdoutLine: {'line': b'[ 28%] Building CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o\n'}
+[0.436578] (inertial_sense_ros2) StdoutLine: {'line': b'[ 28%] Building CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o\n'}
+[0.502812] (-) TimerEvent: {}
+[0.547355] (inertial_sense_ros2) StdoutLine: {'line': b'[ 38%] Built target inertial_sense_ros2__rosidl_typesupport_cpp\n'}
+[0.561591] (inertial_sense_ros2) StdoutLine: {'line': b'[ 47%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp\n'}
+[0.579675] (inertial_sense_ros2) StdoutLine: {'line': b'[ 57%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c\n'}
+[0.602968] (-) TimerEvent: {}
+[0.658265] (inertial_sense_ros2) StdoutLine: {'line': b'[ 67%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c\n'}
+[0.672468] (inertial_sense_ros2) StdoutLine: {'line': b'[ 76%] Built target inertial_sense_ros2__rosidl_typesupport_c\n'}
+[0.703116] (-) TimerEvent: {}
+[0.715668] (inertial_sense_ros2) StdoutLine: {'line': b'[ 85%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp\n'}
+[0.803350] (-) TimerEvent: {}
+[0.803991] (inertial_sense_ros2) StdoutLine: {'line': b'[ 85%] Built target inertial_sense_ros2\n'}
+[0.901066] (inertial_sense_ros2) StdoutLine: {'line': b'[ 86%] Built target inertial_sense_ros2__py\n'}
+[0.903566] (-) TimerEvent: {}
+[1.003898] (-) TimerEvent: {}
+[1.022472] (inertial_sense_ros2) StdoutLine: {'line': b'[ 95%] Built target inertial_sense_ros2__rosidl_generator_py\n'}
+[1.104050] (-) TimerEvent: {}
+[1.106829] (inertial_sense_ros2) StdoutLine: {'line': b'running egg_info\n'}
+[1.114576] (inertial_sense_ros2) StdoutLine: {'line': b'[ 96%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c\n'}
+[1.125063] (inertial_sense_ros2) StdoutLine: {'line': b'[ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_c\n'}
+[1.127279] (inertial_sense_ros2) StdoutLine: {'line': b'[ 98%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c\n'}
+[1.179280] (inertial_sense_ros2) StdoutLine: {'line': b'writing inertial_sense_ros2.egg-info/PKG-INFO\n'}
+[1.180699] (inertial_sense_ros2) StdoutLine: {'line': b'writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt\n'}
+[1.182179] (inertial_sense_ros2) StdoutLine: {'line': b'writing top-level names to inertial_sense_ros2.egg-info/top_level.txt\n'}
+[1.204268] (-) TimerEvent: {}
+[1.304653] (-) TimerEvent: {}
+[1.390729] (inertial_sense_ros2) StdoutLine: {'line': b"reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'\n"}
+[1.393514] (inertial_sense_ros2) StdoutLine: {'line': b"writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'\n"}
+[1.404988] (-) TimerEvent: {}
+[1.484667] (inertial_sense_ros2) StdoutLine: {'line': b'[ 98%] Built target ament_cmake_python_build_inertial_sense_ros2_egg\n'}
+[1.505245] (-) TimerEvent: {}
+[1.605628] (-) TimerEvent: {}
+[1.706241] (-) TimerEvent: {}
+[1.806775] (-) TimerEvent: {}
+[1.907264] (-) TimerEvent: {}
+[2.007870] (-) TimerEvent: {}
+[2.108351] (-) TimerEvent: {}
+[2.208846] (-) TimerEvent: {}
+[2.309252] (-) TimerEvent: {}
+[2.409775] (-) TimerEvent: {}
+[2.510278] (-) TimerEvent: {}
+[2.610876] (-) TimerEvent: {}
+[2.711463] (-) TimerEvent: {}
+[2.811997] (-) TimerEvent: {}
+[2.912535] (-) TimerEvent: {}
+[3.013084] (-) TimerEvent: {}
+[3.113656] (-) TimerEvent: {}
+[3.214177] (-) TimerEvent: {}
+[3.314600] (-) TimerEvent: {}
+[3.415134] (-) TimerEvent: {}
+[3.515722] (-) TimerEvent: {}
+[3.616250] (-) TimerEvent: {}
+[3.716863] (-) TimerEvent: {}
+[3.817535] (-) TimerEvent: {}
+[3.918050] (-) TimerEvent: {}
+[4.018556] (-) TimerEvent: {}
+[4.119062] (-) TimerEvent: {}
+[4.219609] (-) TimerEvent: {}
+[4.320235] (-) TimerEvent: {}
+[4.420910] (-) TimerEvent: {}
+[4.521542] (-) TimerEvent: {}
+[4.622077] (-) TimerEvent: {}
+[4.722689] (-) TimerEvent: {}
+[4.823331] (-) TimerEvent: {}
+[4.923864] (-) TimerEvent: {}
+[5.024334] (-) TimerEvent: {}
+[5.125051] (-) TimerEvent: {}
+[5.225650] (-) TimerEvent: {}
+[5.326283] (-) TimerEvent: {}
+[5.427011] (-) TimerEvent: {}
+[5.527517] (-) TimerEvent: {}
+[5.628113] (-) TimerEvent: {}
+[5.728658] (-) TimerEvent: {}
+[5.829156] (-) TimerEvent: {}
+[5.929947] (-) TimerEvent: {}
+[6.030514] (-) TimerEvent: {}
+[6.130864] (-) TimerEvent: {}
+[6.231352] (-) TimerEvent: {}
+[6.331894] (-) TimerEvent: {}
+[6.432470] (-) TimerEvent: {}
+[6.533003] (-) TimerEvent: {}
+[6.633618] (-) TimerEvent: {}
+[6.734109] (-) TimerEvent: {}
+[6.834617] (-) TimerEvent: {}
+[6.935181] (-) TimerEvent: {}
+[7.035915] (-) TimerEvent: {}
+[7.136513] (-) TimerEvent: {}
+[7.237067] (-) TimerEvent: {}
+[7.337677] (-) TimerEvent: {}
+[7.438223] (-) TimerEvent: {}
+[7.538798] (-) TimerEvent: {}
+[7.639330] (-) TimerEvent: {}
+[7.739947] (-) TimerEvent: {}
+[7.840316] (-) TimerEvent: {}
+[7.941091] (-) TimerEvent: {}
+[8.041581] (-) TimerEvent: {}
+[8.142224] (-) TimerEvent: {}
+[8.242835] (-) TimerEvent: {}
+[8.343462] (-) TimerEvent: {}
+[8.443884] (-) TimerEvent: {}
+[8.544371] (-) TimerEvent: {}
+[8.644903] (-) TimerEvent: {}
+[8.745330] (-) TimerEvent: {}
+[8.846996] (-) TimerEvent: {}
+[8.947446] (-) TimerEvent: {}
+[9.049821] (-) TimerEvent: {}
+[9.150270] (-) TimerEvent: {}
+[9.251622] (-) TimerEvent: {}
+[9.352112] (-) TimerEvent: {}
+[9.452623] (-) TimerEvent: {}
+[9.553185] (-) TimerEvent: {}
+[9.653810] (-) TimerEvent: {}
+[9.758120] (-) TimerEvent: {}
+[9.858550] (-) TimerEvent: {}
+[9.958976] (-) TimerEvent: {}
+[10.059608] (-) TimerEvent: {}
+[10.160061] (-) TimerEvent: {}
+[10.260671] (-) TimerEvent: {}
+[10.361141] (-) TimerEvent: {}
+[10.465598] (-) TimerEvent: {}
+[10.568174] (-) TimerEvent: {}
+[10.668551] (-) TimerEvent: {}
+[10.769331] (-) TimerEvent: {}
+[10.869776] (-) TimerEvent: {}
+[10.971735] (-) TimerEvent: {}
+[11.072231] (-) TimerEvent: {}
+[11.172814] (-) TimerEvent: {}
+[11.273304] (-) TimerEvent: {}
+[11.373812] (-) TimerEvent: {}
+[11.474948] (-) TimerEvent: {}
+[11.575559] (-) TimerEvent: {}
+[11.676093] (-) TimerEvent: {}
+[11.776577] (-) TimerEvent: {}
+[11.877058] (-) TimerEvent: {}
+[11.977578] (-) TimerEvent: {}
+[12.078066] (-) TimerEvent: {}
+[12.178662] (-) TimerEvent: {}
+[12.279510] (-) TimerEvent: {}
+[12.380156] (-) TimerEvent: {}
+[12.480856] (-) TimerEvent: {}
+[12.581649] (-) TimerEvent: {}
+[12.685511] (-) TimerEvent: {}
+[12.785970] (-) TimerEvent: {}
+[12.886548] (-) TimerEvent: {}
+[12.987088] (-) TimerEvent: {}
+[13.088021] (-) TimerEvent: {}
+[13.188575] (-) TimerEvent: {}
+[13.289054] (-) TimerEvent: {}
+[13.389705] (-) TimerEvent: {}
+[13.491031] (-) TimerEvent: {}
+[13.591536] (-) TimerEvent: {}
+[13.693829] (-) TimerEvent: {}
+[13.794203] (-) TimerEvent: {}
+[13.898158] (-) TimerEvent: {}
+[13.998562] (-) TimerEvent: {}
+[14.099975] (-) TimerEvent: {}
+[14.201535] (-) TimerEvent: {}
+[14.302231] (-) TimerEvent: {}
+[14.405625] (-) TimerEvent: {}
+[14.506009] (-) TimerEvent: {}
+[14.606466] (-) TimerEvent: {}
+[14.706970] (-) TimerEvent: {}
+[14.807534] (-) TimerEvent: {}
+[14.908850] (-) TimerEvent: {}
+[15.009955] (-) TimerEvent: {}
+[15.113517] (-) TimerEvent: {}
+[15.214078] (-) TimerEvent: {}
+[15.314643] (-) TimerEvent: {}
+[15.415182] (-) TimerEvent: {}
+[15.515804] (-) TimerEvent: {}
+[15.616348] (-) TimerEvent: {}
+[15.716943] (-) TimerEvent: {}
+[15.817505] (-) TimerEvent: {}
+[15.918114] (-) TimerEvent: {}
+[16.018722] (-) TimerEvent: {}
+[16.119344] (-) TimerEvent: {}
+[16.219975] (-) TimerEvent: {}
+[16.320552] (-) TimerEvent: {}
+[16.421137] (-) TimerEvent: {}
+[16.521661] (-) TimerEvent: {}
+[16.622264] (-) TimerEvent: {}
+[16.722990] (-) TimerEvent: {}
+[16.823553] (-) TimerEvent: {}
+[16.924147] (-) TimerEvent: {}
+[17.024729] (-) TimerEvent: {}
+[17.125238] (-) TimerEvent: {}
+[17.225896] (-) TimerEvent: {}
+[17.326528] (-) TimerEvent: {}
+[17.427075] (-) TimerEvent: {}
+[17.527560] (-) TimerEvent: {}
+[17.628150] (-) TimerEvent: {}
+[17.728673] (-) TimerEvent: {}
+[17.829224] (-) TimerEvent: {}
+[17.929941] (-) TimerEvent: {}
+[18.030538] (-) TimerEvent: {}
+[18.130960] (-) TimerEvent: {}
+[18.218038] (inertial_sense_ros2) StderrLine: {'line': b'In file included from /opt/ros/jazzy/include/rclcpp/rclcpp/service.hpp:37,\n'}
+[18.218947] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/callback_group.hpp:28,\n'}
+[18.219758] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[18.220647] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[18.221444] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[18.223186] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22,\n'}
+[18.223589] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38,\n'}
+[18.223872] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[18.224129] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[18.224526] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172,\n'}
+[18.224904] (inertial_sense_ros2) StderrLine: {'line': b'                 from /home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25,\n'}
+[18.225179] (inertial_sense_ros2) StderrLine: {'line': b'                 from /home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:29,\n'}
+[18.225500] (inertial_sense_ros2) StderrLine: {'line': b'                 from /home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19:\n'}
+[18.225778] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp: In instantiation of \xe2\x80\x98void rclcpp::AnyServiceCallback<ServiceT>::set(CallbackT&&) [with CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename std::enable_if<(! rclcpp::detail::can_be_nullptr<CallbackT>::value), int>::type <anonymous> = 0; ServiceT = std_srvs::srv::Trigger]\xe2\x80\x99:\n'}
+[18.226086] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:69:27:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const rmw_qos_profile_t&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rmw_qos_profile_t = rmw_qos_profile_s; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.226429] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:51:45:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const QoS&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.226796] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/node_impl.hpp:181:53:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::Node::create_service(const std::string&, CallbackT&&, const rclcpp::QoS&, rclcpp::CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename rclcpp::Service<ServiceT>::SharedPtr = std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rclcpp::CallbackGroup::SharedPtr = std::shared_ptr<rclcpp::CallbackGroup>]\xe2\x80\x99\n'}
+[18.227106] (inertial_sense_ros2) StderrLine: {'line': b'/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:82:   required from here\n'}
+[18.227417] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp:103:17: error: no match for \xe2\x80\x98operator=\xe2\x80\x99 (operand types are \xe2\x80\x98std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >\xe2\x80\x99 and \xe2\x80\x98std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>\xe2\x80\x99)\n'}
+[18.227786] (inertial_sense_ros2) StderrLine: {'line': b'  103 |       callback_ = std::forward<CallbackT>(callback);\n'}
+[18.228061] (inertial_sense_ros2) StderrLine: {'line': b'      |       ~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[18.228322] (inertial_sense_ros2) StderrLine: {'line': b'In file included from /opt/ros/jazzy/include/rclcpp/rclcpp/client.hpp:29,\n'}
+[18.228775] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/callback_group.hpp:24:\n'}
+[18.229066] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1494:9: note: candidate: \xe2\x80\x98template<class _Tp> std::enable_if_t<((__exactly_once<std::variant<_Types>::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type> > && is_constructible_v<std::variant<_Types>::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>, _Tp>) && is_assignable_v<std::variant<_Types>::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>&, _Tp>), std::variant<_Types>&> std::variant<_Types>::operator=(_Tp&&) [with _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99\n'}
+[18.229505] (inertial_sense_ros2) StderrLine: {'line': b' 1494 |         operator=(_Tp&& __rhs)\n'}
+[18.229796] (inertial_sense_ros2) StderrLine: {'line': b'      |         ^~~~~~~~\n'}
+[18.230055] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1494:9: note:   template argument deduction/substitution failed:\n'}
+[18.230301] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant: In substitution of \xe2\x80\x98template<class ... _Types> template<class _Tp, class> using std::variant<_Types>::__accepted_type = std::variant<_Types>::__to_type<__accepted_index<_Tp> > [with _Tp = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>&&; <template-parameter-2-2> = void; _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99:\n'}
+[18.230623] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1490:14:   required by substitution of \xe2\x80\x98template<class _Tp> std::enable_if_t<((__exactly_once<std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type> > && is_constructible_v<std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>, _Tp>) && is_assignable_v<std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>&, _Tp>), std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >&> std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::operator=(_Tp&&) [with _Tp = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>]\xe2\x80\x99\n'}
+[18.231047] (-) TimerEvent: {}
+[18.231106] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp:103:17:   required from \xe2\x80\x98void rclcpp::AnyServiceCallback<ServiceT>::set(CallbackT&&) [with CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename std::enable_if<(! rclcpp::detail::can_be_nullptr<CallbackT>::value), int>::type <anonymous> = 0; ServiceT = std_srvs::srv::Trigger]\xe2\x80\x99\n'}
+[18.231434] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:69:27:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const rmw_qos_profile_t&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rmw_qos_profile_t = rmw_qos_profile_s; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.231741] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:51:45:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const QoS&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.232034] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/node_impl.hpp:181:53:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::Node::create_service(const std::string&, CallbackT&&, const rclcpp::QoS&, rclcpp::CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename rclcpp::Service<ServiceT>::SharedPtr = std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rclcpp::CallbackGroup::SharedPtr = std::shared_ptr<rclcpp::CallbackGroup>]\xe2\x80\x99\n'}
+[18.232321] (inertial_sense_ros2) StderrLine: {'line': b'/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:82:   required from here\n'}
+[18.232643] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1407:15: error: no type named \xe2\x80\x98type\xe2\x80\x99 in \xe2\x80\x98struct std::enable_if<false, void>\xe2\x80\x99\n'}
+[18.232893] (inertial_sense_ros2) StderrLine: {'line': b' 1407 |         using __accepted_type = __to_type<__accepted_index<_Tp>>;\n'}
+[18.233129] (inertial_sense_ros2) StderrLine: {'line': b'      |               ^~~~~~~~~~~~~~~\n'}
+[18.233450] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp: In instantiation of \xe2\x80\x98void rclcpp::AnyServiceCallback<ServiceT>::set(CallbackT&&) [with CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename std::enable_if<(! rclcpp::detail::can_be_nullptr<CallbackT>::value), int>::type <anonymous> = 0; ServiceT = std_srvs::srv::Trigger]\xe2\x80\x99:\n'}
+[18.233793] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:69:27:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const rmw_qos_profile_t&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rmw_qos_profile_t = rmw_qos_profile_s; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.234059] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:51:45:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const QoS&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.234298] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/node_impl.hpp:181:53:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::Node::create_service(const std::string&, CallbackT&&, const rclcpp::QoS&, rclcpp::CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename rclcpp::Service<ServiceT>::SharedPtr = std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rclcpp::CallbackGroup::SharedPtr = std::shared_ptr<rclcpp::CallbackGroup>]\xe2\x80\x99\n'}
+[18.234796] (inertial_sense_ros2) StderrLine: {'line': b'/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:82:   required from here\n'}
+[18.235057] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1430:16: note: candidate: \xe2\x80\x98std::variant<_Types>& std::variant<_Types>::operator=(const std::variant<_Types>&) [with _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99\n'}
+[18.235322] (inertial_sense_ros2) StderrLine: {'line': b' 1430 |       variant& operator=(const variant&) = default;\n'}
+[18.235620] (inertial_sense_ros2) StderrLine: {'line': b'      |                ^~~~~~~~\n'}
+[18.235857] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1430:26: note:   no known conversion for argument 1 from \xe2\x80\x98std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>\xe2\x80\x99 to \xe2\x80\x98const std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >&\xe2\x80\x99\n'}
+[18.236130] (inertial_sense_ros2) StderrLine: {'line': b' 1430 |       variant& operator=(const variant&) = default;\n'}
+[18.236364] (inertial_sense_ros2) StderrLine: {'line': b'      |                          ^~~~~~~~~~~~~~\n'}
+[18.236831] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1431:16: note: candidate: \xe2\x80\x98std::variant<_Types>& std::variant<_Types>::operator=(std::variant<_Types>&&) [with _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99\n'}
+[18.237090] (inertial_sense_ros2) StderrLine: {'line': b' 1431 |       variant& operator=(variant&&) = default;\n'}
+[18.237322] (inertial_sense_ros2) StderrLine: {'line': b'      |                ^~~~~~~~\n'}
+[18.237607] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1431:26: note:   no known conversion for argument 1 from \xe2\x80\x98std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>\xe2\x80\x99 to \xe2\x80\x98std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >&&\xe2\x80\x99\n'}
+[18.237895] (inertial_sense_ros2) StderrLine: {'line': b' 1431 |       variant& operator=(variant&&) = default;\n'}
+[18.238127] (inertial_sense_ros2) StderrLine: {'line': b'      |                          ^~~~~~~~~\n'}
+[18.295521] (inertial_sense_ros2) StderrLine: {'line': b'In file included from /opt/ros/jazzy/include/rclcpp/rclcpp/service.hpp:37,\n'}
+[18.297249] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/callback_group.hpp:28,\n'}
+[18.297761] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:20,\n'}
+[18.298032] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25,\n'}
+[18.298272] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18,\n'}
+[18.298733] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22,\n'}
+[18.298999] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38,\n'}
+[18.299235] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25,\n'}
+[18.299627] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21,\n'}
+[18.299896] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172,\n'}
+[18.300133] (inertial_sense_ros2) StderrLine: {'line': b'                 from /home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25,\n'}
+[18.300373] (inertial_sense_ros2) StderrLine: {'line': b'                 from /home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:29,\n'}
+[18.300664] (inertial_sense_ros2) StderrLine: {'line': b'                 from /home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19:\n'}
+[18.300898] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp: In instantiation of \xe2\x80\x98void rclcpp::AnyServiceCallback<ServiceT>::set(CallbackT&&) [with CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename std::enable_if<(! rclcpp::detail::can_be_nullptr<CallbackT>::value), int>::type <anonymous> = 0; ServiceT = std_srvs::srv::Trigger]\xe2\x80\x99:\n'}
+[18.301142] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:69:27:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const rmw_qos_profile_t&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rmw_qos_profile_t = rmw_qos_profile_s; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.301552] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:51:45:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const QoS&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.301931] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/node_impl.hpp:181:53:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::Node::create_service(const std::string&, CallbackT&&, const rclcpp::QoS&, rclcpp::CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename rclcpp::Service<ServiceT>::SharedPtr = std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rclcpp::CallbackGroup::SharedPtr = std::shared_ptr<rclcpp::CallbackGroup>]\xe2\x80\x99\n'}
+[18.302194] (inertial_sense_ros2) StderrLine: {'line': b'/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:82:   required from here\n'}
+[18.302472] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp:103:17: error: no match for \xe2\x80\x98operator=\xe2\x80\x99 (operand types are \xe2\x80\x98std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >\xe2\x80\x99 and \xe2\x80\x98std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>\xe2\x80\x99)\n'}
+[18.302762] (inertial_sense_ros2) StderrLine: {'line': b'  103 |       callback_ = std::forward<CallbackT>(callback);\n'}
+[18.302991] (inertial_sense_ros2) StderrLine: {'line': b'      |       ~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[18.303218] (inertial_sense_ros2) StderrLine: {'line': b'In file included from /opt/ros/jazzy/include/rclcpp/rclcpp/client.hpp:29,\n'}
+[18.303490] (inertial_sense_ros2) StderrLine: {'line': b'                 from /opt/ros/jazzy/include/rclcpp/rclcpp/callback_group.hpp:24:\n'}
+[18.303736] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1494:9: note: candidate: \xe2\x80\x98template<class _Tp> std::enable_if_t<((__exactly_once<std::variant<_Types>::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type> > && is_constructible_v<std::variant<_Types>::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>, _Tp>) && is_assignable_v<std::variant<_Types>::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>&, _Tp>), std::variant<_Types>&> std::variant<_Types>::operator=(_Tp&&) [with _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99\n'}
+[18.304012] (inertial_sense_ros2) StderrLine: {'line': b' 1494 |         operator=(_Tp&& __rhs)\n'}
+[18.304262] (inertial_sense_ros2) StderrLine: {'line': b'      |         ^~~~~~~~\n'}
+[18.304556] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1494:9: note:   template argument deduction/substitution failed:\n'}
+[18.304801] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant: In substitution of \xe2\x80\x98template<class ... _Types> template<class _Tp, class> using std::variant<_Types>::__accepted_type = std::variant<_Types>::__to_type<__accepted_index<_Tp> > [with _Tp = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>&&; <template-parameter-2-2> = void; _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99:\n'}
+[18.305064] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1490:14:   required by substitution of \xe2\x80\x98template<class _Tp> std::enable_if_t<((__exactly_once<std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type> > && is_constructible_v<std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>, _Tp>) && is_assignable_v<std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::__accepted_type<_Tp&&, typename std::enable_if<__not_self<_Tp&&>, void>::type>&, _Tp>), std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >&> std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >::operator=(_Tp&&) [with _Tp = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>]\xe2\x80\x99\n'}
+[18.305479] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp:103:17:   required from \xe2\x80\x98void rclcpp::AnyServiceCallback<ServiceT>::set(CallbackT&&) [with CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename std::enable_if<(! rclcpp::detail::can_be_nullptr<CallbackT>::value), int>::type <anonymous> = 0; ServiceT = std_srvs::srv::Trigger]\xe2\x80\x99\n'}
+[18.305777] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:69:27:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const rmw_qos_profile_t&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rmw_qos_profile_t = rmw_qos_profile_s; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.306040] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:51:45:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const QoS&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.306342] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/node_impl.hpp:181:53:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::Node::create_service(const std::string&, CallbackT&&, const rclcpp::QoS&, rclcpp::CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename rclcpp::Service<ServiceT>::SharedPtr = std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rclcpp::CallbackGroup::SharedPtr = std::shared_ptr<rclcpp::CallbackGroup>]\xe2\x80\x99\n'}
+[18.306668] (inertial_sense_ros2) StderrLine: {'line': b'/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:82:   required from here\n'}
+[18.306905] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1407:15: error: no type named \xe2\x80\x98type\xe2\x80\x99 in \xe2\x80\x98struct std::enable_if<false, void>\xe2\x80\x99\n'}
+[18.307222] (inertial_sense_ros2) StderrLine: {'line': b' 1407 |         using __accepted_type = __to_type<__accepted_index<_Tp>>;\n'}
+[18.307581] (inertial_sense_ros2) StderrLine: {'line': b'      |               ^~~~~~~~~~~~~~~\n'}
+[18.307871] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/any_service_callback.hpp: In instantiation of \xe2\x80\x98void rclcpp::AnyServiceCallback<ServiceT>::set(CallbackT&&) [with CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename std::enable_if<(! rclcpp::detail::can_be_nullptr<CallbackT>::value), int>::type <anonymous> = 0; ServiceT = std_srvs::srv::Trigger]\xe2\x80\x99:\n'}
+[18.308136] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:69:27:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const rmw_qos_profile_t&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rmw_qos_profile_t = rmw_qos_profile_s; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.308567] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/create_service.hpp:51:45:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::create_service(std::shared_ptr<node_interfaces::NodeBaseInterface>, std::shared_ptr<node_interfaces::NodeServicesInterface>, const std::string&, CallbackT&&, const QoS&, CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename Service<ServiceT>::SharedPtr = std::shared_ptr<Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; CallbackGroup::SharedPtr = std::shared_ptr<CallbackGroup>]\xe2\x80\x99\n'}
+[18.308954] (inertial_sense_ros2) StderrLine: {'line': b'/opt/ros/jazzy/include/rclcpp/rclcpp/node_impl.hpp:181:53:   required from \xe2\x80\x98typename rclcpp::Service<ServiceT>::SharedPtr rclcpp::Node::create_service(const std::string&, CallbackT&&, const rclcpp::QoS&, rclcpp::CallbackGroup::SharedPtr) [with ServiceT = std_srvs::srv::Trigger; CallbackT = std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>; typename rclcpp::Service<ServiceT>::SharedPtr = std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >; std::string = std::__cxx11::basic_string<char>; rclcpp::CallbackGroup::SharedPtr = std::shared_ptr<rclcpp::CallbackGroup>]\xe2\x80\x99\n'}
+[18.309271] (inertial_sense_ros2) StderrLine: {'line': b'/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:130:82:   required from here\n'}
+[18.309734] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1430:16: note: candidate: \xe2\x80\x98std::variant<_Types>& std::variant<_Types>::operator=(const std::variant<_Types>&) [with _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99\n'}
+[18.310350] (inertial_sense_ros2) StderrLine: {'line': b' 1430 |       variant& operator=(const variant&) = default;\n'}
+[18.310708] (inertial_sense_ros2) StderrLine: {'line': b'      |                ^~~~~~~~\n'}
+[18.311005] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1430:26: note:   no known conversion for argument 1 from \xe2\x80\x98std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>\xe2\x80\x99 to \xe2\x80\x98const std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >&\xe2\x80\x99\n'}
+[18.311307] (inertial_sense_ros2) StderrLine: {'line': b' 1430 |       variant& operator=(const variant&) = default;\n'}
+[18.311802] (inertial_sense_ros2) StderrLine: {'line': b'      |                          ^~~~~~~~~~~~~~\n'}
+[18.312071] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1431:16: note: candidate: \xe2\x80\x98std::variant<_Types>& std::variant<_Types>::operator=(std::variant<_Types>&&) [with _Types = {std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>}]\xe2\x80\x99\n'}
+[18.312421] (inertial_sense_ros2) StderrLine: {'line': b' 1431 |       variant& operator=(variant&&) = default;\n'}
+[18.312715] (inertial_sense_ros2) StderrLine: {'line': b'      |                ^~~~~~~~\n'}
+[18.313102] (inertial_sense_ros2) StderrLine: {'line': b'/usr/include/c++/13/variant:1431:26: note:   no known conversion for argument 1 from \xe2\x80\x98std::_Bind<bool (InertialSenseROS::*(InertialSenseROS*, std::_Placeholder<1>, std::_Placeholder<2>))(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)>\xe2\x80\x99 to \xe2\x80\x98std::variant<std::monostate, std::function<void(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)>, std::function<void(std::shared_ptr<rclcpp::Service<std_srvs::srv::Trigger> >, std::shared_ptr<rmw_request_id_s>, std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >)> >&&\xe2\x80\x99\n'}
+[18.313533] (inertial_sense_ros2) StderrLine: {'line': b' 1431 |       variant& operator=(variant&&) = default;\n'}
+[18.313848] (inertial_sense_ros2) StderrLine: {'line': b'      |                          ^~~~~~~~~\n'}
+[18.331476] (-) TimerEvent: {}
+[18.431892] (-) TimerEvent: {}
+[18.532471] (-) TimerEvent: {}
+[18.634383] (-) TimerEvent: {}
+[18.734906] (-) TimerEvent: {}
+[18.835523] (-) TimerEvent: {}
+[18.936159] (-) TimerEvent: {}
+[19.036775] (-) TimerEvent: {}
+[19.137219] (-) TimerEvent: {}
+[19.237895] (-) TimerEvent: {}
+[19.338501] (-) TimerEvent: {}
+[19.439125] (-) TimerEvent: {}
+[19.539616] (-) TimerEvent: {}
+[19.640106] (-) TimerEvent: {}
+[19.740670] (-) TimerEvent: {}
+[19.841261] (-) TimerEvent: {}
+[19.941796] (-) TimerEvent: {}
+[20.043532] (-) TimerEvent: {}
+[20.144119] (-) TimerEvent: {}
+[20.244743] (-) TimerEvent: {}
+[20.345346] (-) TimerEvent: {}
+[20.445941] (-) TimerEvent: {}
+[20.546518] (-) TimerEvent: {}
+[20.647051] (-) TimerEvent: {}
+[20.747652] (-) TimerEvent: {}
+[20.848205] (-) TimerEvent: {}
+[20.948830] (-) TimerEvent: {}
+[21.049452] (-) TimerEvent: {}
+[21.150113] (-) TimerEvent: {}
+[21.250703] (-) TimerEvent: {}
+[21.351259] (-) TimerEvent: {}
+[21.452049] (-) TimerEvent: {}
+[21.552759] (-) TimerEvent: {}
+[21.653557] (-) TimerEvent: {}
+[21.754124] (-) TimerEvent: {}
+[21.854636] (-) TimerEvent: {}
+[21.955245] (-) TimerEvent: {}
+[22.056018] (-) TimerEvent: {}
+[22.156540] (-) TimerEvent: {}
+[22.257057] (-) TimerEvent: {}
+[22.357622] (-) TimerEvent: {}
+[22.458281] (-) TimerEvent: {}
+[22.558954] (-) TimerEvent: {}
+[22.659555] (-) TimerEvent: {}
+[22.760119] (-) TimerEvent: {}
+[22.860770] (-) TimerEvent: {}
+[22.961271] (-) TimerEvent: {}
+[23.061929] (-) TimerEvent: {}
+[23.162609] (-) TimerEvent: {}
+[23.263250] (-) TimerEvent: {}
+[23.363977] (-) TimerEvent: {}
+[23.464540] (-) TimerEvent: {}
+[23.566533] (-) TimerEvent: {}
+[23.667059] (-) TimerEvent: {}
+[23.769181] (-) TimerEvent: {}
+[23.869865] (-) TimerEvent: {}
+[23.972071] (-) TimerEvent: {}
+[24.072500] (-) TimerEvent: {}
+[24.173709] (-) TimerEvent: {}
+[24.274069] (-) TimerEvent: {}
+[24.374460] (-) TimerEvent: {}
+[24.475004] (-) TimerEvent: {}
+[24.576552] (-) TimerEvent: {}
+[24.677275] (-) TimerEvent: {}
+[24.779540] (-) TimerEvent: {}
+[24.880111] (-) TimerEvent: {}
+[24.980680] (-) TimerEvent: {}
+[25.081127] (-) TimerEvent: {}
+[25.181604] (-) TimerEvent: {}
+[25.282156] (-) TimerEvent: {}
+[25.382768] (-) TimerEvent: {}
+[25.483281] (-) TimerEvent: {}
+[25.583843] (-) TimerEvent: {}
+[25.684311] (-) TimerEvent: {}
+[25.784873] (-) TimerEvent: {}
+[25.885335] (-) TimerEvent: {}
+[25.986038] (-) TimerEvent: {}
+[25.989612] (inertial_sense_ros2) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1\n'}
+[25.990063] (inertial_sense_ros2) StderrLine: {'line': b'gmake[2]: *** Waiting for unfinished jobs....\n'}
+[26.086288] (-) TimerEvent: {}
+[26.186784] (-) TimerEvent: {}
+[26.287531] (-) TimerEvent: {}
+[26.388016] (-) TimerEvent: {}
+[26.435915] (inertial_sense_ros2) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1\n'}
+[26.436894] (inertial_sense_ros2) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2\n'}
+[26.437854] (inertial_sense_ros2) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[26.442502] (inertial_sense_ros2) CommandEnded: {'returncode': 2}
+[26.488593] (-) TimerEvent: {}
+[26.589060] (-) TimerEvent: {}
+[26.689609] (-) TimerEvent: {}
+[26.790678] (-) TimerEvent: {}
+[26.891151] (-) TimerEvent: {}
+[26.991691] (-) TimerEvent: {}
+[27.092257] (-) TimerEvent: {}
+[27.192837] (-) TimerEvent: {}
+[27.293521] (-) TimerEvent: {}
+[27.394057] (-) TimerEvent: {}
+[27.494434] (-) TimerEvent: {}
+[27.594854] (-) TimerEvent: {}
+[27.695346] (-) TimerEvent: {}
+[27.795858] (-) TimerEvent: {}
+[27.896496] (-) TimerEvent: {}
+[27.996966] (-) TimerEvent: {}
+[28.097533] (-) TimerEvent: {}
+[28.198101] (-) TimerEvent: {}
+[28.298576] (-) TimerEvent: {}
+[28.399074] (-) TimerEvent: {}
+[28.499782] (-) TimerEvent: {}
+[28.600184] (-) TimerEvent: {}
+[28.700605] (-) TimerEvent: {}
+[28.801144] (-) TimerEvent: {}
+[28.901877] (-) TimerEvent: {}
+[29.002342] (-) TimerEvent: {}
+[29.102964] (-) TimerEvent: {}
+[29.203433] (-) TimerEvent: {}
+[29.304055] (-) TimerEvent: {}
+[29.404553] (-) TimerEvent: {}
+[29.505008] (-) TimerEvent: {}
+[29.605427] (-) TimerEvent: {}
+[29.705899] (-) TimerEvent: {}
+[29.806537] (-) TimerEvent: {}
+[29.906979] (-) TimerEvent: {}
+[29.996698] (inertial_sense_ros2) JobEnded: {'identifier': 'inertial_sense_ros2', 'rc': 2}
+[30.008184] (-) EventReactorShutdown: {}

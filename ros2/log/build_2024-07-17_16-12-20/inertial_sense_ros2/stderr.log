@@ -1,0 +1,88 @@
+In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.cpp:19[m[K:
+/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:70:57:[m[K   required from here
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+   84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+      |                                               [01;31m[K^~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >::value[m[K’ evaluates to false
+In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:31[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:70:57:[m[K   required from here
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+   84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+      |                                               [01;31m[K^~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >::value[m[K’ evaluates to false
+In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:25[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:31[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp: In instantiation of ‘[01m[Kclass rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:70:57:[m[K   required from here
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: given message type is not compatible with ROS and cannot be used with a Publisher
+   84 |     rclcpp::is_ros_compatible_type<MessageT>::[01;31m[Kvalue[m[K,
+      |                                               [01;31m[K^~~~~[m[K
+[01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:84:47:[m[K [01;36m[Knote: [m[K‘[01m[Krclcpp::is_ros_compatible_type<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >::value[m[K’ evaluates to false
+In file included from [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/didins1.hpp:9[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:65[m[K:
+[01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kspecialization of ‘[01m[Krosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’ after instantiation
+  330 | struct [01;31m[Kis_message<inertial_sense_ros2::msg::DIDINS1>[m[K
+      |        [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kredefinition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+In file included from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/detail/list_parameters__traits.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/list_parameters.hpp:9[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171[m[K:
+[01m[K/opt/ros/jazzy/include/rosidl_runtime_cpp/rosidl_runtime_cpp/traits.hpp:165:8:[m[K [01;36m[Knote: [m[Kprevious definition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+  165 | struct [01;36m[Kis_message[m[K : std::false_type {};
+      |        [01;36m[K^~~~~~~~~~[m[K
+In file included from [01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/didins1.hpp:9[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:65[m[K:
+[01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kspecialization of ‘[01m[Krosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’ after instantiation
+  330 | struct [01;31m[Kis_message<inertial_sense_ros2::msg::DIDINS1>[m[K
+      |        [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/build/inertial_sense_ros2/rosidl_generator_cpp/inertial_sense_ros2/msg/detail/didins1__traits.hpp:330:8:[m[K [01;31m[Kerror: [m[Kredefinition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+In file included from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/detail/list_parameters__traits.hpp:18[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rcl_interfaces/rcl_interfaces/srv/list_parameters.hpp:9[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:21[m[K,
+                 from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171[m[K:
+[01m[K/opt/ros/jazzy/include/rosidl_runtime_cpp/rosidl_runtime_cpp/traits.hpp:165:8:[m[K [01;36m[Knote: [m[Kprevious definition of ‘[01m[Kstruct rosidl_generator_traits::is_message<inertial_sense_ros2::msg::DIDINS1_<std::allocator<void> > >[m[K’
+  165 | struct [01;36m[Kis_message[m[K : std::false_type {};
+      |        [01;36m[K^~~~~~~~~~[m[K
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

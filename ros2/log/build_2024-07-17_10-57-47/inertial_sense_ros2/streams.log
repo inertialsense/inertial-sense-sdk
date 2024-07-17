@@ -1,0 +1,33 @@
+[0.048s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j6 -l6
+[0.287s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[0.329s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[0.389s] [  1%] Built target inertial_sense_ros2__cpp
+[0.418s] [  2%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o[0m
+[0.425s] [ 28%] Built target inertial_sense_ros2__rosidl_generator_c
+[0.428s] [ 28%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o[0m
+[0.444s] [ 29%] [32mBuilding CXX object CMakeFiles/new_target.dir/include/TopicHelper.cpp.o[0m
+[0.565s] [ 39%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[0.585s] [ 49%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[0.689s] [ 58%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[0.692s] [ 68%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[0.793s] [ 77%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[0.833s] [ 86%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[0.916s] [ 86%] Built target inertial_sense_ros2
+[1.036s] [ 87%] Built target inertial_sense_ros2__py
+[1.112s] running egg_info
+[1.145s] [ 96%] Built target inertial_sense_ros2__rosidl_generator_py
+[1.184s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[1.185s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[1.187s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[1.245s] [ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[1.268s] [ 98%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+[1.339s] [ 99%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[1.395s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.398s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.483s] [ 99%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[4.135s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Interrupt
+[4.136s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Interrupt
+[4.136s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Interrupt
+[4.137s] gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Interrupt
+[4.137s] gmake: *** [Makefile:146: all] Interrupt
+[4.149s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '-2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j6 -l6

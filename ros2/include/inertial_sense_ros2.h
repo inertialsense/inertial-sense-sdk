@@ -17,6 +17,8 @@
  ***************************************************************************************/
 
 #pragma once
+#ifndef INERTIAL_SENSE_ROS_2_H
+#define INERTIAL_SENSE_ROS_2_H
 
 #include <stdio.h>
 #include <iostream>
@@ -275,9 +277,9 @@ public:
    rclcpp::Service<inertial_sense_ros2::srv::RefLLAUpdate>::SharedPtr refLLA_set_value_srv_;
 
     bool set_current_position_as_refLLA(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
-    bool set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request &req, inertial_sense_ros2::srv::RefLLAUpdate::Response &res);
-    bool perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
-    bool perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res);
+    bool set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request::SharedPtr req, inertial_sense_ros2::srv::RefLLAUpdate::Response::SharedPtr res);
+    bool perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res);
+    bool perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res);
     bool update_firmware_srv_callback(inertial_sense_ros2::srv::FirmwareUpdate::Request &req, inertial_sense_ros2::srv::FirmwareUpdate::Response &res);
 
     void publishGPS1();
@@ -446,7 +448,7 @@ public:
 
 };
 
-
+#endif
 
 
 

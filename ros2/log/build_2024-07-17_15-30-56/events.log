@@ -1,0 +1,1321 @@
+[0.000000] (-) TimerEvent: {}
+[0.000229] (inertial_sense_ros2) JobQueued: {'identifier': 'inertial_sense_ros2', 'dependencies': OrderedDict()}
+[0.000430] (inertial_sense_ros2) JobStarted: {'identifier': 'inertial_sense_ros2'}
+[0.033969] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'cmake'}
+[0.036881] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'build'}
+[0.039027] (inertial_sense_ros2) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', '--', '-j6', '-l6'], 'cwd': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'env': OrderedDict({'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 's', 'XDG_SESSION_TYPE': 'wayland', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/s', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'DBUS_STARTER_BUS_TYPE': 'session', 'SYSTEMD_EXEC_PID': '2214', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus,guid=f924f768626b8f5ddd4065286697eb5b', 'COLORTERM': 'truecolor', '_colcon_cd_root': '/opt/ros/jazzy/', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 's', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome\\x2dsession\\x2dmanager.slice/gnome-session-manager@ubuntu.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 's', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/s-VMware-Virtual-Platform:@/tmp/.ICE-unix/2214,unix/s-VMware-Virtual-Platform:/tmp/.ICE-unix/2214', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/ee79ed63_56cc_414c_b474_a4da542e6115', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.MAC8Q2', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'GNOME_TERMINAL_SERVICE': ':1.120', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '0', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'DBUS_STARTER_ADDRESS': 'unix:path=/run/user/1000/bus,guid=f924f768626b8f5ddd4065286697eb5b', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'QTWEBENGINE_DICTIONARIES_PATH': '/usr/share/hunspell-bdic/', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'VTE_VERSION': '7600', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.098006] (-) TimerEvent: {}
+[0.198578] (-) TimerEvent: {}
+[0.299901] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target inertial_sense_ros2__rosidl_generator_type_description\n'}
+[0.300588] (-) TimerEvent: {}
+[0.341583] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target ament_cmake_python_copy_inertial_sense_ros2\n'}
+[0.400748] (-) TimerEvent: {}
+[0.419986] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target inertial_sense_ros2__cpp\n'}
+[0.423632] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Building CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o\n'}
+[0.433702] (inertial_sense_ros2) StdoutLine: {'line': b'[ 25%] Building CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o\n'}
+[0.434206] (inertial_sense_ros2) StdoutLine: {'line': b'[ 28%] Built target inertial_sense_ros2__rosidl_generator_c\n'}
+[0.501623] (-) TimerEvent: {}
+[0.576802] (inertial_sense_ros2) StdoutLine: {'line': b'[ 38%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c\n'}
+[0.604457] (-) TimerEvent: {}
+[0.627185] (inertial_sense_ros2) StdoutLine: {'line': b'[ 47%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp\n'}
+[0.649603] (inertial_sense_ros2) StdoutLine: {'line': b'[ 57%] Built target inertial_sense_ros2__rosidl_typesupport_cpp\n'}
+[0.704775] (-) TimerEvent: {}
+[0.747985] (inertial_sense_ros2) StdoutLine: {'line': b'[ 67%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c\n'}
+[0.805136] (-) TimerEvent: {}
+[0.813428] (inertial_sense_ros2) StdoutLine: {'line': b'[ 76%] Built target inertial_sense_ros2__rosidl_typesupport_c\n'}
+[0.825714] (inertial_sense_ros2) StdoutLine: {'line': b'[ 85%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp\n'}
+[0.906536] (-) TimerEvent: {}
+[0.918982] (inertial_sense_ros2) StdoutLine: {'line': b'[ 85%] Built target inertial_sense_ros2\n'}
+[1.006746] (-) TimerEvent: {}
+[1.017095] (inertial_sense_ros2) StdoutLine: {'line': b'[ 86%] Built target inertial_sense_ros2__py\n'}
+[1.107674] (-) TimerEvent: {}
+[1.159553] (inertial_sense_ros2) StdoutLine: {'line': b'[ 95%] Built target inertial_sense_ros2__rosidl_generator_py\n'}
+[1.183769] (inertial_sense_ros2) StdoutLine: {'line': b'running egg_info\n'}
+[1.210362] (-) TimerEvent: {}
+[1.294099] (inertial_sense_ros2) StdoutLine: {'line': b'writing inertial_sense_ros2.egg-info/PKG-INFO\n'}
+[1.296443] (inertial_sense_ros2) StdoutLine: {'line': b'writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt\n'}
+[1.298634] (inertial_sense_ros2) StdoutLine: {'line': b'writing top-level names to inertial_sense_ros2.egg-info/top_level.txt\n'}
+[1.307912] (inertial_sense_ros2) StdoutLine: {'line': b'[ 96%] Built target inertial_sense_ros2_s__rosidl_typesupport_c\n'}
+[1.309986] (inertial_sense_ros2) StdoutLine: {'line': b'[ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c\n'}
+[1.310464] (-) TimerEvent: {}
+[1.321208] (inertial_sense_ros2) StdoutLine: {'line': b'[ 98%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c\n'}
+[1.410762] (-) TimerEvent: {}
+[1.511187] (-) TimerEvent: {}
+[1.519586] (inertial_sense_ros2) StdoutLine: {'line': b"reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'\n"}
+[1.522486] (inertial_sense_ros2) StdoutLine: {'line': b"writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'\n"}
+[1.611435] (inertial_sense_ros2) StdoutLine: {'line': b'[ 98%] Built target ament_cmake_python_build_inertial_sense_ros2_egg\n'}
+[1.611899] (-) TimerEvent: {}
+[1.712507] (-) TimerEvent: {}
+[1.813201] (-) TimerEvent: {}
+[1.913741] (-) TimerEvent: {}
+[2.014132] (-) TimerEvent: {}
+[2.114515] (-) TimerEvent: {}
+[2.214862] (-) TimerEvent: {}
+[2.315254] (-) TimerEvent: {}
+[2.415743] (-) TimerEvent: {}
+[2.516140] (-) TimerEvent: {}
+[2.616650] (-) TimerEvent: {}
+[2.717162] (-) TimerEvent: {}
+[2.817696] (-) TimerEvent: {}
+[2.918283] (-) TimerEvent: {}
+[3.018791] (-) TimerEvent: {}
+[3.119347] (-) TimerEvent: {}
+[3.219903] (-) TimerEvent: {}
+[3.320717] (-) TimerEvent: {}
+[3.421192] (-) TimerEvent: {}
+[3.521948] (-) TimerEvent: {}
+[3.622518] (-) TimerEvent: {}
+[3.723020] (-) TimerEvent: {}
+[3.823532] (-) TimerEvent: {}
+[3.924030] (-) TimerEvent: {}
+[4.024541] (-) TimerEvent: {}
+[4.125087] (-) TimerEvent: {}
+[4.225774] (-) TimerEvent: {}
+[4.326288] (-) TimerEvent: {}
+[4.426835] (-) TimerEvent: {}
+[4.527333] (-) TimerEvent: {}
+[4.627878] (-) TimerEvent: {}
+[4.728343] (-) TimerEvent: {}
+[4.828919] (-) TimerEvent: {}
+[4.929579] (-) TimerEvent: {}
+[5.030059] (-) TimerEvent: {}
+[5.130618] (-) TimerEvent: {}
+[5.231144] (-) TimerEvent: {}
+[5.331624] (-) TimerEvent: {}
+[5.432161] (-) TimerEvent: {}
+[5.532673] (-) TimerEvent: {}
+[5.633131] (-) TimerEvent: {}
+[5.733613] (-) TimerEvent: {}
+[5.834186] (-) TimerEvent: {}
+[5.934835] (-) TimerEvent: {}
+[6.035310] (-) TimerEvent: {}
+[6.135932] (-) TimerEvent: {}
+[6.236614] (-) TimerEvent: {}
+[6.337207] (-) TimerEvent: {}
+[6.437869] (-) TimerEvent: {}
+[6.538540] (-) TimerEvent: {}
+[6.639032] (-) TimerEvent: {}
+[6.739558] (-) TimerEvent: {}
+[6.840067] (-) TimerEvent: {}
+[6.940639] (-) TimerEvent: {}
+[7.041241] (-) TimerEvent: {}
+[7.142063] (-) TimerEvent: {}
+[7.242589] (-) TimerEvent: {}
+[7.343158] (-) TimerEvent: {}
+[7.443690] (-) TimerEvent: {}
+[7.544248] (-) TimerEvent: {}
+[7.644858] (-) TimerEvent: {}
+[7.745543] (-) TimerEvent: {}
+[7.846136] (-) TimerEvent: {}
+[7.946651] (-) TimerEvent: {}
+[8.047626] (-) TimerEvent: {}
+[8.148127] (-) TimerEvent: {}
+[8.248762] (-) TimerEvent: {}
+[8.349463] (-) TimerEvent: {}
+[8.449969] (-) TimerEvent: {}
+[8.550566] (-) TimerEvent: {}
+[8.651149] (-) TimerEvent: {}
+[8.751770] (-) TimerEvent: {}
+[8.852221] (-) TimerEvent: {}
+[8.953569] (-) TimerEvent: {}
+[9.053946] (-) TimerEvent: {}
+[9.157534] (-) TimerEvent: {}
+[9.257906] (-) TimerEvent: {}
+[9.358242] (-) TimerEvent: {}
+[9.461554] (-) TimerEvent: {}
+[9.561936] (-) TimerEvent: {}
+[9.662540] (-) TimerEvent: {}
+[9.763149] (-) TimerEvent: {}
+[9.866765] (-) TimerEvent: {}
+[9.967169] (-) TimerEvent: {}
+[10.067553] (-) TimerEvent: {}
+[10.167953] (-) TimerEvent: {}
+[10.268769] (-) TimerEvent: {}
+[10.369196] (-) TimerEvent: {}
+[10.470872] (-) TimerEvent: {}
+[10.574198] (-) TimerEvent: {}
+[10.677537] (-) TimerEvent: {}
+[10.777933] (-) TimerEvent: {}
+[10.882551] (-) TimerEvent: {}
+[10.983786] (-) TimerEvent: {}
+[11.086559] (-) TimerEvent: {}
+[11.187023] (-) TimerEvent: {}
+[11.291553] (-) TimerEvent: {}
+[11.391955] (-) TimerEvent: {}
+[11.492328] (-) TimerEvent: {}
+[11.592987] (-) TimerEvent: {}
+[11.693562] (-) TimerEvent: {}
+[11.796552] (-) TimerEvent: {}
+[11.896938] (-) TimerEvent: {}
+[11.997311] (-) TimerEvent: {}
+[12.103577] (-) TimerEvent: {}
+[12.204041] (-) TimerEvent: {}
+[12.304483] (-) TimerEvent: {}
+[12.404851] (-) TimerEvent: {}
+[12.506307] (-) TimerEvent: {}
+[12.606785] (-) TimerEvent: {}
+[12.710591] (-) TimerEvent: {}
+[12.811025] (-) TimerEvent: {}
+[12.911515] (-) TimerEvent: {}
+[13.013558] (-) TimerEvent: {}
+[13.113964] (-) TimerEvent: {}
+[13.217732] (-) TimerEvent: {}
+[13.320626] (-) TimerEvent: {}
+[13.422607] (-) TimerEvent: {}
+[13.522998] (-) TimerEvent: {}
+[13.624547] (-) TimerEvent: {}
+[13.727613] (-) TimerEvent: {}
+[13.829656] (-) TimerEvent: {}
+[13.933754] (-) TimerEvent: {}
+[14.034378] (-) TimerEvent: {}
+[14.138782] (-) TimerEvent: {}
+[14.241513] (-) TimerEvent: {}
+[14.341949] (-) TimerEvent: {}
+[14.445112] (-) TimerEvent: {}
+[14.547535] (-) TimerEvent: {}
+[14.650531] (-) TimerEvent: {}
+[14.750897] (-) TimerEvent: {}
+[14.851602] (-) TimerEvent: {}
+[14.952150] (-) TimerEvent: {}
+[15.052859] (-) TimerEvent: {}
+[15.153471] (-) TimerEvent: {}
+[15.253989] (-) TimerEvent: {}
+[15.354589] (-) TimerEvent: {}
+[15.455169] (-) TimerEvent: {}
+[15.555791] (-) TimerEvent: {}
+[15.656464] (-) TimerEvent: {}
+[15.757112] (-) TimerEvent: {}
+[15.857853] (-) TimerEvent: {}
+[15.958471] (-) TimerEvent: {}
+[16.059154] (-) TimerEvent: {}
+[16.159652] (-) TimerEvent: {}
+[16.260248] (-) TimerEvent: {}
+[16.360855] (-) TimerEvent: {}
+[16.461377] (-) TimerEvent: {}
+[16.561884] (-) TimerEvent: {}
+[16.662447] (-) TimerEvent: {}
+[16.763015] (-) TimerEvent: {}
+[16.863666] (-) TimerEvent: {}
+[16.966873] (-) TimerEvent: {}
+[17.067381] (-) TimerEvent: {}
+[17.167953] (-) TimerEvent: {}
+[17.268519] (-) TimerEvent: {}
+[17.368966] (-) TimerEvent: {}
+[17.469575] (-) TimerEvent: {}
+[17.570177] (-) TimerEvent: {}
+[17.670856] (-) TimerEvent: {}
+[17.771383] (-) TimerEvent: {}
+[17.872122] (-) TimerEvent: {}
+[17.972905] (-) TimerEvent: {}
+[18.073494] (-) TimerEvent: {}
+[18.174009] (-) TimerEvent: {}
+[18.274550] (-) TimerEvent: {}
+[18.375107] (-) TimerEvent: {}
+[18.475646] (-) TimerEvent: {}
+[18.576228] (-) TimerEvent: {}
+[18.676723] (-) TimerEvent: {}
+[18.777249] (-) TimerEvent: {}
+[18.878526] (-) TimerEvent: {}
+[18.979091] (-) TimerEvent: {}
+[19.079552] (-) TimerEvent: {}
+[19.180088] (-) TimerEvent: {}
+[19.280607] (-) TimerEvent: {}
+[19.381111] (-) TimerEvent: {}
+[19.481609] (-) TimerEvent: {}
+[19.582164] (-) TimerEvent: {}
+[19.682802] (-) TimerEvent: {}
+[19.783342] (-) TimerEvent: {}
+[19.884050] (-) TimerEvent: {}
+[19.984580] (-) TimerEvent: {}
+[20.085124] (-) TimerEvent: {}
+[20.185857] (-) TimerEvent: {}
+[20.286340] (-) TimerEvent: {}
+[20.387072] (-) TimerEvent: {}
+[20.487642] (-) TimerEvent: {}
+[20.588124] (-) TimerEvent: {}
+[20.688584] (-) TimerEvent: {}
+[20.789116] (-) TimerEvent: {}
+[20.889628] (-) TimerEvent: {}
+[20.990167] (-) TimerEvent: {}
+[21.090735] (-) TimerEvent: {}
+[21.191207] (-) TimerEvent: {}
+[21.291743] (-) TimerEvent: {}
+[21.392241] (-) TimerEvent: {}
+[21.492822] (-) TimerEvent: {}
+[21.593488] (-) TimerEvent: {}
+[21.694009] (-) TimerEvent: {}
+[21.794514] (-) TimerEvent: {}
+[21.895000] (-) TimerEvent: {}
+[21.995605] (-) TimerEvent: {}
+[22.096607] (-) TimerEvent: {}
+[22.197104] (-) TimerEvent: {}
+[22.297907] (-) TimerEvent: {}
+[22.398694] (-) TimerEvent: {}
+[22.499314] (-) TimerEvent: {}
+[22.599874] (-) TimerEvent: {}
+[22.700380] (-) TimerEvent: {}
+[22.801088] (-) TimerEvent: {}
+[22.901626] (-) TimerEvent: {}
+[23.002213] (-) TimerEvent: {}
+[23.102753] (-) TimerEvent: {}
+[23.203724] (-) TimerEvent: {}
+[23.304289] (-) TimerEvent: {}
+[23.404877] (-) TimerEvent: {}
+[23.505520] (-) TimerEvent: {}
+[23.606550] (-) TimerEvent: {}
+[23.707021] (-) TimerEvent: {}
+[23.807824] (-) TimerEvent: {}
+[23.908321] (-) TimerEvent: {}
+[24.009028] (-) TimerEvent: {}
+[24.109796] (-) TimerEvent: {}
+[24.210244] (-) TimerEvent: {}
+[24.310818] (-) TimerEvent: {}
+[24.415173] (-) TimerEvent: {}
+[24.515552] (-) TimerEvent: {}
+[24.615926] (-) TimerEvent: {}
+[24.717138] (-) TimerEvent: {}
+[24.818527] (-) TimerEvent: {}
+[24.919263] (-) TimerEvent: {}
+[25.019802] (-) TimerEvent: {}
+[25.120537] (-) TimerEvent: {}
+[25.222171] (-) TimerEvent: {}
+[25.322931] (-) TimerEvent: {}
+[25.423449] (-) TimerEvent: {}
+[25.523974] (-) TimerEvent: {}
+[25.624510] (-) TimerEvent: {}
+[25.725039] (-) TimerEvent: {}
+[25.825489] (-) TimerEvent: {}
+[25.926318] (-) TimerEvent: {}
+[26.027009] (-) TimerEvent: {}
+[26.127538] (-) TimerEvent: {}
+[26.227999] (-) TimerEvent: {}
+[26.328543] (-) TimerEvent: {}
+[26.429275] (-) TimerEvent: {}
+[26.529810] (-) TimerEvent: {}
+[26.630503] (-) TimerEvent: {}
+[26.731104] (-) TimerEvent: {}
+[26.831570] (-) TimerEvent: {}
+[26.932248] (-) TimerEvent: {}
+[27.032987] (-) TimerEvent: {}
+[27.133525] (-) TimerEvent: {}
+[27.234107] (-) TimerEvent: {}
+[27.334872] (-) TimerEvent: {}
+[27.435323] (-) TimerEvent: {}
+[27.536024] (-) TimerEvent: {}
+[27.636507] (-) TimerEvent: {}
+[27.736936] (-) TimerEvent: {}
+[27.837499] (-) TimerEvent: {}
+[27.938139] (-) TimerEvent: {}
+[28.038663] (-) TimerEvent: {}
+[28.139193] (-) TimerEvent: {}
+[28.239833] (-) TimerEvent: {}
+[28.340468] (-) TimerEvent: {}
+[28.441015] (-) TimerEvent: {}
+[28.541545] (-) TimerEvent: {}
+[28.642138] (-) TimerEvent: {}
+[28.742630] (-) TimerEvent: {}
+[28.843210] (-) TimerEvent: {}
+[28.943904] (-) TimerEvent: {}
+[29.044364] (-) TimerEvent: {}
+[29.144959] (-) TimerEvent: {}
+[29.247545] (-) TimerEvent: {}
+[29.348130] (-) TimerEvent: {}
+[29.448649] (-) TimerEvent: {}
+[29.549067] (-) TimerEvent: {}
+[29.649639] (-) TimerEvent: {}
+[29.750182] (-) TimerEvent: {}
+[29.850911] (-) TimerEvent: {}
+[29.951382] (-) TimerEvent: {}
+[30.051965] (-) TimerEvent: {}
+[30.152559] (-) TimerEvent: {}
+[30.254588] (-) TimerEvent: {}
+[30.355057] (-) TimerEvent: {}
+[30.455518] (-) TimerEvent: {}
+[30.555914] (-) TimerEvent: {}
+[30.656572] (-) TimerEvent: {}
+[30.756956] (-) TimerEvent: {}
+[30.857609] (-) TimerEvent: {}
+[30.958103] (-) TimerEvent: {}
+[31.058676] (-) TimerEvent: {}
+[31.159135] (-) TimerEvent: {}
+[31.259561] (-) TimerEvent: {}
+[31.360154] (-) TimerEvent: {}
+[31.460563] (-) TimerEvent: {}
+[31.560933] (-) TimerEvent: {}
+[31.661292] (-) TimerEvent: {}
+[31.761904] (-) TimerEvent: {}
+[31.862576] (-) TimerEvent: {}
+[31.963483] (-) TimerEvent: {}
+[32.064568] (-) TimerEvent: {}
+[32.165071] (-) TimerEvent: {}
+[32.265667] (-) TimerEvent: {}
+[32.366170] (-) TimerEvent: {}
+[32.466545] (-) TimerEvent: {}
+[32.566971] (-) TimerEvent: {}
+[32.667497] (-) TimerEvent: {}
+[32.767906] (-) TimerEvent: {}
+[32.868707] (-) TimerEvent: {}
+[32.969239] (-) TimerEvent: {}
+[33.069574] (-) TimerEvent: {}
+[33.170231] (-) TimerEvent: {}
+[33.270732] (-) TimerEvent: {}
+[33.371349] (-) TimerEvent: {}
+[33.472021] (-) TimerEvent: {}
+[33.572529] (-) TimerEvent: {}
+[33.673205] (-) TimerEvent: {}
+[33.773783] (-) TimerEvent: {}
+[33.874307] (-) TimerEvent: {}
+[33.975053] (-) TimerEvent: {}
+[34.075733] (-) TimerEvent: {}
+[34.176191] (-) TimerEvent: {}
+[34.276907] (-) TimerEvent: {}
+[34.377544] (-) TimerEvent: {}
+[34.478074] (-) TimerEvent: {}
+[34.578582] (-) TimerEvent: {}
+[34.679092] (-) TimerEvent: {}
+[34.779601] (-) TimerEvent: {}
+[34.880156] (-) TimerEvent: {}
+[34.980753] (-) TimerEvent: {}
+[35.081234] (-) TimerEvent: {}
+[35.181862] (-) TimerEvent: {}
+[35.282328] (-) TimerEvent: {}
+[35.382865] (-) TimerEvent: {}
+[35.483355] (-) TimerEvent: {}
+[35.583807] (-) TimerEvent: {}
+[35.684275] (-) TimerEvent: {}
+[35.784815] (-) TimerEvent: {}
+[35.885264] (-) TimerEvent: {}
+[35.985933] (-) TimerEvent: {}
+[36.086720] (-) TimerEvent: {}
+[36.187240] (-) TimerEvent: {}
+[36.287862] (-) TimerEvent: {}
+[36.388321] (-) TimerEvent: {}
+[36.488895] (-) TimerEvent: {}
+[36.589326] (-) TimerEvent: {}
+[36.689881] (-) TimerEvent: {}
+[36.790486] (-) TimerEvent: {}
+[36.891026] (-) TimerEvent: {}
+[36.991692] (-) TimerEvent: {}
+[37.092198] (-) TimerEvent: {}
+[37.192723] (-) TimerEvent: {}
+[37.293841] (-) TimerEvent: {}
+[37.394354] (-) TimerEvent: {}
+[37.494891] (-) TimerEvent: {}
+[37.595563] (-) TimerEvent: {}
+[37.696174] (-) TimerEvent: {}
+[37.796875] (-) TimerEvent: {}
+[37.897503] (-) TimerEvent: {}
+[37.998116] (-) TimerEvent: {}
+[38.098673] (-) TimerEvent: {}
+[38.199286] (-) TimerEvent: {}
+[38.300231] (-) TimerEvent: {}
+[38.400839] (-) TimerEvent: {}
+[38.501467] (-) TimerEvent: {}
+[38.602043] (-) TimerEvent: {}
+[38.702771] (-) TimerEvent: {}
+[38.803315] (-) TimerEvent: {}
+[38.903809] (-) TimerEvent: {}
+[39.004337] (-) TimerEvent: {}
+[39.104894] (-) TimerEvent: {}
+[39.205241] (-) TimerEvent: {}
+[39.306634] (-) TimerEvent: {}
+[39.412127] (-) TimerEvent: {}
+[39.514532] (-) TimerEvent: {}
+[39.614985] (-) TimerEvent: {}
+[39.717565] (-) TimerEvent: {}
+[39.817991] (-) TimerEvent: {}
+[39.919031] (-) TimerEvent: {}
+[40.021477] (-) TimerEvent: {}
+[40.122039] (-) TimerEvent: {}
+[40.222735] (-) TimerEvent: {}
+[40.323673] (-) TimerEvent: {}
+[40.424267] (-) TimerEvent: {}
+[40.524823] (-) TimerEvent: {}
+[40.625525] (-) TimerEvent: {}
+[40.725982] (-) TimerEvent: {}
+[40.826574] (-) TimerEvent: {}
+[40.927183] (-) TimerEvent: {}
+[41.027796] (-) TimerEvent: {}
+[41.128328] (-) TimerEvent: {}
+[41.228831] (-) TimerEvent: {}
+[41.329344] (-) TimerEvent: {}
+[41.429889] (-) TimerEvent: {}
+[41.530449] (-) TimerEvent: {}
+[41.630968] (-) TimerEvent: {}
+[41.731541] (-) TimerEvent: {}
+[41.832039] (-) TimerEvent: {}
+[41.932532] (-) TimerEvent: {}
+[42.032968] (-) TimerEvent: {}
+[42.133503] (-) TimerEvent: {}
+[42.234057] (-) TimerEvent: {}
+[42.334578] (-) TimerEvent: {}
+[42.435056] (-) TimerEvent: {}
+[42.535626] (-) TimerEvent: {}
+[42.636211] (-) TimerEvent: {}
+[42.736932] (-) TimerEvent: {}
+[42.837582] (-) TimerEvent: {}
+[42.938191] (-) TimerEvent: {}
+[43.038748] (-) TimerEvent: {}
+[43.139249] (-) TimerEvent: {}
+[43.239805] (-) TimerEvent: {}
+[43.340522] (-) TimerEvent: {}
+[43.441066] (-) TimerEvent: {}
+[43.541647] (-) TimerEvent: {}
+[43.642197] (-) TimerEvent: {}
+[43.742792] (-) TimerEvent: {}
+[43.843352] (-) TimerEvent: {}
+[43.943989] (-) TimerEvent: {}
+[44.044500] (-) TimerEvent: {}
+[44.144980] (-) TimerEvent: {}
+[44.245547] (-) TimerEvent: {}
+[44.346059] (-) TimerEvent: {}
+[44.446590] (-) TimerEvent: {}
+[44.547090] (-) TimerEvent: {}
+[44.647590] (-) TimerEvent: {}
+[44.748111] (-) TimerEvent: {}
+[44.848639] (-) TimerEvent: {}
+[44.949139] (-) TimerEvent: {}
+[45.049641] (-) TimerEvent: {}
+[45.150120] (-) TimerEvent: {}
+[45.250588] (-) TimerEvent: {}
+[45.351079] (-) TimerEvent: {}
+[45.451705] (-) TimerEvent: {}
+[45.552250] (-) TimerEvent: {}
+[45.652615] (-) TimerEvent: {}
+[45.753197] (-) TimerEvent: {}
+[45.853613] (-) TimerEvent: {}
+[45.954091] (-) TimerEvent: {}
+[46.054593] (-) TimerEvent: {}
+[46.155119] (-) TimerEvent: {}
+[46.255749] (-) TimerEvent: {}
+[46.356260] (-) TimerEvent: {}
+[46.456852] (-) TimerEvent: {}
+[46.557367] (-) TimerEvent: {}
+[46.657932] (-) TimerEvent: {}
+[46.758483] (-) TimerEvent: {}
+[46.858994] (-) TimerEvent: {}
+[46.959578] (-) TimerEvent: {}
+[47.060047] (-) TimerEvent: {}
+[47.160551] (-) TimerEvent: {}
+[47.261119] (-) TimerEvent: {}
+[47.361631] (-) TimerEvent: {}
+[47.462065] (-) TimerEvent: {}
+[47.562628] (-) TimerEvent: {}
+[47.663004] (-) TimerEvent: {}
+[47.763541] (-) TimerEvent: {}
+[47.864029] (-) TimerEvent: {}
+[47.964554] (-) TimerEvent: {}
+[48.065069] (-) TimerEvent: {}
+[48.165557] (-) TimerEvent: {}
+[48.266048] (-) TimerEvent: {}
+[48.366560] (-) TimerEvent: {}
+[48.467049] (-) TimerEvent: {}
+[48.567578] (-) TimerEvent: {}
+[48.668094] (-) TimerEvent: {}
+[48.768548] (-) TimerEvent: {}
+[48.869040] (-) TimerEvent: {}
+[48.969582] (-) TimerEvent: {}
+[49.070064] (-) TimerEvent: {}
+[49.170563] (-) TimerEvent: {}
+[49.271063] (-) TimerEvent: {}
+[49.371573] (-) TimerEvent: {}
+[49.472049] (-) TimerEvent: {}
+[49.572572] (-) TimerEvent: {}
+[49.673103] (-) TimerEvent: {}
+[49.773600] (-) TimerEvent: {}
+[49.874034] (-) TimerEvent: {}
+[49.974523] (-) TimerEvent: {}
+[50.075071] (-) TimerEvent: {}
+[50.175691] (-) TimerEvent: {}
+[50.276199] (-) TimerEvent: {}
+[50.376841] (-) TimerEvent: {}
+[50.477497] (-) TimerEvent: {}
+[50.578033] (-) TimerEvent: {}
+[50.678541] (-) TimerEvent: {}
+[50.779076] (-) TimerEvent: {}
+[50.879589] (-) TimerEvent: {}
+[50.980049] (-) TimerEvent: {}
+[51.080631] (-) TimerEvent: {}
+[51.181202] (-) TimerEvent: {}
+[51.281783] (-) TimerEvent: {}
+[51.382353] (-) TimerEvent: {}
+[51.482949] (-) TimerEvent: {}
+[51.583584] (-) TimerEvent: {}
+[51.684186] (-) TimerEvent: {}
+[51.784682] (-) TimerEvent: {}
+[51.885315] (-) TimerEvent: {}
+[51.985978] (-) TimerEvent: {}
+[52.086615] (-) TimerEvent: {}
+[52.187068] (-) TimerEvent: {}
+[52.287510] (-) TimerEvent: {}
+[52.388108] (-) TimerEvent: {}
+[52.488716] (-) TimerEvent: {}
+[52.589194] (-) TimerEvent: {}
+[52.689722] (-) TimerEvent: {}
+[52.790311] (-) TimerEvent: {}
+[52.890943] (-) TimerEvent: {}
+[52.991447] (-) TimerEvent: {}
+[53.091847] (-) TimerEvent: {}
+[53.192582] (-) TimerEvent: {}
+[53.293134] (-) TimerEvent: {}
+[53.393736] (-) TimerEvent: {}
+[53.494464] (-) TimerEvent: {}
+[53.595048] (-) TimerEvent: {}
+[53.695603] (-) TimerEvent: {}
+[53.796267] (-) TimerEvent: {}
+[53.896926] (-) TimerEvent: {}
+[53.997653] (-) TimerEvent: {}
+[54.098183] (-) TimerEvent: {}
+[54.199807] (-) TimerEvent: {}
+[54.234293] (inertial_sense_ros2) StdoutLine: {'line': b'[ 99%] Linking CXX executable new_target\n'}
+[54.300063] (-) TimerEvent: {}
+[54.400512] (-) TimerEvent: {}
+[54.504640] (-) TimerEvent: {}
+[54.605543] (-) TimerEvent: {}
+[54.684498] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `odometryIdentity(nav_msgs::msg::Odometry_<std::allocator<void> >&)':\n"}
+[54.695708] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x93): multiple definition of `odometryIdentity(nav_msgs::msg::Odometry_<std::allocator<void> >&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x93): first defined here\n"}
+[54.696876] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::InertialSenseROS(YAML::Node, bool)':\n"}
+[54.699752] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x182): multiple definition of `InertialSenseROS::InertialSenseROS(YAML::Node, bool)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x182): first defined here\n"}
+[54.701831] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::load_params(YAML::Node&)':\n"}
+[54.705756] (-) TimerEvent: {}
+[54.707346] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x2eb2): multiple definition of `InertialSenseROS::load_params(YAML::Node&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x2eb2): first defined here\n"}
+[54.710781] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::InertialSenseROS(YAML::Node, bool)':\n"}
+[54.714013] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x182): multiple definition of `InertialSenseROS::InertialSenseROS(YAML::Node, bool)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x182): first defined here\n"}
+[54.715426] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::initialize(bool)':\n"}
+[54.718809] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xbe8): multiple definition of `InertialSenseROS::initialize(bool)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xbe8): first defined here\n"}
+[54.719806] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::initializeIS(bool)':\n"}
+[54.721881] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1000): multiple definition of `InertialSenseROS::initializeIS(bool)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1000): first defined here\n"}
+[54.725060] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::initializeROS()':\n"}
+[54.729295] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x14ea): multiple definition of `InertialSenseROS::initializeROS()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x14ea): first defined here\n"}
+[54.729898] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::start_log()':\n"}
+[54.731540] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xe262): multiple definition of `InertialSenseROS::start_log()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xe262): first defined here\n"}
+[54.734011] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::terminate()':\n"}
+[54.737875] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xfc0): multiple definition of `InertialSenseROS::terminate()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xfc0): first defined here\n"}
+[54.738849] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::connect(float)':\n"}
+[54.746443] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xe82c): multiple definition of `InertialSenseROS::connect(float)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xe82c): first defined here\n"}
+[54.747855] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::firmware_compatiblity_check()':\n"}
+[54.748219] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xf51a): multiple definition of `InertialSenseROS::firmware_compatiblity_check()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xf51a): first defined here\n"}
+[54.752342] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_data_streams(bool)':\n"}
+[54.757427] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x7c72): multiple definition of `InertialSenseROS::configure_data_streams(bool)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x7c72): first defined here\n"}
+[54.758100] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[54.759816] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x128ee): multiple definition of `InertialSenseROS::configure_rtk()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x128ee): first defined here\n"}
+[54.762876] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_flash_parameters()':\n"}
+[54.763666] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xf804): multiple definition of `InertialSenseROS::configure_flash_parameters()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xf804): first defined here\n"}
+[54.765630] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::strobe_in_time_callback(unsigned int, strobe_in_time_t const*)':\n"}
+[54.768045] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x18d4e): multiple definition of `InertialSenseROS::strobe_in_time_callback(unsigned int, strobe_in_time_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x18d4e): first defined here\n"}
+[54.771064] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::set_refLLA_to_value(std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Request_<std::allocator<void> > >, std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Response_<std::allocator<void> > >)':\n"}
+[54.773130] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1ca50): multiple definition of `InertialSenseROS::set_refLLA_to_value(std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Request_<std::allocator<void> > >, std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Response_<std::allocator<void> > >)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1ca50): first defined here\n"}
+[54.775469] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::perform_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)':\n"}
+[54.776605] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1cf74): multiple definition of `InertialSenseROS::perform_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1cf74): first defined here\n"}
+[54.778249] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::perform_multi_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)':\n"}
+[54.780581] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1d11a): multiple definition of `InertialSenseROS::perform_multi_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1d11a): first defined here\n"}
+[54.782762] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_data_streams()':\n"}
+[54.787337] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x7708): multiple definition of `InertialSenseROS::configure_data_streams()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x7708): first defined here\n"}
+[54.787848] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_pos_callback(unsigned int, gps_pos_t const*)':\n"}
+[54.791560] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x17e8e): multiple definition of `InertialSenseROS::GPS_pos_callback(unsigned int, gps_pos_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x17e8e): first defined here\n"}
+[54.792000] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::flash_config_callback(unsigned int, nvm_flash_cfg_t const*)':\n"}
+[54.793059] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x15512): multiple definition of `InertialSenseROS::flash_config_callback(unsigned int, nvm_flash_cfg_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x15512): first defined here\n"}
+[54.794734] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::INS4_callback(unsigned int, ins_4_t const*)':\n"}
+[54.797244] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x15f30): multiple definition of `InertialSenseROS::INS4_callback(unsigned int, ins_4_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x15f30): first defined here\n"}
+[54.799805] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::preint_IMU_callback(unsigned int, pimu_t const*)':\n"}
+[54.803671] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x193c6): multiple definition of `InertialSenseROS::preint_IMU_callback(unsigned int, pimu_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x193c6): first defined here\n"}
+[54.804586] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::INS_covariance_callback(unsigned int, ros_covariance_pose_twist_t const*)':\n"}
+[54.805903] (-) TimerEvent: {}
+[54.806714] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x17b96): multiple definition of `InertialSenseROS::INS_covariance_callback(unsigned int, ros_covariance_pose_twist_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x17b96): first defined here\n"}
+[54.811360] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::INS1_callback(unsigned int, ins_1_t const*)':\n"}
+[54.811927] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x15944): multiple definition of `InertialSenseROS::INS1_callback(unsigned int, ins_1_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x15944): first defined here\n"}
+[54.815087] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::INS2_callback(unsigned int, ins_2_t const*)':\n"}
+[54.821798] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x15cba): multiple definition of `InertialSenseROS::INS2_callback(unsigned int, ins_2_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x15cba): first defined here\n"}
+[54.822627] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::INL2_states_callback(unsigned int, inl2_states_t const*)':\n"}
+[54.824423] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x178e6): multiple definition of `InertialSenseROS::INL2_states_callback(unsigned int, inl2_states_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x178e6): first defined here\n"}
+[54.829544] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_vel_callback(unsigned int, gps_vel_t const*)':\n"}
+[54.833370] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x187da): multiple definition of `InertialSenseROS::GPS_vel_callback(unsigned int, gps_vel_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x187da): first defined here\n"}
+[54.833860] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_raw_callback(unsigned int, gps_raw_t const*)':\n"}
+[54.835046] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x19ff0): multiple definition of `InertialSenseROS::GPS_raw_callback(unsigned int, gps_raw_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x19ff0): first defined here\n"}
+[54.837485] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_info_callback(unsigned int, gps_sat_t const*)':\n"}
+[54.841882] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x18ed4): multiple definition of `InertialSenseROS::GPS_info_callback(unsigned int, gps_sat_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x18ed4): first defined here\n"}
+[54.842547] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::mag_callback(unsigned int, magnetometer_t const*)':\n"}
+[54.845792] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x190d8): multiple definition of `InertialSenseROS::mag_callback(unsigned int, magnetometer_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x190d8): first defined here\n"}
+[54.846793] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::baro_callback(unsigned int, barometer_t const*)':\n"}
+[54.848821] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x19272): multiple definition of `InertialSenseROS::baro_callback(unsigned int, barometer_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x19272): first defined here\n"}
+[54.850800] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_ascii_output()':\n"}
+[54.854531] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xe81c): multiple definition of `InertialSenseROS::configure_ascii_output()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xe81c): first defined here\n"}
+[54.855784] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `vecF32Match(float*, float*, int)':\n"}
+[54.856513] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xf721): multiple definition of `vecF32Match(float*, float*, int)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xf721): first defined here\n"}
+[54.860489] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `vecF64Match(double*, double*, int)':\n"}
+[54.861251] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xf791): multiple definition of `vecF64Match(double*, double*, int)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0xf791): first defined here\n"}
+[54.861922] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::reset_device()':\n"}
+[54.863877] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1d2c0): multiple definition of `InertialSenseROS::reset_device()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1d2c0): first defined here\n"}
+[54.865800] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip&)':\n"}
+[54.867739] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x10362): multiple definition of `InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x10362): first defined here\n"}
+[54.869752] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::rtk_connectivity_watchdog_timer_callback()':\n"}
+[54.871868] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x11170): multiple definition of `InertialSenseROS::rtk_connectivity_watchdog_timer_callback()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x11170): first defined here\n"}
+[54.873799] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::start_rtk_connectivity_watchdog_timer()':\n"}
+[54.875743] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x11cc8): multiple definition of `InertialSenseROS::start_rtk_connectivity_watchdog_timer()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x11cc8): first defined here\n"}
+[54.879543] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::stop_rtk_connectivity_watchdog_timer()':\n"}
+[54.880031] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x11d7c): multiple definition of `InertialSenseROS::stop_rtk_connectivity_watchdog_timer()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x11d7c): first defined here\n"}
+[54.882282] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip&)':\n"}
+[54.884176] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x11e36): multiple definition of `InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x11e36): first defined here\n"}
+[54.885850] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::RTK_Misc_callback(unsigned int, gps_rtk_misc_t const*)':\n"}
+[54.887407] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1972a): multiple definition of `InertialSenseROS::RTK_Misc_callback(unsigned int, gps_rtk_misc_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1972a): first defined here\n"}
+[54.889836] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::RTK_Rel_callback(unsigned int, gps_rtk_rel_t const*)':\n"}
+[54.892226] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x19af4): multiple definition of `InertialSenseROS::RTK_Rel_callback(unsigned int, gps_rtk_rel_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x19af4): first defined here\n"}
+[54.893522] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::setRefLla(double const*)':\n"}
+[54.894911] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x15544): multiple definition of `InertialSenseROS::setRefLla(double const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x15544): first defined here\n"}
+[54.896925] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::ros_time_from_week_and_tow(unsigned int, double)':\n"}
+[54.902533] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1d6bc): multiple definition of `InertialSenseROS::ros_time_from_week_and_tow(unsigned int, double)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1d6bc): first defined here\n"}
+[54.903073] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::rotMatB2R(float const*, float*)':\n"}
+[54.903741] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1e050): multiple definition of `InertialSenseROS::rotMatB2R(float const*, float*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1e050): first defined here\n"}
+[54.906081] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::transform_6x6_covariance(float*, float*, float*, float*)':\n"}
+[54.906865] (-) TimerEvent: {}
+[54.909686] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1e324): multiple definition of `InertialSenseROS::transform_6x6_covariance(float*, float*, float*, float*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1e324): first defined here\n"}
+[54.910748] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::ros_time_from_tow(double)':\n"}
+[54.912742] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1ddc6): multiple definition of `InertialSenseROS::ros_time_from_tow(double)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1ddc6): first defined here\n"}
+[54.914110] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::LD2Cov(float const*, float*, int)':\n"}
+[54.915821] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1df58): multiple definition of `InertialSenseROS::LD2Cov(float const*, float*, int)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1df58): first defined here\n"}
+[54.917551] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::publishGPS1()':\n"}
+[54.919321] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x18b96): multiple definition of `InertialSenseROS::publishGPS1()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x18b96): first defined here\n"}
+[54.921034] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::publishGPS2()':\n"}
+[54.922729] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x18c38): multiple definition of `InertialSenseROS::publishGPS2()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x18c38): first defined here\n"}
+[54.924650] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::update()':\n"}
+[54.925759] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x18cda): multiple definition of `InertialSenseROS::update()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x18cda): first defined here\n"}
+[54.927308] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::ros_time_from_start_time(double)':\n"}
+[54.929084] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1da32): multiple definition of `InertialSenseROS::ros_time_from_start_time(double)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1da32): first defined here\n"}
+[54.930511] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_obs_callback(unsigned int, obsd_t const*, int)':\n"}
+[54.932491] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1a0f0): multiple definition of `InertialSenseROS::GPS_obs_callback(unsigned int, obsd_t const*, int)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1a0f0): first defined here\n"}
+[54.933550] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_eph_callback(unsigned int, eph_t const*)':\n"}
+[54.935070] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1ae4a): multiple definition of `InertialSenseROS::GPS_eph_callback(unsigned int, eph_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1ae4a): first defined here\n"}
+[54.936847] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_geph_callback(unsigned int, geph_t const*)':\n"}
+[54.938189] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1b352): multiple definition of `InertialSenseROS::GPS_geph_callback(unsigned int, geph_t const*)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1b352): first defined here\n"}
+[54.939765] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::GPS_obs_bundle_timer_callback()':\n"}
+[54.941421] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1a86a): multiple definition of `InertialSenseROS::GPS_obs_bundle_timer_callback()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1a86a): first defined here\n"}
+[54.943058] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::ros_time_from_gtime(unsigned long, double)':\n"}
+[54.944786] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1defa): multiple definition of `InertialSenseROS::ros_time_from_gtime(unsigned long, double)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1defa): first defined here\n"}
+[54.946278] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::diagnostics_callback()':\n"}
+[54.948084] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1b734): multiple definition of `InertialSenseROS::diagnostics_callback()'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1b734): first defined here\n"}
+[54.950192] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::set_current_position_as_refLLA(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)':\n"}
+[54.952087] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1c59e): multiple definition of `InertialSenseROS::set_current_position_as_refLLA(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1c59e): first defined here\n"}
+[54.954548] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::update_firmware_srv_callback(inertial_sense_ros2::srv::FirmwareUpdate_Request_<std::allocator<void> >&, inertial_sense_ros2::srv::FirmwareUpdate_Response_<std::allocator<void> >&)':\n"}
+[54.956380] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1d6a0): multiple definition of `InertialSenseROS::update_firmware_srv_callback(inertial_sense_ros2::srv::FirmwareUpdate_Request_<std::allocator<void> >&, inertial_sense_ros2::srv::FirmwareUpdate_Response_<std::allocator<void> >&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1d6a0): first defined here\n"}
+[54.958330] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::tow_from_ros_time(rclcpp::Time const&)':\n"}
+[54.960198] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1de34): multiple definition of `InertialSenseROS::tow_from_ros_time(rclcpp::Time const&)'; CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1de34): first defined here\n"}
+[55.007148] (-) TimerEvent: {}
+[55.107595] (-) TimerEvent: {}
+[55.208173] (-) TimerEvent: {}
+[55.308867] (-) TimerEvent: {}
+[55.409479] (-) TimerEvent: {}
+[55.470571] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: warning: relocation against `_ZTVN4YAML13BadConversionE' in read-only section `.text._ZN4YAML13BadConversionC2ERKNS_4MarkE[_ZN4YAML13BadConversionC5ERKNS_4MarkE]'\n"}
+[55.509700] (-) TimerEvent: {}
+[55.561912] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `is_comm_parse_byte':\n"}
+[55.562495] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x8d): undefined reference to `is_comm_parse_byte_timeout'\n"}
+[55.563681] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::InertialSenseROS(YAML::Node, bool)':\n"}
+[55.564166] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x632): undefined reference to `InertialSense::InertialSense(std::function<void (InertialSense*, p_data_t*, int)>, int (*)(unsigned int, p_data_get_t*), int (*)(unsigned int, unsigned char const*, int), int (*)(unsigned int, unsigned char const*, int), int (*)(unsigned int, unsigned char const*, int), int (*)(unsigned int, unsigned char const*, int))'\n"}
+[55.565296] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x7c5): undefined reference to `InertialSense::~InertialSense()'\n"}
+[55.566820] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::terminate()':\n"}
+[55.567262] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0xfde): undefined reference to `InertialSense::Close()'\n"}
+[55.568312] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xff0): undefined reference to `InertialSense::CloseServerConnection()'\n"}
+[55.569851] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::initializeIS(bool)':\n"}
+[55.570306] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x12db): undefined reference to `InertialSense::StopBroadcasts(bool)'\n"}
+[55.571138] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x12fa): undefined reference to `InertialSense::SetSysCmd(unsigned int, int)'\n"}
+[55.572418] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1319): undefined reference to `InertialSense::SetSysCmd(unsigned int, int)'\n"}
+[55.573817] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x136d): undefined reference to `InertialSense::StopBroadcasts(bool)'\n"}
+[55.574852] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x13a5): undefined reference to `InertialSense::SavePersistent()'\n"}
+[55.576718] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::initializeROS()':\n"}
+[55.577189] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x19e3): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.578151] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::load_params(YAML::Node&)':\n"}
+[55.578747] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x31e9): undefined reference to `ParamHelper::paramServerToYamlNode(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'\n"}
+[55.579551] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x3d53): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.580827] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x3dcc): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.582113] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x3e88): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.583375] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x3f67): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.584789] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4046): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.585968] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4125): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.587124] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4204): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.588243] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4317): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.589728] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x486f): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.590897] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x492b): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.592114] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4a0a): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.593277] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4ae9): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.594468] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4bc8): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.595635] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x4ca7): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.596847] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x4d86): more undefined references to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)' follow\n"}
+[55.598035] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::load_params(YAML::Node&)':\n"}
+[55.598561] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x4f91): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.599322] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x51dd): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.600340] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5299): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.601455] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5378): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.602514] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5457): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.603607] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5536): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.604745] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5662): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.605730] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x582b): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.606752] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x58e7): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.607881] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x59c6): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.609309] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5aa5): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.609714] (-) TimerEvent: {}
+[55.610773] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5b84): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[55.612192] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5cb0): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.613561] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5e1f): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.615075] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x5f2c): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.616908] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x6039): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[55.619083] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::configure_data_streams(bool)':\n"}
+[55.619531] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x7d0e): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.620337] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x7fe4): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.621864] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x8305): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.623595] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x836f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.624976] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x86b3): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.626172] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x871d): more undefined references to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)' follow\n"}
+[55.627468] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::configure_data_streams(bool)':\n"}
+[55.627978] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x8cfa): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.629063] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x8dfd): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.630207] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x8ffa): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.631341] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x910d): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.632207] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x931c): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.633387] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x942f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.634553] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x963e): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.635826] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x9751): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.637044] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x9960): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.638182] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x9a73): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.639510] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x9ab9): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[55.640807] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xa380): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.641861] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xa493): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.643108] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xa6a2): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.644319] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xa7b5): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.645693] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xa9c4): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.646673] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xaad7): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.647966] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xace6): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.649231] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xadf9): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.650562] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb01e): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.651842] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb131): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.653084] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb340): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.654174] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb453): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.655242] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb662): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.656274] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb775): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.657325] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xb984): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.658413] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xba97): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.659670] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xbca6): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.660592] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xbdb9): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.661797] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xbfc8): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.662947] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xc0db): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.663972] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xc2ea): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.664910] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xc3fd): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.665901] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xc60c): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.667177] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xc71f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.668772] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::start_log()':\n"}
+[55.669199] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0xe2e0): undefined reference to `cISLogger::CreateCurrentTimestamp[abi:cxx11]()'\n"}
+[55.670032] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xe656): undefined reference to `cISLogger::g_emptyString[abi:cxx11]'\n"}
+[55.671203] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xe688): undefined reference to `InertialSense::SetLoggerEnabled(bool, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, cISLogger::eLogType, unsigned long, unsigned int, float, unsigned int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[55.672994] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::connect(float)':\n"}
+[55.673431] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0xebb8): undefined reference to `InertialSense::Open(char const*, int, bool)'\n"}
+[55.674143] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xf061): undefined reference to `InertialSense::DeviceInfo(int)'\n"}
+[55.675770] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::firmware_compatiblity_check()':\n"}
+[55.676170] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0xf587): undefined reference to `InertialSense::DeviceInfo(int)'\n"}
+[55.677158] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0xf60a): undefined reference to `InertialSense::DeviceInfo(int)'\n"}
+[55.678792] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::configure_flash_parameters()':\n"}
+[55.679230] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0xf854): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[55.680172] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1017d): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.681913] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip&)':\n"}
+[55.682328] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x103b4): undefined reference to `RtkRoverCorrectionProvider_Ntrip::get_connection_string[abi:cxx11]()'\n"}
+[55.683446] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x103e3): undefined reference to `InertialSense::OpenConnectionToServer(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[55.684767] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip&)':\n"}
+[55.685145] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x11e7a): undefined reference to `RtkBaseCorrectionProvider_Ntrip::get_connection_string[abi:cxx11]()'\n"}
+[55.686144] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x11e9a): undefined reference to `InertialSense::CreateHost(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[55.687772] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[55.688193] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x12cc5): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.689187] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x12d2f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.690101] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x130b2): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.691161] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1311c): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.692174] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1342a): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.693327] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x13494): more undefined references to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)' follow\n"}
+[55.694561] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[55.694941] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x137ed): undefined reference to `RtkBaseProvider::getProvidersByType(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'\n"}
+[55.695883] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x13869): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.696966] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x13b71): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.698257] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x13bdb): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.699479] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x13f96): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.700602] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x14000): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.701835] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x143e4): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[55.703076] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:inertial_sense_ros2.cpp:(.text+0x1444e): more undefined references to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)' follow\n"}
+[55.704578] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[55.705137] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x147ba): undefined reference to `RtkBaseProvider::getProvidersByType(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'\n"}
+[55.706316] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x14836): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.707819] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::INS4_callback(unsigned int, ins_4_t const*)':\n"}
+[55.708421] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x162a9): undefined reference to `eye_MatN'\n"}
+[55.710631] (-) TimerEvent: {}
+[55.710803] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1636e): undefined reference to `ecef2lla'\n"}
+[55.711982] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x163a4): undefined reference to `quat_ecef2ned'\n"}
+[55.713972] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x166d8): undefined reference to `quat2euler'\n"}
+[55.714661] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16749): undefined reference to `vectorBodyToReference'\n"}
+[55.715289] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16a4e): undefined reference to `mul_Quat_ConjQuat'\n"}
+[55.717330] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16aa7): undefined reference to `transpose_Mat3'\n"}
+[55.717716] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16c8f): undefined reference to `ecef2lla'\n"}
+[55.719579] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16caf): undefined reference to `lla_Deg2Rad_d'\n"}
+[55.719972] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16ccf): undefined reference to `lla2ned_d'\n"}
+[55.720954] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16db0): undefined reference to `quatConjRot'\n"}
+[55.721378] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x16e72): undefined reference to `quatRot'\n"}
+[55.722906] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1719d): undefined reference to `euler2quat'\n"}
+[55.723221] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x171bd): undefined reference to `mul_Quat_ConjQuat'\n"}
+[55.723878] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x171dd): undefined reference to `mul_Quat_ConjQuat'\n"}
+[55.725192] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x171fd): undefined reference to `mul_Quat_Quat'\n"}
+[55.725606] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x17256): undefined reference to `transpose_Mat3'\n"}
+[55.727326] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1743e): undefined reference to `ecef2lla'\n"}
+[55.727834] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1745e): undefined reference to `lla_Deg2Rad_d'\n"}
+[55.728590] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1747e): undefined reference to `lla2ned_d'\n"}
+[55.729811] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1756a): undefined reference to `quatConjRot'\n"}
+[55.730869] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x17637): undefined reference to `quatRot'\n"}
+[55.732761] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::update()':\n"}
+[55.733247] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x18cf8): undefined reference to `InertialSense::IsOpen()'\n"}
+[55.734112] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x18d11): undefined reference to `InertialSense::Close()'\n"}
+[55.735669] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x18d46): undefined reference to `InertialSense::Update()'\n"}
+[55.737212] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::set_current_position_as_refLLA(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)':\n"}
+[55.737762] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x1c640): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.738538] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1c65f): undefined reference to `comManagerGetData'\n"}
+[55.739784] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1c68e): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[55.740953] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1c695): undefined reference to `comManagerStep'\n"}
+[55.742209] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1c787): undefined reference to `comManagerGetData'\n"}
+[55.743442] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1c938): undefined reference to `comManagerGetData'\n"}
+[55.745284] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::set_refLLA_to_value(std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Request_<std::allocator<void> > >, std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Response_<std::allocator<void> > >)':\n"}
+[55.745950] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x1cab8): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.747809] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1cad7): undefined reference to `comManagerGetData'\n"}
+[55.748246] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1cb06): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[55.749202] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1cb0d): undefined reference to `comManagerStep'\n"}
+[55.750277] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1cc43): undefined reference to `comManagerGetData'\n"}
+[55.751319] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1ce4c): undefined reference to `comManagerGetData'\n"}
+[55.753817] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::perform_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)':\n"}
+[55.754530] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x1cfda): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.756171] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1cff8): undefined reference to `is_comm_init'\n"}
+[55.756708] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1d0e3): undefined reference to `serialPortReadCharTimeout'\n"}
+[55.757999] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::perform_multi_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)':\n"}
+[55.758712] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x1d180): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.760046] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1d19e): undefined reference to `is_comm_init'\n"}
+[55.761516] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1d289): undefined reference to `serialPortReadCharTimeout'\n"}
+[55.762602] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::reset_device()':\n"}
+[55.763050] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x1d329): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[55.764143] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1d5a9): undefined reference to `InertialSense::Close()'\n"}
+[55.765142] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::transform_6x6_covariance(float*, float*, float*, float*)':\n"}
+[55.765714] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text+0x1e4be): undefined reference to `mul_Mat3x3_Mat3x3'\n"}
+[55.766566] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1e4db): undefined reference to `mul_Mat3x3_Mat3x3_Trans'\n"}
+[55.767645] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1e4f8): undefined reference to `mul_Mat3x3_Mat3x3'\n"}
+[55.768633] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1e515): undefined reference to `mul_Mat3x3_Mat3x3_Trans'\n"}
+[55.769790] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1e532): undefined reference to `mul_Mat3x3_Mat3x3'\n"}
+[55.771113] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text+0x1e54c): undefined reference to `mul_Mat3x3_Mat3x3_Trans'\n"}
+[55.774459] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Exception::Exception(YAML::Mark const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':\n"}
+[55.774955] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML9ExceptionC2ERKNS_4MarkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE[_ZN4YAML9ExceptionC5ERKNS_4MarkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE]+0x61): undefined reference to `vtable for YAML::Exception'\n"}
+[55.776322] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::RepresentationException::RepresentationException(YAML::Mark const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':\n"}
+[55.776906] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML23RepresentationExceptionC2ERKNS_4MarkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE[_ZN4YAML23RepresentationExceptionC5ERKNS_4MarkERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE]+0x32): undefined reference to `vtable for YAML::RepresentationException'\n"}
+[55.778359] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::InvalidNode::InvalidNode(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':\n"}
+[55.778973] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML11InvalidNodeC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE[_ZN4YAML11InvalidNodeC5ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE]+0x71): undefined reference to `vtable for YAML::InvalidNode'\n"}
+[55.780123] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::BadConversion::BadConversion(YAML::Mark const&)':\n"}
+[55.780980] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML13BadConversionC2ERKNS_4MarkE[_ZN4YAML13BadConversionC5ERKNS_4MarkE]+0x7b): undefined reference to `vtable for YAML::BadConversion'\n"}
+[55.782482] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::memory_holder::create_node()':\n"}
+[55.782941] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail13memory_holder11create_nodeEv[_ZN4YAML6detail13memory_holder11create_nodeEv]+0x20): undefined reference to `YAML::detail::memory::create_node()'\n"}
+[55.784216] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::mark_defined()':\n"}
+[55.784743] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref12mark_definedEv[_ZN4YAML6detail8node_ref12mark_definedEv]+0x20): undefined reference to `YAML::detail::node_data::mark_defined()'\n"}
+[55.785788] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::set_type(YAML::NodeType::value)':\n"}
+[55.786238] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref8set_typeENS_8NodeType5valueE[_ZN4YAML6detail8node_ref8set_typeENS_8NodeType5valueE]+0x2b): undefined reference to `YAML::detail::node_data::set_type(YAML::NodeType::value)'\n"}
+[55.787631] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::set_null()':\n"}
+[55.788085] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref8set_nullEv[_ZN4YAML6detail8node_ref8set_nullEv]+0x20): undefined reference to `YAML::detail::node_data::set_null()'\n"}
+[55.789472] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::set_scalar(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':\n"}
+[55.789995] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref10set_scalarERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE[_ZN4YAML6detail8node_ref10set_scalarERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE]+0x2e): undefined reference to `YAML::detail::node_data::set_scalar(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[55.791234] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::begin()':\n"}
+[55.791738] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref5beginEv[_ZN4YAML6detail8node_ref5beginEv]+0x3d): undefined reference to `YAML::detail::node_data::begin()'\n"}
+[55.793004] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::end()':\n"}
+[55.793491] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref3endEv[_ZN4YAML6detail8node_ref3endEv]+0x3d): undefined reference to `YAML::detail::node_data::end()'\n"}
+[55.794830] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node_ref::push_back(YAML::detail::node&, std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.796019] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail8node_ref9push_backERNS0_4nodeESt10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail8node_ref9push_backERNS0_4nodeESt10shared_ptrINS0_13memory_holderEE]+0x36): undefined reference to `YAML::detail::node_data::push_back(YAML::detail::node&, std::shared_ptr<YAML::detail::memory_holder> const&)'\n"}
+[55.797235] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node::push_back(YAML::detail::node&, std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.797696] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail4node9push_backERS1_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail4node9push_backERS1_St10shared_ptrINS0_13memory_holderEE]+0x8e): undefined reference to `YAML::detail::node::m_amount'\n"}
+[55.798807] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::EnsureNodeExists() const':\n"}
+[55.799252] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node16EnsureNodeExistsEv[_ZNK4YAML4Node16EnsureNodeExistsEv]+0x46): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.800169] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node16EnsureNodeExistsEv[_ZNK4YAML4Node16EnsureNodeExistsEv]+0x50): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.801721] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::Mark() const':\n"}
+[55.802193] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node4MarkEv[_ZNK4YAML4Node4MarkEv]+0x44): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.802982] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node4MarkEv[_ZNK4YAML4Node4MarkEv]+0x4e): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.804923] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::Type() const':\n"}
+[55.805441] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node4TypeEv[_ZNK4YAML4Node4TypeEv]+0x44): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.806466] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node4TypeEv[_ZNK4YAML4Node4TypeEv]+0x4e): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.808271] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::~TypedBadConversion()':\n"}
+[55.808816] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEED2Ev[_ZN4YAML18TypedBadConversionINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.809974] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::Scalar[abi:cxx11]() const':\n"}
+[55.810508] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node6ScalarB5cxx11Ev[_ZNK4YAML4Node6ScalarB5cxx11Ev]+0x44): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.810857] (-) TimerEvent: {}
+[55.811522] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node6ScalarB5cxx11Ev[_ZNK4YAML4Node6ScalarB5cxx11Ev]+0x4e): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.812710] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node6ScalarB5cxx11Ev[_ZNK4YAML4Node6ScalarB5cxx11Ev]+0x7d): undefined reference to `YAML::detail::node_data::empty_scalar[abi:cxx11]()'\n"}
+[55.814209] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::is(YAML::Node const&) const':\n"}
+[55.814777] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2isERKS0_[_ZNK4YAML4Node2isERKS0_]+0x56): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.815748] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2isERKS0_[_ZNK4YAML4Node2isERKS0_]+0x60): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.817570] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::AssignData(YAML::Node const&)':\n"}
+[55.818072] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node10AssignDataERKS0_[_ZN4YAML4Node10AssignDataERKS0_]+0x72): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.819321] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::AssignNode(YAML::Node const&)':\n"}
+[55.819961] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node10AssignNodeERKS0_[_ZN4YAML4Node10AssignNodeERKS0_]+0x48): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.821019] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node10AssignNodeERKS0_[_ZN4YAML4Node10AssignNodeERKS0_]+0x52): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.822149] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node10AssignNodeERKS0_[_ZN4YAML4Node10AssignNodeERKS0_]+0xec): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.823767] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::Node::push_back(YAML::Node const&)':\n"}
+[55.824146] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node9push_backERKS0_[_ZN4YAML4Node9push_backERKS0_]+0xa8): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.829395] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `TopicHelper::streamingCheck(unsigned int, bool&)':\n"}
+[55.829966] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN11TopicHelper14streamingCheckEjRb[_ZN11TopicHelper14streamingCheckEjRb]+0x212): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[55.831031] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `ParamHelper::ParamHelper(YAML::Node&)':\n"}
+[55.831441] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN11ParamHelperC2ERN4YAML4NodeE[_ZN11ParamHelperC5ERN4YAML4NodeE]+0x52): undefined reference to `ParamHelper::setCurrentNode(YAML::Node)'\n"}
+[55.833488] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `RtkBaseProvider::RtkBaseProvider(YAML::Node)':\n"}
+[55.834476] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN15RtkBaseProviderC2EN4YAML4NodeE[_ZN15RtkBaseProviderC5EN4YAML4NodeE]+0xb3): undefined reference to `RtkBaseProvider::configure(YAML::Node&)'\n"}
+[55.835820] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `RtkRoverProvider::RtkRoverProvider(YAML::Node)':\n"}
+[55.836227] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN16RtkRoverProviderC2EN4YAML4NodeE[_ZN16RtkRoverProviderC5EN4YAML4NodeE]+0x5f): undefined reference to `RtkRoverProvider::configure(YAML::Node&)'\n"}
+[55.841638] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > YAML::Node::as<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >() const':\n"}
+[55.842180] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEET_v[_ZNK4YAML4Node2asINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEET_v]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.843043] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEET_v[_ZNK4YAML4Node2asINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEET_v]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.848287] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `double YAML::Node::as<double>() const':\n"}
+[55.848861] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIdEET_v[_ZNK4YAML4Node2asIdEET_v]+0x67): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.850012] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIdEET_v[_ZNK4YAML4Node2asIdEET_v]+0x71): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.851359] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `float YAML::Node::as<float>() const':\n"}
+[55.851890] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIfEET_v[_ZNK4YAML4Node2asIfEET_v]+0x67): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.852795] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIfEET_v[_ZNK4YAML4Node2asIfEET_v]+0x71): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.854299] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `bool YAML::Node::as<bool>() const':\n"}
+[55.854821] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIbEET_v[_ZNK4YAML4Node2asIbEET_v]+0x67): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.855626] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIbEET_v[_ZNK4YAML4Node2asIbEET_v]+0x71): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.857203] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `int YAML::Node::as<int>() const':\n"}
+[55.857726] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIiEET_v[_ZNK4YAML4Node2asIiEET_v]+0x67): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.858592] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIiEET_v[_ZNK4YAML4Node2asIiEET_v]+0x71): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.860313] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `unsigned int YAML::Node::as<unsigned int>() const':\n"}
+[55.860940] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIjEET_v[_ZNK4YAML4Node2asIjEET_v]+0x67): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.861821] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asIjEET_v[_ZNK4YAML4Node2asIjEET_v]+0x71): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.863162] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::vector<double, std::allocator<double> > YAML::Node::as<std::vector<double, std::allocator<double> > >() const':\n"}
+[55.863698] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asISt6vectorIdSaIdEEEET_v[_ZNK4YAML4Node2asISt6vectorIdSaIdEEEET_v]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.864537] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZNK4YAML4Node2asISt6vectorIdSaIdEEEET_v[_ZNK4YAML4Node2asISt6vectorIdSaIdEEEET_v]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.866383] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::Assign<int>(int const&)':\n"}
+[55.866997] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIiEEvRKT_[_ZN4YAML4Node6AssignIiEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.867877] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIiEEvRKT_[_ZN4YAML4Node6AssignIiEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.872719] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<double>::~TypedBadConversion()':\n"}
+[55.873219] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionIdED2Ev[_ZN4YAML18TypedBadConversionIdED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.874085] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::Assign<double>(double const&)':\n"}
+[55.874579] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIdEEvRKT_[_ZN4YAML4Node6AssignIdEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.875367] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIdEEvRKT_[_ZN4YAML4Node6AssignIdEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.877231] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<float>::~TypedBadConversion()':\n"}
+[55.877772] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionIfED2Ev[_ZN4YAML18TypedBadConversionIfED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.878856] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::Assign<float>(float const&)':\n"}
+[55.879314] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIfEEvRKT_[_ZN4YAML4Node6AssignIfEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.880132] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIfEEvRKT_[_ZN4YAML4Node6AssignIfEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.882167] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<bool>::~TypedBadConversion()':\n"}
+[55.882743] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionIbED2Ev[_ZN4YAML18TypedBadConversionIbED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.883706] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::as_if<bool, void>::operator()() const':\n"}
+[55.884692] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZNK4YAML5as_ifIbvEclEv[_ZNK4YAML5as_ifIbvEclEv]+0xae): undefined reference to `YAML::convert<bool>::decode(YAML::Node const&, bool&)'\n"}
+[55.886243] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::Assign<bool>(bool const&)':\n"}
+[55.887262] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIbEEvRKT_[_ZN4YAML4Node6AssignIbEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.888834] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIbEEvRKT_[_ZN4YAML4Node6AssignIbEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.889303] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<int>::~TypedBadConversion()':\n"}
+[55.890601] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionIiED2Ev[_ZN4YAML18TypedBadConversionIiED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.891220] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<unsigned int>::~TypedBadConversion()':\n"}
+[55.892212] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionIjED2Ev[_ZN4YAML18TypedBadConversionIjED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.892644] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::Assign<unsigned int>(unsigned int const&)':\n"}
+[55.893044] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIjEEvRKT_[_ZN4YAML4Node6AssignIjEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.894786] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignIjEEvRKT_[_ZN4YAML4Node6AssignIjEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.895686] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::TypedBadConversion<std::vector<double, std::allocator<double> > >::~TypedBadConversion()':\n"}
+[55.896076] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML18TypedBadConversionISt6vectorIdSaIdEEED2Ev[_ZN4YAML18TypedBadConversionISt6vectorIdSaIdEEED5Ev]+0x26): undefined reference to `YAML::BadConversion::~BadConversion()'\n"}
+[55.897100] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::Assign<std::vector<double, std::allocator<double> > >(std::vector<double, std::allocator<double> > const&)':\n"}
+[55.897595] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignISt6vectorIdSaIdEEEEvRKT_[_ZN4YAML4Node6AssignISt6vectorIdSaIdEEEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.898277] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node6AssignISt6vectorIdSaIdEEEEvRKT_[_ZN4YAML4Node6AssignISt6vectorIdSaIdEEEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.903572] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::get<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.904088] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0xd3): undefined reference to `YAML::detail::node_data::convert_to_map(std::shared_ptr<YAML::detail::memory_holder> const&)'\n"}
+[55.905057] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x117): undefined reference to `YAML::BadSubscript::~BadSubscript()'\n"}
+[55.906053] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x121): undefined reference to `typeinfo for YAML::BadSubscript'\n"}
+[55.907225] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x20f): undefined reference to `YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)'\n"}
+[55.908837] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::get<char [5]>(char const (&) [5], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.909312] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0xd3): undefined reference to `YAML::detail::node_data::convert_to_map(std::shared_ptr<YAML::detail::memory_holder> const&)'\n"}
+[55.910157] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x117): undefined reference to `YAML::BadSubscript::~BadSubscript()'\n"}
+[55.911319] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x121): undefined reference to `typeinfo for YAML::BadSubscript'\n"}
+[55.911807] (-) TimerEvent: {}
+[55.912441] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x20f): undefined reference to `YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)'\n"}
+[55.914666] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::get<char [8]>(char const (&) [8], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.915155] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0xd3): undefined reference to `YAML::detail::node_data::convert_to_map(std::shared_ptr<YAML::detail::memory_holder> const&)'\n"}
+[55.916373] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x117): undefined reference to `YAML::BadSubscript::~BadSubscript()'\n"}
+[55.917594] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x121): undefined reference to `typeinfo for YAML::BadSubscript'\n"}
+[55.918656] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x20f): undefined reference to `YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)'\n"}
+[55.920146] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::get<char [9]>(char const (&) [9], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.920672] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0xd3): undefined reference to `YAML::detail::node_data::convert_to_map(std::shared_ptr<YAML::detail::memory_holder> const&)'\n"}
+[55.921483] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x117): undefined reference to `YAML::BadSubscript::~BadSubscript()'\n"}
+[55.922914] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x121): undefined reference to `typeinfo for YAML::BadSubscript'\n"}
+[55.925236] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x20f): undefined reference to `YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)'\n"}
+[55.926930] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::get<char [4]>(char const (&) [4], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.927560] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0xd3): undefined reference to `YAML::detail::node_data::convert_to_map(std::shared_ptr<YAML::detail::memory_holder> const&)'\n"}
+[55.928458] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x117): undefined reference to `YAML::BadSubscript::~BadSubscript()'\n"}
+[55.929815] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x121): undefined reference to `typeinfo for YAML::BadSubscript'\n"}
+[55.930913] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data3getIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x20f): undefined reference to `YAML::detail::node_data::insert_map_pair(YAML::detail::node&, YAML::detail::node&)'\n"}
+[55.935706] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `void YAML::Node::push_back<double>(double const&)':\n"}
+[55.936215] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML4Node9push_backIdEEvRKT_[_ZN4YAML4Node9push_backIdEEvRKT_]+0x6b): undefined reference to `YAML::InvalidNode::~InvalidNode()'\n"}
+[55.937122] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_ros2.cpp:(.text._ZN4YAML4Node9push_backIdEEvRKT_[_ZN4YAML4Node9push_backIdEEvRKT_]+0x75): undefined reference to `typeinfo for YAML::InvalidNode'\n"}
+[55.938866] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::BadSubscript::BadSubscript<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(YAML::Mark const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)':\n"}
+[55.939353] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML12BadSubscriptC2INSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERKNS_4MarkERKT_[_ZN4YAML12BadSubscriptC5INSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERKNS_4MarkERKT_]+0x61): undefined reference to `vtable for YAML::BadSubscript'\n"}
+[55.940638] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::convert_to_node<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.941096] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data15convert_to_nodeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data15convert_to_nodeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x69): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.942214] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::BadSubscript::BadSubscript<char [5]>(YAML::Mark const&, char const (&) [5])':\n"}
+[55.942777] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML12BadSubscriptC2IA5_cEERKNS_4MarkERKT_[_ZN4YAML12BadSubscriptC5IA5_cEERKNS_4MarkERKT_]+0x61): undefined reference to `vtable for YAML::BadSubscript'\n"}
+[55.944201] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::convert_to_node<char [5]>(char const (&) [5], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.944730] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data15convert_to_nodeIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data15convert_to_nodeIA5_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x69): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.947916] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::BadSubscript::BadSubscript<char [8]>(YAML::Mark const&, char const (&) [8])':\n"}
+[55.948979] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML12BadSubscriptC2IA8_cEERKNS_4MarkERKT_[_ZN4YAML12BadSubscriptC5IA8_cEERKNS_4MarkERKT_]+0x61): undefined reference to `vtable for YAML::BadSubscript'\n"}
+[55.950484] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::convert_to_node<char [8]>(char const (&) [8], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.951263] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data15convert_to_nodeIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data15convert_to_nodeIA8_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x69): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.952434] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::BadSubscript::BadSubscript<char [9]>(YAML::Mark const&, char const (&) [9])':\n"}
+[55.952803] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML12BadSubscriptC2IA9_cEERKNS_4MarkERKT_[_ZN4YAML12BadSubscriptC5IA9_cEERKNS_4MarkERKT_]+0x61): undefined reference to `vtable for YAML::BadSubscript'\n"}
+[55.953850] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::convert_to_node<char [9]>(char const (&) [9], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.954491] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data15convert_to_nodeIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data15convert_to_nodeIA9_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x69): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.955764] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::BadSubscript::BadSubscript<char [4]>(YAML::Mark const&, char const (&) [4])':\n"}
+[55.956358] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML12BadSubscriptC2IA4_cEERKNS_4MarkERKT_[_ZN4YAML12BadSubscriptC5IA4_cEERKNS_4MarkERKT_]+0x61): undefined reference to `vtable for YAML::BadSubscript'\n"}
+[55.957121] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `YAML::detail::node& YAML::detail::node_data::convert_to_node<char [4]>(char const (&) [4], std::shared_ptr<YAML::detail::memory_holder>)':\n"}
+[55.957351] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN4YAML6detail9node_data15convert_to_nodeIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE[_ZN4YAML6detail9node_data15convert_to_nodeIA4_cEERNS0_4nodeERKT_St10shared_ptrINS0_13memory_holderEE]+0x69): undefined reference to `YAML::detail::memory_holder::merge(YAML::detail::memory_holder&)'\n"}
+[55.981108] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `rclcpp::Service<inertial_sense_ros2::srv::RefLLAUpdate>::Service(std::shared_ptr<rcl_node_s>, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, rclcpp::AnyServiceCallback<inertial_sense_ros2::srv::RefLLAUpdate>, rcl_service_options_s&)':\n"}
+[55.981593] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN6rclcpp7ServiceIN19inertial_sense_ros23srv12RefLLAUpdateEEC2ESt10shared_ptrI10rcl_node_sERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_18AnyServiceCallbackIS3_EER21rcl_service_options_s[_ZN6rclcpp7ServiceIN19inertial_sense_ros23srv12RefLLAUpdateEEC5ESt10shared_ptrI10rcl_node_sERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEENS_18AnyServiceCallbackIS3_EER21rcl_service_options_s]+0xce): undefined reference to `rosidl_service_type_support_t const* rosidl_typesupport_cpp::get_service_type_support_handle<inertial_sense_ros2::srv::RefLLAUpdate>()'\n"}
+[55.986684] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::enable_if<rosidl_generator_traits::is_message<inertial_sense_ros2::msg::RTKInfo_<std::allocator<void> > >::value, rosidl_message_type_support_t const&>::type rclcpp::get_message_type_support_handle<inertial_sense_ros2::msg::RTKInfo_<std::allocator<void> > >()':\n"}
+[55.987716] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg8RTKInfo_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv[_ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg8RTKInfo_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv]+0x10): undefined reference to `rosidl_message_type_support_t const* rosidl_typesupport_cpp::get_message_type_support_handle<inertial_sense_ros2::msg::RTKInfo_<std::allocator<void> > >()'\n"}
+[55.989304] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::enable_if<rosidl_generator_traits::is_message<inertial_sense_ros2::msg::RTKRel_<std::allocator<void> > >::value, rosidl_message_type_support_t const&>::type rclcpp::get_message_type_support_handle<inertial_sense_ros2::msg::RTKRel_<std::allocator<void> > >()':\n"}
+[55.989879] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg7RTKRel_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv[_ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg7RTKRel_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv]+0x10): undefined reference to `rosidl_message_type_support_t const* rosidl_typesupport_cpp::get_message_type_support_handle<inertial_sense_ros2::msg::RTKRel_<std::allocator<void> > >()'\n"}
+[55.990635] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::enable_if<rosidl_generator_traits::is_message<inertial_sense_ros2::msg::GNSSObsVec_<std::allocator<void> > >::value, rosidl_message_type_support_t const&>::type rclcpp::get_message_type_support_handle<inertial_sense_ros2::msg::GNSSObsVec_<std::allocator<void> > >()':\n"}
+[55.991450] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg11GNSSObsVec_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv[_ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg11GNSSObsVec_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv]+0x10): undefined reference to `rosidl_message_type_support_t const* rosidl_typesupport_cpp::get_message_type_support_handle<inertial_sense_ros2::msg::GNSSObsVec_<std::allocator<void> > >()'\n"}
+[55.993621] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::enable_if<rosidl_generator_traits::is_message<inertial_sense_ros2::msg::GNSSEphemeris_<std::allocator<void> > >::value, rosidl_message_type_support_t const&>::type rclcpp::get_message_type_support_handle<inertial_sense_ros2::msg::GNSSEphemeris_<std::allocator<void> > >()':\n"}
+[55.994073] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg14GNSSEphemeris_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv[_ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg14GNSSEphemeris_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv]+0x10): undefined reference to `rosidl_message_type_support_t const* rosidl_typesupport_cpp::get_message_type_support_handle<inertial_sense_ros2::msg::GNSSEphemeris_<std::allocator<void> > >()'\n"}
+[55.994989] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `std::enable_if<rosidl_generator_traits::is_message<inertial_sense_ros2::msg::GlonassEphemeris_<std::allocator<void> > >::value, rosidl_message_type_support_t const&>::type rclcpp::get_message_type_support_handle<inertial_sense_ros2::msg::GlonassEphemeris_<std::allocator<void> > >()':\n"}
+[55.995378] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_ros2.cpp:(.text._ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg17GlonassEphemeris_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv[_ZN6rclcpp31get_message_type_support_handleIN19inertial_sense_ros23msg17GlonassEphemeris_ISaIvEEEEENSt9enable_ifIXsrN23rosidl_generator_traits10is_messageIT_EE5valueERK29rosidl_message_type_support_tE4typeEv]+0x10): undefined reference to `rosidl_message_type_support_t const* rosidl_typesupport_cpp::get_message_type_support_handle<inertial_sense_ros2::msg::GlonassEphemeris_<std::allocator<void> > >()'\n"}
+[56.010909] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:(.data.rel.ro._ZTIN4YAML18TypedBadConversionISt6vectorIdSaIdEEEE[_ZTIN4YAML18TypedBadConversionISt6vectorIdSaIdEEEE]+0x10): undefined reference to `typeinfo for YAML::BadConversion'\n"}
+[56.012084] (-) TimerEvent: {}
+[56.012933] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:(.data.rel.ro._ZTIN4YAML18TypedBadConversionIjEE[_ZTIN4YAML18TypedBadConversionIjEE]+0x10): undefined reference to `typeinfo for YAML::BadConversion'\n"}
+[56.014391] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:(.data.rel.ro._ZTIN4YAML18TypedBadConversionIiEE[_ZTIN4YAML18TypedBadConversionIiEE]+0x10): undefined reference to `typeinfo for YAML::BadConversion'\n"}
+[56.016267] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:(.data.rel.ro._ZTIN4YAML18TypedBadConversionIbEE[_ZTIN4YAML18TypedBadConversionIbEE]+0x10): undefined reference to `typeinfo for YAML::BadConversion'\n"}
+[56.018199] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:(.data.rel.ro._ZTIN4YAML18TypedBadConversionIfEE[_ZTIN4YAML18TypedBadConversionIfEE]+0x10): undefined reference to `typeinfo for YAML::BadConversion'\n"}
+[56.019866] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o:(.data.rel.ro._ZTIN4YAML18TypedBadConversionIdEE[_ZTIN4YAML18TypedBadConversionIdEE]+0x10): more undefined references to `typeinfo for YAML::BadConversion' follow\n"}
+[56.112376] (-) TimerEvent: {}
+[56.115399] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `is_comm_parse_byte':\n"}
+[56.116024] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x8d): undefined reference to `is_comm_parse_byte_timeout'\n"}
+[56.117633] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::InertialSenseROS(YAML::Node, bool)':\n"}
+[56.118100] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x632): undefined reference to `InertialSense::InertialSense(std::function<void (InertialSense*, p_data_t*, int)>, int (*)(unsigned int, p_data_get_t*), int (*)(unsigned int, unsigned char const*, int), int (*)(unsigned int, unsigned char const*, int), int (*)(unsigned int, unsigned char const*, int), int (*)(unsigned int, unsigned char const*, int))'\n"}
+[56.119210] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x7c5): undefined reference to `InertialSense::~InertialSense()'\n"}
+[56.121050] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::terminate()':\n"}
+[56.121597] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xfde): undefined reference to `InertialSense::Close()'\n"}
+[56.122750] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xff0): undefined reference to `InertialSense::CloseServerConnection()'\n"}
+[56.123648] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::initializeIS(bool)':\n"}
+[56.124425] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x12db): undefined reference to `InertialSense::StopBroadcasts(bool)'\n"}
+[56.125677] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x12fa): undefined reference to `InertialSense::SetSysCmd(unsigned int, int)'\n"}
+[56.127220] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1319): undefined reference to `InertialSense::SetSysCmd(unsigned int, int)'\n"}
+[56.128177] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x136d): undefined reference to `InertialSense::StopBroadcasts(bool)'\n"}
+[56.128620] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x13a5): undefined reference to `InertialSense::SavePersistent()'\n"}
+[56.130041] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::initializeROS()':\n"}
+[56.130568] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x19e3): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.131563] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::load_params(YAML::Node&)':\n"}
+[56.132330] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x31e9): undefined reference to `ParamHelper::paramServerToYamlNode(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'\n"}
+[56.133272] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x3d53): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.134267] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x3dcc): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.135640] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x3e88): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.137196] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x3f67): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.138733] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4046): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.139759] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4125): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.140941] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4204): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.142054] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4317): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.143152] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x486f): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.144325] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x492b): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.145338] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4a0a): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.146446] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4ae9): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.147600] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4bc8): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.148752] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x4ca7): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.149955] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o:inertial_sense_node.cpp:(.text+0x4d86): more undefined references to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)' follow\n"}
+[56.151055] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::load_params(YAML::Node&)':\n"}
+[56.151601] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x4f91): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.152339] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x51dd): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.153305] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5299): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.154449] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5378): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.155555] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5457): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.156626] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5536): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.158054] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5662): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.159231] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x582b): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.160723] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x58e7): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.161813] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x59c6): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.163006] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5aa5): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.163996] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5b84): undefined reference to `ParamHelper::msgParams(TopicHelper&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, int, bool)'\n"}
+[56.165222] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5cb0): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.166376] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5e1f): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.167702] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x5f2c): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.169004] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x6039): undefined reference to `ParamHelper::node(YAML::Node&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int)'\n"}
+[56.170448] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_data_streams(bool)':\n"}
+[56.170970] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x7d0e): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.171766] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x7fe4): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.173016] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x8305): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.174216] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x836f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.175414] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x86b3): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.176591] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o:inertial_sense_node.cpp:(.text+0x871d): more undefined references to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)' follow\n"}
+[56.177849] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_data_streams(bool)':\n"}
+[56.179251] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x8cfa): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.179625] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x8dfd): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.180540] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x8ffa): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.181462] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x910d): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.183006] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x931c): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.183867] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x942f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.185194] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x963e): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.186140] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x9751): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.187415] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x9960): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.188593] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x9a73): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.190050] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x9ab9): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[56.191181] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xa380): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.192304] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xa493): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.193628] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xa6a2): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.194502] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xa7b5): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.196219] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xa9c4): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.197232] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xaad7): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.198441] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xace6): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.199653] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xadf9): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.200832] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb01e): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.202384] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb131): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.203359] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb340): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.204595] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb453): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.205773] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb662): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.206924] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb775): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.208006] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xb984): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.209248] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xba97): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.210464] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xbca6): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.211763] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xbdb9): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.212754] (-) TimerEvent: {}
+[56.213478] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xbfc8): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.214706] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xc0db): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.216024] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xc2ea): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.217728] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xc3fd): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.218242] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xc60c): undefined reference to `cISDataMappings::GetDataSetName(unsigned int)'\n"}
+[56.219308] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xc71f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.220677] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::start_log()':\n"}
+[56.221067] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xe2e0): undefined reference to `cISLogger::CreateCurrentTimestamp[abi:cxx11]()'\n"}
+[56.222038] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xe656): undefined reference to `cISLogger::g_emptyString[abi:cxx11]'\n"}
+[56.223162] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xe688): undefined reference to `InertialSense::SetLoggerEnabled(bool, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, cISLogger::eLogType, unsigned long, unsigned int, float, unsigned int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[56.224852] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::connect(float)':\n"}
+[56.225657] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xebb8): undefined reference to `InertialSense::Open(char const*, int, bool)'\n"}
+[56.227187] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xf061): undefined reference to `InertialSense::DeviceInfo(int)'\n"}
+[56.228548] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::firmware_compatiblity_check()':\n"}
+[56.229659] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xf587): undefined reference to `InertialSense::DeviceInfo(int)'\n"}
+[56.229975] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0xf60a): undefined reference to `InertialSense::DeviceInfo(int)'\n"}
+[56.231105] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_flash_parameters()':\n"}
+[56.232194] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0xf854): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[56.232618] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1017d): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.233717] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip&)':\n"}
+[56.234113] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x103b4): undefined reference to `RtkRoverCorrectionProvider_Ntrip::get_connection_string[abi:cxx11]()'\n"}
+[56.234972] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x103e3): undefined reference to `InertialSense::OpenConnectionToServer(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[56.236474] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip&)':\n"}
+[56.236881] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x11e7a): undefined reference to `RtkBaseCorrectionProvider_Ntrip::get_connection_string[abi:cxx11]()'\n"}
+[56.238022] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x11e9a): undefined reference to `InertialSense::CreateHost(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[56.239689] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[56.240081] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x12cc5): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.240782] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x12d2f): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.242023] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x130b2): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.242981] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1311c): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.244200] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1342a): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.245505] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o:inertial_sense_node.cpp:(.text+0x13494): more undefined references to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)' follow\n"}
+[56.246832] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[56.247216] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x137ed): undefined reference to `RtkBaseProvider::getProvidersByType(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'\n"}
+[56.248070] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x13869): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.248999] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x13b71): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.250175] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x13bdb): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.251315] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x13f96): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.252469] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x14000): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.253693] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x143e4): undefined reference to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)'\n"}
+[56.254910] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o:inertial_sense_node.cpp:(.text+0x1444e): more undefined references to `InertialSense::BroadcastBinaryData(unsigned int, int, std::function<void (InertialSense*, p_data_t*, int)>)' follow\n"}
+[56.255993] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::configure_rtk()':\n"}
+[56.257299] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x147ba): undefined reference to `RtkBaseProvider::getProvidersByType(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >)'\n"}
+[56.257862] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x14836): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.258924] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::INS4_callback(unsigned int, ins_4_t const*)':\n"}
+[56.259328] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x162a9): undefined reference to `eye_MatN'\n"}
+[56.260280] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1636e): undefined reference to `ecef2lla'\n"}
+[56.261257] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x163a4): undefined reference to `quat_ecef2ned'\n"}
+[56.262457] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x166d8): undefined reference to `quat2euler'\n"}
+[56.263610] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16749): undefined reference to `vectorBodyToReference'\n"}
+[56.264894] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16a4e): undefined reference to `mul_Quat_ConjQuat'\n"}
+[56.265952] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16aa7): undefined reference to `transpose_Mat3'\n"}
+[56.266997] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16c8f): undefined reference to `ecef2lla'\n"}
+[56.268067] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16caf): undefined reference to `lla_Deg2Rad_d'\n"}
+[56.269221] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16ccf): undefined reference to `lla2ned_d'\n"}
+[56.270366] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16db0): undefined reference to `quatConjRot'\n"}
+[56.271529] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x16e72): undefined reference to `quatRot'\n"}
+[56.272596] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1719d): undefined reference to `euler2quat'\n"}
+[56.273773] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x171bd): undefined reference to `mul_Quat_ConjQuat'\n"}
+[56.275005] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x171dd): undefined reference to `mul_Quat_ConjQuat'\n"}
+[56.276009] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x171fd): undefined reference to `mul_Quat_Quat'\n"}
+[56.277133] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x17256): undefined reference to `transpose_Mat3'\n"}
+[56.278405] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1743e): undefined reference to `ecef2lla'\n"}
+[56.279753] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1745e): undefined reference to `lla_Deg2Rad_d'\n"}
+[56.280835] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1747e): undefined reference to `lla2ned_d'\n"}
+[56.281971] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1756a): undefined reference to `quatConjRot'\n"}
+[56.283241] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x17637): undefined reference to `quatRot'\n"}
+[56.284777] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::update()':\n"}
+[56.285157] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x18cf8): undefined reference to `InertialSense::IsOpen()'\n"}
+[56.286061] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x18d11): undefined reference to `InertialSense::Close()'\n"}
+[56.287253] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x18d46): undefined reference to `InertialSense::Update()'\n"}
+[56.289033] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::set_current_position_as_refLLA(std_srvs::srv::Trigger_Request_<std::allocator<void> >&, std_srvs::srv::Trigger_Response_<std::allocator<void> >&)':\n"}
+[56.289507] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1c640): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.290269] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1c65f): undefined reference to `comManagerGetData'\n"}
+[56.291572] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1c68e): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[56.292759] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1c695): undefined reference to `comManagerStep'\n"}
+[56.294037] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1c787): undefined reference to `comManagerGetData'\n"}
+[56.295210] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1c938): undefined reference to `comManagerGetData'\n"}
+[56.297093] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::set_refLLA_to_value(std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Request_<std::allocator<void> > >, std::shared_ptr<inertial_sense_ros2::srv::RefLLAUpdate_Response_<std::allocator<void> > >)':\n"}
+[56.297706] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1cab8): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.298602] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1cad7): undefined reference to `comManagerGetData'\n"}
+[56.299576] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1cb06): undefined reference to `InertialSense::FlashConfig(nvm_flash_cfg_t&, int)'\n"}
+[56.300555] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1cb0d): undefined reference to `comManagerStep'\n"}
+[56.301724] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1cc43): undefined reference to `comManagerGetData'\n"}
+[56.302950] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1ce4c): undefined reference to `comManagerGetData'\n"}
+[56.304697] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::perform_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)':\n"}
+[56.305108] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1cfda): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.305934] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1cff8): undefined reference to `is_comm_init'\n"}
+[56.306961] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1d0e3): undefined reference to `serialPortReadCharTimeout'\n"}
+[56.308906] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::perform_multi_mag_cal_srv_callback(std::shared_ptr<std_srvs::srv::Trigger_Request_<std::allocator<void> > >, std::shared_ptr<std_srvs::srv::Trigger_Response_<std::allocator<void> > >)':\n"}
+[56.309366] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1d180): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.310349] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1d19e): undefined reference to `is_comm_init'\n"}
+[56.311338] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1d289): undefined reference to `serialPortReadCharTimeout'\n"}
+[56.313042] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::reset_device()':\n"}
+[56.313592] (-) TimerEvent: {}
+[56.313668] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1d329): undefined reference to `InertialSense::SendData(unsigned int, unsigned char*, unsigned int, unsigned int)'\n"}
+[56.314434] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1d5a9): undefined reference to `InertialSense::Close()'\n"}
+[56.316195] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `InertialSenseROS::transform_6x6_covariance(float*, float*, float*, float*)':\n"}
+[56.316722] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1e4be): undefined reference to `mul_Mat3x3_Mat3x3'\n"}
+[56.317428] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1e4db): undefined reference to `mul_Mat3x3_Mat3x3_Trans'\n"}
+[56.318728] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1e4f8): undefined reference to `mul_Mat3x3_Mat3x3'\n"}
+[56.319867] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1e515): undefined reference to `mul_Mat3x3_Mat3x3_Trans'\n"}
+[56.321073] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1e532): undefined reference to `mul_Mat3x3_Mat3x3'\n"}
+[56.322187] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: inertial_sense_node.cpp:(.text+0x1e54c): undefined reference to `mul_Mat3x3_Mat3x3_Trans'\n"}
+[56.323809] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o: in function `main':\n"}
+[56.324186] (inertial_sense_ros2) StderrLine: {'line': b"inertial_sense_node.cpp:(.text+0x1e870): undefined reference to `YAML::LoadFile(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'\n"}
+[56.327188] (inertial_sense_ros2) StderrLine: {'line': b"/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o:(.data.rel.local.DW.ref._ZTIN4YAML7BadFileE[DW.ref._ZTIN4YAML7BadFileE]+0x0): undefined reference to `typeinfo for YAML::BadFile'\n"}
+[56.393327] (inertial_sense_ros2) StderrLine: {'line': b'/usr/bin/ld: warning: creating DT_TEXTREL in a PIE\n'}
+[56.413950] (-) TimerEvent: {}
+[56.423662] (inertial_sense_ros2) StderrLine: {'line': b'collect2: error: ld returned 1 exit status\n'}
+[56.428205] (inertial_sense_ros2) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/new_target.dir/build.make:235: new_target] Error 1\n'}
+[56.429138] (inertial_sense_ros2) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2\n'}
+[56.430331] (inertial_sense_ros2) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[56.434229] (inertial_sense_ros2) CommandEnded: {'returncode': 2}
+[56.514313] (-) TimerEvent: {}
+[56.615273] (-) TimerEvent: {}
+[56.715771] (-) TimerEvent: {}
+[56.816373] (-) TimerEvent: {}
+[56.916907] (-) TimerEvent: {}
+[57.017352] (-) TimerEvent: {}
+[57.118088] (-) TimerEvent: {}
+[57.218542] (-) TimerEvent: {}
+[57.319067] (-) TimerEvent: {}
+[57.419643] (-) TimerEvent: {}
+[57.520141] (-) TimerEvent: {}
+[57.620672] (-) TimerEvent: {}
+[57.721196] (-) TimerEvent: {}
+[57.821630] (-) TimerEvent: {}
+[57.922079] (-) TimerEvent: {}
+[58.022566] (-) TimerEvent: {}
+[58.123072] (-) TimerEvent: {}
+[58.224221] (-) TimerEvent: {}
+[58.324758] (-) TimerEvent: {}
+[58.425243] (-) TimerEvent: {}
+[58.525806] (-) TimerEvent: {}
+[58.626209] (-) TimerEvent: {}
+[58.726679] (-) TimerEvent: {}
+[58.827170] (-) TimerEvent: {}
+[58.927889] (-) TimerEvent: {}
+[59.028570] (-) TimerEvent: {}
+[59.129107] (-) TimerEvent: {}
+[59.229707] (-) TimerEvent: {}
+[59.330337] (-) TimerEvent: {}
+[59.430935] (-) TimerEvent: {}
+[59.531524] (-) TimerEvent: {}
+[59.632315] (-) TimerEvent: {}
+[59.732815] (-) TimerEvent: {}
+[59.835200] (-) TimerEvent: {}
+[59.874580] (inertial_sense_ros2) JobEnded: {'identifier': 'inertial_sense_ros2', 'rc': 2}
+[59.886464] (-) EventReactorShutdown: {}

@@ -81,7 +81,7 @@ void InertialSenseROS::initialize(bool configFlashParameters)
     }
 }
 
-void InertialSenseROS::terminate() 
+void InertialSenseROS::terminate()
 {
     IS_.Close();
     IS_.CloseServerConnection();
@@ -90,7 +90,7 @@ void InertialSenseROS::terminate()
     // ROS equivelant to shutdown advertisers, etc.
 }
 
-void InertialSenseROS::initializeIS(bool configFlashParameters) 
+void InertialSenseROS::initializeIS(bool configFlashParameters)
 {
     if (factory_reset_)
     {
@@ -121,14 +121,14 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
     }
 }
 
-void InertialSenseROS::initializeROS() 
+void InertialSenseROS::initializeROS()
 {
     //auto nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
-    refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate>("set_refLLA_value", &InertialSenseROS::set_refLLA_to_value);
-    mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger>("single_axis_mag_cal", &InertialSenseROS::perform_mag_cal_srv_callback);
-    multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger>("multi_axis_mag_cal", &InertialSenseROS::perform_multi_mag_cal_srv_callback);
+    refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate>("set_refLLA_value", std::bind(&InertialSenseROS::set_refLLA_to_value, this, std::placeholders::_1, std::placeholders::_2));
+    mag_cal_srv_                    = nh_->create_service<std_srvs::srv::Trigger>("single_axis_mag_cal", std::bind(&InertialSenseROS::perform_mag_cal_srv_callback, this, std::placeholders::_1, std::placeholders::_2));
+    multi_mag_cal_srv_              = nh_->create_service<std_srvs::srv::Trigger>("multi_axis_mag_cal", std::bind(&InertialSenseROS::perform_multi_mag_cal_srv_callback, this, std::placeholders::_1, std::placeholders::_2));
     //firmware_update_srv_            = nh_.advertiseService("firmware_update", &InertialSenseROS::update_firmware_srv_callback, this);
 
     SET_CALLBACK(DID_STROBE_IN_TIME, strobe_in_time_t, strobe_in_time_callback, 0); // we always want the strobe
@@ -137,7 +137,7 @@ void InertialSenseROS::initializeROS()
     // Publishers
     strobe_pub_ = nh_->create_publisher<std_msgs::msg::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub_didins1    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
+    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub_didins1    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>("Hello", 1); }
     if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub_didins2      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
     if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub_didins4      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
     if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub_odometry  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
@@ -145,18 +145,16 @@ void InertialSenseROS::initializeROS()
     if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub_odometry = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
     if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub_inl2   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States>(rs_.inl2_states.topic, 1); }
 
-    if (rs_.pimu.enabled)                   { rs_.pimu.pub_pimu = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
-    if (rs_.imu.enabled)                    { rs_.imu.pub_imu = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
-    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub_bfield = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
-    if (rs_.barometer.enabled)              { rs_.barometer.pub_fpres = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
-
-    if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
-    if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
-    if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
-
-    if (rs_.gps2.enabled)                   { rs_.gps2.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
-    if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
-    if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
+   if (rs_.pimu.enabled)                   { rs_.pimu.pub_pimu = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
+   if (rs_.imu.enabled)                    { rs_.imu.pub_imu = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
+   if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub_bfield = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
+   if (rs_.barometer.enabled)              { rs_.barometer.pub_fpres = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
+   if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
+   if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
+   if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
+   if (rs_.gps2.enabled)                   { rs_.gps2.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
+   if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
+   if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
 
     if (RTK_rover_ && RTK_rover_->positioning_enable )
     {
@@ -565,18 +563,18 @@ bool InertialSenseROS::firmware_compatiblity_check()
     char diff_firmware[3] = { 0, 0 ,0 };
     for (int i = 0; i < sizeof(local_firmware); i++)  diff_firmware[i] = local_firmware[i] - IS_.DeviceInfo().firmwareVer[i];
 
-    rclcpp::Logger::Level::Level protocol_fault = rclcpp::Logger::Level::Debug; // none
+    rclcpp::Logger::Level protocol_fault = rclcpp::Logger::Level::Debug; // none
     if (diff_protocol[0] != 0) protocol_fault = rclcpp::Logger::Level::Fatal; // major protocol changes -- BREAKING
     else if (diff_protocol[1] != 0) protocol_fault = rclcpp::Logger::Level::Error; // minor protocol changes -- New parameters/features
     else if (diff_protocol[2] != 0) protocol_fault = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
     else if (diff_protocol[3] != 0) protocol_fault = rclcpp::Logger::Level::Info; // this is essentially trivial, but good to know.
 
-    rclcpp::Logger::Level::Level firmware_fault = rclcpp::Logger::Level::Debug; // none
+    rclcpp::Logger::Level firmware_fault = rclcpp::Logger::Level::Debug; // none
     if (diff_firmware[0] != 0) firmware_fault = rclcpp::Logger::Level::Fatal;  // major protocol changes -- BREAKING
     else if (diff_firmware[1] != 0) firmware_fault = rclcpp::Logger::Level::Error;  // minor protocol changes -- New parameters/features
     else if (diff_firmware[2] != 0) firmware_fault = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
 
-    rclcpp::Logger::Level::Level final_fault = std::max(firmware_fault, protocol_fault);
+    rclcpp::Logger::Level final_fault = std::max(firmware_fault, protocol_fault);
    // ROS_LOG_COND(final_fault != rclcpp::Logger::Level::Debug, final_fault, ROSCONSOLE_DEFAULT_NAME,
    //         "Protocol version mismatch: \n"
    //         "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (SDK)\n"
@@ -951,7 +949,7 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
 
-        if (rs_.did_ins1.pub_didins1->get_subscription_count() > 0)
+       if (rs_.did_ins1.pub_didins1->get_subscription_count() > 0)
             rs_.did_ins1.pub_didins1->publish(msg_did_ins1);
     }
 }
@@ -1308,8 +1306,8 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
     // Use custom INL2 states message
     if (rs_.inl2_states.enabled)
     {
-        if (rs_.inl2_states.pub_inl2->get_subscription_count() > 0)
-            rs_.inl2_states.pub_inl2->publish(msg_inl2_states);
+       if (rs_.inl2_states.pub_inl2->get_subscription_count() > 0)
+           rs_.inl2_states.pub_inl2->publish(msg_inl2_states);
     }
 }
 
@@ -2099,9 +2097,9 @@ bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::srv::Trigger::Re
     return true;
 }
 
-bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request &req, inertial_sense_ros2::srv::RefLLAUpdate::Response &res)
+bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdate::Request::SharedPtr req, inertial_sense_ros2::srv::RefLLAUpdate::Response::SharedPtr res)
 {
-    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req.lla), sizeof(req.lla), offsetof(nvm_flash_cfg_t, refLla));
+    IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&req->lla), sizeof(req->lla), offsetof(nvm_flash_cfg_t, refLla));
 
     comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
 
@@ -2118,23 +2116,23 @@ bool InertialSenseROS::set_refLLA_to_value(inertial_sense_ros2::srv::RefLLAUpdat
         }
     }
 
-    if (req.lla[0] == current_flash.refLla[0] && req.lla[1] == current_flash.refLla[1] && req.lla[2] == current_flash.refLla[2])
-    {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-        res.success = true;
-        res.message = ("Update was succesful.  refLla: Lat: " + std::to_string(req.lla[0]) + "  Lon: " + std::to_string(req.lla[1]) + "  Alt: " + std::to_string(req.lla[2]));
-    }
-    else
-    {
-        comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
-        res.success = false;
-        res.message = "Unable to update refLLA. Please try again.";
-    }
+   if (req->lla[0] == current_flash.refLla[0] && req->lla[1] == current_flash.refLla[1] && req->lla[2] == current_flash.refLla[2])
+   {
+       comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
+       res->success = true;
+       res->message = ("Update was succesful.  refLla: Lat: " + std::to_string(req->lla[0]) + "  Lon: " + std::to_string(req->lla[1]) + "  Alt: " + std::to_string(req->lla[2]));
+   }
+   else
+   {
+       comManagerGetData(0, DID_FLASH_CONFIG, 0, 0, 0);
+       res->success = false;
+       res->message = "Unable to update refLLA. Please try again.";
+   }
 
     return true;
 }
 
-bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res)
+bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res)
 {
     (void)req;
     uint32_t single_axis_command = 2;
@@ -2155,8 +2153,8 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Requ
             ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
             if (msg->insStatus & 0x00400000)
             {
-                res.success = true;
-                res.message = "Successfully initiated mag recalibration.";
+                res->success = true;
+                res->message = "Successfully initiated mag recalibration.";
                 return true;
             }
         }
@@ -2165,7 +2163,7 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::srv::Trigger::Requ
     return true;
 }
 
-bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger::Request &req, std_srvs::srv::Trigger::Response &res)
+bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger::Request::SharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res)
 {
     (void)req;
     uint32_t multi_axis_command = 1;
@@ -2186,8 +2184,8 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::srv::Trigger
             ins_1_t *msg = (ins_1_t *)(comm.rxPkt.data.ptr + comm.rxPkt.offset);
             if (msg->insStatus & 0x00400000)
             {
-                res.success = true;
-                res.message = "Successfully initiated mag recalibration.";
+                res->success = true;
+                res->message = "Successfully initiated mag recalibration.";
                 return true;
             }
         }

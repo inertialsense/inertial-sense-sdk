@@ -1,0 +1,5 @@
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Interrupt
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Interrupt
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Interrupt
+gmake: *** [Makefile:146: all] Interrupt

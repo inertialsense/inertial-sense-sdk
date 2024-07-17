@@ -1,0 +1,24 @@
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:29[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:27:10:[m[K [01;31m[Kfatal error: [m[Kinertial_sense_ros2/msg/detail/didins1__struct.hpp: No such file or directory
+   27 | #include [01;31m[K<inertial_sense_ros2/msg/detail/didins1__struct.hpp>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:27:10:[m[K [01;31m[Kfatal error: [m[Kinertial_sense_ros2/msg/detail/didins1__struct.hpp: No such file or directory
+   27 | #include [01;31m[K<inertial_sense_ros2/msg/detail/didins1__struct.hpp>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:104: CMakeFiles/new_target.dir/include/TopicHelper.cpp.o] Error 1
+In file included from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/inertial_sense_ros2.h:29[m[K,
+                 from [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:19[m[K:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/include/TopicHelper.h:27:10:[m[K [01;31m[Kfatal error: [m[Kinertial_sense_ros2/msg/detail/didins1__struct.hpp: No such file or directory
+   27 | #include [01;31m[K<inertial_sense_ros2/msg/detail/didins1__struct.hpp>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:623: CMakeFiles/new_target.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+gmake: *** [Makefile:146: all] Error 2
