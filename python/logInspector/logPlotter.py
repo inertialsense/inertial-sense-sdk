@@ -802,6 +802,8 @@ class logPlot:
 
     def gpx1Heading(self):
         filepath = self.log.directory + "/enu.out"
+        if ~os.path.isfile(filepath):
+            return [], [], []
         df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
 
         df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
@@ -922,6 +924,8 @@ class logPlot:
 
         # if 0:
         #     gpxTime, gpxBaselineNed, gpxHeading = self.gpx1Heading()
+        #     if len(gpxTime) == 0 or len(gpxBaselineNED) == 0:
+        #         continue
 
         #     gpsHdg_unwrap = self.angle_unwrap(gpsHdg)
         #     gpxHdg_unwrap = self.angle_unwrap(gpxHeading)
@@ -1290,7 +1294,9 @@ class logPlot:
         for i, d in enumerate(self.active_devs):
             rtkRelTime = getTimeFromTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
             gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            gpsLla = self.getData(d, DID_GPS1_POS, 'lla')
+            gpsLla = self.getData(d, DID_GPS1_POS, 'lla', True)
+            if len(gpsLla) == 0:
+                continue
             baseToRoverECEF = self.getData(d, relDid, 'baseToRoverVector')
 
             qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
@@ -1301,6 +1307,8 @@ class logPlot:
             ax[1].plot(rtkRelTime, baselineNED[:,1])
 
             gpxTime, gpxBaselineNED, gpxHeading = self.gpx1Heading()
+            if len(gpxTime) == 0 or len(gpxBaselineNED) == 0:
+                continue
 
             ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
             ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
@@ -1379,9 +1387,9 @@ class logPlot:
                     inds = inds[0][0]
                     tgps[j,inds] = obs['time']['time'][indo] + obs['time']['sec'][indo]
                     # Use only non-zero pseudorange and phase
-                    indP = np.where(obs['P'][indo] != 0)
-                    indL = np.where(obs['L'][indo] != 0)
-                    indD = np.where(obs['D'][indo] != 0)
+                    indP = np.flatnonzero(obs['P'][indo])
+                    indL = np.flatnonzero(obs['L'][indo])
+                    indD = np.flatnonzero(obs['D'][indo])
                     if np.size(indP) > 0 and np.size(indL) > 0:
                         P[indP,j,inds] = obs['P'][indo][indP]
                         L[indL,j,inds] = obs['L'][indo][indL]
@@ -1434,12 +1442,14 @@ class logPlot:
 
             # Reassemble multiple chunks of data by timestamp
             t1 = np.empty(0)
-            del_ind = np.empty(0)
+            del_ind = np.empty(0, dtype=int)
             for j in range(len(gps1_data)):
-                ind = np.where(gps1_data[j]['time']['time'] != 0)[0][0]
-                if np.size(ind) == 0:
+                ind = np.flatnonzero(gps1_data[j]['time']['time'])
+                if len(ind) == 0:
+                    # Empty chunk of data (all time stamps are zero)
                     del_ind = np.append(del_ind, j)
                     continue
+                ind = ind[0]
                 t_ = gps1_data[j]['time']['time'][ind] + gps1_data[j]['time']['sec'][ind]
                 if j > 0 and t_ == t1[-1]:
                     # add chunk to the previous data and mark for deletion
@@ -1449,15 +1459,18 @@ class logPlot:
                 else:
                     # new data
                     t1 = np.append(t1, t_)
+            gps1_data = np.asarray(gps1_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
             gps1_data = np.delete(gps1_data, del_ind)
 
             t2 = np.empty(0)
-            del_ind = np.empty(0)
+            del_ind = np.empty(0, dtype=int)
             for j in range(len(gps2_data)):
-                ind = np.where(gps2_data[j]['time']['time'] != 0)[0][0]
-                if np.size(ind) == 0:
+                ind = np.flatnonzero(gps2_data[j]['time']['time'])
+                if len(ind) == 0:
+                    # Empty chunk of data (all time stamps are zero)
                     del_ind = np.append(del_ind, j)
                     continue
+                ind = ind[0]
                 t_ = gps2_data[j]['time']['time'][ind] + gps2_data[j]['time']['sec'][ind]
                 if j > 0 and t_ == t2[-1]:
                     # add chunk to the previous data and mark for deletion
@@ -1467,6 +1480,7 @@ class logPlot:
                 else:
                     # new data
                     t2 = np.append(t2, t_)
+            gps2_data = np.asarray(gps2_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
             gps2_data = np.delete(gps2_data, del_ind)
 
             N1 = len(gps1_data)
@@ -1494,7 +1508,7 @@ class logPlot:
                     if ( sat_k != 0 and (sat_k not in sat2) and 
                          obs['time']['time'][k] > 0 and obs['P'][k][0] > 0 and obs['L'][k][0] > 0 ):
                         sat2 = np.append(sat2, sat_k)
-            del_ind = np.empty(0)
+            del_ind = np.empty(0, dtype = int)
             for is_, j in enumerate(sat):
                 if j not in sat2:
                     del_ind = np.append(del_ind, is_)
@@ -1507,11 +1521,20 @@ class logPlot:
             delta_L[:] = np.nan
 
             # Compute single differences
+            cnt1 = 0
+            cnt2 = 0
             for j in range(N1):
-                obs1 = gps1_data[j]
-                obs2 = gps2_data[j]
-                if (t2[j] != t1[j]): 
+                if t2[j] > t1[j]:
+                    cnt1 = cnt1 + 1
                     continue
+                elif t2[j] < t1[j]:
+                    cnt2 = cnt2 + 1
+                    continue
+                obs1 = gps1_data[cnt1]
+                obs2 = gps2_data[cnt2]
+                cnt1 = cnt1 + 1
+                cnt2 = cnt2 + 1
+
                 for k in range(Nsat):
                     sat_k = sat[k]
                     # is this satellite present in both gps1 and gps2 data?
@@ -1523,15 +1546,15 @@ class logPlot:
                     ind2 = ind2[0][0]
 
                     # Use only non-zero pseudorange and phase
-                    indval1 = np.where(obs1['P'][ind1] != 0)
-                    indval2 = np.where(obs2['P'][ind2] != 0)
+                    indval1 = np.flatnonzero(obs1['P'][ind1])
+                    indval2 = np.flatnonzero(obs2['P'][ind2])
                     if np.size(indval1) > 0 and np.size(indval2) > 0:
                         delta_P[:,j,k] = obs1['P'][ind1][indval1] - obs2['P'][ind2][indval2]
                         delta_L[:,j,k] = obs1['L'][ind1][indval1] - obs2['L'][ind2][indval2]
 
             for k in range(Nsat):
                 # Do not plot satellites that appeared only for a short time
-                ind = np.where(delta_P[0,:,k] > 0)
+                ind = np.flatnonzero(~np.isnan(delta_P[0,:,k]))
                 if (np.size(ind) / N1) < 0.1 and len(ind) < 100:
                     continue
                 ax[0].plot(t1, delta_P[0,:,k], label=('Sat %s' % sat[k]))
