@@ -1,0 +1,6 @@
+Starting >>> inertial_sense_ros2
+[Processing: inertial_sense_ros2]
+
+Summary: 0 packages finished [57.0s]
+  1 package failed: inertial_sense_ros2
+  1 package had stderr output: inertial_sense_ros2
