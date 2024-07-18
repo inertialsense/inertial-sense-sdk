@@ -60,7 +60,7 @@ enum eSerialPortOptions
 };
 
 typedef struct serial_port_s serial_port_t;
-#define SERIAL_PORT(n)  ((serial_port_t*)port)
+#define SERIAL_PORT(n)  ((serial_port_t*)n)
 
 typedef int(*pfnSerialPortOpen)(port_handle_t port, const char* portName, int baudRate, int blocking);
 typedef int(*pfnSerialPortIsOpen)(port_handle_t port);
