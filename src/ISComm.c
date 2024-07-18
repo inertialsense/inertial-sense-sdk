@@ -1063,24 +1063,25 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, port_handle_
 
     // Write packet to port
     int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
+    if (n == sizeof(packet_hdr_t)) {
+        // only send the rest of the packet if we were able to send the header...
 
-    if (pkt->offset)
-    {
-        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
+        if (pkt->offset) {
+            n += portWrite(port, (uint8_t *) &(pkt->offset), 2);                 // Offset (optional)
+        }
+
+        if (pkt->data.size) {
+            // Include payload in checksum calculation
+            pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t *) pkt->data.ptr, pkt->data.size);
+
+            n += portWrite(port, (uint8_t *) pkt->data.ptr, pkt->data.size);     // Payload
+        }
+
+        n += portWrite(port, (uint8_t *) &(pkt->checksum), 2);                   // Footer (checksum)
+
+        // Increment Tx count
+        ((comm_port_t *) port)->comm.txPktCount++;
     }
-
-    if (pkt->data.size)
-    {
-        // Include payload in checksum calculation
-        pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
-
-        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
-    }
-
-    n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
-
-    // Increment Tx count
-    ((comm_port_t*)port)->comm.txPktCount++;
 
     // Check that number of bytes sent matches packet size.  Return number of bytes written on success or -1 on failure.
     return (n == pkt->size) ? n : -1;

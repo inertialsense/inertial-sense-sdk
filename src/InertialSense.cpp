@@ -188,6 +188,18 @@ void InertialSense::LogRawData(ISDevice* device, int dataSize, const uint8_t* da
         m_logger.LogData(device->devLogger, dataSize, data);
 }
 
+ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInfo) {
+    if (!port)
+        return NULL;
+
+    ISDevice newDevice;
+    newDevice.port = port;
+    newDevice.devInfo = devInfo;
+    newDevice.sysParams.flashCfgChecksum = 0xFFFFFFFF;
+    m_comManagerState.devices.push_back(newDevice);
+    return (ISDevice*)&(m_comManagerState.devices.end().base());
+}
+
 bool InertialSense::HasReceivedDeviceInfo(ISDevice& device)
 {
     return ((device.devInfo.serialNumber != 0) && (device.devInfo.manufacturer[0] != 0));
@@ -228,12 +240,11 @@ void InertialSense::RemoveDevice(ISDevice& device)
     for (std::vector<serial_port_s*>::size_type i = 0; i < m_serialPorts.size(); i++) {
         if (m_serialPorts[i] == device.port) {
             m_serialPorts.erase(m_serialPorts.begin() + i);
+            comManagerRemovePort(device.port);
             delete (serial_port_t*)device.port;
             device.port = NULL;
         }
     }
-    // TODO: remove from m_Ports
-    // TODO: remove from m_serialPorts;
 }
 
 void InertialSense::LoggerThread(void* info)
@@ -916,6 +927,9 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
         device = DeviceByPort(port);
     }
 
+    if (device == NULL)
+        return false;   // no device, no setting of flash-config
+
     device->flashCfg.checksum = flashChecksum32(&device->flashCfg, sizeof(nvm_flash_cfg_t));
 
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
@@ -986,6 +1000,9 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
         device = DeviceByPort(port);
     }
 
+    if (!device)
+        return false;   // No device, no flash-sync
+
     unsigned int startMs = current_timeMs();
     while(!FlashConfigSynced(device->port))
     {   // Request and wait for flash config
@@ -1024,13 +1041,18 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
 
     ISDevice* device = DeviceByPort(port);
     if (!device) {
-        return;
+        if (data->hdr.id != DID_DEV_INFO)
+            return;
     }
 
     switch (data->hdr.id)
     {
         case DID_DEV_INFO:
-            device->devInfo = *(dev_info_t*)data->ptr;
+            if (!device) {
+                registerNewDevice(port, *(dev_info_t*)data->ptr);
+            } else {
+                device->devInfo = *(dev_info_t*)data->ptr;
+            }
             break;
         case DID_SYS_CMD:
             device->sysCmd = *(system_command_t*)data->ptr;
@@ -1064,13 +1086,16 @@ void InertialSense::ProcessRxNmea(port_handle_t port, const uint8_t* msg, int ms
         m_handlerNmea(port, msg, msgSize);
     }
 
-    ISDevice* device = DeviceByPort(port);
-    if (device) {
-        switch (getNmeaMsgId(msg, msgSize)) {
-            case NMEA_MSG_ID_INFO:
-                nmea_parse_info(device->devInfo, (const char *) msg, msgSize);      // IMX device Info
-            break;
+    switch (getNmeaMsgId(msg, msgSize)) {
+        case NMEA_MSG_ID_INFO: {
+            ISDevice* device = DeviceByPort(port);
+            if (!device) {
+                dev_info_t devInfo;
+                nmea_parse_info(devInfo, (const char *) msg, msgSize);      // IMX device Info
+                registerNewDevice(port, devInfo);
+            }
         }
+        break;
     }
 }
 
@@ -1422,22 +1447,27 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
     return port;
 }
 
-/*
-void InertialSense::freeSerialPort(port_handle_t port) {
+bool InertialSense::freeSerialPort(port_handle_t port) {
+    if (!port)
+        return false;
 
-    m_serialPorts.insert(m_serialPorts.cbegin(), serialPort);
-    port_handle_t port = (port_handle_t)&m_serialPorts[0];
+    auto found = std::find(m_serialPorts.begin(), m_serialPorts.end(), port);
+    if (found != m_serialPorts.end()) {
+        serialPortClose(port);
+        comManagerRemovePort(port);
 
-    serialPortPlatformInit(port);
-    return port;
+        m_serialPorts.erase(found);
+        memset(port, 0, sizeof(serial_port_t));
+        delete (serial_port_t*)port;
+    }
+    return true;
 }
-*/
 
-bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
+bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 {
     CloseSerialPorts();
 
-    if (port == NULLPTR || validateBaudRate(baudRate) != 0)
+    if (portPattern == NULLPTR || validateBaudRate(baudRate) != 0)
     {
         return false;
     }
@@ -1446,65 +1476,72 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     vector<string> ports;
     size_t maxCount = UINT32_MAX;
 
+    // it's safe to call comManagerInit() multiple times.
+    comManagerInit(10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmBufBcastMsg);
+    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+
     // handle wildcard, auto-detect serial ports
-    if (port[0] == '*')
+    if (portPattern[0] == '*')
     {
         // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
         cISSerialPort::GetComPorts(ports);
-        if (port[1] != '\0')
+        if (portPattern[1] != '\0')
         {
-            maxCount = atoi(port + 1);
+            maxCount = atoi(portPattern + 1);
             maxCount = (maxCount == 0 ? UINT32_MAX : maxCount);
         }
     }
     else
     {
         // comma separated list of serial ports
-        splitString(port, ',', ports);
+        splitString(portPattern, ',', ports);
     }
 
-    // open serial ports
-    for (size_t i = 0; i < ports.size(); i++)
-    {
-        port_handle_t port = allocateSerialPort(PORT_TYPE__COMM);
-        if (serialPortOpen(port, ports[i].c_str(), baudRate, 0) == 0)
-        {
-            // failed to open
-            serialPortClose(port);
+    // allocate, register and open serial ports, but don't if its already allocated, registered, and opened.
+    for (std::string curPortName : ports) {
+        // check to see if this port should be ignored
+        bool skipPort = false;
+        for (auto ignored : m_ignoredPorts) {
+            if (ignored == curPortName)
+                skipPort = true;
         }
-        else if (comManagerInit(port, 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmBufBcastMsg) != -1) {    // If successful, finish setting up device & callbacks
-            // Register message handler callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+        if (skipPort)
+            continue;   // skip this one...
 
-            ISDevice device;
-            device.port = port;
-            device.sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
-            m_comManagerState.devices.push_back(device);
+        // check is this port already exists, and is open...
+        port_handle_t newPort = 0;
+        for (auto& port : comManagerGetPorts()) {
+            if (portName(port) && (portName(port) == curPortName)) {
+                newPort = port;
+                break;
+            }
+        }
+
+        if (!newPort)
+            newPort = allocateSerialPort(PORT_TYPE__COMM);
+
+        if (!serialPortIsOpen(newPort)) {
+            if (serialPortOpen(newPort, curPortName.c_str(), baudRate, 0) == 0) {
+                serialPortClose(newPort);           // failed to open
+                m_ignoredPorts.push_back(curPortName);     // record this port name as bad, so we don't try and reopen it again
+            } else {
+                comManagerRegisterPort(newPort);    // successful, so register the port, and hopefully data arrives...
+            }
+        } else {
+          // nothing to do, it's already registered and open.
         }
     }
-
-    // [C COMM INSTRUCTION]  1.) Setup com manager.  Specify number of serial ports and register callback functions for
-    // serial port read and write and for successfully parsed data.  Ensure appropriate buffer memory allocation.
-    // if (m_cmPorts) { delete[] m_cmPorts; }
-    // m_cmPorts = new com_manager_port_t[m_comManagerState.devices.size()];
-
-    // if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
-    // m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
-    // m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-
 
     bool timeoutOccurred = false;
     if (m_enableDeviceValidation) {
         unsigned int startTime = current_timeMs();
-        bool removedSerials = false;
 
         do {
-            for (auto& device : m_comManagerState.devices) {
-                if ((((serial_port_t*)device.port)->errorCode == ENOENT) ||
-                    (comManagerSendRaw(device.port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
+            for (auto& port : comManagerGetPorts()) {
+                if ((SERIAL_PORT(port)->errorCode == ENOENT) ||
+                    (comManagerSendRaw(port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
-                    // RemoveDevice(i); FIXME!! (this needs re-implementing)
-                    removedSerials = true;
+                    comManagerRemovePort(port);
                 }
             }
 
@@ -1523,7 +1560,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
             if (!HasReceivedDeviceInfo(device)) {
                 deadPorts.push_back(((serial_port_t*)device.port)->portName);
                 RemoveDevice(device);
-                removedSerials = true;
             }
         }
 
@@ -1545,13 +1581,6 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
         // remove ports if we are over max count
         while (m_comManagerState.devices.size() > maxCount) {
             RemoveDevice(m_comManagerState.devices.size() - 1);
-            removedSerials = true;
-        }
-
-        // setup com manager again if serial ports dropped out with new count of serial ports
-        if (removedSerials) {
-            // comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, 0);
-            // comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
         }
     }
 
@@ -1852,4 +1881,44 @@ ISDevice* InertialSense::DeviceByPort(port_handle_t port) {
             return &device;
     }
     return nullptr;
+}
+
+/**
+ * Locates the device associated with the specified port name
+ * @param port
+ * @return ISDevice* which is connected to port, otherwise NULL
+ */
+ISDevice* InertialSense::DeviceByPortName(const std::string& port_name) {
+    for (auto& device: m_comManagerState.devices) {
+        if (device.port) {
+            const char* devPortName = portName(device.port);
+            if (devPortName && (std::string(devPortName) == port_name))
+                return &device;
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * @return a list of discovered ports which are not currently associated with a open device
+ */
+std::vector<std::string> InertialSense::checkForNewPorts() {
+    std::vector<std::string> new_ports, all_ports;
+    cISSerialPort::GetComPorts(all_ports);
+
+    // remove from "ports", all the ports which we currently have an open connection for.
+    for (auto& portName : all_ports) {
+        bool ignored = false;
+        for (auto& ignoredPort : m_ignoredPorts) {
+            if (ignoredPort == portName)
+                ignored = true;
+        }
+        if (ignored)
+            continue;
+
+        if (DeviceByPortName(portName) == nullptr)
+            new_ports.push_back(portName);
+    }
+
+    return new_ports;
 }

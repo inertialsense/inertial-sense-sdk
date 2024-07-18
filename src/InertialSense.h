@@ -288,6 +288,18 @@ public:
     ISDevice* DeviceByPort(port_handle_t port = 0);
 
     /**
+     * Locates the device associated with the specified port name
+     * @param port
+     * @return ISDevice* which is connected to port, otherwise NULL
+     */
+    ISDevice* DeviceByPortName(const std::string& port_name);
+
+    /**
+     * @return a list of discovered ports which are not currently associated with a open device
+     */
+    std::vector<std::string> checkForNewPorts();
+
+    /**
     * Get the device info
     * @param device device to get device info for.
     * @return the device info
@@ -593,6 +605,8 @@ public:
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
+    bool freeSerialPort(port_handle_t port);
+
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
     void OnClientConnecting(cISTcpServer* server) OVERRIDE;
@@ -637,7 +651,7 @@ private:
     unsigned int m_syncCheckTimeMs = 0;
 
     std::vector<serial_port_t*> m_serialPorts;  //! actual initialized serial ports
-    std::vector<port_handle_t> m_Ports;         //! port_handle's to those serial ports
+    std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
     port_handle_t allocateSerialPort(int ptype);
 
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg = {}; // [MAX_NUM_BCAST_MSGS];
@@ -647,6 +661,7 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
     void DisableLogging();
+    ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo);
     bool HasReceivedDeviceInfo(ISDevice& device);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);

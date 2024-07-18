@@ -13,6 +13,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string.h>
 #include <stdlib.h>
 
+#include <algorithm>
+#include <vector>
+
 #include "com_manager.h"
 #include "serialPort.h"
 
@@ -72,6 +75,28 @@ static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, comm_port_
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int comManagerInit(
+        int stepPeriodMilliseconds,
+        pfnComManagerRead portReadFnc,
+        pfnIsCommPortWrite portWriteFnc,
+        pfnComManagerSendBufferAvailableBytes txFreeFnc,
+        pfnComManagerPostRead pstRxFnc,
+        pfnComManagerPostAck pstAckFnc,
+        pfnComManagerDisableBroadcasts disableBcastFnc,
+        broadcast_msg_array_t* buffers)   //! was: com_manager_init_t *buffers,
+{
+    return s_cm.init(
+            NULL,
+            stepPeriodMilliseconds,
+            portReadFnc,
+            portWriteFnc,
+            txFreeFnc,
+            pstRxFnc,
+            pstAckFnc,
+            disableBcastFnc,
+            buffers);
+}
+
+int comManagerInit(
 	port_handle_t port,
     int stepPeriodMilliseconds,
     pfnComManagerRead portReadFnc,
@@ -105,11 +130,6 @@ int ISComManager::init
     pfnComManagerDisableBroadcasts disableBcastFncCb,
     broadcast_msg_array_t* bcastBuffers)   //! was: com_manager_init_t *buffers,
 {
-    if (bcastBuffers == NULL)
-    {
-        return -1;
-    }
-
     // assign new variables
     portRead = portReadFncCb;
     portWrite = portWriteFncCb;
@@ -126,8 +146,28 @@ int ISComManager::init
     // Buffer: message broadcasts
     broadcastMessages = bcastBuffers;
 
+    if (port)
+        registerPort(port);
+
+    return 0;
+}
+
+bool comManagerRegisterPort(port_handle_t port) {
+    return s_cm.registerPort(port);
+}
+
+
+/**
+ *
+ * @param port
+ * @return
+ */
+bool ISComManager::registerPort(port_handle_t port) {
+    if (!port)
+        return false;
+
     // Initialize IScomm instance, for serial reads / writes
-    if (port && (portType(port) & PORT_TYPE__COMM)) {
+    if ((portType(port) & PORT_TYPE__COMM)) {
         comm_port_t* comm = COMM_PORT(port);
         is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer));
 
@@ -136,10 +176,32 @@ int ISComManager::init
         memset(&(port->con), 0, MEMBERSIZE(com_manager_port_t,con));
 #endif
 
-        ports.push_back(port);
     }
 
-    return 0;
+    ports.push_back(port);
+    return true;
+}
+
+
+std::vector<port_handle_t> comManagerGetPorts() {
+    return s_cm.getPorts();
+}
+
+std::vector<port_handle_t> ISComManager::getPorts() {
+    return ports;
+}
+
+bool comManagerRemovePort(port_handle_t port) {
+    return s_cm.removePort(port);
+}
+
+bool ISComManager::removePort(port_handle_t port) {
+    auto found = std::find(ports.begin(), ports.end(), port);
+    if (found == ports.end())
+        return false;
+
+    ports.erase(found);
+    return true;
 }
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
@@ -431,7 +493,17 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
     get.size = size;
     get.period = period;
 
-    send(port, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0);
+    if (send(port, PKT_TYPE_GET_DATA, &get, 0, sizeof(get), 0)) {
+        // if send() is true, then an error occurred...
+        // depending on the nature of the error, we may want to close the port.
+        // FIXME: we really should be more selective with which errors we actually close the port for.
+        if (SERIAL_PORT(port)->errorCode > 0) {
+            serialPortClose(port);
+            // removePort(port);
+            // memset(SERIAL_PORT(port), 0, sizeof(serial_port_s));
+            // TODO: we still haven't deleted all references to the port, and this will likely cause problems (ie, InertialSense class, etc).
+        }
+    }
 }
 
 void comManagerGetDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions)
@@ -772,7 +844,6 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     }
 
     // Search for matching message (i.e. matches port, id, size, and offset)...
-    // for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
     for (auto& bc : *(broadcastMessages))
     {
         if (bc.port == port && bc.pkt.hdr.id == req->id && bc.pkt.hdr.payloadSize == req->size && bc.pkt.offset == req->offset)
@@ -785,7 +856,6 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
     // otherwise use the first available (period=0) message.
     if (msg == 0)
     {
-        // for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
         for (auto& bc : *(broadcastMessages))
         {
             if (bc.period <= MSG_PERIOD_DISABLED)

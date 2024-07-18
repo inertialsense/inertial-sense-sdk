@@ -143,7 +143,7 @@ static int configure_serial_port(int fd, int baudRate)
 
     if (tcgetattr(fd, &tty) != 0) 
     {
-        error_message("error getting tty settings: tcgetattr");
+        error_message("error getting tty settings: tcgetattr\n");
         return -1;
     }
 
@@ -151,7 +151,7 @@ static int configure_serial_port(int fd, int baudRate)
     baudRate = validate_baud_rate(baudRate);    
     if (baudRate == 0)
     {
-        error_message("error invalid baudrate");
+        error_message("error invalid baudrate\n");
         return -1;
     }
 
@@ -164,7 +164,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Now baud rate can be set higher than 230400
     if (ioctl(fd, IOSSIOSPEED, &baudRate) == -1)
     {
-        error_message("error %d from ioctl IOSSIOSPEED", errno);
+        error_message("error %d from ioctl IOSSIOSPEED\n", errno);
     }
 
 #else
@@ -219,7 +219,7 @@ static int configure_serial_port(int fd, int baudRate)
     // Save tty settings, also checking for error
     if (tcsetattr(fd, TCSANOW, &tty) != 0) 
     {
-        error_message("error saving tty settings: tcsetattr");
+        error_message("error saving tty settings: tcsetattr\n");
         return -1;
     }
 
@@ -233,14 +233,14 @@ int set_nonblocking(int fd)
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) 
     {
-        error_message("error fcntl F_GETFL");
+        error_message("error fcntl F_GETFL\n");
         return -1;
     }
 
     flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, flags) == -1) 
     {
-        error_message("error setting O_NONBLOCK");
+        error_message("error setting O_NONBLOCK\n");
         return -1;
     }
 
@@ -623,8 +623,10 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("Error reading from %s : %s (%d)\n", serialPort->portName, strerror(errno), errno);
+        error_message("[%s] read():: Error reading from port: %s (%d)\n", serialPort->portName, strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
+        serialPort->error = strerror(errno);
+
     } else
         serialPort->errorCode = 0; // clear any previous errorcode
     return result;
@@ -728,7 +730,9 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
                 continue;
             }
             // Other errors
-            error_message("error writing data");
+            serialPort->errorCode = errno;
+            serialPort->error = strerror(errno);
+            error_message("[%s] write():: Error writing to port: %s (%d)\n", serialPort->portName, strerror(errno), errno);
             return -1;
         }
         bytes_written += result;
@@ -825,6 +829,7 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->pfnRead = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
     serialPort->pfnWrite = serialPort->base.portWrite = serialPortWritePlatform;
+    serialPort->base.portName = serialPortName;
     serialPort->pfnGetByteCountAvailableToRead = serialPort->base.portAvailable = serialPortGetByteCountAvailableToReadPlatform;
     serialPort->pfnGetByteCountAvailableToWrite = serialPort->base.portFree = serialPortGetByteCountAvailableToWritePlatform;
     serialPort->pfnSleep = serialPortSleepPlatform;

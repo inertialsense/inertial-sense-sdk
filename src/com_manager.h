@@ -237,6 +237,51 @@ int comManagerInit(
         pfnComManagerDisableBroadcasts disableBcastFnc,
         std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
 
+/** Alternate without having to specify a port...
+ * TODO: Remove this and move port to the last, and make it optional.
+ * @param port
+ * @param stepPeriodMilliseconds
+ * @param readFnc
+ * @param sendFnc
+ * @param txFreeFnc
+ * @param pstRxFnc
+ * @param pstAckFnc
+ * @param disableBcastFnc
+ * @param buffers
+ * @return
+ */
+int comManagerInit(
+        int stepPeriodMilliseconds,
+        pfnComManagerRead readFnc,
+        pfnIsCommPortWrite sendFnc,
+        pfnComManagerSendBufferAvailableBytes txFreeFnc,
+        pfnComManagerPostRead pstRxFnc,
+        pfnComManagerPostAck pstAckFnc,
+        pfnComManagerDisableBroadcasts disableBcastFnc,
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+
+/**
+ * registered a port with the comm manager (allowing the port to be managed by ISComManager.
+ * @param port
+ * @return true if this port was registered, otherwise false
+ */
+bool comManagerRegisterPort(port_handle_t port);
+
+
+/**
+ * @return a vector of all registered ports
+ */
+std::vector<port_handle_t> comManagerGetPorts();
+
+
+/**
+ * Removes the requested port from the comManager, preventing it from being considered in broadcasts or received data.
+ * NOTE that this call does not close the port of flush the port.
+ * @return true if the port was found and removed, otherwise false.
+ */
+bool comManagerRemovePort(port_handle_t port);
+
+
 /**
 * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
 * @param timeMs current time in milliseconds used for paser timeout.  Used to invalidate packet parsing if PKT_PARSER_TIMEOUT_MS time has lapsed since any data has been received.
@@ -505,6 +550,28 @@ public:
             pfnComManagerPostAck pstAckFnc,
             pfnComManagerDisableBroadcasts disableBcastFnc,
             std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+
+    /**
+     * registered a port with the comm manager (allowing the port to be managed by ISComManager.
+     * @param port
+     * @return true if this port was registered, otherwise false
+     */
+    bool registerPort(port_handle_t port);
+
+
+    /**
+     * @return a vector of all registered ports
+     */
+    std::vector<port_handle_t> getPorts();
+
+
+    /**
+     * Removes the requested port from the comManager, preventing it from being considered in broadcasts or received data.
+     * NOTE that this call does not close the port of flush the port.
+     * @return true if the port was found and removed, otherwise false.
+     */
+    bool removePort(port_handle_t port);
+
 
     /**
     * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
