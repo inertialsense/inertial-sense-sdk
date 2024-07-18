@@ -491,7 +491,11 @@ class logPlot:
             if refLla is None:
                 refLla = self.getData(d, DID_INS_2, 'lla')[-1]
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            insVelNed = quatRot(self.getData(d, DID_INS_2, 'qn2b'), self.getData(d, DID_INS_2, 'uvw'))
+            uvw = self.getData(d, DID_INS_2, 'uvw')
+            qn2b = self.getData(d, DID_INS_2, 'qn2b')
+            if len(uvw) == 0 or len(qn2b) == 0:
+                continue
+            insVelNed = quatRot(qn2b, uvw)
             insVelNorm = np.linalg.norm(insVelNed, axis=1)
             ax[0,0].plot(time, insVelNed[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, insVelNed[:,1])
@@ -594,9 +598,12 @@ class logPlot:
             if refTime is None:
                 for d in self.active_devs:
                     time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+                    uvw = self.getData(d, DID_INS_2, 'uvw')
+                    if len(uvw) == 0:
+                        continue
 
                     # Adjust data for attitude bias
-                    uvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
+                    uvw = quatRot(self.log.mount_bias_quat[d,:], uvw)
 
                     if refTime is None:
                         refTime = time
@@ -613,8 +620,11 @@ class logPlot:
 
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            uvw = self.getData(d, DID_INS_2, 'uvw')
+            if len(uvw) == 0:
+                continue
             # Adjust data for attitude bias
-            uvw = quatRot(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'uvw'))
+            uvw = quatRot(self.log.mount_bias_quat[d,:], uvw)
             ax[0,0].plot(time, uvw[:,0], label=self.log.serials[d])
             ax[1,0].plot(time, uvw[:,1])
             ax[2,0].plot(time, uvw[:,2])
@@ -664,8 +674,11 @@ class logPlot:
             if refTime is None:
                 for d in self.active_devs:
                     time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+                    qn2b = self.getData(d, DID_INS_2, 'qn2b')
+                    if len(qn2b) == 0:
+                        continue
                     # Adjust data for attitude bias
-                    quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
+                    quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], qn2b)
                     euler = quat2euler(quat)
 
                     if refTime is None:
@@ -683,13 +696,14 @@ class logPlot:
                 refEuler += sumDelta / sumCount
 
         for d in self.active_devs:
-            # Adjust data for attitude bias
             qn2b = self.getData(d, DID_INS_2, 'qn2b')
             if len(qn2b) == 0:
                 continue
+            # Adjust data for attitude bias
             quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], qn2b)
             euler = quat2euler(quat)
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            tow = self.getData(d, DID_INS_2, 'timeOfWeek')
+            time = getTimeFromTow(tow, True)
             ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1,0].plot(time, euler[:,1]*RAD2DEG)
             ax[2,0].plot(time, euler[:,2]*RAD2DEG)
@@ -733,7 +747,10 @@ class logPlot:
             insTime = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             magHdg = self.getData(d, DID_INL2_MAG_OBS_INFO, 'magHdg')
             gpsHdg = self.getData(d, DID_GPS1_RTK_CMP_REL, 'baseToRoverHeading')
-            euler = quat2euler(self.getData(d, DID_INS_2, 'qn2b'))
+            qn2b = self.getData(d, DID_INS_2, 'qn2b')
+            if len(qn2b) == 0:
+                continue
+            euler = quat2euler(qn2b)
             insHdg = euler[:,2]
             if magTime.any():
                 ax[0,0].plot(magTime, magHdg * RAD2DEG)
