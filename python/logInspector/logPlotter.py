@@ -773,7 +773,8 @@ class logPlot:
             # Adjust data for attitude bias
             quat = mul_ConjQuat_Quat(self.log.mount_bias_quat[d,:], self.getData(d, DID_INS_2, 'qn2b'))
             euler = quat2euler(quat)
-            time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
+            tow = self.getData(d, DID_INS_2, 'timeOfWeek')
+            time = getTimeFromTow(tow, True)
             ax[0,0].plot(time, euler[:,0]*RAD2DEG, label=self.log.serials[d])
             ax[1,0].plot(time, euler[:,1]*RAD2DEG)
             ax[2,0].plot(time, euler[:,2]*RAD2DEG)
