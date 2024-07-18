@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "protocol/FirmwareUpdate.h"
+#include "imx_defaults.h"
 
 using namespace std;
 
@@ -870,6 +871,22 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
     }
 }
 
+void InertialSense::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg)
+{
+    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    // Exclude from the checksum update the following which does not get saved in the flash config
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    if (platformCfgUpdateIoConfig)
+    {   // Update ioConfig
+        imxPlatformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, flashCfg.platformConfig);
+    }
+
+    // Update checksum
+    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+}
+
 bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
@@ -893,14 +910,20 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
-    
+
+    device.flashCfg.checksum = flashChecksum32(&device.flashCfg, sizeof(nvm_flash_cfg_t));
+
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
     uint32_t *newCfg = (uint32_t*)&flashCfg;
     uint32_t *curCfg = (uint32_t*)&device.flashCfg; 
     int iSize = sizeof(nvm_flash_cfg_t) / 4;
     bool failure = false;
-    for (int i = 2; i < iSize; i++)
+    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
+    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    for (int i = 2; i < iSize; i++)     // Start with index 2 to exclude size and checksum
     {
         if (newCfg[i] != curCfg[i])
         {   // Found start
@@ -913,6 +936,14 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
             uint8_t *tail = (uint8_t*)&(newCfg[i]);
             int size = tail-head;
             int offset = head-((uint8_t*)newCfg);
+
+            if (platformCfgUpdateIoConfig &&
+                head <= (uint8_t*)&(flashCfg.platformConfig) &&
+                tail >  (uint8_t*)&(flashCfg.platformConfig))
+            {   // Re-apply updateIoConfig bit prior to upload
+                flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
+            }
+            
             DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
             int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);            
             failure = failure || fail;
@@ -925,11 +956,10 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
         printf("DID_FLASH_CONFIG in sync.  No upload.\n");
     }
 
-    // Exclude from the checksum update the following which does not get saved in the flash config
-    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
-
     // Update checksum
-    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    UpdateFlashConfigChecksum(flashCfg);
+
+    // Save checksum to ensure upload happened correctly
     if (device.flashCfgUploadTimeMs)
     {
         device.flashCfgUploadChecksum = flashCfg.checksum;

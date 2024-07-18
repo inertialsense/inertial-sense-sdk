@@ -2335,7 +2335,8 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "obs_count_bas", obs_count_bas, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "obs_count_rov", obs_count_rov, 0, DataTypeUInt8, uint8_t, 0);
 
-    ADD_MAP(m, totalSize, "obs_pairs_filtered", obs_pairs_filtered, 0, DataTypeUInt8, uint8_t, 0);
+    //ADD_MAP(m, totalSize, "obs_pairs_filtered", obs_pairs_filtered, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "reserved2", reserved2, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "raw_ptr_queue_overrun", raw_ptr_queue_overrun, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "raw_dat_queue_overrun", raw_dat_queue_overrun, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "obs_unhealthy", obs_unhealthy, 0, DataTypeUInt8, uint8_t, 0);
@@ -2350,10 +2351,15 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "obs_low_snr_base", obs_low_snr_base, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "obs_high_snr_parity", obs_high_snr_parity, 0, DataTypeUInt8, uint8_t, 0);
 
-    //ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
-    //ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
-    //ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
-    //ADD_MAP(m, totalSize, "reserved[3]", reserved[3], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "obs_zero_L1_rover", obs_zero_L1_rover, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "obs_zero_L1_base", obs_zero_L1_base, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "obs_low_elev_rover", obs_low_elev_rover, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "obs_low_elev_base", obs_low_elev_base, 0, DataTypeUInt8, uint8_t, 0);
+
+    ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved[3]", reserved[3], 0, DataTypeUInt8, uint8_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
