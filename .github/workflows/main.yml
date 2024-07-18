@@ -17,6 +17,8 @@ on:
     pull_request:
       - 'develop'
       - 'main'
+    tags:
+      - '\d+.\d.+\d+*'
 
 concurrency:
   group: ${{ github.ref }}
