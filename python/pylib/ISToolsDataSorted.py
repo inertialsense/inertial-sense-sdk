@@ -89,7 +89,7 @@ def getTimeFromTow(s, fixTimeBeforeGnss=0):
         if fixTimeBeforeGnss:
             # Backpropagate first available GNSS time to convert time since start to GNSS time
             ds = np.diff(s)
-            ind = np.flatnonzero(abs(ds - ds[-1]) > 0.1)
+            ind = np.flatnonzero(abs(ds - ds[-1]) > 10) # jump in time stamp due to GNSS ToW offset
             if len(ind) > 0:
                 for i in reversed(range(ind[-1]+1)):
                     s[i] = s[i+1] - ds[-1]
