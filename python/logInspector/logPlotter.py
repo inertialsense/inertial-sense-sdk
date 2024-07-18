@@ -1508,7 +1508,6 @@ class logPlot:
 
             N1 = len(gps1_data)
             N2 = len(gps2_data)
-            if (N1 != N2): continue
 
             # Build common satellite array for gps1 and gps2
             sat = np.empty(0, dtype=int)
@@ -1537,6 +1536,28 @@ class logPlot:
                     del_ind = np.append(del_ind, is_)
             sat = np.delete(sat, del_ind)
 
+            # Build array of common timestamps for gps1 and gps2
+            del_ind = np.empty(0, dtype = int)
+            for j in range(N1):
+                if t1[j] not in t2:
+                    del_ind = np.append(del_ind, j)
+            gps1_data = np.asarray(gps1_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
+            gps1_data = np.delete(gps1_data, del_ind)
+            t1 = np.delete(t1, del_ind)
+            N1 = len(gps1_data)
+
+            del_ind = np.empty(0, dtype = int)
+            t = np.empty(0, dtype=int)
+            for j in range(N2):
+                if t2[j] not in t1:
+                    del_ind = np.append(del_ind, j)
+            gps2_data = np.asarray(gps2_data, dtype = object) # newer Numpy can't delete inhomogeneous arrays unless we set dtype=object
+            gps2_data = np.delete(gps2_data, del_ind)
+            t2 = np.delete(t2, del_ind)
+            N2 = len(gps2_data)
+            if (N1 != N2): 
+                continue
+
             Nsat = len(sat)
             delta_P = np.empty([Nf, N1, Nsat])
             delta_L = np.empty([Nf, N1, Nsat])
@@ -1544,19 +1565,9 @@ class logPlot:
             delta_L[:] = np.nan
 
             # Compute single differences
-            cnt1 = 0
-            cnt2 = 0
             for j in range(N1):
-                if t2[j] > t1[j]:
-                    cnt1 = cnt1 + 1
-                    continue
-                elif t2[j] < t1[j]:
-                    cnt2 = cnt2 + 1
-                    continue
-                obs1 = gps1_data[cnt1]
-                obs2 = gps2_data[cnt2]
-                cnt1 = cnt1 + 1
-                cnt2 = cnt2 + 1
+                obs1 = gps1_data[j]
+                obs2 = gps2_data[j]
 
                 for k in range(Nsat):
                     sat_k = sat[k]
