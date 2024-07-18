@@ -1,0 +1,14 @@
+/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::initializeIS(bool)':
+inertial_sense_ros2.cpp:(.text+0x1390): undefined reference to `InertialSenseROS::configure_rtk()'
+/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::rtk_connectivity_watchdog_timer_callback()':
+inertial_sense_ros2.cpp:(.text+0x1194e): undefined reference to `InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip&)'
+/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `RtkBaseProvider::RtkBaseProvider(YAML::Node)':
+inertial_sense_ros2.cpp:(.text._ZN15RtkBaseProviderC2EN4YAML4NodeE[_ZN15RtkBaseProviderC5EN4YAML4NodeE]+0xb3): undefined reference to `RtkBaseProvider::configure(YAML::Node&)'
+/usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `RtkRoverProvider::RtkRoverProvider(YAML::Node)':
+inertial_sense_ros2.cpp:(.text._ZN16RtkRoverProviderC2EN4YAML4NodeE[_ZN16RtkRoverProviderC5EN4YAML4NodeE]+0x5f): undefined reference to `RtkRoverProvider::configure(YAML::Node&)'
+/usr/bin/ld: CMakeFiles/new_target.dir/src/ParamHelper.cpp.o: in function `xmlRpcToYamlNode(xmlrpc_c::value&)':
+ParamHelper.cpp:(.text+0x70e): undefined reference to `xmlrpc_c::value::type() const'
+collect2: error: ld returned 1 exit status
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:262: new_target] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:626: CMakeFiles/new_target.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

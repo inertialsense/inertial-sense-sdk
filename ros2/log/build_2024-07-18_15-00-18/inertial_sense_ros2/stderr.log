@@ -1,0 +1,6 @@
+/usr/bin/ld: CMakeFiles/new_target.dir/src/ParamHelper.cpp.o: in function `xmlRpcToYamlNode(xmlrpc_c::value&)':
+ParamHelper.cpp:(.text+0x70e): undefined reference to `xmlrpc_c::value::type() const'
+collect2: error: ld returned 1 exit status
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:262: new_target] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:626: CMakeFiles/new_target.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

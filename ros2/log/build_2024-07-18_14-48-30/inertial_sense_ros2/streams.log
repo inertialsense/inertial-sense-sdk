@@ -1,0 +1,41 @@
+[0.039s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j6 -l6
+[0.280s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[0.330s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[0.378s] [  1%] Built target inertial_sense_ros2__cpp
+[0.415s] [ 27%] Built target inertial_sense_ros2__rosidl_generator_c
+[0.536s] [ 36%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[0.547s] [ 45%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[0.552s] [ 54%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[0.563s] [ 64%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[0.563s] [ 74%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[0.663s] [ 84%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[0.751s] [ 84%] Built target inertial_sense_ros2
+[0.842s] [ 85%] Built target inertial_sense_ros2__py
+[0.960s] [ 94%] Built target inertial_sense_ros2__rosidl_generator_py
+[0.995s] [ 94%] Building CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o
+[1.059s] [ 95%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[1.060s] [ 96%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+[1.065s] [ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[1.092s] running egg_info
+[1.159s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[1.161s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[1.162s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[1.359s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.361s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.442s] [ 97%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[68.905s] [ 98%] Linking CXX executable new_target
+[70.612s] /usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::initializeIS(bool)':
+[70.613s] inertial_sense_ros2.cpp:(.text+0x1390): undefined reference to `InertialSenseROS::configure_rtk()'
+[70.615s] /usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `InertialSenseROS::rtk_connectivity_watchdog_timer_callback()':
+[70.616s] inertial_sense_ros2.cpp:(.text+0x1194e): undefined reference to `InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip&)'
+[70.627s] /usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `RtkBaseProvider::RtkBaseProvider(YAML::Node)':
+[70.628s] inertial_sense_ros2.cpp:(.text._ZN15RtkBaseProviderC2EN4YAML4NodeE[_ZN15RtkBaseProviderC5EN4YAML4NodeE]+0xb3): undefined reference to `RtkBaseProvider::configure(YAML::Node&)'
+[70.630s] /usr/bin/ld: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o: in function `RtkRoverProvider::RtkRoverProvider(YAML::Node)':
+[70.630s] inertial_sense_ros2.cpp:(.text._ZN16RtkRoverProviderC2EN4YAML4NodeE[_ZN16RtkRoverProviderC5EN4YAML4NodeE]+0x5f): undefined reference to `RtkRoverProvider::configure(YAML::Node&)'
+[70.963s] /usr/bin/ld: CMakeFiles/new_target.dir/src/ParamHelper.cpp.o: in function `xmlRpcToYamlNode(xmlrpc_c::value&)':
+[70.964s] ParamHelper.cpp:(.text+0x70e): undefined reference to `xmlrpc_c::value::type() const'
+[71.189s] collect2: error: ld returned 1 exit status
+[71.194s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:262: new_target] Error 1
+[71.195s] gmake[1]: *** [CMakeFiles/Makefile2:626: CMakeFiles/new_target.dir/all] Error 2
+[71.196s] gmake: *** [Makefile:146: all] Error 2
+[71.200s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j6 -l6

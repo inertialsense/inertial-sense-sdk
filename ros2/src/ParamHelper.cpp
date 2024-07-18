@@ -17,7 +17,8 @@
  ***************************************************************************************/
 
 #include "ParamHelper.h"
-
+#include "xmlrpc-c/xml.hpp"
+#include "xmlrpc.h"
 void ParamHelper::setCurrentNode(YAML::Node node)
 {
     node ? currentNode_.reset(node) : currentNode_.reset(YAML::Node());
@@ -60,17 +61,17 @@ bool ParamHelper::msgParamsImplicit(TopicHelper &th, std::string key, std::strin
     return msgParams(th, key, topicDefault, enabledDefault, periodDefault, enabledDefault);
 }
 
-YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
+/*YAML::Node xmlRpcToYamlNode(xmlrpc_c::value &v)
 {
     YAML::Node node;
 
-    switch(v.getType())
+    switch(v.type())
     {
-        case XmlRpc::XmlRpcValue::TypeString:   node = static_cast<std::string>(v);    break;
-        case XmlRpc::XmlRpcValue::TypeBoolean:  node = static_cast<bool>(v);           break;
-        case XmlRpc::XmlRpcValue::TypeDouble:   node = static_cast<double>(v);         break;
-        case XmlRpc::XmlRpcValue::TypeInt:      node = static_cast<int>(v);            break;
-        case XmlRpc::XmlRpcValue::TypeArray:
+        case xmlrpc_c::value::TYPE_STRING:   node = static_cast<std::string>(v);    break;
+        case xmlrpc_c::value::TYPE_BOOLEAN:  node = static_cast<bool>(v);           break;
+        case xmlrpc_c::value::TYPE_DOUBLE:   node = static_cast<double>(v);         break;
+        case xmlrpc_c::value::TYPE_INT:      node = static_cast<int>(v);            break;
+        case xmlrpc_c::vale::type:
             for (int i=0; i<v.size(); i++)
             {
                 node[i] = xmlRpcToYamlNode(v[i]);
@@ -80,13 +81,13 @@ YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
 
     return node;
 }
-
+*/
 bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std::string indentStr)
 {
-    ros::NodeHandle nh;
+    auto nh_ = std::make_shared<rclcpp::Node>("nh_");;
 
     std::vector <std::string> nhKeyList;
-    nh.getParamNames(nhKeyList);
+    nh_->get_parameters(nhKeyList);
     for (std::string key: nhKeyList)
     {
         std::string::size_type pos = key.find(nhKey);
@@ -102,12 +103,12 @@ bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std
         if (pos == std::string::npos)
         {   // Param name
 
-            XmlRpc::XmlRpcValue v;
-            if (nh.getParam(key, v))
-            {
-                node[name] = xmlRpcToYamlNode(v);
-                continue;
-            }
+            //XmlRpc::XmlRpcValue v;
+            //if (nh.getParam(key, v))
+            //{
+            //    node[name] = xmlRpcToYamlNode(v);
+            //    continue;
+            //}
         }
         else
         {   // Node key

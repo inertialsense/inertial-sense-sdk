@@ -1,0 +1,6 @@
+CMake Error at CMakeLists.txt:70 (rosidl_target_interfaces):
+  rosidl_target_interfaces Function invoked with incorrect arguments for
+  function named: rosidl_target_interfaces
+
+
+gmake: *** [Makefile:5257: cmake_check_build_system] Error 1

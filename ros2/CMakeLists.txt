@@ -11,11 +11,23 @@ find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
-#find_package(msg REQUIRED)
+#find_package(InertialSenseSDK REQUIRED)
+find_package(XMLRPC REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(Threads)
-set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+#set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+
+
+set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
+# find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR} ${IS_SDK_DIR}/build ${IS_SDK_DIR}/build/Release)
+find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
+    # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
+    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+else()
+    link_directories(${IS_SDK_DIR})
+endif()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/GTime.msg"
@@ -35,7 +47,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/DIDINS4.msg"
         "srv/FirmwareUpdate.srv"
         "srv/RefLLAUpdate.srv"
-        DEPENDENCIES std_msgs geometry_msgs diagnostic_msgs
+        DEPENDENCIES std_msgs geometry_msgs diagnostic_msgs builtin_interfaces
 )
 ament_export_include_directories(include)
 ament_export_libraries(inertial_sense_ros2)
@@ -45,7 +57,7 @@ ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs diagnostic_m
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
 include_directories(include
-  #${catkin_INCLUDE_DIRS}
+  ${XMLRPC_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
   ../src #This line of CMakeList.txt stays in .external file to reference submodule
   ../src/libusb/libusb
@@ -56,7 +68,7 @@ include_directories(include
   /opt/ros/jazzy/include/sensor_msgs
 )
 
-#add_library(inertial_sense_ros2
+#add_library(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk
 #    src/ParamHelper.cpp
 #    src/RtkRover.cpp
 #    src/RtkBase.cpp
@@ -69,8 +81,6 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
-
-#target_link_libraries(inertial_sense_ros2 InertialSenseSDK ${YAML_CPP_LIBRARIES} pthread)
 #target_include_directories(inertial_sense_ros2 PUBLIC include)
 #add_dependencies(inertial_sense_ros2 inertial_sense_ros_generate_messages_cpp)
 #
@@ -89,9 +99,13 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLA
 add_executable(new_target
         src/inertial_sense_ros2.cpp
         src/inertial_sense_node.cpp
-        #src/ParamHelper.cpp
+        src/ParamHelper.cpp
        # src/serial.cpp
         include/TopicHelper.cpp
-        include/TopicHelper.h
+        #include/TopicHelper.h
 )
-ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs std_srvs)
+rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
+ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
+
+target_link_libraries(new_target /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)

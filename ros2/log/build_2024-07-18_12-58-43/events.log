@@ -1,0 +1,1265 @@
+[0.000000] (-) TimerEvent: {}
+[0.000677] (inertial_sense_ros2) JobQueued: {'identifier': 'inertial_sense_ros2', 'dependencies': OrderedDict()}
+[0.000846] (inertial_sense_ros2) JobStarted: {'identifier': 'inertial_sense_ros2'}
+[0.043392] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'cmake'}
+[0.048179] (inertial_sense_ros2) JobProgress: {'identifier': 'inertial_sense_ros2', 'progress': 'build'}
+[0.048382] (inertial_sense_ros2) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', '--', '-j6', '-l6'], 'cwd': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'env': OrderedDict({'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 's', 'XDG_SESSION_TYPE': 'wayland', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/s', 'DESKTOP_SESSION': 'ubuntu', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'DBUS_STARTER_BUS_TYPE': 'session', 'SYSTEMD_EXEC_PID': '2177', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus,guid=d8c4629005968020db0297e766993680', 'COLORTERM': 'truecolor', '_colcon_cd_root': '/opt/ros/jazzy/', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 's', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-gnome\\x2dsession\\x2dmanager.slice/gnome-session-manager@ubuntu.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 's', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/s-VMware-Virtual-Platform:@/tmp/.ICE-unix/2177,unix/s-VMware-Virtual-Platform:/tmp/.ICE-unix/2177', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/9fee9c1b_fe67_40f2_9a9b_8595572a4fe2', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.TW5YQ2', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'GNOME_TERMINAL_SERVICE': ':1.123', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '0', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'DBUS_STARTER_ADDRESS': 'unix:path=/run/user/1000/bus,guid=d8c4629005968020db0297e766993680', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'QTWEBENGINE_DICTIONARIES_PATH': '/usr/share/hunspell-bdic/', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'VTE_VERSION': '7600', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.097355] (-) TimerEvent: {}
+[0.199368] (-) TimerEvent: {}
+[0.224534] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)\n'}
+[0.300617] (-) TimerEvent: {}
+[0.342108] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.400886] (-) TimerEvent: {}
+[0.501762] (-) TimerEvent: {}
+[0.605364] (-) TimerEvent: {}
+[0.707612] (-) TimerEvent: {}
+[0.747721] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_generator_c: 4.6.3 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)\n'}
+[0.781541] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 4.6.3 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)\n'}
+[0.808079] (-) TimerEvent: {}
+[0.821770] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.875060] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.908357] (-) TimerEvent: {}
+[0.973127] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found std_srvs: 5.3.5 (/opt/ros/jazzy/share/std_srvs/cmake)\n'}
+[1.008738] (-) TimerEvent: {}
+[1.090569] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)\n'}
+[1.109079] (-) TimerEvent: {}
+[1.145584] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rclcpp: 28.1.3 (/opt/ros/jazzy/share/rclcpp/cmake)\n'}
+[1.209348] (-) TimerEvent: {}
+[1.278384] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)\n'}
+[1.283303] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 8.4.1 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)\n'}
+[1.309723] (-) TimerEvent: {}
+[1.410418] (-) TimerEvent: {}
+[1.511280] (-) TimerEvent: {}
+[1.514026] (inertial_sense_ros2) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[1.611492] (-) TimerEvent: {}
+[1.712160] (-) TimerEvent: {}
+[1.752151] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)\n'}
+[1.753404] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)\n'}
+[1.812442] (-) TimerEvent: {}
+[1.843620] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found nav_msgs: 5.3.5 (/opt/ros/jazzy/share/nav_msgs/cmake)\n'}
+[1.912732] (-) TimerEvent: {}
+[1.940988] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)\n'}
+[2.013001] (-) TimerEvent: {}
+[2.034825] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)\n'}
+[2.065245] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found rosidl_adapter: 4.6.3 (/opt/ros/jazzy/share/rosidl_adapter/cmake)\n'}
+[2.071155] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found tf2: 0.36.4 (/opt/ros/jazzy/share/tf2/cmake)\n'}
+[2.113339] (-) TimerEvent: {}
+[2.214054] (-) TimerEvent: {}
+[2.315320] (-) TimerEvent: {}
+[2.416613] (-) TimerEvent: {}
+[2.517441] (-) TimerEvent: {}
+[2.618417] (-) TimerEvent: {}
+[2.719346] (-) TimerEvent: {}
+[2.820290] (-) TimerEvent: {}
+[2.920966] (-) TimerEvent: {}
+[3.029522] (-) TimerEvent: {}
+[3.151333] (-) TimerEvent: {}
+[3.266307] (-) TimerEvent: {}
+[3.367542] (-) TimerEvent: {}
+[3.468262] (-) TimerEvent: {}
+[3.541436] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)\n'}
+[3.568479] (-) TimerEvent: {}
+[3.669286] (-) TimerEvent: {}
+[3.772414] (-) TimerEvent: {}
+[3.873310] (-) TimerEvent: {}
+[3.974109] (-) TimerEvent: {}
+[4.074884] (-) TimerEvent: {}
+[4.178598] (-) TimerEvent: {}
+[4.279430] (-) TimerEvent: {}
+[4.380178] (-) TimerEvent: {}
+[4.480960] (-) TimerEvent: {}
+[4.581793] (-) TimerEvent: {}
+[4.682454] (-) TimerEvent: {}
+[4.724078] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[4.782684] (-) TimerEvent: {}
+[4.883389] (-) TimerEvent: {}
+[4.984320] (-) TimerEvent: {}
+[5.085339] (-) TimerEvent: {}
+[5.186478] (-) TimerEvent: {}
+[5.210269] (inertial_sense_ros2) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[5.217005] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)\n'}
+[5.286527] (-) TimerEvent: {}
+[5.387371] (-) TimerEvent: {}
+[5.488353] (-) TimerEvent: {}
+[5.589375] (-) TimerEvent: {}
+[5.690132] (-) TimerEvent: {}
+[5.790855] (-) TimerEvent: {}
+[5.891538] (-) TimerEvent: {}
+[5.992897] (-) TimerEvent: {}
+[6.092646] (inertial_sense_ros2) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed \n'}
+[6.093322] (-) TimerEvent: {}
+[6.194007] (-) TimerEvent: {}
+[6.270463] (inertial_sense_ros2) StdoutLine: {'line': b'-- Configuring done (6.1s)\n'}
+[6.294328] (-) TimerEvent: {}
+[6.395071] (-) TimerEvent: {}
+[6.496136] (-) TimerEvent: {}
+[6.597050] (-) TimerEvent: {}
+[6.657936] (inertial_sense_ros2) StdoutLine: {'line': b'-- Generating done (0.3s)\n'}
+[6.687499] (inertial_sense_ros2) StdoutLine: {'line': b'-- Build files have been written to: /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2\n'}
+[6.697326] (-) TimerEvent: {}
+[6.799366] (-) TimerEvent: {}
+[6.855562] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] Built target inertial_sense_ros2__rosidl_generator_type_description\n'}
+[6.873425] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataChunk.cpp.o\x1b[0m\n'}
+[6.894318] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataCSV.cpp.o\x1b[0m\n'}
+[6.894812] (inertial_sense_ros2) StdoutLine: {'line': b'[  1%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/hw-libs/bootloader/bootloaderShared.c.o\x1b[0m\n'}
+[6.899527] (-) TimerEvent: {}
+[6.904359] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataChunkSorted.cpp.o\x1b[0m\n'}
+[6.937902] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] Built target ament_cmake_python_copy_inertial_sense_ros2\n'}
+[6.985679] (inertial_sense_ros2) StderrLine: {'line': b"gmake[2]: *** No rule to make target '/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/libInertialSenseSDK.a', needed by 'new_target'.  Stop.\n"}
+[6.988047] (inertial_sense_ros2) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:641: CMakeFiles/new_target.dir/all] Error 2\n'}
+[6.989732] (inertial_sense_ros2) StderrLine: {'line': b'gmake[1]: *** Waiting for unfinished jobs....\n'}
+[7.001359] (-) TimerEvent: {}
+[7.035052] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataJSON.cpp.o\x1b[0m\n'}
+[7.045571] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] Built target inertial_sense_ros2__cpp\n'}
+[7.086555] (inertial_sense_ros2) StdoutLine: {'line': b'[  2%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataKML.cpp.o\x1b[0m\n'}
+[7.103441] (-) TimerEvent: {}
+[7.204296] (-) TimerEvent: {}
+[7.308625] (-) TimerEvent: {}
+[7.317114] (inertial_sense_ros2) StdoutLine: {'line': b'[  3%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLog.cpp.o\x1b[0m\n'}
+[7.411354] (-) TimerEvent: {}
+[7.511993] (-) TimerEvent: {}
+[7.612934] (-) TimerEvent: {}
+[7.716541] (-) TimerEvent: {}
+[7.817284] (-) TimerEvent: {}
+[7.923352] (-) TimerEvent: {}
+[8.026643] (-) TimerEvent: {}
+[8.127358] (-) TimerEvent: {}
+[8.230636] (-) TimerEvent: {}
+[8.331355] (-) TimerEvent: {}
+[8.435636] (-) TimerEvent: {}
+[8.536362] (-) TimerEvent: {}
+[8.639546] (-) TimerEvent: {}
+[8.742391] (-) TimerEvent: {}
+[8.843017] (-) TimerEvent: {}
+[8.946352] (-) TimerEvent: {}
+[9.047089] (-) TimerEvent: {}
+[9.150683] (-) TimerEvent: {}
+[9.254570] (-) TimerEvent: {}
+[9.356892] (-) TimerEvent: {}
+[9.461577] (-) TimerEvent: {}
+[9.562525] (-) TimerEvent: {}
+[9.666325] (-) TimerEvent: {}
+[9.769813] (-) TimerEvent: {}
+[9.852857] (inertial_sense_ros2) StdoutLine: {'line': b'[  3%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogCSV.cpp.o\x1b[0m\n'}
+[9.871343] (-) TimerEvent: {}
+[9.974612] (-) TimerEvent: {}
+[10.080355] (-) TimerEvent: {}
+[10.186181] (-) TimerEvent: {}
+[10.292410] (-) TimerEvent: {}
+[10.396368] (-) TimerEvent: {}
+[10.499670] (-) TimerEvent: {}
+[10.603808] (-) TimerEvent: {}
+[10.707338] (-) TimerEvent: {}
+[10.809938] (-) TimerEvent: {}
+[10.911178] (-) TimerEvent: {}
+[10.942358] (inertial_sense_ros2) StdoutLine: {'line': b'[  3%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogJSON.cpp.o\x1b[0m\n'}
+[11.012431] (-) TimerEvent: {}
+[11.117681] (-) TimerEvent: {}
+[11.222085] (-) TimerEvent: {}
+[11.326029] (-) TimerEvent: {}
+[11.432361] (-) TimerEvent: {}
+[11.533079] (-) TimerEvent: {}
+[11.635655] (-) TimerEvent: {}
+[11.740445] (-) TimerEvent: {}
+[11.842099] (-) TimerEvent: {}
+[11.945691] (-) TimerEvent: {}
+[12.049677] (-) TimerEvent: {}
+[12.155331] (-) TimerEvent: {}
+[12.257448] (-) TimerEvent: {}
+[12.358600] (-) TimerEvent: {}
+[12.462832] (-) TimerEvent: {}
+[12.567067] (-) TimerEvent: {}
+[12.669541] (-) TimerEvent: {}
+[12.770679] (-) TimerEvent: {}
+[12.874350] (-) TimerEvent: {}
+[12.979437] (-) TimerEvent: {}
+[13.080446] (-) TimerEvent: {}
+[13.186078] (-) TimerEvent: {}
+[13.288338] (-) TimerEvent: {}
+[13.391308] (-) TimerEvent: {}
+[13.496723] (-) TimerEvent: {}
+[13.601480] (-) TimerEvent: {}
+[13.706502] (-) TimerEvent: {}
+[13.807428] (-) TimerEvent: {}
+[13.910362] (-) TimerEvent: {}
+[14.014057] (-) TimerEvent: {}
+[14.115585] (-) TimerEvent: {}
+[14.216313] (-) TimerEvent: {}
+[14.321334] (-) TimerEvent: {}
+[14.424899] (-) TimerEvent: {}
+[14.531427] (-) TimerEvent: {}
+[14.639723] (-) TimerEvent: {}
+[14.744382] (-) TimerEvent: {}
+[14.845113] (-) TimerEvent: {}
+[14.945821] (-) TimerEvent: {}
+[15.051549] (-) TimerEvent: {}
+[15.158712] (-) TimerEvent: {}
+[15.260915] (-) TimerEvent: {}
+[15.363359] (-) TimerEvent: {}
+[15.464046] (-) TimerEvent: {}
+[15.567897] (-) TimerEvent: {}
+[15.668562] (-) TimerEvent: {}
+[15.702367] (inertial_sense_ros2) StdoutLine: {'line': b'[  4%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogKML.cpp.o\x1b[0m\n'}
+[15.770445] (-) TimerEvent: {}
+[15.872379] (-) TimerEvent: {}
+[15.973043] (-) TimerEvent: {}
+[16.076433] (-) TimerEvent: {}
+[16.178375] (-) TimerEvent: {}
+[16.280134] (-) TimerEvent: {}
+[16.383972] (-) TimerEvent: {}
+[16.479699] (inertial_sense_ros2) StdoutLine: {'line': b'[  4%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogRaw.cpp.o\x1b[0m\n'}
+[16.485421] (-) TimerEvent: {}
+[16.588566] (-) TimerEvent: {}
+[16.689364] (-) TimerEvent: {}
+[16.793648] (-) TimerEvent: {}
+[16.894359] (-) TimerEvent: {}
+[16.998648] (-) TimerEvent: {}
+[17.045502] (inertial_sense_ros2) StdoutLine: {'line': b'[  4%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogSerial.cpp.o\x1b[0m\n'}
+[17.103383] (-) TimerEvent: {}
+[17.208426] (-) TimerEvent: {}
+[17.310468] (-) TimerEvent: {}
+[17.411353] (-) TimerEvent: {}
+[17.512064] (-) TimerEvent: {}
+[17.614320] (-) TimerEvent: {}
+[17.719987] (-) TimerEvent: {}
+[17.823367] (-) TimerEvent: {}
+[17.924311] (-) TimerEvent: {}
+[18.025017] (-) TimerEvent: {}
+[18.094393] (inertial_sense_ros2) StdoutLine: {'line': b'[  5%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogSorted.cpp.o\x1b[0m\n'}
+[18.126683] (-) TimerEvent: {}
+[18.230186] (-) TimerEvent: {}
+[18.330953] (-) TimerEvent: {}
+[18.435494] (-) TimerEvent: {}
+[18.539984] (-) TimerEvent: {}
+[18.641856] (-) TimerEvent: {}
+[18.744487] (-) TimerEvent: {}
+[18.851348] (-) TimerEvent: {}
+[18.954565] (-) TimerEvent: {}
+[19.058342] (-) TimerEvent: {}
+[19.158995] (-) TimerEvent: {}
+[19.259919] (-) TimerEvent: {}
+[19.363346] (-) TimerEvent: {}
+[19.463992] (-) TimerEvent: {}
+[19.564768] (-) TimerEvent: {}
+[19.669813] (-) TimerEvent: {}
+[19.752830] (inertial_sense_ros2) StdoutLine: {'line': b'[  5%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderAPP.cpp.o\x1b[0m\n'}
+[19.769997] (-) TimerEvent: {}
+[19.875481] (-) TimerEvent: {}
+[19.976156] (-) TimerEvent: {}
+[20.080561] (-) TimerEvent: {}
+[20.184115] (-) TimerEvent: {}
+[20.287617] (-) TimerEvent: {}
+[20.392312] (-) TimerEvent: {}
+[20.493019] (-) TimerEvent: {}
+[20.600452] (-) TimerEvent: {}
+[20.701580] (-) TimerEvent: {}
+[20.802271] (-) TimerEvent: {}
+[20.904846] (-) TimerEvent: {}
+[20.962302] (inertial_sense_ros2) StdoutLine: {'line': b'[  5%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderBase.cpp.o\x1b[0m\n'}
+[21.008376] (-) TimerEvent: {}
+[21.109098] (-) TimerEvent: {}
+[21.209910] (-) TimerEvent: {}
+[21.312896] (-) TimerEvent: {}
+[21.417662] (-) TimerEvent: {}
+[21.518343] (-) TimerEvent: {}
+[21.621826] (-) TimerEvent: {}
+[21.726653] (-) TimerEvent: {}
+[21.832627] (-) TimerEvent: {}
+[21.933356] (-) TimerEvent: {}
+[22.035373] (-) TimerEvent: {}
+[22.137361] (-) TimerEvent: {}
+[22.239996] (-) TimerEvent: {}
+[22.346368] (-) TimerEvent: {}
+[22.449360] (-) TimerEvent: {}
+[22.550097] (-) TimerEvent: {}
+[22.651006] (-) TimerEvent: {}
+[22.753456] (-) TimerEvent: {}
+[22.859403] (-) TimerEvent: {}
+[22.960536] (-) TimerEvent: {}
+[23.061629] (-) TimerEvent: {}
+[23.162768] (-) TimerEvent: {}
+[23.266889] (-) TimerEvent: {}
+[23.316550] (inertial_sense_ros2) StdoutLine: {'line': b'[  6%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderDFU.cpp.o\x1b[0m\n'}
+[23.367094] (-) TimerEvent: {}
+[23.471360] (-) TimerEvent: {}
+[23.573748] (-) TimerEvent: {}
+[23.642549] (inertial_sense_ros2) StdoutLine: {'line': b'[  6%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderISB.cpp.o\x1b[0m\n'}
+[23.677358] (-) TimerEvent: {}
+[23.778055] (-) TimerEvent: {}
+[23.881611] (-) TimerEvent: {}
+[23.982188] (-) TimerEvent: {}
+[24.066697] (inertial_sense_ros2) StdoutLine: {'line': b'[  6%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderSAMBA.cpp.o\x1b[0m\n'}
+[24.082593] (-) TimerEvent: {}
+[24.186619] (-) TimerEvent: {}
+[24.287310] (-) TimerEvent: {}
+[24.309330] (inertial_sense_ros2) StdoutLine: {'line': b'[  7%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderThread.cpp.o\x1b[0m\n'}
+[24.388344] (-) TimerEvent: {}
+[24.492625] (-) TimerEvent: {}
+[24.596620] (-) TimerEvent: {}
+[24.697332] (-) TimerEvent: {}
+[24.797970] (-) TimerEvent: {}
+[24.902619] (-) TimerEvent: {}
+[25.003552] (-) TimerEvent: {}
+[25.107630] (-) TimerEvent: {}
+[25.136762] (inertial_sense_ros2) StdoutLine: {'line': b'[  7%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISClient.cpp.o\x1b[0m\n'}
+[25.212356] (-) TimerEvent: {}
+[25.313053] (-) TimerEvent: {}
+[25.413880] (-) TimerEvent: {}
+[25.517604] (-) TimerEvent: {}
+[25.618798] (-) TimerEvent: {}
+[25.722968] (-) TimerEvent: {}
+[25.825063] (-) TimerEvent: {}
+[25.930649] (-) TimerEvent: {}
+[26.031656] (-) TimerEvent: {}
+[26.075573] (inertial_sense_ros2) StdoutLine: {'line': b'[  7%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISComm.c.o\x1b[0m\n'}
+[26.131822] (-) TimerEvent: {}
+[26.233641] (-) TimerEvent: {}
+[26.336887] (-) TimerEvent: {}
+[26.440743] (-) TimerEvent: {}
+[26.543535] (-) TimerEvent: {}
+[26.648376] (-) TimerEvent: {}
+[26.749107] (-) TimerEvent: {}
+[26.849869] (-) TimerEvent: {}
+[26.860357] (inertial_sense_ros2) StdoutLine: {'line': b'[  8%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISCommDataBuffer.cpp.o\x1b[0m\n'}
+[26.950079] (-) TimerEvent: {}
+[27.053356] (-) TimerEvent: {}
+[27.154098] (-) TimerEvent: {}
+[27.254919] (-) TimerEvent: {}
+[27.362396] (-) TimerEvent: {}
+[27.463363] (-) TimerEvent: {}
+[27.565915] (-) TimerEvent: {}
+[27.669378] (-) TimerEvent: {}
+[27.773630] (-) TimerEvent: {}
+[27.874616] (-) TimerEvent: {}
+[27.977620] (-) TimerEvent: {}
+[28.081362] (-) TimerEvent: {}
+[28.182080] (-) TimerEvent: {}
+[28.285613] (-) TimerEvent: {}
+[28.389543] (-) TimerEvent: {}
+[28.446375] (inertial_sense_ros2) StdoutLine: {'line': b'[  8%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDFUFirmwareUpdater.cpp.o\x1b[0m\n'}
+[28.490423] (-) TimerEvent: {}
+[28.594135] (-) TimerEvent: {}
+[28.696861] (-) TimerEvent: {}
+[28.804650] (-) TimerEvent: {}
+[28.905426] (-) TimerEvent: {}
+[29.006846] (-) TimerEvent: {}
+[29.107966] (-) TimerEvent: {}
+[29.208892] (-) TimerEvent: {}
+[29.312721] (-) TimerEvent: {}
+[29.413937] (-) TimerEvent: {}
+[29.514884] (-) TimerEvent: {}
+[29.616166] (-) TimerEvent: {}
+[29.717367] (-) TimerEvent: {}
+[29.820650] (-) TimerEvent: {}
+[29.921667] (-) TimerEvent: {}
+[30.025801] (-) TimerEvent: {}
+[30.128881] (-) TimerEvent: {}
+[30.229505] (-) TimerEvent: {}
+[30.333600] (-) TimerEvent: {}
+[30.434340] (-) TimerEvent: {}
+[30.535050] (-) TimerEvent: {}
+[30.636299] (-) TimerEvent: {}
+[30.737151] (-) TimerEvent: {}
+[30.838013] (-) TimerEvent: {}
+[30.938821] (-) TimerEvent: {}
+[31.039570] (-) TimerEvent: {}
+[31.140325] (-) TimerEvent: {}
+[31.241183] (-) TimerEvent: {}
+[31.342135] (-) TimerEvent: {}
+[31.442994] (-) TimerEvent: {}
+[31.543912] (-) TimerEvent: {}
+[31.644928] (-) TimerEvent: {}
+[31.745863] (-) TimerEvent: {}
+[31.846893] (-) TimerEvent: {}
+[31.947818] (-) TimerEvent: {}
+[32.048899] (-) TimerEvent: {}
+[32.149824] (-) TimerEvent: {}
+[32.250759] (-) TimerEvent: {}
+[32.351594] (-) TimerEvent: {}
+[32.452178] (-) TimerEvent: {}
+[32.552975] (-) TimerEvent: {}
+[32.571502] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISFileManager.cpp.o\x1b[0m\n'}
+[32.653375] (-) TimerEvent: {}
+[32.754109] (-) TimerEvent: {}
+[32.855030] (-) TimerEvent: {}
+[32.955896] (-) TimerEvent: {}
+[33.056831] (-) TimerEvent: {}
+[33.157669] (-) TimerEvent: {}
+[33.258531] (-) TimerEvent: {}
+[33.359584] (-) TimerEvent: {}
+[33.460496] (-) TimerEvent: {}
+[33.561267] (-) TimerEvent: {}
+[33.662336] (-) TimerEvent: {}
+[33.766292] (-) TimerEvent: {}
+[33.867051] (-) TimerEvent: {}
+[33.967941] (-) TimerEvent: {}
+[34.068796] (-) TimerEvent: {}
+[34.169756] (-) TimerEvent: {}
+[34.270795] (-) TimerEvent: {}
+[34.371710] (-) TimerEvent: {}
+[34.472569] (-) TimerEvent: {}
+[34.573660] (-) TimerEvent: {}
+[34.674448] (-) TimerEvent: {}
+[34.775284] (-) TimerEvent: {}
+[34.876077] (-) TimerEvent: {}
+[34.976950] (-) TimerEvent: {}
+[35.077866] (-) TimerEvent: {}
+[35.178829] (-) TimerEvent: {}
+[35.279696] (-) TimerEvent: {}
+[35.380565] (-) TimerEvent: {}
+[35.481386] (-) TimerEvent: {}
+[35.582288] (-) TimerEvent: {}
+[35.682963] (-) TimerEvent: {}
+[35.784119] (-) TimerEvent: {}
+[35.884975] (-) TimerEvent: {}
+[35.986176] (-) TimerEvent: {}
+[36.087254] (-) TimerEvent: {}
+[36.188111] (-) TimerEvent: {}
+[36.289150] (-) TimerEvent: {}
+[36.389966] (-) TimerEvent: {}
+[36.490893] (-) TimerEvent: {}
+[36.591924] (-) TimerEvent: {}
+[36.692922] (-) TimerEvent: {}
+[36.793811] (-) TimerEvent: {}
+[36.894731] (-) TimerEvent: {}
+[36.995499] (-) TimerEvent: {}
+[37.096346] (-) TimerEvent: {}
+[37.197137] (-) TimerEvent: {}
+[37.297989] (-) TimerEvent: {}
+[37.398912] (-) TimerEvent: {}
+[37.499850] (-) TimerEvent: {}
+[37.600755] (-) TimerEvent: {}
+[37.701617] (-) TimerEvent: {}
+[37.802442] (-) TimerEvent: {}
+[37.903310] (-) TimerEvent: {}
+[38.004144] (-) TimerEvent: {}
+[38.105026] (-) TimerEvent: {}
+[38.206001] (-) TimerEvent: {}
+[38.306821] (-) TimerEvent: {}
+[38.407763] (-) TimerEvent: {}
+[38.508867] (-) TimerEvent: {}
+[38.609734] (-) TimerEvent: {}
+[38.618025] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISFirmwareUpdater.cpp.o\x1b[0m\n'}
+[38.710021] (-) TimerEvent: {}
+[38.811046] (-) TimerEvent: {}
+[38.912688] (-) TimerEvent: {}
+[39.013435] (-) TimerEvent: {}
+[39.114288] (-) TimerEvent: {}
+[39.215087] (-) TimerEvent: {}
+[39.315923] (-) TimerEvent: {}
+[39.416591] (-) TimerEvent: {}
+[39.517329] (-) TimerEvent: {}
+[39.618189] (-) TimerEvent: {}
+[39.719083] (-) TimerEvent: {}
+[39.819847] (-) TimerEvent: {}
+[39.920719] (-) TimerEvent: {}
+[40.021416] (-) TimerEvent: {}
+[40.122394] (-) TimerEvent: {}
+[40.223072] (-) TimerEvent: {}
+[40.326765] (-) TimerEvent: {}
+[40.427458] (-) TimerEvent: {}
+[40.528466] (-) TimerEvent: {}
+[40.646865] (-) TimerEvent: {}
+[40.702854] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISEarth.c.o\x1b[0m\n'}
+[40.750258] (-) TimerEvent: {}
+[40.851414] (-) TimerEvent: {}
+[40.954346] (-) TimerEvent: {}
+[41.055132] (-) TimerEvent: {}
+[41.149123] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDisplay.cpp.o\x1b[0m\n'}
+[41.155396] (-) TimerEvent: {}
+[41.257349] (-) TimerEvent: {}
+[41.358102] (-) TimerEvent: {}
+[41.461919] (-) TimerEvent: {}
+[41.562892] (-) TimerEvent: {}
+[41.666632] (-) TimerEvent: {}
+[41.769485] (-) TimerEvent: {}
+[41.870616] (-) TimerEvent: {}
+[41.972394] (-) TimerEvent: {}
+[42.074355] (-) TimerEvent: {}
+[42.176376] (-) TimerEvent: {}
+[42.279359] (-) TimerEvent: {}
+[42.380034] (-) TimerEvent: {}
+[42.481648] (-) TimerEvent: {}
+[42.584619] (-) TimerEvent: {}
+[42.685543] (-) TimerEvent: {}
+[42.786885] (-) TimerEvent: {}
+[42.888483] (-) TimerEvent: {}
+[42.913586] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISGnss.cpp.o\x1b[0m\n'}
+[42.990369] (-) TimerEvent: {}
+[43.091003] (-) TimerEvent: {}
+[43.191730] (-) TimerEvent: {}
+[43.294421] (-) TimerEvent: {}
+[43.398567] (-) TimerEvent: {}
+[43.499365] (-) TimerEvent: {}
+[43.600480] (-) TimerEvent: {}
+[43.702879] (-) TimerEvent: {}
+[43.803893] (-) TimerEvent: {}
+[43.905137] (-) TimerEvent: {}
+[44.006127] (-) TimerEvent: {}
+[44.107396] (-) TimerEvent: {}
+[44.208403] (-) TimerEvent: {}
+[44.309372] (-) TimerEvent: {}
+[44.410155] (-) TimerEvent: {}
+[44.513720] (-) TimerEvent: {}
+[44.614394] (-) TimerEvent: {}
+[44.717704] (-) TimerEvent: {}
+[44.818456] (-) TimerEvent: {}
+[44.919174] (-) TimerEvent: {}
+[45.019870] (-) TimerEvent: {}
+[45.123880] (-) TimerEvent: {}
+[45.224894] (-) TimerEvent: {}
+[45.325751] (-) TimerEvent: {}
+[45.427028] (-) TimerEvent: {}
+[45.528438] (-) TimerEvent: {}
+[45.631376] (-) TimerEvent: {}
+[45.732338] (-) TimerEvent: {}
+[45.834866] (-) TimerEvent: {}
+[45.935755] (-) TimerEvent: {}
+[46.036625] (-) TimerEvent: {}
+[46.137392] (-) TimerEvent: {}
+[46.238082] (-) TimerEvent: {}
+[46.338866] (-) TimerEvent: {}
+[46.439849] (-) TimerEvent: {}
+[46.540574] (-) TimerEvent: {}
+[46.545834] (inertial_sense_ros2) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISLogger.cpp.o\x1b[0m\n'}
+[46.640864] (-) TimerEvent: {}
+[46.741531] (-) TimerEvent: {}
+[46.842437] (-) TimerEvent: {}
+[46.943432] (-) TimerEvent: {}
+[47.044328] (-) TimerEvent: {}
+[47.145140] (-) TimerEvent: {}
+[47.246157] (-) TimerEvent: {}
+[47.347024] (-) TimerEvent: {}
+[47.447916] (-) TimerEvent: {}
+[47.548813] (-) TimerEvent: {}
+[47.649661] (-) TimerEvent: {}
+[47.750428] (-) TimerEvent: {}
+[47.851106] (-) TimerEvent: {}
+[47.951938] (-) TimerEvent: {}
+[48.052864] (-) TimerEvent: {}
+[48.153608] (-) TimerEvent: {}
+[48.254406] (-) TimerEvent: {}
+[48.355265] (-) TimerEvent: {}
+[48.457345] (-) TimerEvent: {}
+[48.557997] (-) TimerEvent: {}
+[48.660347] (-) TimerEvent: {}
+[48.761290] (-) TimerEvent: {}
+[48.864775] (-) TimerEvent: {}
+[48.965444] (-) TimerEvent: {}
+[49.066282] (-) TimerEvent: {}
+[49.167170] (-) TimerEvent: {}
+[49.271086] (-) TimerEvent: {}
+[49.371896] (-) TimerEvent: {}
+[49.473002] (-) TimerEvent: {}
+[49.573904] (-) TimerEvent: {}
+[49.674699] (-) TimerEvent: {}
+[49.775766] (-) TimerEvent: {}
+[49.876697] (-) TimerEvent: {}
+[49.977559] (-) TimerEvent: {}
+[50.078393] (-) TimerEvent: {}
+[50.179173] (-) TimerEvent: {}
+[50.280101] (-) TimerEvent: {}
+[50.381027] (-) TimerEvent: {}
+[50.481954] (-) TimerEvent: {}
+[50.582975] (-) TimerEvent: {}
+[50.684012] (-) TimerEvent: {}
+[50.785063] (-) TimerEvent: {}
+[50.886042] (-) TimerEvent: {}
+[50.987110] (-) TimerEvent: {}
+[51.088089] (-) TimerEvent: {}
+[51.188995] (-) TimerEvent: {}
+[51.289937] (-) TimerEvent: {}
+[51.390811] (-) TimerEvent: {}
+[51.491756] (-) TimerEvent: {}
+[51.592578] (-) TimerEvent: {}
+[51.693454] (-) TimerEvent: {}
+[51.794410] (-) TimerEvent: {}
+[51.895392] (-) TimerEvent: {}
+[51.996181] (-) TimerEvent: {}
+[52.097110] (-) TimerEvent: {}
+[52.198092] (-) TimerEvent: {}
+[52.299000] (-) TimerEvent: {}
+[52.399962] (-) TimerEvent: {}
+[52.500867] (-) TimerEvent: {}
+[52.601844] (-) TimerEvent: {}
+[52.702658] (-) TimerEvent: {}
+[52.803595] (-) TimerEvent: {}
+[52.904714] (-) TimerEvent: {}
+[53.005508] (-) TimerEvent: {}
+[53.106445] (-) TimerEvent: {}
+[53.207333] (-) TimerEvent: {}
+[53.262039] (inertial_sense_ros2) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISMatrix.c.o\x1b[0m\n'}
+[53.307586] (-) TimerEvent: {}
+[53.408359] (-) TimerEvent: {}
+[53.509332] (-) TimerEvent: {}
+[53.610176] (-) TimerEvent: {}
+[53.710925] (-) TimerEvent: {}
+[53.731495] (inertial_sense_ros2) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISPolynomial.c.o\x1b[0m\n'}
+[53.811192] (-) TimerEvent: {}
+[53.912093] (-) TimerEvent: {}
+[53.930398] (inertial_sense_ros2) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISPose.c.o\x1b[0m\n'}
+[54.012458] (-) TimerEvent: {}
+[54.113357] (-) TimerEvent: {}
+[54.214096] (-) TimerEvent: {}
+[54.271879] (inertial_sense_ros2) StdoutLine: {'line': b'[ 11%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISSerialPort.cpp.o\x1b[0m\n'}
+[54.314423] (-) TimerEvent: {}
+[54.415383] (-) TimerEvent: {}
+[54.516360] (-) TimerEvent: {}
+[54.617252] (-) TimerEvent: {}
+[54.718094] (-) TimerEvent: {}
+[54.819026] (-) TimerEvent: {}
+[54.920070] (-) TimerEvent: {}
+[55.021542] (-) TimerEvent: {}
+[55.122394] (-) TimerEvent: {}
+[55.223309] (-) TimerEvent: {}
+[55.324130] (-) TimerEvent: {}
+[55.424933] (-) TimerEvent: {}
+[55.527123] (-) TimerEvent: {}
+[55.629455] (-) TimerEvent: {}
+[55.730479] (-) TimerEvent: {}
+[55.831795] (-) TimerEvent: {}
+[55.933316] (-) TimerEvent: {}
+[56.034094] (-) TimerEvent: {}
+[56.134978] (-) TimerEvent: {}
+[56.236007] (-) TimerEvent: {}
+[56.336977] (-) TimerEvent: {}
+[56.438027] (-) TimerEvent: {}
+[56.540021] (-) TimerEvent: {}
+[56.641092] (-) TimerEvent: {}
+[56.742690] (-) TimerEvent: {}
+[56.843510] (-) TimerEvent: {}
+[56.944355] (-) TimerEvent: {}
+[57.045337] (-) TimerEvent: {}
+[57.146356] (-) TimerEvent: {}
+[57.247160] (-) TimerEvent: {}
+[57.348260] (-) TimerEvent: {}
+[57.449126] (-) TimerEvent: {}
+[57.550076] (-) TimerEvent: {}
+[57.650801] (-) TimerEvent: {}
+[57.751706] (-) TimerEvent: {}
+[57.852711] (-) TimerEvent: {}
+[57.953654] (-) TimerEvent: {}
+[58.054489] (-) TimerEvent: {}
+[58.155220] (-) TimerEvent: {}
+[58.256176] (-) TimerEvent: {}
+[58.357161] (-) TimerEvent: {}
+[58.458096] (-) TimerEvent: {}
+[58.559127] (-) TimerEvent: {}
+[58.641981] (inertial_sense_ros2) StdoutLine: {'line': b'[ 11%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISStream.cpp.o\x1b[0m\n'}
+[58.643132] (inertial_sense_ros2) StdoutLine: {'line': b'[ 11%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISLogStats.cpp.o\x1b[0m\n'}
+[58.659392] (-) TimerEvent: {}
+[58.760162] (-) TimerEvent: {}
+[58.860939] (-) TimerEvent: {}
+[58.961754] (-) TimerEvent: {}
+[59.063425] (-) TimerEvent: {}
+[59.164411] (-) TimerEvent: {}
+[59.265139] (-) TimerEvent: {}
+[59.366008] (-) TimerEvent: {}
+[59.467076] (-) TimerEvent: {}
+[59.568038] (-) TimerEvent: {}
+[59.668906] (-) TimerEvent: {}
+[59.679974] (inertial_sense_ros2) StdoutLine: {'line': b'[ 11%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISTcpClient.cpp.o\x1b[0m\n'}
+[59.769326] (-) TimerEvent: {}
+[59.870033] (-) TimerEvent: {}
+[59.970790] (-) TimerEvent: {}
+[60.071674] (-) TimerEvent: {}
+[60.172472] (-) TimerEvent: {}
+[60.273316] (-) TimerEvent: {}
+[60.374059] (-) TimerEvent: {}
+[60.474880] (-) TimerEvent: {}
+[60.575708] (-) TimerEvent: {}
+[60.677038] (-) TimerEvent: {}
+[60.722949] (inertial_sense_ros2) StdoutLine: {'line': b'[ 12%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDevice.cpp.o\x1b[0m\n'}
+[60.732053] (inertial_sense_ros2) StdoutLine: {'line': b'[ 13%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISLogFile.cpp.o\x1b[0m\n'}
+[60.777338] (-) TimerEvent: {}
+[60.877933] (-) TimerEvent: {}
+[60.978732] (-) TimerEvent: {}
+[61.013505] (inertial_sense_ros2) StdoutLine: {'line': b'[ 13%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDataMappings.cpp.o\x1b[0m\n'}
+[61.078957] (-) TimerEvent: {}
+[61.181343] (-) TimerEvent: {}
+[61.282100] (-) TimerEvent: {}
+[61.387032] (-) TimerEvent: {}
+[61.490369] (-) TimerEvent: {}
+[61.591000] (-) TimerEvent: {}
+[61.691679] (-) TimerEvent: {}
+[61.793194] (-) TimerEvent: {}
+[61.893950] (-) TimerEvent: {}
+[61.995017] (-) TimerEvent: {}
+[62.070082] (inertial_sense_ros2) StdoutLine: {'line': b'[ 14%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISTcpServer.cpp.o\x1b[0m\n'}
+[62.096012] (-) TimerEvent: {}
+[62.200698] (-) TimerEvent: {}
+[62.301337] (-) TimerEvent: {}
+[62.394061] (inertial_sense_ros2) StdoutLine: {'line': b'[ 14%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISUtilities.cpp.o\x1b[0m\n'}
+[62.403344] (-) TimerEvent: {}
+[62.503553] (inertial_sense_ros2) StdoutLine: {'line': b'[ 14%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/InertialSense.cpp.o\x1b[0m\n'}
+[62.504342] (-) TimerEvent: {}
+[62.606559] (-) TimerEvent: {}
+[62.700441] (inertial_sense_ros2) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/com_manager.c.o\x1b[0m\n'}
+[62.706728] (-) TimerEvent: {}
+[62.809665] (-) TimerEvent: {}
+[62.910363] (-) TimerEvent: {}
+[63.011313] (-) TimerEvent: {}
+[63.113902] (-) TimerEvent: {}
+[63.137019] (inertial_sense_ros2) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/convert_ins.cpp.o\x1b[0m\n'}
+[63.214093] (-) TimerEvent: {}
+[63.316622] (-) TimerEvent: {}
+[63.417341] (-) TimerEvent: {}
+[63.521631] (-) TimerEvent: {}
+[63.622336] (-) TimerEvent: {}
+[63.727350] (-) TimerEvent: {}
+[63.829730] (-) TimerEvent: {}
+[63.933727] (-) TimerEvent: {}
+[64.034605] (-) TimerEvent: {}
+[64.136353] (-) TimerEvent: {}
+[64.224151] (inertial_sense_ros2) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/data_sets.c.o\x1b[0m\n'}
+[64.237350] (-) TimerEvent: {}
+[64.339366] (-) TimerEvent: {}
+[64.441040] (-) TimerEvent: {}
+[64.492351] (inertial_sense_ros2) StdoutLine: {'line': b'[ 15%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/filters.cpp.o\x1b[0m\n'}
+[64.541301] (-) TimerEvent: {}
+[64.642012] (-) TimerEvent: {}
+[64.744936] (-) TimerEvent: {}
+[64.845922] (-) TimerEvent: {}
+[64.949649] (-) TimerEvent: {}
+[65.050351] (-) TimerEvent: {}
+[65.151045] (-) TimerEvent: {}
+[65.253673] (-) TimerEvent: {}
+[65.354529] (-) TimerEvent: {}
+[65.456583] (-) TimerEvent: {}
+[65.553271] (inertial_sense_ros2) StdoutLine: {'line': b'[ 16%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ihex.c.o\x1b[0m\n'}
+[65.558298] (-) TimerEvent: {}
+[65.604716] (inertial_sense_ros2) StdoutLine: {'line': b'[ 16%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/linked_list.c.o\x1b[0m\n'}
+[65.658475] (-) TimerEvent: {}
+[65.735451] (inertial_sense_ros2) StdoutLine: {'line': b'[ 16%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/message_stats.cpp.o\x1b[0m\n'}
+[65.750093] (inertial_sense_ros2) StdoutLine: {'line': b'[ 17%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/miniz.c.o\x1b[0m\n'}
+[65.759271] (-) TimerEvent: {}
+[65.862543] (-) TimerEvent: {}
+[65.963288] (-) TimerEvent: {}
+[66.066641] (-) TimerEvent: {}
+[66.169368] (-) TimerEvent: {}
+[66.271350] (-) TimerEvent: {}
+[66.372164] (-) TimerEvent: {}
+[66.475730] (-) TimerEvent: {}
+[66.576476] (-) TimerEvent: {}
+[66.667368] (inertial_sense_ros2) StdoutLine: {'line': b'[ 17%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/protocol/FirmwareUpdate.cpp.o\x1b[0m\n'}
+[66.676655] (-) TimerEvent: {}
+[66.716464] (inertial_sense_ros2) StdoutLine: {'line': b'[ 17%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/protocol_nmea.cpp.o\x1b[0m\n'}
+[66.776844] (-) TimerEvent: {}
+[66.878088] (-) TimerEvent: {}
+[66.981742] (-) TimerEvent: {}
+[67.083352] (-) TimerEvent: {}
+[67.185804] (-) TimerEvent: {}
+[67.286594] (-) TimerEvent: {}
+[67.388675] (-) TimerEvent: {}
+[67.490354] (-) TimerEvent: {}
+[67.592361] (-) TimerEvent: {}
+[67.693117] (-) TimerEvent: {}
+[67.796672] (-) TimerEvent: {}
+[67.893794] (inertial_sense_ros2) StdoutLine: {'line': b'[ 18%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ring_buffer.c.o\x1b[0m\n'}
+[67.899352] (-) TimerEvent: {}
+[68.000037] (-) TimerEvent: {}
+[68.086383] (inertial_sense_ros2) StdoutLine: {'line': b'[ 18%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/serialPort.c.o\x1b[0m\n'}
+[68.100969] (-) TimerEvent: {}
+[68.203365] (-) TimerEvent: {}
+[68.304860] (-) TimerEvent: {}
+[68.317233] (inertial_sense_ros2) StdoutLine: {'line': b'[ 18%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/serialPortPlatform.c.o\x1b[0m\n'}
+[68.407361] (-) TimerEvent: {}
+[68.508068] (-) TimerEvent: {}
+[68.608884] (-) TimerEvent: {}
+[68.711192] (-) TimerEvent: {}
+[68.812742] (-) TimerEvent: {}
+[68.916714] (-) TimerEvent: {}
+[69.020744] (-) TimerEvent: {}
+[69.124793] (-) TimerEvent: {}
+[69.225481] (-) TimerEvent: {}
+[69.327374] (-) TimerEvent: {}
+[69.428079] (-) TimerEvent: {}
+[69.530799] (-) TimerEvent: {}
+[69.634492] (-) TimerEvent: {}
+[69.735324] (-) TimerEvent: {}
+[69.836338] (-) TimerEvent: {}
+[69.937118] (-) TimerEvent: {}
+[70.038016] (-) TimerEvent: {}
+[70.138910] (-) TimerEvent: {}
+[70.239946] (-) TimerEvent: {}
+[70.341648] (-) TimerEvent: {}
+[70.442346] (-) TimerEvent: {}
+[70.543467] (-) TimerEvent: {}
+[70.644411] (-) TimerEvent: {}
+[70.745302] (-) TimerEvent: {}
+[70.846322] (-) TimerEvent: {}
+[70.947045] (-) TimerEvent: {}
+[71.048015] (-) TimerEvent: {}
+[71.149097] (-) TimerEvent: {}
+[71.250124] (-) TimerEvent: {}
+[71.351154] (-) TimerEvent: {}
+[71.452018] (-) TimerEvent: {}
+[71.554038] (-) TimerEvent: {}
+[71.656406] (-) TimerEvent: {}
+[71.757691] (-) TimerEvent: {}
+[71.860778] (-) TimerEvent: {}
+[71.961737] (-) TimerEvent: {}
+[72.062719] (-) TimerEvent: {}
+[72.163456] (-) TimerEvent: {}
+[72.264320] (-) TimerEvent: {}
+[72.365670] (-) TimerEvent: {}
+[72.466451] (-) TimerEvent: {}
+[72.572130] (-) TimerEvent: {}
+[72.672899] (-) TimerEvent: {}
+[72.773844] (-) TimerEvent: {}
+[72.874824] (-) TimerEvent: {}
+[72.975665] (-) TimerEvent: {}
+[73.076446] (-) TimerEvent: {}
+[73.177359] (-) TimerEvent: {}
+[73.278346] (-) TimerEvent: {}
+[73.379153] (-) TimerEvent: {}
+[73.480013] (-) TimerEvent: {}
+[73.580863] (-) TimerEvent: {}
+[73.681702] (-) TimerEvent: {}
+[73.782552] (-) TimerEvent: {}
+[73.876182] (inertial_sense_ros2) StdoutLine: {'line': b'[ 19%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinyxml.cpp.o\x1b[0m\n'}
+[73.882806] (-) TimerEvent: {}
+[73.955748] (inertial_sense_ros2) StdoutLine: {'line': b'[ 19%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinystr.cpp.o\x1b[0m\n'}
+[73.983316] (-) TimerEvent: {}
+[74.084043] (-) TimerEvent: {}
+[74.137092] (inertial_sense_ros2) StdoutLine: {'line': b'[ 19%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinyxmlerror.cpp.o\x1b[0m\n'}
+[74.184351] (-) TimerEvent: {}
+[74.285360] (-) TimerEvent: {}
+[74.298304] (inertial_sense_ros2) StdoutLine: {'line': b'[ 19%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinyxmlparser.cpp.o\x1b[0m\n'}
+[74.337257] (inertial_sense_ros2) StdoutLine: {'line': b'[ 20%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/util/md5.cpp.o\x1b[0m\n'}
+[74.385625] (-) TimerEvent: {}
+[74.489618] (-) TimerEvent: {}
+[74.590434] (-) TimerEvent: {}
+[74.691272] (-) TimerEvent: {}
+[74.792073] (-) TimerEvent: {}
+[74.892982] (-) TimerEvent: {}
+[74.994069] (-) TimerEvent: {}
+[75.095109] (-) TimerEvent: {}
+[75.196293] (-) TimerEvent: {}
+[75.297099] (-) TimerEvent: {}
+[75.385714] (inertial_sense_ros2) StdoutLine: {'line': b'[ 20%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/time_conversion.cpp.o\x1b[0m\n'}
+[75.397430] (-) TimerEvent: {}
+[75.498153] (-) TimerEvent: {}
+[75.599694] (-) TimerEvent: {}
+[75.700807] (-) TimerEvent: {}
+[75.803881] (-) TimerEvent: {}
+[75.905045] (-) TimerEvent: {}
+[75.914475] (inertial_sense_ros2) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/statistics.cpp.o\x1b[0m\n'}
+[76.005361] (-) TimerEvent: {}
+[76.108752] (-) TimerEvent: {}
+[76.209477] (-) TimerEvent: {}
+[76.230706] (inertial_sense_ros2) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/util/natsort.cpp.o\x1b[0m\n'}
+[76.309720] (-) TimerEvent: {}
+[76.412373] (-) TimerEvent: {}
+[76.519094] (-) TimerEvent: {}
+[76.626367] (-) TimerEvent: {}
+[76.671483] (inertial_sense_ros2) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/util/util.cpp.o\x1b[0m\n'}
+[76.726642] (-) TimerEvent: {}
+[76.830651] (-) TimerEvent: {}
+[76.934615] (-) TimerEvent: {}
+[76.998542] (inertial_sense_ros2) StdoutLine: {'line': b'[ 22%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/binary.cpp.o\x1b[0m\n'}
+[77.035358] (-) TimerEvent: {}
+[77.073476] (inertial_sense_ros2) StdoutLine: {'line': b'[ 22%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/contrib/graphbuilder.cpp.o\x1b[0m\n'}
+[77.135814] (-) TimerEvent: {}
+[77.237641] (-) TimerEvent: {}
+[77.338357] (-) TimerEvent: {}
+[77.387479] (inertial_sense_ros2) StdoutLine: {'line': b'[ 22%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/contrib/graphbuilderadapter.cpp.o\x1b[0m\n'}
+[77.439561] (-) TimerEvent: {}
+[77.525651] (inertial_sense_ros2) StdoutLine: {'line': b'[ 23%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/convert.cpp.o\x1b[0m\n'}
+[77.539834] (-) TimerEvent: {}
+[77.641322] (-) TimerEvent: {}
+[77.742162] (-) TimerEvent: {}
+[77.844808] (-) TimerEvent: {}
+[77.945585] (-) TimerEvent: {}
+[78.048354] (-) TimerEvent: {}
+[78.149074] (-) TimerEvent: {}
+[78.249883] (-) TimerEvent: {}
+[78.353964] (-) TimerEvent: {}
+[78.455015] (-) TimerEvent: {}
+[78.558547] (-) TimerEvent: {}
+[78.591596] (inertial_sense_ros2) StdoutLine: {'line': b'[ 23%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/depthguard.cpp.o\x1b[0m\n'}
+[78.658746] (-) TimerEvent: {}
+[78.762691] (-) TimerEvent: {}
+[78.835895] (inertial_sense_ros2) StdoutLine: {'line': b'[ 23%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/directives.cpp.o\x1b[0m\n'}
+[78.862879] (-) TimerEvent: {}
+[78.964756] (-) TimerEvent: {}
+[79.066716] (-) TimerEvent: {}
+[79.168627] (-) TimerEvent: {}
+[79.272603] (-) TimerEvent: {}
+[79.378430] (-) TimerEvent: {}
+[79.479950] (-) TimerEvent: {}
+[79.583018] (-) TimerEvent: {}
+[79.688567] (-) TimerEvent: {}
+[79.789308] (-) TimerEvent: {}
+[79.830710] (inertial_sense_ros2) StdoutLine: {'line': b'[ 24%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emit.cpp.o\x1b[0m\n'}
+[79.890359] (-) TimerEvent: {}
+[79.993636] (-) TimerEvent: {}
+[80.001515] (inertial_sense_ros2) StdoutLine: {'line': b'[ 24%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitfromevents.cpp.o\x1b[0m\n'}
+[80.093838] (-) TimerEvent: {}
+[80.196656] (-) TimerEvent: {}
+[80.297500] (-) TimerEvent: {}
+[80.398388] (-) TimerEvent: {}
+[80.502396] (-) TimerEvent: {}
+[80.603278] (-) TimerEvent: {}
+[80.704023] (-) TimerEvent: {}
+[80.806659] (-) TimerEvent: {}
+[80.907411] (-) TimerEvent: {}
+[81.009678] (-) TimerEvent: {}
+[81.070103] (inertial_sense_ros2) StdoutLine: {'line': b'[ 24%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitter.cpp.o\x1b[0m\n'}
+[81.109879] (-) TimerEvent: {}
+[81.169534] (inertial_sense_ros2) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitterstate.cpp.o\x1b[0m\n'}
+[81.210070] (-) TimerEvent: {}
+[81.310799] (-) TimerEvent: {}
+[81.412576] (-) TimerEvent: {}
+[81.514687] (-) TimerEvent: {}
+[81.625127] (-) TimerEvent: {}
+[81.725871] (-) TimerEvent: {}
+[81.829803] (-) TimerEvent: {}
+[81.930791] (-) TimerEvent: {}
+[82.033628] (-) TimerEvent: {}
+[82.135357] (-) TimerEvent: {}
+[82.236662] (-) TimerEvent: {}
+[82.325616] (inertial_sense_ros2) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitterutils.cpp.o\x1b[0m\n'}
+[82.336484] (-) TimerEvent: {}
+[82.437193] (-) TimerEvent: {}
+[82.537938] (-) TimerEvent: {}
+[82.641655] (-) TimerEvent: {}
+[82.742389] (-) TimerEvent: {}
+[82.843679] (-) TimerEvent: {}
+[82.944924] (-) TimerEvent: {}
+[83.045559] (-) TimerEvent: {}
+[83.059605] (inertial_sense_ros2) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/exceptions.cpp.o\x1b[0m\n'}
+[83.148350] (-) TimerEvent: {}
+[83.249001] (-) TimerEvent: {}
+[83.350027] (-) TimerEvent: {}
+[83.453343] (-) TimerEvent: {}
+[83.553954] (-) TimerEvent: {}
+[83.654633] (-) TimerEvent: {}
+[83.694895] (inertial_sense_ros2) StdoutLine: {'line': b'[ 26%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/exp.cpp.o\x1b[0m\n'}
+[83.757353] (-) TimerEvent: {}
+[83.857985] (-) TimerEvent: {}
+[83.958690] (-) TimerEvent: {}
+[84.029414] (inertial_sense_ros2) StdoutLine: {'line': b'[ 26%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/memory.cpp.o\x1b[0m\n'}
+[84.061360] (-) TimerEvent: {}
+[84.162056] (-) TimerEvent: {}
+[84.262838] (-) TimerEvent: {}
+[84.364996] (-) TimerEvent: {}
+[84.466385] (-) TimerEvent: {}
+[84.569369] (-) TimerEvent: {}
+[84.670058] (-) TimerEvent: {}
+[84.772355] (-) TimerEvent: {}
+[84.872966] (-) TimerEvent: {}
+[84.894930] (inertial_sense_ros2) StdoutLine: {'line': b'[ 26%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/node.cpp.o\x1b[0m\n'}
+[84.974590] (-) TimerEvent: {}
+[85.076340] (-) TimerEvent: {}
+[85.102434] (inertial_sense_ros2) StdoutLine: {'line': b'[ 27%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/node_data.cpp.o\x1b[0m\n'}
+[85.177349] (-) TimerEvent: {}
+[85.277984] (-) TimerEvent: {}
+[85.380380] (-) TimerEvent: {}
+[85.482347] (-) TimerEvent: {}
+[85.586702] (-) TimerEvent: {}
+[85.690664] (-) TimerEvent: {}
+[85.793624] (-) TimerEvent: {}
+[85.897365] (-) TimerEvent: {}
+[85.998060] (-) TimerEvent: {}
+[86.099902] (-) TimerEvent: {}
+[86.126639] (inertial_sense_ros2) StdoutLine: {'line': b'[ 27%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/nodebuilder.cpp.o\x1b[0m\n'}
+[86.200168] (-) TimerEvent: {}
+[86.301586] (-) TimerEvent: {}
+[86.403324] (-) TimerEvent: {}
+[86.505796] (-) TimerEvent: {}
+[86.606625] (-) TimerEvent: {}
+[86.664259] (inertial_sense_ros2) StdoutLine: {'line': b'[ 27%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/nodeevents.cpp.o\x1b[0m\n'}
+[86.710951] (-) TimerEvent: {}
+[86.815355] (-) TimerEvent: {}
+[86.916366] (-) TimerEvent: {}
+[87.018986] (-) TimerEvent: {}
+[87.121375] (-) TimerEvent: {}
+[87.222735] (-) TimerEvent: {}
+[87.325408] (-) TimerEvent: {}
+[87.426147] (-) TimerEvent: {}
+[87.530791] (-) TimerEvent: {}
+[87.631718] (-) TimerEvent: {}
+[87.734727] (-) TimerEvent: {}
+[87.769987] (inertial_sense_ros2) StdoutLine: {'line': b'[ 28%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/null.cpp.o\x1b[0m\n'}
+[87.834922] (-) TimerEvent: {}
+[87.938345] (-) TimerEvent: {}
+[88.039055] (-) TimerEvent: {}
+[88.143360] (-) TimerEvent: {}
+[88.244277] (-) TimerEvent: {}
+[88.344972] (-) TimerEvent: {}
+[88.372193] (inertial_sense_ros2) StdoutLine: {'line': b'[ 28%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/ostream_wrapper.cpp.o\x1b[0m\n'}
+[88.409516] (inertial_sense_ros2) StdoutLine: {'line': b'[ 28%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/parse.cpp.o\x1b[0m\n'}
+[88.445879] (-) TimerEvent: {}
+[88.551452] (-) TimerEvent: {}
+[88.652085] (-) TimerEvent: {}
+[88.753008] (-) TimerEvent: {}
+[88.856345] (-) TimerEvent: {}
+[88.957009] (-) TimerEvent: {}
+[89.062360] (-) TimerEvent: {}
+[89.165588] (-) TimerEvent: {}
+[89.266349] (-) TimerEvent: {}
+[89.369345] (-) TimerEvent: {}
+[89.470082] (-) TimerEvent: {}
+[89.574656] (-) TimerEvent: {}
+[89.677393] (-) TimerEvent: {}
+[89.778128] (-) TimerEvent: {}
+[89.880357] (-) TimerEvent: {}
+[89.981638] (-) TimerEvent: {}
+[90.087346] (-) TimerEvent: {}
+[90.189370] (-) TimerEvent: {}
+[90.293354] (-) TimerEvent: {}
+[90.394150] (-) TimerEvent: {}
+[90.494840] (-) TimerEvent: {}
+[90.595840] (-) TimerEvent: {}
+[90.696832] (-) TimerEvent: {}
+[90.800633] (-) TimerEvent: {}
+[90.901482] (-) TimerEvent: {}
+[91.002504] (-) TimerEvent: {}
+[91.103309] (-) TimerEvent: {}
+[91.204168] (-) TimerEvent: {}
+[91.305316] (-) TimerEvent: {}
+[91.406050] (-) TimerEvent: {}
+[91.507029] (-) TimerEvent: {}
+[91.607965] (-) TimerEvent: {}
+[91.708984] (-) TimerEvent: {}
+[91.809854] (-) TimerEvent: {}
+[91.910912] (-) TimerEvent: {}
+[92.011948] (-) TimerEvent: {}
+[92.112922] (-) TimerEvent: {}
+[92.213948] (-) TimerEvent: {}
+[92.314848] (-) TimerEvent: {}
+[92.351603] (inertial_sense_ros2) StdoutLine: {'line': b'[ 29%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scantag.cpp.o\x1b[0m\n'}
+[92.415442] (-) TimerEvent: {}
+[92.516349] (-) TimerEvent: {}
+[92.617132] (-) TimerEvent: {}
+[92.718081] (-) TimerEvent: {}
+[92.819110] (-) TimerEvent: {}
+[92.919964] (-) TimerEvent: {}
+[93.020921] (-) TimerEvent: {}
+[93.121825] (-) TimerEvent: {}
+[93.222844] (-) TimerEvent: {}
+[93.323771] (-) TimerEvent: {}
+[93.424662] (-) TimerEvent: {}
+[93.525411] (-) TimerEvent: {}
+[93.626439] (-) TimerEvent: {}
+[93.727311] (-) TimerEvent: {}
+[93.828178] (-) TimerEvent: {}
+[93.929342] (-) TimerEvent: {}
+[94.030316] (-) TimerEvent: {}
+[94.131185] (-) TimerEvent: {}
+[94.232130] (-) TimerEvent: {}
+[94.333189] (-) TimerEvent: {}
+[94.390366] (inertial_sense_ros2) StdoutLine: {'line': b'[ 29%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scantoken.cpp.o\x1b[0m\n'}
+[94.433461] (-) TimerEvent: {}
+[94.534316] (-) TimerEvent: {}
+[94.588520] (inertial_sense_ros2) StdoutLine: {'line': b'[ 29%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scanscalar.cpp.o\x1b[0m\n'}
+[94.634555] (-) TimerEvent: {}
+[94.735285] (-) TimerEvent: {}
+[94.836019] (-) TimerEvent: {}
+[94.936890] (-) TimerEvent: {}
+[95.037763] (-) TimerEvent: {}
+[95.138700] (-) TimerEvent: {}
+[95.239465] (-) TimerEvent: {}
+[95.340404] (-) TimerEvent: {}
+[95.441378] (-) TimerEvent: {}
+[95.542307] (-) TimerEvent: {}
+[95.643112] (-) TimerEvent: {}
+[95.743890] (-) TimerEvent: {}
+[95.844796] (-) TimerEvent: {}
+[95.945663] (-) TimerEvent: {}
+[96.046475] (-) TimerEvent: {}
+[96.147463] (-) TimerEvent: {}
+[96.248354] (-) TimerEvent: {}
+[96.349101] (-) TimerEvent: {}
+[96.450085] (-) TimerEvent: {}
+[96.550999] (-) TimerEvent: {}
+[96.630658] (inertial_sense_ros2) StdoutLine: {'line': b'[ 29%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/simplekey.cpp.o\x1b[0m\n'}
+[96.651387] (-) TimerEvent: {}
+[96.752349] (-) TimerEvent: {}
+[96.853165] (-) TimerEvent: {}
+[96.954065] (-) TimerEvent: {}
+[97.054988] (-) TimerEvent: {}
+[97.155994] (-) TimerEvent: {}
+[97.255228] (inertial_sense_ros2) StdoutLine: {'line': b'[ 29%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scanner.cpp.o\x1b[0m\n'}
+[97.256077] (-) TimerEvent: {}
+[97.356826] (-) TimerEvent: {}
+[97.457609] (-) TimerEvent: {}
+[97.558416] (-) TimerEvent: {}
+[97.659165] (-) TimerEvent: {}
+[97.760015] (-) TimerEvent: {}
+[97.860917] (-) TimerEvent: {}
+[97.961776] (-) TimerEvent: {}
+[98.010479] (inertial_sense_ros2) StdoutLine: {'line': b'[ 30%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/singledocparser.cpp.o\x1b[0m\n'}
+[98.062087] (-) TimerEvent: {}
+[98.162928] (-) TimerEvent: {}
+[98.263815] (-) TimerEvent: {}
+[98.364747] (-) TimerEvent: {}
+[98.465704] (-) TimerEvent: {}
+[98.566513] (-) TimerEvent: {}
+[98.667361] (-) TimerEvent: {}
+[98.768176] (-) TimerEvent: {}
+[98.869146] (-) TimerEvent: {}
+[98.970108] (-) TimerEvent: {}
+[99.055593] (inertial_sense_ros2) StdoutLine: {'line': b'[ 30%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/stream.cpp.o\x1b[0m\n'}
+[99.070435] (-) TimerEvent: {}
+[99.171387] (-) TimerEvent: {}
+[99.272391] (-) TimerEvent: {}
+[99.373268] (-) TimerEvent: {}
+[99.476331] (-) TimerEvent: {}
+[99.576959] (-) TimerEvent: {}
+[99.595563] (inertial_sense_ros2) StdoutLine: {'line': b'[ 30%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/regex_yaml.cpp.o\x1b[0m\n'}
+[99.596078] (inertial_sense_ros2) StdoutLine: {'line': b'[ 31%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/parser.cpp.o\x1b[0m\n'}
+[99.677304] (-) TimerEvent: {}
+[99.780578] (-) TimerEvent: {}
+[99.881297] (-) TimerEvent: {}
+[99.982843] (-) TimerEvent: {}
+[100.084853] (-) TimerEvent: {}
+[100.186358] (-) TimerEvent: {}
+[100.289528] (-) TimerEvent: {}
+[100.390149] (-) TimerEvent: {}
+[100.490908] (-) TimerEvent: {}
+[100.594355] (-) TimerEvent: {}
+[100.694972] (-) TimerEvent: {}
+[100.702348] (inertial_sense_ros2) StdoutLine: {'line': b'[ 31%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/tag.cpp.o\x1b[0m\n'}
+[100.795157] (-) TimerEvent: {}
+[100.895852] (-) TimerEvent: {}
+[101.001372] (-) TimerEvent: {}
+[101.103356] (-) TimerEvent: {}
+[101.205364] (-) TimerEvent: {}
+[101.311370] (-) TimerEvent: {}
+[101.412337] (-) TimerEvent: {}
+[101.514349] (-) TimerEvent: {}
+[101.615101] (-) TimerEvent: {}
+[101.666422] (inertial_sense_ros2) StdoutLine: {'line': b'[ 32%] \x1b[32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/tests/runtime/device_runtime_tests.cpp.o\x1b[0m\n'}
+[101.715351] (-) TimerEvent: {}
+[101.820608] (-) TimerEvent: {}
+[101.924346] (-) TimerEvent: {}
+[101.935452] (inertial_sense_ros2) StdoutLine: {'line': b'[ 32%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/core.c.o\x1b[0m\n'}
+[102.024551] (-) TimerEvent: {}
+[102.140389] (-) TimerEvent: {}
+[102.241097] (-) TimerEvent: {}
+[102.342857] (-) TimerEvent: {}
+[102.423837] (inertial_sense_ros2) StdoutLine: {'line': b'[ 32%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/descriptor.c.o\x1b[0m\n'}
+[102.444573] (-) TimerEvent: {}
+[102.545471] (-) TimerEvent: {}
+[102.635185] (inertial_sense_ros2) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/hotplug.c.o\x1b[0m\n'}
+[102.645731] (-) TimerEvent: {}
+[102.747707] (-) TimerEvent: {}
+[102.826596] (inertial_sense_ros2) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/events_posix.c.o\x1b[0m\n'}
+[102.828448] (inertial_sense_ros2) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/io.c.o\x1b[0m\n'}
+[102.847956] (-) TimerEvent: {}
+[102.942485] (inertial_sense_ros2) StdoutLine: {'line': b'[ 34%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/linux_netlink.c.o\x1b[0m\n'}
+[102.948145] (-) TimerEvent: {}
+[103.052361] (-) TimerEvent: {}
+[103.119448] (inertial_sense_ros2) StdoutLine: {'line': b'[ 34%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/linux_udev.c.o\x1b[0m\n'}
+[103.154365] (-) TimerEvent: {}
+[103.255009] (-) TimerEvent: {}
+[103.269900] (inertial_sense_ros2) StdoutLine: {'line': b'[ 34%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/linux_usbfs.c.o\x1b[0m\n'}
+[103.331343] (inertial_sense_ros2) StdoutLine: {'line': b'[ 35%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/threads_posix.c.o\x1b[0m\n'}
+[103.356362] (-) TimerEvent: {}
+[103.433171] (inertial_sense_ros2) StdoutLine: {'line': b'[ 35%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/strerror.c.o\x1b[0m\n'}
+[103.462513] (-) TimerEvent: {}
+[103.563188] (-) TimerEvent: {}
+[103.664068] (-) TimerEvent: {}
+[103.765509] (-) TimerEvent: {}
+[103.866719] (-) TimerEvent: {}
+[103.969098] (-) TimerEvent: {}
+[104.071086] (-) TimerEvent: {}
+[104.172688] (-) TimerEvent: {}
+[104.273362] (-) TimerEvent: {}
+[104.374126] (-) TimerEvent: {}
+[104.474907] (-) TimerEvent: {}
+[104.575877] (-) TimerEvent: {}
+[104.676703] (-) TimerEvent: {}
+[104.777473] (-) TimerEvent: {}
+[104.878320] (-) TimerEvent: {}
+[104.979189] (-) TimerEvent: {}
+[105.080179] (-) TimerEvent: {}
+[105.181145] (-) TimerEvent: {}
+[105.282158] (-) TimerEvent: {}
+[105.383127] (-) TimerEvent: {}
+[105.484125] (-) TimerEvent: {}
+[105.585160] (-) TimerEvent: {}
+[105.686128] (-) TimerEvent: {}
+[105.787277] (-) TimerEvent: {}
+[105.888190] (-) TimerEvent: {}
+[105.989173] (-) TimerEvent: {}
+[106.090144] (-) TimerEvent: {}
+[106.191077] (-) TimerEvent: {}
+[106.292064] (-) TimerEvent: {}
+[106.392949] (-) TimerEvent: {}
+[106.493784] (-) TimerEvent: {}
+[106.594673] (-) TimerEvent: {}
+[106.695531] (-) TimerEvent: {}
+[106.796362] (-) TimerEvent: {}
+[106.897347] (-) TimerEvent: {}
+[106.998318] (-) TimerEvent: {}
+[107.099193] (-) TimerEvent: {}
+[107.200080] (-) TimerEvent: {}
+[107.301049] (-) TimerEvent: {}
+[107.401925] (-) TimerEvent: {}
+[107.502919] (-) TimerEvent: {}
+[107.603925] (-) TimerEvent: {}
+[107.704745] (-) TimerEvent: {}
+[107.805651] (-) TimerEvent: {}
+[107.906453] (-) TimerEvent: {}
+[107.978600] (inertial_sense_ros2) StdoutLine: {'line': b'[ 35%] \x1b[32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/sync.c.o\x1b[0m\n'}
+[108.006722] (-) TimerEvent: {}
+[108.107527] (-) TimerEvent: {}
+[108.181434] (inertial_sense_ros2) StdoutLine: {'line': b'[ 36%] \x1b[32m\x1b[1mLinking CXX static library libInertialSenseSDK.a\x1b[0m\n'}
+[108.207987] (-) TimerEvent: {}
+[108.308975] (-) TimerEvent: {}
+[108.409836] (-) TimerEvent: {}
+[108.510846] (-) TimerEvent: {}
+[108.611888] (-) TimerEvent: {}
+[108.712790] (-) TimerEvent: {}
+[108.813480] (-) TimerEvent: {}
+[108.914290] (-) TimerEvent: {}
+[109.015065] (-) TimerEvent: {}
+[109.115988] (-) TimerEvent: {}
+[109.216936] (-) TimerEvent: {}
+[109.317851] (-) TimerEvent: {}
+[109.418793] (-) TimerEvent: {}
+[109.519671] (-) TimerEvent: {}
+[109.605176] (inertial_sense_ros2) StdoutLine: {'line': b'[ 36%] Built target InertialSenseSDK\n'}
+[109.608849] (inertial_sense_ros2) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[109.614939] (inertial_sense_ros2) CommandEnded: {'returncode': 2}
+[109.619985] (-) TimerEvent: {}
+[109.720797] (-) TimerEvent: {}
+[109.821532] (-) TimerEvent: {}
+[109.922603] (-) TimerEvent: {}
+[110.023565] (-) TimerEvent: {}
+[110.124241] (-) TimerEvent: {}
+[110.225111] (-) TimerEvent: {}
+[110.326115] (-) TimerEvent: {}
+[110.427037] (-) TimerEvent: {}
+[110.527916] (-) TimerEvent: {}
+[110.629605] (-) TimerEvent: {}
+[110.730438] (-) TimerEvent: {}
+[110.831281] (-) TimerEvent: {}
+[110.932086] (-) TimerEvent: {}
+[111.032927] (-) TimerEvent: {}
+[111.133712] (-) TimerEvent: {}
+[111.234994] (-) TimerEvent: {}
+[111.336342] (-) TimerEvent: {}
+[111.437031] (-) TimerEvent: {}
+[111.537883] (-) TimerEvent: {}
+[111.638873] (-) TimerEvent: {}
+[111.739711] (-) TimerEvent: {}
+[111.840455] (-) TimerEvent: {}
+[111.941348] (-) TimerEvent: {}
+[112.042819] (-) TimerEvent: {}
+[112.143609] (-) TimerEvent: {}
+[112.244385] (-) TimerEvent: {}
+[112.345350] (-) TimerEvent: {}
+[112.446114] (-) TimerEvent: {}
+[112.546926] (-) TimerEvent: {}
+[112.647639] (-) TimerEvent: {}
+[112.748440] (-) TimerEvent: {}
+[112.849234] (-) TimerEvent: {}
+[112.950055] (-) TimerEvent: {}
+[113.050884] (-) TimerEvent: {}
+[113.151778] (-) TimerEvent: {}
+[113.224076] (inertial_sense_ros2) JobEnded: {'identifier': 'inertial_sense_ros2', 'rc': 2}
+[113.235546] (-) EventReactorShutdown: {}

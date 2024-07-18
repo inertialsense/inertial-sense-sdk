@@ -1,0 +1,14 @@
+Starting >>> inertial_sense_ros2
+--- stderr: inertial_sense_ros2
+CMake Error at CMakeLists.txt:70 (rosidl_target_interfaces):
+  rosidl_target_interfaces Function invoked with incorrect arguments for
+  function named: rosidl_target_interfaces
+
+
+gmake: *** [Makefile:5257: cmake_check_build_system] Error 1
+---
+Failed   <<< inertial_sense_ros2 [8.90s, exited with code 2]
+
+Summary: 0 packages finished [9.37s]
+  1 package failed: inertial_sense_ros2
+  1 package had stderr output: inertial_sense_ros2

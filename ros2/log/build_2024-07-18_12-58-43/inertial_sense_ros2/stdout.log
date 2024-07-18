@@ -1,0 +1,139 @@
+-- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Found rosidl_generator_c: 4.6.3 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+-- Found rosidl_generator_cpp: 4.6.3 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found std_srvs: 5.3.5 (/opt/ros/jazzy/share/std_srvs/cmake)
+-- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+-- Found rclcpp: 28.1.3 (/opt/ros/jazzy/share/rclcpp/cmake)
+-- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 8.4.1 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Found rclpy: 7.1.1 (/opt/ros/jazzy/share/rclpy/cmake)
+-- Found sensor_msgs: 5.3.5 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+-- Found nav_msgs: 5.3.5 (/opt/ros/jazzy/share/nav_msgs/cmake)
+-- Found diagnostic_msgs: 5.3.5 (/opt/ros/jazzy/share/diagnostic_msgs/cmake)
+-- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+-- Found rosidl_adapter: 4.6.3 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+-- Found tf2: 0.36.4 (/opt/ros/jazzy/share/tf2/cmake)
+-- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+-- Configuring done (6.1s)
+-- Generating done (0.3s)
+-- Build files have been written to: /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[  1%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataChunk.cpp.o[0m
+[  1%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataCSV.cpp.o[0m
+[  1%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/hw-libs/bootloader/bootloaderShared.c.o[0m
+[  2%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataChunkSorted.cpp.o[0m
+[  2%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[  2%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataJSON.cpp.o[0m
+[  2%] Built target inertial_sense_ros2__cpp
+[  2%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DataKML.cpp.o[0m
+[  3%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLog.cpp.o[0m
+[  3%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogCSV.cpp.o[0m
+[  3%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogJSON.cpp.o[0m
+[  4%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogKML.cpp.o[0m
+[  4%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogRaw.cpp.o[0m
+[  4%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogSerial.cpp.o[0m
+[  5%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/DeviceLogSorted.cpp.o[0m
+[  5%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderAPP.cpp.o[0m
+[  5%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderBase.cpp.o[0m
+[  6%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderDFU.cpp.o[0m
+[  6%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderISB.cpp.o[0m
+[  6%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderSAMBA.cpp.o[0m
+[  7%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISBootloaderThread.cpp.o[0m
+[  7%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISClient.cpp.o[0m
+[  7%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISComm.c.o[0m
+[  8%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISCommDataBuffer.cpp.o[0m
+[  8%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDFUFirmwareUpdater.cpp.o[0m
+[  9%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISFileManager.cpp.o[0m
+[  9%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISFirmwareUpdater.cpp.o[0m
+[  9%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISEarth.c.o[0m
+[  9%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDisplay.cpp.o[0m
+[  9%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISGnss.cpp.o[0m
+[  9%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISLogger.cpp.o[0m
+[ 10%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISMatrix.c.o[0m
+[ 10%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISPolynomial.c.o[0m
+[ 10%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISPose.c.o[0m
+[ 11%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISSerialPort.cpp.o[0m
+[ 11%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISStream.cpp.o[0m
+[ 11%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISLogStats.cpp.o[0m
+[ 11%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISTcpClient.cpp.o[0m
+[ 12%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDevice.cpp.o[0m
+[ 13%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISLogFile.cpp.o[0m
+[ 13%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISDataMappings.cpp.o[0m
+[ 14%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISTcpServer.cpp.o[0m
+[ 14%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ISUtilities.cpp.o[0m
+[ 14%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/InertialSense.cpp.o[0m
+[ 15%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/com_manager.c.o[0m
+[ 15%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/convert_ins.cpp.o[0m
+[ 15%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/data_sets.c.o[0m
+[ 15%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/filters.cpp.o[0m
+[ 16%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ihex.c.o[0m
+[ 16%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/linked_list.c.o[0m
+[ 16%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/message_stats.cpp.o[0m
+[ 17%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/miniz.c.o[0m
+[ 17%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/protocol/FirmwareUpdate.cpp.o[0m
+[ 17%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/protocol_nmea.cpp.o[0m
+[ 18%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/ring_buffer.c.o[0m
+[ 18%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/serialPort.c.o[0m
+[ 18%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/serialPortPlatform.c.o[0m
+[ 19%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinyxml.cpp.o[0m
+[ 19%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinystr.cpp.o[0m
+[ 19%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinyxmlerror.cpp.o[0m
+[ 19%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/tinyxmlparser.cpp.o[0m
+[ 20%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/util/md5.cpp.o[0m
+[ 20%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/time_conversion.cpp.o[0m
+[ 21%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/statistics.cpp.o[0m
+[ 21%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/util/natsort.cpp.o[0m
+[ 21%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/util/util.cpp.o[0m
+[ 22%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/binary.cpp.o[0m
+[ 22%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/contrib/graphbuilder.cpp.o[0m
+[ 22%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/contrib/graphbuilderadapter.cpp.o[0m
+[ 23%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/convert.cpp.o[0m
+[ 23%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/depthguard.cpp.o[0m
+[ 23%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/directives.cpp.o[0m
+[ 24%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emit.cpp.o[0m
+[ 24%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitfromevents.cpp.o[0m
+[ 24%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitter.cpp.o[0m
+[ 25%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitterstate.cpp.o[0m
+[ 25%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/emitterutils.cpp.o[0m
+[ 25%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/exceptions.cpp.o[0m
+[ 26%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/exp.cpp.o[0m
+[ 26%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/memory.cpp.o[0m
+[ 26%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/node.cpp.o[0m
+[ 27%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/node_data.cpp.o[0m
+[ 27%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/nodebuilder.cpp.o[0m
+[ 27%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/nodeevents.cpp.o[0m
+[ 28%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/null.cpp.o[0m
+[ 28%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/ostream_wrapper.cpp.o[0m
+[ 28%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/parse.cpp.o[0m
+[ 29%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scantag.cpp.o[0m
+[ 29%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scantoken.cpp.o[0m
+[ 29%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scanscalar.cpp.o[0m
+[ 29%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/simplekey.cpp.o[0m
+[ 29%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/scanner.cpp.o[0m
+[ 30%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/singledocparser.cpp.o[0m
+[ 30%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/stream.cpp.o[0m
+[ 30%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/regex_yaml.cpp.o[0m
+[ 31%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/parser.cpp.o[0m
+[ 31%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/yaml-cpp/tag.cpp.o[0m
+[ 32%] [32mBuilding CXX object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/tests/runtime/device_runtime_tests.cpp.o[0m
+[ 32%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/core.c.o[0m
+[ 32%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/descriptor.c.o[0m
+[ 33%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/hotplug.c.o[0m
+[ 33%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/events_posix.c.o[0m
+[ 33%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/io.c.o[0m
+[ 34%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/linux_netlink.c.o[0m
+[ 34%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/linux_udev.c.o[0m
+[ 34%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/linux_usbfs.c.o[0m
+[ 35%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/os/threads_posix.c.o[0m
+[ 35%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/strerror.c.o[0m
+[ 35%] [32mBuilding C object InertialSenseSDK/CMakeFiles/InertialSenseSDK.dir/src/libusb/libusb/sync.c.o[0m
+[ 36%] [32m[1mLinking CXX static library libInertialSenseSDK.a[0m
+[ 36%] Built target InertialSenseSDK

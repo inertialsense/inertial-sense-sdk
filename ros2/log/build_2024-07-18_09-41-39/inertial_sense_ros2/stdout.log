@@ -1,0 +1,24 @@
+[  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[  2%] [32m[1mLinking CXX executable new_target[0m
+[  2%] Built target inertial_sense_ros2__cpp
+[  2%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[ 28%] Built target inertial_sense_ros2__rosidl_generator_c
+[ 38%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[ 48%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[ 58%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[ 67%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[ 76%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[ 85%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[ 85%] Built target inertial_sense_ros2
+[ 86%] Built target inertial_sense_ros2__py
+running egg_info
+[ 95%] Built target inertial_sense_ros2__rosidl_generator_py
+writing inertial_sense_ros2.egg-info/PKG-INFO
+writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[ 96%] Built target inertial_sense_ros2_s__rosidl_typesupport_introspection_c
+[ 97%] Built target inertial_sense_ros2_s__rosidl_typesupport_c
+[ 98%] Built target inertial_sense_ros2_s__rosidl_typesupport_fastrtps_c
+reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[ 98%] Built target ament_cmake_python_build_inertial_sense_ros2_egg

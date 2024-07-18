@@ -29,11 +29,7 @@
 #include <chrono>
 #include <memory>
 #include <TopicHelper.h>
-#include <TopicHelper.h>
 
-
-#include "TopicHelper.h"
-#include "ParamHelper.h"
 #include "RtkBase.h"
 #include "RtkRover.h"
 

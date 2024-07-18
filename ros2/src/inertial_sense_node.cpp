@@ -17,7 +17,6 @@
  ***************************************************************************************/
 
 #include "inertial_sense_ros2.h"
-#include "inertial_sense_ros2.cpp"
 int main(int argc, char**argv)
 {
     InertialSenseROS* thing;

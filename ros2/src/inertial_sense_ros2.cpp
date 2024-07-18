@@ -21,14 +21,13 @@
 #include <chrono>
 #include <stddef.h>
 #include <unistd.h>
-#include <ISPose.h>
+//#include <ISPose.h>
 //#include <duration.hpp>
-#include <ISEarth.h>
+#include "ISEarth.h"
 #include <memory>
 #include <boost/chrono/duration.hpp>
 
-#include "ISMatrix.h"
-#include "ISEarth.h"
+//#include "ISMatrix.h"
 
 #include "ParamHelper.h"
 
@@ -111,7 +110,7 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
         IS_.StopBroadcasts(true);
         configure_data_streams(true);
-        configure_rtk();
+        //configure_rtk();
         IS_.SavePersistent();
 
         if (configFlashParameters)
@@ -321,13 +320,13 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("cb_preset", evb_.cb_preset, 2);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
     ph.nodeParam("cb_options", evb_.cb_options, 0);
 
-    YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
-    if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
-        RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
+    //YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
+    //if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
+        //RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
 
-    YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
-    if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
-        RTK_base_ = new RtkBaseProvider(rtkBaseNode);
+    //YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
+    //if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
+        //RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     YAML::Node diagNode = ph.node(node, "diagnostics");
     ph.nodeParam("enable", rs_.diagnostics.enabled);
@@ -694,39 +693,39 @@ void InertialSenseROS::configure_flash_parameters()
 }
 
 // FIXME:: THESE SHOULD BE IN RtkRoverCorrectionProvider_Ntrip
-void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& config)
-{
-    config.connecting_ = true;
+//void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& config)
+//{
+//    config.connecting_ = true;
+//
+//    // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
+//    std::string RTK_connection = config.get_connection_string();
+//
+//    int RTK_connection_attempt_count = 0;
+//    while (++RTK_connection_attempt_count < config.connection_attempt_limit_)
+//    {
+//        config.connected_ = IS_.OpenConnectionToServer(RTK_connection);
+//
+//        int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
+//        if (config.connected_) {
+//            RCLCPP_INFO_STREAM(rclcpp::get_logger("successfully_connected_rtk"),"InertialSenseROS: Successfully connected to RTK server [" << RTK_connection  << "]. [Attempt " << RTK_connection_attempt_count << "]");
+//            break;
+//        }
+//        // fall-through
+//
+//        // ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
+//        if (RTK_connection_attempt_count < config.connection_attempt_limit_) {
+//            RCLCPP_WARN_STREAM(rclcpp::get_logger("unable_to_connect_reattempt"),"InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Will try again in " << sleep_duration << " seconds.");
+//       } else {
+//           RCLCPP_ERROR_STREAM(rclcpp::get_logger("unable_to_connect_giveup"),"InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Giving up.");
+//       }
+//       //rclcpp::Duration(sleep_duration,0).sleep(); // we will always sleep on a failure...
+//       rclcpp::Rate r(sleep_duration); r.sleep();
+//   }
 
-    // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
-    std::string RTK_connection = config.get_connection_string();
+//   config.connecting_ = false;
+//}
 
-    int RTK_connection_attempt_count = 0;
-    while (++RTK_connection_attempt_count < config.connection_attempt_limit_)
-    {
-        config.connected_ = IS_.OpenConnectionToServer(RTK_connection);
-
-        int sleep_duration = RTK_connection_attempt_count * config.connection_attempt_backoff_;
-        if (config.connected_) {
-            RCLCPP_INFO_STREAM(rclcpp::get_logger("successfully_connected_rtk"),"InertialSenseROS: Successfully connected to RTK server [" << RTK_connection  << "]. [Attempt " << RTK_connection_attempt_count << "]");
-            break;
-        }
-        // fall-through
-
-        // ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
-        if (RTK_connection_attempt_count < config.connection_attempt_limit_) {
-            RCLCPP_WARN_STREAM(rclcpp::get_logger("unable_to_connect_reattempt"),"InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Will try again in " << sleep_duration << " seconds.");
-        } else {
-            RCLCPP_ERROR_STREAM(rclcpp::get_logger("unable_to_connect_giveup"),"InertialSenseROS: Unable to establish connection with RTK server [" << RTK_connection << "] after attempt " << RTK_connection_attempt_count << ". Giving up.");
-        }
-        //rclcpp::Duration(sleep_duration,0).sleep(); // we will always sleep on a failure...
-        rclcpp::Rate r(sleep_duration); r.sleep();
-    }
-
-    config.connecting_ = false;
-}
-
-void InertialSenseROS::rtk_connectivity_watchdog_timer_callback()
+/*void InertialSenseROS::rtk_connectivity_watchdog_timer_callback()
 {
     if ((RTK_rover_ == nullptr) || (RTK_rover_->correction_input == nullptr) || (RTK_rover_->correction_input->type_ != "ntrip"))
         return;
@@ -790,20 +789,20 @@ void InertialSenseROS::stop_rtk_connectivity_watchdog_timer()
         config.data_transmission_interruption_count_ = 0;
     }
 }
-
+*/
 // FIXME:: THIS SHOULD BE IN RtkBaseCorrectionProvider_Ntrip
-void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
-{
-    // [type]:[ip/url]:[port]
-    std::string RTK_connection = config.get_connection_string();
-    if (IS_.CreateHost(RTK_connection))
-        RCLCPP_INFO_STREAM(rclcpp::get_logger("started_rtk_ntrip_server"),"InertialSenseROS: Successfully started RTK Base NTRIP correction server at" << RTK_connection);
-    else
-        RCLCPP_ERROR_STREAM(rclcpp::get_logger("failed_to_start_ntrip_server"),"InertialSenseROS: Failed to start RTK Base NTRIP correction server at " << RTK_connection);
-}
+//void InertialSenseROS::start_rtk_server(RtkBaseCorrectionProvider_Ntrip& config)
+//{
+//    // [type]:[ip/url]:[port]
+//    std::string RTK_connection = config.get_connection_string();
+//    if (IS_.CreateHost(RTK_connection))
+//        RCLCPP_INFO_STREAM(rclcpp::get_logger("started_rtk_ntrip_server"),"InertialSenseROS: Successfully started RTK Base NTRIP correction server at" << RTK_connection);
+//    else
+//        RCLCPP_ERROR_STREAM(rclcpp::get_logger("failed_to_start_ntrip_server"),"InertialSenseROS: Failed to start RTK Base NTRIP correction server at " << RTK_connection);
+//}
 
 
-void InertialSenseROS::configure_rtk()
+/*void InertialSenseROS::configure_rtk()
 {
     rtkConfigBits_ = 0;
     if (rs_.gps1.type == "F9P")
@@ -902,7 +901,7 @@ void InertialSenseROS::configure_rtk()
         IS_.SendData(DID_FLASH_CONFIG, reinterpret_cast<uint8_t *>(&rtkConfigBits_), sizeof(rtkConfigBits_), offsetof(nvm_flash_cfg_t, RTKCfgBits));
     }
     RCLCPP_INFO(rclcpp::get_logger("set_rtkConfigBits"),"InertialSenseROS: Setting rtkConfigBits: 0x%08x", rtkConfigBits_);
-}
+}*/
 
 void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
 {

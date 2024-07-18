@@ -20,6 +20,5 @@
   <depend>geometry_msgs</depend>
   <depend>tf2</depend>
   <depend>diagnostic_msgs</depend>
-  <test_depend>test_inertial_sense_ros</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
 </package>

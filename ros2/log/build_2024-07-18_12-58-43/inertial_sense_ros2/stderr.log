@@ -1,0 +1,4 @@
+gmake[2]: *** No rule to make target '/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/libInertialSenseSDK.a', needed by 'new_target'.  Stop.
+gmake[1]: *** [CMakeFiles/Makefile2:641: CMakeFiles/new_target.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+gmake: *** [Makefile:146: all] Error 2
