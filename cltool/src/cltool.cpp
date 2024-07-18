@@ -677,7 +677,12 @@ bool cltool_extractEventData()
     {
         // the folder does not exist try to create it
         // creating output files
-        if (mkdir(g_commandLineOptions.evOCont.outFile.c_str()) == 0)
+        #if PLATFORM_IS_WINDOWS
+            if (mkdir(g_commandLineOptions.evOCont.outFile.c_str()) == 0)
+        #else
+            if (mkdir(g_commandLineOptions.evOCont.outFile.c_str(), 0777))
+        #endif
+
             cout << "Created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
         else
         {
@@ -707,7 +712,11 @@ bool cltool_extractEventData()
         {
             // the folder does not exist try to create it
             // creating output files
-            if (mkdir(deviceFolder.c_str()) == 0)
+            #if PLATFORM_IS_WINDOWS
+                if (mkdir(deviceFolder.c_str()) == 0)
+            #else
+                if (mkdir(deviceFolder.c_str(), 0777))
+            #endif
                 cout << "Created output dir: " << deviceFolder << endl;
             else
             {
