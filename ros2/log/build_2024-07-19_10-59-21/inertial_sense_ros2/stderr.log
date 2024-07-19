@@ -1,0 +1,8 @@
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:[m[K In constructor ‘[01m[KInertialSenseROS::[01;32m[KInertialSenseROS[m[K(YAML::Node, bool)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_ros2.cpp:50:87:[m[K [01;31m[Kerror: [m[Kclass ‘[01m[KInertialSenseROS[m[K’ does not have any field named ‘[01m[Knh_[m[K’
+   50 | SenseROS(YAML::Node paramNode, bool configFlashParameters): [01;31m[Knh_[m[K(), nh_private_()
+      |                                                             [01;31m[K^~~[m[K
+
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:76: CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:626: CMakeFiles/new_target.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

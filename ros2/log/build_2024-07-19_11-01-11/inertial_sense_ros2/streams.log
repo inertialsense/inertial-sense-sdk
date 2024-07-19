@@ -1,0 +1,30 @@
+[0.048s] Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j4 -l4
+[0.313s] [  1%] Built target inertial_sense_ros2__rosidl_generator_type_description
+[0.474s] [  1%] Built target ament_cmake_python_copy_inertial_sense_ros2
+[0.642s] [ 27%] Built target inertial_sense_ros2__rosidl_generator_c
+[1.591s] running egg_info
+[1.658s] writing inertial_sense_ros2.egg-info/PKG-INFO
+[1.660s] writing dependency_links to inertial_sense_ros2.egg-info/dependency_links.txt
+[1.661s] writing top-level names to inertial_sense_ros2.egg-info/top_level.txt
+[1.873s] reading manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.879s] writing manifest file 'inertial_sense_ros2.egg-info/SOURCES.txt'
+[1.977s] [ 27%] Built target ament_cmake_python_build_inertial_sense_ros2_egg
+[2.096s] [ 36%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_c
+[2.233s] [ 45%] Built target inertial_sense_ros2__rosidl_typesupport_c
+[2.407s] [ 54%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_c
+[2.516s] [ 54%] Built target inertial_sense_ros2__cpp
+[2.644s] [ 64%] Built target inertial_sense_ros2__rosidl_typesupport_cpp
+[2.777s] [ 74%] Built target inertial_sense_ros2__rosidl_typesupport_introspection_cpp
+[2.912s] [ 84%] Built target inertial_sense_ros2__rosidl_typesupport_fastrtps_cpp
+[3.009s] [ 84%] Built target inertial_sense_ros2
+[3.122s] [ 85%] Built target inertial_sense_ros2__py
+[3.415s] [ 85%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_ros2.cpp.o[0m
+[103.583s] [ 86%] [32mBuilding CXX object CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o[0m
+[116.473s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:[m[K In function ‘[01m[Kint[01;32m[K main[m[K(int, char**)[m[K’:
+[116.474s] [01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:49:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass InertialSenseROS[m[K’ has no member named ‘[01m[Knh_[m[K’
+[116.474s]    49 |         rclcpp::spin_some(thing->[01;31m[Knh_[m[K);
+[116.474s]       |                                  [01;31m[K^~~[m[K
+[121.282s] gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+[121.283s] gmake[1]: *** [CMakeFiles/Makefile2:626: CMakeFiles/new_target.dir/all] Error 2
+[121.285s] gmake: *** [Makefile:146: all] Error 2
+[121.291s] Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j4 -l4

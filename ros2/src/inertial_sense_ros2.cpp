@@ -33,7 +33,7 @@
 
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
 #define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; RCLCPP_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
-
+//auto nh_ = std::make_shared<rclcpp::Node>("nh_");
 /**
  * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
  * @param msg_odom - the nav_msgs::Odometry message to set the identity on.
@@ -47,7 +47,7 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
     }
 }
 
-InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(), nh_private_()
+InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_")), nh_private_()
 {
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;

@@ -1,0 +1,7 @@
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:[m[K In function ‘[01m[Kint[01;32m[K main[m[K(int, char**)[m[K’:
+[01m[K/home/s/Inertial_Sense/imx/SDK/ros2/src/inertial_sense_node.cpp:49:34:[m[K [01;31m[Kerror: [m[K‘[01m[Kclass InertialSenseROS[m[K’ has no member named ‘[01m[Knh_[m[K’
+   49 |         rclcpp::spin_some(thing->[01;31m[Knh_[m[K);
+      |                                  [01;31m[K^~~[m[K
+gmake[2]: *** [CMakeFiles/new_target.dir/build.make:90: CMakeFiles/new_target.dir/src/inertial_sense_node.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:626: CMakeFiles/new_target.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2
