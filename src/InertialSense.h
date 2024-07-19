@@ -349,7 +349,7 @@ public:
         ISDevice* device = getDevice(port);
         if (device != NULL)
             return  (device->flashCfg.checksum == device->sysParams.flashCfgChecksum) &&
-                    (device->flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(port);
+                    (device->flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(device->port);
 
         return false;
     }

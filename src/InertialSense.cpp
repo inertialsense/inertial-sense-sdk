@@ -195,22 +195,21 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     ISDevice newDevice;
     newDevice.port = port;
     newDevice.devInfo = devInfo;
-    newDevice.sysParams.flashCfgChecksum = 0xFFFFFFFF;
+    newDevice.flashCfgUploadChecksum = 0;
+    newDevice.sysParams.flashCfgChecksum = 0;
     m_comManagerState.devices.push_back(newDevice);
     return (ISDevice*)&(m_comManagerState.devices.end().base());
 }
 
 bool InertialSense::HasReceivedDeviceInfo(ISDevice& device)
 {
-    return ((device.devInfo.serialNumber != 0) && (device.devInfo.manufacturer[0] != 0));
+    return ((device.devInfo.serialNumber != 0) && (device.devInfo.hardwareType != 0) && (device.devInfo.manufacturer[0] != 0));
 }
 
 bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
 {
-    if (m_comManagerState.devices.size() == 0)
-    {
+    if (m_comManagerState.devices.empty())
         return false;
-    }
 
     for (auto& device : m_comManagerState.devices)
     {
@@ -964,7 +963,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
             }
 
             DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
-            int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
+            int fail = comManagerSendData(device->port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
             device->flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
         }
@@ -1029,7 +1028,7 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
         }
     }
 
-    return FlashConfigSynced(port);
+    return FlashConfigSynced(device->port);
 }
 
 void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
@@ -1537,6 +1536,12 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         unsigned int startTime = current_timeMs();
 
         do {
+            // doing the timeout check first help during debugging (since stepping through code will likely trigger the timeout.
+            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
+                timeoutOccurred = true;
+                break;
+            }
+
             for (auto& port : comManagerGetPorts()) {
                 if ((SERIAL_PORT(port)->errorCode == ENOENT) ||
                     (comManagerSendRaw(port, (uint8_t *) NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE) != 0)) {
@@ -1545,12 +1550,9 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 }
             }
 
-            SLEEP_MS(100);
-            comManagerStep();
-
-            if ((current_timeMs() - startTime) > (uint32_t)m_comManagerState.discoveryTimeout) {
-                timeoutOccurred = true;
-                break;
+            for (int i = 0; i < 3; i++) {
+                SLEEP_MS(100);
+                comManagerStep();
             }
         } while (!HasReceivedDeviceInfoFromAllDevices());
 
@@ -1578,10 +1580,12 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
             return false;
         }
 
+/*
         // remove ports if we are over max count
         while (m_comManagerState.devices.size() > maxCount) {
             RemoveDevice(m_comManagerState.devices.size() - 1);
         }
+*/
     }
 
     // request extended device info for remaining connected devices...
