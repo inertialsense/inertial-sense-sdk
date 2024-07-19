@@ -3127,27 +3127,21 @@ class logPlot:
             eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
             vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
-
             actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point
             actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
-
             eff_l -= actuatorTrim_l
             eff_r -= actuatorTrim_r
-
             # deadbandDuty_l = 0.045
             deadbandDuty_r = 0.0335
             deadbandDuty_l = deadbandDuty_r # match left and right
             deadbandVel = 0.05
-
             c_l = self.solveInversePlant(ax[0], vel_l, eff_l, deadbandVel, deadbandDuty_l, "left ")
             c_r = self.solveInversePlant(ax[1], vel_r, eff_r, deadbandVel, deadbandDuty_r, "right")
-
             # string = []
             # for element in c_l:
             #     string.append("{:.9f}".format(element))
             # string = "[" + ", ".join(string) + "]"
             # # print(label, "inverse plant:" , string, " deadband:", deadbandDuty)
-
             print("\nADD TO MODEL FILE:")
             print("  InversePlant_l: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_l[4], c_l[3], c_l[2], c_l[1], c_l[0]))
             print("  InversePlant_r: [%.9f, %.9f, %.9f, %.9f, %.9f]" % (c_r[4], c_r[3], c_r[2], c_r[1], c_r[0]))
