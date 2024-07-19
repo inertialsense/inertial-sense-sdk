@@ -126,8 +126,9 @@ class SuperNPP():
         else:
             # cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
             # npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
-            cmds = [r'navpp.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
-            npp_build_folder = "../../../cpp/NavPostProcess/build/Release"
+            cmds = [r'NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
+            file_path = os.path.dirname(os.path.realpath(__file__))
+            npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/VS_project/x64/Release')
 
         if self.startMode == 1:
             for i in range(len(cmds)):
