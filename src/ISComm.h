@@ -621,6 +621,9 @@ POP_PACK
 // InertialSense binary (ISB) message handler function
 typedef int(*pfnIsCommIsbMsgHandler)(unsigned int port, p_data_t* data);
 
+// InertialSense binary (ISB) command handler function
+typedef int(*pfnIsCommIsbCmdHandler)(unsigned int port, is_comm_instance_t *comm);
+
 // broadcast message handler
 typedef int(*pfnIsCommAsapMsg)(unsigned int port, p_data_get_t* req);
 
@@ -633,7 +636,7 @@ typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* 
 typedef struct
 {
     pfnIsCommIsbMsgHandler          isbData;    // Message handler - Inertial Sense binary data (ISB) message 
-    pfnIsCommIsbMsgHandler          isbCmd;     // Message handler - Inertial Sense binary command (ISB) message 
+    pfnIsCommIsbCmdHandler          isbCmd;     // Message handler - Inertial Sense binary command (ISB) message 
     pfnIsCommAsapMsg                rmc;    	// Message handler - broadcast.  Called whenever we get a message broadcast request or message disable command.
     pfnIsCommGenMsgHandler          nmea;   	// Message handler - NMEA
     pfnIsCommGenMsgHandler          ublox;  	// Message handler - Ublox

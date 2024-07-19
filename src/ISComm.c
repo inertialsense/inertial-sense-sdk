@@ -989,15 +989,21 @@ void is_comm_read_parse_messages(pfnIsCommPortRead portRead, unsigned int port, 
         switch (ptype)
         {
         case _PTYPE_INERTIAL_SENSE_CMD:
+            if (callbacks->isbCmd) 
+            {
+                callbacks->isbCmd(port, comm);
+            }
+            break;
+
         case _PTYPE_INERTIAL_SENSE_DATA:
-            if (callbacks->isb) 
+            if (callbacks->isbData) 
             {
                 p_data_t data;
                 data.hdr.id     = comm->rxPkt.dataHdr.id;
                 data.hdr.offset = comm->rxPkt.offset;
                 data.hdr.size   = comm->rxPkt.data.size;
                 data.ptr        = comm->rxPkt.data.ptr;
-                callbacks->isb(port, &data);
+                callbacks->isbData(port, &data);
             }
             break;
 
