@@ -498,10 +498,12 @@ void ISComManager::getData(port_handle_t port, uint16_t did, uint16_t size, uint
         // depending on the nature of the error, we may want to close the port.
         // FIXME: we really should be more selective with which errors we actually close the port for.
         if (SERIAL_PORT(port)->errorCode > 0) {
+    #ifndef IMX_5
             serialPortClose(port);
             // removePort(port);
             // memset(SERIAL_PORT(port), 0, sizeof(serial_port_s));
             // TODO: we still haven't deleted all references to the port, and this will likely cause problems (ie, InertialSense class, etc).
+    #endif
         }
     }
 }
