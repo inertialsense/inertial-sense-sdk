@@ -618,11 +618,11 @@ POP_PACK
 // typedef void(*pfnIsCommParseMsgHandler)(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
 // typedef protocol_type_t(*pfnIsCommParseMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
 
-// InertialSense binary (ISB) message handler function
-typedef int(*pfnIsCommIsbMsgHandler)(unsigned int port, p_data_t* data);
+// InertialSense binary (ISB) data message handler function
+typedef int(*pfnIsCommIsbDataHandler)(unsigned int port, p_data_t* data);
 
-// InertialSense binary (ISB) command handler function
-typedef int(*pfnIsCommIsbCmdHandler)(unsigned int port, is_comm_instance_t *comm);
+// InertialSense binary (ISB) general message handler function
+typedef int(*pfnIsCommIsbHandler)(unsigned int port, is_comm_instance_t *comm);
 
 // broadcast message handler
 typedef int(*pfnIsCommAsapMsg)(unsigned int port, p_data_get_t* req);
@@ -635,8 +635,8 @@ typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* 
 
 typedef struct
 {
-    pfnIsCommIsbMsgHandler          isbData;    // Message handler - Inertial Sense binary data (ISB) message 
-    pfnIsCommIsbCmdHandler          isbCmd;     // Message handler - Inertial Sense binary command (ISB) message 
+    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message 
+    pfnIsCommIsbHandler             isb;        // Message handler - Inertial Sense binary (ISB) general message 
     pfnIsCommAsapMsg                rmc;    	// Message handler - broadcast.  Called whenever we get a message broadcast request or message disable command.
     pfnIsCommGenMsgHandler          nmea;   	// Message handler - NMEA
     pfnIsCommGenMsgHandler          ublox;  	// Message handler - Ublox
@@ -958,7 +958,22 @@ static inline void is_comm_reset_parser(is_comm_instance_t* c)
 }
 
 /** Copies is_comm_instance data into a data structure.  Returns 0 on success, -1 on failure. */
-char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *com, const unsigned int maxsize);
+char is_comm_copy_to_struct(void *sptr, const is_comm_instance_t *comm, const unsigned int maxsize);
+
+/** Get ISB p_data_t from is_comm_instance_t */
+static inline void is_comm_to_isb_p_data(const is_comm_instance_t *comm, p_data_t *data)
+{
+    data->hdr.id        = comm->rxPkt.dataHdr.id;
+    data->hdr.offset    = comm->rxPkt.offset;
+    data->hdr.size      = comm->rxPkt.data.size;
+    data->ptr           = comm->rxPkt.data.ptr;
+}
+
+/** Get ISB packet type from is_comm_instance */
+static inline uint8_t is_comm_to_isb_pkt_type(const is_comm_instance_t *comm)
+{
+    return comm->rxPkt.hdr.flags&PKT_TYPE_MASK;
+}
 
 /** Returns -1 if the baudrate is not a standard baudrate. */
 int validateBaudRate(unsigned int baudRate);

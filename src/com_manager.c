@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MSG_PERIOD_DISABLED			0
 
 static com_manager_t s_cm = {0};
+static com_manager_t *s_cmPtr = NULL;
 
 int initComManagerInstanceInternal
 (
@@ -47,11 +48,12 @@ int initComManagerInstanceInternal
     pfnComManagerPostAck pstAckFnc,
     pfnComManagerDisableBroadcasts disableBcastFnc,
     com_manager_init_t *buffers,
-    com_manager_port_t *cmPorts
+    com_manager_port_t *cmPorts,
+    is_comm_callbacks_t *callbacks
 );
 // int processAsciiRxPacket(com_manager_t* cmInstance, int pHandle, unsigned char* start, int count);
 // void parseAsciiPacket(com_manager_t* cmInstance, int pHandle, unsigned char* buf, int count);
-int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt);
+int processIsb(unsigned int pHandle, is_comm_instance_t *comm);
 void enableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg, int periodMultiple);
 void disableBroadcastMsg(com_manager_t* cmInstance, broadcast_msg_t *msg);
 void disableDidBroadcast(com_manager_t* cmInstance, int pHandle, uint16_t did);
@@ -74,7 +76,8 @@ int comManagerInit
     pfnComManagerPostAck pstAckFnc,
     pfnComManagerDisableBroadcasts disableBcastFnc,
     com_manager_init_t *buffers,
-    com_manager_port_t *cmPorts)
+    com_manager_port_t *cmPorts,
+    is_comm_callbacks_t *callbacks)
 {
     return initComManagerInstanceInternal(
         &s_cm, 
@@ -87,7 +90,8 @@ int comManagerInit
         pstAckFnc, 
         disableBcastFnc, 
         buffers,
-        cmPorts);
+        cmPorts,
+        callbacks);
 }
 
 int comManagerInitInstance
@@ -101,7 +105,8 @@ int comManagerInitInstance
     pfnComManagerPostAck pstAckFnc,
     pfnComManagerDisableBroadcasts disableBcastFnc,
     com_manager_init_t *buffers,
-    com_manager_port_t *cmPorts)
+    com_manager_port_t *cmPorts,
+    is_comm_callbacks_t *callbacks)
 {
     int result = 0;
 
@@ -120,7 +125,8 @@ int comManagerInitInstance
             pstAckFnc, 
             disableBcastFnc,
             buffers, 
-            cmPorts);
+            cmPorts,
+            callbacks);
     }
     return result;
 }
@@ -136,7 +142,8 @@ int initComManagerInstanceInternal
     pfnComManagerPostAck pstAckFnc,
     pfnComManagerDisableBroadcasts disableBcastFnc,
     com_manager_init_t *buffers,
-    com_manager_port_t *cmPorts)
+    com_manager_port_t *cmPorts,
+    is_comm_callbacks_t *callbacks)
 {
     int32_t i;
 
@@ -155,7 +162,11 @@ int initComManagerInstanceInternal
     cmInstance->disableBcastFnc = disableBcastFnc;
     cmInstance->numPorts = numPorts;
     cmInstance->stepPeriodMilliseconds = stepPeriodMilliseconds;
-    memset(&(cmInstance->callbacks), 0, sizeof(is_comm_callbacks_t));
+    if (callbacks)
+    {
+        cmInstance->callbacks = *callbacks;
+    }
+    cmInstance->callbacks.isb = processIsb;
 
     if (buffers == NULL || cmPorts == NULL)
     {
@@ -256,7 +267,9 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
     {
         return;
     }
-        
+    
+    s_cmPtr = cmInstance;
+
     for (port = 0; port < cmInstance->numPorts; port++)
     {
         com_manager_port_t *cmPort = &(cmInstance->ports[port]);
@@ -317,36 +330,6 @@ void stepComManagerSendMessagesInstance(CMHANDLE cmInstance_)
                 }
             }
         }
-    }
-}
-
-void comManagerSetCallbacks(
-    pfnIsCommAsapMsg handlerRmc,
-    pfnIsCommGenMsgHandler handlerAscii,
-    pfnIsCommGenMsgHandler handlerUblox, 
-    pfnIsCommGenMsgHandler handlerRtcm3,
-    pfnIsCommGenMsgHandler handlerSpartn,
-    pfnIsCommParseErrorHandler handlerError)
-{
-    comManagerSetCallbacksInstance(&s_cm, handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn, handlerError);
-}
-
-void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-    pfnIsCommAsapMsg handlerRmc,
-    pfnIsCommGenMsgHandler handlerAscii,
-    pfnIsCommGenMsgHandler handlerUblox,
-    pfnIsCommGenMsgHandler handlerRtcm3,
-    pfnIsCommGenMsgHandler handlerSpartn,
-    pfnIsCommParseErrorHandler handlerError)
-{
-    if (cmInstance != 0)
-    {
-        ((com_manager_t*)cmInstance)->callbacks.rmc = handlerRmc;
-        ((com_manager_t*)cmInstance)->callbacks.nmea = handlerAscii;
-        ((com_manager_t*)cmInstance)->callbacks.ublox = handlerUblox;
-        ((com_manager_t*)cmInstance)->callbacks.rtcm3 = handlerRtcm3;
-        ((com_manager_t*)cmInstance)->callbacks.sprtn = handlerSpartn;
-        ((com_manager_t*)cmInstance)->callbacks.error = handlerError;        
     }
 }
 
@@ -496,16 +479,19 @@ int findAsciiMessage(const void * a, const void * b)
 }
 
 /**
-*   @brief Process binary packet content:
+*   @brief Process ISB data packet
 *
 *	@return 0 on success.  -1 on failure.
 */
-int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
+int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
 {
-    packet_hdr_t        *hdr = &(pkt->hdr);
-    registered_data_t   *regData = NULL;
-    uint8_t             ptype = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
+    if (s_cmPtr == NULL)
+    {
+        return -1;
+    }
+    com_manager_t* cmInstance = s_cmPtr;
 
+    uint8_t ptype = is_comm_to_isb_pkt_type(comm);
     switch (ptype)
     {
     default:    // Data ID Unknown
@@ -514,19 +500,16 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
     case PKT_TYPE_SET_DATA:
     case PKT_TYPE_DATA:
     {		
+        p_data_t data;
+        is_comm_to_isb_p_data(comm, &data);
+
         // Validate Data
-        if (hdr->id >= DID_COUNT || hdr->payloadSize == 0)
+        if (data.hdr.id >= DID_COUNT || comm->rxPkt.hdr.payloadSize == 0)
         {
             return -1;
         }
 
-        regData = &(cmInstance->regData[hdr->id]);
-
-        p_data_t data;
-        data.hdr.id = pkt->dataHdr.id;
-        data.hdr.offset = pkt->offset;
-        data.hdr.size = pkt->data.size;
-        data.ptr = pkt->data.ptr;
+        registered_data_t *regData = &(cmInstance->regData[data.hdr.id]);
 
         // Validate and constrain Rx data size to fit within local data struct
         if (regData->dataSet.size && (uint32_t)(data.hdr.offset + data.hdr.size) > regData->dataSet.size)
@@ -619,26 +602,28 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         // Reply w/ ACK for PKT_TYPE_SET_DATA
         if (ptype == PKT_TYPE_SET_DATA)
         {
-            sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
+            sendAck(cmInstance, pHandle, &(comm->rxPkt), PKT_TYPE_ACK);
         }
     }
         break;
 
     case PKT_TYPE_GET_DATA:
         #ifdef IMX_5
+    {
+        p_data_get_t *gdata = (p_data_get_t*)(comm->rxPkt.data.ptr);
         // Forward to gpx
         if(IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
-            (((p_data_get_t*)(pkt->data.ptr))->id == DID_RTK_DEBUG || (
-            (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
-            (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))))
+            (gdata->id == DID_RTK_DEBUG || 
+            ((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST))))
         {
-            comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
+            comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, gdata->id, gdata->size, gdata->offset, gdata->period);
         }
-        
+    }        
         #endif
-        if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t*)(pkt->data.ptr)))
+        
+        if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t*)(comm->rxPkt.data.ptr)))
         {
-            sendAck(cmInstance, pHandle, pkt, PKT_TYPE_NACK);
+            sendAck(cmInstance, pHandle, &(comm->rxPkt), PKT_TYPE_NACK);
         }
         break;
 
@@ -650,7 +635,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         {
             cmInstance->disableBcastFnc(-1);
         }
-        sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
+        sendAck(cmInstance, pHandle, &(comm->rxPkt), PKT_TYPE_ACK);
         break;
 
     case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
@@ -661,11 +646,11 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         {
             cmInstance->disableBcastFnc(pHandle);
         }
-        sendAck(cmInstance, pHandle, pkt, PKT_TYPE_ACK);
+        sendAck(cmInstance, pHandle, &(comm->rxPkt), PKT_TYPE_ACK);
         break;
 
     case PKT_TYPE_STOP_DID_BROADCAST:
-        disableDidBroadcast(cmInstance, pHandle, pkt->hdr.id);
+        disableDidBroadcast(cmInstance, pHandle, comm->rxPkt.hdr.id);
         break;
 
     case PKT_TYPE_NACK:
@@ -673,7 +658,7 @@ int processBinaryRxPacket(com_manager_t* cmInstance, int pHandle, packet_t *pkt)
         // Call general ack callback
         if (cmInstance->pstAckFnc)
         {
-            cmInstance->pstAckFnc(pHandle, (p_ack_t*)(pkt->data.ptr), ptype);
+            cmInstance->pstAckFnc(pHandle, (p_ack_t*)(comm->rxPkt.data.ptr), ptype);
         }
         break;
     }

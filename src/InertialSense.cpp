@@ -1466,12 +1466,19 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
     m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
     m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1) {    // Error
-        return false;
-    }
 
     // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+    is_comm_callbacks_t callbacks = {};
+    callbacks.rmc   = m_handlerRmc;
+    callbacks.nmea  = staticProcessRxNmea;
+    callbacks.ublox = m_handlerUblox;
+    callbacks.rtcm3 = m_handlerRtcm3;
+    callbacks.sprtn = m_handlerSpartn;
+    callbacks.error = m_handlerError;
+    
+    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks) == -1) {    // Error
+        return false;
+    }
 
     bool timeoutOccurred = false;
     if (m_enableDeviceValidation) {
@@ -1530,8 +1537,14 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
         // setup com manager again if serial ports dropped out with new count of serial ports
         if (removedSerials) {
-            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+            is_comm_callbacks_t callbacks = {};
+            callbacks.rmc   = m_handlerRmc;
+            callbacks.nmea  = staticProcessRxNmea;
+            callbacks.ublox = m_handlerUblox;
+            callbacks.rtcm3 = m_handlerRtcm3;
+            callbacks.sprtn = m_handlerSpartn;
+            callbacks.error = m_handlerError;
+            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks);
         }
     }
 

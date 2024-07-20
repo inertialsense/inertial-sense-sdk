@@ -202,7 +202,8 @@ int comManagerInit
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts);
+	com_manager_port_t *cmPorts,
+	is_comm_callbacks_t *callbacks);
 
 // Initialize an instance to a com manager that can be passed to instance functions and can later be freed with freeComManagerInstance
 // this function may be called multiple times.  Return 0 on success, -1 on failure.
@@ -217,7 +218,8 @@ int comManagerInitInstance
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts);
+	com_manager_port_t *cmPorts,
+	is_comm_callbacks_t *callbacks);
 
 /**
 * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
@@ -449,31 +451,6 @@ int comManagerGetDataRequestInstance(CMHANDLE cmInstance, int port, p_data_get_t
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 void comManagerRegisterInstance(CMHANDLE cmInstance, uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
-
-/**
-* Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
-* 
-* @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
-* @param asciiHandler handler for NMEA messages.
-* @param ubloxHandler handler for ublox messages.
-* @param rtcm3Handler handler for RTCM3 messages.
-* @param spartnHandler handler for SPARTN messages.
-* @param handlerError handler for parse errors.
-*/
-void comManagerSetCallbacks(
-	pfnIsCommAsapMsg rmcHandler,
-	pfnIsCommGenMsgHandler asciiHandler,
-	pfnIsCommGenMsgHandler ubloxHandler, 
-	pfnIsCommGenMsgHandler rtcm3Handler,
-	pfnIsCommGenMsgHandler spartnHandler,
-	pfnIsCommParseErrorHandler handlerError);
-void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-	pfnIsCommAsapMsg rmcHandler,
-	pfnIsCommGenMsgHandler asciiHandler,
-	pfnIsCommGenMsgHandler ubloxHandler,
-	pfnIsCommGenMsgHandler rtcm3Handler,
-	pfnIsCommGenMsgHandler spartnHandler,
-	pfnIsCommParseErrorHandler handlerError);
 
 /**
 * Attach user defined data to a com manager instance
