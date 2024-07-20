@@ -198,7 +198,7 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     newDevice.flashCfgUploadChecksum = 0;
     newDevice.sysParams.flashCfgChecksum = 0;
     m_comManagerState.devices.push_back(newDevice);
-    return (ISDevice*)&(m_comManagerState.devices.end().base());
+    return m_comManagerState.devices.empty() ? NULL : (ISDevice*)&m_comManagerState.devices.back();
 }
 
 bool InertialSense::HasReceivedDeviceInfo(ISDevice& device)
