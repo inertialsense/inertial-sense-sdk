@@ -653,8 +653,8 @@ typedef struct
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
 
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
-void is_comm_read_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
-
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks);
+void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.

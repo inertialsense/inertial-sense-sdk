@@ -477,7 +477,7 @@ bool InertialSense::UpdateServer()
     is_comm_instance_t *comm = &(m_gpComm);
     protocol_type_t ptype = _PTYPE_NONE;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  Call before serialPortRead.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
@@ -561,7 +561,7 @@ bool InertialSense::UpdateClient()
     protocol_type_t ptype = _PTYPE_NONE;
     static int error = 0;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  Call before serialPortRead.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer

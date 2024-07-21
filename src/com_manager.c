@@ -276,7 +276,7 @@ void comManagerStepRxInstance(CMHANDLE cmInstance_, uint32_t timeMs)
         is_comm_instance_t *comm = &(cmPort->comm);
 
         // Read data directly into comm buffer and call callback functions
-        is_comm_read_parse_messages(cmInstance->portRead, port, comm, &(cmInstance->callbacks));
+        is_comm_port_parse_messages(cmInstance->portRead, port, comm, &(cmInstance->callbacks));
     }
 }
 
