@@ -633,19 +633,19 @@ typedef int(*pfnIsCommHandler)(unsigned int port, is_comm_instance_t *comm);
 // Parse error handler function
 typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* comm);
 
-// The following callback functions are called when the specific message is received and the callback pointer is not null:
+// Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
     pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message 
     pfnIsCommHandler                isb;        // Message handler - Inertial Sense binary (ISB) general message 
-    pfnIsCommAsapMsg                rmc;    	// Message handler - broadcast.  Called whenever we get a message broadcast request or message disable command.
     pfnIsCommGenMsgHandler          nmea;   	// Message handler - NMEA
     pfnIsCommGenMsgHandler          ublox;  	// Message handler - Ublox
     pfnIsCommGenMsgHandler          rtcm3;  	// Message handler - RTCM3
     pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
     pfnIsCommGenMsgHandler          sprtn;  	// Message handler - SPARTN
     pfnIsCommParseErrorHandler      error;	    // Error handler 
-    pfnIsCommHandler                all;        // Message handler - Called in addition to all message handlers including error handler.
+    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
+    pfnIsCommAsapMsg                rmc;    	// Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
 } is_comm_callbacks_t;
 
 /**
