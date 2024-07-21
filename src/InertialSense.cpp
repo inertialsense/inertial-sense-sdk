@@ -28,8 +28,8 @@ using namespace std;
 #define DEBUG_PRINT(...) 
 #endif
 
-static InertialSense *s_is;
-static InertialSense::com_manager_cpp_state_t *s_cm_state;
+static InertialSense *s_is = NULL;
+static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
 static int staticSendData(unsigned int port, const uint8_t* buf, int len)
 {
@@ -477,7 +477,7 @@ bool InertialSense::UpdateServer()
     is_comm_instance_t *comm = &(m_gpComm);
     protocol_type_t ptype = _PTYPE_NONE;
 
-    // Get available size of comm buffer.  Call before serialPortRead.
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
@@ -561,7 +561,7 @@ bool InertialSense::UpdateClient()
     protocol_type_t ptype = _PTYPE_NONE;
     static int error = 0;
 
-    // Get available size of comm buffer.  Call before serialPortRead.
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer

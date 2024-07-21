@@ -621,22 +621,23 @@ POP_PACK
 // InertialSense binary (ISB) data message handler function
 typedef int(*pfnIsCommIsbDataHandler)(unsigned int port, p_data_t* data);
 
-// InertialSense binary (ISB) general message handler function
-typedef int(*pfnIsCommIsbHandler)(unsigned int port, is_comm_instance_t *comm);
-
 // broadcast message handler
 typedef int(*pfnIsCommAsapMsg)(unsigned int port, p_data_get_t* req);
 
-// Generic message handler function
+// Generic message handler function with message pointer and size 
 typedef int(*pfnIsCommGenMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
+
+// Generic message handler function with is_comm_instance_t
+typedef int(*pfnIsCommHandler)(unsigned int port, is_comm_instance_t *comm);
 
 // Parse error handler function
 typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* comm);
 
+// The following callback functions are called when the specific message is received and the callback pointer is not null:
 typedef struct
 {
     pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message 
-    pfnIsCommIsbHandler             isb;        // Message handler - Inertial Sense binary (ISB) general message 
+    pfnIsCommHandler                isb;        // Message handler - Inertial Sense binary (ISB) general message 
     pfnIsCommAsapMsg                rmc;    	// Message handler - broadcast.  Called whenever we get a message broadcast request or message disable command.
     pfnIsCommGenMsgHandler          nmea;   	// Message handler - NMEA
     pfnIsCommGenMsgHandler          ublox;  	// Message handler - Ublox
@@ -644,6 +645,7 @@ typedef struct
     pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
     pfnIsCommGenMsgHandler          sprtn;  	// Message handler - SPARTN
     pfnIsCommParseErrorHandler      error;	    // Error handler 
+    pfnIsCommHandler                all;        // Message handler - Called in addition to all message handlers including error handler.
 } is_comm_callbacks_t;
 
 /**
@@ -722,14 +724,14 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
     // Read a set of bytes (fast method)
     protocol_type_t ptype;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
-    if ((n = mySerialPortRead(comm->buf.tail, n)))
+    if ((n = mySerialPortRead(comm->rxBuf.tail, n)))
     {
         // Update comm buffer tail pointer
-        comm->buf.tail += n;
+        comm->rxBuf.tail += n;
 
         // Search comm buffer for valid packets
         while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)

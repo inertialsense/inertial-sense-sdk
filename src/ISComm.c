@@ -898,7 +898,7 @@ int is_comm_free(is_comm_instance_t* c)
 
 protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, uint32_t timeMs)
 {
-    // Reset buffer if needed
+    // Reset buffer if needed.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     is_comm_free(c);
 
     // Add byte to buffer
@@ -973,6 +973,7 @@ static inline void parse_messages(unsigned int port, is_comm_instance_t* comm, i
     protocol_type_t ptype;
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
     {
+        // Found valid packet
         switch (ptype)
         {
         case _PTYPE_INERTIAL_SENSE_DATA:
@@ -1002,12 +1003,17 @@ static inline void parse_messages(unsigned int port, is_comm_instance_t* comm, i
         case _PTYPE_SPARTN:         if (callbacks->sprtn)   { callbacks->sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
         default: break;
         }
+
+        if (callbacks->all)
+        {
+            callbacks->all(port, comm);
+        }
     }
 }
 
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
 {
-    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, so call it first before using comm->rxBuf.tail.
+    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = (int)_MIN((int)buf_size, is_comm_free(comm));
 
     memcpy(comm->rxBuf.tail, buf, n);
@@ -1021,7 +1027,7 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
 
 void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
 {
-    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, so call it first before using comm->rxBuf.tail.
+    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int bytesFree = is_comm_free(comm);
 
     int n = portRead(port, comm->rxBuf.tail, bytesFree);
