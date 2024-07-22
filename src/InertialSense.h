@@ -95,12 +95,12 @@ public:
     * @param callbackSpartn Spartn received data callback (optional).
     */
     InertialSense(
-            pfnHandleBinaryData        callbackIsb = NULL,
-            pfnComManagerAsapMsg       callbackRmc = NULL,
-            pfnComManagerGenMsgHandler callbackNmea = NULL,
-            pfnComManagerGenMsgHandler callbackUblox = NULL,
-            pfnComManagerGenMsgHandler callbackRtcm3 = NULL,
-            pfnComManagerGenMsgHandler callbackSpartn = NULL );
+            pfnHandleBinaryData    callbackIsb = NULL,
+            pfnIsCommAsapMsg       callbackRmc = NULL,
+            pfnIsCommGenMsgHandler callbackNmea = NULL,
+            pfnIsCommGenMsgHandler callbackUblox = NULL,
+            pfnIsCommGenMsgHandler callbackRtcm3 = NULL,
+            pfnIsCommGenMsgHandler callbackSpartn = NULL );
 
     /**
     * Destructor
@@ -159,7 +159,7 @@ public:
     /**
      * Register a callback handler for data stream errors.
      */
-    void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
+    void setErrorHandler(pfnIsCommParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
 
     /**
     * Enable or disable logging - logging is disabled by default
@@ -595,12 +595,12 @@ protected:
 private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
-    pfnComManagerAsapMsg       m_handlerRmc = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
-    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
+    pfnIsCommAsapMsg       m_handlerRmc = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerNmea = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerUblox = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerRtcm3 = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerSpartn = NULLPTR;
+    pfnIsCommParseErrorHandler m_handlerError = NULLPTR;
     cISLogger m_logger;
     void* m_logThread;
     cMutex m_logMutex;
