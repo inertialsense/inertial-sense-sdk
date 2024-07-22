@@ -194,12 +194,7 @@ is_operation_result cISBootloaderBase::mode_device_app
     
     // Tell device to stop broadcasting
     serialPortWriteAscii(obj->m_port, "STPB", 4);
-
-    if (portName(port))
-        (obj)->m_port_name = std::string(portName(port));
-    else
-        (obj)->m_port_name = "[NONE]";
-
+    (obj)->m_port_name = std::string(portName(port));
     device = (obj)->check_is_compatible();
     if(device)
     {   
