@@ -325,9 +325,12 @@ class logPlot:
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            ax[0].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,0], label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,2])
+            lla = self.getData(d, DID_INS_2, 'lla', True)
+            if len(lla) != len(time):
+                continue
+            ax[0].plot(time, lla[:,0], label=self.log.serials[d])
+            ax[1].plot(time, lla[:,1])
+            ax[2].plot(time, lla[:,2])
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -526,7 +529,10 @@ class logPlot:
     def getGpsNedVel(self, d):
         velNed = None
         velDid = DID_GPS2_VEL if self.getData(d, DID_GPS1_VEL, 'status').size == 0 else DID_GPS1_VEL
-        status = self.getData(d, velDid, 'status')[0]
+        status = self.getData(d, velDid, 'status')
+        if len(status) == 0:
+            return []
+        status = status[0]
         if (status & 0x00008000):
             velNed = self.getData(d, velDid, 'vel')    # NED velocity
         else:
@@ -587,6 +593,8 @@ class logPlot:
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
+                if len(timeGPS) == 0:
+                    continue
                 gpsVelNed = self.getGpsNedVel(d)
                 gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0])
@@ -2232,19 +2240,31 @@ class logPlot:
             timeBar = self.getData(d, DID_BAROMETER, 'time')
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            altGps = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            llaGps = self.getData(d, DID_GPS1_POS, 'lla')
+            if len(llaGps) > 0:
+                altGps = lla[:, 2]
+            else:
+                altGps = []
             timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            altIns = self.getData(d, DID_INS_2, 'lla', True)[:, 2]
-
+            lla = self.getData(d, DID_INS_2, 'lla', True)
+            if len(lla) > 0:
+                altIns = lla[:, 2]
+            else:
+                altIns = []
             if np.shape(towOffset)[0] != 0:
                 timeBar = timeBar + towOffset[-1]
             mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
+
             ax[0].plot(timeBar, mslBar, label=self.log.serials[d])
-            ax[1].plot(timeGps, altGps)
-            ax[2].plot(timeIns, altIns)
+            if len(timeGps) == len(altGps) and len(altGps) > 0:
+                ax[1].plot(timeGps, altGps)
+            if len(timeIns) == len(altIns) and len(altIns) > 0:
+                ax[2].plot(timeIns, altIns)
             if len(altGps) > 0:
                 ax[3].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
                 ax[3].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
+            elif len(mslBar) > 0:
+                ax[3].plot(timeBar, mslBar, label=("Bar %s" % self.log.serials[d]))
 
         self.legends_add(ax[0].legend(ncol=2))
         self.legends_add(ax[3].legend(ncol=2))
@@ -2267,19 +2287,27 @@ class logPlot:
             timeBar = self.getData(d, DID_BAROMETER, 'time')
             mslBar  = self.getData(d, DID_BAROMETER, 'mslBar')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            altGps  = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            llaGps = self.getData(d, DID_GPS1_POS, 'lla')
+            if len(llaGps) > 0:
+                altGps = llaGps[:, 2]
+            else:
+                altGps = []
             timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            altIns = self.getData(d, DID_INS_2, 'lla', True)[:, 2]
+            llaIns = self.getData(d, DID_INS_2, 'lla', True)
+            if len(llaIns) > 0:
+                altIns = llaIns[:, 2]
+            else:
+                altIns = []
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if len(towOffset) > 0:
                 timeBar = timeBar + towOffset[-1]
             if len(timeBar) > 2:
                 climbBar = np.gradient(mslBar, timeBar)
                 ax[0].plot(timeBar, climbBar, label=self.log.serials[d])
-            if len(timeGps) > 2:
+            if len(timeGps) > 2 and len(altGps) == len(timeGps):
                 climbGps = np.gradient(altGps, timeGps)
                 ax[1].plot(timeGps, climbGps)
-            if len(timeIns) > 2:
+            if len(timeIns) > 2 and len(altIns) == len(timeIns):
                 climbIns = np.gradient(altIns, timeIns)
                 ax[2].plot(timeIns, climbIns)
 
