@@ -7,11 +7,8 @@
   <maintainer email="devteam@inertialsense.com">IS Dev Team</maintainer>
   <license>MIT</license>
 
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
-
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <member_of_group>rosidl_interface_packages</member_of_group>
   <depend>rclcpp</depend>
@@ -21,4 +18,8 @@
   <depend>tf2</depend>
   <depend>diagnostic_msgs</depend>
   <test_depend>ament_cmake_gtest</test_depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

@@ -22,13 +22,13 @@ find_package(Threads)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 # find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR} ${IS_SDK_DIR}/build ${IS_SDK_DIR}/build/Release)
-find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
-if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
+#find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
+#if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
     # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
-    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
-else()
-    link_directories(${IS_SDK_DIR})
-endif()
+#    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+#else()
+#    link_directories(${IS_SDK_DIR})
+#endif()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/GTime.msg"
@@ -109,6 +109,7 @@ rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # E
 ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
 target_link_libraries(new_target /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
-link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
+#link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
 install(TARGETS new_target
         DESTINATION lib/${PROJECT_NAME})
+ament_package()
