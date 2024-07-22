@@ -43,11 +43,11 @@ cDeviceLogSerial::cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo) : cDeviceL
 
 void cDeviceLogSerial::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) {
     m_chunk.Clear();
-    if (device != nullptr) {
-        m_chunk.m_hdr.devSerialNum = device->devInfo.serialNumber;
+    m_chunk.m_hdr.devSerialNum = SerialNumber();
+    if (device) {
         m_chunk.m_hdr.portId = portId(device->port);
+        m_chunk.m_hdr.portType = portId(device->port);
     }
-
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 

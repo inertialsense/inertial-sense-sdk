@@ -14,6 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define DATA_CHUNK_H
 
 #include "ISConstants.h"
+
 #if PLATFORM_IS_EVB_2
 #define DEFAULT_CHUNK_DATA_SIZE     16384			// 16 KB (EVB)
 #else
@@ -32,81 +33,89 @@ void logStats(const char *format, ...);
 //!< Chunk Header
 PUSH_PACK_1
 
-struct sChunkHeader 
-{
-	uint32_t	    marker;				//!< Chunk marker (0xFC05EA32)
-	uint16_t	    version;			//!< Chunk Version
-	uint16_t	    classification;		//!< Chunk classification
-	char		    name[4];			//!< Chunk name
-	char		    invName[4];			//!< Bitwise inverse of chunk name
-	uint32_t	    dataSize;			//!< Chunk data length in bytes
-	uint32_t	    invDataSize;		//!< Bitwise inverse of chunk data length
-	uint32_t	    grpNum;				//!< Chunk Group Number: 0 = serial data, 1 = sorted data...
-	uint32_t	    devSerialNum;		//!< Device serial number
-	uint16_t        portId;				//!< Device port id
-	uint16_t        portType;           //!< Device port type
-	uint32_t	    reserved;			//!< Unused
+struct sChunkHeader {
+    uint32_t marker = DATA_CHUNK_MARKER;         //!< Chunk marker (0xFC05EA32)
+    uint16_t version = 1;                        //!< Chunk Version
+    uint16_t classification = ' ' << 8 | 'U';    //!< Chunk classification
+    char name[4];                                //!< Chunk name
+    char invName[4];                             //!< Bitwise inverse of chunk name
+    uint32_t dataSize;                           //!< Chunk data length in bytes
+    uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
+    uint32_t grpNum = 0;                         //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
+    uint32_t devSerialNum = 0;                   //!< Device serial number
+    uint16_t portId = 0xFFFF;                    //!< Device port id
+    uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
+    uint32_t reserved = 0;                       //!< Unused
 
 #if LOG_CHUNK_STATS
-	void print()
-	{
-		logStats( "Chunk Header\n" );
-		logStats( "         marker:  %u (0x%x)\n", marker, marker );
-		logStats( "        version:  %d\n", version );
-		logStats( " classification:  %d\n", classification );
-		logStats( "           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3] );
-		logStats( "        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3] );
-		logStats( "       dataSize:  %d\n", dataSize );
-		logStats( "    invDataSize:  %d\n", invDataSize );
-		logStats( "         grpNum:  %d\n", grpNum );
-		logStats( "   devSerialNum:  %d\n", devSerialNum );
-		logStats( "        port:  %d\n", port );
-		logStats( "       reserved:  %d\n", reserved );
-	}
+    void print()
+    {
+        logStats( "Chunk Header\n" );
+        logStats( "         marker:  %u (0x%x)\n", marker, marker );
+        logStats( "        version:  %d\n", version );
+        logStats( " classification:  %d\n", classification );
+        logStats( "           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3] );
+        logStats( "        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3] );
+        logStats( "       dataSize:  %d\n", dataSize );
+        logStats( "    invDataSize:  %d\n", invDataSize );
+        logStats( "         grpNum:  %d\n", grpNum );
+        logStats( "   devSerialNum:  %d\n", devSerialNum );
+        logStats( "        port:  %d\n", port );
+        logStats( "       reserved:  %d\n", reserved );
+    }
 #endif
 };
 
 POP_PACK
 
-class cDataChunk
-{
+class cDataChunk {
 public:
-	cDataChunk();
+    cDataChunk();
+
     virtual ~cDataChunk();
 
-    int32_t GetBuffSize() { return (int32_t)(m_buffTail - m_buffHead); }
-    int32_t GetBuffFree() { return (int32_t)(m_buffTail - m_dataTail); }
-    int32_t GetDataSize() { return (int32_t)(m_dataTail - m_dataHead); }
+    int32_t GetBuffSize() { return (int32_t) (m_buffTail - m_buffHead); }
+
+    int32_t GetBuffFree() { return (int32_t) (m_buffTail - m_dataTail); }
+
+    int32_t GetDataSize() { return (int32_t) (m_dataTail - m_dataHead); }
+
     void SetName(const char name[4]);
-	uint8_t* GetDataPtr();
-	bool PopFront(int32_t size);
-    int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0, bool writeHeader = true); // Returns number of bytes written to file and clears the chunk
-	int32_t ReadFromFile(cISLogFileBase* pFile, bool readHeader = true);
-	int32_t PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2 = NULL, int32_t d2Size = 0);
 
-	virtual void Clear();
+    uint8_t *GetDataPtr();
 
-	sChunkHeader m_hdr;
+    bool PopFront(int32_t size);
+
+    int32_t WriteToFile(cISLogFileBase *pFile, int groupNumber = 0, bool writeHeader = true); // Returns number of bytes written to file and clears the chunk
+    int32_t ReadFromFile(cISLogFileBase *pFile, bool readHeader = true);
+
+    int32_t PushBack(uint8_t *d1, int32_t d1Size, uint8_t *d2 = NULL, int32_t d2Size = 0);
+
+    virtual void Clear();
+
+    sChunkHeader m_hdr = { };
 
 #if LOG_CHUNK_STATS
-	struct
-	{
-		uint32_t count;		// Number of occurrences
-		uint32_t size;		// Size of each data structure
-		uint32_t total;		// Total bytes read
-	} m_stats[DID_COUNT];
+    struct
+    {
+        uint32_t count;		// Number of occurrences
+        uint32_t size;		// Size of each data structure
+        uint32_t total;		// Total bytes read
+    } m_stats[DID_COUNT];
 #endif
 
 protected:
-	virtual int32_t WriteAdditionalChunkHeader(cISLogFileBase* pFile);
-	virtual int32_t ReadAdditionalChunkHeader(cISLogFileBase* pFile);
-	virtual int32_t GetHeaderSize();
+    virtual int32_t WriteAdditionalChunkHeader(cISLogFileBase *pFile);
+
+    virtual int32_t ReadAdditionalChunkHeader(cISLogFileBase *pFile);
+
+    virtual int32_t GetHeaderSize();
 
 private:
     uint8_t m_buffHead[DEFAULT_CHUNK_DATA_SIZE];    // Start of buffer
-    uint8_t* m_buffTail;    // End of buffer
-    uint8_t* m_dataHead;    // Front of data in buffer.  This moves as data is read.
-    uint8_t* m_dataTail;    // End of data in buffer.  This moves as data is written.
+    uint8_t *m_buffTail;    // End of buffer
+    uint8_t *m_dataHead;    // Front of data in buffer.  This moves as data is read.
+    uint8_t *m_dataTail;    // End of data in buffer.  This moves as data is written.
 };
 
 
