@@ -236,14 +236,17 @@ void InertialSense::RemoveDevice(ISDevice& device)
 {
     serialPortClose(device.port);
 
-    for (std::vector<serial_port_s*>::size_type i = 0; i < m_serialPorts.size(); i++) {
-        if (m_serialPorts[i] == device.port) {
-            m_serialPorts.erase(m_serialPorts.begin() + i);
+    for (auto& cmsDevice : m_comManagerState.devices) {
+        if (device == cmsDevice) {
+            // m_serialPorts.erase(m_serialPorts.begin() + i);
             comManagerRemovePort(device.port);
             delete (serial_port_t*)device.port;
             device.port = NULL;
         }
     }
+    // TODO: remove the device from m_comManagerState
+    //   -- we don't really need to remove it, but we should
+    //   -- we could end up with the same device listed more than once, with different ports if we don't, though only the most recent should have an active/open port
 }
 
 void InertialSense::LoggerThread(void* info)
@@ -260,9 +263,9 @@ void InertialSense::LoggerThread(void* info)
         {
             // lock so we can read and clear m_logPackets
             cMutexLocker logMutexLocker(&inertialSense->m_logMutex);
-            for (map<port_handle_t, vector<p_data_buf_t>>::iterator i = inertialSense->m_logPackets.begin(); i != inertialSense->m_logPackets.end(); i++)
+            for (auto [port, pkts] : inertialSense->m_logPackets)
             {
-                packets[i->first] = i->second;
+                packets[port] = pkts;
             }
 
             // clear shared memory
@@ -275,13 +278,13 @@ void InertialSense::LoggerThread(void* info)
         if (running)
         {
             // log the packets
-            for (map<port_handle_t, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
+            for (auto [port, pkts] : packets)
             {
                 if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
-                    size_t numPackets = i->second.size();
-                    for (size_t j = 0; j < numPackets; j++) {
-                        ISDevice* device = inertialSense->DeviceByPort(i->first);
-                        if (!inertialSense->m_logger.LogData(device->devLogger, &i->second[j].hdr, i->second[j].buf)) {
+                    size_t numPackets = pkts.size();
+                    for (auto& pkt : pkts) {
+                        ISDevice* device = inertialSense->DeviceByPort(port);
+                        if (!inertialSense->m_logger.LogData(device->devLogger, &pkt.hdr, pkt.buf)) {
                             // Failed to write to log
                             SLEEP_MS(20); // FIXME:  This maybe problematic, as it may unnecessarily delay the thread, leading run-away memory usage.
                         }
@@ -289,7 +292,7 @@ void InertialSense::LoggerThread(void* info)
                 }
 
                 // clear all log data for this port
-                i->second.clear();
+                pkts.clear();   // TODO: Make sure this clears the backing vector, not just the local instance
             }
         }
 
@@ -486,14 +489,15 @@ bool InertialSense::Update()
 bool InertialSense::UpdateServer()
 {
     // as a tcp server, only the first serial port is read from
-    is_comm_instance_t *comm = &(m_gpComm);
+    port_handle_t port = m_comManagerState.devices[0].port;
+    is_comm_instance_t *comm = &(COMM_PORT(port)->comm);
     protocol_type_t ptype = _PTYPE_NONE;
 
     // Get available size of comm buffer
-    int n = is_comm_free(comm);
+    int n = is_comm_free(comm);         // TODO:  This is a little janky; as a Serial/COMM port, this should already know how to do these things...
 
     // Read data directly into comm buffer
-    if ((n = serialPortReadTimeout(m_comManagerState.devices[0].port, comm->rxBuf.tail, n, 0)))
+    if ((n = serialPortReadTimeout(port, comm->rxBuf.tail, n, 0)))
     {
         // Update comm buffer tail pointer
         comm->rxBuf.tail += n;

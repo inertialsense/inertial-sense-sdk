@@ -447,11 +447,11 @@ public:
     void FlushRx()
     {
         uint8_t buf[10];
-        for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+        for (auto& device : m_comManagerState.devices)
         {
-            if (!serialPortIsOpen(m_comManagerState.devices[i].port))
+            if (!serialPortIsOpen(device.port))
             {
-                while (serialPortReadTimeout(m_comManagerState.devices[i].port, buf, sizeof(buf), 0));
+                while (serialPortReadTimeout(device.port, buf, sizeof(buf), 0));
             }
         }
     }
@@ -634,7 +634,6 @@ private:
     bool m_forwardGpgga;
 
     cISTcpServer m_tcpServer;
-    //cISSerialPort m_serialServer;
     cISStream* m_clientStream;				// Our client connection to a server
     uint64_t m_clientServerByteCount;
     int m_clientConnectionsCurrent = 0;
@@ -643,14 +642,10 @@ private:
 
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
-    // com_manager_init_t m_cmInit;
-    // com_manager_port_t *m_cmPorts;
-    is_comm_instance_t m_gpComm;
-    uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
 
-    std::vector<serial_port_t*> m_serialPorts;  //! actual initialized serial ports
+    //std::vector<serial_port_t*> m_serialPorts;  //! actual initialized serial ports
     std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
     port_handle_t allocateSerialPort(int ptype);
 
