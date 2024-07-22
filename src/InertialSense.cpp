@@ -28,10 +28,10 @@ using namespace std;
 #define DEBUG_PRINT(...) 
 #endif
 
-static InertialSense *s_is;
-static InertialSense::com_manager_cpp_state_t *s_cm_state;
+static InertialSense *s_is = NULL;
+static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
-static int staticSendData(unsigned int port, const unsigned char* buf, int len)
+static int staticSendData(unsigned int port, const uint8_t* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -40,7 +40,7 @@ static int staticSendData(unsigned int port, const unsigned char* buf, int len)
     return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadData(unsigned int port, unsigned char* buf, int len)
+static int staticReadData(unsigned int port, uint8_t* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -117,12 +117,12 @@ static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int 
 
 
 InertialSense::InertialSense(
-        pfnHandleBinaryData        handlerIsb,
-        pfnComManagerAsapMsg       handlerRmc,
-        pfnComManagerGenMsgHandler handlerNmea,
-        pfnComManagerGenMsgHandler handlerUblox,
-        pfnComManagerGenMsgHandler handlerRtcm3,
-        pfnComManagerGenMsgHandler handlerSpartn ) : m_tcpServer(this)
+        pfnHandleBinaryData    handlerIsb,
+        pfnIsCommAsapMsg       handlerRmc,
+        pfnIsCommGenMsgHandler handlerNmea,
+        pfnIsCommGenMsgHandler handlerUblox,
+        pfnIsCommGenMsgHandler handlerRtcm3,
+        pfnIsCommGenMsgHandler handlerSpartn ) : m_tcpServer(this)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
@@ -477,7 +477,7 @@ bool InertialSense::UpdateServer()
     is_comm_instance_t *comm = &(m_gpComm);
     protocol_type_t ptype = _PTYPE_NONE;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
@@ -561,7 +561,7 @@ bool InertialSense::UpdateClient()
     protocol_type_t ptype = _PTYPE_NONE;
     static int error = 0;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
@@ -1466,12 +1466,19 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
     m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
     m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1) {    // Error
-        return false;
-    }
 
     // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+    is_comm_callbacks_t callbacks = {};
+    callbacks.rmc   = m_handlerRmc;
+    callbacks.nmea  = staticProcessRxNmea;
+    callbacks.ublox = m_handlerUblox;
+    callbacks.rtcm3 = m_handlerRtcm3;
+    callbacks.sprtn = m_handlerSpartn;
+    callbacks.error = m_handlerError;
+    
+    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks) == -1) {    // Error
+        return false;
+    }
 
     bool timeoutOccurred = false;
     if (m_enableDeviceValidation) {
@@ -1530,8 +1537,14 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
         // setup com manager again if serial ports dropped out with new count of serial ports
         if (removedSerials) {
-            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+            is_comm_callbacks_t callbacks = {};
+            callbacks.rmc   = m_handlerRmc;
+            callbacks.nmea  = staticProcessRxNmea;
+            callbacks.ublox = m_handlerUblox;
+            callbacks.rtcm3 = m_handlerRtcm3;
+            callbacks.sprtn = m_handlerSpartn;
+            callbacks.error = m_handlerError;
+            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks);
         }
     }
 

@@ -272,15 +272,18 @@ static bool initComManager(test_data_t &t)
 	com_manager_init_t cmInit = {};
 	cmInit.broadcastMsg = t.cmBufBcastMsg;
 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
+	is_comm_callbacks_t callbacks = {};
+	callbacks.nmea 	= msgHandlerNmea;
+	callbacks.ublox = msgHandlerUblox;
+	callbacks.rtcm3 = msgHandlerRtcm3;
+	callbacks.error = msgHandlerError;
+	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort, &callbacks))
 	{	// Fail to init
 		return false;
 	}
 
 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
 	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
-
-	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR, msgHandlerError);
 
 	// Enable/disable protocols
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);

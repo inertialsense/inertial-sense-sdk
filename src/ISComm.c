@@ -898,7 +898,7 @@ int is_comm_free(is_comm_instance_t* c)
 
 protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, uint32_t timeMs)
 {
-    // Reset buffer if needed
+    // Reset buffer if needed.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     is_comm_free(c);
 
     // Add byte to buffer
@@ -965,6 +965,84 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
 #endif
 
     return _PTYPE_NONE;
+}
+
+static inline void parse_messages(unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+{
+    // Search comm buffer for valid packets
+    protocol_type_t ptype;
+    while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+    {
+        // Found valid packet
+        switch (ptype)
+        {
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            if (callbacks->isb)
+            {
+                callbacks->isb(port, comm);
+            }
+            if (callbacks->isbData)
+            {
+                p_data_t data;
+                is_comm_to_isb_p_data(comm, &data);
+                callbacks->isbData(port, &data);
+            }
+            break;
+        case _PTYPE_INERTIAL_SENSE_ACK:
+        case _PTYPE_INERTIAL_SENSE_CMD:
+            if (callbacks->isb)
+            {
+                callbacks->isb(port, comm);
+            }
+            break;
+
+        case _PTYPE_NMEA:           if (callbacks->nmea)    { callbacks->nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_RTCM3:          if (callbacks->rtcm3)   { callbacks->rtcm3( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_SPARTN:         if (callbacks->sprtn)   { callbacks->sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_UBLOX:          if (callbacks->ublox)   { callbacks->ublox( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_SONY:           if (callbacks->sony)    { callbacks->sony(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_PARSE_ERROR:    if (callbacks->error)   { callbacks->error( port, comm); } break;
+        default: break;
+        }
+
+        if (callbacks->all)
+        {
+            callbacks->all(port, comm);
+        }
+    }
+}
+
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+{
+    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
+    int n = (int)_MIN((int)buf_size, is_comm_free(comm));
+
+    memcpy(comm->rxBuf.tail, buf, n);
+
+    // Update comm buffer tail pointer
+    comm->rxBuf.tail += n;
+
+    // Parse messages and call corresponding callback functions
+    parse_messages(0, comm, callbacks);
+}
+
+void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+{
+    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
+    int bytesFree = is_comm_free(comm);
+
+    int n = portRead(port, comm->rxBuf.tail, bytesFree);
+
+    if (n <= 0)
+    {   // No update
+        return;
+    }
+
+    // Update comm buffer tail pointer
+    comm->rxBuf.tail += n;
+
+    // Parse messages and call corresponding callback functions
+    parse_messages(port, comm, callbacks);
 }
 
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
