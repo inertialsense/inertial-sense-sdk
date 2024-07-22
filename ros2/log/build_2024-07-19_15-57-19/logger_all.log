@@ -1,0 +1,115 @@
+[0.376s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[0.376s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=4, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, mixin_files=None, mixin=None, verb_parser=<colcon_mixin.mixin.mixin_argument.MixinArgumentDecorator object at 0x77484768e0f0>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x77484768ddc0>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x77484768ddc0>>, mixin_verb=('build',))
+[0.489s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.490s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.490s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.490s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.491s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.491s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.491s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/s/Inertial_Sense/imx/SDK/ros2'
+[0.491s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.492s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.492s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.492s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.492s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.493s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.493s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.493s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.493s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.574s] DEBUG:colcon.colcon_core.package_identification:Package '.' with type 'ros.ament_cmake' and name 'inertial_sense_ros2'
+[0.574s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.574s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.574s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.574s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.575s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.622s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.622s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.627s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 0 installed packages in /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/ros2/install
+[0.628s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 1 installed packages in /home/s/Inertial_Sense/imx/ros2_ws/install
+[0.635s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 308 installed packages in /opt/ros/jazzy
+[0.638s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.786s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'cmake_args' from command line to 'None'
+[0.786s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'cmake_target' from command line to 'None'
+[0.786s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.787s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'cmake_clean_cache' from command line to 'False'
+[0.787s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'cmake_clean_first' from command line to 'False'
+[0.787s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'cmake_force_configure' from command line to 'False'
+[0.787s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'ament_cmake_args' from command line to 'None'
+[0.787s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'catkin_cmake_args' from command line to 'None'
+[0.787s] Level 5:colcon.colcon_core.verb:set package 'inertial_sense_ros2' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.787s] DEBUG:colcon.colcon_core.verb:Building package 'inertial_sense_ros2' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2', 'merge_install': False, 'path': '/home/s/Inertial_Sense/imx/SDK/ros2', 'symlink_install': False, 'test_result_base': None}
+[0.787s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.792s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.793s] INFO:colcon.colcon_ros.task.ament_cmake.build:Building ROS package in '/home/s/Inertial_Sense/imx/SDK/ros2' with build type 'ament_cmake'
+[0.794s] INFO:colcon.colcon_cmake.task.cmake.build:Building CMake package in '/home/s/Inertial_Sense/imx/SDK/ros2'
+[0.801s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.801s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.801s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.838s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/s/Inertial_Sense/imx/SDK/ros2 -DCMAKE_INSTALL_PREFIX=/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2
+[23.860s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/s/Inertial_Sense/imx/SDK/ros2 -DCMAKE_INSTALL_PREFIX=/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2
+[23.861s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j4 -l4
+[397.410s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2 -- -j4 -l4
+[401.068s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[401.868s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(inertial_sense_ros2)
+[401.869s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/s/Inertial_Sense/imx/SDK/ros2/build/inertial_sense_ros2
+[401.875s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2' for CMake module files
+[401.877s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2' for CMake config files
+[401.881s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib'
+[401.881s] Level 1:colcon.colcon_core.shell:create_environment_hook('inertial_sense_ros2', 'ld_library_path_lib')
+[401.882s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/ld_library_path_lib.ps1'
+[401.883s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/ld_library_path_lib.dsv'
+[401.884s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/ld_library_path_lib.sh'
+[401.886s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/bin'
+[401.886s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/pkgconfig/inertial_sense_ros2.pc'
+[401.887s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages'
+[401.887s] Level 1:colcon.colcon_core.shell:create_environment_hook('inertial_sense_ros2', 'pythonpath')
+[401.887s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/pythonpath.ps1'
+[401.889s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/pythonpath.dsv'
+[401.889s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/pythonpath.sh'
+[401.891s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/bin'
+[401.891s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.ps1'
+[401.893s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.dsv'
+[401.894s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.sh'
+[401.896s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.bash'
+[401.897s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.zsh'
+[401.899s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/colcon-core/packages/inertial_sense_ros2)
+[407.443s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(inertial_sense_ros2)
+[407.444s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2' for CMake module files
+[407.449s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2' for CMake config files
+[407.454s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib'
+[407.455s] Level 1:colcon.colcon_core.shell:create_environment_hook('inertial_sense_ros2', 'ld_library_path_lib')
+[407.455s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/ld_library_path_lib.ps1'
+[407.460s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/ld_library_path_lib.dsv'
+[407.463s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/ld_library_path_lib.sh'
+[407.468s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/bin'
+[407.468s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/pkgconfig/inertial_sense_ros2.pc'
+[407.469s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/lib/python3.12/site-packages'
+[407.470s] Level 1:colcon.colcon_core.shell:create_environment_hook('inertial_sense_ros2', 'pythonpath')
+[407.470s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/pythonpath.ps1'
+[407.472s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/pythonpath.dsv'
+[407.474s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/hook/pythonpath.sh'
+[407.479s] Level 1:colcon.colcon_core.environment:checking '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/bin'
+[407.480s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.ps1'
+[407.483s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.dsv'
+[407.489s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.sh'
+[407.492s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.bash'
+[407.494s] INFO:colcon.colcon_core.shell:Creating package script '/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/inertial_sense_ros2/package.zsh'
+[407.497s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/s/Inertial_Sense/imx/SDK/ros2/install/inertial_sense_ros2/share/colcon-core/packages/inertial_sense_ros2)
+[407.504s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[407.504s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[407.504s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[407.504s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[407.561s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[407.561s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[407.561s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[407.633s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[407.637s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/s/Inertial_Sense/imx/SDK/ros2/install/local_setup.ps1'
+[407.641s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/s/Inertial_Sense/imx/SDK/ros2/install/_local_setup_util_ps1.py'
+[407.652s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/s/Inertial_Sense/imx/SDK/ros2/install/setup.ps1'
+[407.661s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/s/Inertial_Sense/imx/SDK/ros2/install/local_setup.sh'
+[407.662s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/s/Inertial_Sense/imx/SDK/ros2/install/_local_setup_util_sh.py'
+[407.668s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/s/Inertial_Sense/imx/SDK/ros2/install/setup.sh'
+[407.677s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/s/Inertial_Sense/imx/SDK/ros2/install/local_setup.bash'
+[407.678s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/s/Inertial_Sense/imx/SDK/ros2/install/setup.bash'
+[407.698s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/s/Inertial_Sense/imx/SDK/ros2/install/local_setup.zsh'
+[407.699s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/s/Inertial_Sense/imx/SDK/ros2/install/setup.zsh'

@@ -1,6 +1,7 @@
 set(CMAKE_CXX_STANDARD 17)
 cmake_minimum_required(VERSION 3.10.0)
 project(inertial_sense_ros2)
+#find_package(rosidl_typesupport_c REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -109,3 +110,5 @@ ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diag
 
 target_link_libraries(new_target /home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk/libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
+install(TARGETS new_target
+        DESTINATION lib/${PROJECT_NAME})

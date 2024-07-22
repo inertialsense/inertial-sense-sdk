@@ -23,8 +23,8 @@ inertial_sense_ros2__msg__GPSInfo__get_type_hash(
 #include <string.h>
 
 // Include directives for referenced types
-#include "builtin_interfaces/msg/detail/time__functions.h"
 #include "inertial_sense_ros2/msg/detail/sat_info__functions.h"
+#include "builtin_interfaces/msg/detail/time__functions.h"
 #include "std_msgs/msg/detail/header__functions.h"
 
 // Hashes for external referenced types
