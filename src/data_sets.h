@@ -1047,8 +1047,6 @@ typedef struct PACKED
 	uint32_t				numSats;					
     /** Satellite information list */
 	gps_sat_sv_t			sat[MAX_NUM_SATELLITES];	
-    /** Last ephem time stamp (index matachs sat) */
-    int                     lastEphem[MAX_NUM_SATELLITES];
 } gps_sat_t;
 
 enum eSatSvSigId
