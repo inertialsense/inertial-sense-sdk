@@ -198,38 +198,34 @@ is_operation_result cISBootloaderBase::mode_device_app
     (obj)->m_port_name = std::string(handle->port);
     device = (obj)->check_is_compatible();
     if(device)
-    {   
-        if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)   
-        {
-            (obj)->m_filename = filenames.fw_EVB_2.path;
-            strncpy((obj)->m_app.enable_command, "EBLE", 5);
-            (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);     // Delay 3 seconds to avoid port being re-used
-            return IS_OP_CLOSED;
-        }
-        else if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
+    {
+        // newest first...
+        if ((device & IS_IMAGE_SIGN_APP) & fw_IMX_5)
         {
             (obj)->m_filename = filenames.fw_IMX_5.path;
             strncpy((obj)->m_app.enable_command, "BLEN", 5);
             (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);
-            return IS_OP_CLOSED;
+            SLEEP_MS(3000);     // time to reboot into bootloader
         }
         else if ((device & IS_IMAGE_SIGN_APP) & fw_uINS_3)
         {
             (obj)->m_filename = filenames.fw_uINS_3.path;
             strncpy((obj)->m_app.enable_command, "BLEN", 5);
             (obj)->reboot_down();
-            delete obj;
-            SLEEP_MS(3000);
-            return IS_OP_CLOSED;
+            SLEEP_MS(3000);     // time to reboot into bootloader
+        }
+        else if ((device & IS_IMAGE_SIGN_APP) & fw_EVB_2)
+        {
+            (obj)->m_filename = filenames.fw_EVB_2.path;
+            strncpy((obj)->m_app.enable_command, "EBLE", 5);
+            (obj)->reboot_down();
+            SLEEP_MS(3000);     // time to reboot into bootloader
+        } else {
+            SLEEP_MS(300);      // something responded, but nothing we expected, let's give a brief break and then continue...
         }
     }
 
     delete obj;
-    SLEEP_MS(3000);
     return IS_OP_CLOSED;    // Assume we found something besides app mode
 }
 

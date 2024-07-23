@@ -31,13 +31,13 @@ std::vector<uint32_t> cISBootloaderISB::rst_serial_list;
 std::mutex cISBootloaderISB::serial_list_mutex;
 std::mutex cISBootloaderISB::rst_serial_list_mutex;
 
-// Delete this and assocated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
-#define SUPPORT_BOOTLOADER_V5A
+// Delete this and associated code in Q4 2022 after bootloader v5a is out of circulation. WHJ
+// #define SUPPORT_BOOTLOADER_V5A
 
 /** uINS bootloader baud rate */
 #define IS_BAUD_RATE_BOOTLOADER 921600
 
-#define BOOTLOADER_RETRIES          100
+#define BOOTLOADER_RETRIES          10
 #define BOOTLOADER_RESPONSE_DELAY   10
 #define BOOTLOADER_REFRESH_DELAY    500
 #define MAX_VERIFY_CHUNK_SIZE       1024
@@ -64,89 +64,98 @@ eImageSignature cISBootloaderISB::check_is_compatible()
     uint8_t buf[14] = { 0 };
     int count = 0;
 
-    serialPortFlush(m_port);
-    serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    sync(m_port);
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "ISBootloaderISB :: entering check_is_compatible()");
 
-    SLEEP_MS(100);
-
-    for (int retry=0;; retry++)
-    {
+#define READ_DELAY_MS   500
+    int retry = 0;
+    do {
         // Send command
+        if (has_sync == false) {
+            // first, let's try and "sync"...
+            serialPortFlush(m_port);
+            serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
+            sync(m_port);
+            SLEEP_MS(200);
+        }
+
         serialPortFlush(m_port);
         serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
         serialPortWrite(m_port, (uint8_t*)":020000041000EA", 15);
 
         // Read Version, SAM-BA Available, serial number (in version 6+) and ok (.\r\n) response
-#define READ_DELAY_MS   500
         count = serialPortReadTimeout(m_port, buf, 14, READ_DELAY_MS);
-
-        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55)
-        {
+        if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55) {
             break;
         }
 
-        if (retry*READ_DELAY_MS > 4000)
-        {   // No response
-            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible response missing.", m_port->port);
-            return IS_IMAGE_SIGN_NONE;
-        }
-    }
+        retry++;
+    } while (retry * READ_DELAY_MS < 4000);  // retry for upto 4 seconds...)
 
-    uint32_t valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
-    
-    m_isb_major = buf[2];
-    m_isb_minor = (char)buf[3];
-    bool rom_available = buf[4];
-    uint8_t processor = 0xFF;
-    m_isb_props.is_evb = false;
-    m_sn = 0;
+    uint32_t valid_signatures = IS_IMAGE_SIGN_NONE;
+    if (count >= 8 && buf[0] == 0xAA && buf[1] == 0x55) {
+        valid_signatures = IS_IMAGE_SIGN_IMX_5p0;  // Assume IMX-5
 
-    if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
-    {   // Valid packet found
-        processor = (eProcessorType)buf[5];
-        m_isb_props.is_evb = buf[6];
-        memcpy(&m_sn, &buf[7], sizeof(uint32_t));
-    }
-    else
-    {   // Error parsing
-        char msg[200] = { 0 };
-        int n = SNPRINTF(msg, sizeof(msg), "    | (ISB Error) (%s) check_is_compatible parse error:\n 0x ", m_port->port);
-        for(int i=0; i<count; i++)
-        {
-            if (i%2 == 0)
-            {   // Add space every other 
-                n += SNPRINTF(&msg[n], sizeof(msg)-n, " ");
+        m_isb_major = buf[2];
+        m_isb_minor = (char)buf[3];
+        bool rom_available = buf[4];
+        uint8_t processor = 0xFF;
+        m_isb_props.is_evb = false;
+        m_sn = 0;
+
+        if(buf[11] == '.' && buf[12] == '\r' && buf[13] == '\n')
+        {   // Valid packet found
+            processor = (eProcessorType)buf[5];
+            m_isb_props.is_evb = buf[6];
+            memcpy(&m_sn, &buf[7], sizeof(uint32_t));
+
+            if(m_isb_major >= 6)
+            {   // v6 and up has EVB detection built-in
+                if(processor == IS_PROCESSOR_SAMx70)
+                {
+                    valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
+                    if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+                }
+                else if(processor == IS_PROCESSOR_STM32L4)
+                {
+                    valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
+                    if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
+                }
             }
-            n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
+            else
+            {
+                valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
+                if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+            }
         }
-        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, msg);
-        return (eImageSignature)valid_signatures;
+        else
+        {   // Error parsing
+            char msg[200] = { 0 };
+            int n = SNPRINTF(msg, sizeof(msg), "    | (ISB Error) (%s) check_is_compatible parse error:\n 0x ", m_port->port);
+            for(int i=0; i<count; i++)
+            {
+                if (i%2 == 0)
+                {   // Add space every other
+                    n += SNPRINTF(&msg[n], sizeof(msg)-n, " ");
+                }
+                n += SNPRINTF(&msg[n], sizeof(msg)-n, "%02x", buf[i]);
+            }
+            m_info_callback(NULL, IS_LOG_LEVEL_ERROR, msg);
+        }
     }
-
-    if(m_isb_major >= 6)   
-    {   // v6 and up has EVB detection built-in
-        if(processor == IS_PROCESSOR_SAMx70)
-        {   
-            valid_signatures |= m_isb_props.is_evb ? IS_IMAGE_SIGN_EVB_2_24K : IS_IMAGE_SIGN_UINS_3_24K;
-            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
-        }
-        else if(processor == IS_PROCESSOR_STM32L4)
-        {
-            valid_signatures |= IS_IMAGE_SIGN_IMX_5p0;
-            if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_STM32L4;
-        }
-    }
-    else
-    {
-        valid_signatures |= IS_IMAGE_SIGN_EVB_2_16K | IS_IMAGE_SIGN_UINS_3_16K;
-        if (rom_available) valid_signatures |= IS_IMAGE_SIGN_ISB_SAMx70_16K | IS_IMAGE_SIGN_ISB_SAMx70_24K;
+    else if (retry*READ_DELAY_MS > 4000)
+    {   // No response
+        m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) timeout waiting for compatibility check response.", m_port->port);
     }
 
     if (valid_signatures == 0)
     {
         m_info_callback(NULL, IS_LOG_LEVEL_ERROR, "    | (ISB Error) (%s) check_is_compatible no valid signature.", m_port->port);
     }
+
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "ISBootloaderISB :: exiting check_is_compatible()");
 
     return (eImageSignature)valid_signatures;
 }
@@ -310,17 +319,18 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
 {
     static const uint8_t handshakerChar = 'U';
 
+    if (has_sync == true)
+        return IS_OP_OK;
+
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms. 
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
-    for (int i = 0; i < BOOTLOADER_RETRIES; i++)
-    {
-        if(serialPortWrite(s, &handshakerChar, 1) != 1)
-        {
+    for (int i = 0; i < BOOTLOADER_RETRIES; i++) {
+        if (serialPortWrite(s, &handshakerChar, 1) != 1) {
             return IS_OP_ERROR;
         }
 
-        if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
-        {	// Success
+        if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY)) {    // Success
+            has_sync = true;
             return IS_OP_OK;
         }
     }

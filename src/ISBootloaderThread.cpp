@@ -196,7 +196,7 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
     thread_serial_t* thread_info = (thread_serial_t*)context;
     cISBootloaderBase* new_context;
 
-    SLEEP_MS(2500);     // Wait for all other threads to start
+    // SLEEP_MS(2500);     // Wait for all other threads to start
 
     serial_port_t port;
     serialPortPlatformInit(&port);
@@ -357,6 +357,10 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ctx.clear();
     m_ctx_mutex.unlock();
 
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Entering set_mode_and_check_devices()...");
+
     // Copy in the firmware update settings
     m_firmware = firmware;
     m_uploadProgress = uploadProgress;
@@ -384,14 +388,17 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Initializing devices for update...");
+    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Discovering available ports...");
 
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_app` to put all APP devices into IS-bootloader mode
     ////////////////////////////////////////////////////////////////////////////
 
     // Put all devices in the correct mode
-    m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Waiting for devices to initialize...");
+    //m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Waiting for devices to initialize...");
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Device Discovery :: Requesting device info...");
+
     while(m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
@@ -440,7 +447,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                 new_thread->ctx = NULL;
                 new_thread->done = false;
 
-                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Discovered device on port %s", new_thread->serial_name);
+                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "%s :: Querying for compatible devices.", new_thread->serial_name);
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
 
@@ -463,7 +470,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ////////////////////////////////////////////////////////////////////////////
     // Join and free
     ////////////////////////////////////////////////////////////////////////////
-    
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Device Discovery :: Waiting for threads to finish...");
+
     // Join and free all mode threads
     while (m_continue_update)
     {
@@ -514,7 +523,14 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     // Run `get_device_isb_version_thread` to get version from ISB bootloaders
     ////////////////////////////////////////////////////////////////////////////
 
-    // Put all devices in the correct mode
+    /*
+     * At this point, devices that responded to Inertial Sense queries should have also been instructed to reset into ISB-bootloader mode.
+     * This action may, in some instances (usually USB devices) causes them to re-enumerate with a different port ID.  So, we need to
+     * check all of the available ports, again, looking for new ones, and then to query them for their ISB bootloader version.
+     * In fact, we should probably query ALL valid devices for their bootloader version here, but we don't (though we will eventually).
+     */
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Device Discovery :: Looking for re-enumerated devices after reset into ISB-bootloader");
     while(m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
@@ -543,7 +559,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
                         break;
                     }
                 }
-               
             }
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
@@ -584,7 +599,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ////////////////////////////////////////////////////////////////////////////
     // Join threads
     ////////////////////////////////////////////////////////////////////////////
-    
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Device Discovery :: Waiting for threads to finish...");
+
     // Join and free all mode threads
     while (m_continue_update)
     {
@@ -646,6 +663,9 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
     m_update_mutex.unlock();
 
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Device Discovery :: All discovered devices should be in ISB-bootloader mode.");
+
     return updatesPending;
 }
 
@@ -706,6 +726,9 @@ is_operation_result cISBootloaderThread::update(
     ////////////////////////////////////////////////////////////////////////////
     // Run `mode_thread_serial_isb` to put all ISB devices into ROM-bootloader (DFU/SAM-BA) mode
     ////////////////////////////////////////////////////////////////////////////
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Entering ROM-bootloader mode...");
 
     while(m_continue_update && !true_if_cancelled())
     {
@@ -768,7 +791,9 @@ is_operation_result cISBootloaderThread::update(
     ////////////////////////////////////////////////////////////////////////////
     // Join and free 
     ////////////////////////////////////////////////////////////////////////////
-    
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Exiting ROM-bootloader mode... (Join and Free)");
+
     while (m_continue_update)
     {
         m_continue_update = false;
@@ -809,6 +834,8 @@ is_operation_result cISBootloaderThread::update(
     }
     m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Updating...");
 
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Entering DFU-update mode...");
     ////////////////////////////////////////////////////////////////////////////
     // Run `mgmt_thread_libusb` to update DFU devices
     ////////////////////////////////////////////////////////////////////////////
@@ -820,6 +847,8 @@ is_operation_result cISBootloaderThread::update(
     m_continue_update = true;
     m_timeStart = current_timeMs();
 
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Entering serial-update mode...");
     ////////////////////////////////////////////////////////////////////////////
     // Run `update_thread_serial` to update devices
     ////////////////////////////////////////////////////////////////////////////
@@ -927,6 +956,9 @@ is_operation_result cISBootloaderThread::update(
     }
 
     timeDeltaMs = current_timeMs() - beginTimeMs;
+
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Exiting firmware update modes.");
 
     tmp = "Update run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
 

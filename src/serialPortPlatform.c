@@ -92,6 +92,32 @@ static int serialPortFlushPlatform(serial_port_t* serialPort);
 static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
+#define DEBUG_COMMS
+// Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+#ifdef DEBUG_COMMS
+#define IS_PRINTABLE(n) ( ((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)) )
+static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
+    if (len <= 0)
+        return;
+
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s", start.tv_sec, (uint16_t)(start.tv_usec / 1000), prefix);
+    for ( int i = 0; i < len; i++)
+        printf(" %02x", buffer[i]);
+
+    int linePos = 16 + strlen(prefix) + (len * 3);
+    printf("%*c", 80 - linePos, ' ');
+
+    for ( int i = 0; i < len; i++)
+        printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
+
+    printf("\n");
+}
+#else
+    #define debugDumpBuffer
+#endif
+
 #if PLATFORM_IS_WINDOWS
 
 #define WINDOWS_OVERLAPPED_BUFFER_SIZE 8192
@@ -605,6 +631,8 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             break;
         }
     }
+
+    debugDumpBuffer("<< ", buffer, totalRead);
     return totalRead;
 }
 
@@ -633,6 +661,8 @@ static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned cha
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
     else
         serialPort->errorCode = 0; // clear any previous errorcode
+
+    debugDumpBuffer("{{ ", buffer, result);
     return result;
 }
 
@@ -707,10 +737,10 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
 
     struct stat sb;
     errno = 0;
-    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
-    {   // Serial port not open
+    if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0) {
+        // Serial port not open
         serialPort->errorCode = errno;
-        return 0;
+        return -1;
     }
 
     // make a quick attempt to poll WRITE availability
@@ -718,56 +748,41 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
     fds[0].fd = handle->fd;
     fds[0].events = POLLOUT;
     int pollrc = poll(fds, 1, 10);
-    if (pollrc <= 0 || !(fds[0].revents & POLLOUT))
-    {
-        if ((pollrc <= 0) && !(fds[0].revents & POLLOUT)) {
-            if (fds[0].revents & POLLERR) {
-                error_message("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
-                serialPort->errorCode = errno;
-                return -1; // more than a timeout occurred.
-            }
-            return 0;
+    if ((pollrc <= 0) && !(fds[0].revents & POLLOUT)) {
+        if (fds[0].revents & POLLERR) {
+            error_message("[%s] write():: error %d: %s\n", serialPort->port, errno, strerror(errno));
+            serialPort->errorCode = errno;
+            return -1; // more than a timeout occurred.
         }
+        return 0; // this essentially means there is no room left in the FD's FIFO to send more data (but its not an error)
     }
 
     int count, retry = 0;
-    do
-    {
-        count = write(handle->fd, buffer, writeCount);
-        if (count < 0) {
-            // Retry if resource temporarily unavailable (errno 11)
-            if (((errno != EAGAIN) && (errno != EWOULDBLOCK)) || (retry >= 10))
-                break;
+    while ((count = write(handle->fd, buffer, writeCount)) < 0) {
+        // Retry if resource temporarily unavailable (errno 11)
+        if (((errno != EAGAIN) && (errno != EWOULDBLOCK)) || (retry >= 10))
+            break;
 
-            usleep(1000); // give it a hot second to clear to buffer/error
-            retry++;
-        }
-    }
-    while (count < 0);
+        usleep(1000); // give it a hot second to clear to buffer/error
+        retry++;
+    };
 
-    if (count < 0)
-    {
+    if (count < 0) {
         if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
             // error_message("[%s] error %d: %s\n", serialPort->port, errno, strerror(errno));
             serialPort->errorCode = errno;
         }
-        return 0;
+        return -1;
     }
 
-    if(handle->blocking)
-    {
-        int error = tcdrain(handle->fd);
-
-        if (error != 0)
-        {   // Drain error
-            return 0;
-        }
+    if ((handle->blocking) && (tcdrain(handle->fd) != 0)) {
+        // Drain error
+        return -1;
     }
 
+    debugDumpBuffer(">> ", buffer, count);
     return count;
-
 #endif
-
 }
 
 static int serialPortGetByteCountAvailableToReadPlatform(serial_port_t* serialPort)
@@ -845,3 +860,4 @@ int serialPortPlatformInit(serial_port_t* serialPort)
     serialPort->pfnSleep = serialPortSleepPlatform;
     return 0;
 }
+

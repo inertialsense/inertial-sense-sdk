@@ -71,7 +71,7 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    static is_operation_result sync(serial_port_t* s);
+    is_operation_result sync(serial_port_t* s);
 
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 
@@ -102,6 +102,7 @@ private:
     is_operation_result download_data(int startOffset, int endOffset);
 
     // Verification parameters
+    bool has_sync = false;  // whether this instance has successfully "synced" with the device
     int m_currentPage;
     int m_verifyCheckSum;
 

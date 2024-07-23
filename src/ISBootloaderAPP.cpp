@@ -172,12 +172,12 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
     // In case we are in program mode, try and send the commands to go into bootloader mode
     uint8_t c = 0;
 
-    for (size_t loop = 0; loop < 10; loop++)
+    for (size_t loop = 0; loop < 3; loop++)
     {
         if (!serialPortWriteAscii(m_port, "STPB", 4)) break;     // If the write fails, assume the device is now in bootloader mode.
         if (!serialPortWriteAscii(m_port, m_app.enable_command, 4)) break;
         c = 0;
-        if (serialPortReadCharTimeout(m_port, &c, 13) == 1)
+        if (serialPortReadCharTimeout(m_port, &c, 1000) == 1)
         {
             if (c == '$')
             {
@@ -186,6 +186,8 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
             }
         }
         else serialPortFlush(m_port);
+
+        SLEEP_MS(500);
     }
 
     return IS_OP_OK;

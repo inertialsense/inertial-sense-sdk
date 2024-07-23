@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 #include <stdint.h>
 
-int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
+int SERIAL_PORT_DEFAULT_TIMEOUT = 250;
 
 void serialPortSetOptions(serial_port_t* serialPort, uint32_t options)
 {

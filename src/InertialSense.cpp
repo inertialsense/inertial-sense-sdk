@@ -1220,6 +1220,10 @@ is_operation_result InertialSense::BootloadFile(
 
     cISBootloaderThread::set_mode_and_check_devices(comPorts, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Completed device discovery.");
+
     cISSerialPort::GetComPorts(all_ports);
 
     // Get the list of ports to ignore during the bootloading process
@@ -1229,6 +1233,9 @@ is_operation_result InertialSense::BootloadFile(
             all_ports.begin(), all_ports.end(),
             ports_user_ignore.begin(), ports_user_ignore.end(),
             back_inserter(update_ports));
+
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s\n", start.tv_sec, (uint16_t)(start.tv_usec / 1000), "Starting update...");
 
     cISBootloaderThread::update(update_ports, forceBootloaderUpdate, baudRate, files, uploadProgress, verifyProgress, infoProgress, waitAction);
 
