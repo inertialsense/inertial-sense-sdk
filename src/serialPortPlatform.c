@@ -623,7 +623,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 #endif
 
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
-        error_message("[%s] read():: Error reading from port: %s (%d)\n", serialPort->portName, strerror(errno), errno);
+        error_message("[%s] read():: Error reading from port: %s (%d)\n", portName(portName), strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
         serialPort->error = strerror(errno);
 
@@ -818,9 +818,15 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serial_port_t* serialPort = (serial_port_t*)port;
 	// very important - the serial port must be initialized to zeros
     base_port_t tmp = { .pnum = portId(port), .ptype = portType(port) };
+
+    // FIXME:  I really don't like this having to copy and clean, and copy back.  It shouldn't be necessary.
+    char tmpName[64];
+    memcpy(tmpName, serialPort->portName, sizeof(serialPort->portName));
+
 	memset(serialPort, 0, sizeof(serial_port_t));
 
     serialPort->base = tmp;
+    memcpy(serialPort->portName, tmpName, sizeof(serialPort->portName));
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;

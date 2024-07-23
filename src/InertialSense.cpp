@@ -131,7 +131,7 @@ InertialSense::InertialSense(
     comManagerGetGlobal()->assignUserPointer(&m_comManagerState);
     // memset(&m_cmInit, 0, sizeof(m_cmInit));
     // m_cmPorts = NULLPTR;
-    is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer));
+    // is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer));
 
     // Rx data callback functions
     m_handlerRmc    = handlerRmc;
@@ -237,7 +237,7 @@ void InertialSense::RemoveDevice(ISDevice& device)
     serialPortClose(device.port);
 
     for (auto& cmsDevice : m_comManagerState.devices) {
-        if (device == cmsDevice) {
+        if (cmsDevice == device) {
             // m_serialPorts.erase(m_serialPorts.begin() + i);
             comManagerRemovePort(device.port);
             delete (serial_port_t*)device.port;
@@ -281,7 +281,6 @@ void InertialSense::LoggerThread(void* info)
             for (auto [port, pkts] : packets)
             {
                 if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
-                    size_t numPackets = pkts.size();
                     for (auto& pkt : pkts) {
                         ISDevice* device = inertialSense->DeviceByPort(port);
                         if (!inertialSense->m_logger.LogData(device->devLogger, &pkt.hdr, pkt.buf)) {
@@ -1010,9 +1009,8 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
     while(!FlashConfigSynced(device->port))
     {   // Request and wait for flash config
         Update();
-        SLEEP_MS(100);
 
-        if (current_timeMs() - startMs > 3000)
+        if ((current_timeMs() - startMs) > SYNC_FLASH_CFG_TIMEOUT_MS)
         {   // Timeout waiting for flash config
             printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
 
@@ -1030,6 +1028,7 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
             GetData(DID_SYS_PARAMS);
             DEBUG_PRINT("Waiting for flash sync...\n");
         }
+        SLEEP_MS(20);  // give some time for the device to respond.
     }
 
     return FlashConfigSynced(device->port);
@@ -1439,13 +1438,15 @@ void InertialSense::OnClientDisconnected(cISTcpServer* server, socket_t socket)
 }
 
 port_handle_t InertialSense::allocateSerialPort(int ptype) {
-    serial_port_t* serialPort = new serial_port_t;
-    serialPort->base.pnum = m_serialPorts.size();
-    serialPort->base.ptype = (ptype | PORT_TYPE__UART);
+    // TODO :: TRYING SOMETHING DIFFERENT
+    //   -- rather than using new, m_serialPorts will allocate a new port using a copy constructor.
+    //   We'll dereference the internal copy in the vector to a port_handle_t -- this avoids us using new/delete or malloc/free
+    serial_port_t serialPort;
+    serialPort.base.pnum = (uint16_t)m_comManagerState.devices.size();
+    serialPort.base.ptype = (ptype | PORT_TYPE__UART);
 
     m_serialPorts.push_back(serialPort);
-    port_handle_t port = (port_handle_t)serialPort;
-
+    port_handle_t port = (port_handle_t)&m_serialPorts.back();
     serialPortPlatformInit(port);
     return port;
 }
@@ -1454,16 +1455,21 @@ bool InertialSense::freeSerialPort(port_handle_t port) {
     if (!port)
         return false;
 
-    auto found = std::find(m_serialPorts.begin(), m_serialPorts.end(), port);
-    if (found != m_serialPorts.end()) {
-        serialPortClose(port);
-        comManagerRemovePort(port);
+    // its annoying that its not "easy" to remove a vector element by value, especially when the value is complex
+    for (auto portIter = m_serialPorts.begin(); portIter != m_serialPorts.end(); portIter++) {
+        if (port == (port_handle_t*)&(*portIter)) {
+            serialPortClose(port);
+            comManagerRemovePort(port);
 
-        m_serialPorts.erase(found);
-        memset(port, 0, sizeof(serial_port_t));
-        delete (serial_port_t*)port;
+            m_serialPorts.erase(portIter);
+            // TODO: Don't need this, if we stick with the vector/copy allocation/initialization
+            // memset(port, 0, sizeof(serial_port_t));
+            // delete (serial_port_t*)port;
+            return true;
+        }
     }
-    return true;
+
+    return false;
 }
 
 bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)

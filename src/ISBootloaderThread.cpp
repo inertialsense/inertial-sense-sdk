@@ -130,12 +130,13 @@ void cISBootloaderThread::mode_thread_serial_app(void* context)
     SLEEP_MS(100);
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    serialPortPlatformInit(port);
+    // serialPortInit(port, 0, PORT_TYPE__COMM);
+    // serialPortPlatformInit(port);
     m_serial_thread_mutex.lock();
     const char* serial_name = portName(port);
     m_serial_thread_mutex.unlock();
 
-    serialPortSetPort(port, serial_name);
+    // serialPortSetPort(port, serial_name);
     if (!serialPortOpenRetry(port, serial_name, m_baudRate, 1))
     {
         serialPortClose(port);
@@ -200,7 +201,7 @@ void cISBootloaderThread::mode_thread_serial_isb(void* context)
     SLEEP_MS(2500);     // Wait for all other threads to start
 
     port_handle_t port = (port_handle_t)&(thread_info->serialPort);
-    serialPortPlatformInit(port);
+    // serialPortPlatformInit(port);
     m_serial_thread_mutex.lock();
     const char* serial_name = portName(port);
     m_serial_thread_mutex.unlock();
@@ -366,21 +367,21 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     m_baudRate = baudRate;
     m_waitAction = waitAction;
 
-    vector<string> ports;                       // List of all ports connected, including ignored ports
+    vector<string> portNames;                       // List of all ports connected, including ignored ports
     vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
     vector<confirm_bootload_t> updatesPending;
 
     m_serial_threads.clear();
 
-    cISSerialPort::GetComPorts(ports);
+    cISSerialPort::GetComPorts(portNames);
 
     // Get the list of ports to ignore during the bootloading process
-    sort(ports.begin(), ports.end());
+    sort(portNames.begin(), portNames.end());
     sort(comPorts.begin(), comPorts.end());
-    set_symmetric_difference(   
-        ports.begin(), ports.end(),
-        comPorts.begin(), comPorts.end(),
-        back_inserter(ports_user_ignore));
+    set_symmetric_difference(
+            portNames.begin(), portNames.end(),
+            comPorts.begin(), comPorts.end(),
+            back_inserter(ports_user_ignore));
 
     m_continue_update = true;
     m_timeStart = current_timeMs();
@@ -398,26 +399,26 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         if (m_waitAction) m_waitAction();
         SLEEP_MS(10);
 
-        cISSerialPort::GetComPorts(ports);
+        cISSerialPort::GetComPorts(portNames);
 
         m_serial_thread_mutex.lock();
 
-        for (size_t i = 0; i < ports.size(); i++)
+        for (auto port_name : portNames)
         {
             bool found = false;
 
-            for (size_t j = 0; j < m_serial_threads.size(); j++)
+            for (auto serialThread : m_serial_threads)
             {
-                port_handle_t port = (port_handle_t)&(m_serial_threads[j]->serialPort);
-                std::string serPortName(portName(port));
-                if (serPortName == ports[i])
+                port_handle_t threadPort = (port_handle_t)&(serialThread->serialPort);
+                std::string serPortName(portName(threadPort));
+                if (serPortName == port_name)
                 {
-                    if (!m_serial_threads[j]->done)    //(m_serial_threads[j]->ctx != NULL || 
+                    if (!serialThread->done)    //(m_serial_threads[j]->ctx != NULL ||
                     {   // Thread hasn't finished
                         found = true;
                         break;
                     }
-                    if (m_serial_threads[j]->done && !m_serial_threads[j]->reuse_port)
+                    if (serialThread->done && !serialThread->reuse_port)
                     {   // Thread finished and the reuse flag isn't set
                         found = true;
                         break;
@@ -428,7 +429,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
             {
-                if (ports_user_ignore[k] == ports[i])
+                if (ports_user_ignore[k] == port_name)
                 {
                     found = true;
                     break;
@@ -437,12 +438,13 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             if (!found)
             {
-                thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                port_handle_t newPort = (port_handle_t)&(new_thread->serialPort);
+                thread_serial_t* new_thread = new thread_serial_t(); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
 
-                // FIXME: The follow two lines are unsafe.  serialPort has its own name, which we shouldn't rely on intrinsic knowledge of its type/struct to set it.  This should use a setter if possible.
-                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
-                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(), sizeof(new_thread->serialPort.portName)));
+                // FIXME: This is pretty jank... and rediculous.  I can do better!
+                port_handle_t newPort = (port_handle_t)&(new_thread->serialPort);
+                serialPortInit(newPort, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+                serialPortPlatformInit(newPort);
+                serialPortSetPort(newPort, port_name.c_str());
 
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -481,16 +483,16 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
         m_serial_thread_mutex.lock();
 
-        for (size_t l = 0; l < m_serial_threads.size(); l++)
+        for (auto serialThread : m_serial_threads)
         {
-            if(!m_serial_threads[l]->done)
+            if(!serialThread->done)
             {
                 m_continue_update = true;
             }
-            else if (m_serial_threads[l]->thread != NULL)
+            else if (serialThread->thread != NULL)
             {
-                threadJoinAndFree(m_serial_threads[l]->thread);
-                m_serial_threads[l]->thread = NULL;
+                threadJoinAndFree(serialThread->thread);
+                serialThread->thread = NULL;
             }
         }
 
@@ -527,26 +529,26 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         if (m_waitAction) m_waitAction();
         SLEEP_MS(10);
 
-        cISSerialPort::GetComPorts(ports);
+        cISSerialPort::GetComPorts(portNames);
 
         m_serial_thread_mutex.lock();
 
-        for (size_t i = 0; i < ports.size(); i++)
+        for (auto port_name : portNames)
         {
             bool found = false;
 
-            for (size_t j = 0; j < m_serial_threads.size(); j++)
+            for (auto serialThread : m_serial_threads)
             {
-                port_handle_t serPort = (port_handle_t)&(m_serial_threads[j]->serialPort);
-                std::string serPortName(portName(serPort));
-                if (serPortName == ports[i])
+                port_handle_t threadPort = (port_handle_t)&(serialThread->serialPort);
+                std::string serPortName(portName(threadPort));
+                if (serPortName == port_name)
                 {
-                    if (!m_serial_threads[j]->done)    //(m_serial_threads[j]->ctx != NULL || 
+                    if (!serialThread->done)    //(m_serial_threads[j]->ctx != NULL ||
                     {   // Thread hasn't finished
                         found = true;
                         break;
                     }
-                    if (m_serial_threads[j]->done && !m_serial_threads[j]->reuse_port)
+                    if (serialThread->done && !serialThread->reuse_port)
                     {   // Thread finished and the reuse flag isn't set
                         found = true;
                         break;
@@ -557,7 +559,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
             {
-                if (ports_user_ignore[k] == ports[i])
+                if (ports_user_ignore[k] == port_name)
                 {
                     found = true;
                     break;
@@ -566,13 +568,13 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             if (!found)
             {
-                thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                thread_serial_t* new_thread = new thread_serial_t(); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
 
+                // FIXME: This is pretty jank... and rediculous.  I can do better!
                 port_handle_t newPort = (port_handle_t)&(new_thread->serialPort);
-
-                // FIXME: The follow two lines are unsafe.  serialPort has its own name, which we shouldn't rely on intrinsic knowledge of its type/struct to set it.  This should use a setter if possible.
-                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
-                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(), sizeof(new_thread->serialPort.portName)));
+                serialPortInit(newPort, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+                serialPortPlatformInit(newPort);
+                serialPortSetPort(newPort, port_name.c_str());
 
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -609,16 +611,16 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
         m_serial_thread_mutex.lock();
 
-        for (size_t l = 0; l < m_serial_threads.size(); l++)
+        for (auto serialThread : m_serial_threads)
         {
-            if(!m_serial_threads[l]->done)
+            if(!serialThread->done)
             {
                 m_continue_update = true;
             }
-            else if (m_serial_threads[l]->thread != NULL)
+            else if (serialThread->thread != NULL)
             {
-                threadJoinAndFree(m_serial_threads[l]->thread);
-                m_serial_threads[l]->thread = NULL;
+                threadJoinAndFree(serialThread->thread);
+                serialThread->thread = NULL;
             }
         }
 
@@ -691,20 +693,20 @@ is_operation_result cISBootloaderThread::update(
     m_baudRate = baudRate;
     m_waitAction = waitAction;
 
-    vector<string> ports;                       // List of ports connected
+    vector<string> portNames;                       // List of ports connected
     vector<string> ports_user_ignore;           // List of ports that were connected at startup but not selected. Will ignore in update.
 
     m_serial_threads.clear();
 
-    cISSerialPort::GetComPorts(ports);
+    cISSerialPort::GetComPorts(portNames);
 
     // Get the list of ports to ignore during the bootloading process
-    sort(ports.begin(), ports.end());
+    sort(portNames.begin(), portNames.end());
     sort(comPorts.begin(), comPorts.end());
-    set_symmetric_difference(   
-        ports.begin(), ports.end(),
-        comPorts.begin(), comPorts.end(),
-        back_inserter(ports_user_ignore));
+    set_symmetric_difference(
+            portNames.begin(), portNames.end(),
+            comPorts.begin(), comPorts.end(),
+            back_inserter(ports_user_ignore));
 
     if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
@@ -726,19 +728,19 @@ is_operation_result cISBootloaderThread::update(
         if (m_waitAction) m_waitAction();
         SLEEP_MS(10);
 
-        cISSerialPort::GetComPorts(ports);
+        cISSerialPort::GetComPorts(portNames);
 
         m_serial_thread_mutex.lock();
 
-        for (size_t i = 0; i < ports.size(); i++)
+        for (auto port_name : portNames)
         {
             bool found = false;
 
-            for (size_t j = 0; j < m_serial_threads.size(); j++)
+            for (auto serialThread : m_serial_threads)
             {
-                port_handle_t serPort = (port_handle_t)&(m_serial_threads[j]->serialPort);
-                std::string serPortName(portName(serPort));
-                if (serPortName == ports[i])
+                port_handle_t threadPort = (port_handle_t)&(serialThread->serialPort);
+                std::string serPortName(portName(threadPort));
+                if (serPortName == port_name)
                 {
                     found = true;
                     break;
@@ -747,7 +749,7 @@ is_operation_result cISBootloaderThread::update(
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
             {
-                if (ports_user_ignore[k] == ports[i])
+                if (ports_user_ignore[k] == port_name)
                 {
                     found = true;
                     break;
@@ -756,11 +758,13 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                thread_serial_t* new_thread = new thread_serial_t(); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
 
-                // FIXME: The follow two lines are unsafe.  serialPort has its own name, which we shouldn't rely on intrinsic knowledge of its type/struct to set it.  This should use a setter if possible.
-                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
-                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(), sizeof(new_thread->serialPort.portName)));
+                // FIXME: This is pretty jank... and rediculous.  I can do better!
+                port_handle_t newPort = (port_handle_t)&(new_thread->serialPort);
+                serialPortInit(newPort, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+                serialPortPlatformInit(newPort);
+                serialPortSetPort(newPort, port_name.c_str());
 
                 new_thread->ctx = NULL;
                 new_thread->done = false;
@@ -852,40 +856,40 @@ is_operation_result cISBootloaderThread::update(
 
         m_serial_devicesActive = 0;
 
-        cISSerialPort::GetComPorts(ports);
+        cISSerialPort::GetComPorts(portNames);
 
         m_serial_thread_mutex.lock();
 
-        for (size_t l = 0; l < m_serial_threads.size(); l++)
+        for (auto serialThread : m_serial_threads)
         {
-            if (m_serial_threads[l]->thread != NULL && m_serial_threads[l]->done)
+            if (serialThread->thread != NULL && serialThread->done)
             {
-                threadJoinAndFree(m_serial_threads[l]->thread);
-                m_serial_threads[l]->thread = NULL;
+                threadJoinAndFree(serialThread->thread);
+                serialThread->thread = NULL;
             }
 
-            if (!m_serial_threads[l]->done)
+            if (!serialThread->done)
             {
                 m_serial_devicesActive++;
             }
         }
 
-        for (size_t i = 0; i < ports.size(); i++)
+        for (auto port_name : portNames)
         {
             bool found = false;
 
-            for (size_t j = 0; j < m_serial_threads.size(); j++)
+            for (auto serialThread : m_serial_threads)
             {
-                port_handle_t serPort = (port_handle_t)&(m_serial_threads[j]->serialPort);
+                port_handle_t serPort = (port_handle_t)&(serialThread->serialPort);
                 std::string serPortName(portName(serPort));
-                if (serPortName == ports[i])
+                if (serPortName == port_name)
                 {
-                    if (!m_serial_threads[j]->done)    //(m_serial_threads[j]->ctx != NULL || 
+                    if (!serialThread->done)    //(m_serial_threads[j]->ctx != NULL ||
                     {   // Thread hasn't finished
                         found = true;
                         break;
                     }
-                    if (m_serial_threads[j]->done && !m_serial_threads[j]->reuse_port)
+                    if (serialThread->done && !serialThread->reuse_port)
                     {   // Thread finished and the reuse flag isn't set
                         found = true;
                         break;
@@ -896,7 +900,7 @@ is_operation_result cISBootloaderThread::update(
 
             for (size_t k = 0; k < ports_user_ignore.size(); k++)
             {
-                if (ports_user_ignore[k] == ports[i])
+                if (ports_user_ignore[k] == port_name)
                 {
                     found = true;
                     break;
@@ -905,11 +909,13 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                thread_serial_t* new_thread = (thread_serial_t*)malloc(sizeof(thread_serial_t));
+                thread_serial_t* new_thread = new thread_serial_t(); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
 
-                // FIXME: The follow two lines are unsafe.  serialPort has its own name, which we shouldn't rely on intrinsic knowledge of its type/struct to set it.  This should use a setter if possible.
-                memset(new_thread->serialPort.portName, 0, sizeof(new_thread->serialPort.portName));
-                strncpy(new_thread->serialPort.portName, ports[i].c_str(), _MIN(ports[i].size(), sizeof(new_thread->serialPort.portName)));
+                // FIXME: This is pretty jank... and rediculous.  I can do better!
+                port_handle_t newPort = (port_handle_t)&(new_thread->serialPort);
+                serialPortInit(newPort, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+                serialPortPlatformInit(newPort);
+                serialPortSetPort(newPort, port_name.c_str());
 
                 new_thread->ctx = NULL;
                 new_thread->done = false;

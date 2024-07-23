@@ -60,7 +60,23 @@ public:
     fwUpdate::update_status_e closeStatus = { };
     ISDeviceUpdater fwUpdate = { };
 
-    ISDevice() { };
+    bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
+
+    ISDevice(const ISDevice& src) {
+        port = src.port;
+        devInfo = src.devInfo;
+        flashCfg = src.flashCfg;
+        flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
+        flashCfgUploadChecksum = src.flashCfgUploadChecksum;
+        evbFlashCfg = src.evbFlashCfg;
+        sysCmd = src.sysCmd;
+        devLogger = src.devLogger;
+        closeStatus = src.closeStatus;
+        fwUpdate = src.fwUpdate;
+    }
+    ISDevice() {
+        flashCfg.checksum = (uint32_t)-1;
+    };
 };
 
 

@@ -14,6 +14,7 @@
 /**
  * Port definitions used across the entire product line & SDK.
  */
+#define PORT_TYPE__UNKNOWN          0xFFFF  //! Invalid or unknown port type
 #define PORT_TYPE__UART             0x01
 #define PORT_TYPE__USB              0x02
 #define PORT_TYPE__SPI              0x03

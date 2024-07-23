@@ -49,6 +49,7 @@ extern "C"
 }
 
 #define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
+#define SYNC_FLASH_CFG_TIMEOUT_MS           3000
 
 class InertialSense;
 
@@ -342,7 +343,7 @@ public:
     /**
     * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
     * @param port the port to get flash config for
-    * @return bool whether the flash config is valid, currently synchronized.
+    * @return true if the flash config is valid, currently synchronized, otherwise false.
     */
     bool FlashConfigSynced(port_handle_t port = 0)
     { 
@@ -642,10 +643,14 @@ private:
 
     bool m_enableDeviceValidation = true;
     bool m_disableBroadcastsOnClose;
+
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
 
-    //std::vector<serial_port_t*> m_serialPorts;  //! actual initialized serial ports
+    is_comm_instance_t m_gpComm;
+    uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
+
+    std::vector<serial_port_t> m_serialPorts;   //! actual initialized serial ports
     std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
     port_handle_t allocateSerialPort(int ptype);
 
