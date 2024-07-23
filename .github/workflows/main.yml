@@ -114,7 +114,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: catkin_ws
+        working-directory: ../catkin_ws
         shell: bash
 
     steps:
