@@ -1826,7 +1826,8 @@ enum eNmeaMsgId
     // NMEA_GNGSV_START = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
     NMEA_MSG_ID_SPECIAL_CASE_START = 256,
 
-    // GxGSV special cases
+    // Filtered GxGSV NMEA Message IDs:
+
     // GNGSV - All constellations
     NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840)
     NMEA_MSG_ID_GNGSV_0         = NMEA_MSG_ID_GNGSV_START,                                                                                                                  // (3840) Clear all constellations and frequencies
