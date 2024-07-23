@@ -119,6 +119,7 @@ jobs:
 
     steps:
       - name: Update Git version to make actions/checkout happy
+        working-directory: .
         run: |
           echo "::group::Install software-properties-common and dependencies."
           apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev
