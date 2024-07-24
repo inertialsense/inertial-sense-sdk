@@ -1663,7 +1663,7 @@ int decodeGSV(char* a, int aSize)
 
     int msgNum = NMEA_GNGSV_START;
     
-    if(a[1] == 'x')        return NMEA_MSG_ID_GxGSV;
+    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
