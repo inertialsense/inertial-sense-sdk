@@ -989,7 +989,6 @@ typedef struct PACKED
 
     /** (see eSatSvStatus) */
     uint16_t				status;
-
 } gps_sat_sv_t;
 
 /** Sat SV - GNSS System ID */
@@ -1024,6 +1023,8 @@ enum eSatSvStatus
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET         = 8,
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,	
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
+
+    SAT_SV_STATUS_RTK_EPH_PULSE                     = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
 
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
@@ -1978,6 +1979,8 @@ enum GRMC_BIT_POS{
     GMRC_BIT_POS_GPS2_RTK_CMP_MISC =    20,
     GMRC_BIT_POS_GPS2_RTK_CMP_REL =     21,
     GMRC_BIT_POS_DID_RTK_DEBUG =        22,
+    GMRC_BIT_POS_DID_PORT_MON =         23,
+    GMRC_BIT_POS_DID_GPX_PORT_MON =     24,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2004,6 +2007,8 @@ enum GRMC_BIT_POS{
 #define GMRC_BITS_GPS2_RTK_CMP_MISC     (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_MISC)
 #define GMRC_BITS_GPS2_RTK_CMP_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_REL)
 #define GMRC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GMRC_BIT_POS_DID_RTK_DEBUG)
+#define GMRC_BITS_PORT_MON              (0x0000000000000001 << GMRC_BIT_POS_DID_PORT_MON)
+#define GMRC_BITS_GPX_PORT_MON          (0x0000000000000001 << GMRC_BIT_POS_DID_GPX_PORT_MON)
 #define GRMC_BITS_PRESET                (0x8000000000000000)	// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2216,8 +2221,9 @@ enum eCalBitStatusFlags
     CAL_BIT_FAULT_TCAL_ACC_SLOPE            = (int)0x00010000,    // Temperature calibration accelerometer slope
     CAL_BIT_FAULT_TCAL_ACC_LIN              = (int)0x00020000,    // Temperature calibration accelerometer linearity
     CAL_BIT_FAULT_CAL_SERIAL_NUM            = (int)0x00040000,    // Calibration info: wrong device serial number
+    CAL_BIT_FAULT_MCAL_MAG_INVALID          = (int)0x00080000,    // Motion calibration MAG Cross-axis alignment is poorly formed
     CAL_BIT_FAULT_MCAL_EMPTY                = (int)0x00100000,    // Motion calibration Cross-axis alignment is not calibrated
-    CAL_BIT_FAULT_MCAL_INVALID              = (int)0x00200000,    // Motion calibration Cross-axis alignment is poorly formed
+    CAL_BIT_FAULT_MCAL_IMU_INVALID          = (int)0x00200000,    // Motion calibration IMU Cross-axis alignment is poorly formed
     CAL_BIT_FAULT_MOTION_PQR                = (int)0x00400000,    // Motion on gyros
     CAL_BIT_FAULT_MOTION_ACC                = (int)0x00800000,    // Motion on accelerometers
     CAL_BIT_NOTICE_IMU1_PQR_BIAS            = (int)0x01000000,    // IMU 1 gyro bias offset detected.  If stationary, zero gyros command may be used.
@@ -3237,7 +3243,7 @@ typedef struct PACKED
     /** Hardware interface configuration bits (see eIoConfig). */
     uint32_t				ioConfig;
 
-    /** Hardware platform specifying the IMX carrier board type (i.e. RUG, EVB, IG) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.  */
+    /** Hardware platform specifying the IMX carrier board type (i.e. RUG, EVB, IG) and configuration bits (see ePlatformConfig).  The platform type is used to simplify the GPS and I/O configuration process.  Bit PLATFORM_CFG_UPDATE_IO_CONFIG is excluded from the flashConfig checksum and from determining whether to upload. */
     uint32_t				platformConfig;
 
     /** X,Y,Z offset in meters in Sensor Frame origin to GPS 2 antenna. */
@@ -3430,17 +3436,30 @@ typedef struct PACKED
     uint8_t obs_count_bas;
     uint8_t obs_count_rov;
 
-    uint8_t obs_pairs_filtered;  // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
-    uint8_t obs_pairs_used;      // number of observation pairs (all frequencies) used to compute the integer (fixed) solution
+    //uint8_t obs_pairs_filtered;   // number of satellites used to compute float solution [nu, nr in relpos() after selsat()]. Min is 0, max is number of common pairs between obs_rover_avail and obs_base_avail.
+    uint8_t reserved2;
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
+    uint8_t obs_unhealthy;          // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
 
-    uint8_t obs_rover_avail; // nu - total number of satellites with observations to rover in relpos() before selsat()
-    uint8_t obs_base_avail;  // nr - total number of satellites with observations to base in relpos() before selsat()
-    uint8_t obs_eph_avail;   // number of satellites with ephemeris available (min is 0, max is nu)
-    uint8_t obs_unhealthy;   // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
+    uint8_t obs_rover_avail;        // nu - total number of satellites with observations to rover in relpos() before selsat()
+    uint8_t obs_base_avail;         // nr - total number of satellites with observations to base in relpos() before selsat()
+    uint8_t obs_pairs_used_float;   // number of satellite pairs used to compute the float solution
+    uint8_t obs_pairs_used_ar;      // number of satellite pairs used to compute the fixed solution
 
-    uint8_t reserved[4];
+    uint8_t obs_eph_avail;          // number of satellites with ephemeris available (min is 0, max is nu)
+    uint8_t obs_low_snr_rover;      // number of satellites with low snr at rover
+    uint8_t obs_low_snr_base;       // number of satellites with low snr at base
+    uint8_t obs_high_snr_parity;    // number of satellites with high difference between snr at rover and snr at base
+
+    uint8_t obs_zero_L1_rover;      // number of satellites with zero L1 pseudorange or phase at rover
+    uint8_t obs_zero_L1_base;       // number of satellites with zero L1 pseudorange or phase at base
+    uint8_t obs_low_elev_rover;     // number of satellites with low elevation at rover
+    uint8_t obs_low_elev_base;      // number of satellites with low elevation at base
+
+    uint8_t eph1RxCnt;              // total ephem recieved for reciever 1 before RTCM3 parse per period
+    uint8_t eph2RxCnt;              // total ephem recieved for reciever 2 before RTCM3 parse per period
+    uint8_t reserved[2];
 } rtk_debug_t;
 
 POP_PACK
@@ -5292,6 +5311,7 @@ typedef union PACKED
     debug_array_t           imxDebugArray;
     debug_array_t           gpxDebugArray;
     port_monitor_t          portMonitor;
+    did_event_t             event;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
