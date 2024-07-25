@@ -228,14 +228,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM0");
+        ph.nodeParam("port", param, "/dev/ttyACM3");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM0");
+        ports_.push_back("/dev/ttyACM3");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
