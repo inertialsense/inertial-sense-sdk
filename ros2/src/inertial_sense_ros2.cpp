@@ -122,7 +122,7 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
 void InertialSenseROS::initializeROS()
 {
-    rs_.did_ins1.enabled = true;
+    //rs_.did_ins1.enabled = true;
     //auto nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
@@ -228,14 +228,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM3");
+        ph.nodeParam("port", param, "/dev/ttyACM2");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM3");
+        ports_.push_back("/dev/ttyACM2");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
@@ -288,7 +288,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu");
     ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned");
     ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef");
-    ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned");
+    ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned", true, 1, true);
     ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla");
     ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true);
     ph.msgParams(rs_.inl2_states, "inl2_states");
@@ -350,7 +350,9 @@ void InertialSenseROS::configure_data_streams()
 
 #define CONFIG_STREAM(stream, did, type, cb_fun) \
     if((stream.enabled) && !(stream.streaming)){ \
-        RCLCPP_DEBUG(rclcpp::get_logger("config_stream"),"InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did), did); \
+        rclcpp::Logger logger_conf_str = rclcpp::get_logger("config stream"); \
+        logger_conf_str.set_level(rclcpp::Logger::Level::Debug); \
+        RCLCPP_DEBUG(logger_conf_str,"InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did), did); \
         SET_CALLBACK(did, type, cb_fun, stream.period); \
         if (!firstrun) \
             return; \
@@ -374,12 +376,16 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 {
     if (!rs_.gps1.streaming_pos) // we always need GPS for Fix status
     {
-        //ROS_DEBUG("InertialSenseROS: Attempting to enable GPS1 Pos data stream");
+        rclcpp::Logger logger_gps1pos = rclcpp::get_logger("gps1_pos");
+        logger_gps1pos.set_level(rclcpp::Logger::Level::Debug);
+        RCLCPP_DEBUG(logger_gps1pos,"InertialSenseROS: Attempting to enable GPS1 Pos data stream");
         SET_CALLBACK(DID_GPS1_POS, gps_pos_t, GPS_pos_callback, rs_.gps1.period);
     }
     if (!flashConfigStreaming_)
     {
-        RCLCPP_DEBUG(rclcpp::get_logger("flash_config"),"InertialSenseROS: Attempting to enable flash config data stream");
+        rclcpp::Logger logger_flash_conf = rclcpp::get_logger("flash_config");
+        logger_flash_conf.set_level(rclcpp::Logger::Level::Debug);
+        RCLCPP_DEBUG(logger_flash_conf,"InertialSenseROS: Attempting to enable flash config data stream");
         SET_CALLBACK(DID_FLASH_CONFIG, nvm_flash_cfg_t, flash_config_callback, 0);
         if (!firstrun)
             return;
