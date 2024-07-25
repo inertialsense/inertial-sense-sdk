@@ -1872,7 +1872,7 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GBGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),        // (3906) Enable Beidou B2
     NMEA_MSG_ID_GBGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),      // (3907) Enable Beidou B1, B2
     NMEA_MSG_ID_GBGSV_3         = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_BEI_OFFSET),        // (3908) Enable Beidou B3 
-    NMEA_GBGSV_3_1              = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),      // (3909) Enable Beidou B1, B3
+    NMEA_MSG_ID_GBGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),      // (3909) Enable Beidou B1, B3
     NMEA_MSG_ID_GBGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),      // (3910) Enable Beidou B2, B3
     NMEA_MSG_ID_GBGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),    // (3911) Enable Beidou B1, B2, B3
     NMEA_MSG_ID_GBGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_BEI_OFFSET),          // (3919) Enable all Beidou frequencys
