@@ -139,25 +139,25 @@ void InertialSenseROS::initializeROS()
 
     if (rs_.did_ins1.enabled)
         { rs_.did_ins1.pub_didins1    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
-/*
+
     if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub_didins2      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
     if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub_didins4      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
-    if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub_odometry  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
-    if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub_odometry  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_enu.topic, 1); }
-    if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub_odometry = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
+    //if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub_odometry  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
+    //if (rs_.odom_ins_enu.enabled)           { rs_.odom_ins_enu.pub_odometry  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_enu.topic, 1); }
+   // if (rs_.odom_ins_ecef.enabled)          { rs_.odom_ins_ecef.pub_odometry = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ecef.topic, 1); }
     if (rs_.inl2_states.enabled)            { rs_.inl2_states.pub_inl2   = nh_->create_publisher<inertial_sense_ros2::msg::INL2States>(rs_.inl2_states.topic, 1); }
 
    if (rs_.pimu.enabled)                   { rs_.pimu.pub_pimu = nh_->create_publisher<inertial_sense_ros2::msg::PIMU>(rs_.pimu.topic, 1); }
    if (rs_.imu.enabled)                    { rs_.imu.pub_imu = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub_bfield = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
    if (rs_.barometer.enabled)              { rs_.barometer.pub_fpres = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
-   if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
-   if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
-   if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
-   if (rs_.gps2.enabled)                   { rs_.gps2.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
-   if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
-   if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
-
+  // if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
+  // if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
+  // if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
+  // if (rs_.gps2.enabled)                   { rs_.gps2.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
+  // if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
+  // if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
+/*
     if (RTK_rover_ && RTK_rover_->positioning_enable )
     {
         rs_.rtk_pos.pubInfo = nh_->create_publisher<inertial_sense_ros2::msg::RTKInfo>("RTK_pos/info", 10);
@@ -257,10 +257,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
     YAML::Node sensorsMsgs = ph.node(sensorsNode, "messages", 2);
-    ph.msgParams(rs_.imu, "imu");
-    ph.msgParams(rs_.pimu, "pimu");
-    ph.msgParams(rs_.magnetometer, "magnetometer", "mag");
-    ph.msgParams(rs_.barometer, "barometer", "baro");
+    ph.msgParams(rs_.imu, "imu", "", true, 1, true);
+    ph.msgParams(rs_.pimu, "pimu", "", true, 1, true);
+    ph.msgParams(rs_.magnetometer, "magnetometer", "mag", true, 1, true);
+    ph.msgParams(rs_.barometer, "barometer", "baro", true, 1, true);
     ph.msgParams(rs_.strobe_in, "strobe_in");
     node["sensors"]["messages"] = sensorsMsgs;
 
@@ -285,13 +285,13 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, DYNAMIC_MODEL_AIRBORNE_4G);
     ph.nodeParam("enable_covariance", covariance_enabled_, false);
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
-    ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu");
-    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned");
-    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef");
+    ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu", "", true, 1, false);
+    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned", "", true, 1, false);
+    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef", "", true, 1, false);
     ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned", true, 1, true);
-    ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla");
-    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true);
-    ph.msgParams(rs_.inl2_states, "inl2_states");
+    ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla", true, 1, true);
+    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true, 1, true);
+    ph.msgParams(rs_.inl2_states, "inl2_states", "", true, 1, true);
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
 
