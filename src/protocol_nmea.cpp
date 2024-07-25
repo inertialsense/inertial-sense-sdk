@@ -1651,7 +1651,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 
 /**
  * decodes the NMEA GSV family of messages
- * Returns: message id (see eNmeaAsciiMsgId)
+ * Returns: message id (see eNmeaMsgId)
  *  Error   -1 for NMEA head not found 
  * 	        -2 for invalid length
  *          -3 other error 

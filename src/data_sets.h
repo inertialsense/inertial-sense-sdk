@@ -1529,7 +1529,7 @@ enum eSerialPortBridge
 
 typedef struct nmeaBroadcastMsgPair
 {
-    /** Message ID. (see eNmeaAsciiMsgId) */
+    /** Message ID. (see eNmeaMsgId) */
     uint8_t msgID;
 
 	/** Message period multiple. */
@@ -1544,7 +1544,7 @@ typedef struct PACKED
     /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistent] (see RMC_OPTIONS_...) */
     uint32_t				options;
 
-    /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaAsciiMsgId) */
+    /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaMsgId) */
     nmeaBroadcastMsgPair_t	nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
