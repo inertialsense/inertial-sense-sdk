@@ -47,7 +47,7 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
     }
 }
 
-InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_")), nh_private_()
+InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_"))
 {
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
@@ -115,13 +115,14 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
         if (configFlashParameters)
         {   // Set IMX flash parameters (flash write) after everything else so processor stall doesn't interfere with communications.
-            configure_flash_parameters();
+            //configure_flash_parameters();
         }
     }
 }
 
 void InertialSenseROS::initializeROS()
 {
+    rs_.did_ins1.enabled = true;
     //auto nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
@@ -136,7 +137,9 @@ void InertialSenseROS::initializeROS()
     // Publishers
     strobe_pub_ = nh_->create_publisher<std_msgs::msg::Header>(rs_.strobe_in.topic, 1);
 
-    if (rs_.did_ins1.enabled)               { rs_.did_ins1.pub_didins1    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>("Hello", 1); }
+    if (rs_.did_ins1.enabled)
+        { rs_.did_ins1.pub_didins1    = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS1>(rs_.did_ins1.topic, 1); }
+/*
     if (rs_.did_ins2.enabled)               { rs_.did_ins2.pub_didins2      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS2>(rs_.did_ins2.topic, 1); }
     if (rs_.did_ins4.enabled)               { rs_.did_ins4.pub_didins4      = nh_->create_publisher<inertial_sense_ros2::msg::DIDINS4>(rs_.did_ins4.topic, 1); }
     if (rs_.odom_ins_ned.enabled)           { rs_.odom_ins_ned.pub_odometry  = nh_->create_publisher<nav_msgs::msg::Odometry>(rs_.odom_ins_ned.topic, 1); }
@@ -194,6 +197,7 @@ void InertialSenseROS::initializeROS()
     }
 
     //data_stream_timer_ = nh_->create_timer(1s, configure_data_streams, this);
+*/
 }
 
 void InertialSenseROS::load_params(YAML::Node &node)
@@ -620,7 +624,7 @@ bool vecF64Match(double v1[], double v2[], int size=3)
     return true;
 }
 
-void InertialSenseROS::configure_flash_parameters()
+/*void InertialSenseROS::configure_flash_parameters()
 {
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
@@ -691,7 +695,7 @@ void InertialSenseROS::configure_flash_parameters()
         reset_device();
     }
 }
-
+*/
 // FIXME:: THESE SHOULD BE IN RtkRoverCorrectionProvider_Ntrip
 //void InertialSenseROS::connect_rtk_client(RtkRoverCorrectionProvider_Ntrip& config)
 //{
