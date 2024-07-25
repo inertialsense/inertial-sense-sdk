@@ -151,12 +151,12 @@ void InertialSenseROS::initializeROS()
    if (rs_.imu.enabled)                    { rs_.imu.pub_imu = nh_->create_publisher<sensor_msgs::msg::Imu>(rs_.imu.topic, 1); }
    if (rs_.magnetometer.enabled)           { rs_.magnetometer.pub_bfield = nh_->create_publisher<sensor_msgs::msg::MagneticField>(rs_.magnetometer.topic, 1); }
    if (rs_.barometer.enabled)              { rs_.barometer.pub_fpres = nh_->create_publisher<sensor_msgs::msg::FluidPressure>(rs_.barometer.topic, 1); }
-  // if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
-  // if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
-  // if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
-  // if (rs_.gps2.enabled)                   { rs_.gps2.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
-  // if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
-  // if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
+   if (rs_.gps1.enabled)                   { rs_.gps1.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps1.topic, 1); }
+   if (rs_.gps1_navsatfix.enabled)         { rs_.gps1_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps1_navsatfix.topic, 1); }
+   if (rs_.gps1_info.enabled)              { rs_.gps1_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps1_info.topic, 1); }
+   if (rs_.gps2.enabled)                   { rs_.gps2.pub_gps = nh_->create_publisher<inertial_sense_ros2::msg::GPS>(rs_.gps2.topic, 1); }
+   if (rs_.gps2_navsatfix.enabled)         { rs_.gps2_navsatfix.pub_nsf = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(rs_.gps2_navsatfix.topic, 1); }
+   if (rs_.gps2_info.enabled)              { rs_.gps2_info.pub_gpsinfo = nh_->create_publisher<inertial_sense_ros2::msg::GPSInfo>(rs_.gps2_info.topic, 1); }
 /*
     if (RTK_rover_ && RTK_rover_->positioning_enable )
     {
@@ -228,14 +228,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM2");
+        ph.nodeParam("port", param, "/dev/ttyACM0");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM2");
+        ports_.push_back("/dev/ttyACM0");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
@@ -301,10 +301,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_);
     ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset);
     YAML::Node gps1Msgs = ph.node(gps1Node, "messages", 2);
-    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel");
-    ph.msgParams(rs_.gps1_info, "info", "gps1/info");
-    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw");
-    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix");
+    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel", true, 1, true);
+    ph.msgParams(rs_.gps1_info, "info", "gps1/info", true, 1, true);
+    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw", true, 1, false);
+    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix", true, 1, true);
     gps1Node["messages"] = gps1Msgs;
     node["gps1"] = gps1Node;
 
@@ -313,10 +313,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("type", rs_.gps2.type);
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
-    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel");
-    ph.msgParams(rs_.gps2_info, "info", "gps2/info");
+    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, true);
+    ph.msgParams(rs_.gps2_info, "info", "gps2/info", true, 1, true);
     ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw");
-    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix");
+    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", true, 1, true);
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 
