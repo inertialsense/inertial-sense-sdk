@@ -1661,7 +1661,7 @@ int decodeGSV(char* a, int aSize)
     if(aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
         return -2;
 
-    int msgNum = NMEA_GNGSV_START;
+    int msgNum = NMEA_MSG_ID_GNGSV_START;
     
     if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
@@ -2019,7 +2019,7 @@ int parseASCE_GSV(int inId)
     uint8_t constTarget = (inId & 0xf0) >> 4;
     uint8_t freqMask = (inId & 0x0f);
 
-    if(inId < NMEA_GNGSV_START || inId > NMEA_GNGSV_END)
+    if(inId < NMEA_MSG_ID_GNGSV_START || inId > NMEA_MSG_ID_GNGSV_END)
         return 0;
 
     switch (constTarget)
@@ -2101,7 +2101,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         
@@ -2177,7 +2177,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         
