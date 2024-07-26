@@ -1760,6 +1760,9 @@ typedef struct PACKED
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
                                         | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_GPX_DEBUG \
+                                        | RMC_BITS_GPS1_SAT \
+                                        | RMC_BITS_GPS2_SAT \
                                         | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
