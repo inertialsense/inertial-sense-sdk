@@ -22,6 +22,7 @@
 #include "rclcpp/rclcpp/rclcpp.hpp"
 
 #include "ParamHelper.h"
+#include "RtkBase.h"
 
 class RtkRoverCorrectionProvider {
 protected:

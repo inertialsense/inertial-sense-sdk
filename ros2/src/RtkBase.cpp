@@ -48,7 +48,7 @@ void RtkBaseProvider::configure(YAML::Node& node) {
                     const YAML::Node &provider_node = ph_.node(rtkBaseOutputs, (*it).as<std::string>());
                     RtkBaseCorrectionProvider *correctionProvider = RtkBaseCorrectionProviderFactory::buildProvider(*this, (YAML::Node &) provider_node);
                     if (correctionProvider == nullptr) {
-                        ROS_ERROR_STREAM("Unable to configure RosBaseCorrectionProvider [" << (*it).as<std::string>() << "]. Please validate the configuration:\n\n" << node << "\n\n");
+                        RCLCPP_ERROR_STREAM(rclcpp::get_logger("unable_to_config_RBCP"),"Unable to configure RosBaseCorrectionProvider [" << (*it).as<std::string>() << "]. Please validate the configuration:\n\n" << node << "\n\n");
                     } else {
                         correction_outputs_.push_back(reinterpret_cast<const RtkBaseCorrectionProvider *const>(correctionProvider));
                     }
@@ -57,16 +57,16 @@ void RtkBaseProvider::configure(YAML::Node& node) {
                 const YAML::Node &provider_node = ph_.node(rtkBaseOutputs, rtkBase_providers.as<std::string>());
                 RtkBaseCorrectionProvider *correctionProvider = RtkBaseCorrectionProviderFactory::buildProvider(*this, (YAML::Node &) provider_node);
                 if (correctionProvider == nullptr) {
-                    ROS_ERROR_STREAM("Unable to configure RosBaseCorrectionProvider [" << rtkBase_providers.as<std::string>() << "]. Please validate the configuration:\n\n" << node << "\n\n");
+                    RCLCPP_ERROR_STREAM(rclcpp::get_logger("unable_to_config_RBCP"),"Unable to configure RosBaseCorrectionProvider [" << rtkBase_providers.as<std::string>() << "]. Please validate the configuration:\n\n" << node << "\n\n");
                 } else {
                     correction_outputs_.push_back(reinterpret_cast<const RtkBaseCorrectionProvider *const>(correctionProvider));
                 }
             }
         } else {
-            ROS_ERROR_STREAM("No \"correction_outputs\" configuration has been provided.  Please validate the configuration:\n\n" << node << "\n\n");
+            RCLCPP_ERROR_STREAM(rclcpp::get_logger("No_config_provided"),"No \"correction_outputs\" configuration has been provided.  Please validate the configuration:\n\n" << node << "\n\n");
         }
     } else {
-        ROS_ERROR("Unable to configure RosBaseProvider. The YAML node was null or undefined.");
+        RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_RBP"),"Unable to configure RosBaseProvider. The YAML node was null or undefined.");
     }
 }
 
@@ -93,7 +93,7 @@ void RtkBaseCorrectionProvider_Ntrip::configure(YAML::Node& node) {
         ph_.nodeParam("password", password_);
         ph_.nodeParam("credentials", credentials_);
     } else {
-        ROS_ERROR("Unable to configure RtkBaseCorrectionProvider_Ntrip. The YAML node was null or undefined.");
+        RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_RBCP_Ntrip"),"Unable to configure RtkBaseCorrectionProvider_Ntrip. The YAML node was null or undefined.");
     }
 }
 
@@ -111,7 +111,7 @@ void RtkBaseCorrectionProvider_Serial::configure(YAML::Node& node) {
         ph_.nodeParam("port", port_);
         ph_.nodeParam("baud_rate", baud_rate_);
     } else {
-        ROS_ERROR("Unable to configure RtkBaseCorrectionProvider_Serial. The YAML node was null or undefined.");
+        RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_RBCP_Ntrip"), "Unable to configure RtkBaseCorrectionProvider_Serial. The YAML node was null or undefined.");
     }
 }
 
@@ -123,7 +123,7 @@ void RtkBaseCorrectionProvider_ROS::configure(YAML::Node& node) {
         ph_.setCurrentNode(node);
         ph_.nodeParam("topic", topic_);
     } else {
-        ROS_ERROR("Unable to configure RtkBaseCorrectionProvider_ROS. The YAML node was null or undefined.");
+        RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_RBCP_Ntrip"), "Unable to configure RtkBaseCorrectionProvider_ROS. The YAML node was null or undefined.");
     }
 }
 
@@ -135,7 +135,7 @@ void RtkBaseCorrectionProvider_EVB::configure(YAML::Node& node) {
         ph_.setCurrentNode(node);
         ph_.nodeParam("port", port_);
     } else {
-        ROS_ERROR("Unable to configure RtkBaseCorrectionProvider_EVB. The YAML node was null or undefined.");
+        RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_RBCP_Ntrip"), "Unable to configure RtkBaseCorrectionProvider_EVB. The YAML node was null or undefined.");
     }
 }
 

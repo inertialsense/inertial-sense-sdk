@@ -83,7 +83,7 @@ using namespace std::chrono_literals;
     IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
                             [this](InertialSense *i, p_data_t *data, int pHandle)           \
                             {                                                               \
-                                /* ROS_INFO("Got message %d", DID);*/                       \
+                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */                     \
                                 this->__cb_fun(DID, reinterpret_cast<__type *>(data->ptr)); \
                             })
 

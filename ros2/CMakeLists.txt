@@ -102,6 +102,7 @@ add_executable(new_target
        # src/serial.cpp
         include/TopicHelper.cpp
         src/RtkRover.cpp
+        src/RtkBase.cpp
         #include/TopicHelper.h
 )
 rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )

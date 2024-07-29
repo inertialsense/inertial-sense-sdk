@@ -169,6 +169,9 @@ void RtkRoverCorrectionProvider_Ntrip::stop_connectivity_watchdog_timer()
     data_transmission_interruption_count_ = 0;
 }
 
+
+
+
 /*
  *==================  RtkRoverCorrectionProvider_Serial ==================*
  */

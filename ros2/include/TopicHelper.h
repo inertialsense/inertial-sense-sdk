@@ -58,7 +58,9 @@ public:
         if (!stream)
         {
             stream = true;
-            RCLCPP_DEBUG(rclcpp::get_logger("stream_check"),"%s response received", cISDataMappings::GetDataSetName(did)); //???
+            rclcpp::Logger logger_stream_check = rclcpp::get_logger("stream_check");
+            logger_stream_check.set_level(rclcpp::Logger::Level::Debug);
+            RCLCPP_DEBUG(logger_stream_check,"%s response received", cISDataMappings::GetDataSetName(did)); //???
         }
     }
 
@@ -78,7 +80,8 @@ public:
     rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pub_fpres;
     rclcpp::Publisher<inertial_sense_ros2::msg::GPS>::SharedPtr pub_gps;
     rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_nsf;
-    rclcpp::Publisher<inertial_sense_ros2::msg::GPSInfo>::SharedPtr pub_gpsinfo;
+    rclcpp::Publisher<inertial_sense_ros2::msg::GPSInfo>::SharedPtr pub_gpsinfo1;
+    rclcpp::Publisher<inertial_sense_ros2::msg::GPSInfo>::SharedPtr pub_gpsinfo2;
 
 };
 
