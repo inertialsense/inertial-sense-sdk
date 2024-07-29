@@ -12,8 +12,6 @@ find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
-#find_package(InertialSenseSDK REQUIRED)
-#find_package(XMLRPC REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(Threads)
@@ -103,6 +101,7 @@ add_executable(new_target
         src/ParamHelper.cpp
        # src/serial.cpp
         include/TopicHelper.cpp
+        src/RtkRover.cpp
         #include/TopicHelper.h
 )
 rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
