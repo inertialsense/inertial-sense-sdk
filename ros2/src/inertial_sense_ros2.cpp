@@ -174,7 +174,8 @@ void InertialSenseROS::initializeROS()
         rs_.gps1_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps1_raw.topic + "/obs", 50);
         rs_.gps1_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps1_raw.topic + "/eph", 50);
         rs_.gps1_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps1_raw.topic + "/geph", 50);
-        obs_bundle_timer_ = nh_->create_wall_timer(0.001s, std::bind(InertialSenseROS::GPS_obs_bundle_timer_callback, this));
+        //obs_bundle_timer_ = nh_->create_wall_timer(0.001s, std::bind(InertialSenseROS::GPS_obs_bundle_timer_callback, this));
+        obs_bundle_timer_ = nh_->create_wall_timer(1s, [this]() { this->GPS_obs_bundle_timer_callback(); });
     }
 
     if (rs_.gps2_raw.enabled)
@@ -182,7 +183,7 @@ void InertialSenseROS::initializeROS()
         rs_.gps2_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>(rs_.gps2_raw.topic + "/obs", 50);
         rs_.gps2_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>(rs_.gps2_raw.topic + "/eph", 50);
         rs_.gps2_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>(rs_.gps2_raw.topic + "/geph", 50);
-        obs_bundle_timer_ = nh_->create_wall_timer(0.001s, std::bind(InertialSenseROS::GPS_obs_bundle_timer_callback, this));
+        obs_bundle_timer_ = nh_->create_wall_timer(1s, [this]() { this->GPS_obs_bundle_timer_callback(); });
     }
 
     if (rs_.gpsbase_raw.enabled)
@@ -190,7 +191,7 @@ void InertialSenseROS::initializeROS()
         rs_.gpsbase_raw.pubObs = nh_->create_publisher<inertial_sense_ros2::msg::GNSSObsVec>("gps/base_obs", 50);
         rs_.gpsbase_raw.pubEph = nh_->create_publisher<inertial_sense_ros2::msg::GNSSEphemeris>("gps/base_eph", 50);
         rs_.gpsbase_raw.pubGEp = nh_->create_publisher<inertial_sense_ros2::msg::GlonassEphemeris>("gps/base_geph", 50);
-        obs_bundle_timer_ = nh_->create_wall_timer(0.001s, std::bind(InertialSenseROS::GPS_obs_bundle_timer_callback, this));
+        obs_bundle_timer_ = nh_->create_wall_timer(1s, [this]() { this->GPS_obs_bundle_timer_callback(); });
     }
 
     if (rs_.diagnostics.enabled)
@@ -318,7 +319,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
     ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, true);
     ph.msgParams(rs_.gps2_info, "info", "gps2/info", true, 1, true);
-    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, true);
+    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, false);
     ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", true, 1, true);
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
@@ -504,14 +505,14 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (rs_.gps1.enabled)
     {   // Set up the GPS ROS stream - we always need GPS information for time sync, just don't always need to publish it
         CONFIG_STREAM_GPS(rs_.gps1, DID_GPS1_POS, GPS_pos_callback, DID_GPS1_VEL, GPS_vel_callback);
-      //  CONFIG_STREAM(rs_.gps1_raw, DID_GPS1_RAW, gps_raw_t, GPS_raw_callback); //not currrently working
+        CONFIG_STREAM(rs_.gps1_raw, DID_GPS1_RAW, gps_raw_t, GPS_raw_callback); //not currrently working
         CONFIG_STREAM(rs_.gps1_info, DID_GPS1_SAT, gps_sat_t, GPS_info_callback);
     }
     if (rs_.gps2.enabled)
     {
         CONFIG_STREAM_GPS(rs_.gps2, DID_GPS2_POS, GPS_pos_callback, DID_GPS2_VEL, GPS_vel_callback);
-       // CONFIG_STREAM(rs_.gps2_raw, DID_GPS2_RAW, gps_raw_t, GPS_raw_callback);   //not currrently working
-        //CONFIG_STREAM(rs_.gps2_info, DID_GPS2_SAT, gps_sat_t, GPS_info_callback); //not currrently working
+        CONFIG_STREAM(rs_.gps2_raw, DID_GPS2_RAW, gps_raw_t, GPS_raw_callback);   //not currrently working
+        //CONFIG_STREAM(rs_.gps2_info, DID_GPS2_SAT, gps_sat_t, GPS_info_callback); //not currrently working - ignore for now
     }
     //CONFIG_STREAM(rs_.gpsbase_raw, DID_GPS_BASE_RAW, gps_raw_t, GPS_raw_callback); //not currrently working
 
