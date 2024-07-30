@@ -1025,8 +1025,10 @@ enum eSatSvStatus
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
 
     SAT_SV_STATUS_RTK_EPH_RTCM_PULSE                = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
-    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE             = 0x2000,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE             = 0x2000,   // Set when eph is added to RTK LIB for this SV 
     SAT_SV_STATUS_RTK_EPH_PULSE_MASK                = SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE | SAT_SV_STATUS_RTK_EPH_RTCM_PULSE,   // Set when eph is Rx for this SV and cleared by next message send
+
+    SAT_SV_STATUS_RTK_EPH_SEND_PULSE                = 0x4000,   // Set when eph is Tx'd from device
 
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
