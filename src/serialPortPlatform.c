@@ -722,7 +722,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
                 continue;
             }
             // Other errors
-            error_message("serialPortWritePlatform() write error. ");
+            // error_message("serialPortWritePlatform() write error. ");
             return -1;
         }
         bytes_written += result;
