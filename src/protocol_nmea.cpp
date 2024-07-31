@@ -1672,7 +1672,7 @@ int decodeGSV(char* a, int aSize)
     else if (a[1] == 'L')  msgNum += NMEA_GNGSV_GLO_OFFSET;
     else                   return -3;
 
-    // Parse freqencys
+    // Parse freqencies
     // Enable all Freqs ie GNGSV,
     if(a[5] == ',' || a[5] == '*')
         msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
