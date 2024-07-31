@@ -1725,16 +1725,17 @@ class logPlot:
         for d in self.active_devs:
             satData1 = self.log.data[d, DID_GPS1_SAT]
             satData2 = self.log.data[d, DID_GPS2_SAT]
-            time = getTimeFromTowMs(satData1['timeOfWeekMs'], 1) * 0.001
+            time = getTimeFromTowMs(satData1['timeOfWeekMs'], 1)
             ephData = np.zeros([Nsat, len(satData1)])
             for i, data in enumerate(satData1):
+                rng = range(data['numSats'])
+                status = data['sat'][rng]['status'] >> 12 & 0x7
+                gnss = data['sat'][rng]['gnssId']
+                sat = data['sat'][rng]['svId']
+                sat[gnss==3] = sat[gnss==3] + 32
                 for j in range(data['numSats']):
-                    gnss = data['sat'][j]['gnssId']
-                    sat = data['sat'][j]['svId']
-                    if gnss == 3:
-                        sat = sat + 32
-                    ind = sv.index(sat)
-                    ephData[ind,i] = data['sat'][j]['status'] >> 12 & 0x7
+                    ind = sv.index(sat[j])
+                    ephData[ind,i] = status[j]
 
             for j, sat in enumerate(sv):
                 ax[j % rows, j // rows].set_title('SV '+ str(sat))
