@@ -26,14 +26,15 @@ set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
 #else()
 #    link_directories(${IS_SDK_DIR})
 #endif()
-set(RELATIVE_SCRIPT_PATH "${CMAKE_SOURCE_DIR}/../inertial-sense-sdk/scripts/build_all.sh")
-get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
-add_custom_target(
-	RunScript
-	COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
-    COMMENT "Running custom shell script..."
-    VERBATIM
-	)
+
+#set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../inertial-sense-sdk/scripts/build_is_sdk.sh")
+#get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
+#add_custom_target(
+#	RunScript
+#	COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
+#    COMMENT "Running custom shell script..."
+#    VERBATIM
+#	)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/GTime.msg"
@@ -112,7 +113,7 @@ add_executable(new_target
         src/RtkBase.cpp
         #include/TopicHelper.h
 )
-add_dependencies(new_target RunScript)
+#add_dependencies(new_target RunScript)
 rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
 ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 

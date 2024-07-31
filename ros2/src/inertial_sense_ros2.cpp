@@ -232,14 +232,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM0");
+        ph.nodeParam("port", param, "/dev/ttyACM1");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM0");
+        ports_.push_back("/dev/ttyACM1");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
@@ -319,7 +319,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
     ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, true);
     ph.msgParams(rs_.gps2_info, "info", "gps2/info", true, 1, true);
-    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, false);
+    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, true);
     ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", true, 1, true);
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
@@ -505,13 +505,13 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
     if (rs_.gps1.enabled)
     {   // Set up the GPS ROS stream - we always need GPS information for time sync, just don't always need to publish it
         CONFIG_STREAM_GPS(rs_.gps1, DID_GPS1_POS, GPS_pos_callback, DID_GPS1_VEL, GPS_vel_callback);
-        CONFIG_STREAM(rs_.gps1_raw, DID_GPS1_RAW, gps_raw_t, GPS_raw_callback); //not currrently working
+        //CONFIG_STREAM(rs_.gps1_raw, DID_GPS1_RAW, gps_raw_t, GPS_raw_callback); // Requires IG-2.0
         CONFIG_STREAM(rs_.gps1_info, DID_GPS1_SAT, gps_sat_t, GPS_info_callback);
     }
     if (rs_.gps2.enabled)
     {
         CONFIG_STREAM_GPS(rs_.gps2, DID_GPS2_POS, GPS_pos_callback, DID_GPS2_VEL, GPS_vel_callback);
-        CONFIG_STREAM(rs_.gps2_raw, DID_GPS2_RAW, gps_raw_t, GPS_raw_callback);   //not currrently working
+        //CONFIG_STREAM(rs_.gps2_raw, DID_GPS2_RAW, gps_raw_t, GPS_raw_callback);   //Requires IG-2.0
         //CONFIG_STREAM(rs_.gps2_info, DID_GPS2_SAT, gps_sat_t, GPS_info_callback); //not currrently working - ignore for now
     }
     //CONFIG_STREAM(rs_.gpsbase_raw, DID_GPS_BASE_RAW, gps_raw_t, GPS_raw_callback); //not currrently working
