@@ -1693,6 +1693,65 @@ class logPlot:
         self.setup_and_wire_legend()
         self.saveFig(fig, 'rtkRel')
 
+    def gnssEphemeris(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        # Build list of SV
+        sv = []
+        for d in self.active_devs:
+            satData1 = self.log.data[d, DID_GPS1_SAT]
+            satData2 = self.log.data[d, DID_GPS2_SAT]
+            if satData1.size == 0 and satData2.size == 0:
+                continue
+            for data in satData1:
+                for j in range(data['numSats']):
+                    gnss = data['sat'][j]['gnssId']
+                    sat = data['sat'][j]['svId']
+                    if gnss == 3:
+                        sat = sat + 32
+                    if sat not in sv:
+                        sv.append(sat)
+        Nsat = len(sv)
+        if Nsat == 0:
+            return
+        sv.sort()
+
+        cols = 4
+        rows = math.ceil(Nsat/float(cols))
+        ax = fig.subplots(rows, cols, sharex=True)
+        fig.suptitle('Ephemeris Counters - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            satData1 = self.log.data[d, DID_GPS1_SAT]
+            satData2 = self.log.data[d, DID_GPS2_SAT]
+            time = getTimeFromTowMs(satData1['timeOfWeekMs'], 1) * 0.001
+            ephData = np.zeros([Nsat, len(satData1)])
+            for i, data in enumerate(satData1):
+                for j in range(data['numSats']):
+                    gnss = data['sat'][j]['gnssId']
+                    sat = data['sat'][j]['svId']
+                    if gnss == 3:
+                        sat = sat + 32
+                    ind = sv.index(sat)
+                    ephData[ind,i] = data['sat'][j]['status'] >> 12 & 0x7
+
+            for j, sat in enumerate(sv):
+                ax[j % rows, j // rows].set_title('SV '+ str(sat))
+                ax[j % rows, j // rows].title.set_fontsize(8)
+                ax[j % rows, j // rows].plot(time, ephData[j,:], label=self.log.serials[d])
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+
+
+
+
+
+
+
     def loadGyros(self, device):
         return self.loadIMU(device, 0)
 
