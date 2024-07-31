@@ -70,7 +70,10 @@ TEST(BasicTestSuite, test_rtk_rover)
     EXPECT_EQ(ntrip->connectivity_watchdog_enabled_, true);
 
     isROS.configure_rtk();
-    EXPECT_EQ(isROS.rtkConfigBits_, 0x2);
+    nvm_flash_cfg_t flashCfg;
+    isROS.IS_.WaitForFlashSynced();
+    isROS.IS_.FlashConfig(flashCfg);
+    EXPECT_EQ(flashCfg.RTKCfgBits, 0x2);
 }
 
 TEST(BasicTestSuite, test_rtk_rover_ntrip)
@@ -228,9 +231,10 @@ TEST(BasicTestSuite, test_rtk_base)
     EXPECT_EQ(ntrip->get_connection_string(), "TCP:RTCM3:127.0.0.1:7777");
 
     isROS.configure_rtk();
-    EXPECT_EQ(isROS.rtkConfigBits_, 0x2);
-
-
+    nvm_flash_cfg_t flashCfg;
+    isROS.IS_.WaitForFlashSynced();
+    isROS.IS_.FlashConfig(flashCfg);
+    EXPECT_EQ(flashCfg.RTKCfgBits, 0x2);
 }
 
 TEST(BasicTestSuite, test_topic_helper)

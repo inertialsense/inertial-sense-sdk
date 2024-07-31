@@ -77,32 +77,20 @@ Since most messages use the RMC (real-time message controller) now, this can be 
 typedef void* CMHANDLE;
 
 // com manager callback prototypes
-// readFnc read data from the serial port. Returns number of bytes read.
-typedef int(*pfnComManagerRead)(int port, unsigned char* buf, int len);
-
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by pHandle
-typedef int(*pfnComManagerSendBufferAvailableBytes)(int port);
+typedef int(*pfnComManagerSendBufferAvailableBytes)(unsigned int port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by pHandle
-typedef void(*pfnComManagerPostRead)(int port, p_data_t* dataRead);
+typedef void(*pfnComManagerPostRead)(unsigned int port, p_data_t* dataRead);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
-typedef void(*pfnComManagerPostAck)(int port, p_ack_t* ack, unsigned char packetIdentifier);
+typedef void(*pfnComManagerPostAck)(unsigned int port, p_ack_t* ack, unsigned char packetIdentifier);
 
-// disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL
+// disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
 typedef void(*pfnComManagerDisableBroadcasts)(int port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
-typedef int(*pfnComManagerPreSend)(int port, p_data_hdr_t *dataHdr);
-
-// Generic message handler function, return 1 if message handled
-typedef int(*pfnComManagerGenMsgHandler)(int port, const unsigned char* msg, int msgSize);
-
-// Parse error handler function, return 1 if message handled
-typedef int(*pfnComManagerParseErrorHandler)(int port, is_comm_instance_t* comm);
-
-// broadcast message handler
-typedef int(*pfnComManagerAsapMsg)(int port, p_data_get_t* req);
+typedef int(*pfnComManagerPreSend)(unsigned int port, p_data_hdr_t *dataHdr);
 
 /* Contains callback information for a before and after send for a data structure */
 typedef struct
@@ -140,7 +128,7 @@ typedef struct
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
-	pfnComManagerRead portRead;
+	pfnIsCommPortRead portRead;
 
 	// write data to the destination (usually a serial port)
 	pfnIsCommPortWrite portWrite;
@@ -154,7 +142,7 @@ typedef struct
 	// Callback function pointer, used to respond to ack
 	pfnComManagerPostAck pstAckFnc;
 
-	// Callback function pointer, used when disabling all broadcast messages
+	// Callback function pointer to disable broadcasts on specified port, or all ports if port is -1
 	pfnComManagerDisableBroadcasts disableBcastFnc;
 
 	// Pointer to local data and data specific callback functions
@@ -174,23 +162,8 @@ typedef struct
 	// user defined pointer
 	void* userPointer;
 
-	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
-	pfnComManagerAsapMsg cmMsgHandlerRmc;
-
-	// Message handler - NMEA
-	pfnComManagerGenMsgHandler cmMsgHandlerNmea;
-
-	// Message handler - Ublox
-	pfnComManagerGenMsgHandler cmMsgHandlerUblox;
-
-	// Message handler - RTCM3
-	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
-	
-	// Message handler - SPARTN
-	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
-
-	// Error handler 
-	pfnComManagerParseErrorHandler cmMsgHandlerError;
+	// Message handlers
+	is_comm_callbacks_t callbacks;
 
 } com_manager_t;
 
@@ -222,14 +195,15 @@ CMHANDLE comManagerGetGlobal(void);
 int comManagerInit
 (	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
+	pfnIsCommPortRead readFnc,
 	pfnIsCommPortWrite sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts);
+	com_manager_port_t *cmPorts,
+	is_comm_callbacks_t *callbacks);
 
 // Initialize an instance to a com manager that can be passed to instance functions and can later be freed with freeComManagerInstance
 // this function may be called multiple times.  Return 0 on success, -1 on failure.
@@ -237,14 +211,15 @@ int comManagerInitInstance
 (	CMHANDLE cmHandle,
 	int numPorts,
 	int stepPeriodMilliseconds,
-	pfnComManagerRead readFnc,
+	pfnIsCommPortRead readFnc,
 	pfnIsCommPortWrite sendFnc,
 	pfnComManagerSendBufferAvailableBytes txFreeFnc,
 	pfnComManagerPostRead pstRxFnc,
 	pfnComManagerPostAck pstAckFnc,
 	pfnComManagerDisableBroadcasts disableBcastFnc,
 	com_manager_init_t *buffers,
-	com_manager_port_t *cmPorts);
+	com_manager_port_t *cmPorts,
+	is_comm_callbacks_t *callbacks);
 
 /**
 * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
@@ -476,31 +451,6 @@ int comManagerGetDataRequestInstance(CMHANDLE cmInstance, int port, p_data_get_t
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 void comManagerRegisterInstance(CMHANDLE cmInstance, uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
-
-/**
-* Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
-* 
-* @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
-* @param asciiHandler handler for NMEA messages.
-* @param ubloxHandler handler for ublox messages.
-* @param rtcm3Handler handler for RTCM3 messages.
-* @param spartnHandler handler for SPARTN messages.
-* @param handlerError handler for parse errors.
-*/
-void comManagerSetCallbacks(
-	pfnComManagerAsapMsg rmcHandler,
-	pfnComManagerGenMsgHandler asciiHandler,
-	pfnComManagerGenMsgHandler ubloxHandler, 
-	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler,
-	pfnComManagerParseErrorHandler handlerError);
-void comManagerSetCallbacksInstance(CMHANDLE cmInstance, 
-	pfnComManagerAsapMsg rmcHandler,
-	pfnComManagerGenMsgHandler asciiHandler,
-	pfnComManagerGenMsgHandler ubloxHandler,
-	pfnComManagerGenMsgHandler rtcm3Handler,
-	pfnComManagerGenMsgHandler spartnHandler,
-	pfnComManagerParseErrorHandler handlerError);
 
 /**
 * Attach user defined data to a com manager instance

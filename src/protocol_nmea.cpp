@@ -1492,11 +1492,8 @@ bool gsv_freq_ena(gps_sig_sv_t* sig)
     return false;
 }
 
-int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
+int nmea_gsv_group(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, uint8_t sigId=0xFF, bool noCno=false)
 {
-    // Apply offset to buffer
-    a += offset;
-    aSize -= offset;
     char *bufStart = a;
 
     int numSigs = nmea_gsv_num_sat_sigs(gnssId, sigId, gsig);
@@ -1549,7 +1546,6 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
         }
         nmea_sprint_footer(a, aSize, n);
 
-        offset += n;
         // Move buffer pointer
         a += n;
         aSize -= n;
@@ -1559,12 +1555,12 @@ int nmea_gsv_group(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t 
 }
 
 
-int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
+int nmea_gsv_gnss(char a[], int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno)
 {
     (void)noCno;
     if (s_protocol_version < NMEA_PROTOCOL_4P10)
     {
-        return nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId);
+        return nmea_gsv_group(a, aSize, gsat, gsig, gnssId);
     }
 
     uint8_t *sigIds;
@@ -1622,7 +1618,7 @@ int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &
 
     for (int i = 0; i<numSigIds; i++)
     {
-        n += nmea_gsv_group(a, aSize, offset, gsat, gsig, gnssId, sigIds[i]);
+        n += nmea_gsv_group(a+n, aSize-n, gsat, gsig, gnssId, sigIds[i]);
     }
 
     return n;
@@ -1630,7 +1626,7 @@ int nmea_gsv_gnss(char a[], int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &
 
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 {
-    int n=0;
+    int n = 0;
 
     // eSatSvGnssId
     for (int gnssId=1; gnssId<=SAT_SV_GNSS_ID_IRN; gnssId++)
@@ -1640,7 +1636,10 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
             // printf("gnssId: %d\n", gnssId);
 
             // With CNO
-            nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId);
+            if((aSize - n) > 0)
+                n += nmea_gsv_gnss(a+n, aSize - n, gsat, gsig, gnssId);
+            else 
+                break;
 
             // Zero CNO
             // nmea_gsv_gnss(a, aSize, n, gsat, gsig, gnssId, true);
@@ -1652,7 +1651,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 
 /**
  * decodes the NMEA GSV family of messages
- * Returns: message id (see eNmeaAsciiMsgId)
+ * Returns: message id (see eNmeaMsgId)
  *  Error   -1 for NMEA head not found 
  * 	        -2 for invalid length
  *          -3 other error 
@@ -1662,9 +1661,9 @@ int decodeGSV(char* a, int aSize)
     if(aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
         return -2;
 
-    int msgNum = NMEA_GNGSV_START;
+    int msgNum = NMEA_MSG_ID_GNGSV_START;
     
-    if(a[1] == 'x')        return NMEA_MSG_ID_GxGSV;
+    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
@@ -1673,7 +1672,7 @@ int decodeGSV(char* a, int aSize)
     else if (a[1] == 'L')  msgNum += NMEA_GNGSV_GLO_OFFSET;
     else                   return -3;
 
-    // Parse freqencys
+    // Parse freqencies
     // Enable all Freqs ie GNGSV,
     if(a[5] == ',' || a[5] == '*')
         msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
@@ -1835,7 +1834,7 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
     unsigned int year, month, day;
     SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
     info.buildType = ' ';
-    info.buildYear = (uint8_t)(year - 2000);
+    info.buildYear = (uint8_t)(year >= 2000 ? (year - 2000):year);
     info.buildMonth = (uint8_t)(month);
     info.buildDay = (uint8_t)(day);
     ptr = ASCII_find_next_field(ptr);
@@ -2020,7 +2019,7 @@ int parseASCE_GSV(int inId)
     uint8_t constTarget = (inId & 0xf0) >> 4;
     uint8_t freqMask = (inId & 0x0f);
 
-    if(inId < NMEA_GNGSV_START || inId > NMEA_GNGSV_END)
+    if(inId < NMEA_MSG_ID_GNGSV_START || inId > NMEA_MSG_ID_GNGSV_END)
         return 0;
 
     switch (constTarget)
@@ -2102,7 +2101,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         
@@ -2178,7 +2177,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         

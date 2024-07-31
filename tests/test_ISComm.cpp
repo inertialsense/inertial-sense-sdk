@@ -81,7 +81,7 @@ static int portRead(int pHandle, unsigned char* buf, int len)
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(int pHandle, const unsigned char* buf, int len)
+static int portWrite(unsigned int pHandle, const unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow

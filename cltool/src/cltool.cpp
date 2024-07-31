@@ -216,68 +216,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             print_dids();
             return false;
         }
-        else if (startsWith(a, "-evf="))
-        {
-            g_commandLineOptions.evFCont.sendEVF = true;
-
-            char* token = strtok((char*)&a[5], ",");
-            g_commandLineOptions.evFCont.dest = stoi(token);
-
-            if (g_commandLineOptions.evFCont.dest == 0)
-                printf("EVF Target: Primary device.\n", token);
-            else if (g_commandLineOptions.evFCont.dest == 1)
-                printf("EVF Target: device GNSS1 port.\n", token);
-            else if (g_commandLineOptions.evFCont.dest == 2)
-                printf("EVF Target: device GNSS2 port.\n", token);
-            else 
-            {
-                printf("EVF Target: INVALID\n", token); 
-                g_commandLineOptions.evFCont.sendEVF = false;
-                continue;
-            }
-
-            token = strtok(NULL, ",");
-            if (token != NULL)
-            {
-                g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
-                printf("EVF PortMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.portMask);
-            }
-            else
-            {
-                printf("EVF PortMask: MISSING! See usage!\n");
-                g_commandLineOptions.evFCont.sendEVF = false;
-                continue;
-            }
-
-            token = strtok(NULL, ",");
-            if (token != NULL)
-            {
-                g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask = stoi(token);
-                printf("EVF PriotityMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask);
-            }
-            else
-            {
-                printf("EVF PriotityMask: MISSING! See usage!\n");
-                g_commandLineOptions.evFCont.sendEVF = false;
-                continue;
-            }
-
-            token = strtok(NULL, ",");
-            if (token != NULL)
-            {
-                g_commandLineOptions.evFCont.evFilter.eventMask.idMask = stoi(token);
-                printf("EVF IDMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.idMask);
-            }
-            else
-            {
-                printf("EVF IDMask: MISSING! See usage!\n");
-                g_commandLineOptions.evFCont.sendEVF = false;
-                continue;
-            }
-
-            printf("EVF Enabled!");
-
-        }
         else if (startsWith(a, "-did") && (i + 1) < argc)
         {
             while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"
@@ -314,6 +252,91 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 print_dids();
                 return false;
             }
+        }
+        else if (startsWith(a, "-evf="))
+        {
+            g_commandLineOptions.evFCont.sendEVF = true;
+
+            char* token = strtok((char*)&a[5], ",");
+            g_commandLineOptions.evFCont.dest = stoi(token);
+
+            if (g_commandLineOptions.evFCont.dest == 0)
+                printf("EVF Target: Primary device\n");
+            else if (g_commandLineOptions.evFCont.dest == 1)
+                printf("EVF Target: device GNSS1 port\n");
+            else if (g_commandLineOptions.evFCont.dest == 2)
+                printf("EVF Target: device GNSS2 port\n");
+            else
+            {
+                printf("EVF Target: INVALID\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
+                g_commandLineOptions.evFCont.evFilter.portMask = stoi(token);
+                printf("EVF PortMask: 0x%02x\n", g_commandLineOptions.evFCont.evFilter.portMask);
+            }
+            else
+            {
+                printf("EVF PortMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
+                g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel = stoi(token);
+                printf("EVF PriorityLevel: 0x%d\n", g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
+            }
+            else
+            {
+                printf("EVF PriorityLevel: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            token = strtok(NULL, ",");
+            if (token != NULL)
+            {
+                g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask = stoi(token);
+                printf("EVF msgTypeIdMask: 0x%08x\n", g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask);
+            }
+            else
+            {
+                printf("EVF msgTypeIdMask: MISSING! See usage!\n");
+                g_commandLineOptions.evFCont.sendEVF = false;
+                continue;
+            }
+
+            printf("EVF Enabled!");
+
+        }
+        else if (startsWith(a, "-evo"))
+        {
+            if ((i + 3) < argc)
+            {
+                g_commandLineOptions.evOCont.extractEv = true;
+
+                g_commandLineOptions.evOCont.inFile = argv[++i];
+                g_commandLineOptions.evOCont.logType = argv[++i];
+                g_commandLineOptions.evOCont.outFile = argv[++i];
+
+                printf("EVO src file: %s\n", g_commandLineOptions.evOCont.inFile.c_str());
+                printf("EVO src file type: %s\n", g_commandLineOptions.evOCont.logType.c_str());
+                printf("EVO dest file: %s\n", g_commandLineOptions.evOCont.outFile.c_str());
+                printf("EVO Enabled!\n");
+            }
+            else if ((i + 1) < argc)
+                printf("EVO destination file: MISSING! See usage!\n"); 
+            else if ((i + 2) < argc)
+                printf("EVO SRC file type: MISSING! See usage!\n");
+            else
+                printf("EVO SRC file: MISSING! See usage!\n");
+
         }
         else if (startsWith(a, "-factoryReset"))
         {
@@ -434,6 +457,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_RAW_PARSE;
         }
+
         else if (startsWith(a, "-rp") && (i + 1) < argc)
         {
             g_commandLineOptions.replayDataLog = true;
@@ -598,6 +622,162 @@ bool cltool_replayDataLog()
     return true;
 }
 
+void event_outputEvToFile(string fileName, uint8_t* data, int len)
+{
+    std::ofstream outfile;
+
+    outfile.open(fileName, std::ios_base::app | std::ios_base::binary); // append instead of overwrite
+    outfile.write((const char*)data, len);
+    outfile.close();
+}
+
+bool cltool_extractEventData()
+{
+    is_comm_instance_t c;
+    uint8_t evScratch[1028 + DID_EVENT_HEADER_SIZE];
+    c.rxBuf.start = evScratch;
+    c.rxBuf.size = 1028 + DID_EVENT_HEADER_SIZE;
+    
+    std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+    if (g_commandLineOptions.evOCont.inFile.length() == 0)
+    {
+        cout << "Please specify the parse log path!" << endl;
+        return false;
+    }
+
+    if (g_commandLineOptions.evOCont.outFile.length() == 0)
+    {
+        cout << "Please specify the output log path!" << endl;
+        return false;
+    }
+
+    cISLogger logger;
+    if (!logger.LoadFromDirectory(g_commandLineOptions.evOCont.inFile, cISLogger::ParseLogType(g_commandLineOptions.evOCont.logType), { "ALL" }))
+    {
+        cout << "Failed to load log files: " << g_commandLineOptions.evOCont.inFile << endl;
+        return false;
+    }
+
+
+    // time do handle our output dir
+    // does it exist?
+    struct stat info;
+    if (stat(g_commandLineOptions.evOCont.outFile.c_str(), &info) == 0)
+    {
+        if (info.st_mode & S_IFDIR)
+            cout << "Found output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+        else
+        {
+            cout << "Output dir not a folder: " << g_commandLineOptions.evOCont.outFile << endl;
+            return false;
+        }
+    }
+    else
+    {
+        // the folder does not exist try to create it
+        // creating output files
+        #if PLATFORM_IS_WINDOWS
+            if (mkdir(g_commandLineOptions.evOCont.outFile.c_str()) == 0)
+        #else
+            if (mkdir(g_commandLineOptions.evOCont.outFile.c_str(), 0777))
+        #endif
+
+            cout << "Created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+        else
+        {
+            cout << "Failed to created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+            return false;
+        }
+    }
+
+    cout << "Parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
+
+    p_data_buf_t* data;
+    // for (int d=0; d<logger.DeviceCount(); d++)
+    for (auto dl : logger.DeviceLogs())
+    {
+
+        string deviceFolder = g_commandLineOptions.evOCont.outFile + "/SN-" + std::to_string(dl->SerialNumber());
+        
+        if (stat(deviceFolder.c_str(), &info) == 0)
+        {
+            if (!(info.st_mode & S_IFDIR))
+            {
+                cout << "Output dir not a folder skipping: " << deviceFolder << endl;
+                continue;
+            }
+        }
+        else
+        {
+            // the folder does not exist try to create it
+            // creating output files
+            #if PLATFORM_IS_WINDOWS
+                if (mkdir(deviceFolder.c_str()) == 0)
+            #else
+                if (mkdir(deviceFolder.c_str(), 0777))
+            #endif
+                cout << "Created output dir: " << deviceFolder << endl;
+            else
+            {
+                cout << "Failed to created output dir: " << deviceFolder << endl;
+                continue;
+            }
+        }
+
+        int count = 0;
+
+        // cycle through data
+        while (((data = logger.ReadData(dl)) != NULL))
+        {
+            p_data_t d = { data->hdr, data->buf };
+
+            if (d.hdr.id == DID_EVENT)
+            {
+                did_event_t* ev = (did_event_t*)data->buf;
+                memset(evScratch, 0, 1028 + DID_EVENT_HEADER_SIZE);
+                memcpy(evScratch, ev->data, ev->length);
+
+                string fileName;
+
+                switch (ev->msgTypeID)
+                {
+                    case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
+                    case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1: 
+                        fileName = deviceFolder + "/rcvr1.rtcm"; 
+                        c.rxBuf.size = ev->length;
+                        c.rxBuf.head = evScratch;
+                        c.rxBuf.end = evScratch + ev->length;
+                        c.rxBuf.tail = evScratch + ev->length;
+                        c.rxBuf.scan = evScratch;
+                        
+                        c.processPkt = nullptr;
+
+                        is_comm_parse_timeout(&c, 0);
+                        break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR2: fileName = deviceFolder + "/rcvr2.rtcm";  break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
+                    case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
+                    case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
+                    default: 
+                        fileName = deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
+                        printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, fileName.c_str());
+                        break;
+                }
+                event_outputEvToFile(fileName, evScratch, ev->length);
+            }
+
+            if(++count % 5000 == 0)
+                printf("Read %d msgs from SN-%d\n", count, dl->SerialNumber());
+
+        }
+    }
+
+    cout << "Done parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
+    return true;
+}
+
 void cltool_outputUsage()
 {
 	cout << boldOff;
@@ -612,7 +792,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
@@ -642,11 +822,10 @@ void cltool_outputUsage()
     cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
     cout << "         target: t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
     cout << "         portMask: po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
-    cout << "         priorityMask: pr=[Priority ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventPriority for protocol EV_ID values]. It is recommended to mask 0xc0" << endlbOn;
-    cout << "             at all times to allow broadcast of critical errors,"  << endlbOn;
-    cout << "         idMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_PROTOCOL_ASCII)" << endlbOn;
+    cout << "         priorityLevel: pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
+    cout << "             It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors,"  << endlbOn;
+    cout << "         msgTypeIdMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
+    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
     cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;

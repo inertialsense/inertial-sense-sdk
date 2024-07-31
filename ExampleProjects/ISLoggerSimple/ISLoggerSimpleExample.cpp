@@ -57,6 +57,7 @@ int main(int argc, char* argv[])
 
     // Setup and enable logger.  Select the LOGTYPE (i.e. dat, raw, csv)
     cISLogger logger;
+    auto devLog = logger.registerDevice(IS_HARDWARE_TYPE_IMX, 12345);   // if you know this information, you can pass it, but it's not important that it match your actual hardware.
     logger.InitSave(cISLogger::eLogType::LOGTYPE_RAW, logPath);
     logger.EnableLogging(true);
 
@@ -84,7 +85,7 @@ int main(int argc, char* argv[])
 		if (int len = serialPortRead(&s_serialPort, buf, sizeof(buf)))
 		{
 			// Log serial port data to file
-			logger.LogData(0, len, buf);
+			logger.LogData(devLog, len, buf);
 
 			printf("Log file size: %.3f MB \r", logger.LogSizeAllMB());
 		}

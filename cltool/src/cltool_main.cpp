@@ -138,7 +138,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
         printf("\nLogging %.2f KB to: %s\n", logSize * 0.001f, logger.LogDirectory().c_str());
 }
 
-static int cltool_errorCallback(int port, is_comm_instance_t* comm)
+static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 {
     #define BUF_SIZE    8192
     #define BLACK   "\u001b[30m"
@@ -536,23 +536,25 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
 
     if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
     {
-        printf("    | %s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
+        printf("    | %s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
     }
     else if(ctx->m_sn != 0)
     {
-        printf("    | (SN%d):\r", ctx->m_sn);
+        printf("    | (SN%d):", ctx->m_sn);
     }
     else if (ctx->m_port_name.size() != 0)
     {
-        printf("    | %s:\r", ctx->m_port_name.c_str());
+        printf("    | %s:", ctx->m_port_name.c_str());
     }
     else
     {
-        printf("    | SN?:\r");
+        printf("    | SN?:");
     }
 
     if (buffer[0])
-        printf("\t%s\r\n", buffer);
+        printf(" %s", buffer);
+
+    printf("\r\n");
 
     print_mutex.unlock();
 }
@@ -728,9 +730,9 @@ static int cltool_dataStreaming()
 
             if (g_commandLineOptions.evFCont.sendEVF)
                 inertialSenseInterface.SetEventFilter(g_commandLineOptions.evFCont.dest, 
-                    g_commandLineOptions.evFCont.evFilter.eventMask.idMask,  
+                    g_commandLineOptions.evFCont.evFilter.eventMask.msgTypeIdMask,  
                     g_commandLineOptions.evFCont.evFilter.portMask,
-                    g_commandLineOptions.evFCont.evFilter.eventMask.priorityMask);
+                    g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
             // Main loop. Could be in separate thread if desired.
             uint32_t startTime = current_timeMs();
@@ -814,7 +816,14 @@ static int inertialSenseMain()
         // [REPLAY INSTRUCTION] 1.) Replay data log
         return cltool_replayDataLog();
     }
-        // if app firmware was specified on the command line, do that now and return
+    
+    // if event parsing return after completeing
+    else if (g_commandLineOptions.evOCont.extractEv)
+    {
+        return cltool_extractEventData();
+    }
+
+    // if app firmware was specified on the command line, do that now and return
     else if ((g_commandLineOptions.updateFirmwareTarget == fwUpdate::TARGET_HOST) && (g_commandLineOptions.updateAppFirmwareFilename.length() != 0))
     {
         // FIXME: {{ DEPRECATED }} -- This is the legacy update method (still required by the uINS3 and IMX-5, but will go away with the IMX-5.1)

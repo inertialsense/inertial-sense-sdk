@@ -301,7 +301,7 @@ bool nextStreamDigit(stringstream &ss, string &str)
     return true;
 }
 
-
+// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.  
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -379,7 +379,10 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     for (size_t i = 0; i < files.size(); i++)
     {
         string name = ISFileManager::GetFileName(files[i].name);
-        ParseFilename(name, serialNum, date, time, index);
+        if (!ParseFilename(name, serialNum, date, time, index))
+        {   // Skip invalid filename
+            continue;
+        }
 
         if (serialNum >= 0)
         {

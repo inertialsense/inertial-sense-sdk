@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "../../src/serialPortPlatform.h"
 #include "../../src/ISPose.h"
 #include "../../src/ISUtilities.h"
+#include "../../src/protocol_nmea.h"
 
 static serial_port_t s_serialPort;
 static int running = 1;
@@ -54,7 +55,7 @@ static void handleImuMessage(imu_t* imu)
 		imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
-static int portWrite(int port, const unsigned char* buf, int len)
+static int portWrite(unsigned int port, const unsigned char* buf, int len)
 {
 	return serialPortWrite(&s_serialPort, buf, len);
 }
@@ -167,7 +168,6 @@ int main(int argc, char* argv[])
 		return -2;
 	}
 
-
 	int error;
 
 	// STEP 4: Stop any message broadcasting
@@ -184,13 +184,11 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-
 	// STEP 6: Enable message broadcasting
 	if ((error = enable_message_broadcasting(&s_serialPort, &comm)))
 	{
 		return error;
 	}
-
 
 #if 0   // STEP 7: (Optional) Save currently enabled streams as persistent messages enabled after reboot
 	save_persistent_messages(&serialPort, &comm);
@@ -199,7 +197,6 @@ int main(int argc, char* argv[])
 	// STEP 8: Handle received data
 	uint8_t inByte;
 
-	// You can set running to false with some other piece of code to break out of the loop and end the program
 	while (running)
 	{
 		// Read one byte with a 20 millisecond timeout
@@ -229,6 +226,17 @@ int main(int argc, char* argv[])
 
 					// TODO: add other cases for other data ids that you care about
 				}
+				break;
+
+			case _PTYPE_NMEA:
+				switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.dataHdr.size))
+				{
+                case NMEA_MSG_ID_GxGGA:
+					// Access NMEA message here:
+					// comm.dataPtr 
+					// comm.dataHdr.size
+                    break;
+                }
 				break;
 
 			default:

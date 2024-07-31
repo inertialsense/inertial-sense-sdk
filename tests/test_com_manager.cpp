@@ -67,12 +67,12 @@ static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
 
-static int portRead(int port, unsigned char* buf, int len)
+static int portRead(unsigned int port, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(int port, const unsigned char* buf, int len)
+static int portWrite(unsigned int port, const unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
@@ -82,7 +82,7 @@ static int portWrite(int port, const unsigned char* buf, int len)
 	return len;
 }
 
-static void postRxRead(int port, p_data_t* dataRead)
+static void postRxRead(unsigned int port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -98,17 +98,17 @@ static void disableBroadcasts(int port)
 {
 }
 
-int prepDevInfo(int port, p_data_hdr_t* dataHdr)
+int prepDevInfo(unsigned int port, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(int port, p_data_t* data)
+void writeNvrUserpageFlashCfg(unsigned int port, p_data_t* data)
 {
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerNmea(int port, const uint8_t* msg, int msgSize)
+static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
 {
 // 	comWrite(pHandle, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
@@ -168,7 +168,7 @@ static int msgHandlerNmea(int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerUblox(int port, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox(unsigned int port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -206,7 +206,7 @@ static int msgHandlerUblox(int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm3(unsigned int port, const uint8_t* msg, int msgSize)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -244,7 +244,7 @@ static int msgHandlerRtcm3(int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerError(int port, is_comm_instance_t* comm)
+static int msgHandlerError(unsigned int port, is_comm_instance_t* comm)
 {
 	return 0;
 }
@@ -272,15 +272,18 @@ static bool initComManager(test_data_t &t)
 	com_manager_init_t cmInit = {};
 	cmInit.broadcastMsg = t.cmBufBcastMsg;
 	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort))
+	is_comm_callbacks_t callbacks = {};
+	callbacks.nmea 	= msgHandlerNmea;
+	callbacks.ublox = msgHandlerUblox;
+	callbacks.rtcm3 = msgHandlerRtcm3;
+	callbacks.error = msgHandlerError;
+	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort, &callbacks))
 	{	// Fail to init
 		return false;
 	}
 
 	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
 	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
-
-	comManagerSetCallbacksInstance(&(t.cm), NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR, msgHandlerError);
 
 	// Enable/disable protocols
 	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);

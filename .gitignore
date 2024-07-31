@@ -21,12 +21,14 @@ CMakeFiles/
 *.user
 .vs
 .vscode
-
+.venv
 .idea
 cmake-build-debug
 Makefile
 CMakeCache.txt
 cmake_install.cmake
 libInertialSenseSDK.a
-
+scripts/.venv/
+python/venv/
+python/logInspector/.eggs/
 

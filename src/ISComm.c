@@ -898,7 +898,7 @@ int is_comm_free(is_comm_instance_t* c)
 
 protocol_type_t is_comm_parse_byte_timeout(is_comm_instance_t* c, uint8_t byte, uint32_t timeMs)
 {
-    // Reset buffer if needed
+    // Reset buffer if needed.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     is_comm_free(c);
 
     // Add byte to buffer
@@ -967,6 +967,84 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
+static inline void parse_messages(unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+{
+    // Search comm buffer for valid packets
+    protocol_type_t ptype;
+    while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
+    {
+        // Found valid packet
+        switch (ptype)
+        {
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            if (callbacks->isb)
+            {
+                callbacks->isb(port, comm);
+            }
+            if (callbacks->isbData)
+            {
+                p_data_t data;
+                is_comm_to_isb_p_data(comm, &data);
+                callbacks->isbData(port, &data);
+            }
+            break;
+        case _PTYPE_INERTIAL_SENSE_ACK:
+        case _PTYPE_INERTIAL_SENSE_CMD:
+            if (callbacks->isb)
+            {
+                callbacks->isb(port, comm);
+            }
+            break;
+
+        case _PTYPE_NMEA:           if (callbacks->nmea)    { callbacks->nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_RTCM3:          if (callbacks->rtcm3)   { callbacks->rtcm3( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_SPARTN:         if (callbacks->sprtn)   { callbacks->sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_UBLOX:          if (callbacks->ublox)   { callbacks->ublox( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_SONY:           if (callbacks->sony)    { callbacks->sony(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_PARSE_ERROR:    if (callbacks->error)   { callbacks->error( port, comm); } break;
+        default: break;
+        }
+
+        if (callbacks->all)
+        {
+            callbacks->all(port, comm);
+        }
+    }
+}
+
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+{
+    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
+    int n = (int)_MIN((int)buf_size, is_comm_free(comm));
+
+    memcpy(comm->rxBuf.tail, buf, n);
+
+    // Update comm buffer tail pointer
+    comm->rxBuf.tail += n;
+
+    // Parse messages and call corresponding callback functions
+    parse_messages(0, comm, callbacks);
+}
+
+void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+{
+    // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
+    int bytesFree = is_comm_free(comm);
+
+    int n = portRead(port, comm->rxBuf.tail, bytesFree);
+
+    if (n <= 0)
+    {   // No update
+        return;
+    }
+
+    // Update comm buffer tail pointer
+    comm->rxBuf.tail += n;
+
+    // Parse messages and call corresponding callback functions
+    parse_messages(port, comm, callbacks);
+}
+
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
@@ -979,7 +1057,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-int is_comm_get_data(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
+int is_comm_get_data(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -1050,35 +1128,17 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *pkt)
+int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *pkt)
 {
-    // TODO: Debug test_flash_sync, remove later (WHJ)
-    int j;
-
     // Set checksum using precomputed header checksum
     pkt->checksum = pkt->hdrCksum;
 
     // Write packet to port
-    int n = j = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
-
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-    if (j != sizeof(packet_hdr_t))
-    {
-        printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite header: %d,%d\n", j, (int)sizeof(packet_hdr_t));
-    }
-#endif
+    int n = portWrite(port, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));  // Header
 
     if (pkt->offset)
     {
-        n += j = portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
-
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-        if (j != 2)
-        {
-            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite optional offset: %d,2\n", j);
-        }
-#endif
-
+        n += portWrite(port, (uint8_t*)&(pkt->offset), 2);                 // Offset (optional)
     }
 
     if (pkt->data.size)
@@ -1086,15 +1146,7 @@ int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, int port, is
         // Include payload in checksum calculation
         pkt->checksum = is_comm_isb_checksum16(pkt->checksum, (uint8_t*)pkt->data.ptr, pkt->data.size);
 
-        n += j = portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
-
-#if !PLATFORM_IS_EMBEDDED    // TODO: Debug test_flash_sync, remove later (WHJ)
-        if (j != (int)(pkt->data.size))
-        {
-            printf("ISComm.c::is_comm_write_isb_precomp_to_port() failed to portWrite payload: %d,%d\n", j, pkt->data.size);
-        }
-#endif
-
+        n += portWrite(port, (uint8_t*)pkt->data.ptr, pkt->data.size);     // Payload
     }
 
     n += portWrite(port, (uint8_t*)&(pkt->checksum), 2);                   // Footer (checksum)
@@ -1117,7 +1169,7 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
-int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
     packet_t txPkt;
 
@@ -1125,7 +1177,7 @@ int is_comm_write(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* co
     return is_comm_write_pkt(portWrite, port, comm, &txPkt, flags, did, data_size, offset, data);
 }
 
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_pkt(pfnIsCommPortWrite portWrite, unsigned int port, is_comm_instance_t* comm, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
     if (portWrite == NULL)
     {

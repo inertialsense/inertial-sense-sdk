@@ -223,7 +223,7 @@ bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, prot
 	{
 		return false;
 	}
-	else if (dataHdr->id == DID_DEV_INFO)
+	else if (dataHdr->id == DID_DEV_INFO && device)
 	{
 		memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
 	}

@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISBootloaderDFU.h"
 #include "protocol/FirmwareUpdate.h"
+#include "imx_defaults.h"
 
 using namespace std;
 
@@ -27,10 +28,10 @@ using namespace std;
 #define DEBUG_PRINT(...) 
 #endif
 
-static InertialSense *s_is;
-static InertialSense::com_manager_cpp_state_t *s_cm_state;
+static InertialSense *s_is = NULL;
+static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
-static int staticSendData(int port, const unsigned char* buf, int len)
+static int staticSendData(unsigned int port, const uint8_t* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -39,7 +40,7 @@ static int staticSendData(int port, const unsigned char* buf, int len)
     return serialPortWrite(&(s_cm_state->devices[port].serialPort), buf, len);
 }
 
-static int staticReadData(int port, unsigned char* buf, int len)
+static int staticReadData(unsigned int port, uint8_t* buf, int len)
 {
     if ((size_t)port >= s_cm_state->devices.size())
     {
@@ -55,7 +56,7 @@ static int staticReadData(int port, unsigned char* buf, int len)
     return bytesRead;
 }
 
-static void staticProcessRxData(int port, p_data_t* data)
+static void staticProcessRxData(unsigned int port, p_data_t* data)
 {
     if (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData)))
     {
@@ -102,7 +103,7 @@ static void staticProcessRxData(int port, p_data_t* data)
     }
 }
 
-static int staticProcessRxNmea(int port, const unsigned char* msg, int msgSize)
+static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int msgSize)
 {
     if ((size_t)port > s_cm_state->devices.size())
     {
@@ -116,12 +117,12 @@ static int staticProcessRxNmea(int port, const unsigned char* msg, int msgSize)
 
 
 InertialSense::InertialSense(
-        pfnHandleBinaryData        handlerIsb,
-        pfnComManagerAsapMsg       handlerRmc,
-        pfnComManagerGenMsgHandler handlerNmea,
-        pfnComManagerGenMsgHandler handlerUblox,
-        pfnComManagerGenMsgHandler handlerRtcm3,
-        pfnComManagerGenMsgHandler handlerSpartn ) : m_tcpServer(this)
+        pfnHandleBinaryData    handlerIsb,
+        pfnIsCommAsapMsg       handlerRmc,
+        pfnIsCommGenMsgHandler handlerNmea,
+        pfnIsCommGenMsgHandler handlerUblox,
+        pfnIsCommGenMsgHandler handlerRtcm3,
+        pfnIsCommGenMsgHandler handlerSpartn ) : m_tcpServer(this)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
@@ -476,7 +477,7 @@ bool InertialSense::UpdateServer()
     is_comm_instance_t *comm = &(m_gpComm);
     protocol_type_t ptype = _PTYPE_NONE;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
@@ -560,7 +561,7 @@ bool InertialSense::UpdateClient()
     protocol_type_t ptype = _PTYPE_NONE;
     static int error = 0;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer
@@ -780,9 +781,11 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
  * param Target: 0 = device, 
  *               1 = forward to device GNSS 1 port (ie GPX), 
  *               2 = forward to device GNSS 2 port (ie GPX),
- *               else will return  
+ *               else will return
+ *       pHandle: Send in target COM port. 
+ *                If arg is < 0 default port will be used 
 */
-void InertialSense::SetEventFilter(int target, uint32_t IDMask, uint8_t portMask, uint8_t priorityMask)
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
@@ -798,22 +801,25 @@ void InertialSense::SetEventFilter(int target, uint32_t IDMask, uint8_t portMask
         .portMask = portMask,
     };
 
-    filter.eventMask.priorityMask = priorityMask;
-    filter.eventMask.idMask = IDMask;
+    filter.eventMask.priorityLevel = priorityLevel;
+    filter.eventMask.msgTypeIdMask = msgTypeIdMask;
 
     if(target == 0)
-        event.protocol = EVENT_PROTOCOL_ENA_FILTER;
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
     else if(target == 1)
-        event.protocol = EVENT_PROTOCOL_ENA_GNSS1_FILTER;
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
     else if(target == 2)
-        event.protocol = EVENT_PROTOCOL_ENA_GNSS2_FILTER;
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
     else 
         return;
 
     memcpy(data, &event, DID_EVENT_HEADER_SIZE);
     memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
 
-    SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+    if(pHandle < 0)
+        SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+    else    
+        comManagerSendData(pHandle, data, DID_EVENT, DID_EVENT_HEADER_SIZE + event.length, 0);
 }
 
 // This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
@@ -865,6 +871,22 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
     }
 }
 
+void InertialSense::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg)
+{
+    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    // Exclude from the checksum update the following which does not get saved in the flash config
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    if (platformCfgUpdateIoConfig)
+    {   // Update ioConfig
+        imxPlatformConfigToFlashCfgIoConfig(&flashCfg.ioConfig, flashCfg.platformConfig);
+    }
+
+    // Update checksum
+    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+}
+
 bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
@@ -885,20 +907,23 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
 {
     if ((size_t)pHandle >= m_comManagerState.devices.size())
     {
-        // TODO: Debug test_flash_sync, remove later (WHJ)
-        printf("InertialSense::SetFlashConfig() no devices present.\n");
-
         return 0;
     }
     ISDevice& device = m_comManagerState.devices[pHandle];
-    
+
+    device.flashCfg.checksum = flashChecksum32(&device.flashCfg, sizeof(nvm_flash_cfg_t));
+
     // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
     static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
     uint32_t *newCfg = (uint32_t*)&flashCfg;
     uint32_t *curCfg = (uint32_t*)&device.flashCfg; 
     int iSize = sizeof(nvm_flash_cfg_t) / 4;
     bool failure = false;
-    for (int i = 2; i < iSize; i++)
+    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
+    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    for (int i = 2; i < iSize; i++)     // Start with index 2 to exclude size and checksum
     {
         if (newCfg[i] != curCfg[i])
         {   // Found start
@@ -911,16 +936,16 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
             uint8_t *tail = (uint8_t*)&(newCfg[i]);
             int size = tail-head;
             int offset = head-((uint8_t*)newCfg);
-            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
-            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);
-            
-            // TODO: Debug test_flash_sync, remove later (WHJ)
-            if (fail != 0)
-            {
-                printf("InertialSense::SetFlashConfig() failed to send flash config using comManagerSendData(): port %d, size %d, offset %d\n", pHandle, size, offset);
-                printf("  buf %p, head %p, tail %p\n", (void*)&(newCfg), (void*)head, (void*)tail);
+
+            if (platformCfgUpdateIoConfig &&
+                head <= (uint8_t*)&(flashCfg.platformConfig) &&
+                tail >  (uint8_t*)&(flashCfg.platformConfig))
+            {   // Re-apply updateIoConfig bit prior to upload
+                flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
             }
             
+            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            int fail = comManagerSendData(pHandle, head, DID_FLASH_CONFIG, size, offset);            
             failure = failure || fail;
             device.flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
         }
@@ -931,11 +956,10 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle)
         printf("DID_FLASH_CONFIG in sync.  No upload.\n");
     }
 
-    // Exclude from the checksum update the following which does not get saved in the flash config
-    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
-
     // Update checksum
-    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+    UpdateFlashConfigChecksum(flashCfg);
+
+    // Save checksum to ensure upload happened correctly
     if (device.flashCfgUploadTimeMs)
     {
         device.flashCfgUploadChecksum = flashCfg.checksum;
@@ -1442,12 +1466,19 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     if (m_cmInit.broadcastMsg) { delete[] m_cmInit.broadcastMsg; }
     m_cmInit.broadcastMsgSize = COM_MANAGER_BUF_SIZE_BCAST_MSG(MAX_NUM_BCAST_MSGS);
     m_cmInit.broadcastMsg = new broadcast_msg_t[MAX_NUM_BCAST_MSGS];
-    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts) == -1) {    // Error
-        return false;
-    }
 
     // Register message hander callback functions: RealtimeMessageController (RMC) handler, NMEA, ublox, and RTCM3.
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+    is_comm_callbacks_t callbacks = {};
+    callbacks.rmc   = m_handlerRmc;
+    callbacks.nmea  = staticProcessRxNmea;
+    callbacks.ublox = m_handlerUblox;
+    callbacks.rtcm3 = m_handlerRtcm3;
+    callbacks.sprtn = m_handlerSpartn;
+    callbacks.error = m_handlerError;
+    
+    if (comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks) == -1) {    // Error
+        return false;
+    }
 
     bool timeoutOccurred = false;
     if (m_enableDeviceValidation) {
@@ -1506,8 +1537,14 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
 
         // setup com manager again if serial ports dropped out with new count of serial ports
         if (removedSerials) {
-            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts);
-            comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+            is_comm_callbacks_t callbacks = {};
+            callbacks.rmc   = m_handlerRmc;
+            callbacks.nmea  = staticProcessRxNmea;
+            callbacks.ublox = m_handlerUblox;
+            callbacks.rtcm3 = m_handlerRtcm3;
+            callbacks.sprtn = m_handlerSpartn;
+            callbacks.error = m_handlerError;
+            comManagerInit((int) m_comManagerState.devices.size(), 10, staticReadData, staticSendData, 0, staticProcessRxData, 0, 0, &m_cmInit, m_cmPorts, &callbacks);
         }
     }
 
