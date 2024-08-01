@@ -1727,6 +1727,7 @@ class logPlot:
                 status = data['sat'][rng]['status'] >> 12 & 0x7
                 gnss = data['sat'][rng]['gnssId']
                 sat = data['sat'][rng]['svId']
+                # convert SV prn to RTKlib prn: add 32 (max number of GPS satellites) to Galileo, assuming no GLONASS satellites in the data (PRN sequence: [GPS, Galileo])
                 sat[gnss==3] = sat[gnss==3] + 32
                 ephData[np.isin(sv,sat),i,d] = status[rng]
 
