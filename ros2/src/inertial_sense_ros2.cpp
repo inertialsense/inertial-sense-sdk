@@ -232,14 +232,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM1");
+        ph.nodeParam("port", param, "/dev/ttyACM8");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM1");
+        ports_.push_back("/dev/ttyACM8");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
@@ -328,20 +328,20 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("cb_preset", evb_.cb_preset, 2);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
     ph.nodeParam("cb_options", evb_.cb_options, 0);
 
-    //YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
-    //if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
-        //RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
+    YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
+    if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
+        RTK_rover_ = new RtkRoverProvider(rtkRoverNode);
 
-    //YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
-    //if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
-        //RTK_base_ = new RtkBaseProvider(rtkBaseNode);
+    YAML::Node rtkBaseNode = ph.node(node, "rtk_base");
+    if (rtkBaseNode.IsDefined() && !rtkBaseNode.IsNull())
+        RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     YAML::Node diagNode = ph.node(node, "diagnostics");
-    //ph.nodeParam("enable", rs_.diagnostics.enabled);
+    ph.nodeParam("enable", rs_.diagnostics.enabled);
 
     // Print entire yaml node tree
-    // printf("Node Tree:\n");
-    // std::cout << node << "\n\n=====================  EXIT  =====================\n\n";
+     //printf("Node Tree:\n");
+     //std::cout << node << "\n\n=====================  EXIT  =====================\n\n";
 
     // exit(1);
 }
@@ -604,25 +604,44 @@ bool InertialSenseROS::firmware_compatiblity_check()
     else if (diff_firmware[2] != 0) firmware_fault = rclcpp::Logger::Level::Warn; // patch changes - the shouldn't be significant, but still important
 
     rclcpp::Logger::Level final_fault = std::max(firmware_fault, protocol_fault);
-   // ROS_LOG_COND(final_fault != rclcpp::Logger::Level::Debug, final_fault, ROSCONSOLE_DEFAULT_NAME,
-   //         "Protocol version mismatch: \n"
-   //         "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (SDK)\n"
-   //         "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (device)",
-   //         PROTOCOL_VERSION_CHAR0,
-   //         PROTOCOL_VERSION_CHAR1,
-   //         PROTOCOL_VERSION_CHAR2,
-   //         PROTOCOL_VERSION_CHAR3,
-   //         REPO_VERSION_MAJOR,
-   //         REPO_VERSION_MINOR,
-   //         REPO_VERSION_REVIS,
-   //         IS_.DeviceInfo().protocolVer[0],
-   //         IS_.DeviceInfo().protocolVer[1],
-   //         IS_.DeviceInfo().protocolVer[2],
-   //         IS_.DeviceInfo().protocolVer[3],
-   //         IS_.DeviceInfo().firmwareVer[0],
-   //         IS_.DeviceInfo().firmwareVer[1],
-   //         IS_.DeviceInfo().firmwareVer[2]
-   // );
+  // ROS_LOG_COND(final_fault != rclcpp::Logger::Level::Debug, final_fault, ROSCONSOLE_DEFAULT_NAME,
+  //         "Protocol version mismatch: \n"
+  //         "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (SDK)\n"
+  //         "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (device)",
+  //         PROTOCOL_VERSION_CHAR0,
+  //         PROTOCOL_VERSION_CHAR1,
+  //         PROTOCOL_VERSION_CHAR2,
+  //         PROTOCOL_VERSION_CHAR3,
+  //         REPO_VERSION_MAJOR,
+  //         REPO_VERSION_MINOR,
+  //         REPO_VERSION_REVIS,
+  //         IS_.DeviceInfo().protocolVer[0],
+  //         IS_.DeviceInfo().protocolVer[1],
+  //         IS_.DeviceInfo().protocolVer[2],
+  //         IS_.DeviceInfo().protocolVer[3],
+  //         IS_.DeviceInfo().firmwareVer[0],
+  //         IS_.DeviceInfo().firmwareVer[1],
+  //         IS_.DeviceInfo().firmwareVer[2]
+  // );
+    if (final_fault != rclcpp::Logger::Level::Debug) {
+        RCLCPP_INFO(rclcpp::get_logger("final_fault_logger"), "Protocol version mismatch: \n"
+            "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (SDK)\n"
+            "   protocol %d.%d.%d.%d  firmware %d.%d.%d  (device)",
+            PROTOCOL_VERSION_CHAR0,
+            PROTOCOL_VERSION_CHAR1,
+            PROTOCOL_VERSION_CHAR2,
+            PROTOCOL_VERSION_CHAR3,
+            REPO_VERSION_MAJOR,
+            REPO_VERSION_MINOR,
+            REPO_VERSION_REVIS,
+            IS_.DeviceInfo().protocolVer[0],
+            IS_.DeviceInfo().protocolVer[1],
+            IS_.DeviceInfo().protocolVer[2],
+            IS_.DeviceInfo().protocolVer[3],
+            IS_.DeviceInfo().firmwareVer[0],
+            IS_.DeviceInfo().firmwareVer[1],
+            IS_.DeviceInfo().firmwareVer[2]);
+    }
     return final_fault == rclcpp::Logger::Level::Debug; // true if they match, false if they don't.
 }
 
@@ -885,7 +904,13 @@ void InertialSenseROS::configure_rtk()
     }
     else
     {
-        //RCLCPP_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+        if (RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable) {
+            RCLCPP_ERROR(rclcpp::get_logger("default_to_rover"), "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+        }
+       // RCLCPP_ERROR_COND(RTK_rover_ && RTK_rover_->enable && RTK_base_ && RTK_base_->enable, "unable to configure onboard receiver to be both RTK rover and base - default to rover");
+        if (RTK_rover_ && RTK_rover_->enable && GNSS_Compass_) {
+            RCLCPP_ERROR(rclcpp::get_logger("default_to_dual_GNSS"), "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
+        }
         //ROS_ERROR_COND(RTK_rover_  && RTK_rover_->enable && GNSS_Compass_, "unable to configure onboard receiver to be both RTK rover as dual GNSS - default to dual GNSS");
 
         if (GNSS_Compass_)
@@ -1344,7 +1369,7 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
 
 void InertialSenseROS::INS_covariance_callback(eDataIDs DID, const ros_covariance_pose_twist_t *const msg)
 {
-    //STREAMING_CHECK(rclcpp::get_logger("started_rtk_ntrip_server"),insCovarianceStreaming_, DID);
+    STREAMING_CHECK(insCovarianceStreaming_, DID);
     
     float poseCovIn[36];
     int ind1, ind2;

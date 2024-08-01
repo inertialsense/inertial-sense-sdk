@@ -12,12 +12,12 @@ CATKIN_DIR=${CATKIN_PWD}/catkin_ws
 
 apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev
 add-apt-repository ppa:git-core/ppa -y && apt -y install git
-source /opt/ros/$ROS_DISTRO/setup.bash
-apt -y install ros-${ROS_DISTRO}-tf libusb-1.0-0-dev
+source /opt/ros/jazzy/setup.bash
+#apt -y install ros-${ROS_DISTRO}-tf libusb-1.0-0-dev
 pushd $CATKIN_DIR
-catkin_make
+colcon build
 
-source devel/setup.bash
+. install/setup.bash
 
 ### Do other things, the run your tests.
 
