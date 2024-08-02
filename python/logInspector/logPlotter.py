@@ -4,6 +4,7 @@ from typing import List, Any, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from inertialsense_math.pose import *
 from datetime import date, datetime
@@ -1692,6 +1693,73 @@ class logPlot:
 
         self.setup_and_wire_legend()
         self.saveFig(fig, 'rtkRel')
+
+    def gnssEphemeris(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        # Build array of SV present in the logs
+        sv = np.empty(0, dtype = int)
+        for d in self.active_devs:
+            satData1 = self.log.data[d, DID_GPS1_SAT]
+            if satData1.size == 0:
+                continue
+            for data in satData1:
+                rng = range(data['numSats'])
+                gnss = data['sat'][rng]['gnssId']
+                sat = data['sat'][rng]['svId']
+                sat[gnss==3] = sat[gnss==3] + 32
+                ind_new = ~np.isin(sat, sv)
+                if any(ind_new):
+                    sv = np.append(sv, sat[ind_new])
+        Nsat = len(sv)
+        if Nsat == 0:
+            return
+        sv = np.sort(sv)
+
+        # Array of ephemeris counts (Nsat x samples x Ndevices)
+        ephData = np.zeros([Nsat, len(satData1), len(self.active_devs)])
+        for d in self.active_devs:
+            satData1 = self.log.data[d, DID_GPS1_SAT]
+            time = getTimeFromTowMs(satData1['timeOfWeekMs'], 1)
+            for i, data in enumerate(satData1):
+                rng = range(data['numSats'])
+                status = data['sat'][rng]['status'] >> 12 & 0x7
+                gnss = data['sat'][rng]['gnssId']
+                sat = data['sat'][rng]['svId']
+                # convert SV prn to RTKlib prn: add 32 (max number of GPS satellites) to Galileo, assuming no GLONASS satellites in the data (PRN sequence: [GPS, Galileo])
+                sat[gnss==3] = sat[gnss==3] + 32
+                ephData[np.isin(sv,sat),i,d] = status[rng]
+
+        # Delete SV that have zero ephemeris entries
+        ind = ephData > 0
+        del_ind = []
+        for j, sat in enumerate(sv):
+            if not any(ind[j,:,:]):
+                del_ind.append(j)
+        sv = np.delete(sv, del_ind)
+        ephData = np.delete(ephData, (del_ind), axis=0)
+        Nsat = len(sv)
+        if Nsat == 0:
+            return
+
+        cols = 4
+        rows = math.ceil(Nsat/float(cols))
+        ax = fig.subplots(rows, cols, sharex=True)
+        fig.suptitle('Ephemeris Counters - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            for j, sat in enumerate(sv):
+                ax[j % rows, j // rows].set_title('SV '+ str(sat))
+                ax[j % rows, j // rows].title.set_fontsize(8)
+                ax[j % rows, j // rows].plot(time, ephData[j,:,d], label=self.log.serials[d])
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+                b.yaxis.set_major_locator(MaxNLocator(integer=True))
+
 
     def loadGyros(self, device):
         return self.loadIMU(device, 0)

@@ -1663,7 +1663,7 @@ int decodeGSV(char* a, int aSize)
 
     int msgNum = NMEA_MSG_ID_GNGSV_START;
     
-    if(a[1] == 'x')        return NMEA_MSG_ID_GxGSV;
+    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
@@ -1672,7 +1672,7 @@ int decodeGSV(char* a, int aSize)
     else if (a[1] == 'L')  msgNum += NMEA_GNGSV_GLO_OFFSET;
     else                   return -3;
 
-    // Parse freqencys
+    // Parse freqencies
     // Enable all Freqs ie GNGSV,
     if(a[5] == ',' || a[5] == '*')
         msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
