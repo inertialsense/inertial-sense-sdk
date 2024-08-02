@@ -5,7 +5,7 @@ namespace testing
 {
     namespace internal
     {
-#if 0 // We are using a new-enough version that these are already defined...
+#if 1 // We are using a new-enough version that these are already defined...
         enum GTestColor {
             COLOR_DEFAULT,
             COLOR_RED,
@@ -28,7 +28,7 @@ class TestCout : public std::stringstream
 public:
     ~TestCout()
     {
-        PRINTF("%s",str().c_str());
+        printf("%s",str().c_str());
     }
 };
 

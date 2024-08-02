@@ -1,26 +1,30 @@
 
-#include "inertial_sense_ros.h"
-#include <filesystem>
-#include "gtest_helpers.h"
 #include <yaml-cpp/yaml.h>
+
+#include <filesystem>
+
+#include "gtest_helpers.h"
+#include "inertial_sense_ros2.h"
 
 #define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_config.yaml"
 
-class gpsTestNode
+class gpsTestNode: public rclcpp::Node
 {
 private:
-    ros::Subscriber sub_navsatfix;
+    //rclcpp::Subscription<sensor_msgs::msg::NavSatFix> sub_navsatfix;
 public:
-    gpsTestNode() {}
+
+    //rclcpp::Node::SharedPtr nh = std::make_shared<rclcpp::Node>("nh");
+    gpsTestNode() : Node("nh") {}
     void init() {
-        ros::NodeHandle nh;
-        sub_navsatfix = nh.subscribe("/NavSatFix", 1, &gpsTestNode::cb_navsatfix, this);
+
+       auto sub_navsatfix = this->create_subscription<sensor_msgs::msg::NavSatFix>("/NavSatFix", 1, std::bind(&gpsTestNode::cb_navsatfix, this, std::placeholders::_1));
     }
 
     bool navsatfix_passed = false;
-    sensor_msgs::NavSatFix msg_NavSatFix;
-    void cb_navsatfix(const sensor_msgs::NavSatFixConstPtr& fix) {
-        msg_NavSatFix = *fix;
+    sensor_msgs::msg::NavSatFix msg_NavSatFix;
+    void cb_navsatfix(const sensor_msgs::msg::NavSatFix &fix) {
+        msg_NavSatFix = fix;
         navsatfix_passed = true;
         TEST_COUT << "Rx NavSatFix\n";
     }
@@ -61,11 +65,12 @@ TEST(ROSCommunicationsTests, test_navsatfix )
     InertialSenseROS isROS(config);
     isROS.initialize();
 
-    double now = ros::Time::now().toSec();
+    double now = testNode.now().seconds();
+    auto node = std::make_shared<gpsTestNode>();
     double expires = now + 5.0, nextMsg = now + 1.0;
     do {
         isROS.update();
-        ros::spinOnce();
+        rclcpp::spin_some(node);
         SLEEP_MS(100);
 
         if (now > nextMsg) {
@@ -73,7 +78,7 @@ TEST(ROSCommunicationsTests, test_navsatfix )
             nextMsg = now + 1.0;
         }
 
-        now = ros::Time::now().toSec();
+        now = testNode.now().seconds();
     } while(!testNode.navsatfix_passed && (now < expires));
 
     EXPECT_TRUE(testNode.navsatfix_passed);

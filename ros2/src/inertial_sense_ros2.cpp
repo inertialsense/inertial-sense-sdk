@@ -122,8 +122,6 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 
 void InertialSenseROS::initializeROS()
 {
-    //rs_.did_ins1.enabled = true;
-    //auto nh_ = rclcpp::Node::make_shared("inertial_sense_ros2");
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate>("set_refLLA_value", std::bind(&InertialSenseROS::set_refLLA_to_value, this, std::placeholders::_1, std::placeholders::_2));
@@ -232,14 +230,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM8");
+        ph.nodeParam("port", param, "/dev/ttyACM1");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM8");
+        ports_.push_back("/dev/ttyACM1");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
@@ -1538,6 +1536,11 @@ void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg
             gps2_velEcef.vector.y = msg->vel[1];
             gps2_velEcef.vector.z = msg->vel[2];
             publishGPS2();
+
+
+
+
+
         }
         break;
     }

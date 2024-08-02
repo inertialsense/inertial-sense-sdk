@@ -1,6 +1,7 @@
 
+
 #include "gtest_helpers.h"
-#include "inertial_sense_ros.h"
+#include "inertial_sense_ros2.h"
 
 InertialSense IS_;
 
@@ -29,22 +30,23 @@ void connect_rtk_client(const std::string& rtk_correction_protocol, const std::s
 
     if (connected)
     {
-      ROS_INFO_STREAM("Successfully connected to " << RTK_connection << " RTK server");
+      RCLCPP_INFO_STREAM(rclcpp::get_logger("connection_successful"),"Successfully connected to " << RTK_connection << " RTK server");
       break;
     }
     else
     {
-      ROS_ERROR_STREAM("Failed to connect to base server at " << RTK_connection);
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("failed_to_connect_base"),"Failed to connect to base server at " << RTK_connection);
 
       if (RTK_connection_attempt_count >= rtk_connection_attempt_limit)
       {
-        ROS_ERROR_STREAM("Giving up after " << RTK_connection_attempt_count << " failed attempts");
+        RCLCPP_ERROR_STREAM(rclcpp::get_logger("give_up_failed_attempts"),"Giving up after " << RTK_connection_attempt_count << " failed attempts");
       }
       else
       {
         int sleep_duration = RTK_connection_attempt_count * rtk_connection_attempt_backoff;
-        ROS_WARN_STREAM("Retrying connection in " << sleep_duration << " seconds");
-        ros::Duration(sleep_duration).sleep();
+        RCLCPP_WARN_STREAM(rclcpp::get_logger("retrying_connection"),"Retrying connection in " << sleep_duration << " seconds");
+        //ros::Duration(sleep_duration).sleep();
+        rclcpp::Rate r(sleep_duration); r.sleep();
       }
     }
   }

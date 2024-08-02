@@ -8,7 +8,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "../include/inertial_sense_ros.h"
+#include "../include/inertial_sense_ros2.h"
 
 #define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_config.yaml"
 
@@ -332,7 +332,7 @@ int main(int argc, char** argv) {
     // FIXME: Ideally, we shouldn't need to startup ROS to perform basic unit tests, but the InertialSenseROS constructor requires ROS to be running.
     // We should move this to an initROS() function which can be called from a parameterized constructor, and implement a default constructor that
     // initializes class fields/members, but doesn't do anything else.
-    ros::init(argc, argv, "test_unit_tests");
-    ros::NodeHandle nh;
+   rclcpp::init(argc, argv);
+   auto nh = std::make_shared<rclcpp::Node>("nh");
     return RUN_ALL_TESTS();
 }
