@@ -73,6 +73,7 @@ typedef int(*pfnSerialPortFlush)(port_handle_t port);
 typedef int(*pfnSerialPortGetByteCountAvailableToRead)(port_handle_t port);
 typedef int(*pfnSerialPortGetByteCountAvailableToWrite)(port_handle_t port);
 typedef int(*pfnSerialPortSleep)(int sleepMilliseconds);
+typedef int(*pfnSerialPortOnErrorCB)(port_handle_t port, int errCode, const char *errMsg);
 
 // Allows communicating over a serial port
 struct serial_port_s
@@ -134,6 +135,8 @@ struct serial_port_s
 
     // sleep for a specified number of milliseconds
     pfnSerialPortSleep pfnSleep;
+
+    pfnSerialPortOnErrorCB pfnError;
 };
 
 void serialPortInit(port_handle_t, int id, int type);
@@ -310,6 +313,9 @@ int serialPortSleep(port_handle_t port, int sleepMilliseconds);
 
 // Set the port options
 void serialPortSetOptions(port_handle_t port, uint32_t options);
+
+// Set callback for error events
+int serialPortSetErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb);
 
 #ifdef __cplusplus
 }

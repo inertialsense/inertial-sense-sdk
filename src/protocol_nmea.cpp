@@ -1811,55 +1811,70 @@ int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
     char *ptr = (char *)&a[6];	// $INFO,
     
     // uint32_t        serialNumber;
-    ptr = ASCII_to_u32(&info.serialNumber, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
     // uint8_t         hardwareVer[4];
-    ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
     // uint8_t         firmwareVer[4];
-    ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
     // uint32_t        buildNumber;
-    ptr = ASCII_to_u32(&info.buildNumber, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
     // uint8_t         protocolVer[4];
-    ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
     // uint32_t        repoRevision;
-    ptr = ASCII_to_u32(&info.repoRevision, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u32(&info.repoRevision, ptr);
 
     // char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
-    ptr = ASCII_to_char_array(info.manufacturer, ptr, DEVINFO_MANUFACTURER_STRLEN);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_char_array(info.manufacturer, ptr, DEVINFO_MANUFACTURER_STRLEN);
 
     // uint8_t         buildDate[4];	YYYY-MM-DD
-    unsigned int year, month, day;
-    SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
-    info.buildType = ' ';
-    info.buildYear = (uint8_t)(year >= 2000 ? (year - 2000):year);
-    info.buildMonth = (uint8_t)(month);
-    info.buildDay = (uint8_t)(day);
-    ptr = ASCII_find_next_field(ptr);
+    if (ptr < a + aSize) {
+        unsigned int year, month, day;
+        SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
+        info.buildType = ' ';
+        info.buildYear = (uint8_t) (year >= 2000 ? (year - 2000) : year);
+        info.buildMonth = (uint8_t) (month);
+        info.buildDay = (uint8_t) (day);
+        ptr = ASCII_find_next_field(ptr);
+    }
     
     // uint8_t         buildTime[4];	hh:mm:ss.ms
-    unsigned int hour, minute, second, ms;
-    SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
-    info.buildHour = (uint8_t)hour;
-    info.buildMinute = (uint8_t)minute;
-    info.buildSecond = (uint8_t)second;
-    info.buildMillisecond = (uint8_t)ms;
-    ptr = ASCII_find_next_field(ptr);
-    
+    if (ptr < a + aSize) {
+        unsigned int hour, minute, second, ms;
+        SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
+        info.buildHour = (uint8_t) hour;
+        info.buildMinute = (uint8_t) minute;
+        info.buildSecond = (uint8_t) second;
+        info.buildMillisecond = (uint8_t) ms;
+        ptr = ASCII_find_next_field(ptr);
+    }
+
     // char            addInfo[DEVINFO_ADDINFO_STRLEN];
-    ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
 
     // uint16_t        hardware;
-    ptr = ASCII_to_u8(&info.hardwareType, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u8(&info.hardwareType, ptr);
 
     // uint16_t        reserved;
-    ptr = ASCII_to_u16(&info.reserved, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u16(&info.reserved, ptr);
 
     // uint8_t         build type;
-    info.buildType = (uint8_t)*ptr;
+    if (ptr < a + aSize)
+        info.buildType = (uint8_t)*ptr;
     if (info.buildType==0) { info.buildType = ' '; }
 
     // ptr = ASCII_find_next_field(ptr);

@@ -615,6 +615,9 @@ protected:
     void OnClientConnectFailed(cISTcpServer* server) OVERRIDE;
     void OnClientDisconnected(cISTcpServer* server, socket_t socket) OVERRIDE;
 
+    static int OnSerialPortError(port_handle_t port, int errCode, const char *errMsg);
+
+
 private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
@@ -661,11 +664,12 @@ private:
     bool UpdateClient();
     bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
     void DisableLogging();
+    bool registerDevice(ISDevice* device);
     ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo);
     bool HasReceivedDeviceInfo(ISDevice& device);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
-    void RemoveDevice(ISDevice& device);
+    void RemoveDevice(ISDevice* device);
     bool OpenSerialPorts(const char* port, int baudRate);
     void CloseSerialPorts();
     static void LoggerThread(void* info);

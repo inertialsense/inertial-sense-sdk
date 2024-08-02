@@ -341,14 +341,14 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     int fd = open(portName, O_RDWR | O_NOCTTY);     // enable read/write and disable flow control
     if (fd < 0)
     {
-        error_message("[%s] open():: Error opening port: %d\n", portName, errno);
+        error_message("[%s] open():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         return 0;
     }
 
     if (configure_serial_port(fd, baudRate) != 0) 
     {
-        error_message("[%s] open():: Error configuring port: %d\n", portName, errno);
+        error_message("[%s] open():: Error configuring port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
         return 0;
     }
@@ -442,7 +442,7 @@ static int serialPortClosePlatform(port_handle_t port)
 #else
 
     close(handle->fd);
-    handle->fd = 0;
+    handle->fd = -1;
 
 #endif
 

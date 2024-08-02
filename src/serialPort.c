@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "serialPort.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <errno.h>
 
 int SERIAL_PORT_DEFAULT_TIMEOUT = 2500;
 
@@ -53,39 +54,52 @@ const char *serialPortName(port_handle_t port) {
 int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
+    if ((serialPort == 0) || (port == 0) || (serialPort->pfnOpen == 0))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
-    return serialPort->pfnOpen(port, portName, baudRate, blocking);
+    if (serialPort->pfnOpen(port, portName, baudRate, blocking) != 1) {
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+        return 0;
+    }
+    return 1;
 }
 
 int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, int blocking)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-    if (serialPort == 0 || port == 0 || serialPort->pfnOpen == 0)
+    if ((serialPort == 0) || (serialPort->pfnOpen == 0))
     {
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
     }
 
-    serialPortClose(port);
-    for (int retry = 0; retry < 30; retry++)
+    if (serialPortIsOpen(port))
+        return 1;
+
+    serialPortClose(port);  // Note that if port->handle is NULL, which usually indicates a closed port, we won't be able to close it. This is kind of superfluous.
+    for (int retry = 0; retry < 5; retry++)
     {
         if (serialPortOpen(port, portName, baudRate, blocking))
         {
             return 1;
         }
+        if (serialPort->errorCode == ENOENT)
+            break;  // don't retry if the port doesn't even exist
         serialPortSleep(port, 100);
     }
-    serialPortClose(port);
+    if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+    if (serialPortIsOpen(port)) serialPortClose(port);
     return 0;
 }
 
 int serialPortIsOpen(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (serialPort->pfnOpen == 0))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 	return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
@@ -94,18 +108,20 @@ int serialPortIsOpen(port_handle_t port)
 int serialPortClose(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort != 0 && serialPort->pfnClose != 0)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (serialPort->pfnClose == 0))
 	{
-		return serialPort->pfnClose(port);
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+        return 0;
 	}
-	return 0;
+    return serialPort->pfnClose(port);
 }
 
 int serialPortFlush(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || serialPort->pfnFlush == 0)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (serialPort->pfnFlush == 0))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 	return serialPort->pfnFlush(port);
@@ -120,8 +136,9 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount)
 int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || readCount < 1 || serialPort->pfnRead == 0)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (readCount < 1) || (serialPort->pfnRead == 0))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 
@@ -129,6 +146,7 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCou
 
 	if (count < 0)
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 
@@ -138,8 +156,9 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCou
 int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || readCount < 1 || serialPort->pfnAsyncRead == 0 || completion == 0)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (readCount < 1) || (serialPort->pfnAsyncRead == 0) || (completion == 0))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 
@@ -155,8 +174,9 @@ int serialPortReadLine(port_handle_t port, unsigned char* buffer, int bufferLeng
 int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, int bufferLength, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (port == 0 || serialPort->handle == 0 || buffer == 0 || bufferLength < 8 || serialPort->pfnRead == 0)
+	if ((port == 0) || (serialPort->handle == 0) || (buffer == 0) || (bufferLength < 8) || (serialPort->pfnRead == 0))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 
@@ -179,13 +199,11 @@ int serialPortReadLineTimeout(port_handle_t port, unsigned char* buffer, int buf
 
 int serialPortReadAscii(port_handle_t port, unsigned char* buffer, int bufferLength, unsigned char** asciiData)
 {
-    // serial_port_t* serialPort = (serial_port_t*)port;
 	return serialPortReadAsciiTimeout(port, buffer, bufferLength, SERIAL_PORT_DEFAULT_TIMEOUT, asciiData);
 }
 
 int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, int bufferLength, int timeoutMilliseconds, unsigned char** asciiData)
 {
-    // serial_port_t* serialPort = (serial_port_t*)port;
 	int count = serialPortReadLineTimeout(port, buffer, bufferLength, timeoutMilliseconds);
 	unsigned char* ptr = buffer;
 	unsigned char* ptrEnd = buffer + count;
@@ -227,29 +245,31 @@ int serialPortReadAsciiTimeout(port_handle_t port, unsigned char* buffer, int bu
 
 int serialPortReadChar(port_handle_t port, unsigned char* c)
 {
-    // serial_port_t* serialPort = (serial_port_t*)port;
 	return serialPortReadCharTimeout(port, c, SERIAL_PORT_DEFAULT_TIMEOUT);
 }
 
 int serialPortReadCharTimeout(port_handle_t port, unsigned char* c, int timeoutMilliseconds)
 {
-    // serial_port_t* serialPort = (serial_port_t*)port;
 	return serialPortReadTimeout(port, c, 1, timeoutMilliseconds);
 }
 
 int serialPortWrite(port_handle_t port, const unsigned char* buffer, int writeCount)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || writeCount < 1 || serialPort->pfnWrite == 0)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1) || (serialPort->pfnWrite == 0))
 	{
+        if (serialPort && serialPort->pfnError) {
+            if (serialPort->handle == 0) serialPort->pfnError(port, ENOENT, strerror(ENOENT));
+            else serialPort->pfnError(port, EINVAL, strerror(EINVAL));
+        }
 		return 0;
 	}
 
 	int count = serialPort->pfnWrite(port, buffer, writeCount);
-
 	if (count < 0)
 	{
-		return 0;
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, ENODATA, strerror(ENODATA));
+        return 0;
 	}
 
 	return count;
@@ -258,8 +278,9 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, int writeCo
 int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, int writeCount)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || writeCount < 1)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, EINVAL, strerror(EINVAL));
 		return 0;
 	}
 
@@ -271,8 +292,9 @@ int serialPortWriteLine(port_handle_t port, const unsigned char* buffer, int wri
 int serialPortWriteAscii(port_handle_t port, const char* buffer, int bufferLength)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || bufferLength < 2)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (bufferLength < 2))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, EINVAL, strerror(EINVAL));
 		return 0;
 	}
 
@@ -329,8 +351,9 @@ int serialPortWriteAndWaitFor(port_handle_t port, const unsigned char* buffer, i
 int serialPortWriteAndWaitForTimeout(port_handle_t port, const unsigned char* buffer, int writeCount, const unsigned char* waitFor, int waitForLength, const int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || buffer == 0 || writeCount < 1 || waitFor == 0 || waitForLength < 1)
+	if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (writeCount < 1) || (waitFor == 0) || (waitForLength < 1))
 	{
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, EINVAL, strerror(EINVAL));
 		return 0;
 	}
 
@@ -353,18 +376,24 @@ int serialPortWaitFor(port_handle_t port, const unsigned char* waitFor, int wait
 int serialPortWaitForTimeout(port_handle_t port, const unsigned char* waitFor, int waitForLength, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if (serialPort == 0 || serialPort->handle == 0 || waitFor == 0 || waitForLength < 1)
+	if (!serialPort) return 0;
+    if (!serialPort->handle) {
+        if (serialPort->pfnError) serialPort->pfnError(port, EBADF, strerror(EBADF));
+        return 0;
+    }
+
+    if ((waitFor == 0) || (waitForLength < 1))
 	{
-		return 1;
+        return 1;
 	}
 	else if (waitForLength > 128)
 	{
+        if (serialPort->pfnError) serialPort->pfnError(port, EBADF, strerror(EBADF));
 		return 0;
 	}
 
 	unsigned char buf[128] = { 0 };
 	int count = serialPortReadTimeout(port, buf, waitForLength, timeoutMilliseconds);
-
 	if (count == waitForLength && memcmp(buf, waitFor, waitForLength) == 0)
 	{
 		return 1;
@@ -403,4 +432,16 @@ int serialPortSleep(port_handle_t port, int sleepMilliseconds)
 	}
 
 	return serialPort->pfnSleep(sleepMilliseconds);
+}
+
+int setSerialPortOnErrorCB(port_handle_t port, pfnSerialPortOnErrorCB onErrorCb)
+{
+    serial_port_t* serialPort = (serial_port_t*)port;
+    if (serialPort == 0)
+    {
+        return -1;
+    }
+
+    serialPort->pfnError = onErrorCb;
+    return 0;
 }
