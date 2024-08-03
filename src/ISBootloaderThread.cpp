@@ -283,8 +283,6 @@ void cISBootloaderThread::update_thread_serial(void* context)
         // Other device
     }
 
-    SLEEP_MS(1000);
-
     serialPortFlush(port);
     serialPortClose(port);
 
@@ -487,8 +485,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             }
         }
 
-        SLEEP_MS(100);
-
         // Timeout after 5 seconds
         if (current_timeMs() - m_timeStart > 5000) 
         {
@@ -610,8 +606,6 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
             }
         }
 
-        SLEEP_MS(100);
-
         // Timeout after 5 seconds
         if (current_timeMs() - m_timeStart > 3000)
         {
@@ -713,7 +707,7 @@ is_operation_result cISBootloaderThread::update(
     while(m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
-        SLEEP_MS(10);
+        SLEEP_MS(1000);
 
         cISSerialPort::GetComPorts(portNames);
 
@@ -788,8 +782,6 @@ is_operation_result cISBootloaderThread::update(
                 m_serial_threads[l]->thread = NULL;
             }
         }
-
-        SLEEP_MS(100);
 
         // Timeout after 5 seconds
         if (current_timeMs() - m_timeStart > 5000)
