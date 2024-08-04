@@ -2356,10 +2356,11 @@ static void PopulateRtkDebugMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "obs_low_elev_rover", obs_low_elev_rover, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "obs_low_elev_base", obs_low_elev_base, 0, DataTypeUInt8, uint8_t, 0);
 
+    ADD_MAP(m, totalSize, "eph1RxCnt", eph1RxCnt, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "eph2RxCnt", eph2RxCnt, 0, DataTypeUInt8, uint8_t, 0);
+
     ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
-    ADD_MAP(m, totalSize, "reserved[3]", reserved[3], 0, DataTypeUInt8, uint8_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }

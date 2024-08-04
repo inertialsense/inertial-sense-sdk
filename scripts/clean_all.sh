@@ -21,6 +21,11 @@ build_header "LogInspector"
 ./build_log_inspector.sh --clean
 build_footer $?
 
+rm -rf ../CMakeFiles
+rm -rf ../cmake_install.cmake
+rm -rf ../Makefile
+rm -f ../CMakeCache.txt
+
 clean_directory "SDK_Examples"          ../ExampleProjects/build
 clean_directory "SDK_Unit_Tests"        ../tests/build
 

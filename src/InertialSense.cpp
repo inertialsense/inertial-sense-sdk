@@ -32,15 +32,15 @@ using namespace std;
 #define DEBUG_PRINT(...) 
 #endif
 
-static InertialSense *s_is;
-static InertialSense::com_manager_cpp_state_t *s_cm_state;
+static InertialSense *s_is = NULL;
+static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
-static int staticSendData(port_handle_t port, const unsigned char* buf, int len)
+static int staticSendData(port_handle_t port, const uint8_t* buf, int len)
 {
     return serialPortWrite(port, buf, len);
 }
 
-static int staticReadData(port_handle_t port, unsigned char* buf, int len)
+static int staticReadData(port_handle_t port, uint8_t* buf, int len)
 {
     int bytesRead = serialPortReadTimeout(port, buf, len, 1);
 
@@ -103,12 +103,12 @@ static int staticProcessRxNmea(port_handle_t port, const unsigned char* msg, int
 
 
 InertialSense::InertialSense(
-        pfnHandleBinaryData        handlerIsb,
-        pfnComManagerAsapMsg       handlerRmc,
-        pfnComManagerGenMsgHandler handlerNmea,
-        pfnComManagerGenMsgHandler handlerUblox,
-        pfnComManagerGenMsgHandler handlerRtcm3,
-        pfnComManagerGenMsgHandler handlerSpartn ) : m_tcpServer(this)
+        pfnHandleBinaryData    handlerIsb,
+        pfnIsCommAsapMsg       handlerRmc,
+        pfnIsCommGenMsgHandler handlerNmea,
+        pfnIsCommGenMsgHandler handlerUblox,
+        pfnIsCommGenMsgHandler handlerRtcm3,
+        pfnIsCommGenMsgHandler handlerSpartn ) : m_tcpServer(this)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
@@ -612,7 +612,7 @@ bool InertialSense::UpdateClient()
     protocol_type_t ptype = _PTYPE_NONE;
     static int error = 0;
 
-    // Get available size of comm buffer
+    // Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = is_comm_free(comm);
 
     // Read data directly into comm buffer

@@ -70,7 +70,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     is_comm_init(&comm, buffer, sizeof(buffer));
     int messageSize, n, i;
 
-    // clear the Rx serial buffer
+    // clear the Rx serial buffer. is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
     n = is_comm_free(&comm);
 
     // In testing it was found that @ 330kb/s The buffer would take 10-11
@@ -99,7 +99,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     }
 
     protocol_type_t ptype;
-    n = is_comm_free(&comm);
+    n = is_comm_free(&comm);        // is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
     uint32_t valid_signatures = 0;
     if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {

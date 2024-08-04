@@ -79,7 +79,7 @@ enum eComManagerErrorType
 
 // com manager callback prototypes
 // readFnc read data from the serial port. Returns number of bytes read.
-typedef int(*pfnComManagerRead)(port_handle_t port, unsigned char* buf, int len);
+// typedef int(*pfnComManagerRead)(port_handle_t port, unsigned char* buf, int len);
 
 // txFreeFnc optional, return the number of free bytes in the send buffer for the serial port represented by port
 typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
@@ -146,7 +146,7 @@ typedef struct
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
-	pfnComManagerRead portRead;
+	pfnIsCommPortRead portRead;
 
 	// write data to the destination (usually a serial port)
 	pfnIsCommPortWrite portWrite;
@@ -195,7 +195,7 @@ typedef struct
 
 	// Message handler - RTCM3
 	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
-	
+
 	// Message handler - SPARTN
 	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
 
@@ -229,7 +229,7 @@ typedef struct
 int comManagerInit(
         port_handle_t port,
         int stepPeriodMilliseconds,
-        pfnComManagerRead readFnc,
+	pfnIsCommPortRead readFnc,
         pfnIsCommPortWrite sendFnc,
         pfnComManagerSendBufferAvailableBytes txFreeFnc,
         pfnComManagerPostRead pstRxFnc,
@@ -252,7 +252,7 @@ int comManagerInit(
  */
 int comManagerInit(
         int stepPeriodMilliseconds,
-        pfnComManagerRead readFnc,
+	pfnIsCommPortRead readFnc,
         pfnIsCommPortWrite sendFnc,
         pfnComManagerSendBufferAvailableBytes txFreeFnc,
         pfnComManagerPostRead pstRxFnc,

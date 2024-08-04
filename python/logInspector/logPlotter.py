@@ -4,6 +4,7 @@ from typing import List, Any, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
 from inertialsense_math.pose import *
 from datetime import date, datetime
@@ -325,9 +326,12 @@ class logPlot:
         fig.suptitle('INS LLA - ' + os.path.basename(os.path.normpath(self.log.directory)))
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            ax[0].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,0], label=self.log.serials[d])
-            ax[1].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,1])
-            ax[2].plot(time, self.getData(d, DID_INS_2, 'lla', True)[:,2])
+            lla = self.getData(d, DID_INS_2, 'lla', True)
+            if len(lla) != len(time):
+                continue
+            ax[0].plot(time, lla[:,0], label=self.log.serials[d])
+            ax[1].plot(time, lla[:,1])
+            ax[2].plot(time, lla[:,2])
 
             if(np.shape(self.active_devs)[0]==1):
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
@@ -527,11 +531,10 @@ class logPlot:
         velNed = None
         velDid = DID_GPS2_VEL if self.getData(d, DID_GPS1_VEL, 'status').size == 0 else DID_GPS1_VEL
         status = self.getData(d, velDid, 'status')
-        if not status.size:
-            print("GpsNedVel: No 'status' field was found in any DID_GPS1_VEL or DID_GPS2_VEL messages.")
-            return velNed
-
-        if (status[0] & 0x00008000):
+        if len(status) == 0:
+            return []
+        status = status[0]
+        if (status & 0x00008000):
             velNed = self.getData(d, velDid, 'vel')    # NED velocity
         else:
             velEcef = self.getData(d, velDid, 'vel')   # ECEF velocity
@@ -591,6 +594,8 @@ class logPlot:
 
             if np.shape(self.active_devs)[0] == 1 or SHOW_GPS_W_INS:  # Show GPS if #devs is 1
                 timeGPS = getTimeFromTowMs(self.getData(d, DID_GPS1_VEL, 'timeOfWeekMs'))
+                if len(timeGPS) == 0:
+                    continue
                 gpsVelNed = self.getGpsNedVel(d)
                 gpsVelNorm = np.linalg.norm(gpsVelNed, axis=1)
                 ax[0,0].plot(timeGPS, gpsVelNed[:, 0])
@@ -1700,6 +1705,73 @@ class logPlot:
         self.setup_and_wire_legend()
         self.saveFig(fig, 'rtkRel')
 
+    def gnssEphemeris(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+
+        # Build array of SV present in the logs
+        sv = np.empty(0, dtype = int)
+        for d in self.active_devs:
+            satData1 = self.log.data[d, DID_GPS1_SAT]
+            if satData1.size == 0:
+                continue
+            for data in satData1:
+                rng = range(data['numSats'])
+                gnss = data['sat'][rng]['gnssId']
+                sat = data['sat'][rng]['svId']
+                sat[gnss==3] = sat[gnss==3] + 32
+                ind_new = ~np.isin(sat, sv)
+                if any(ind_new):
+                    sv = np.append(sv, sat[ind_new])
+        Nsat = len(sv)
+        if Nsat == 0:
+            return
+        sv = np.sort(sv)
+
+        # Array of ephemeris counts (Nsat x samples x Ndevices)
+        ephData = np.zeros([Nsat, len(satData1), len(self.active_devs)])
+        for d in self.active_devs:
+            satData1 = self.log.data[d, DID_GPS1_SAT]
+            time = getTimeFromTowMs(satData1['timeOfWeekMs'], 1)
+            for i, data in enumerate(satData1):
+                rng = range(data['numSats'])
+                status = data['sat'][rng]['status'] >> 12 & 0x7
+                gnss = data['sat'][rng]['gnssId']
+                sat = data['sat'][rng]['svId']
+                # convert SV prn to RTKlib prn: add 32 (max number of GPS satellites) to Galileo, assuming no GLONASS satellites in the data (PRN sequence: [GPS, Galileo])
+                sat[gnss==3] = sat[gnss==3] + 32
+                ephData[np.isin(sv,sat),i,d] = status[rng]
+
+        # Delete SV that have zero ephemeris entries
+        ind = ephData > 0
+        del_ind = []
+        for j, sat in enumerate(sv):
+            if not any(ind[j,:,:]):
+                del_ind.append(j)
+        sv = np.delete(sv, del_ind)
+        ephData = np.delete(ephData, (del_ind), axis=0)
+        Nsat = len(sv)
+        if Nsat == 0:
+            return
+
+        cols = 4
+        rows = math.ceil(Nsat/float(cols))
+        ax = fig.subplots(rows, cols, sharex=True)
+        fig.suptitle('Ephemeris Counters - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+        for d in self.active_devs:
+            for j, sat in enumerate(sv):
+                ax[j % rows, j // rows].set_title('SV '+ str(sat))
+                ax[j % rows, j // rows].title.set_fontsize(8)
+                ax[j % rows, j // rows].plot(time, ephData[j,:,d], label=self.log.serials[d])
+
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for a in ax:
+            for b in a:
+                b.grid(True)
+                b.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+
     def loadGyros(self, device):
         return self.loadIMU(device, 0)
 
@@ -2247,19 +2319,31 @@ class logPlot:
             timeBar = self.getData(d, DID_BAROMETER, 'time')
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            altGps = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            llaGps = self.getData(d, DID_GPS1_POS, 'lla')
+            if len(llaGps) > 0:
+                altGps = lla[:, 2]
+            else:
+                altGps = []
             timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            altIns = self.getData(d, DID_INS_2, 'lla', True)[:, 2]
-
+            lla = self.getData(d, DID_INS_2, 'lla', True)
+            if len(lla) > 0:
+                altIns = lla[:, 2]
+            else:
+                altIns = []
             if np.shape(towOffset)[0] != 0:
                 timeBar = timeBar + towOffset[-1]
             mslBar = self.getData(d, DID_BAROMETER, 'mslBar')
+
             ax[0].plot(timeBar, mslBar, label=self.log.serials[d])
-            ax[1].plot(timeGps, altGps)
-            ax[2].plot(timeIns, altIns)
+            if len(timeGps) == len(altGps) and len(altGps) > 0:
+                ax[1].plot(timeGps, altGps)
+            if len(timeIns) == len(altIns) and len(altIns) > 0:
+                ax[2].plot(timeIns, altIns)
             if len(altGps) > 0:
                 ax[3].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
                 ax[3].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
+            elif len(mslBar) > 0:
+                ax[3].plot(timeBar, mslBar, label=("Bar %s" % self.log.serials[d]))
 
         self.legends_add(ax[0].legend(ncol=2))
         self.legends_add(ax[3].legend(ncol=2))
@@ -2282,19 +2366,27 @@ class logPlot:
             timeBar = self.getData(d, DID_BAROMETER, 'time')
             mslBar  = self.getData(d, DID_BAROMETER, 'mslBar')
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
-            altGps  = self.getData(d, DID_GPS1_POS, 'lla')[:, 2]
+            llaGps = self.getData(d, DID_GPS1_POS, 'lla')
+            if len(llaGps) > 0:
+                altGps = llaGps[:, 2]
+            else:
+                altGps = []
             timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
-            altIns = self.getData(d, DID_INS_2, 'lla', True)[:, 2]
+            llaIns = self.getData(d, DID_INS_2, 'lla', True)
+            if len(llaIns) > 0:
+                altIns = llaIns[:, 2]
+            else:
+                altIns = []
             towOffset = self.getData(d, DID_GPS1_POS, 'towOffset')
             if len(towOffset) > 0:
                 timeBar = timeBar + towOffset[-1]
             if len(timeBar) > 2:
                 climbBar = np.gradient(mslBar, timeBar)
                 ax[0].plot(timeBar, climbBar, label=self.log.serials[d])
-            if len(timeGps) > 2:
+            if len(timeGps) > 2 and len(altGps) == len(timeGps):
                 climbGps = np.gradient(altGps, timeGps)
                 ax[1].plot(timeGps, climbGps)
-            if len(timeIns) > 2:
+            if len(timeIns) > 2 and len(altIns) == len(timeIns):
                 climbIns = np.gradient(altIns, timeIns)
                 ax[2].plot(timeIns, climbIns)
 
