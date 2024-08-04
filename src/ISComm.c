@@ -967,7 +967,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-static inline void parse_messages(unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+static inline void parse_messages(port_handle_t port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
 {
     // Search comm buffer for valid packets
     protocol_type_t ptype;
@@ -1026,7 +1026,7 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
     parse_messages(0, comm, callbacks);
 }
 
-void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+void is_comm_port_parse_messages(pfnIsCommPortRead portRead, port_handle_t port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
 {
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int bytesFree = is_comm_free(comm);

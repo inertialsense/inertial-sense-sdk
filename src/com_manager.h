@@ -146,7 +146,7 @@ typedef struct
 typedef struct
 {
 	// reads n bytes into buffer from the source (usually a serial port)
-	pfnIsCommPortRead portRead;
+	// pfnIsCommPortRead portRead;
 
 	// write data to the destination (usually a serial port)
 	pfnIsCommPortWrite portWrite;
@@ -252,7 +252,7 @@ int comManagerInit(
  */
 int comManagerInit(
         int stepPeriodMilliseconds,
-	pfnIsCommPortRead readFnc,
+        // pfnIsCommPortRead readFnc,
         pfnIsCommPortWrite sendFnc,
         pfnComManagerSendBufferAvailableBytes txFreeFnc,
         pfnComManagerPostRead pstRxFnc,
@@ -543,7 +543,7 @@ public:
     int init(
             port_handle_t port,
             int stepPeriodMilliseconds,
-            pfnComManagerRead readFnc,
+            //pfnComManagerRead readFnc,
             pfnIsCommPortWrite sendFnc,
             pfnComManagerSendBufferAvailableBytes txFreeFnc,
             pfnComManagerPostRead pstRxFnc,

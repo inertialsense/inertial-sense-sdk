@@ -46,7 +46,7 @@ int initComManagerInstanceInternal
     com_manager_t* cmInstance,
     port_handle_t port,
     int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
+    // pfnComManagerRead portReadFnc,
     pfnIsCommPortWrite portWriteFnc,
     pfnComManagerSendBufferAvailableBytes txFreeFnc,
     pfnComManagerPostRead pstRxFnc,
@@ -76,7 +76,7 @@ CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
 int comManagerInit(
         int stepPeriodMilliseconds,
-        pfnComManagerRead portReadFnc,
+        // pfnComManagerRead portReadFnc,
         pfnIsCommPortWrite portWriteFnc,
         pfnComManagerSendBufferAvailableBytes txFreeFnc,
         pfnComManagerPostRead pstRxFnc,
@@ -87,7 +87,7 @@ int comManagerInit(
     return s_cm.init(
             NULL,
             stepPeriodMilliseconds,
-            portReadFnc,
+            // portReadFnc,
             portWriteFnc,
             txFreeFnc,
             pstRxFnc,
@@ -99,7 +99,7 @@ int comManagerInit(
 int comManagerInit(
 	port_handle_t port,
     int stepPeriodMilliseconds,
-    pfnComManagerRead portReadFnc,
+    // pfnComManagerRead portReadFnc,
     pfnIsCommPortWrite portWriteFnc,
     pfnComManagerSendBufferAvailableBytes txFreeFnc,
     pfnComManagerPostRead pstRxFnc,
@@ -110,7 +110,7 @@ int comManagerInit(
     return s_cm.init(
         port,
         stepPeriodMilliseconds,
-        portReadFnc, 
+        // portReadFnc,
         portWriteFnc, 
         txFreeFnc, 
         pstRxFnc, 
@@ -122,7 +122,7 @@ int comManagerInit(
 int ISComManager::init
 (	port_handle_t port,
     int stepPeriodMillis,
-    pfnComManagerRead portReadFncCb,
+    // pfnComManagerRead portReadFncCb,
     pfnIsCommPortWrite portWriteFncCb,
     pfnComManagerSendBufferAvailableBytes txFreeFncCb,
     pfnComManagerPostRead pstRxFncCb,
@@ -131,7 +131,7 @@ int ISComManager::init
     broadcast_msg_array_t* bcastBuffers)   //! was: com_manager_init_t *buffers,
 {
     // assign new variables
-    portRead = portReadFncCb;
+    // portRead = portReadFncCb;
     portWrite = portWriteFncCb;
     txFree = txFreeFncCb;
     pstRxFnc = pstRxFncCb;
@@ -259,11 +259,6 @@ void ISComManager::step()
 
 void ISComManager::stepRx(uint32_t timeMs)
 {
-    if (!portRead)
-    {
-        return;
-    }
-        
     for (port_handle_t port : ports)
     {
         // com_manager_port_t *cmPort = &(cmInstance->ports[port]);
@@ -583,7 +578,7 @@ int comManagerSend(port_handle_t port, uint8_t pFlags, void* data, uint16_t did,
 int ISComManager::send(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     // Return 0 on success, -1 on failure
-    if (portRead)
+    if (portWrite)
         return (is_comm_write(portWrite, port, pFlags, did, size, offset, data) < 0 ? -1 : 0);
     return 0;
 }

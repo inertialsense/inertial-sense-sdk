@@ -137,7 +137,7 @@ typedef enum
 typedef int(*pfnIsCommPortWrite)(port_handle_t port, const uint8_t* buf, int len);
 
 /** Read data from the serial port.  Returns number of bytes read. */ 
-typedef int(*pfnIsCommPortRead)(unsigned int port, uint8_t* buf, int bufLen);
+typedef int(*pfnIsCommPortRead)(port_handle_t port, uint8_t* buf, int bufLen);
 
 /** We must not allow any packing or shifting as these data structures must match exactly in memory on all devices */
 PUSH_PACK_1
@@ -633,19 +633,19 @@ POP_PACK
 // typedef protocol_type_t(*pfnIsCommParseMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
 
 // InertialSense binary (ISB) data message handler function
-typedef int(*pfnIsCommIsbDataHandler)(unsigned int port, p_data_t* data);
+typedef int(*pfnIsCommIsbDataHandler)(port_handle_t port, p_data_t* data);
 
 // broadcast message handler
-typedef int(*pfnIsCommAsapMsg)(unsigned int port, p_data_get_t* req);
+typedef int(*pfnIsCommAsapMsg)(port_handle_t port, p_data_get_t* req);
 
 // Generic message handler function with message pointer and size 
-typedef int(*pfnIsCommGenMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
+typedef int(*pfnIsCommGenMsgHandler)(port_handle_t port, const unsigned char* msg, int msgSize);
 
 // Generic message handler function with is_comm_instance_t
-typedef int(*pfnIsCommHandler)(unsigned int port, is_comm_instance_t *comm);
+typedef int(*pfnIsCommHandler)(port_handle_t port, is_comm_instance_t *comm);
 
 // Parse error handler function
-typedef int(*pfnIsCommParseErrorHandler)(unsigned int port, is_comm_instance_t* comm);
+typedef int(*pfnIsCommParseErrorHandler)(port_handle_t port, is_comm_instance_t* comm);
 
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
@@ -670,7 +670,7 @@ void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize)
 
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks);
-void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
+void is_comm_port_parse_messages(pfnIsCommPortRead portRead, port_handle_t port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
