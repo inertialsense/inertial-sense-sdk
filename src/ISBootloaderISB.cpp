@@ -310,8 +310,6 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
 {
     static const uint8_t handshakerChar = 'U';
 
-    status_update("(ISB) ***  Handshake sync  ***", IS_LOG_LEVEL_INFO);
-
     // Bootloader sync requires at least 6 'U' characters to be sent every 10ms. 
     // write a 'U' to handshake with the boot loader - once we get a 'U' back we are ready to go
     for (int i = 0; i < BOOTLOADER_RETRIES; i++)
@@ -323,7 +321,7 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
 
         if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            status_update("(ISB) ***  Handshake received  ***", IS_LOG_LEVEL_INFO);
+            status_update("(ISB) ***  Handshake w/ response  ***", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
@@ -336,11 +334,13 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
     {
         if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            status_update("(ISB) ***  Handshake w/ v5a response  ***", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
 #endif
 
+    status_update("(ISB) ***  Handshake w/o response  ***", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
