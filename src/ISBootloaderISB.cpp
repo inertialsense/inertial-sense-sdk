@@ -321,7 +321,7 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
 
         if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            status_update("(ISB) ...handshake w/ response", IS_LOG_LEVEL_INFO);
+            status_update("(ISB) Handshake w/ response", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
@@ -334,13 +334,13 @@ is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
     {
         if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
-            status_update("(ISB) ***  ...v5a handshake w/ response", IS_LOG_LEVEL_INFO);
+            status_update("(ISB) Handshake v5a w/ response", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
 #endif
 
-    status_update("(ISB) ...handshake w/o response", IS_LOG_LEVEL_INFO);
+    status_update("(ISB) Handshake w/o response", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
