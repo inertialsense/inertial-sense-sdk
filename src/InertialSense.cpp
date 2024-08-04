@@ -47,9 +47,6 @@ static int staticReadData(port_handle_t port, unsigned char* buf, int len)
 	if (s_is) {	// Save raw data to ISlogger
 		s_is->LogRawData(s_is->DeviceByPort(port), bytesRead, buf);
 	}
-    if (bytesRead) {
-        printf("bytesRead=%d\n", bytesRead);
-    }
     return bytesRead;
 }
 
@@ -196,7 +193,6 @@ bool InertialSense::registerDevice(ISDevice* device) {
         return NULL;
 
     // first, ensure there isn't a matching device already
-    ISDevice* foundDevice = NULL;
     for (auto& d : m_comManagerState.devices) {
         if (&d == device)
             return true;
@@ -1131,12 +1127,17 @@ void InertialSense::ProcessRxNmea(port_handle_t port, const uint8_t* msg, int ms
 
     switch (getNmeaMsgId(msg, msgSize)) {
         case NMEA_MSG_ID_INFO: {
+            // Device Info
             ISDevice* device = DeviceByPort(port);
             if (!device) {
-                dev_info_t devInfo;
-                nmea_parse_info(devInfo, (const char *) msg, msgSize);      // IMX device Info
-                device = registerNewDevice(port, devInfo);
-                device->hdwRunState = ISDevice::HDW_STATE_APP; // We know this for a fact
+                dev_info_t devInfo = {};
+                if (!nmea_parse_info(devInfo, (const char *) msg, msgSize)) {
+                    device = registerNewDevice(port, devInfo);
+                    device->hdwRunState = ISDevice::HDW_STATE_APP; // We know this for a fact
+                } else {
+                    // FIXME: This is a weird state, sometimes the device will return an empty $INFO response.  What should we do with it?
+                    //   We know the device is alive, because we got A response, but it wasn't sufficient to actually identify the device.
+                }
             }
         }
         break;

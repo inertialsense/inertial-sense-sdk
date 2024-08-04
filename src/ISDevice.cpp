@@ -203,39 +203,42 @@ std::string ISDevice::getName() {
 std::string ISDevice::getFirmwareInfo(int detail) {
     std::string out;
 
-    // firmware version
-    out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
-    switch(devInfo.buildType) {
-        case 'a': out +="-alpha";       break;
-        case 'b': out +="-beta";        break;
-        case 'c': out +="-rc";          break;
-        case 'd': out +="-devel";       break;
-        case 's': out +="-snap";        break;
-        case '*': out +="-snap";        break;
-        default : out +="";             break;
-    }
-    if (devInfo.firmwareVer[3] != 0)
-        out += utils::string_format(".%u", devInfo.firmwareVer[3]);
-
-    if (detail > 0) {
-        out += utils::string_format(" %08x", devInfo.repoRevision);
-        if (devInfo.buildType == '*') {
-            out += "*";
+    if (hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
+        out += utils::string_format("ISbl.v%u%c **BOOTLOADER**", devInfo.firmwareVer[0], devInfo.firmwareVer[1]);
+    } else {
+        // firmware version
+        out += utils::string_format("fw%u.%u.%u", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2]);
+        switch(devInfo.buildType) {
+            case 'a': out +="-alpha";       break;
+            case 'b': out +="-beta";        break;
+            case 'c': out +="-rc";          break;
+            case 'd': out +="-devel";       break;
+            case 's': out +="-snap";        break;
+            case '*': out +="-snap";        break;
+            default : out +="";             break;
         }
+        if (devInfo.firmwareVer[3] != 0)
+            out += utils::string_format(".%u", devInfo.firmwareVer[3]);
 
-        if (detail > 1) {
-            // build number/type
-            out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
+        if (detail > 0) {
+            out += utils::string_format(" %08x", devInfo.repoRevision);
+            if (devInfo.buildType == '*') {
+                out += "*";
+            }
 
-            // build date/time
-            out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
-            out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
-            if (devInfo.buildMillisecond)
-                out += utils::string_format(".%03u", devInfo.buildMillisecond);
+            if (detail > 1) {
+                // build number/type
+                out += utils::string_format(" b%05x.%d", ((devInfo.buildNumber >> 12) & 0xFFFFF), (devInfo.buildNumber & 0xFFF));
+
+                // build date/time
+                out += utils::string_format(" %04u-%02u-%02u", devInfo.buildYear + 2000, devInfo.buildMonth, devInfo.buildDay);
+                out += utils::string_format(" %02u:%02u:%02u", devInfo.buildHour, devInfo.buildMinute, devInfo.buildSecond);
+                if (devInfo.buildMillisecond)
+                    out += utils::string_format(".%03u", devInfo.buildMillisecond);
+            }
         }
     }
 
-    //return utils::string_format("fw%d.%d.%d %3d%c", devInfo.firmwareVer[0], devInfo.firmwareVer[1], devInfo.firmwareVer[2], devInfo.buildNumber, devInfo.buildType);
     return out;
 }
 

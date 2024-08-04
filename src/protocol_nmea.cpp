@@ -1808,7 +1808,11 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
 int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 {
     (void)aSize;
-    char *ptr = (char *)&a[6];	// $INFO,
+    char *startPtr = (char *)&a[6];     // $INFO,
+    char *ptr = startPtr;
+
+    if (ptr >= (a + aSize - 5)) // '5' is the length of the trailing checksum and line terminator
+        return 1;   // this message has no data in it...
     
     // uint32_t        serialNumber;
     if (ptr < a + aSize)

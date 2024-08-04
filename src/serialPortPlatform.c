@@ -92,6 +92,33 @@ static int serialPortFlushPlatform(port_handle_t port);
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
+// #define DEBUG_COMMS
+// Enabling this will cause all traffic to be printed on the console, with timestamps and direction (<< = received, >> = transmitted).
+#ifdef DEBUG_COMMS
+#define IS_PRINTABLE(n) ( ((n >= 0x20) && (n <= 0x7E)) || ((n >= 0xA1) && (n <= 0xFF)) )
+static inline void debugDumpBuffer(const char* prefix, const unsigned char* buffer, int len) {
+    if (len <= 0)
+        return;
+
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    printf("%ld.%03d: %s", start.tv_sec, (uint16_t)(start.tv_usec / 1000), prefix);
+    for ( int i = 0; i < len; i++)
+        printf(" %02x", buffer[i]);
+
+    int linePos = 16 + strlen(prefix) + (len * 3);
+    printf("%*c", 80 - linePos, ' ');
+
+    for ( int i = 0; i < len; i++)
+        printf("%c", IS_PRINTABLE(buffer[i]) ? buffer[i] : 0xB7);
+
+    printf("\n");
+}
+#else
+    #define debugDumpBuffer(...)
+#endif
+
+
 #if PLATFORM_IS_WINDOWS
 
 #define WINDOWS_OVERLAPPED_BUFFER_SIZE 8192
@@ -597,6 +624,7 @@ static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned
             break;
         }
     }
+    debugDumpBuffer("<< ", buffer, totalRead);
     return totalRead;
 }
 
@@ -629,6 +657,8 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
 
     } else
         serialPort->errorCode = 0; // clear any previous errorcode
+
+    debugDumpBuffer("{{ ", buffer, result);
     return result;
 }
 
@@ -747,6 +777,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         }
     }
 
+    debugDumpBuffer(">> ", buffer, bytes_written);
     return bytes_written;
 
 #endif
