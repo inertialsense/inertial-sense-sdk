@@ -153,6 +153,7 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()
+        self.addListItem('GNSS Ephemeris', 'gnssEphemeris')
         self.addListItem('GPX Debug', 'gpxDebugfArray')
 
 def kill_handler(*args):

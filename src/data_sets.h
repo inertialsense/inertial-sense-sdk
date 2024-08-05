@@ -1024,7 +1024,11 @@ enum eSatSvStatus
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,	
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
 
-    SAT_SV_STATUS_RTK_EPH_PULSE                     = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTCM_PULSE                = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE             = 0x2000,   // Set when eph is added to RTK LIB for this SV 
+    SAT_SV_STATUS_RTK_EPH_PULSE_MASK                = SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE | SAT_SV_STATUS_RTK_EPH_RTCM_PULSE,   // Set when eph is Rx for this SV and cleared by next message send
+
+    SAT_SV_STATUS_RTK_EPH_SEND_PULSE                = 0x4000,   // Set when eph is Tx'd from device
 
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
@@ -1760,6 +1764,9 @@ typedef struct PACKED
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
                                         | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_GPX_DEBUG \
+                                        | RMC_BITS_GPS1_SAT \
+                                        | RMC_BITS_GPS2_SAT \
                                         | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
@@ -1830,7 +1837,7 @@ enum eNmeaMsgId
     // Filtered GxGSV NMEA Message IDs:
 
     // GNGSV - All constellations
-    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // Used for reference only
+    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840) Used for reference only
     NMEA_MSG_ID_GNGSV_0         = NMEA_MSG_ID_GNGSV_START,                                                                                                                  // GNGSV_0 (3840) Clear all constellations and frequencies
     NMEA_MSG_ID_GNGSV_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),                                                                                    // GNGSV_1 (3841) Enable all constellations band1
     NMEA_MSG_ID_GNGSV_2         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),                                                                                    // GNGSV_2 (3842) Enable all constellations band2
@@ -1900,7 +1907,7 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GLGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_3_2_1 (3943) Enable Glonass L1, L2, L3
     NMEA_MSG_ID_GLGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GLO_OFFSET),          // GLGSV (3951) Enable all Glonass frequencies
     
-    NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // Used for reference only
+    NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // (3951) Used for reference only
 };
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
