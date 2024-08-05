@@ -230,14 +230,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM1");
+        ph.nodeParam("port", param, "/dev/ttyACM0");
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM1");
+        ports_.push_back("/dev/ttyACM0");
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
@@ -812,10 +812,13 @@ void InertialSenseROS::rtk_connectivity_watchdog_timer_callback()
 
 void InertialSenseROS::start_rtk_connectivity_watchdog_timer()
 {
+
     if ((RTK_rover_ == nullptr) || (RTK_rover_->correction_input == nullptr) || (RTK_rover_->correction_input->type_ != "ntrip"))
         return;
 
     RtkRoverCorrectionProvider_Ntrip& config = *(RtkRoverCorrectionProvider_Ntrip*)(RTK_rover_->correction_input);
+    rtk_connectivity_watchdog_timer_ = nh_->create_wall_timer(std::chrono::duration<float>(config.connectivity_watchdog_timer_frequency_) , std::bind(InertialSenseROS::rtk_connectivity_watchdog_timer_callback, this));
+    rtk_connectivity_watchdog_timer_->cancel();
     if (!config.connectivity_watchdog_enabled_) {
         return;
     }

@@ -10,7 +10,7 @@
 
 #include "../include/inertial_sense_ros2.h"
 
-#define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_config.yaml"
+#define PARAM_YAML_FILE "../launch/test_config.yaml"
 
 char cwd_buff[64];
 
@@ -333,6 +333,6 @@ int main(int argc, char** argv) {
     // We should move this to an initROS() function which can be called from a parameterized constructor, and implement a default constructor that
     // initializes class fields/members, but doesn't do anything else.
    rclcpp::init(argc, argv);
-   auto nh = std::make_shared<rclcpp::Node>("nh");
+   //auto nh = std::make_shared<rclcpp::Node>("nh");
     return RUN_ALL_TESTS();
 }

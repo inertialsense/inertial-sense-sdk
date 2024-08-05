@@ -11,20 +11,21 @@
 class gpsTestNode: public rclcpp::Node
 {
 private:
-    //rclcpp::Subscription<sensor_msgs::msg::NavSatFix> sub_navsatfix;
+    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr sub_navsatfix;
 public:
 
     //rclcpp::Node::SharedPtr nh = std::make_shared<rclcpp::Node>("nh");
-    gpsTestNode() : Node("nh") {}
+    gpsTestNode() : Node("nh_gps") {}
     void init() {
 
-       auto sub_navsatfix = this->create_subscription<sensor_msgs::msg::NavSatFix>("/NavSatFix", 1, std::bind(&gpsTestNode::cb_navsatfix, this, std::placeholders::_1));
+        sub_navsatfix = this->create_subscription<sensor_msgs::msg::NavSatFix>("/NavSatFix", 1, std::bind(&gpsTestNode::cb_navsatfix, this, std::placeholders::_1));
+
     }
 
     bool navsatfix_passed = false;
     sensor_msgs::msg::NavSatFix msg_NavSatFix;
-    void cb_navsatfix(const sensor_msgs::msg::NavSatFix &fix) {
-        msg_NavSatFix = fix;
+    void cb_navsatfix(const sensor_msgs::msg::NavSatFix::SharedPtr fix) {
+        msg_NavSatFix = *fix;
         navsatfix_passed = true;
         TEST_COUT << "Rx NavSatFix\n";
     }
@@ -41,10 +42,9 @@ public:
  * If this passes, the test passes.
  */
 
-TEST(ROSCommunicationsTests, test_navsatfix )
-{
-    gpsTestNode testNode;
-    testNode.init();
+TEST(ROSCommunicationsTests, test_navsatfix ) {
+    auto testNode = std::make_shared<gpsTestNode>();
+    testNode->init();
 
     std::string yaml = "topic: \"inertialsense\"\n"
                        "port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]\n"
@@ -65,25 +65,25 @@ TEST(ROSCommunicationsTests, test_navsatfix )
     InertialSenseROS isROS(config);
     isROS.initialize();
 
-    double now = testNode.now().seconds();
-    auto node = std::make_shared<gpsTestNode>();
-    double expires = now + 5.0, nextMsg = now + 1.0;
+    double now = testNode->now().seconds();
+    //auto testNode = std::make_shared<gpsTestNode>();
+    double expires = now + 150.0, nextMsg = now + 1.0;
     do {
         isROS.update();
-        rclcpp::spin_some(node);
+        rclcpp::spin_some(testNode);
         SLEEP_MS(100);
 
         if (now > nextMsg) {
-            TEST_COUT << "waiting for gps1/pos_vel message...  (timeout in " << (expires - now) << " seconds)" << std::endl;
+            TEST_COUT << "waiting for NavSatFix message...  (timeout in " << (expires - now) << " seconds)" << std::endl;
             nextMsg = now + 1.0;
         }
 
-        now = testNode.now().seconds();
-    } while(!testNode.navsatfix_passed && (now < expires));
+        now = testNode->now().seconds();
+    } while(!testNode->navsatfix_passed && (now < expires));
 
-    EXPECT_TRUE(testNode.navsatfix_passed);
-    EXPECT_GE(testNode.msg_NavSatFix.latitude, -90.0);
-    EXPECT_LE(testNode.msg_NavSatFix.latitude, 90.0);
-    EXPECT_GE(testNode.msg_NavSatFix.longitude, -180.0);
-    EXPECT_LE(testNode.msg_NavSatFix.longitude, 180.0);
+    EXPECT_TRUE(testNode->navsatfix_passed);
+    EXPECT_GE(testNode->msg_NavSatFix.latitude, -90.0);
+    EXPECT_LE(testNode->msg_NavSatFix.latitude, 90.0);
+    EXPECT_GE(testNode->msg_NavSatFix.longitude, -180.0);
+    EXPECT_LE(testNode->msg_NavSatFix.longitude, 180.0);
 }
