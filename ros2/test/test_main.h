@@ -8,10 +8,10 @@
 
 #include "inertial_sense_ros2.h"
 
-class cTestNode
+class cTestNode : public rclcpp::Node
 {
 public:
-    cTestNode(){}
+    cTestNode() : Node("test_node"){}
     void init();
     bool step();
     void cbWheelEncoder(const sensor_msgs::msg::JointState &msg);
