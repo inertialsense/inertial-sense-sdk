@@ -19,10 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISLogFileBase.h"
 #include "ISLogStats.h"
 
-extern "C"
-{
 #include "com_manager.h"
-}
 
 // never change these!
 #define IS_LOG_FILE_PREFIX "LOG_SN"

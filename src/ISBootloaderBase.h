@@ -210,7 +210,7 @@ public:
     bool m_use_progress;
     int m_start_time_ms;
 
-    serial_port_t* m_port;
+    port_handle_t m_port;
     std::string m_port_name;
     int m_baud;
 
@@ -222,7 +222,7 @@ public:
 
     static is_operation_result mode_device_app(
         firmwares_t filenames,
-        serial_port_t* handle,
+        port_handle_t port,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateProgress,
         pfnBootloadProgress verifyProgress,
@@ -233,7 +233,7 @@ public:
 
     static is_operation_result get_device_isb_version(
         firmwares_t filenames,
-        serial_port_t* handle,
+        port_handle_t port,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateProgress,
         pfnBootloadProgress verifyProgress,
@@ -245,7 +245,7 @@ public:
     static is_operation_result mode_device_isb(
         firmwares_t filenames,
         bool force,
-        serial_port_t* handle,
+        port_handle_t port,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateProgress,
         pfnBootloadProgress verifyProgress,
@@ -256,7 +256,7 @@ public:
 
     static is_operation_result update_device(
         firmwares_t filenames,
-        serial_port_t* handle,
+        port_handle_t port,
         pfnBootloadStatus statusfn,
         pfnBootloadProgress updateprogress,
         pfnBootloadProgress verifyProgress,

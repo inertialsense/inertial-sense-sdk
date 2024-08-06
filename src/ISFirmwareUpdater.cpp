@@ -282,7 +282,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
+                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName(port), devInfo->serialNumber, startAttempts);
                             } else {
                                 printf("Error attempting to initiate Firmware Update\n");
                             }
@@ -367,7 +367,7 @@ bool ISFirmwareUpdater::fwUpdate_writeToWire(fwUpdate::target_t target, uint8_t 
     // TODO: end
 
     nextChunkSend = current_timeMs() + chunkDelay; // give *at_least* enough time for the send buffer to actually transmit before we send the next message
-    int result = comManagerSendData(pHandle, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
+    int result = comManagerSendData(port, buffer, DID_FIRMWARE_UPDATE, buff_len, 0);
     return (result == 0);
 }
 

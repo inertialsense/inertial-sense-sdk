@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <cctype>
+#include <vector>
 #include "protocol_nmea.h"
 #include "time_conversion.h"
 #include "ISPose.h"
@@ -1807,58 +1808,77 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
 int nmea_parse_info(dev_info_t &info, const char a[], const int aSize)
 {
     (void)aSize;
-    char *ptr = (char *)&a[6];	// $INFO,
+    char *startPtr = (char *)&a[6];     // $INFO,
+    char *ptr = startPtr;
+
+    if (ptr >= (a + aSize - 5)) // '5' is the length of the trailing checksum and line terminator
+        return 1;   // this message has no data in it...
     
     // uint32_t        serialNumber;
-    ptr = ASCII_to_u32(&info.serialNumber, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u32(&info.serialNumber, ptr);
 
     // uint8_t         hardwareVer[4];
-    ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_ver4u8(info.hardwareVer, ptr);
 
     // uint8_t         firmwareVer[4];
-    ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_ver4u8(info.firmwareVer, ptr);
 
     // uint32_t        buildNumber;
-    ptr = ASCII_to_u32(&info.buildNumber, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u32(&info.buildNumber, ptr);
 
     // uint8_t         protocolVer[4];
-    ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_ver4u8(info.protocolVer, ptr);
 
     // uint32_t        repoRevision;
-    ptr = ASCII_to_u32(&info.repoRevision, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u32(&info.repoRevision, ptr);
 
     // char            manufacturer[DEVINFO_MANUFACTURER_STRLEN];
-    ptr = ASCII_to_char_array(info.manufacturer, ptr, DEVINFO_MANUFACTURER_STRLEN);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_char_array(info.manufacturer, ptr, DEVINFO_MANUFACTURER_STRLEN);
 
     // uint8_t         buildDate[4];	YYYY-MM-DD
-    unsigned int year, month, day;
-    SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
-    info.buildType = ' ';
-    info.buildYear = (uint8_t)(year >= 2000 ? (year - 2000):year);
-    info.buildMonth = (uint8_t)(month);
-    info.buildDay = (uint8_t)(day);
-    ptr = ASCII_find_next_field(ptr);
+    if (ptr < a + aSize) {
+        unsigned int year, month, day;
+        SSCANF(ptr, "%04d-%02u-%02u", &year, &month, &day);
+        info.buildType = ' ';
+        info.buildYear = (uint8_t) (year >= 2000 ? (year - 2000) : year);
+        info.buildMonth = (uint8_t) (month);
+        info.buildDay = (uint8_t) (day);
+        ptr = ASCII_find_next_field(ptr);
+    }
     
     // uint8_t         buildTime[4];	hh:mm:ss.ms
-    unsigned int hour, minute, second, ms;
-    SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
-    info.buildHour = (uint8_t)hour;
-    info.buildMinute = (uint8_t)minute;
-    info.buildSecond = (uint8_t)second;
-    info.buildMillisecond = (uint8_t)ms;
-    ptr = ASCII_find_next_field(ptr);
-    
+    if (ptr < a + aSize) {
+        unsigned int hour, minute, second, ms;
+        SSCANF(ptr, "%02u:%02u:%03u.%02u", &hour, &minute, &second, &ms);
+        info.buildHour = (uint8_t) hour;
+        info.buildMinute = (uint8_t) minute;
+        info.buildSecond = (uint8_t) second;
+        info.buildMillisecond = (uint8_t) ms;
+        ptr = ASCII_find_next_field(ptr);
+    }
+
     // char            addInfo[DEVINFO_ADDINFO_STRLEN];
-    ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_char_array(info.addInfo, ptr, DEVINFO_ADDINFO_STRLEN);
 
     // uint16_t        hardware;
-    ptr = ASCII_to_u8(&info.hardwareType, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u8(&info.hardwareType, ptr);
 
     // uint16_t        reserved;
-    ptr = ASCII_to_u16(&info.reserved, ptr);
+    if (ptr < a + aSize)
+        ptr = ASCII_to_u16(&info.reserved, ptr);
 
     // uint8_t         build type;
-    info.buildType = (uint8_t)*ptr;
+    if (ptr < a + aSize)
+        info.buildType = (uint8_t)*ptr;
     if (info.buildType==0) { info.buildType = ' '; }
 
     // ptr = ASCII_find_next_field(ptr);
@@ -2055,7 +2075,7 @@ int parseASCE_GSV(int inId)
     return NMEA_MSG_ID_GxGSV;
 }
 
-uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci)
 {
     (void)aSize;
 
@@ -2064,7 +2084,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
     uint32_t ports;
     uint8_t period;
 
-    if(pHandle >= NUM_COM_PORTS)
+    if (!port)
     {
         return 0;
     }
@@ -2118,14 +2138,19 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         // Copy tmp to corresponding port(s)
         switch (ports)
         {	
-        case RMC_OPTIONS_PORT_CURRENT:	nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period); break;
-        case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); } break;
-            
-        default:	// Current port
-            if (ports & RMC_OPTIONS_PORT_SER0)     { nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period); }
-            if (ports & RMC_OPTIONS_PORT_SER1)     { nmea_enable_stream(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, id, period); }
-            if (ports & RMC_OPTIONS_PORT_SER2)     { nmea_enable_stream(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, id, period); }
-            if (ports & RMC_OPTIONS_PORT_USB)      { nmea_enable_stream(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, id, period); }
+        case RMC_OPTIONS_PORT_CURRENT:
+            nmea_enable_stream(rmci[portId(port)]->rmcNmea.nmeaBits, rmci[portId(port)]->rmcNmea.nmeaPeriod, id, period);
+            break;
+        case RMC_OPTIONS_PORT_ALL:
+            for (int i=0; i < NUM_SERIAL_PORTS; i++) {
+                nmea_enable_stream(rmci[i]->rmcNmea.nmeaBits, rmci[i]->rmcNmea.nmeaPeriod, id,  period);
+            }
+            break;
+        default:	// Specified port
+            if (ports & RMC_OPTIONS_PORT_SER0)     { nmea_enable_stream(rmci[0]->rmcNmea.nmeaBits, rmci[0]->rmcNmea.nmeaPeriod, id, period); }
+            if (ports & RMC_OPTIONS_PORT_SER1)     { nmea_enable_stream(rmci[1]->rmcNmea.nmeaBits, rmci[1]->rmcNmea.nmeaPeriod, id, period); }
+            if (ports & RMC_OPTIONS_PORT_SER2)     { nmea_enable_stream(rmci[2]->rmcNmea.nmeaBits, rmci[2]->rmcNmea.nmeaPeriod, id, period); }
+            if (ports & RMC_OPTIONS_PORT_USB)      { nmea_enable_stream(rmci[3]->rmcNmea.nmeaBits, rmci[3]->rmcNmea.nmeaPeriod, id, period); }
             break;
         }
     }
@@ -2133,7 +2158,13 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
     return options;
 }
 
-uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+inline void nmea_configure_grmci(const std::vector<grmci_t*>& grmci, int i, uint32_t id, uint8_t period, uint32_t options) {
+    nmea_enable_stream(grmci[i]->rmcNmea.nmeaBits, grmci[i]->rmcNmea.nmeaPeriod, id, period);
+    grmci[i]->rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+}
+
+//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS])
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci)
 {
     (void)aSize;
 
@@ -2142,7 +2173,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
     uint32_t ports;
     uint8_t period;
 
-    if(pHandle >= NUM_COM_PORTS)
+    if (!port)
         return 0;
     
     char *ptr = (char*)&a[6];				// $ASCE
@@ -2194,40 +2225,22 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         // Copy tmp to corresponding port(s)
         switch (ports)
         {	
-        case RMC_OPTIONS_PORT_CURRENT:	
-            nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period);
-            rmci[pHandle].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+        case RMC_OPTIONS_PORT_CURRENT:
+            nmea_configure_grmci(grmci, portId(port), id, period, options);
             break;
         
         case RMC_OPTIONS_PORT_ALL:		
             for(int i=0; i<NUM_COM_PORTS; i++) 
-            { 
-                nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); 
-                rmci[i].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
-            } 
+            {
+                nmea_configure_grmci(grmci, i, id, period, options);
+            }
             break;
             
         default:	// Current port
-            if (ports & RMC_OPTIONS_PORT_SER0)     
-            { 
-                nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period);
-                rmci[0].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
-            }
-            if (ports & RMC_OPTIONS_PORT_SER1)    
-            { 
-                nmea_enable_stream(rmci[1].rmcNmea.nmeaBits, rmci[1].rmcNmea.nmeaPeriod, id, period);
-                rmci[1].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
-            }
-            if (ports & RMC_OPTIONS_PORT_SER2)     
-            { 
-                nmea_enable_stream(rmci[2].rmcNmea.nmeaBits, rmci[2].rmcNmea.nmeaPeriod, id, period);
-                rmci[2].rmc.options |= (options & RMC_OPTIONS_PERSISTENT); 
-            }
-            if (ports & RMC_OPTIONS_PORT_USB)      
-            { 
-                nmea_enable_stream(rmci[3].rmcNmea.nmeaBits, rmci[3].rmcNmea.nmeaPeriod, id, period);
-                rmci[3].rmc.options |= (options & RMC_OPTIONS_PERSISTENT); 
-            }
+            if (ports & RMC_OPTIONS_PORT_SER0)  nmea_configure_grmci(grmci, 0, id, period, options);
+            if (ports & RMC_OPTIONS_PORT_SER1)  nmea_configure_grmci(grmci, 1, id, period, options);
+            if (ports & RMC_OPTIONS_PORT_SER2)  nmea_configure_grmci(grmci, 2, id, period, options);
+            if (ports & RMC_OPTIONS_PORT_USB)   nmea_configure_grmci(grmci, 3, id, period, options);
             break;
         }
     }

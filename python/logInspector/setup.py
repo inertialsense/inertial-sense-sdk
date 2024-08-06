@@ -31,7 +31,7 @@ ext_modules = [
     Extension('log_reader',
         ['src/log_reader.cpp',
          '../../src/convert_ins.cpp',
-         '../../src/com_manager.c',
+         '../../src/com_manager.cpp',
          '../../src/data_sets.c',
          '../../src/DataChunk.cpp',
          '../../src/DataChunkSorted.cpp',

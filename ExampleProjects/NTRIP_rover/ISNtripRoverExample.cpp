@@ -27,13 +27,13 @@ using namespace std;
 static cISStream *s_clientStream;
 
 
-int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int stop_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	uint8_t buf[1024];
 	// Stop all broadcasts on the device
 	int n = is_comm_write_to_buf(buf, sizeof(buf), comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);    
 
-	if (n != serialPortWrite(serialPort, buf, n))
+	if (n != serialPortWrite(port, buf, n))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -42,17 +42,17 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 
-int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	uint8_t buf[1024];
 	int n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, buf, n))
+	if (n != serialPortWrite(port, buf, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
 	n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, buf, n))
+	if (n != serialPortWrite(port, buf, n))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -120,7 +120,7 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 }
 
 
-void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+void read_uINS_data(port_handle_t port, is_comm_instance_t *comm, cISStream *clientStream)
 {
 	protocol_type_t ptype;
 
@@ -128,7 +128,7 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if ((n = serialPortRead(serialPort, comm->rxBuf.tail, n)))
+	if ((n = serialPortRead(port, comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
 		comm->rxBuf.tail += n;
@@ -145,7 +145,7 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 }
 
 
-void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+void read_RTK_base_data(port_handle_t port, is_comm_instance_t *comm, cISStream *clientStream)
 {
 	protocol_type_t ptype;
 
@@ -163,7 +163,7 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 		{
 			if (ptype == _PTYPE_RTCM3)
 			{	// Forward RTCM3 packets to uINS
-				serialPortWrite(serialPort, comm->rxPkt.data.ptr, comm->rxPkt.data.size);
+				serialPortWrite(port, comm->rxPkt.data.ptr, comm->rxPkt.data.size);
 				s_rx.baseCount++;
 			}
 		}

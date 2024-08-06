@@ -17,12 +17,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+
+#include "core/types.h"
 #include "ISConstants.h"
 #include "rtk_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 // *****************************************************************************
 // ****** InertialSense binary message Data Identification Numbers (DIDs) ****** 
@@ -487,7 +490,7 @@ typedef struct PACKED
     // _ 3 4
     // _ _ 5
 
-}pos_measurement_t;
+} pos_measurement_t;
 
 /***
  * Product Hardware ID Mask  [6:4:6]
@@ -1653,9 +1656,15 @@ typedef struct PACKED
     f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
 } sys_sensors_adc_t;
 
-#define NUM_COM_PORTS       4	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
+#if defined(IMX_5)
+    #define NUM_COM_PORTS       4	// Number of communication ports.  (Ser0, Ser1, Ser2, and USB).
+#elif defined(GPX_1)
+    #define NUM_COM_PORTS   6
+#else
+    #define NUM_COM_PORTS   6
+#endif
 #ifndef NUM_SERIAL_PORTS
-#define NUM_SERIAL_PORTS	6
+#define NUM_SERIAL_PORTS	NUM_COM_PORTS
 #endif
 
 /** Realtime Message Controller (used in rmc_t). 
@@ -4438,7 +4447,7 @@ typedef enum {
     kFwUpdate,  // ready and able to accept code injections
     kError,
     kShutdown,
-}eGPXGnssRunState;
+} eGPXGnssRunState;
 
 /**
 * (DID_GPX_STATUS) GPX status.

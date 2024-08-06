@@ -26,7 +26,7 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
     {
         return IS_OP_OK;
     }
