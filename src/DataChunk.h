@@ -35,8 +35,12 @@ PUSH_PACK_1
 
 struct sChunkHeader {
     uint32_t marker = DATA_CHUNK_MARKER;         //!< Chunk marker (0xFC05EA32)
-    uint16_t version = 1;                        //!< Chunk Version
-    uint16_t classification = ' ' << 8 | 'U';    //!< Chunk classification
+    uint8_t version = 2;                         //!< Chunk Version
+    uint8_t dataOffset = 34;                     //!< offset from this position until the start of the chunk data (34 = sum of all bytes below, or sizeof(sChunkHeader) - 6).
+    char protocolVersion[2] = {                  //!< major/minor version of the underlying line/protocol
+            PROTOCOL_VERSION_CHAR0,
+            PROTOCOL_VERSION_CHAR1
+    };
     char name[4];                                //!< Chunk name
     char invName[4];                             //!< Bitwise inverse of chunk name
     uint32_t dataSize;                           //!< Chunk data length in bytes
@@ -45,7 +49,7 @@ struct sChunkHeader {
     uint32_t devSerialNum = 0;                   //!< Device serial number
     uint16_t portId = 0xFFFF;                    //!< Device port id
     uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
-    uint32_t reserved = 0;                       //!< Unused
+    char fwVersion[4] = {};                      //!< Device firmware version
 
 #if LOG_CHUNK_STATS
     void print()

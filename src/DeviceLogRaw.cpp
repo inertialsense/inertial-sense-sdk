@@ -45,7 +45,7 @@ void cDeviceLogRaw::InitDeviceForWriting(std::string timestamp, std::string dire
     m_chunk.m_hdr.devSerialNum = SerialNumber();
     if (device) {
         m_chunk.m_hdr.portId = portId(device->port);
-        m_chunk.m_hdr.portType = portId(device->port);
+        m_chunk.m_hdr.portType = portType(device->port);
     }
     cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
@@ -141,14 +141,25 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                         if (device != nullptr)
                             devInfo = (dev_info_t *) &(device->devInfo);
 
-                        // Record the serial number in the chunk header if available
-                        if (!copyDataPToStructP2((void *) devInfo, &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t)))
-                        {
+                        // Record the serial number, protocol and firmware version in the chunk header if available
+                        if (!copyDataPToStructP2((void *) devInfo, &m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, sizeof(dev_info_t))) {
                             int start = m_comm.rxPkt.dataHdr.offset;
                             int end = m_comm.rxPkt.dataHdr.offset + m_comm.rxPkt.dataHdr.size;
-                            int snOffset = offsetof(dev_info_t, serialNumber);
+
+                            // Did we really get the protocol version?
+                            int protOffset = offsetof(dev_info_t, protocolVer);
+                            if (start <= protOffset && (int) (protOffset + sizeof(uint32_t)) <= end) {
+                                memcpy(m_chunk.m_hdr.fwVersion, devInfo->protocolVer, 4);
+                            }
+
+                            // Did we really get the firmware version?
+                            int fwOffset = offsetof(dev_info_t, firmwareVer);
+                            if (start <= fwOffset && (int) (fwOffset + sizeof(uint32_t)) <= end) {
+                                memcpy(m_chunk.m_hdr.fwVersion, devInfo->firmwareVer, 4);
+                            }
 
                             // Did we really get the serial number?
+                            int snOffset = offsetof(dev_info_t, serialNumber);
                             if (start <= snOffset && (int) (snOffset + sizeof(uint32_t)) <= end) {
                                 m_chunk.m_hdr.devSerialNum = devInfo->serialNumber;
                             }

@@ -22,11 +22,19 @@ cDataChunk::cDataChunk()
 {
 	Clear();
 	m_hdr.marker = DATA_CHUNK_MARKER;
-	m_hdr.version = 1;
-	m_hdr.classification = ' ' << 8 | 'U';
-	m_hdr.grpNum = 0;				//!< Chunk group number
-	m_hdr.devSerialNum = 0;			//!< Serial number
-	m_hdr.reserved = 0;				//!< Reserved 
+	m_hdr.version = 2;
+	m_hdr.dataOffset = sizeof(sChunkHeader) - 6;
+    m_hdr.protocolVersion[0] = PROTOCOL_VERSION_CHAR0;
+    m_hdr.protocolVersion[1] = PROTOCOL_VERSION_CHAR1;
+	m_hdr.grpNum = 0;                       //!< Chunk group number
+	m_hdr.devSerialNum = 0;                 //!< Serial number
+	m_hdr.portId = 0xFFFF;                  //!< Port Id
+	m_hdr.portType = PORT_TYPE__UNKNOWN;    //!< Port Type
+	m_hdr.fwVersion[0] = 0;
+    m_hdr.fwVersion[1] = 0;
+    m_hdr.fwVersion[2] = 0;
+    m_hdr.fwVersion[3] = 0;
+
     m_buffTail = m_buffHead + DEFAULT_CHUNK_DATA_SIZE;
 	m_dataHead = m_buffHead;
 	m_dataTail = m_buffHead;
