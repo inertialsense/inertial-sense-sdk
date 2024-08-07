@@ -7,7 +7,7 @@ TEST(test_main, basic)
 {
     auto testNode = std::make_shared<cTestNode>();
     testNode->init();
-    rclcpp::spin_some(testNode);
+    //rclcpp::spin_some(testNode);
     std::string yaml = "topic: \"inertialsense\"\n"
                        "port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]\n"
                        "baudrate: 921600\n"
@@ -32,7 +32,8 @@ TEST(test_main, basic)
     unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
 	while((nowTimeMs = current_timeMs()) - startTimeMs < 5000)
 	{
-        isROS.update();
+            isROS.update();
+	    rclcpp::spin_some(testNode);
         if (testNode->did_rx_pimu_) {
             success = true;
             break;
@@ -62,95 +63,97 @@ TEST(test_main, basic)
  * and the nearest GPS timestamp.  The average deviation should be below <0.5s, but ideally is below 0.1s.
  * DID_GPS1_TIMEPULSE provides the towOffset, timeMcu (effectively time since bootup)
  */
-//TEST(test_main, gps_ins_time_sync)
-//{
-//    auto testNode = std::make_shared<cTestNode>();
-//    testNode->init();
-//    rclcpp::spin_some(testNode);
-//    std::string yaml = "topic: \"inertialsense\"\n"
-//                       "port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]\n"
-//                       "baudrate: 921600\n"
-//                       "\n"
-//                       "ins:\n"
-//                       "  navigation_dt_ms: 16\n"
-//                       "  messages:\n"
-//                       "    odom_ins_enu:\n"
-//                       "      topic: \"odom_ins_enu\"\n"
-//                       "      enable: true\n"
-//                       "\n"
-//                       "sensors:\n"
-//                       "  messages:  \n"
-//                       "    imu:\n"
-//                       "      topic: \"imu\"\n"
-//                       "      enable: true\n"
-//                       "      period: 1\n"
-//                       "    pimu:\n"
-//                       "      topic: \"pimu\"\n"
-//                       "      enable: true\n"
-//                       "      period: 1\n"
-//                       "\n"
-//                       "gps1:\n"
-//                       "  type: 'F9P'\n"
-//                       "  gpsTimeUserDelay: 0.0\n"
-//                       "  messages:\n"
-//                       "    pos_vel:\n"
-//                       "      topic: \"gps1/pos_vel\"\n"
-//                       "      enable: true\n"
-//                       "      period: 1";
-//
-//    YAML::Node config = YAML::Load(yaml);
-//    ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
-//
-//    InertialSenseROS isROS(config);
-//    isROS.initialize();
-//
-//    testNode->quiet = true;
-//
-//    bool success = false;
-//    unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
-//    while( ((nowTimeMs = current_timeMs()) - startTimeMs < 10000) && !testNode->got_gps_tow )
-//    {
-//        isROS.update();
-//        // check regularly, but don't print regularly..
-//        SLEEP_MS(100);
-//        if (prevTimeMs / 2500 != nowTimeMs / 2500) {
-//            TEST_COUT << "Waiting for GPS Fix/TimeOfWeek Update...  (time: " << (nowTimeMs - startTimeMs) / 1000.0 << ")" << std::endl;
-//            prevTimeMs = nowTimeMs;
-//        }
-//    }
-//
-//    ASSERT_TRUE(testNode->got_gps_tow) << "Timeout waiting for TimeOfWeek to set (Poor GPS Signal?). Unable to perform relevant tests." << std::endl;
-//    TEST_COUT << "Got TimeOfWeek/GPS Fix.  Collecting 10 seconds of data..." << std::endl;
-//
-//    startTimeMs = current_timeMs(), prevTimeMs = 0;
-//    while((nowTimeMs = current_timeMs()) - startTimeMs < 10000)
-//    {
-//        isROS.update();
-//        // check regularly, but don't print regularly..
-//        SLEEP_MS(100);
-//        if (prevTimeMs / 2500 != nowTimeMs / 2500) {
-//            TEST_COUT << "Collecting data...  (" << 10.0 - (nowTimeMs - startTimeMs) / 1000.0 << "sec remaining)" << std::endl;
-//            prevTimeMs = nowTimeMs;
-//        }
-//    }
-//
-//    TEST_COUT << "Timestamp Deviation (GPS <> pIMU):  [" << testNode->get_min_deviation(testNode->gps_ts, testNode->pimu_ts) << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->pimu_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->pimu_ts) << "]" << :: std::endl;
-//    TEST_COUT << "Timestamp Deviation (GPS <> IMU):   [" << testNode->get_min_deviation(testNode->gps_ts, testNode->imu_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->imu_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->imu_ts) << "]" << :: std::endl;
-//    TEST_COUT << "Timestamp Deviation (GPS <> INS):   [" << testNode->get_min_deviation(testNode->gps_ts, testNode->ins_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->ins_ts) << "]" << :: std::endl;
-//    TEST_COUT << "Timestamp Deviation (INS <> IMU):   [" << testNode->get_min_deviation(testNode->ins_ts, testNode->imu_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts) << " <= "  << testNode->get_max_deviation(testNode->ins_ts, testNode->imu_ts) << "]" << :: std::endl;
-//
-//    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->pimu_ts));
-//    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->imu_ts));
-//    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts));
-//    EXPECT_GE( 0.005, testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts));
-//    isROS.terminate();
-//}
+TEST(test_main, gps_ins_time_sync)
+{
+    auto testNode = std::make_shared<cTestNode>();
+    testNode->init();
+    std::string yaml = "topic: \"inertialsense\"\n"
+                       "port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]\n"
+                       "baudrate: 921600\n"
+                       "\n"
+                       "ins:\n"
+                       "  navigation_dt_ms: 16\n"
+                       "  messages:\n"
+                       "    odom_ins_enu:\n"
+                       "      topic: \"odom_ins_enu\"\n"
+                       "      enable: true\n"
+                       "\n"
+                       "sensors:\n"
+                       "  messages:  \n"
+                       "    imu:\n"
+                       "      topic: \"imu\"\n"
+                       "      enable: true\n"
+                       "      period: 1\n"
+                       "    pimu:\n"
+                       "      topic: \"pimu\"\n"
+                       "      enable: true\n"
+                       "      period: 1\n"
+                       "\n"
+                       "gps1:\n"
+                       "  type: 'F9P'\n"
+                       "  gpsTimeUserDelay: 0.0\n"
+                       "  messages:\n"
+                       "    pos_vel:\n"
+                       "      topic: \"gps1/pos_vel\"\n"
+                       "      enable: true\n"
+                       "      period: 1";
+
+    YAML::Node config = YAML::Load(yaml);
+    ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
+
+    InertialSenseROS isROS(config);
+    isROS.initialize();
+
+    testNode->quiet = true;
+
+    bool success = false;
+    unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
+    while( ((nowTimeMs = current_timeMs()) - startTimeMs < 10000) && !testNode->got_gps_tow )
+    {
+        isROS.update();
+        rclcpp::spin_some(testNode);
+        // check regularly, but don't print regularly..
+        SLEEP_MS(100);
+        if (prevTimeMs / 2500 != nowTimeMs / 2500) {
+            TEST_COUT << "Waiting for GPS Fix/TimeOfWeek Update...  (time: " << (nowTimeMs - startTimeMs) / 1000.0 << ")" << std::endl;
+            prevTimeMs = nowTimeMs;
+        }
+    }
+
+    ASSERT_TRUE(testNode->got_gps_tow) << "Timeout waiting for TimeOfWeek to set (Poor GPS Signal?). Unable to perform relevant tests." << std::endl;
+    TEST_COUT << "Got TimeOfWeek/GPS Fix.  Collecting 10 seconds of data..." << std::endl;
+
+    startTimeMs = current_timeMs(), prevTimeMs = 0;
+    while((nowTimeMs = current_timeMs()) - startTimeMs < 10000)
+    {
+        isROS.update();
+        rclcpp::spin_some(testNode);
+        // check regularly, but don't print regularly..
+        SLEEP_MS(100);
+        if (prevTimeMs / 2500 != nowTimeMs / 2500) {
+            TEST_COUT << "Collecting data...  (" << 10.0 - (nowTimeMs - startTimeMs) / 1000.0 << "sec remaining)" << std::endl;
+            prevTimeMs = nowTimeMs;
+        }
+    }
+
+    TEST_COUT << "Timestamp Deviation (GPS <> pIMU):  [" << testNode->get_min_deviation(testNode->gps_ts, testNode->pimu_ts) << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->pimu_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->pimu_ts) << "]" << :: std::endl;
+    TEST_COUT << "Timestamp Deviation (GPS <> IMU):   [" << testNode->get_min_deviation(testNode->gps_ts, testNode->imu_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->imu_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->imu_ts) << "]" << :: std::endl;
+    TEST_COUT << "Timestamp Deviation (GPS <> INS):   [" << testNode->get_min_deviation(testNode->gps_ts, testNode->ins_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts) << " <= "  << testNode->get_max_deviation(testNode->gps_ts, testNode->ins_ts) << "]" << :: std::endl;
+    TEST_COUT << "Timestamp Deviation (INS <> IMU):   [" << testNode->get_min_deviation(testNode->ins_ts, testNode->imu_ts)  << " <= " <<  testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts) << " <= "  << testNode->get_max_deviation(testNode->ins_ts, testNode->imu_ts) << "]" << :: std::endl;
+
+    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->pimu_ts));
+    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->imu_ts));
+    EXPECT_GE( 0.05,  testNode->get_avg_deviation(testNode->gps_ts, testNode->ins_ts));
+    EXPECT_GE( 0.005, testNode->get_avg_deviation(testNode->ins_ts, testNode->imu_ts));
+    isROS.terminate();
+}
 
 
 void cTestNode::init()
 {
     //auto testNode = std::make_shared<cTestNode>();
     //testNode->init();
+
     //auto nh = std::make_shared<rclcpp::Node>("nh");
     sub_wheel_encoder_      = this->create_subscription<sensor_msgs::msg::JointState>("msg_wheel_encoder", 1, std::bind(&cTestNode::cbWheelEncoder, this, std::placeholders::_1));
     sub_pimu_               = this->create_subscription<inertial_sense_ros2::msg::PIMU>("pimu", 1, std::bind(&cTestNode::cbPIMU, this, std::placeholders::_1));
@@ -185,12 +188,12 @@ void cTestNode::cbWheelEncoder(const sensor_msgs::msg::JointState &msg)
         TEST_COUT << "Rx wheel encoder : " << std::fixed << std::setw(11) << std::setprecision(6) << msg.header.stamp.sec << std::endl;
 }
 
-void cTestNode::cbPIMU(const inertial_sense_ros2::msg::PIMU &pimu)
+void cTestNode::cbPIMU(const inertial_sense_ros2::msg::PIMU::SharedPtr pimu)
 {
     if (!quiet)
-        TEST_COUT << "Rx PIMU : " << std::fixed << std::setw(11) << std::setprecision(6) << pimu.header.stamp.sec << std::endl;
+        TEST_COUT << "Rx PIMU : " << std::fixed << std::setw(11) << std::setprecision(6) << pimu->header.stamp.sec << std::endl;
     if (got_gps_tow)
-        pimu_ts.push_back(pimu.header.stamp.sec);
+        pimu_ts.push_back(pimu->header.stamp.sec);
     this->did_rx_pimu_ = true;
 }
 

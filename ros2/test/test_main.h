@@ -15,7 +15,7 @@ public:
     void init();
     bool step();
     void cbWheelEncoder(const sensor_msgs::msg::JointState &msg);
-    void cbPIMU(const inertial_sense_ros2::msg::PIMU &pimu);
+    void cbPIMU(const inertial_sense_ros2::msg::PIMU::SharedPtr pimu);
     void cbIMU(const  sensor_msgs::msg::Imu &imu);
     void cbINS(const nav_msgs::msg::Odometry &ins);
     void cbGPS(const inertial_sense_ros2::msg::GPS &gps);
