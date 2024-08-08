@@ -1332,7 +1332,7 @@ is_operation_result InertialSense::BootloadFile(
     }
 
     #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+    fputs("\e[?25l", stdout);	// Turn off cursor during firmware update
     #endif
 
     printf("\n\r");

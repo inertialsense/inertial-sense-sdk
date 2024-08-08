@@ -71,7 +71,7 @@ public:
      */
     static is_operation_result get_version_from_file(const char* filename, uint8_t* major, char* minor);
 
-    static is_operation_result sync(serial_port_t* s);
+    is_operation_result handshake_sync(serial_port_t* s);
 
     static void reset_serial_list() { serial_list_mutex.lock(); serial_list.clear(); serial_list_mutex.unlock(); }
 
