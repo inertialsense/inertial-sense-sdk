@@ -14,7 +14,7 @@ endif()
 
 if(BUILD_INERTIAL_SENSE_SDK)	# Build w/ SDK
 
-add_executable(ISCommunicationsExample ISCommunicationsExample.c)
+add_executable(ISCommunicationsExample ISCommunicationsExample.cpp)
 target_link_libraries(ISCommunicationsExample InertialSense)
 
 else()	# Build only this project
