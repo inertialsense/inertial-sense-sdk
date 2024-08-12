@@ -6,7 +6,7 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 
 #### Project Files
 
-* [ISCommunicationsExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications/ISCommunicationsExample.c)
+* [ISCommunicationsExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications/ISCommunicationsExample.cpp)
 
 #### SDK Files
 
