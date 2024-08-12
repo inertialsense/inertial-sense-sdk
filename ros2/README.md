@@ -1,6 +1,6 @@
 # Inertial Sense ROS
 
-A ROS wrapper node implementation for the Inertial Sense IMX product line.
+A ROS2 wrapper node implementation for the Inertial Sense IMX product line.
 
 ---
 ### ***************  NOTICE  ***************
@@ -30,21 +30,23 @@ OUT OF OR IN ANY WAY CONNECTED WITH THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 ---
 
 ## Setup
-This ROS package, uses the inertial-sense-sdk as a submodule. Clone this package into the catkin workspace `src` folder, then pull the submodule.
+This ROS2 package, uses the inertial-sense-sdk as a submodule. Clone this package into the ros2_ws workspace `src` folder, then pull the submodule.
 
 ```bash
-mkdir -p catkin_ws/src
-cd catkin_ws/src
-catkin_init_workspace
+mkdir -p ros2_ws/src
+cd ros2_ws/src
 git clone https://github.com/inertialsense/inertial-sense-sdk
 cd ..
-catkin_make
 ```
+then, create a symbolic link to the `ros2` directory in the `ros2_ws/src` directory using the command `sudo ln -s inertial-sense-sdk/ros2` (run this from `ros2_ws/src`). This
+allows `colcon build` to find the appropriate package to build.
 
-For ROS to run properly, `devel/setup.bash` in the catkin workspace (catkin_ws) must be sourced to add necessary environment variables.  To understand more about this see the general [catkin documentation](http://wiki.ros.org/catkin).
+Return to the `ros2_ws/src` directory and run `colcon build`.
+
+For ROS2 to run properly, `. install/setup.bash` in the ROS2 workspace (ros2_ws) must be run to add necessary environment variables. 
 
 ```bash
-source devel/setup.bash
+. install/setup.bash
 ```
 
 You will need to run this command on every new shell you open to have access to the ROS commands, unless you add this line to your `~/.bashrc`.
@@ -58,7 +60,7 @@ You will need to run this command on every new shell you open to have access to 
 ## Execution
 
 ```bash
-rosrun inertial_sense_ros inertial_sense_node
+ros2 run inertial_sense_ros2 new_target
 ```
 
 For instructions on changing parameter values and topic remapping from the command line while using `rosrun` refer to the [Remapping Arguments](http://wiki.ros.org/Remapping%20Arguments) page.  The following example shows how to set parameter using the ROS param server and run the inertial_sense_node:
@@ -91,19 +93,19 @@ Ideally there should be no jump in timestamps when GPS is first acquired because
 
 Topics are enabled and disabled using parameters.  By default, only the `ins` topic is published to save processor time in serializing unecessary messages.
 
-- `odom_ins_ned` (nav_msgs/Odometry)
+- `odom_ins_ned` (nav_msgs/msg/Odometry)
    - full 12-DOF measurements from onboard estimator in NED frame.
-- `odom_ins_enu` (nav_msgs/Odometry)
+- `odom_ins_enu` (nav_msgs/msg/Odometry)
    -  full 12-DOF measurements from onboard estimator in ENU frame.
-- `odom_ins_ecef`(nav_msgs/Odometry)
+- `odom_ins_ecef`(nav_msgs/msg/Odometry)
    -  full 12-DOF measurements from onboard estimator in ECEF frame.
-- `did_ins1` (inertial_sense_ros/did_ins1)
+- `did_ins1` (inertial_sense_ros2/msg/did_ins1)
    -  Standard Inertial Sense [DID_INS_1](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins1) Definition
-- `did_ins2` (inertial_sense_ros/did_ins2)
+- `did_ins2` (inertial_sense_ros2/msg/did_ins2)
    -  Standard Inertial Sense [DID_INS_2](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins2) Definition
-- `did_ins4` (inertial_sense_ros/did_ins4)
+- `did_ins4` (inertial_sense_ros/msg/did_ins4)
    -  Standard Inertial Sense [DID_INS_4](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_ins_4) Definition
-- `inl2_states` (inertial_sense_ros/INL2States)
+- `inl2_states` (inertial_sense_ros2/msg/INL2States)
    -  INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
 
 - `imu`(sensor_msgs/Imu)
@@ -115,23 +117,23 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
 - `baro` (sensor_msgs/FluidPressure)
    -  Raw barometer measurements in kPa
 
-- `NavSatFix`(sensor_msgs/NavSatFix)
+- `NavSatFix`(sensor_msgs/msg/NavSatFix)
    -  Standard ROS sensor_msgs/NavSatFix data
-- `gps1`(inertial_sense_ros/gps1)
+- `gps1`(inertial_sense_ros2/msg/gps1)
    -  GPS measurements from GPS1 receiver
-- `gps2`(inertial_sense_ros/gps2)
+- `gps2`(inertial_sense_ros2/msg/gps2)
    -  GPS measurements from GPS2 receiver
-- `gps1/info`(inertial_sense_ros/gps1/info)
+- `gps1/info`(inertial_sense_ros2/msg/gps1/info)
    -  satelite information and carrier noise ratio array for each satelite
-- `gps2/info`(inertial_sense_ros/gps2/info)
+- `gps2/info`(inertial_sense_ros2/msg/gps2/info)
    -  satelite information and carrier noise ratio array for each satelite
-- `RTK_pos/info` (inertial_sense_ros/RTKInfo)
+- `RTK_pos/info` (inertial_sense_ros2/msg/RTKInfo)
    -  information about RTK positioning status
-- `RTK_pos/rel` (inertial_sense_ros/RTKRel)
+- `RTK_pos/rel` (inertial_sense_ros2/msg/RTKRel)
    -  Relative measurement between RTK positioning base and rover
-- `RTK_cmp/info` (inertial_sense_ros/RTKInfo)
+- `RTK_cmp/info` (inertial_sense_ros2/msg/RTKInfo)
    -  information about RTK compassing status
-- `RTK_cmp/rel` (inertial_sense_ros/RTKRel)
+- `RTK_cmp/rel` (inertial_sense_ros2/msg/RTKRel)
    -  Relative measurement between RTK compassing moving base and rover
 
 - `strobe_in` (std_msgs/Header)
@@ -141,9 +143,9 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
 
 
 __*Note: RTK positioning or RTK compassing mode must be enabled to stream any raw GPS data. Raw data can only be streamed from the onboard m8 receiver. To enable the onboard receiver change `gps1_type` to m8.__
-- `<gps1_topic>/obs` (inertial_sense_ros/GNSSObservation)
+- `<gps1_topic>/obs` (inertial_sense_ros2/GNSSObservation)
     * Raw satellite observation (psuedorange and carrier phase)
-- `<gps1_topic>/eph` (inertial_sense_ros/GNSSEphemeris)
+- `<gps1_topic>/eph` (inertial_sense_ros2/GNSSEphemeris)
     * Satellite Ephemeris for GPS and Galileo GNSS constellations
 - `<gps1_topic>/geph`
     * Satellite Ephemeris for Glonass GNSS constellation
