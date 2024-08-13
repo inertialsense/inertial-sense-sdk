@@ -129,8 +129,22 @@ int serialPortFlush(port_handle_t port)
 
 int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount)
 {
-    //serial_port_t* serialPort = (serial_port_t*)port;
-	return serialPortReadTimeout(port, buffer, readCount, -1);
+    serial_port_t* serialPort = (serial_port_t*)port;
+    if ((serialPort == 0) || (serialPort->handle == 0) || (buffer == 0) || (readCount < 1) || (serialPort->pfnRead == 0))
+    {
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+        return 0;
+    }
+
+    int count = serialPort->pfnRead(port, buffer, readCount);
+
+    if (count < 0)
+    {
+        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+        return 0;
+    }
+
+    return count;
 }
 
 int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds)
@@ -142,7 +156,7 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCou
 		return 0;
 	}
 
-	int count = serialPort->pfnRead(port, buffer, readCount, timeoutMilliseconds);
+	int count = serialPort->pfnReadTimeout(port, buffer, readCount, timeoutMilliseconds);
 
 	if (count < 0)
 	{

@@ -258,7 +258,7 @@ static int msgHandlerRtcm3(port_handle_t port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerError(port_handle_t port, is_comm_instance_t* comm)
+static int msgHandlerError(port_handle_t port)
 {
 	return 0;
 }
@@ -292,10 +292,11 @@ static bool initComManager(test_data_t &t)
 	// com_manager_init_t cmInit = {};
 	//cmInit.broadcastMsg = t.cmBufBcastMsg;
 	//cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (t.cm.init(TEST0_PORT, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg))
+	if (t.cm.init(TASK_PERIOD_MS, portWrite, 0, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg))
 	{	// Fail to init
 		return false;
 	}
+    t.cm.registerPort(TEST0_PORT);
 
 	t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
     t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
@@ -565,7 +566,7 @@ static void sendDequeToPort(std::deque<data_holder_t> &testDeque, port_handle_t 
         {
             case _PTYPE_INERTIAL_SENSE_DATA:
                 // Packetize data and write
-                n = is_comm_data(TEST0_PORT->base.portWrite, TEST0_PORT, td.did, td.size, 0, (void*)&(td.data));
+                n = is_comm_data(TEST0_PORT, td.did, td.size, 0, (void*)&(td.data));
                 td.pktSize = n;
                 EXPECT_GT(n, 0);
                 break;
@@ -588,7 +589,7 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);   // TODO: Should we be using callbacks??  Probably
 
 	int k=0;
 
@@ -631,7 +632,7 @@ void parseDequeFromPort(std::deque<data_holder_t> &testDeque, port_handle_t port
 {
     is_comm_instance_t		comm;
     uint8_t					comm_buffer[2048] = { 0 };
-    is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+    is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use passed port
     unsigned char c;
     protocol_type_t ptype;
     uDatasets dataWritten;

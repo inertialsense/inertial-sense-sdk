@@ -85,28 +85,16 @@ enum eComManagerErrorType
 typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by port
-typedef void(*pfnComManagerPostRead)(port_handle_t port, p_data_t* dataRead);
+typedef int(*pfnComManagerPostRead)(port_handle_t port, p_data_t* dataRead);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by port
-typedef void(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
+typedef int(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
-typedef void(*pfnComManagerDisableBroadcasts)(port_handle_t port);
+typedef int(*pfnComManagerDisableBroadcasts)(port_handle_t port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(port_handle_t port, p_data_hdr_t *dataHdr);
-
-// Generic message handler function, return 1 if message handled
-typedef int(*pfnComManagerGenMsgHandler)(port_handle_t port, const unsigned char* msg, int msgSize);
-
-// Parse error handler function, return 1 if message handled
-typedef int(*pfnComManagerParseErrorHandler)(port_handle_t port, is_comm_instance_t* comm);
-
-// "Global" handler for any Binary Data which does not have an explicit handler (registerDid)
-typedef int(*pfnComManagerBinaryDataHandler)(port_handle_t port, p_data_t* data);
-
-// broadcast message handler
-typedef int(*pfnComManagerAsapMsg)(port_handle_t port, p_data_get_t* req);
 
 /* Contains callback information for a before and after send for a data structure */
 typedef struct
@@ -182,25 +170,25 @@ typedef struct
 	void* userPointer;
 
     // "Global" handler for any Binary Data which does not have an explicit handler (registerDid)
-    pfnComManagerBinaryDataHandler cmMsgHandleDID;
+    pfnIsCommIsbDataHandler cmMsgHandleDID;
 
 	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
-	pfnComManagerAsapMsg cmMsgHandlerRmc;
+    pfnIsCommAsapMsg cmMsgHandlerRmc;
 
 	// Message handler - NMEA
-	pfnComManagerGenMsgHandler cmMsgHandlerNmea;
+    pfnIsCommGenMsgHandler cmMsgHandlerNmea;
 
 	// Message handler - Ublox
-	pfnComManagerGenMsgHandler cmMsgHandlerUblox;
+    pfnIsCommGenMsgHandler cmMsgHandlerUblox;
 
 	// Message handler - RTCM3
-	pfnComManagerGenMsgHandler cmMsgHandlerRtcm3;
+    pfnIsCommGenMsgHandler cmMsgHandlerRtcm3;
 
 	// Message handler - SPARTN
-	pfnComManagerGenMsgHandler cmMsgHandlerSpartn;
+    pfnIsCommGenMsgHandler cmMsgHandlerSpartn;
 
     // Error handler
-	pfnComManagerParseErrorHandler cmMsgHandlerError;
+    pfnIsCommParseErrorHandler cmMsgHandlerError;
 
 } com_manager_t;
 
@@ -500,15 +488,15 @@ void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerP
 * @param handlerError handler for parse errors.
 */
 void comManagerSetCallbacks(
-        pfnComManagerAsapMsg rmcHandler,
-        pfnComManagerGenMsgHandler asciiHandler,
-        pfnComManagerGenMsgHandler ubloxHandler,
-        pfnComManagerGenMsgHandler rtcm3Handler,
-        pfnComManagerGenMsgHandler spartnHandler,
-        pfnComManagerParseErrorHandler handlerError);
+        pfnIsCommAsapMsg rmcHandler,
+        pfnIsCommGenMsgHandler asciiHandler,
+        pfnIsCommGenMsgHandler ubloxHandler,
+        pfnIsCommGenMsgHandler rtcm3Handler,
+        pfnIsCommGenMsgHandler spartnHandler,
+        pfnIsCommParseErrorHandler handlerError);
 
 void comManagerSetBinaryDataCallback(
-        pfnComManagerBinaryDataHandler binaryDataHandler);
+        pfnIsCommIsbDataHandler binaryDataHandler);
 
 class ISComManager : com_manager_t {
 public:
@@ -788,15 +776,15 @@ public:
     * @param handlerError handler for parse errors.
     */
     void setCallbacks(
-            pfnComManagerAsapMsg rmcHandler,
-            pfnComManagerGenMsgHandler asciiHandler,
-            pfnComManagerGenMsgHandler ubloxHandler,
-            pfnComManagerGenMsgHandler rtcm3Handler,
-            pfnComManagerGenMsgHandler spartnHandler,
-            pfnComManagerParseErrorHandler handlerError);
+            pfnIsCommAsapMsg rmcHandler,
+            pfnIsCommGenMsgHandler asciiHandler,
+            pfnIsCommGenMsgHandler ubloxHandler,
+            pfnIsCommGenMsgHandler rtcm3Handler,
+            pfnIsCommGenMsgHandler spartnHandler,
+            pfnIsCommParseErrorHandler handlerError);
 
     void setBinaryDataCallback(
-            pfnComManagerBinaryDataHandler binaryDataHandler);
+            pfnIsCommIsbDataHandler binaryDataHandler);
 
     /**
     * Attach user defined data to a com manager instance

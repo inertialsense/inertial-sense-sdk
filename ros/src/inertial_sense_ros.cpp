@@ -2123,7 +2123,7 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
     port_handle_t port = IS_.SerialPort();
     uint8_t inByte;
     int n;
@@ -2154,7 +2154,7 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
     port_handle_t port = IS_.SerialPort();
     uint8_t inByte;
     int n;

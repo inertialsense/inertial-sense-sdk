@@ -570,6 +570,37 @@ typedef struct
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
+// InertialSense binary (ISB) data message handler function
+typedef int(*pfnIsCommIsbDataHandler)(port_handle_t port, p_data_t* data);
+
+// broadcast message handler
+typedef int(*pfnIsCommAsapMsg)(port_handle_t port, p_data_get_t* req);
+
+// Generic message handler function with message pointer and size
+typedef int(*pfnIsCommGenMsgHandler)(port_handle_t port, const unsigned char* msg, int msgSize);
+
+// Generic message handler function with is_comm_instance_t
+typedef int(*pfnIsCommHandler)(port_handle_t port);
+
+// Parse error handler function
+typedef int(*pfnIsCommParseErrorHandler)(port_handle_t port);
+
+// Callback functions are called when the specific message is received and callback pointer is not null:
+typedef struct
+{
+    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message
+    pfnIsCommHandler                isb;        // Message handler - Inertial Sense binary (ISB) general message
+    pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
+    pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
+    pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
+    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
+    pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
+    pfnIsCommParseErrorHandler      error;      // Error handler
+    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
+    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
+} is_comm_callbacks_t;
+
+
 /** An instance of an is_comm interface.  Do not modify these values. */
 typedef struct
 {
@@ -609,6 +640,8 @@ typedef struct
     /** Used to prevent counting more than one error count between valid packets */
     uint8_t rxErrorState;
 
+    is_comm_callbacks_t cb;
+
 } is_comm_instance_t;
 
 typedef struct {
@@ -632,45 +665,16 @@ POP_PACK
 // typedef void(*pfnIsCommParseMsgHandler)(com_manager_t* cmInstance, com_manager_port_t* cmPort, is_comm_instance_t* comm, int32_t port, protocol_type_t ptype)
 // typedef protocol_type_t(*pfnIsCommParseMsgHandler)(unsigned int port, const unsigned char* msg, int msgSize);
 
-// InertialSense binary (ISB) data message handler function
-typedef int(*pfnIsCommIsbDataHandler)(port_handle_t port, p_data_t* data);
-
-// broadcast message handler
-typedef int(*pfnIsCommAsapMsg)(port_handle_t port, p_data_get_t* req);
-
-// Generic message handler function with message pointer and size 
-typedef int(*pfnIsCommGenMsgHandler)(port_handle_t port, const unsigned char* msg, int msgSize);
-
-// Generic message handler function with is_comm_instance_t
-typedef int(*pfnIsCommHandler)(port_handle_t port, is_comm_instance_t *comm);
-
-// Parse error handler function
-typedef int(*pfnIsCommParseErrorHandler)(port_handle_t port, is_comm_instance_t* comm);
-
-// Callback functions are called when the specific message is received and callback pointer is not null:
-typedef struct
-{
-    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message 
-    pfnIsCommHandler                isb;        // Message handler - Inertial Sense binary (ISB) general message 
-    pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
-    pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
-    pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
-    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
-    pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
-    pfnIsCommParseErrorHandler      error;      // Error handler 
-    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
-    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
-} is_comm_callbacks_t;
 
 /**
 * Init simple communications interface - call this before doing anything else
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize
 */
-void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize);
+void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, is_comm_callbacks_t *callbacks);
 
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
-void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks);
-void is_comm_port_parse_messages(pfnIsCommPortRead portRead, port_handle_t port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
+void is_comm_port_parse_messages(port_handle_t port);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -790,13 +794,13 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
  * @param portWrite Serial port callback function used send packet.
  * @param port Serial port number packet will be written to.
  */
-int is_comm_write(pfnIsCommPortWrite portWrite, port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 /**
  * @brief Same as is_comm_write() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
 
 /**
  * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
@@ -822,7 +826,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-int is_comm_get_data(pfnIsCommPortWrite portWrite, port_handle_t port,uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
+int is_comm_get_data(port_handle_t port,uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple);
 
 /**
  * @brief Encode a binary packet to set data on the device - puts the data ready to send into the buffer passed into is_comm_init.  An acknowledge packet is sent in response to this packet.
@@ -846,9 +850,9 @@ static inline int is_comm_set_data_to_buf(uint8_t* buf, uint32_t buf_size, is_co
  * @param portWrite Call back function for serial port write
  * @param port Port number for serial port
  */
-static inline int is_comm_set_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_set_data(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write(portWrite, port, PKT_TYPE_SET_DATA, did, size, offset, data);
+    return is_comm_write(port, PKT_TYPE_SET_DATA, did, size, offset, data);
 }    
 
 /**
@@ -862,18 +866,18 @@ static inline int is_comm_data_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_i
 /**
  * Same as is_comm_set_data() except NO acknowledge packet is sent in response to this packet.
  */
-static inline int is_comm_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_data(port_handle_t port, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write(portWrite, port, PKT_TYPE_DATA, did, size, offset, data);
+    return is_comm_write(port, PKT_TYPE_DATA, did, size, offset, data);
 }    
 
 /**
  * @brief Same as is_comm_data() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
+static inline int is_comm_data_pkt(port_handle_t port, packet_t *txPkt, uint16_t did, uint16_t size, uint16_t offset, void* data)
 {
-    return is_comm_write_pkt(portWrite, port, txPkt, PKT_TYPE_DATA, did, size, offset, data);
+    return is_comm_write_pkt(port, txPkt, PKT_TYPE_DATA, did, size, offset, data);
 }    
 
 /**
@@ -881,9 +885,9 @@ static inline int is_comm_data_pkt(pfnIsCommPortWrite portWrite, port_handle_t p
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite, port_handle_t port)
+static inline int is_comm_stop_broadcasts_all_ports(port_handle_t port)
 {
-    return is_comm_write(portWrite, port, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
+    return is_comm_write(port, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
 }
 
 /**
@@ -891,9 +895,9 @@ static inline int is_comm_stop_broadcasts_all_ports(pfnIsCommPortWrite portWrite
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_current_ports(pfnIsCommPortWrite portWrite, port_handle_t port)
+static inline int is_comm_stop_broadcasts_current_ports(port_handle_t port)
 {
-    return is_comm_write(portWrite, port, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
+    return is_comm_write(port, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
 }
 
 /**
@@ -941,7 +945,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
  * @param pkt Pointer to precomputed ISB packet
  * @return int Number of bytes written on success or -1 on failure
  */
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *pkt);
+int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt);
 
 unsigned int calculate24BitCRCQ(const unsigned char* buffer, unsigned int len);
 unsigned int getBitsAsUInt32(const unsigned char* buffer, unsigned int pos, unsigned int len);

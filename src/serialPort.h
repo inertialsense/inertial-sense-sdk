@@ -64,7 +64,8 @@ typedef struct serial_port_s serial_port_t;
 
 typedef int(*pfnSerialPortOpen)(port_handle_t port, const char* portName, int baudRate, int blocking);
 typedef int(*pfnSerialPortIsOpen)(port_handle_t port);
-typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, int len, int timeoutMilliseconds);
+typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, int len);
+typedef int(*pfnSerialPortReadTimeout)(port_handle_t port, unsigned char* buf, int len, int timeoutMs);
 typedef void(*pfnSerialPortAsyncReadCompletion)(port_handle_t port, unsigned char* buf, int len, int errorCode);
 typedef int(*pfnSerialPortAsyncRead)(port_handle_t port, unsigned char* buf, int len, pfnSerialPortAsyncReadCompletion completion);
 typedef int(*pfnSerialPortWrite)(port_handle_t port, const unsigned char* buf, int len);
@@ -114,6 +115,9 @@ struct serial_port_s
 
     // read data synchronously
     pfnSerialPortRead pfnRead;
+
+    // read data synchronously w/ timeout
+    pfnSerialPortReadTimeout pfnReadTimeout;
 
     // read data asynchronously
     pfnSerialPortAsyncRead pfnAsyncRead;

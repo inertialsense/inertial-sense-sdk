@@ -169,7 +169,17 @@ bool ISComManager::registerPort(port_handle_t port) {
     // Initialize IScomm instance, for serial reads / writes
     if ((portType(port) & PORT_TYPE__COMM)) {
         comm_port_t* comm = COMM_PORT(port);
-        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer));
+
+        // Setup callback functions
+        is_comm_callbacks_t callbacks = {
+            .isbData = pstRxFnc, // cmMsgHandleDID,
+            .isb     = NULL, // FIXME: cmMsgHandleDID,
+            .nmea    = cmMsgHandlerNmea,
+            .rtcm3   = cmMsgHandlerRtcm3,
+            .sony    = NULL,
+            .error   = cmMsgHandlerError,
+        };
+        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), &callbacks);
 
 #if ENABLE_PACKET_CONTINUATION
         // Packet data continuation
@@ -261,9 +271,14 @@ void ISComManager::stepRx(uint32_t timeMs)
 {
     for (port_handle_t port : ports)
     {
+        // Read data directly into comm buffer and call callback functions
+        is_comm_port_parse_messages(port);
+
+/*
         // com_manager_port_t *cmPort = &(cmInstance->ports[port]);
         comm_port_t* commPort = COMM_PORT(port);
         is_comm_instance_t *comm = &commPort->comm;
+
         protocol_type_t ptype = _PTYPE_NONE;
 
         // Read data directly into comm buffer
@@ -288,9 +303,11 @@ void ISComManager::stepRx(uint32_t timeMs)
                 }
             }
         }
+*/
     }
 }
 
+/*
 int ISComManager::stepRxHandler(comm_port_t* port, protocol_type_t ptype)
 {
     int error = 0;
@@ -346,6 +363,7 @@ int ISComManager::stepRxHandler(comm_port_t* port, protocol_type_t ptype)
 
     return error;
 }
+*/
 
 void ISComManager::stepTx()
 {
@@ -403,29 +421,29 @@ void ISComManager::stepSendMessages()
 }
 
 void comManagerSetCallbacks(
-    pfnComManagerAsapMsg handlerRmc,
-    pfnComManagerGenMsgHandler handlerAscii,
-    pfnComManagerGenMsgHandler handlerUblox, 
-    pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn,
-    pfnComManagerParseErrorHandler handlerError)
+    pfnIsCommAsapMsg handlerRmc,
+    pfnIsCommGenMsgHandler handlerAscii,
+    pfnIsCommGenMsgHandler handlerUblox,
+    pfnIsCommGenMsgHandler handlerRtcm3,
+    pfnIsCommGenMsgHandler handlerSpartn,
+    pfnIsCommParseErrorHandler handlerError)
 {
     s_cm.setCallbacks(handlerRmc, handlerAscii, handlerUblox, handlerRtcm3, handlerSpartn, handlerError);
 }
 
 void comManagerSetBinaryDataCallback(
-        pfnComManagerBinaryDataHandler binaryDataHandler)
+        pfnIsCommIsbDataHandler binaryDataHandler)
 {
     s_cm.setBinaryDataCallback(binaryDataHandler);
 }
 
 void ISComManager::setCallbacks(
-    pfnComManagerAsapMsg handlerRmc,
-    pfnComManagerGenMsgHandler handlerAscii,
-    pfnComManagerGenMsgHandler handlerUblox,
-    pfnComManagerGenMsgHandler handlerRtcm3,
-    pfnComManagerGenMsgHandler handlerSpartn,
-    pfnComManagerParseErrorHandler handlerError)
+    pfnIsCommAsapMsg handlerRmc,
+    pfnIsCommGenMsgHandler handlerAscii,
+    pfnIsCommGenMsgHandler handlerUblox,
+    pfnIsCommGenMsgHandler handlerRtcm3,
+    pfnIsCommGenMsgHandler handlerSpartn,
+    pfnIsCommParseErrorHandler handlerError)
 {
     cmMsgHandlerRmc = handlerRmc;
     cmMsgHandlerNmea = handlerAscii;
@@ -435,7 +453,7 @@ void ISComManager::setCallbacks(
     cmMsgHandlerError = handlerError;
 }
 
-void ISComManager::setBinaryDataCallback(pfnComManagerBinaryDataHandler binaryDataHandler) {
+void ISComManager::setBinaryDataCallback(pfnIsCommIsbDataHandler binaryDataHandler) {
     cmMsgHandleDID = binaryDataHandler;
 }
 
@@ -579,7 +597,7 @@ int ISComManager::send(port_handle_t port, uint8_t pFlags, void *data, uint16_t 
 {
     // Return 0 on success, -1 on failure
     if (portWrite)
-        return (is_comm_write(portWrite, port, pFlags, did, size, offset, data) < 0 ? -1 : 0);
+        return (is_comm_write(port, pFlags, did, size, offset, data) < 0 ? -1 : 0);
     return 0;
 }
 
@@ -1006,7 +1024,7 @@ void ISComManager::disableDidBroadcast(port_handle_t port, uint16_t did)
 // Consolidate this with sendPacket() so that we break up packets into multiples that fit our buffer size.  Returns 0 on success, -1 on failure.
 int ISComManager::sendDataPacket(port_handle_t port, packet_t* pkt)
 {
-    int bytes = is_comm_write_isb_precomp_to_port(portWrite, port, pkt);
+    int bytes = is_comm_write_isb_precomp_to_port(port, pkt);
 
     // Return 0 on success, -1 on failure
     return (bytes < 0) ? -1 : 0;

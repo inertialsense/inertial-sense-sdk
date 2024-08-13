@@ -30,7 +30,7 @@ void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0)
 {
 //	is_comm_instance_t comm = {};
 	uint8_t buf[64];
-	is_comm_init(&s_serialPort.comm, buf, sizeof(buf));
+	is_comm_init(&s_serialPort.comm, buf, sizeof(buf), NULL);  // TODO: Should we be using callbacks??  Probably
 
 	rmc_t rmc;
 	rmc.bits = bits;

@@ -662,6 +662,11 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     return result;
 }
 
+static int serialPortReadPlatform(port_handle_t port, unsigned char* buffer, int readCount) {
+    return serialPortReadTimeoutPlatform(port, buffer, readCount, 0);
+}
+
+
 static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer, int readCount, pfnSerialPortAsyncReadCompletion completion)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
@@ -863,7 +868,8 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->pfnFlush = serialPortFlushPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
-    serialPort->pfnRead = serialPortReadTimeoutPlatform;
+    serialPort->pfnRead = serialPort->base.portRead = serialPortReadPlatform;
+    serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
     serialPort->pfnWrite = serialPort->base.portWrite = serialPortWritePlatform;
     serialPort->base.portName = serialPortName;

@@ -157,7 +157,7 @@ int validateBaudRate(unsigned int baudRate)
     return -1;
 }
 
-void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, is_comm_callbacks_t *callbacks)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
 
@@ -180,6 +180,9 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
+
+    if (callbacks)
+        c->cb = *callbacks;
 }
 
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
@@ -967,8 +970,11 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
     return _PTYPE_NONE;
 }
 
-static inline void parse_messages(port_handle_t port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
 {
+    if (!comm)
+        return;
+
     // Search comm buffer for valid packets
     protocol_type_t ptype;
     while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
@@ -977,42 +983,42 @@ static inline void parse_messages(port_handle_t port, is_comm_instance_t* comm, 
         switch (ptype)
         {
         case _PTYPE_INERTIAL_SENSE_DATA:
-            if (callbacks->isb)
+            if (comm->cb.isb)
             {
-                callbacks->isb(port, comm);
+                comm->cb.isb(port);
             }
-            if (callbacks->isbData)
+            if (comm->cb.isbData)
             {
                 p_data_t data;
                 is_comm_to_isb_p_data(comm, &data);
-                callbacks->isbData(port, &data);
+                comm->cb.isbData(port, &data);
             }
             break;
         case _PTYPE_INERTIAL_SENSE_ACK:
         case _PTYPE_INERTIAL_SENSE_CMD:
-            if (callbacks->isb)
+            if (comm->cb.isb)
             {
-                callbacks->isb(port, comm);
+                comm->cb.isb(port);
             }
             break;
 
-        case _PTYPE_NMEA:           if (callbacks->nmea)    { callbacks->nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_RTCM3:          if (callbacks->rtcm3)   { callbacks->rtcm3( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SPARTN:         if (callbacks->sprtn)   { callbacks->sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_UBLOX:          if (callbacks->ublox)   { callbacks->ublox( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SONY:           if (callbacks->sony)    { callbacks->sony(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_PARSE_ERROR:    if (callbacks->error)   { callbacks->error( port, comm); } break;
+        case _PTYPE_NMEA:           if (comm->cb.nmea)    { comm->cb.nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_PARSE_ERROR:    if (comm->cb.error)   { comm->cb.error( port); } break;
         default: break;
         }
 
-        if (callbacks->all)
+        if (comm->cb.all)
         {
-            callbacks->all(port, comm);
+            comm->cb.all(port);
         }
     }
 }
 
-void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm)
 {
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int n = (int)_MIN((int)buf_size, is_comm_free(comm));
@@ -1023,11 +1029,16 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
     comm->rxBuf.tail += n;
 
     // Parse messages and call corresponding callback functions
-    parse_messages(0, comm, callbacks);
+    parse_messages(comm, NULL);
 }
 
-void is_comm_port_parse_messages(pfnIsCommPortRead portRead, port_handle_t port, is_comm_instance_t* comm, is_comm_callbacks_t *callbacks)
+void is_comm_port_parse_messages(port_handle_t port)
 {
+    if ((port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
+        return;
+
+    is_comm_instance_t* comm = &COMM_PORT(port)->comm;
+
     // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
     int bytesFree = is_comm_free(comm);
 
@@ -1042,7 +1053,7 @@ void is_comm_port_parse_messages(pfnIsCommPortRead portRead, port_handle_t port,
     comm->rxBuf.tail += n;
 
     // Parse messages and call corresponding callback functions
-    parse_messages(port, comm, callbacks);
+    parse_messages(comm, port);
 }
 
 int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
@@ -1057,8 +1068,7 @@ int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size, is_comm_instance_t*
     return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-//[[maybe_unused]]
-int is_comm_get_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
+int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t offset, uint32_t periodMultiple)
 {
     p_data_get_t get;
 
@@ -1067,7 +1077,7 @@ int is_comm_get_data(pfnIsCommPortWrite portWrite, port_handle_t port, uint32_t 
     get.size = size;
     get.period = periodMultiple;
 
-    return is_comm_write(portWrite, port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
+    return is_comm_write(port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
 void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
@@ -1129,9 +1139,9 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
     return pkt->size;
 }
 
-int is_comm_write_isb_precomp_to_port(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *pkt)
+int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
-    if ((portWrite == NULL) || (port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
+    if ((port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
     {
         return -1;  // can't write if we don't have a valid port, or the port isn't an ISComm
     }
@@ -1176,17 +1186,17 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
-int is_comm_write(pfnIsCommPortWrite portWrite, port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
     packet_t txPkt;
 
     // Encode header and header checksum.  Update checksum and write packet to buffer.  Returns number of bytes written on success or -1 on failure.
-    return is_comm_write_pkt(portWrite, port, &txPkt, flags, did, data_size, offset, data);
+    return is_comm_write_pkt(port, &txPkt, flags, did, data_size, offset, data);
 }
 
-int is_comm_write_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
 {
-    if ((portWrite == NULL) || (port == NULL) || !(portType(port) & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
     {
         return -1;
     }
@@ -1195,7 +1205,7 @@ int is_comm_write_pkt(pfnIsCommPortWrite portWrite, port_handle_t port, packet_t
     is_comm_encode_hdr(txPkt, flags, did, data_size, offset, data);
 
     // Update checksum and write packet to port.  Returns number of bytes written on success or -1 on failure.
-    return is_comm_write_isb_precomp_to_port(portWrite, port, txPkt);
+    return is_comm_write_isb_precomp_to_port(port, txPkt);
 }
 
 char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int maxsize)

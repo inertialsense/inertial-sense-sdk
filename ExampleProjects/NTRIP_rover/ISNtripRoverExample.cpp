@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
 	uint8_t buffer[2048];
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer));
+	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably
 
 	// STEP 3: Initialize and open serial port
 	serial_port_t serialPort;

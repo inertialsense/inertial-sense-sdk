@@ -26,15 +26,15 @@ using namespace std;
 
 cDeviceLogRaw::cDeviceLogRaw() : cDeviceLog()
 {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
 }
 
 cDeviceLogRaw::cDeviceLogRaw(const ISDevice *dev) : cDeviceLog(dev) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
 }
 
 cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {
-    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf));
+    is_comm_init(&m_comm, m_commBuf, sizeof(m_commBuf), NULL); // TODO: Should we be using callbacks??  Probably
 };
 
 

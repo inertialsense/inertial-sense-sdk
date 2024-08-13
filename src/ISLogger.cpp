@@ -715,7 +715,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
     is_comm_instance_t comm;
     uint8_t commBuf[PKT_BUF_SIZE];
-    is_comm_init(&comm, commBuf, sizeof(commBuf));
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     EnableLogging(true);
     p_data_buf_t *data = NULL;

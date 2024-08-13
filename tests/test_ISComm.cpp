@@ -219,7 +219,7 @@ static bool init(test_data_t &t)
 	//ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
 	ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
 
-	is_comm_init(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, sizeof(COMM_PORT(TEST0_PORT)->buffer));
+	is_comm_init(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, sizeof(COMM_PORT(TEST0_PORT)->buffer), NULL); // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
 
 	// Enable/disable protocols
     COMM_PORT(TEST0_PORT)->comm.config.enabledMask = 0;
@@ -531,7 +531,7 @@ void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);   // TODO: Should we be using callbacks??  Probably
 
 	int k=0;
 
@@ -871,7 +871,7 @@ TEST(ISComm, TxRxMultiBytePreceededByGarbage)
 TEST(ISComm, TxRxWithOffsetTest)
 {
     is_comm_instance_t &g_comm = COMM_PORT(TEST0_PORT)->comm;
-    is_comm_init(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, COM_BUFFER_SIZE);
+    is_comm_init(&COMM_PORT(TEST0_PORT)->comm, COMM_PORT(TEST0_PORT)->buffer, COM_BUFFER_SIZE, NULL);   // TODO: Should we be using callbacks??  Probably
 
 	// Initialize Com Manager
 	init(tcm);
@@ -881,8 +881,8 @@ TEST(ISComm, TxRxWithOffsetTest)
 	txIns1.theta[2] = 2.345f;
 	int n;
 
-	n = is_comm_data(portWrite, TEST0_PORT, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
-	n = is_comm_data(portWrite, TEST0_PORT, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
+	n = is_comm_data(TEST0_PORT, DID_INS_1, sizeof(double), offsetof(ins_1_t,timeOfWeek), &txIns1.timeOfWeek);
+	n = is_comm_data(TEST0_PORT, DID_INS_1, sizeof(float), offsetof(ins_1_t,theta[2]), &txIns1.theta[2]);
 
 	{
 		ins_1_t rxIns1 = {};
@@ -1087,7 +1087,7 @@ TEST(ISComm, alternating_isb_nmea_parse_error_check)
     int n;
     is_comm_instance_t &g_comm = COMM_PORT(TEST0_PORT)->comm;
 
-    is_comm_init(&g_comm, rxBuf, sizeof(rxBuf));
+    is_comm_init(&g_comm, rxBuf, sizeof(rxBuf), NULL);  // TODO: Should we be using callbacks??  Probably
 
     uint8_t *txPtr = txBuf;
     uint8_t *txEnd = txBuf + sizeof(txBuf);

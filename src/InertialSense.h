@@ -53,7 +53,7 @@ extern "C"
 
 class InertialSense;
 
-typedef std::function<void(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef std::function<int(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, port_handle_t port);
 
 /**

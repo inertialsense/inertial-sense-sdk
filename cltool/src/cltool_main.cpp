@@ -138,7 +138,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
         printf("\nLogging %.2f KB to: %s\n", logSize * 0.001f, logger.LogDirectory().c_str());
 }
 
-static int cltool_errorCallback(port_handle_t port, is_comm_instance_t* comm)
+static int cltool_errorCallback(port_handle_t port)
 {
     #define BUF_SIZE    8192
     #define BLACK   "\u001b[30m"
@@ -182,6 +182,7 @@ static int cltool_errorCallback(port_handle_t port, is_comm_instance_t* comm)
     char* ptrEnd = buf + BUF_SIZE;
     int bytesPerLine = 32;
 
+    is_comm_instance_t* comm = &(COMM_PORT(port)->comm);
     const packet_t* rxPkt = &(comm->rxPkt);
     const uint8_t* raw_data = rxPkt->data.ptr;
 
@@ -233,11 +234,11 @@ static int cltool_errorCallback(port_handle_t port, is_comm_instance_t* comm)
 }
 
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
-static void cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
+static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
     if (g_commandLineOptions.outputOnceDid) {
         if (data->hdr.id != g_commandLineOptions.outputOnceDid)
-            return;
+            return 0;
         g_inertialSenseDisplay.showRawData(true);
     }
 
@@ -249,6 +250,8 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t 
         cout.flush();
     else
         g_inertialSenseDisplay.ProcessData(data);
+
+    return 0;
 }
 
 // Where we tell the uINS what data to send and at what rate.  

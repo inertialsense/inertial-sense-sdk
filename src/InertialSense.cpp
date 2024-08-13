@@ -50,11 +50,11 @@ static int staticReadData(port_handle_t port, uint8_t* buf, int len)
     return bytesRead;
 }
 
-static void staticProcessRxData(port_handle_t port, p_data_t* data)
+static int staticProcessRxData(port_handle_t port, p_data_t* data)
 {
     if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
     {
-        return;
+        return -1;
     }
 
     pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
@@ -90,6 +90,7 @@ static void staticProcessRxData(port_handle_t port, p_data_t* data)
             }
             break;
     }
+    return 0;
 }
 
 static int staticProcessRxNmea(port_handle_t port, const unsigned char* msg, int msgSize)

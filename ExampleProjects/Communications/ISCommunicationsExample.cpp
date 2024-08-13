@@ -111,7 +111,7 @@ int save_persistent_messages(port_handle_t port)
 int enable_message_broadcasting(port_handle_t port)
 {
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
-	if (is_comm_get_data(portWrite, port, DID_INS_1, 0, 0, 10) < 0)
+	if (is_comm_get_data(port, DID_INS_1, 0, 0, 10) < 0)
 	{
 		printf("Failed to encode and write get INS message\r\n");
 		return -4;
@@ -119,7 +119,7 @@ int enable_message_broadcasting(port_handle_t port)
 
 #if 1
 	// Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-	if (is_comm_get_data(portWrite, port, DID_GPS1_POS, 0, 0, 1) < 0)
+	if (is_comm_get_data(port, DID_GPS1_POS, 0, 0, 1) < 0)
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -128,7 +128,7 @@ int enable_message_broadcasting(port_handle_t port)
 
 #if 0
 	// Ask for IMU message at period of 100ms (1ms source period x 100).  This could be as high as 1000 times a second (period multiple of 1)
-	if (is_comm_get_data(portWrite, 0, comm, DID_IMU, 0, 0, 100) < 0)
+	if (is_comm_get_data(port, DID_IMU, 0, 0, 100) < 0)
 	{
 		printf("Failed to encode and write get IMU message\r\n");
 		return -6;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 	uint8_t buffer[2048];
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer));
+	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably
 
 	// STEP 3: Initialize and open serial port
 
