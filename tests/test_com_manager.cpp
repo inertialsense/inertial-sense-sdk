@@ -89,7 +89,7 @@ static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 }
 */
 
-static int postRxRead(port_handle_t port, p_data_t* dataRead)
+static void postRxRead(port_handle_t port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -99,12 +99,10 @@ static int postRxRead(port_handle_t port, p_data_t* dataRead)
 	EXPECT_EQ(td.did, dataRead->hdr.id) << "Parsed DID " << dataRead->hdr.id << " but expected DID " << td.did << "." << std::endl;
 	EXPECT_EQ(td.size, dataRead->hdr.size) << "Parsed packet size " << dataRead->hdr.size << " but expected " << td.size << "." << std::endl;
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0) << "Packet contents did not match expected contents." << std::endl;
-    return 0;
 }
 
-static int disableBroadcasts(port_handle_t port)
+static void disableBroadcasts(port_handle_t port)
 {
-    return 0;
 }
 
 int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
@@ -112,9 +110,8 @@ int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
 	return 1;
 }
 
-int writeNvrUserpageFlashCfg(port_handle_t port, p_data_t* data)
+void writeNvrUserpageFlashCfg(port_handle_t port, p_data_t* data)
 {
-    return 0;
 }
 
 // return 1 on success, 0 on failure

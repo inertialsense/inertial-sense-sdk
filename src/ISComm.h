@@ -571,7 +571,7 @@ typedef struct
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
 // InertialSense binary (ISB) data message handler function
-typedef int(*pfnIsCommIsbDataHandler)(port_handle_t port, p_data_t* data);
+typedef void(*pfnIsCommIsbDataHandler)(port_handle_t port, p_data_t* data);
 
 // broadcast message handler
 typedef int(*pfnIsCommAsapMsg)(port_handle_t port, p_data_get_t* req);

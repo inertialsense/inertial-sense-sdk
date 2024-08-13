@@ -85,13 +85,13 @@ enum eComManagerErrorType
 typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by port
-typedef int(*pfnComManagerPostRead)(port_handle_t port, p_data_t* dataRead);
+typedef void(*pfnComManagerPostRead)(port_handle_t port, p_data_t* dataRead);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by port
 typedef int(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
-typedef int(*pfnComManagerDisableBroadcasts)(port_handle_t port);
+typedef void(*pfnComManagerDisableBroadcasts)(port_handle_t port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(port_handle_t port, p_data_hdr_t *dataHdr);
