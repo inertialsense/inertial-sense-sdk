@@ -746,7 +746,7 @@ TEST(ISComm, BasicTxPortRxByteTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			n = is_comm_data(portWrite, TEST0_PORT, td.did, td.size, 0, td.data.buf);
+			n = is_comm_data(TEST0_PORT, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:
@@ -789,7 +789,7 @@ TEST(ISComm, BasicTxRxMultiByteTest)
 		{
 		case _PTYPE_INERTIAL_SENSE_DATA:	// IS binary
 		case _PTYPE_INERTIAL_SENSE_CMD:
-			n = is_comm_data(portWrite, TEST0_PORT, td.did, td.size, 0, td.data.buf);
+			n = is_comm_data(TEST0_PORT, td.did, td.size, 0, td.data.buf);
 			break;
 
 		case _PTYPE_NMEA:

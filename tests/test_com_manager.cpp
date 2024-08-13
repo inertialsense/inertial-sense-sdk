@@ -89,7 +89,7 @@ static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 }
 */
 
-static void postRxRead(port_handle_t port, p_data_t* dataRead)
+static int postRxRead(port_handle_t port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -99,10 +99,12 @@ static void postRxRead(port_handle_t port, p_data_t* dataRead)
 	EXPECT_EQ(td.did, dataRead->hdr.id) << "Parsed DID " << dataRead->hdr.id << " but expected DID " << td.did << "." << std::endl;
 	EXPECT_EQ(td.size, dataRead->hdr.size) << "Parsed packet size " << dataRead->hdr.size << " but expected " << td.size << "." << std::endl;
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0) << "Packet contents did not match expected contents." << std::endl;
+    return 0;
 }
 
-static void disableBroadcasts(port_handle_t port)
+static int disableBroadcasts(port_handle_t port)
 {
+    return 0;
 }
 
 int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
@@ -110,8 +112,9 @@ int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(port_handle_t port, p_data_t* data)
+int writeNvrUserpageFlashCfg(port_handle_t port, p_data_t* data)
 {
+    return 0;
 }
 
 // return 1 on success, 0 on failure
@@ -292,11 +295,10 @@ static bool initComManager(test_data_t &t)
 	// com_manager_init_t cmInit = {};
 	//cmInit.broadcastMsg = t.cmBufBcastMsg;
 	//cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (t.cm.init(TASK_PERIOD_MS, portWrite, 0, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg))
+	if (t.cm.init(TEST0_PORT, TASK_PERIOD_MS, portWrite, 0, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg))
 	{	// Fail to init
 		return false;
 	}
-    t.cm.registerPort(TEST0_PORT);
 
 	t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
     t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);

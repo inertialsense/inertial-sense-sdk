@@ -55,23 +55,11 @@ static void handleImuMessage(imu_t* imu)
 		imu->I.acc[0], imu->I.acc[1], imu->I.acc[2]);
 }
 
-/*
-static int portWrite(port_handle_t port, const unsigned char* buf, int len)
-{
-	return serialPortWrite(&s_serialPort, buf, len);
-}
-
-static int portRead(int port, unsigned char* buf, int len)
-{
-	return serialPortRead(&s_serialPort, buf, len);
-}
-*/
-
 int set_configuration(port_handle_t port)
 {
 	// Set INS output Euler rotation in radians to 90 degrees roll for mounting
 	float rotation[3] = { 90.0f*C_DEG2RAD_F, 0.0f, 0.0f };
-	if (is_comm_set_data(portWrite, port, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation) < 0)
+	if (is_comm_set_data(port, DID_FLASH_CONFIG, sizeof(float) * 3, offsetof(nvm_flash_cfg_t, insRotation), rotation) < 0)
 	{
 		printf("Failed to encode and write set INS rotation\r\n");
 		return -3;
@@ -84,7 +72,7 @@ int set_configuration(port_handle_t port)
 int stop_message_broadcasting(port_handle_t port)
 {
 	// Stop all broadcasts on the device
-	if (is_comm_stop_broadcasts_all_ports(portWrite, port) < 0)
+	if (is_comm_stop_broadcasts_all_ports(port) < 0)
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -99,7 +87,7 @@ int save_persistent_messages(port_handle_t port)
 	cfg.command = SYS_CMD_SAVE_PERSISTENT_MESSAGES;
 	cfg.invCommand = ~cfg.command;
 
-	if (is_comm_set_data(portWrite, port, DID_SYS_CMD, 0, 0, &cfg) < 0)
+	if (is_comm_set_data(port, DID_SYS_CMD, 0, 0, &cfg) < 0)
 	{
 		printf("Failed to write save persistent message\r\n");
 		return -3;
