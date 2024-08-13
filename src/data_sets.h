@@ -868,9 +868,10 @@ enum eImuStatus
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
-    /** Magnetometer sample occured */
+    /** Magnetometer sample ocurred */
     IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
-    
+    /** Data was received at least once from Reference IMU */
+    IMU_STATUS_REFERENCE_IMU_PRESENT			= (int)0x00000200,
     /** Reserved */
     // IMU_STATUS_RESERVED2						= (int)0x00000400,
 
