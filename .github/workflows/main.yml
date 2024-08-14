@@ -99,8 +99,8 @@ jobs:
       - name: Build SDK Examples
         run: ./build_sdk_examples.bat
 
-  ros-bridge-tests:
-    name: "ROS Bridge Tests"
+  ros1-bridge-tests:
+    name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker]
     # if: false  # disable this job
 
@@ -110,7 +110,9 @@ jobs:
 
     container:
       image: ros:noetic
-      options: --privileged -v /dev:/dev
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
 
     defaults:
       run:
