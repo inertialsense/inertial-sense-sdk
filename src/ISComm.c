@@ -185,6 +185,16 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, is_com
         c->cb = *callbacks;
 }
 
+void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
+    if (callbacks)
+        c->cb = *callbacks;
+}
+
+void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks) {
+    if (port)
+        is_comm_register_callbacks(&COMM_PORT(port)->comm, callbacks);
+}
+
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
     is_comm_parser_t *p = &(c->parser);
@@ -1002,7 +1012,10 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
             }
             break;
 
-        case _PTYPE_NMEA:           if (comm->cb.nmea)    { comm->cb.nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
+        case _PTYPE_NMEA:
+            if (comm->cb.nmea)    {
+                comm->cb.nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size);
+            } break;
         case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
         case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
         case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;

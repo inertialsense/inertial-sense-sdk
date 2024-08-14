@@ -137,7 +137,7 @@ typedef struct
 	// pfnIsCommPortRead portRead;
 
 	// write data to the destination (usually a serial port)
-	pfnIsCommPortWrite portWrite;
+	// pfnIsCommPortWrite portWrite;
 
 	// bytes free in Tx buffer (used to check if packet, keeps us from overflowing the Tx buffer)
 	pfnComManagerSendBufferAvailableBytes txFree;
@@ -217,9 +217,6 @@ typedef struct
 int comManagerInit(
         port_handle_t port,
         int stepPeriodMilliseconds,
-	pfnIsCommPortRead readFnc,
-        pfnIsCommPortWrite sendFnc,
-        pfnComManagerSendBufferAvailableBytes txFreeFnc,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
         pfnComManagerDisableBroadcasts disableBcastFnc,
@@ -229,9 +226,6 @@ int comManagerInit(
  * TODO: Remove this and move port to the last, and make it optional.
  * @param port
  * @param stepPeriodMilliseconds
- * @param readFnc
- * @param sendFnc
- * @param txFreeFnc
  * @param pstRxFnc
  * @param pstAckFnc
  * @param disableBcastFnc
@@ -240,13 +234,11 @@ int comManagerInit(
  */
 int comManagerInit(
         int stepPeriodMilliseconds,
-        // pfnIsCommPortRead readFnc,
-        pfnIsCommPortWrite sendFnc,
-        pfnComManagerSendBufferAvailableBytes txFreeFnc,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
         pfnComManagerDisableBroadcasts disableBcastFnc,
-        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
+        is_comm_callbacks_t* callbacks);
 
 /**
  * registered a port with the comm manager (allowing the port to be managed by ISComManager.
@@ -254,6 +246,14 @@ int comManagerInit(
  * @return true if this port was registered, otherwise false
  */
 bool comManagerRegisterPort(port_handle_t port);
+
+/**
+ * registered a port with the comm manager (allowing the port to be managed by ISComManager.
+ * @param port
+ * @param callbacks custom set of callbacks to use for this port (if null, use defaults)
+ * @return true if this port was registered, otherwise false
+ */
+bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* callbacks);
 
 
 /**
@@ -477,35 +477,13 @@ int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req);
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
-/**
-* Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
-*
-* @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
-* @param asciiHandler handler for NMEA messages.
-* @param ubloxHandler handler for ublox messages.
-* @param rtcm3Handler handler for RTCM3 messages.
-* @param spartnHandler handler for SPARTN messages.
-* @param handlerError handler for parse errors.
-*/
-void comManagerSetCallbacks(
-        pfnIsCommAsapMsg rmcHandler,
-        pfnIsCommGenMsgHandler asciiHandler,
-        pfnIsCommGenMsgHandler ubloxHandler,
-        pfnIsCommGenMsgHandler rtcm3Handler,
-        pfnIsCommGenMsgHandler spartnHandler,
-        pfnIsCommParseErrorHandler handlerError);
-
-void comManagerSetBinaryDataCallback(
-        pfnIsCommIsbDataHandler binaryDataHandler);
+int comManagerProcessBinaryRxPacket(port_handle_t port, packet_t *pkt);
 
 class ISComManager : com_manager_t {
 public:
     void step();
-    void stepRx(uint32_t timeMs);
-    int stepRxHandler(comm_port_t* port, protocol_type_t ptype);
-
     void stepTx();
-
+    void stepRx(uint32_t timeMs);
 
     /**
     * Initializes the default global com manager. This is generally only called once on program start.
@@ -531,20 +509,18 @@ public:
     int init(
             port_handle_t port,
             int stepPeriodMilliseconds,
-            //pfnComManagerRead readFnc,
-            pfnIsCommPortWrite sendFnc,
-            pfnComManagerSendBufferAvailableBytes txFreeFnc,
             pfnComManagerPostRead pstRxFnc,
             pfnComManagerPostAck pstAckFnc,
             pfnComManagerDisableBroadcasts disableBcastFnc,
-            std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+            std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
+            is_comm_callbacks_t *callbacks);
 
-    /**
-     * registered a port with the comm manager (allowing the port to be managed by ISComManager.
-     * @param port
-     * @return true if this port was registered, otherwise false
-     */
-    bool registerPort(port_handle_t port);
+            /**
+             * registered a port with the comm manager (allowing the port to be managed by ISComManager.
+             * @param port
+             * @return true if this port was registered, otherwise false
+             */
+    bool registerPort(port_handle_t port, is_comm_callbacks_t* callbacks = NULL);
 
 
     /**
@@ -764,28 +740,6 @@ public:
     */
     void registerDid(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
-
-    /**
-    * Register message handler callback functions.  Pass in NULL to disable any of these callbacks.
-    *
-    * @param rmcHandler handler for Realtime Message Controller (RMC) called whenever we get a message broadcast request or message disable command.
-    * @param asciiHandler handler for NMEA messages.
-    * @param ubloxHandler handler for ublox messages.
-    * @param rtcm3Handler handler for RTCM3 messages.
-    * @param spartnHandler handler for SPARTN messages.
-    * @param handlerError handler for parse errors.
-    */
-    void setCallbacks(
-            pfnIsCommAsapMsg rmcHandler,
-            pfnIsCommGenMsgHandler asciiHandler,
-            pfnIsCommGenMsgHandler ubloxHandler,
-            pfnIsCommGenMsgHandler rtcm3Handler,
-            pfnIsCommGenMsgHandler spartnHandler,
-            pfnIsCommParseErrorHandler handlerError);
-
-    void setBinaryDataCallback(
-            pfnIsCommIsbDataHandler binaryDataHandler);
-
     /**
     * Attach user defined data to a com manager instance
     */
@@ -809,10 +763,11 @@ public:
     */
     int validateBaudRate(unsigned int baudRate);
 
+    int processBinaryRxPacket(port_handle_t port, packet_t *pkt);
+
 private:
 // int processAsciiRxPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* start, int count);
 // void parseAsciiPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* buf, int count);
-    int processBinaryRxPacket(port_handle_t port, packet_t *pkt);
     void enableBroadcastMsg(broadcast_msg_t *msg, int periodMultiple);
     void disableBroadcastMsg(broadcast_msg_t *msg);
     void disableDidBroadcast(port_handle_t port, uint16_t did);
@@ -821,6 +776,8 @@ private:
 
     int findAsciiMessage(const void * a, const void * b);
     int asciiMessageCompare(const void* elem1, const void* elem2);
+
+    is_comm_callbacks_t defaultCbs; // local copy of any callbacks passed at init
 };
 
 extern ISComManager s_cm;
