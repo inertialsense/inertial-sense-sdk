@@ -192,7 +192,7 @@ jobs:
       - name: Install libboost
         working-directory: .
         run: |
-          apt update && apt install libboost-all-dev
+          apt-get update && apt-get -y install libboost-all-dev
 
       - name: Checkout source and submodules
         uses: actions/checkout@v4
