@@ -570,34 +570,29 @@ typedef struct
 
 typedef protocol_type_t (*pFnProcessPkt)(void*);
 
+// Generic message handler function with is_comm_instance_t
+typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
+
 // InertialSense binary (ISB) data message handler function
-typedef void(*pfnIsCommIsbDataHandler)(port_handle_t port, p_data_t* data);
+typedef void(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
 
 // broadcast message handler
-typedef int(*pfnIsCommAsapMsg)(port_handle_t port, p_data_get_t* req);
+// typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);
 
 // Generic message handler function with message pointer and size
-typedef int(*pfnIsCommGenMsgHandler)(port_handle_t port, const unsigned char* msg, int msgSize);
-
-// Generic message handler function with is_comm_instance_t
-typedef int(*pfnIsCommHandler)(port_handle_t port);
-
-// Parse error handler function
-typedef int(*pfnIsCommParseErrorHandler)(port_handle_t port);
+typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port_handle_t port);
 
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
     pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message
-    pfnIsCommHandler                isb;        // Message handler - Inertial Sense binary (ISB) general message
     pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
     pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
     pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
     pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
     pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
-    pfnIsCommParseErrorHandler      error;      // Error handler
     pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
-    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
+//    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
 } is_comm_callbacks_t;
 
 

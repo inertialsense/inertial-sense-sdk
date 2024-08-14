@@ -993,40 +993,32 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
         switch (ptype)
         {
         case _PTYPE_INERTIAL_SENSE_DATA:
-            if (comm->cb.isb)
-            {
-                comm->cb.isb(port);
-            }
             if (comm->cb.isbData)
             {
                 p_data_t data;
                 is_comm_to_isb_p_data(comm, &data);
-                comm->cb.isbData(port, &data);
+                comm->cb.isbData(&data, port);
             }
             break;
         case _PTYPE_INERTIAL_SENSE_ACK:
         case _PTYPE_INERTIAL_SENSE_CMD:
-            if (comm->cb.isb)
-            {
-                comm->cb.isb(port);
-            }
             break;
 
         case _PTYPE_NMEA:
             if (comm->cb.nmea)    {
-                comm->cb.nmea(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size);
+                comm->cb.nmea(  comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
             } break;
-        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox( port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(  port, comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size); } break;
-        case _PTYPE_PARSE_ERROR:    if (comm->cb.error)   { comm->cb.error( port); } break;
+        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(  comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+        // case _PTYPE_PARSE_ERROR:    if (comm->cb.error)   { comm->cb.error( port); } break;
         default: break;
         }
 
         if (comm->cb.all)
         {
-            comm->cb.all(port);
+            comm->cb.all(ptype, &(comm->rxPkt), port);
         }
     }
 }
@@ -1047,7 +1039,7 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
 
 void is_comm_port_parse_messages(port_handle_t port)
 {
-    if ((port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
         return;
 
     is_comm_instance_t* comm = &COMM_PORT(port)->comm;

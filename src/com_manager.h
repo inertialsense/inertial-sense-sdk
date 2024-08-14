@@ -85,7 +85,7 @@ enum eComManagerErrorType
 typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by port
-typedef void(*pfnComManagerPostRead)(port_handle_t port, p_data_t* dataRead);
+typedef void(*pfnComManagerPostRead)(p_data_t* dataRead, port_handle_t port);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by port
 typedef int(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
@@ -95,6 +95,13 @@ typedef void(*pfnComManagerDisableBroadcasts)(port_handle_t port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(port_handle_t port, p_data_hdr_t *dataHdr);
+
+// broadcast message handler
+typedef int(*pfnComManagerRmcHandler)(p_data_get_t* req, port_handle_t port);
+
+// Parse error handler function, return 1 if message handled
+typedef int(*pfnComManagerParseErrorHandler)(port_handle_t port);
+
 
 /* Contains callback information for a before and after send for a data structure */
 typedef struct
@@ -169,27 +176,16 @@ typedef struct
 	// user defined pointer
 	void* userPointer;
 
+/*
     // "Global" handler for any Binary Data which does not have an explicit handler (registerDid)
     pfnIsCommIsbDataHandler cmMsgHandleDID;
+*/
 
-	// Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
-    pfnIsCommAsapMsg cmMsgHandlerRmc;
-
-	// Message handler - NMEA
-    pfnIsCommGenMsgHandler cmMsgHandlerNmea;
-
-	// Message handler - Ublox
-    pfnIsCommGenMsgHandler cmMsgHandlerUblox;
-
-	// Message handler - RTCM3
-    pfnIsCommGenMsgHandler cmMsgHandlerRtcm3;
-
-	// Message handler - SPARTN
-    pfnIsCommGenMsgHandler cmMsgHandlerSpartn;
+    // Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
+    pfnComManagerRmcHandler cmMsgHandlerRmc;
 
     // Error handler
-    pfnIsCommParseErrorHandler cmMsgHandlerError;
-
+    pfnComManagerParseErrorHandler cmMsgHandlerError;
 } com_manager_t;
 
 
@@ -219,6 +215,7 @@ int comManagerInit(
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
+        pfnComManagerRmcHandler rmcHandler,
         pfnComManagerDisableBroadcasts disableBcastFnc,
         std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
         is_comm_callbacks_t *callbacks);
@@ -237,6 +234,7 @@ int comManagerInit(
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
+        pfnComManagerRmcHandler rmcHandler,
         pfnComManagerDisableBroadcasts disableBcastFnc,
         std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
         is_comm_callbacks_t* callbacks);
@@ -478,7 +476,7 @@ int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req);
 */
 void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerPostRead pstRxFnc, const void* txDataPtr, void* rxDataPtr, uint16_t size, uint8_t pktFlags);
 
-int comManagerProcessBinaryRxPacket(port_handle_t port, packet_t *pkt);
+int comManagerProcessBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 class ISComManager : com_manager_t {
 public:
@@ -512,6 +510,7 @@ public:
             int stepPeriodMilliseconds,
             pfnComManagerPostRead pstRxFnc,
             pfnComManagerPostAck pstAckFnc,
+            pfnComManagerRmcHandler rmcHandler,
             pfnComManagerDisableBroadcasts disableBcastFnc,
             std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
             is_comm_callbacks_t *callbacks);
@@ -764,7 +763,7 @@ public:
     */
     int validateBaudRate(unsigned int baudRate);
 
-    int processBinaryRxPacket(port_handle_t port, packet_t *pkt);
+    int processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 private:
 // int processAsciiRxPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* start, int count);

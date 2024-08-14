@@ -61,6 +61,7 @@ int comManagerInit(
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
+        pfnComManagerRmcHandler rmcHandler,
         pfnComManagerDisableBroadcasts disableBcastFnc,
         broadcast_msg_array_t* buffers,   //! was: com_manager_init_t *buffers,
         is_comm_callbacks_t *callbacks)
@@ -70,6 +71,7 @@ int comManagerInit(
             stepPeriodMilliseconds,
             pstRxFnc,
             pstAckFnc,
+            rmcHandler,
             disableBcastFnc,
             buffers,
             callbacks);
@@ -80,6 +82,7 @@ int comManagerInit(
     int stepPeriodMilliseconds,
     pfnComManagerPostRead pstRxFnc,
     pfnComManagerPostAck pstAckFnc,
+    pfnComManagerRmcHandler rmcHandler,
     pfnComManagerDisableBroadcasts disableBcastFnc,
     broadcast_msg_array_t* buffers,   //! was: com_manager_init_t *buffers,
     is_comm_callbacks_t *callbacks)
@@ -88,8 +91,9 @@ int comManagerInit(
         port,
         stepPeriodMilliseconds,
         pstRxFnc,
-        pstAckFnc, 
-        disableBcastFnc, 
+        pstAckFnc,
+        rmcHandler,
+        disableBcastFnc,
         buffers,
         callbacks);
 }
@@ -99,6 +103,7 @@ int ISComManager::init
     int stepPeriodMillis,
     pfnComManagerPostRead pstRxFncCb,
     pfnComManagerPostAck pstAckFncCb,
+    pfnComManagerRmcHandler rmcHandler,
     pfnComManagerDisableBroadcasts disableBcastFncCb,
     broadcast_msg_array_t* bcastBuffers,   //! was: com_manager_init_t *buffers,
     is_comm_callbacks_t *callbacks)
@@ -108,13 +113,13 @@ int ISComManager::init
     disableBcastFnc = disableBcastFncCb;
     stepPeriodMilliseconds = stepPeriodMillis;
 
-    cmMsgHandleDID = NULL;
-    cmMsgHandlerNmea = NULL;
-    cmMsgHandlerUblox = NULL;
-    cmMsgHandlerRtcm3 = NULL;
-    cmMsgHandlerSpartn = NULL;
-    cmMsgHandlerRmc = NULL;
-    cmMsgHandlerError = NULL;
+    //cmMsgHandleDID = NULL;
+    //cmMsgHandlerNmea = NULL;
+    //cmMsgHandlerUblox = NULL;
+    //cmMsgHandlerRtcm3 = NULL;
+    //cmMsgHandlerSpartn = NULL;
+
+    cmMsgHandlerRmc = rmcHandler;
 
     // Buffer: message broadcasts
     broadcastMessages = bcastBuffers;
@@ -463,13 +468,16 @@ int findAsciiMessage(const void * a, const void * b)
 *
 *	@return 0 on success.  -1 on failure.
 */
-int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
+int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
     packet_hdr_t        *hdr = &(pkt->hdr);
     registered_data_t   *regData = NULL;
-    uint8_t             ptype = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
+    uint8_t             isbPktType = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
 
-    switch (ptype)
+    if (ptype != _PTYPE_INERTIAL_SENSE_DATA)
+        return -1;
+
+    switch (isbPktType)
     {
     default:    // Data ID Unknown
         return -1;
@@ -493,8 +501,8 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
         //  if (!didRegistrationMap.contains(hdr->id)) {
         if (didRegistrationMap.find(hdr->id) == didRegistrationMap.end()) {
             // only call the global handler if no DID handler is registered
-            if (cmMsgHandleDID)
-                cmMsgHandleDID(port, &data);
+            if (pstRxFnc)
+                pstRxFnc(&data, port);
         } else {
             // NOTE we do the find() above to see if its exists, because making the following call will insert an empty regData into
             // the map, if ones not already there..
@@ -572,13 +580,13 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
             // Call data specific callback after data has been received
             if (regData->pstRxFnc)
             {
-                regData->pstRxFnc(port, &data);
+                regData->pstRxFnc(&data, port);
             }
         }
 
         // Call general/global callback
         if (pstRxFnc)
-            pstRxFnc(port, &data);
+            pstRxFnc(&data, port);
 
 #if ENABLE_PACKET_CONTINUATION
 
@@ -588,7 +596,7 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
 #endif
 
         // Reply w/ ACK for PKT_TYPE_SET_DATA
-        if (ptype == PKT_TYPE_SET_DATA)
+        if (isbPktType == PKT_TYPE_SET_DATA)
         {
             sendAck(port, pkt, PKT_TYPE_ACK);
         }
@@ -649,9 +657,9 @@ int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt)
     return 0;
 }
 
-int comManagerProcessBinaryRxPacket(port_handle_t port, packet_t *pkt)
+int comManagerProcessBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
-    return s_cm.processBinaryRxPacket(port, pkt);
+    return s_cm.processBinaryRxPacket(ptype, pkt, port);
 }
 
 bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did)
@@ -687,7 +695,7 @@ int ISComManager::getDataRequest(port_handle_t port, p_data_get_t* req)
         return -1;
     }
     // Call RealtimeMessageController (RMC) handler
-    else if (cmMsgHandlerRmc && (cmMsgHandlerRmc(port, req) == 0))
+    else if (cmMsgHandlerRmc && (cmMsgHandlerRmc(req, port) == 0))
     {
         // Don't allow comManager broadcasts for messages handled by RealtimeMessageController. 
         return 0;
@@ -871,7 +879,7 @@ void ISComManager::disableDidBroadcast(port_handle_t port, uint16_t did)
         req.size = 0;
         req.offset = 0;
         req.period = 0;
-        cmMsgHandlerRmc(port, &req);
+        cmMsgHandlerRmc(&req, port);
     }
 }
 

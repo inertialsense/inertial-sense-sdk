@@ -50,7 +50,7 @@ static int staticReadData(port_handle_t port, uint8_t* buf, int len)
     return bytesRead;
 }
 
-static void staticProcessRxData(port_handle_t port, p_data_t* data)
+static void staticProcessRxData(p_data_t* data, port_handle_t port)
 {
     if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
     {
@@ -92,7 +92,7 @@ static void staticProcessRxData(port_handle_t port, p_data_t* data)
     }
 }
 
-static int staticProcessRxNmea(port_handle_t port, const unsigned char* msg, int msgSize)
+static int staticProcessRxNmea(const unsigned char* msg, int msgSize, port_handle_t port)
 {
     if (port)
     {
@@ -103,12 +103,12 @@ static int staticProcessRxNmea(port_handle_t port, const unsigned char* msg, int
 
 
 InertialSense::InertialSense(
-        pfnHandleBinaryData    handlerIsb,
-        pfnIsCommAsapMsg       handlerRmc,
-        pfnIsCommGenMsgHandler handlerNmea,
-        pfnIsCommGenMsgHandler handlerUblox,
-        pfnIsCommGenMsgHandler handlerRtcm3,
-        pfnIsCommGenMsgHandler handlerSpartn ) : m_tcpServer(this)
+        pfnHandleBinaryData     handlerIsb,
+        pfnComManagerRmcHandler handlerRmc,
+        pfnIsCommGenMsgHandler  handlerNmea,
+        pfnIsCommGenMsgHandler  handlerUblox,
+        pfnIsCommGenMsgHandler  handlerRtcm3,
+        pfnIsCommGenMsgHandler  handlerSpartn ) : m_tcpServer(this)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
@@ -1122,7 +1122,7 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
 void InertialSense::ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 {
     if (m_handlerNmea) {
-        m_handlerNmea(port, msg, msgSize);
+        m_handlerNmea(msg, msgSize, port);
     }
 
     switch (getNmeaMsgId(msg, msgSize)) {
@@ -1538,16 +1538,16 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     // it's safe to call comManagerInit() multiple times.
     is_comm_callbacks_t cbs = {
             .isbData = staticProcessRxData,
-            .isb = NULL, // ??
             .nmea = staticProcessRxNmea,
             .ublox = m_handlerUblox,
             .rtcm3 = m_handlerRtcm3,
             .sprtn = m_handlerSpartn,
-            .error = m_handlerError,
-            .all = NULL, // ??
-            .rmc = m_handlerRmc,
+            // .all = NULL, // ??
+            // .error = m_handlerError,
+            // .isb = NULL, // ??
+            // .rmc = m_handlerRmc,
     };
-    comManagerInit(10, staticProcessRxData, 0, 0, &m_cmBufBcastMsg, &cbs);
+    comManagerInit(10, staticProcessRxData, 0, 0, 0, &m_cmBufBcastMsg, &cbs);
 
     // handle wildcard, auto-detect serial ports
     if (portPattern[0] == '*')
