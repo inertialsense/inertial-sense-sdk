@@ -186,8 +186,8 @@ jobs:
     defaults:
       run:
         working-directory: ../ros2_ws # This is outside the scope of git
-        shell: bash
-
+        shell: /ros_entrypoint.sh /bin/bash # This entrypoint adds all needed environment variable 
+        
     steps:
       - name: Install libboost
         working-directory: .
