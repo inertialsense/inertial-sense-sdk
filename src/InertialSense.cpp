@@ -1536,8 +1536,18 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     size_t maxCount = UINT32_MAX;
 
     // it's safe to call comManagerInit() multiple times.
-    comManagerInit(10, /* staticReadData,*/ staticSendData, 0, staticProcessRxData, 0, 0, &m_cmBufBcastMsg);
-    comManagerSetCallbacks(m_handlerRmc, staticProcessRxNmea, m_handlerUblox, m_handlerRtcm3, m_handlerSpartn, m_handlerError);
+    is_comm_callbacks_t cbs = {
+            .isbData = staticProcessRxData,
+            .isb = NULL, // ??
+            .nmea = staticProcessRxNmea,
+            .ublox = m_handlerUblox,
+            .rtcm3 = m_handlerRtcm3,
+            .sprtn = m_handlerSpartn,
+            .error = m_handlerError,
+            .all = NULL, // ??
+            .rmc = m_handlerRmc,
+    };
+    comManagerInit(10, staticProcessRxData, 0, 0, &m_cmBufBcastMsg, &cbs);
 
     // handle wildcard, auto-detect serial ports
     if (portPattern[0] == '*')

@@ -25,7 +25,7 @@ extern "C"
 #define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
-#if 0
+#if 1
 #define DEBUG_PRINTF	printf
 #else
 #define DEBUG_PRINTF	
@@ -94,10 +94,11 @@ static void postRxRead(port_handle_t port, p_data_t* dataRead)
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
 
-	DEBUG_PRINTF("[%2d] postRxRead() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), td.did, td.size);
+	DEBUG_PRINTF("[%2d] postRxRead() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), dataRead->hdr.id, dataRead->hdr.size);
+    DEBUG_PRINTF("  -- [%2d] testRxQueue() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), td.did, td.size);
 
-	EXPECT_EQ(td.did, dataRead->hdr.id) << "Parsed DID " << dataRead->hdr.id << " but expected DID " << td.did << "." << std::endl;
-	EXPECT_EQ(td.size, dataRead->hdr.size) << "Parsed packet size " << dataRead->hdr.size << " but expected " << td.size << "." << std::endl;
+	EXPECT_EQ(td.did, dataRead->hdr.id) << "Parsed DID " << (int)dataRead->hdr.id << " but expected DID " << (int)td.did << "." << std::endl;
+	EXPECT_EQ(td.size, dataRead->hdr.size) << "Parsed packet size " << (int)dataRead->hdr.size << " but expected " << (int)td.size << "." << std::endl;
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0) << "Packet contents did not match expected contents." << std::endl;
 }
 
@@ -292,7 +293,19 @@ static bool initComManager(test_data_t &t)
 	// com_manager_init_t cmInit = {};
 	//cmInit.broadcastMsg = t.cmBufBcastMsg;
 	//cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	if (t.cm.init(TEST0_PORT, TASK_PERIOD_MS, portWrite, 0, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg))
+    is_comm_callbacks_t cbs = {
+            .isbData = postRxRead,
+            .isb = NULL, // ??
+            .nmea = msgHandlerNmea,
+            .ublox = msgHandlerUblox,
+            .rtcm3 = msgHandlerRtcm3,
+            .sprtn = NULL,
+            .error = msgHandlerError,
+            .all = NULL, // ??
+            .rmc = NULL,
+    };
+
+	if (t.cm.init(NULL, TASK_PERIOD_MS, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg, &cbs))
 	{	// Fail to init
 		return false;
 	}
@@ -300,15 +313,14 @@ static bool initComManager(test_data_t &t)
 	t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
     t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
-    // t.cm.setBinaryDataCallback(msgHandlerBinaryData);
-	t.cm.setCallbacks(NULL, msgHandlerNmea, msgHandlerUblox, msgHandlerRtcm3, NULLPTR, msgHandlerError);
-
 	// Enable/disable protocols
 	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
 	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
 	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
 	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
 	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
+
+    t.cm.registerPort(TEST0_PORT);
 
 	return true;
 }
@@ -522,7 +534,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			DEBUG_PRINTF("[%2d] ", (int)testDeque.size());
 			switch (td.ptype)
 			{
-			case PSC_ISB_PREAMBLE:
+                case _PTYPE_INERTIAL_SENSE_DATA:
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
 			case _PTYPE_NMEA:
@@ -994,7 +1006,8 @@ TEST(ComManager, Evb2DataForwardTest)
     ringBufInit(&portTxBuf, portTxBuffer, sizeof(portTxBuffer), 1);
 
 	initComManager(tcm);
-    tcm.cm.setBinaryDataCallback(NULL); // This is initialized in initComManager() but will cause this to fail unless we clear it (double-remove from deque, if not set to NULL)
+    // tcm.cm.setBinaryDataCallback(NULL); // This is initialized in initComManager() but will cause this to fail unless we clear it (double-remove from deque, if not set to NULL)
+
 	is_comm_instance_t &comm = COMM_PORT(TEST0_PORT)->comm;
 
 	// Generate and add data to deque

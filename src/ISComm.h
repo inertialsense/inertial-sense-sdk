@@ -672,6 +672,10 @@ POP_PACK
 */
 void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, is_comm_callbacks_t *callbacks);
 
+void is_comm_register_callbacks(is_comm_instance_t* instance, is_comm_callbacks_t *callbacks);
+
+void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *callbacks);
+
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
 void is_comm_port_parse_messages(port_handle_t port);
