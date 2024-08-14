@@ -220,7 +220,8 @@ int comManagerInit(
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
         pfnComManagerDisableBroadcasts disableBcastFnc,
-        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);   //! was: com_manager_init_t *buffers,
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
+        is_comm_callbacks_t *callbacks);
 
 /** Alternate without having to specify a port...
  * TODO: Remove this and move port to the last, and make it optional.

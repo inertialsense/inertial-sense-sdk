@@ -53,21 +53,6 @@ int initComManagerInstanceInternal
     is_comm_callbacks_t *callbacks
 );
 
-// int processAsciiRxPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* start, int count);
-// void parseAsciiPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* buf, int count);
-//int ISComManager::processBinaryRxPacket(port_handle_t port, packet_t *pkt);
-//void ISComManager::enableBroadcastMsg(broadcast_msg_t *msg, int periodMultiple);
-//void ISComManager::disableBroadcastMsg(broadcast_msg_t *msg);
-//void ISComManager::disableDidBroadcast(port_handle_t port, uint16_t did);
-//int ISComManager::sendDataPacket(port_handle_t port, packet_t *pkt);
-//void ISComManager::sendAck(port_handle_t port, packet_t *pkt, uint8_t pTypeFlags);
-
-// int findAsciiMessage(const void * a, const void * b);
-// int asciiMessageCompare(const void* elem1, const void* elem2);
-// void stepComManagerSendMessages(void);
-
-//void ISComManager::stepComManagerSendMessagesInstance();
-
 static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, comm_port_t* port, protocol_type_t ptype);
 
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
@@ -163,30 +148,18 @@ bool ISComManager::registerPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     if (!port)
         return false;
 
+    is_comm_callbacks_t portCbs = defaultCbs;
+    if (cbs) portCbs = *cbs; // override defaults
+
+    // now override user-specified callback for those few that ComManager requires internally
+    // portCbs.isb = comManagerProcessBinaryRxPacket;
+    // portCbs.isbData = processBinaryRxPacket;
+
     // Initialize IScomm instance, for serial reads / writes
     if ((portType(port) & PORT_TYPE__COMM)) {
         comm_port_t* comm = COMM_PORT(port);
 
-        // Setup callback functions
-//        cmMsgHandlerRmc = handlerRmc;
-//        cmMsgHandlerNmea = handlerAscii;
-//        cmMsgHandlerUblox = handlerUblox;
-//        cmMsgHandlerRtcm3 = handlerRtcm3;
-//        cmMsgHandlerSpartn = handlerSpartn;
-//        cmMsgHandlerError = handlerError;
-//        cmMsgHandleDID = binaryDataHandler;
-
-//        is_comm_callbacks_t defaultCbs = {
-//            .isbData = pstRxFnc, // cmMsgHandleDID,
-//            .isb     = comManagerProcessBinaryRxPacket,
-//            .nmea    = cmMsgHandlerNmea,
-//            .rtcm3   = cmMsgHandlerRtcm3,
-//            .sony    = NULL,
-//            .error   = cmMsgHandlerError,
-//        };
-        if (!cbs)
-            cbs = &defaultCbs;
-        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), cbs);
+        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), &portCbs);
 
 #if ENABLE_PACKET_CONTINUATION
         // Packet data continuation
