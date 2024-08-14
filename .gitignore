@@ -31,4 +31,8 @@ libInertialSenseSDK.a
 scripts/.venv/
 python/venv/
 python/logInspector/.eggs/
-
+.cmake/
+/install/
+/log/
+/ros2/install/
+/ros2/log/
