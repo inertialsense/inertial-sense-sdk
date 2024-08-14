@@ -89,7 +89,7 @@ static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 }
 */
 
-static void postRxRead(port_handle_t port, p_data_t* dataRead)
+static void postRxRead(p_data_t* dataRead, port_handle_t port)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -111,19 +111,19 @@ int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(port_handle_t port, p_data_t* data)
+void writeNvrUserpageFlashCfg(p_data_t* data, port_handle_t port)
 {
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerBinaryData(port_handle_t port, p_data_t* msg)
+static int msgHandlerBinaryData(p_data_t* msg, port_handle_t port)
 {
-    postRxRead(port, msg);
+    postRxRead(msg, port);
     return 0;
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerNmea(port_handle_t port, const uint8_t* msg, int msgSize)
+static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
 {
 // 	comWrite(port, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
@@ -183,7 +183,7 @@ static int msgHandlerNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerUblox(port_handle_t port, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -221,7 +221,7 @@ static int msgHandlerUblox(port_handle_t port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerRtcm3(port_handle_t port, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm3(const uint8_t* msg, int msgSize, port_handle_t port)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -295,17 +295,16 @@ static bool initComManager(test_data_t &t)
 	//cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
     is_comm_callbacks_t cbs = {
             .isbData = postRxRead,
-            .isb = NULL, // ??
             .nmea = msgHandlerNmea,
             .ublox = msgHandlerUblox,
             .rtcm3 = msgHandlerRtcm3,
             .sprtn = NULL,
-            .error = msgHandlerError,
-            .all = NULL, // ??
-            .rmc = NULL,
+            // .all = NULL, // ??
+            // .error = msgHandlerError,
+            // .rmc = NULL,
     };
 
-	if (t.cm.init(NULL, TASK_PERIOD_MS, postRxRead, 0, disableBroadcasts, &g_cmBufBcastMsg, &cbs))
+	if (t.cm.init(NULL, TASK_PERIOD_MS, postRxRead, 0, 0, disableBroadcasts, &g_cmBufBcastMsg, &cbs))
 	{	// Fail to init
 		return false;
 	}
