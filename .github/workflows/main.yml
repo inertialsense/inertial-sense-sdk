@@ -101,7 +101,7 @@ jobs:
 
   ros-bridge-tests:
     name: "ROS Bridge Tests"
-     runs-on: [self-hosted, Linux, X64, docker, focal]
+    runs-on: [self-hosted, Linux, X64, docker, focal]
     # if: false  # disable this job
 
     env:
