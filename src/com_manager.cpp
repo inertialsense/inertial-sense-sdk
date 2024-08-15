@@ -157,8 +157,7 @@ bool ISComManager::registerPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     if (cbs) portCbs = *cbs; // override defaults
 
     // now override user-specified callback for those few that ComManager requires internally
-    // portCbs.isb = comManagerProcessBinaryRxPacket;
-    // portCbs.isbData = processBinaryRxPacket;
+    portCbs.all = comManagerProcessBinaryRxPacket;
 
     // Initialize IScomm instance, for serial reads / writes
     if ((portType(port) & PORT_TYPE__COMM)) {
@@ -919,3 +918,6 @@ int comManagerValidateBaudRate(unsigned int baudRate)
     return validateBaudRate(baudRate);
 }
 
+void comManagerSetErrorHandler(pfnComManagerParseErrorHandler errorCb) {
+    s_cm.setErrorHandler(errorCb);
+}

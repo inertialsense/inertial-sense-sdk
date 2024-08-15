@@ -158,6 +158,9 @@ typedef struct
 	// Callback function pointer to disable broadcasts on specified port, or all ports if port is -1
 	pfnComManagerDisableBroadcasts disableBcastFnc;
 
+    // Callback function pointer for parse errors
+    pfnComManagerParseErrorHandler errorHandlerFnc;
+
 	// Pointer to local data and data specific callback functions  ::  NOTE: https://howardhinnant.github.io/stack_alloc.html  if using this in embedded environments and dynamic allocation is a concern
 	std::map<int, registered_data_t> didRegistrationMap;
 	
@@ -458,6 +461,12 @@ bufTxRxPtr_t* comManagerGetRegisteredDataInfo(uint16_t did);
 int comManagerGetDataRequest(port_handle_t port, p_data_get_t* req);
 
 /**
+ * Register a callback function when a parse error occurs.
+ * @param errorCb
+ */
+void comManagerSetErrorHandler(pfnComManagerParseErrorHandler errorCb);
+
+/**
 * Register message handling function for a received data id (binary). This is mostly an internal use function,
 * but can be used if you are implementing your own receiver on a device.
 *
@@ -515,11 +524,13 @@ public:
             std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
             is_comm_callbacks_t *callbacks);
 
-            /**
-             * registered a port with the comm manager (allowing the port to be managed by ISComManager.
-             * @param port
-             * @return true if this port was registered, otherwise false
-             */
+    void setErrorHandler(pfnComManagerParseErrorHandler errorCb) { errorHandlerFnc = errorCb; }
+
+    /**
+     * registered a port with the comm manager (allowing the port to be managed by ISComManager.
+     * @param port
+     * @return true if this port was registered, otherwise false
+     */
     bool registerPort(port_handle_t port, is_comm_callbacks_t* callbacks = NULL);
 
 
