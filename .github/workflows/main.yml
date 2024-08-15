@@ -209,7 +209,6 @@ jobs:
       - name: Build ROS2 bridge
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          rm -rf log/ build/ install/ src/inertial-sense-sdk/CMakeCache.txt src/inertial-sense-sdk/libInertialSenseSDK.a || true
           colcon build
           "
 

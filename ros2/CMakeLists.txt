@@ -132,9 +132,10 @@ ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diag
 rosidl_target_interfaces(test_new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
 ament_target_dependencies(test_new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
-target_link_libraries(new_target ${CMAKE_CURRENT_LIST_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+get_filename_component(RESOLVED_ROS_DIR ${CMAKE_SOURCE_DIR} REALPATH) # Symlink hell
 
-target_link_libraries(test_new_target ${CMAKE_CURRENT_LIST_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(new_target ${RESOLVED_ROS_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(test_new_target ${RESOLVED_ROS_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
 install(TARGETS new_target test_new_target
