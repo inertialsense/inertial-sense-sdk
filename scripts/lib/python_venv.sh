@@ -1,7 +1,8 @@
-# This script sets the python virtual environment based on the first .venv directory found.
+# This script sets the python virtual environment based on the first .venv directory found, either in $PWD or in DIR_SEARCH_LIST.
 
 SCRIPT_DIR="$(dirname "$(realpath $0)")"
-DIR_LIST=(
+DIR_SEARCH_LIST=(
+	$PWD,
 	$SCRIPT_DIR,
 	$SCRIPT_DIR/../is-common/scripts,
 	$SCRIPT_DIR/../is-common/SDK/scripts,
@@ -11,11 +12,8 @@ DIR_LIST=(
 if [ -n "${VIRTUAL_ENV+x}" ]; then
 	echo "Virtual Enviroment already activated"
 	echo "VENV: $VIRTUAL_ENV"
-elif [ -r  $PWD/.venv/bin/activate ]; then
-	source $PWD/.venv/bin/activate
-	echo "Activated Virtual Enviroment at $PWD/.venv"
 else
-	for directory in "${DIR_LIST[@]}"
+	for directory in "${DIR_SEARCH_LIST[@]}"
 	do	# Search directory list for first .venv directory that exists
 		echo "Checking directory: ${directory}"
 		if [ -r  $directory/.venv/bin/activate ]; then
