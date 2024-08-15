@@ -191,9 +191,8 @@ jobs:
     steps:
       - name: Cleanup Last Run
         run: |
-          rm -rf ../inertial-sense-sdk || true
+          rm -rf ../inertial-sense-sdk/* || true
           rm -rf log/ build/ install/ || true
-          mkdir ../inertual-sense-sdk
 
       - name: Install libboost
         working-directory: .
