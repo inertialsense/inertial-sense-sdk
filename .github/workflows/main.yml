@@ -190,9 +190,9 @@ jobs:
         
     steps:
       - name: Install libboost
-        working-directory: .
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
+          rm -rf ../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
           apt-get update && apt-get -y install libboost-all-dev
           "
 
@@ -204,7 +204,6 @@ jobs:
       - name: Build ROS2 bridge
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          rm -rf ../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
           colcon build
           "
 
