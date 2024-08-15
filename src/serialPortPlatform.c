@@ -856,24 +856,24 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     base_port_t tmp = { .pnum = portId(port), .ptype = portType(port) };
 
     // FIXME:  I really don't like this having to copy and clean, and copy back.  It shouldn't be necessary.
-    // char tmpName[64];
-    // memcpy(tmpName, serialPort->portName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
-    // memset(serialPort, 0, sizeof(serial_port_t));
-    // memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
+    char tmpName[64];
+    memcpy(tmpName, serialPort->portName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
+    memset(serialPort, 0, sizeof(serial_port_t));
+    memcpy(serialPort->portName, tmpName, _MIN(sizeof(serialPort->portName), sizeof(tmpName)));
 
-    // serialPort->base = tmp;
+    serialPort->base = tmp;
+    serialPort->base.portRead = serialPort->pfnRead = serialPortReadPlatform;
+    serialPort->base.portWrite = serialPort->pfnWrite = serialPortWritePlatform;
+    serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
+    serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
-    serialPort->pfnRead = serialPort->base.portRead = serialPortReadPlatform;
     serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;
     serialPort->pfnAsyncRead = serialPortAsyncReadPlatform;
-    serialPort->pfnWrite = serialPort->base.portWrite = serialPortWritePlatform;
     serialPort->base.portName = serialPortName;
-    serialPort->pfnGetByteCountAvailableToRead = serialPort->base.portAvailable = serialPortGetByteCountAvailableToReadPlatform;
-    serialPort->pfnGetByteCountAvailableToWrite = serialPort->base.portFree = serialPortGetByteCountAvailableToWritePlatform;
     serialPort->pfnSleep = serialPortSleepPlatform;
     return 0;
 }
