@@ -186,13 +186,15 @@ jobs:
     defaults:
       run:
         working-directory: ../ros2_ws # This is outside the scope of git
-        shell: "/ros_entrypoint.sh /bin/bash -e {0}" # This entrypoint adds all needed environment variable 
+        shell: bash
         
     steps:
       - name: Install libboost
         working-directory: .
         run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
           apt-get update && apt-get -y install libboost-all-dev
+          "
 
       - name: Checkout source and submodules
         uses: actions/checkout@v4
@@ -201,9 +203,13 @@ jobs:
 
       - name: Build ros2 bridge
         run: |
-          colcon build 
+          /ros_entrypoint.sh /bin/bash -e -c "
+          colcon build
+          "
 
       - name: Run Functional/Integration Tests (via hardware)
-        run: |          
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "          
           source install/setup.bash
           ros2 run inertial_sense_ros2 test_new_target
+          "
