@@ -16,15 +16,6 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake_gtest REQUIRED)
 find_package(Threads)
 
-set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-#find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR} ${IS_SDK_DIR}/build ${IS_SDK_DIR}/build/Release)
-#find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
-#if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)# InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
-#    add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
-#else()
-#    link_directories(${IS_SDK_DIR})
-#endif()
-
 set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../inertial-sense-sdk/scripts/build_is_sdk.sh")
 get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
 add_custom_target(
@@ -33,6 +24,7 @@ add_custom_target(
     COMMENT "Running custom shell script..."
     VERBATIM
 	)
+
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/GTime.msg"
@@ -62,6 +54,7 @@ ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs diagnostic_m
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
 include_directories(include
+#<<<<<<< Updated upstream
   ${XMLRPC_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
   ../src #This line of CMakeList.txt stays in .external file to reference submodule
@@ -73,39 +66,19 @@ include_directories(include
   /opt/ros/jazzy/include/sensor_msgs
 )
 
-#add_library(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk
-#    src/ParamHelper.cpp
-#    src/RtkRover.cpp
-#    src/RtkBase.cpp
-#    src/inertial_sense_ros2.cpp
-#)
-
 # Build using C11 and CXX20
 set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
-#target_include_directories(inertial_sense_ros2 PUBLIC include)
-#add_dependencies(inertial_sense_ros2 inertial_sense_ros_generate_messages_cpp)
-#
-#add_executable(inertial_sense_node src/inertial_sense_node.cpp)
-#target_link_libraries(inertial_sense_node inertial_sense_ros2)
-#
-#ament_add_gtest(test_unit_tests test/test_basic_unit_tests.cpp)
-#target_link_libraries(test_unit_tests ${PROJECT_NAME})
-#
-#ament_add_gtest(test_ros_bridge test/test_main.cpp test/test_communications.cpp test/test_client_reconnect.cpp)
-#target_link_libraries(test_ros_bridge ${PROJECT_NAME})
-#
-# catkin_add_gtest(test_client_reconnect test/test_client_reconnect.cpp)
-# target_link_libraries(test_client_reconnect ${PROJECT_NAME})
+
 
 add_executable(new_target
         src/inertial_sense_ros2.cpp
         src/inertial_sense_node.cpp
         src/ParamHelper.cpp
-       # src/serial.cpp
+        # src/serial.cpp
         include/TopicHelper.cpp
         src/RtkRover.cpp
         src/RtkBase.cpp
@@ -118,11 +91,11 @@ ament_add_gtest(test_new_target
         include/TopicHelper.cpp
         src/RtkRover.cpp
         src/RtkBase.cpp
-        #test/test_basic_unit_tests.cpp
+        test/test_basic_unit_tests.cpp
         test/test_client_reconnect.cpp
         test/test_communications.cpp
-        test/test_main.cpp
-        test/test_main.h
+        #test/test_main.cpp
+        #test/test_main.h
         test/gtest_helpers.h
 )
 add_dependencies(new_target RunScript)
@@ -136,6 +109,7 @@ get_filename_component(RESOLVED_ROS_DIR ${CMAKE_SOURCE_DIR} REALPATH) # Symlink 
 
 target_link_libraries(new_target ${RESOLVED_ROS_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 target_link_libraries(test_new_target ${RESOLVED_ROS_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+
 
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
 install(TARGETS new_target test_new_target
