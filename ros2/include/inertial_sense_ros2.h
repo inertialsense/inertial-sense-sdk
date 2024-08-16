@@ -160,9 +160,9 @@ public:
 
     //ros::Publisher did_ins_1_pub_;
 
-	rclcpp::Publisher<std_msgs::msg::String>::SharedPtr did_ins_1_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr did_ins_1_pub_;
     //ros::Publisher did_ins_2_pub_;
-   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr did_ins_2_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr did_ins_2_pub_;
     //ros::Publisher odom_ins_ned_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr odom_ins_ned_pub_;
     //ros::Publisher odom_ins_ecef_pub_;
@@ -182,8 +182,8 @@ public:
     inertial_sense_ros2::msg::GNSSObsVec base_obs_Vec_;
 
 
-    RtkRoverProvider* RTK_rover_;
-    RtkBaseProvider* RTK_base_;
+    RtkRoverProvider* RTK_rover_ = {};
+    RtkBaseProvider* RTK_base_ = {};
 
     bool GNSS_Compass_ = false;
 

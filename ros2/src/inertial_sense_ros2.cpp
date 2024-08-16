@@ -67,7 +67,7 @@ void InertialSenseROS::initialize(bool configFlashParameters)
     RCLCPP_INFO(rclcpp::get_logger("start"),"======  Starting Inertial Sense ROS2  ======");
 
     initializeIS(true);
-    if (sdk_connected_) 
+    if (sdk_connected_)
     {
         initializeROS();
 
@@ -93,7 +93,7 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
 {
     if (factory_reset_)
     {
-        if (connect()) 
+        if (connect())
         {   // Apply factory reset
             RCLCPP_INFO(rclcpp::get_logger("factory_reset"), "InertialSenseROS2: Applying factory reset.");
             IS_.StopBroadcasts(true);
@@ -103,12 +103,13 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
         }
     }
 
-    if (connect()) 
+    if (connect())
     {
         // Check protocol and firmware version
         firmware_compatiblity_check();
 
         IS_.StopBroadcasts(true);
+        initializeROS();
         configure_data_streams(true);
         //configure_rtk();
         IS_.SavePersistent();
@@ -1005,9 +1006,11 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[0] = msg->ned[0];
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
+       if(rs_.did_ins1.pub_didins1 != NULL) {
+           if (rs_.did_ins1.pub_didins1->get_subscription_count() > 0)
+               rs_.did_ins1.pub_didins1->publish(msg_did_ins1);
+       }
 
-       if (rs_.did_ins1.pub_didins1->get_subscription_count() > 0)
-            rs_.did_ins1.pub_didins1->publish(msg_did_ins1);
     }
 }
 
@@ -1033,8 +1036,11 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
         msg_did_ins2.lla[0] = msg->lla[0];
         msg_did_ins2.lla[1] = msg->lla[1];
         msg_did_ins2.lla[2] = msg->lla[2];
-        if (rs_.did_ins2.pub_didins2->get_subscription_count() > 0)
-            rs_.did_ins2.pub_didins2->publish(msg_did_ins2);
+        if (rs_.did_ins2.pub_didins2 != NULL) {
+            if (rs_.did_ins2.pub_didins2->get_subscription_count() > 0)
+                rs_.did_ins2.pub_didins2->publish(msg_did_ins2);
+        }
+
     }
 }
 
@@ -1060,8 +1066,11 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         msg_did_ins4.ecef[0] = msg->ecef[0];
         msg_did_ins4.ecef[1] = msg->ecef[1];
         msg_did_ins4.ecef[2] = msg->ecef[2];
-        if (rs_.did_ins4.pub_didins4->get_subscription_count() > 0)
-            rs_.did_ins4.pub_didins4->publish(msg_did_ins4);
+        if (rs_.did_ins4.pub_didins4 != NULL) {
+            if (rs_.did_ins4.pub_didins4->get_subscription_count() > 0)
+                rs_.did_ins4.pub_didins4->publish(msg_did_ins4);
+        }
+
     }
 
     if (rs_.odom_ins_ned.enabled || rs_.odom_ins_enu.enabled || rs_.odom_ins_ecef.enabled)
@@ -1363,8 +1372,11 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
     // Use custom INL2 states message
     if (rs_.inl2_states.enabled)
     {
-       if (rs_.inl2_states.pub_inl2->get_subscription_count() > 0)
-           rs_.inl2_states.pub_inl2->publish(msg_inl2_states);
+       if (rs_.inl2_states.pub_inl2 != NULL) {
+           if (rs_.inl2_states.pub_inl2->get_subscription_count() > 0)
+               rs_.inl2_states.pub_inl2->publish(msg_inl2_states);
+       }
+
     }
 }
 
@@ -1556,8 +1568,14 @@ void InertialSenseROS::publishGPS1()
     {
         msg_gps1.vel_ecef = gps1_velEcef.vector;
         msg_gps1.sacc = gps1_vel.sAcc;
-        if (rs_.gps1.pub_gps->get_subscription_count() > 0)
-            rs_.gps1.pub_gps->publish(msg_gps1);
+        if (rs_.gps1.pub_gps == NULL) {
+            initialize();
+        }
+        if (rs_.gps1.pub_gps != NULL) {
+            if (rs_.gps1.pub_gps->get_subscription_count() > 0)
+                rs_.gps1.pub_gps->publish(msg_gps1);
+        }
+
     }
 }
 
@@ -1568,8 +1586,11 @@ void InertialSenseROS::publishGPS2()
     {
         msg_gps2.vel_ecef = gps2_velEcef.vector;
         msg_gps2.sacc = gps2_vel.sAcc;
-        if (rs_.gps2.pub_gps->get_subscription_count() > 0)
-            rs_.gps2.pub_gps->publish(msg_gps2);
+        if (rs_.gps2.pub_gps != NULL) {
+            if (rs_.gps2.pub_gps->get_subscription_count() > 0)
+                rs_.gps2.pub_gps->publish(msg_gps2);
+        }
+
     }
 }
 
@@ -1648,6 +1669,7 @@ void InertialSenseROS::mag_callback(eDataIDs DID, const magnetometer_t *const ms
     mag_msg.magnetic_field.x = msg->mag[0];
     mag_msg.magnetic_field.y = msg->mag[1];
     mag_msg.magnetic_field.z = msg->mag[2];
+
     rs_.magnetometer.pub_bfield->publish(mag_msg);
 }
 
@@ -1664,7 +1686,8 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
     baro_msg.header.frame_id = frame_id_;
     baro_msg.fluid_pressure = msg->bar;
     baro_msg.variance = msg->barTemp;
-    rs_.barometer.pub_fpres->publish(baro_msg);
+    if (rs_.barometer.pub_fpres != NULL)
+        rs_.barometer.pub_fpres->publish(baro_msg);
 }
 
 void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg)

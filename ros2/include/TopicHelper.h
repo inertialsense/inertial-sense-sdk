@@ -65,7 +65,7 @@ public:
     }
 
     std::string topic;
-    bool enabled = true;
+    bool enabled = false;
     bool streaming = false;
     int period = 1;             // Period multiple (data rate divisor)
     rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr pub_diagnostics;
