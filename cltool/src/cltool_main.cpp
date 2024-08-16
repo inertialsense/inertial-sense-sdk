@@ -677,19 +677,7 @@ static int cltool_dataStreaming()
         for (auto& device : inertialSenseInterface.getDevices()) {
             if (ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo) != 0) {
                 std::string portName(((serial_port_t*)device.port)->portName);
-                if (device.devInfo.firmwareVer[3] == 0) {
-                    portDevices[portName] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d %d%c)",
-                                                                 device.devInfo.serialNumber,
-                                                                          g_isHardwareTypeNames[device.devInfo.hardwareType], device.devInfo.hardwareVer[0], device.devInfo.hardwareVer[1],
-                                                                 device.devInfo.firmwareVer[0], device.devInfo.firmwareVer[1], device.devInfo.firmwareVer[2],
-                                                                 device.devInfo.buildNumber, device.devInfo.buildType);
-                } else {
-                    portDevices[portName] = utils::string_format("SN%u, %s-%d.%d (fw%d.%d.%d.%d %d%c)",
-                                                                 device.devInfo.serialNumber,
-                                                                          g_isHardwareTypeNames[device.devInfo.hardwareType], device.devInfo.hardwareVer[0], device.devInfo.hardwareVer[1],
-                                                                 device.devInfo.firmwareVer[0], device.devInfo.firmwareVer[1], device.devInfo.firmwareVer[2], device.devInfo.firmwareVer[3],
-                                                                 device.devInfo.buildNumber, device.devInfo.buildType);
-                }
+                portDevices[portName] = "" + device.getName() + " " + device.getFirmwareInfo(1);
                 maxPortLen = std::max<int>(maxPortLen, portName.length());
             }
         }

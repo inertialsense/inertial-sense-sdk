@@ -29,12 +29,15 @@ class ISFirmwareUpdater;
 
 class ISDevice {
 public:
-    static ISDevice invalidRef;
     enum eHdwRunStates:uint8_t {
         HDW_STATE_UNKNOWN,
         HDW_STATE_BOOTLOADER,
         HDW_STATE_APP,
     };
+
+    static ISDevice invalidRef;
+    static std::string getName(const dev_info_t& devInfo);
+    static std::string getFirmwareInfo(const dev_info_t& devInfo, int detail = 1, eHdwRunStates hdwRunState = eHdwRunStates::HDW_STATE_APP);
 
     ISDevice() {
         flashCfg.checksum = (uint32_t)-1;
@@ -69,10 +72,10 @@ public:
 
     std::string getId();
     std::string getName();
-    std::string getFirmwareInfo(int detail);
+    std::string getFirmwareInfo(int detail = 1);
     std::string getDescription();
 
-        port_handle_t port = 0;
+    port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
     uint16_t hdwId = IS_HARDWARE_TYPE_UNKNOWN;                       //! hardware type and version (ie, IMX-5.0)

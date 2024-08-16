@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDisplay.h"
 #include "ISPose.h"
 #include "ISEarth.h"
+#include "ISDevice.h"
 
 #if PLATFORM_IS_WINDOWS
 
@@ -1468,10 +1469,15 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
+
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
+    sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
+    return string(buf);
+
+/*
     // Single line format
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
         info.serialNumber
@@ -1542,6 +1548,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
     }
 
     return buf;
+*/
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {

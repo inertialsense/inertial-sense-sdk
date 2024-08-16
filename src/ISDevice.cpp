@@ -166,7 +166,7 @@ std::string ISDevice::getId() {
     return utils::string_format("%s-%d.%d::SN%ld", typeName, DECODE_HDW_MAJOR(hdwId), DECODE_HDW_MINOR(hdwId), devInfo.serialNumber);
 }
 
-std::string ISDevice::getName() {
+std::string ISDevice::getName(const dev_info_t &devInfo) {
     std::string out;
 
     // device serial no
@@ -191,6 +191,10 @@ std::string ISDevice::getName() {
     return out;
 }
 
+std::string ISDevice::getName() {
+    return getName(devInfo);
+}
+
 /**
  * Generates a single string representing the firmware version & build information for this specified device.
  * @param dev the dev_data_s device for which to format the version info
@@ -200,7 +204,8 @@ std::string ISDevice::getName() {
  *      a value of 2 will output the firmware version, build number, and build date/time.
  * @return the resulting string
  */
-std::string ISDevice::getFirmwareInfo(int detail) {
+
+std::string ISDevice::getFirmwareInfo(const dev_info_t& devInfo, int detail, eHdwRunStates hdwRunState) {
     std::string out;
 
     if (hdwRunState == eHdwRunStates::HDW_STATE_BOOTLOADER) {
@@ -240,6 +245,10 @@ std::string ISDevice::getFirmwareInfo(int detail) {
     }
 
     return out;
+}
+
+std::string ISDevice::getFirmwareInfo(int detail) {
+    return getFirmwareInfo(devInfo, detail, hdwRunState);
 }
 
 std::string ISDevice::getDescription() {
