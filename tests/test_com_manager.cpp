@@ -289,25 +289,13 @@ static uint8_t* s_comm_buffer = g_testPorts[0].comm.buffer;
 
 static bool initComManager(test_data_t &t)
 {
-	// Init ComManager
-	// com_manager_init_t cmInit = {};
-	//cmInit.broadcastMsg = t.cmBufBcastMsg;
-	//cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-    is_comm_callbacks_t cbs = {
-            .isbData = postRxRead,
-            .nmea = msgHandlerNmea,
-            .ublox = msgHandlerUblox,
-            .rtcm3 = msgHandlerRtcm3,
-            .sprtn = NULL,
-            // .all = NULL, // ??
-            // .error = msgHandlerError,
-            // .rmc = NULL,
-    };
+	if (t.cm.init(NULL, TASK_PERIOD_MS, postRxRead, 0, 0, disableBroadcasts, &g_cmBufBcastMsg))
+		return false;   // Failed to init
 
-	if (t.cm.init(NULL, TASK_PERIOD_MS, postRxRead, 0, 0, disableBroadcasts, &g_cmBufBcastMsg, &cbs))
-	{	// Fail to init
-		return false;
-	}
+    t.cm.registerIsbDataHandler(postRxRead);
+    t.cm.registerProtocolHandler(_PTYPE_NMEA, msgHandlerNmea);
+    t.cm.registerProtocolHandler(_PTYPE_UBLOX, msgHandlerUblox);
+    t.cm.registerProtocolHandler(_PTYPE_RTCM3, msgHandlerRtcm3);
 
 	t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
     t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);

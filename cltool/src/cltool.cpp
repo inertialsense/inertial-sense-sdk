@@ -552,6 +552,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-verbose"))
+        {
+            g_commandLineOptions.verbose++;
+        }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
             cout << cltool_version() << endl;

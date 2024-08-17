@@ -129,15 +129,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     target_devInfo = &remoteDevInfo;
 
     if(pfnInfoProgress_cb != nullptr) {
-        if ((remoteDevInfo.hardwareType >= IS_HARDWARE_TYPE_UINS) && (remoteDevInfo.hardwareType <= IS_HARDWARE_TYPE_GPX)) {
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", g_isHardwareTypeNames[remoteDevInfo.hardwareType],
-                               remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
-                               remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3],
-                               remoteDevInfo.buildNumber);
-        } else {
-            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s, Fw %d.%d.%d.%d", fwUpdate_getTargetName(msg.data.version_resp.resTarget),
-                               remoteDevInfo.firmwareVer[0], remoteDevInfo.firmwareVer[1], remoteDevInfo.firmwareVer[2], remoteDevInfo.firmwareVer[3]);
-        }
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received device version: %s, %s", ISDevice::getName(remoteDevInfo).c_str(), ISDevice::getFirmwareInfo(remoteDevInfo, 0).c_str());
     }
 
     return true;
@@ -230,10 +222,10 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
 
     if(pfnUploadProgress_cb != nullptr)
-        pfnUploadProgress_cb(this, percent);
+        pfnUploadProgress_cb(NULL, percent);
 
     if(pfnVerifyProgress_cb != nullptr)
-        pfnVerifyProgress_cb(this, percent);
+        pfnVerifyProgress_cb(NULL, percent);
 
     if(pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, static_cast<ISBootloader::eLogLevel>(msg.data.progress.msg_level), message);

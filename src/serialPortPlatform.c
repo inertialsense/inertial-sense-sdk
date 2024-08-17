@@ -867,6 +867,9 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
     serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
 
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
+
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;

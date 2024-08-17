@@ -49,8 +49,7 @@ int initComManagerInstanceInternal
     pfnComManagerPostRead pstRxFnc,
     pfnComManagerPostAck pstAckFnc,
     pfnComManagerDisableBroadcasts disableBcastFnc,
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,  //! was: com_manager_init_t *buffers,
-    is_comm_callbacks_t *callbacks
+    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers
 );
 
 static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, comm_port_t* port, protocol_type_t ptype);
@@ -63,8 +62,7 @@ int comManagerInit(
         pfnComManagerPostAck pstAckFnc,
         pfnComManagerRmcHandler rmcHandler,
         pfnComManagerDisableBroadcasts disableBcastFnc,
-        broadcast_msg_array_t* buffers,   //! was: com_manager_init_t *buffers,
-        is_comm_callbacks_t *callbacks)
+        broadcast_msg_array_t* buffers)
 {
     return s_cm.init(
             NULL,
@@ -73,8 +71,7 @@ int comManagerInit(
             pstAckFnc,
             rmcHandler,
             disableBcastFnc,
-            buffers,
-            callbacks);
+            buffers);
 }
 
 int comManagerInit(
@@ -84,8 +81,7 @@ int comManagerInit(
     pfnComManagerPostAck pstAckFnc,
     pfnComManagerRmcHandler rmcHandler,
     pfnComManagerDisableBroadcasts disableBcastFnc,
-    broadcast_msg_array_t* buffers,   //! was: com_manager_init_t *buffers,
-    is_comm_callbacks_t *callbacks)
+    broadcast_msg_array_t* buffers)
 {
     return s_cm.init(
         port,
@@ -94,8 +90,7 @@ int comManagerInit(
         pstAckFnc,
         rmcHandler,
         disableBcastFnc,
-        buffers,
-        callbacks);
+        buffers);
 }
 
 int ISComManager::init
@@ -105,19 +100,12 @@ int ISComManager::init
     pfnComManagerPostAck pstAckFncCb,
     pfnComManagerRmcHandler rmcHandler,
     pfnComManagerDisableBroadcasts disableBcastFncCb,
-    broadcast_msg_array_t* bcastBuffers,   //! was: com_manager_init_t *buffers,
-    is_comm_callbacks_t *callbacks)
+    broadcast_msg_array_t* bcastBuffers)
 {
     pstRxFnc = pstRxFncCb;
     pstAckFnc = pstAckFncCb;
     disableBcastFnc = disableBcastFncCb;
     stepPeriodMilliseconds = stepPeriodMillis;
-
-    //cmMsgHandleDID = NULL;
-    //cmMsgHandlerNmea = NULL;
-    //cmMsgHandlerUblox = NULL;
-    //cmMsgHandlerRtcm3 = NULL;
-    //cmMsgHandlerSpartn = NULL;
 
     cmMsgHandlerRmc = rmcHandler;
 
@@ -125,14 +113,16 @@ int ISComManager::init
     broadcastMessages = bcastBuffers;
 
     defaultCbs = {};
-
-    if (callbacks)
-        defaultCbs = *callbacks;
+    defaultCbs.all = comManagerProcessBinaryRxPacket;
 
     if (port)
         registerPort(port, &defaultCbs);
 
     return 0;
+}
+
+pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port) {
+    return s_cm.registerProtocolHandler(ptype, cbHandler, port);
 }
 
 bool comManagerRegisterPort(port_handle_t port) {
@@ -156,14 +146,12 @@ bool ISComManager::registerPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     is_comm_callbacks_t portCbs = defaultCbs;
     if (cbs) portCbs = *cbs; // override defaults
 
-    // now override user-specified callback for those few that ComManager requires internally
-    portCbs.all = comManagerProcessBinaryRxPacket;
-
     // Initialize IScomm instance, for serial reads / writes
     if ((portType(port) & PORT_TYPE__COMM)) {
         comm_port_t* comm = COMM_PORT(port);
 
-        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), &portCbs);
+        is_comm_init(&(comm->comm), comm->buffer, sizeof(comm->buffer), portCbs.all);
+        is_comm_register_port_callbacks(port, &portCbs);
 
 #if ENABLE_PACKET_CONTINUATION
         // Packet data continuation
@@ -469,12 +457,12 @@ int findAsciiMessage(const void * a, const void * b)
 */
 int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port)
 {
+    if ((ptype != _PTYPE_INERTIAL_SENSE_DATA) && (ptype != _PTYPE_INERTIAL_SENSE_CMD))
+        return -1;
+
     packet_hdr_t        *hdr = &(pkt->hdr);
     registered_data_t   *regData = NULL;
     uint8_t             isbPktType = (uint8_t)(pkt->hdr.flags&PKT_TYPE_MASK);
-
-    if (ptype != _PTYPE_INERTIAL_SENSE_DATA)
-        return -1;
 
     switch (isbPktType)
     {
@@ -496,13 +484,9 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         data.hdr.size = pkt->data.size;
         data.ptr = pkt->data.ptr;
 
-        // TODO: contains() isn't available in older c++ standards.  We may need to perform a local equivalent
+        // TODO: std::map.contains() isn't available in older c++ standards.  We may need to perform a local equivalent
         //  if (!didRegistrationMap.contains(hdr->id)) {
-        if (didRegistrationMap.find(hdr->id) == didRegistrationMap.end()) {
-            // only call the global handler if no DID handler is registered
-            if (pstRxFnc)
-                pstRxFnc(&data, port);
-        } else {
+        if (didRegistrationMap.find(hdr->id) != didRegistrationMap.end()) {
             // NOTE we do the find() above to see if its exists, because making the following call will insert an empty regData into
             // the map, if ones not already there..
             regData = &didRegistrationMap[hdr->id];
@@ -920,4 +904,38 @@ int comManagerValidateBaudRate(unsigned int baudRate)
 
 void comManagerSetErrorHandler(pfnComManagerParseErrorHandler errorCb) {
     s_cm.setErrorHandler(errorCb);
+}
+
+pfnIsCommIsbDataHandler ISComManager::registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler, port_handle_t port) {
+    if (port && portType(port) & PORT_TYPE__COMM) {
+        return is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
+    }
+
+    if (!port) {
+        // if port is null, set this for all available ports
+        defaultCbs.isbData = cbHandler;
+        for (auto port : ports) {
+            if (port && portType(port) & PORT_TYPE__COMM) {
+                is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
+            }
+        }
+    }
+    return NULL;
+}
+
+pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port) {
+    if (port && portType(port) & PORT_TYPE__COMM) {
+        return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+    }
+
+    if (!port) {
+        // if port is null, set this for all available ports
+        defaultCbs.generic[ptype] = cbHandler; // TODO: range check this
+        for (auto port : ports) {
+            if (port && portType(port) & PORT_TYPE__COMM) {
+                is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
+            }
+        }
+    }
+    return NULL;
 }
