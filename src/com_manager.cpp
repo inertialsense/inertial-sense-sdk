@@ -836,7 +836,7 @@ void ISComManager::disableBroadcasts(port_handle_t port)
     // for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
     for (auto& bc : *broadcastMessages)
     {
-        if ((port == NULL) || bc.port == port)
+        if ((port == NULL) || (bc.port == port))
         {
             bc.period = MSG_PERIOD_DISABLED;
         }
@@ -848,7 +848,7 @@ void ISComManager::disableDidBroadcast(port_handle_t port, uint16_t did)
     // for (broadcast_msg_t* bcPtr = cmInstance->broadcastMessages, *ptrEnd = (cmInstance->broadcastMessages + MAX_NUM_BCAST_MSGS); bcPtr < ptrEnd; bcPtr++)
     for (auto& bc : *broadcastMessages)
     {
-        if (((port == NULL) || (port == bc.port)) && bc.pkt.hdr.id == did)
+        if (((port == NULL) || (port == bc.port)) && (bc.pkt.hdr.id == did))
         {
             bc.period = MSG_PERIOD_DISABLED;
         }

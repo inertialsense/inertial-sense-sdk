@@ -110,7 +110,8 @@ int serialPortClose(port_handle_t port)
     serial_port_t* serialPort = (serial_port_t*)port;
 	if ((serialPort == 0) || (serialPort->handle == 0) || (serialPort->pfnClose == 0))
 	{
-        if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
+        if (serialPort && serialPort->pfnError)
+            serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
 	}
     return serialPort->pfnClose(port);
