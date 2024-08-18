@@ -82,7 +82,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
             name = s.substr(0, pos);
         }
 
-        did = cISDataMappings::GetDataSetId(name);
+        did = cISDataMappings::GetId(name);
     }
 
     if (did > DID_NULL && did < DID_COUNT)
@@ -126,7 +126,7 @@ void print_dids()
     for (eDataIDs id = 0; id < DID_COUNT; id++)
 #endif
     {
-        printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+        printf("(%d) %s\n", id, cISDataMappings::GetName(id));
     }
     cltool_outputHelp();
 }

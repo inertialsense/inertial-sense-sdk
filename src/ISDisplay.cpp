@@ -475,7 +475,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 		break;
 
-		case DMODE_EDIT:
+	case DMODE_EDIT:
 		if (m_editData.did == data->hdr.id)
 		{
 			m_editData.pData = *data;
@@ -598,7 +598,7 @@ void cInertialSenseDisplay::PrintStats()
 		sDidStats& s = m_didStats[i];
 		if (s.count)
 		{
-			printf("%9d %7.3lf %4d  %s\n", s.count, s.dtMs*0.001, i, cISDataMappings::GetDataSetName(i));
+			printf("%9d %7.3lf %4d  %s\n", s.count, s.dtMs*0.001, i, cISDataMappings::GetName(i));
 		}
 	}
 }
@@ -745,7 +745,7 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -796,7 +796,7 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -852,7 +852,7 @@ string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -908,7 +908,7 @@ string cInertialSenseDisplay::DataToStringINS4(const ins_4_t &ins4, const p_data
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -964,7 +964,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, const p_data_hdr
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 	return string(buf) + DataToStringIMU(imu, m_displayMode != DMODE_SCROLL);
 }
@@ -1018,7 +1018,7 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, co
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -1060,7 +1060,7 @@ string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, con
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -1090,7 +1090,7 @@ string cInertialSenseDisplay::DataToStringMagnetometer(const magnetometer_t &mag
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };
@@ -1126,7 +1126,7 @@ string cInertialSenseDisplay::DataToStringMagCal(const mag_cal_t &mag, const p_d
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 	switch (mag.state)
 	{
@@ -1159,7 +1159,7 @@ string cInertialSenseDisplay::DataToStringGpsVersion(const gps_version_t &ver, c
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " Sw-%s Hw-%s",
 		ver.swVersion,
@@ -1185,7 +1185,7 @@ string cInertialSenseDisplay::DataToStringGpsPos(const gps_pos_t &gps, const p_d
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 	return string(buf) + DataToStringGpsPos(gps, m_displayMode != DMODE_SCROLL);
 }
@@ -1262,7 +1262,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
 
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
@@ -1296,7 +1296,7 @@ string cInertialSenseDisplay::DataToStringRtkRel(const gps_rtk_rel_t &rel, const
 string cInertialSenseDisplay::DataToStringRtkMisc(const gps_rtk_misc_t& rtk, const p_data_hdr_t& hdr)
 {
 	(void)hdr;
-	string didName = cISDataMappings::GetDataSetName(hdr.id);
+	string didName = cISDataMappings::GetName(hdr.id);
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
@@ -1340,7 +1340,7 @@ string cInertialSenseDisplay::DataToStringSurveyIn(const survey_in_t &survey, co
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " state: %d ", survey.state);
     switch (survey.state)
     {
@@ -1384,7 +1384,7 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static int lastTimeMs = 0;
@@ -1413,7 +1413,7 @@ string cInertialSenseDisplay::DataToStringSysSensors(const sys_sensors_t& sensor
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime = 0;
@@ -1462,7 +1462,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 	return string(buf) + DataToStringDevInfo(info, m_displayMode!=DMODE_SCROLL) + (m_displayMode!=DMODE_SCROLL ? "\n" : "");
 }
@@ -1471,8 +1471,8 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 {
 
     char buf[BUF_SIZE];
-    char* ptr = buf;
-    char* ptrEnd = buf + BUF_SIZE;
+//    char* ptr = buf;
+//    char* ptrEnd = buf + BUF_SIZE;
 
     sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
     return string(buf);
@@ -1615,7 +1615,7 @@ string cInertialSenseDisplay::DataToStringWheelEncoder(const wheel_encoder_t &wh
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
 	static double lastTime[2] = { 0 };
@@ -1650,7 +1650,7 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
     char buf[BUF_SIZE];
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };
@@ -1682,7 +1682,7 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };
@@ -1726,7 +1726,7 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:\n", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s:\n", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };
@@ -1772,7 +1772,7 @@ string cInertialSenseDisplay::DataToStringRawHex(const char *raw_data, const p_d
     char* ptr = buf;
     char* ptrEnd = buf + BUF_SIZE;
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s (RAW):", hdr.id, cISDataMappings::GetDataSetName(hdr.id));
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s (RAW):", hdr.id, cISDataMappings::GetName(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };
@@ -1823,7 +1823,7 @@ string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_d
 
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[PREAMB] " GREEN "49 EF ");
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Flags: " YELLOW "%s" BLUE "] " GREEN "?? ", "?");
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " GREEN "%02x ", cISDataMappings::GetDataSetName(hdr.id), hdr.id);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " GREEN "%02x ", cISDataMappings::GetName(hdr.id), hdr.id);
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Size: " YELLOW "%u" BLUE "] " GREEN "%02x %02x ", hdr.size, ((hdr.size >> 8) & 0xFF), (hdr.size & 0xFF));
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Offset: " YELLOW "%u" BLUE "] " GREEN "%02x %02x", hdr.offset, ((hdr.offset >> 8) & 0xFF), (hdr.offset & 0xFF));
 
@@ -1869,7 +1869,7 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
+	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetName(data->hdr.id));
 
 	data_mapping_string_t tmp;
 	for (map_name_to_info_t::const_iterator it = mapInfo->begin(); it != mapInfo->end(); it++)
@@ -1898,7 +1898,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
+	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetName(data->hdr.id));
 
 	data_mapping_string_t tmp;
 	for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)

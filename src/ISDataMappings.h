@@ -135,6 +135,7 @@ struct equal_to<std::string> : public unary_function<std::string, bool>
 
 // map of field name to data info
 typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
+typedef std::map<int, data_info_t*> map_index_to_info_t;
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 class cISDataMappings
@@ -150,20 +151,26 @@ public:
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static const char* GetDataSetName(uint32_t dataId);
+	static const char* GetName(uint32_t dataId);
 
 	/**
 	* Get a data set id from name
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t GetDataSetId(std::string name);
+	static uint32_t GetId(std::string name);
 
 	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
 	static const map_name_to_info_t* GetMapInfo(uint32_t dataId);
+
+	/**
+	* Get the info for a data id
+	* @return the info for the data id, or NULL if none found
+	*/
+	static const map_index_to_info_t* GetIndexMapInfo(uint32_t dataId);
 
 	/**
 	* Get the size of a given data id
@@ -245,6 +252,7 @@ private:
 	uint32_t m_lookupSize[DID_COUNT];
 	const data_info_t* m_timestampFields[DID_COUNT];
 	map_name_to_info_t m_lookupInfo[DID_COUNT];
+	map_index_to_info_t m_indexInfo[DID_COUNT];
 
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
