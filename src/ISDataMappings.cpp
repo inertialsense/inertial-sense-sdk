@@ -2827,6 +2827,30 @@ const map_index_to_info_t* cISDataMappings::GetIndexMapInfo(uint32_t dataId)
 }
 
 
+// const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t dataId, uint32_t field)
+// {
+//     if (dataId >= DID_COUNT)
+//     {
+//         return NULLPTR;
+//     }
+
+// #if PLATFORM_IS_EMBEDDED
+
+//     if (s_map == NULLPTR)
+//     {
+//         s_map = new cISDataMappings();
+//     }
+
+//     return s_map->m_indexInfo[dataId][field];
+
+// #else
+
+//     return s_map.m_indexInfo[dataId][field];
+
+// #endif
+// }
+
+
 uint32_t cISDataMappings::GetSize(uint32_t dataId)
 {
     if (dataId >= DID_COUNT)

@@ -135,7 +135,7 @@ struct equal_to<std::string> : public unary_function<std::string, bool>
 
 // map of field name to data info
 typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
-typedef std::map<int, data_info_t*> map_index_to_info_t;
+typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 class cISDataMappings
@@ -167,10 +167,16 @@ public:
 	static const map_name_to_info_t* GetMapInfo(uint32_t dataId);
 
 	/**
-	* Get the info for a data id
-	* @return the info for the data id, or NULL if none found
+	* Get map pointer for a data id
+	* @return map pointer for the data id, or NULL if none found
 	*/
 	static const map_index_to_info_t* GetIndexMapInfo(uint32_t dataId);
+
+	/**
+	* Get data info pointer based on data id and field index number
+	* @return the data info for data id field, or NULL if none found
+	*/
+	// static const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t dataId, uint32_t field);
 
 	/**
 	* Get the size of a given data id
