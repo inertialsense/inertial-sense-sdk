@@ -139,6 +139,8 @@ InertialSense::InertialSense(
     m_handlerUblox  = handlerUblox;
     m_handlerRtcm3  = handlerRtcm3;
     m_handlerSpartn = handlerSpartn;
+
+    m_serialPorts.reserve(10);
 }
 
 InertialSense::~InertialSense()
@@ -727,6 +729,7 @@ void InertialSense::Close()
         serialPortClose(device.port);
     }
     m_comManagerState.devices.clear();
+    m_serialPorts.clear();
 }
 
 vector<string> InertialSense::GetPorts()
@@ -1399,7 +1402,7 @@ is_operation_result InertialSense::BootloadFile(
     ifstream tmpStream(fileName);
     if (!tmpStream.good())
     {
-        printf("File does not exist");
+        printf("File does not exist: %s\n", fileName.c_str());
         return IS_OP_ERROR;
     }
 
@@ -1490,7 +1493,7 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
     //   -- rather than using new, m_serialPorts will allocate a new port using a copy constructor.
     //   We'll dereference the internal copy in the vector to a port_handle_t -- this avoids us using new/delete or malloc/free
     serial_port_t serialPort;
-    serialPort.base.pnum = (uint16_t)m_comManagerState.devices.size();
+    serialPort.base.pnum = (uint16_t)m_serialPorts.size(); // m_comManagerState.devices.size();
     serialPort.base.ptype = (ptype | PORT_TYPE__UART);
 
     m_serialPorts.push_back(serialPort);
@@ -1535,6 +1538,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     vector<string> ports;
     size_t maxCount = UINT32_MAX;
 
+    debug_message("Initializing comManager...\n");
     comManagerInit(10, staticProcessRxData, 0, 0, 0, &m_cmBufBcastMsg);
     comManagerRegisterProtocolHandler(_PTYPE_NMEA, staticProcessRxNmea);
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
@@ -1545,6 +1549,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     if (portPattern[0] == '*')
     {
         // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
+        debug_message("[DGB] Querying OS for available serial ports.\n");
         cISSerialPort::GetComPorts(ports);
         if (portPattern[1] != '\0')
         {
@@ -1572,6 +1577,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // check is this port already exists, and is open...
         port_handle_t newPort = 0;
         for (auto& port : comManagerGetPorts()) {
+            debug_message("[DGB] Serial port '%s' has already been allocated.\n", curPortName.c_str());
             if (portName(port) && (portName(port) == curPortName)) {
                 newPort = port;
                 break;
@@ -1579,10 +1585,12 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
 
         if (!newPort) {
+            debug_message("[DGB] Allocating serial port instance for %s\n", curPortName.c_str());
             newPort = allocateSerialPort(PORT_TYPE__COMM);
         }
 
         if (!serialPortIsOpen(newPort)) {
+            debug_message("[DGB] OpeningSerial port '%s' has already been allocated.\n", curPortName.c_str());
             if (serialPortOpen(newPort, curPortName.c_str(), baudRate, 0) == 0) {
                 serialPortClose(newPort);           // failed to open
                 m_ignoredPorts.push_back(curPortName);     // record this port name as bad, so we don't try and reopen it again
@@ -1686,6 +1694,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
 void InertialSense::CloseSerialPorts()
 {
+    debug_message("Closing all serial ports.\n");
     for (auto& dev : m_comManagerState.devices)
         serialPortClose(dev.port);
 
@@ -2008,4 +2017,80 @@ std::vector<std::string> InertialSense::checkForNewPorts() {
     }
 
     return new_ports;
+}
+
+
+
+/**
+ * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+ * @param info1
+ * @param info2
+ * @return a uint32_t with each bit indicating a match of a specific field in the struct
+ */
+uint32_t InertialSense::compareDevInfo(const dev_info_t& info1, const dev_info_t& info2) {
+    uint32_t match = 0;
+
+    match |= (((info1.reserved          == info2.reserved)          & 1) << 0);
+
+    match |= (((info1.hardwareType      == info2.hardwareType)      & 1) << 1);
+    match |= (((info1.reserved2         == info2.reserved2)         & 1) << 2);
+
+    match |= (((info1.serialNumber      == info2.serialNumber)      & 1) << 3);
+
+    match |= (((info1.hardwareVer[0]    == info2.hardwareVer[0])    & 1) << 4);
+    match |= (((info1.hardwareVer[1]    == info2.hardwareVer[1])    & 1) << 5);
+    match |= (((info1.hardwareVer[2]    == info2.hardwareVer[2])    & 1) << 6);
+    match |= (((info1.hardwareVer[3]    == info2.hardwareVer[3])    & 1) << 7);
+
+    match |= (((info1.firmwareVer[0]    == info2.firmwareVer[0])    & 1) << 8);
+    match |= (((info1.firmwareVer[1]    == info2.firmwareVer[1])    & 1) << 9);
+    match |= (((info1.firmwareVer[2]    == info2.firmwareVer[2])    & 1) << 10);
+    match |= (((info1.firmwareVer[3]    == info2.firmwareVer[3])    & 1) << 11);
+
+    match |= (((info1.buildNumber       == info2.buildNumber)       & 1) << 12);
+
+    match |= (((info1.protocolVer[0]    == info2.protocolVer[0])    & 1) << 13);
+    match |= (((info1.protocolVer[1]    == info2.protocolVer[1])    & 1) << 14);
+    match |= (((info1.protocolVer[2]    == info2.protocolVer[2])    & 1) << 15);
+    match |= (((info1.protocolVer[3]    == info2.protocolVer[3])    & 1) << 16);
+
+    match |= (((!strncmp(info1.manufacturer, info2.manufacturer, DEVINFO_MANUFACTURER_STRLEN))    & 1) << 17);
+
+    match |= (((info1.buildType         == info2.buildType)         & 1) << 18);
+
+    match |= (((info1.buildYear         == info2.buildYear)         & 1) << 19);
+    match |= (((info1.buildMonth        == info2.buildMonth)        & 1) << 20);
+    match |= (((info1.buildDay          == info2.buildDay)          & 1) << 21);
+
+    match |= (((info1.buildHour         == info2.buildHour)         & 1) << 22);
+    match |= (((info1.buildMinute       == info2.buildMinute)       & 1) << 23);
+    match |= (((info1.buildSecond       == info2.buildSecond)       & 1) << 24);
+    match |= (((info1.buildMillisecond  == info2.buildMillisecond)  & 1) << 25);
+
+    match |= (((!strncmp(info1.addInfo, info2.addInfo, DEVINFO_ADDINFO_STRLEN))    & 1) << 26);
+
+    return match;
+}
+
+/**
+ * Returns a subset of connected devices filtered by the passed devInfo and filterFlags.
+ * filterFlags is a bitmask the matches the returned bitmap from compareDevInfo, in which
+ * each bit corresponds to a field in devInfo, which must be matched in order to be
+ * selected. All bits which are set in filterFlags must also be set in the result from
+ * compareDevInfo in order to selected.  Passing 0x0000 for filterFlags will return all available
+ * devices (any device matches), while passing 0xFFFF will only match an exact match, including
+ * the serial number.
+ * @param devInfo
+ * @param filterFlags
+ * @return a vector of ISDevice which match the filter criteria
+ */
+std::vector<ISDevice*> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
+    std::vector<ISDevice*> selected;
+
+    for (auto& device: m_comManagerState.devices) {
+        uint32_t matchy = compareDevInfo(devInfo, device.devInfo) & filterFlags;
+        if (matchy == filterFlags)
+            selected.push_back(&device);
+    }
+    return selected;
 }

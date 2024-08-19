@@ -39,6 +39,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
 
+#define DEBUG_LOGGING
+// #define debug_message(...)
+#ifndef debug_message
+    #define debug_message printf
+#endif
+
+
 extern "C"
 {
 // [C COMM INSTRUCTION]  Include data_sets.h and com_manager.h
@@ -301,6 +308,28 @@ public:
     std::vector<std::string> checkForNewPorts();
 
     /**
+     * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
+     * @param info1
+     * @param info2
+     * @return a uint32_t with each bit indicating a match of a specific field in the struct
+     */
+    uint32_t compareDevInfo(const dev_info_t& info1, const dev_info_t& info2);
+
+    /**
+     * Returns a subset of connected devices filtered by the passed devInfo and filterFlags.
+     * filterFlags is a bitmask the matches the returned bitmap from compareDevInfo, in which
+     * each bit corresponds to a field in devInfo, which must be matched in order to be
+     * selected. All bits which are set in filterFlags must also be set in the result from
+     * compareDevInfo in order to selected.  Passing 0x0000 for filterFlags will return all available
+     * devices (any device matches), while passing 0xFFFF will only match an exact match, including
+     * the serial number.
+     * @param devInfo
+     * @param filterFlags
+     * @return a vector of ISDevice which match the filter criteria
+     */
+    std::vector<ISDevice*> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
+
+    /**
     * Get the device info
     * @param device device to get device info for.
     * @return the device info
@@ -346,9 +375,15 @@ public:
     * @return true if the flash config is valid, currently synchronized, otherwise false.
     */
     bool FlashConfigSynced(port_handle_t port = 0)
-    { 
-        ISDevice* device = getDevice(port);
-        if (device != NULL)
+    {
+        ISDevice* device = NULL;
+        if (!port) {
+            device = &m_comManagerState.devices[0];
+        } else {
+            device = DeviceByPort(port);
+        }
+
+        if (device)
             return  (device->flashCfg.checksum == device->sysParams.flashCfgChecksum) &&
                     (device->flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(device->port);
 
@@ -362,12 +397,19 @@ public:
      * @return true Flash config upload was either not received or rejected.
      */
     bool FlashConfigUploadFailure(port_handle_t port = 0)
-    { 
-        ISDevice* device = getDevice(port);
-        if (device != NULL)
-            return device->flashCfgUploadChecksum && (device->flashCfgUploadChecksum != device->sysParams.flashCfgChecksum);
-        return true;
-    } 
+    {
+        ISDevice* device = NULL;
+        if (!port) {
+            device = &m_comManagerState.devices[0];
+        } else {
+            device = DeviceByPort(port);
+        }
+
+        if (!device)
+            return true;
+
+        return device->flashCfgUploadChecksum && (device->flashCfgUploadChecksum != device->sysParams.flashCfgChecksum);
+    }
 
     /**
     * Set the flash config and update flash config on the uINS flash memory

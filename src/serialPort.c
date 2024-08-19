@@ -87,7 +87,7 @@ int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, 
         }
         if (serialPort->errorCode == ENOENT)
             break;  // don't retry if the port doesn't even exist
-        serialPortSleep(port, 100);
+        serialPortSleep(port, 250);
     }
     if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
     if (serialPortIsOpen(port)) serialPortClose(port);
