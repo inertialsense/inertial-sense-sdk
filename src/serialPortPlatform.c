@@ -66,6 +66,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #endif
 
+#define error_message(...)
 #ifndef error_message
     #define error_message printf
 #endif
@@ -370,6 +371,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     {
         error_message("[%s] open():: Error opening port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
@@ -377,6 +379,7 @@ static int serialPortOpenPlatform(port_handle_t port, const char* portName, int 
     {
         error_message("[%s] open():: Error configuring port: %s (%d)\n", portName, strerror(errno), errno);
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
@@ -427,6 +430,7 @@ static int serialPortIsOpenPlatform(port_handle_t port)
     struct stat sb;
     if (fstat(((serialPortHandle*)(serialPort->handle))->fd, &sb) != 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
     return 1; // return success
@@ -493,8 +497,10 @@ static int serialPortFlushPlatform(port_handle_t port)
 
 #else
 
-    if (tcflush(handle->fd, TCIOFLUSH) < 0)
+    if (tcflush(handle->fd, TCIOFLUSH) < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+    }
 
 #endif
 
@@ -636,6 +642,7 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
+        serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
 
@@ -653,10 +660,12 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     if ((result < 0) && !((errno == EAGAIN) && !handle->blocking)) {
         error_message("[%s] read():: Error reading from port: %s (%d)\n", portName(portName), strerror(errno), errno);
         serialPort->errorCode = errno;  // NOTE: If you are here looking at errno = -11 (EAGAIN) remember that if this is a non-blocking tty, returning EAGAIN on a read() just means there was no data available.
-        serialPort->error = strerror(errno);
-
-    } else
+        serialPort->error = strerror(serialPort->errorCode);
+    } else {
         serialPort->errorCode = 0; // clear any previous errorcode
+        serialPort->error = NULL;
+    }
+
 
     debugDumpBuffer("{{ ", buffer, result);
     return result;
@@ -673,6 +682,7 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
+        serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
 
@@ -693,8 +703,10 @@ static int serialPortAsyncReadPlatform(port_handle_t port, unsigned char* buffer
 
     // no support for async, just call the completion right away
     int n = read(handle->fd, buffer, readCount);
-    if (n < 0)
+    if (n < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+    }
 
     completion(port, buffer, (n < 0 ? 0 : n), (n >= 0 ? 0 : n));
 
@@ -710,6 +722,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
         serialPort->errorCode = ENODEV;
+        serialPort->error = strerror(serialPort->errorCode);
         return -1;
     }
 
@@ -744,6 +757,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     if(fstat(((serialPortHandle*)serialPort->handle)->fd, &sb) != 0)
     {   // Serial port not open
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
         return 0;
     }
 
@@ -766,7 +780,7 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
             }
             // Other errors
             serialPort->errorCode = errno;
-            serialPort->error = strerror(errno);
+            serialPort->error = strerror(serialPort->errorCode);
             error_message("[%s] write():: Error writing to port: %s (%d)\n", serialPort->portName, strerror(errno), errno);
             return -1;
         }
@@ -807,8 +821,10 @@ static int serialPortGetByteCountAvailableToReadPlatform(port_handle_t port)
 #else
 
     int bytesAvailable;
-    if (ioctl(handle->fd, FIONREAD, &bytesAvailable) < 0)
+    if (ioctl(handle->fd, FIONREAD, &bytesAvailable) < 0) {
         serialPort->errorCode = errno;
+        serialPort->error = strerror(serialPort->errorCode);
+    }
 
     return bytesAvailable;
 
@@ -866,6 +882,9 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
     serialPort->base.portWrite = serialPort->pfnWrite = serialPortWritePlatform;
     serialPort->base.portAvailable = serialPort->pfnGetByteCountAvailableToRead = serialPortGetByteCountAvailableToReadPlatform;
     serialPort->base.portFree = serialPort->pfnGetByteCountAvailableToWrite = serialPortGetByteCountAvailableToWritePlatform;
+
+    if (portType(port) & PORT_TYPE__COMM)
+        is_comm_port_init(COMM_PORT(port), NULL);
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;

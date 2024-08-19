@@ -585,13 +585,17 @@ typedef int(*pfnIsCommGenMsgHandler)(const unsigned char* msg, int msgSize, port
 // Callback functions are called when the specific message is received and callback pointer is not null:
 typedef struct
 {
-    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message
-    pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
-    pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
-    pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
-    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
-    pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
-    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
+    pfnIsCommHandler                all;
+    pfnIsCommIsbDataHandler         isbData;
+    pfnIsCommGenMsgHandler          generic[_PTYPE_LAST_DATA];
+
+//    pfnIsCommIsbDataHandler         isbData;    // Message handler - Inertial Sense binary (ISB) data message
+//    pfnIsCommGenMsgHandler          nmea;       // Message handler - NMEA
+//    pfnIsCommGenMsgHandler          ublox;      // Message handler - Ublox
+//    pfnIsCommGenMsgHandler          rtcm3;      // Message handler - RTCM3
+//    pfnIsCommGenMsgHandler          sony;  	    // Message handler - Sony
+//    pfnIsCommGenMsgHandler          sprtn;      // Message handler - SPARTN
+//    pfnIsCommHandler                all;        // Message handler - Called for all messages in addition to any message handler including the error handler.
 //    pfnIsCommAsapMsg                rmc;        // Message handler - Used in com_manager to forward data requests to realtime message controller (RMC).  Called whenever we get a message broadcast request or message disable command.
 } is_comm_callbacks_t;
 
@@ -665,7 +669,15 @@ POP_PACK
 * Init simple communications interface - call this before doing anything else
 * @param instance communications instance, please ensure that you have set the buffer and bufferSize
 */
-void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, is_comm_callbacks_t *callbacks);
+void is_comm_init(is_comm_instance_t* instance, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler);
+
+void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler);
+
+is_comm_instance_t* is_comm_get_port_instance(port_handle_t port);
+
+pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler);
+
+pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler);
 
 void is_comm_register_callbacks(is_comm_instance_t* instance, is_comm_callbacks_t *callbacks);
 
@@ -894,7 +906,7 @@ static inline int is_comm_stop_broadcasts_all_ports(port_handle_t port)
  * @param comm the comm instance passed to is_comm_init
  * @return 0 if success, otherwise an error code
  */
-static inline int is_comm_stop_broadcasts_current_ports(port_handle_t port)
+static inline int is_comm_stop_broadcasts_current_port(port_handle_t port)
 {
     return is_comm_write(port, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
 }

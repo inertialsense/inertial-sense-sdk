@@ -18,7 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-static comm_port_t s_serialPort = {};
+static serial_port_t s_serialPort = {};
 
 
 /**
@@ -28,18 +28,13 @@ static comm_port_t s_serialPort = {};
  */
 void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0) 
 {
-//	is_comm_instance_t comm = {};
-	uint8_t buf[64];
-	is_comm_init(&s_serialPort.comm, buf, sizeof(buf), NULL);  // TODO: Should we be using callbacks??  Probably
+    is_comm_port_init(&s_serialPort.comm, NULL); // TODO: Should we be using callbacks??  Probably
 
 	rmc_t rmc;
 	rmc.bits = bits;
 	rmc.options = options;
 
-	int len = is_comm_data_to_buf(buf, sizeof(buf), &s_serialPort.comm, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
-
-	// Write command to serial port
-	serialPortWrite((port_handle_t)&s_serialPort, buf, len);
+	is_comm_data(&s_serialPort.comm, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
 }
 
 

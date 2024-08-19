@@ -220,8 +220,7 @@ int comManagerInit(
         pfnComManagerPostAck pstAckFnc,
         pfnComManagerRmcHandler rmcHandler,
         pfnComManagerDisableBroadcasts disableBcastFnc,
-        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
-        is_comm_callbacks_t *callbacks);
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);
 
 /** Alternate without having to specify a port...
  * TODO: Remove this and move port to the last, and make it optional.
@@ -239,8 +238,9 @@ int comManagerInit(
         pfnComManagerPostAck pstAckFnc,
         pfnComManagerRmcHandler rmcHandler,
         pfnComManagerDisableBroadcasts disableBcastFnc,
-        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
-        is_comm_callbacks_t* callbacks);
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);
+
+pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port = NULL);
 
 /**
  * registered a port with the comm manager (allowing the port to be managed by ISComManager.
@@ -521,8 +521,11 @@ public:
             pfnComManagerPostAck pstAckFnc,
             pfnComManagerRmcHandler rmcHandler,
             pfnComManagerDisableBroadcasts disableBcastFnc,
-            std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers,   //! was: com_manager_init_t *buffers,
-            is_comm_callbacks_t *callbacks);
+            std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers);
+
+    pfnIsCommIsbDataHandler registerIsbDataHandler(pfnIsCommIsbDataHandler cbHandler, port_handle_t port = NULL);
+
+    pfnIsCommGenMsgHandler registerProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port = NULL);
 
     void setErrorHandler(pfnComManagerParseErrorHandler errorCb) { errorHandlerFnc = errorCb; }
 

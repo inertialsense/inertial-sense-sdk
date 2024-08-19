@@ -157,7 +157,7 @@ int validateBaudRate(unsigned int baudRate)
     return -1;
 }
 
-void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, is_comm_callbacks_t *callbacks)
+void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, pfnIsCommHandler pktHandler)
 {
     memset(c, 0, sizeof(is_comm_instance_t));
 
@@ -181,8 +181,38 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, is_com
     c->rxPkt.data.ptr = c->rxBuf.start;
     c->rxErrorState = 1;
 
-    if (callbacks)
-        c->cb = *callbacks;
+    c->cb.all = pktHandler;
+}
+
+void is_comm_port_init(comm_port_t* port, pfnIsCommHandler pktHandler) {
+    if (port && (portType((port_handle_t)port) & PORT_TYPE__COMM)) {
+        is_comm_init(&port->comm, port->buffer, sizeof(port->buffer), pktHandler);
+    }
+}
+
+is_comm_instance_t* is_comm_get_port_instance(port_handle_t port) {
+    if (port && (portType((port_handle_t)port) & PORT_TYPE__COMM)) {
+        return &COMM_PORT(port)->comm;
+    }
+    return NULL;
+}
+
+pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm, pfnIsCommIsbDataHandler cbHandler) {
+    if (!comm)
+        return NULL;
+
+    pfnIsCommIsbDataHandler priorCb = comm->cb.isbData;
+    comm->cb.isbData = cbHandler;
+    return priorCb;
+}
+
+pfnIsCommGenMsgHandler is_comm_register_msg_handler(is_comm_instance_t* comm, int ptype, pfnIsCommGenMsgHandler cbHandler) {
+    if (!comm || (ptype < _PTYPE_FIRST_DATA) || (ptype > _PTYPE_LAST_DATA))
+        return NULL;
+
+    pfnIsCommGenMsgHandler priorCb = comm->cb.generic[ptype];
+    comm->cb.generic[ptype] = cbHandler;
+    return priorCb;
 }
 
 void is_comm_register_callbacks(is_comm_instance_t* c, is_comm_callbacks_t *callbacks) {
@@ -1004,16 +1034,19 @@ static inline void parse_messages(is_comm_instance_t* comm, port_handle_t port)
         case _PTYPE_INERTIAL_SENSE_CMD:
             break;
 
-        case _PTYPE_NMEA:
-            if (comm->cb.nmea)    {
-                comm->cb.nmea(  comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
-            } break;
-        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(  comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
-        // case _PTYPE_PARSE_ERROR:    if (comm->cb.error)   { comm->cb.error( port); } break;
-        default: break;
+//        case _PTYPE_NMEA:
+//            if (comm->cb.nmea)    {
+//                comm->cb.nmea(  comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+//            } break;
+//        case _PTYPE_RTCM3:          if (comm->cb.rtcm3)   { comm->cb.rtcm3( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+//        case _PTYPE_SPARTN:         if (comm->cb.sprtn)   { comm->cb.sprtn( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+//        case _PTYPE_UBLOX:          if (comm->cb.ublox)   { comm->cb.ublox( comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+//        case _PTYPE_SONY:           if (comm->cb.sony)    { comm->cb.sony(  comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port); } break;
+        default:
+            if (comm->cb.generic[ptype]) {
+                comm->cb.generic[ptype](comm->rxPkt.data.ptr + comm->rxPkt.offset, comm->rxPkt.data.size, port);
+            }
+            break;
         }
 
         if (comm->cb.all)
