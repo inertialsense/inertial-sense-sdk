@@ -22,9 +22,10 @@ int main(int argc, char**argv)
     InertialSenseROS* thing;
     rclcpp::init(argc, argv);
     //auto nh_ = std::make_shared<rclcpp::Node>("nh_");
-    if (argc > 1)
+    if (true)
     {
-        std::string paramYamlPath = argv[1];
+        //std::string paramYamlPath = argv[1];
+        std::string paramYamlPath = "./launch/example_params.yaml";
         std::cout << "\n\nLoading YAML paramfile: " << paramYamlPath << "\n\n";
         YAML::Node node;
         try
