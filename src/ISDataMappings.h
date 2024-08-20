@@ -17,7 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <map>
 #include <inttypes.h>
 #include "com_manager.h"
-#include "DataCSV.h"
 
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
@@ -27,12 +26,63 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "luna_data_sets.h"
 #endif
 
-/**
-* Get the size of an eDataType
-* @param dataType the data type to get size for
-* @return the size of the data type, or 0 if unknown or variable length (i.e. DataTypeString)
+#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
+
+typedef enum
+{
+	DATA_TYPE_INT8,
+	DATA_TYPE_UINT8,
+	DATA_TYPE_INT16,
+	DATA_TYPE_UINT16,
+	DATA_TYPE_INT32,
+	DATA_TYPE_UINT32,
+	DATA_TYPE_INT64,
+	DATA_TYPE_UINT64,
+	DATA_TYPE_F32,
+	DATA_TYPE_F64,
+	DATA_TYPE_STRING,
+	DATA_TYPE_BINARY,
+
+	DATA_TYPE_COUNT
+} eDataType;
+
+typedef enum
+{
+	DATA_FLAG_FIXED_DECIMAL_OFFSET      = 4,
+	DATA_FLAG_FIXED_DECIMAL_MASK 		= 0x000000F0,
+	DATA_FLAG_FIXED_DECIMAL_1           = 0x00000010,
+	DATA_FLAG_FIXED_DECIMAL_2           = 0x00000020,
+	DATA_FLAG_FIXED_DECIMAL_3           = 0x00000030,
+	DATA_FLAG_FIXED_DECIMAL_4           = 0x00000040,
+	DATA_FLAG_FIXED_DECIMAL_5           = 0x00000050,
+	DATA_FLAG_FIXED_DECIMAL_6           = 0x00000060,
+	DATA_FLAG_FIXED_DECIMAL_7           = 0x00000070,
+	DATA_FLAG_FIXED_DECIMAL_8           = 0x00000080,
+	DATA_FLAG_FIXED_DECIMAL_9           = 0x00000090,
+	DATA_FLAG_FIXED_DECIMAL_10          = 0x000000A0,
+	DATA_FLAG_FIXED_DECIMAL_11          = 0x000000B0,
+	DATA_FLAG_FIXED_DECIMAL_12          = 0x000000C0,
+	DATA_FLAG_FIXED_DECIMAL_13          = 0x000000D0,
+	DATA_FLAG_FIXED_DECIMAL_14          = 0x000000E0,
+	DATA_FLAG_FIXED_DECIMAL_15          = 0x000000F0,
+	DATA_FLAG_DISPLAY_HEX               = 0x00000100,
+} eDataFlags;
+
+/*
+* Metadata about a specific field
 */
-uint32_t GetDataTypeSize(eDataType dataType);
+typedef struct
+{
+	uint32_t dataOffset;
+	uint32_t dataSize;
+	eDataType dataType;
+	eDataFlags dataFlags;
+	std::string name;
+	std::string units;			// Units (after conversion)
+	std::string description;
+	double conversion;			// Unit conversion when converting to string
+} data_info_t;
+
 
 #if !PLATFOM_IS_EMBEDDED
 
