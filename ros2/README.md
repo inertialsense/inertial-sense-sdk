@@ -1,6 +1,6 @@
-# Inertial Sense ROS
+# Inertial Sense ROS 2
 
-A ROS2 wrapper node implementation for the Inertial Sense IMX product line.
+A ROS 2 wrapper node implementation for the Inertial Sense IMX product line.
 
 ---
 ### ***************  NOTICE  ***************
@@ -30,7 +30,7 @@ OUT OF OR IN ANY WAY CONNECTED WITH THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 ---
 
 ## Setup
-This ROS2 package, uses the inertial-sense-sdk as a submodule. Clone this package into the ros2_ws workspace `src` folder, then pull the submodule.
+This ROS2 (Jazzy) package, uses the inertial-sense-sdk as a submodule. Clone this package into the ros2_ws workspace `src` folder, then pull the submodule.
 
 ```bash
 mkdir -p ros2_ws/src
@@ -55,25 +55,23 @@ You will need to run this command on every new shell you open to have access to 
 
 **Firmware Version** - The IMX/uINS should be updated with the latest firmware found on the Inertial Sense [release page](https://github.com/inertialsense/inertial-sense-sdk/releases).  Download the appropriate `.hex` file and use the Inertial Sense EvalTool, CLTool, or SDK to upload the firmware.
 
-**Dialout Group** - The user must be a member of the `dialout` group, or the user won't have access to the serial port.
-
 ## Execution
 
 ```bash
 ros2 run inertial_sense_ros2 new_target
 ```
 
-For instructions on changing parameter values and topic remapping from the command line while using `rosrun` refer to the [Remapping Arguments](http://wiki.ros.org/Remapping%20Arguments) page.  The following example shows how to set parameter using the ROS param server and run the inertial_sense_node:
+For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html).  Note: Parameters may only be set after the program has been started.
 
 ```bash
-rosparam set /inertial_sense_ros/navigation_dt_ms 16
-rosparam set /inertial_sense_ros/msg/did_ins2/enable true
-rosparam set /inertial_sense_ros/ref_lla "[40.25, -111.67, 1556.59]"
-rosparam set /inertial_sense_ros/gps1_ant_xyz "[0.2, 0.0, 0.3]"
-rosrun inertial_sense_ros inertial_sense_node
+ros2 param set nh_ navigation_dt_ms 16.0
+ros2 param set nh_ ref_lla "[40.25, -111.67, 1556.59]"
+
+ros2 param list //lists all parameters that can be changed
+
 ```
 
-To set parameters and topic remapping from a launch file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the the sample launch files in this repository, `ros/launch/test_param_srv.launch` or  `ros/launch/test_YAML_params.launch`:
+To set parameters and topic remapping from a launch file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the the sample launch files in this repository, `ros2/launch/test_param_srv.launch` or  `ros2/launch/test_YAML_params.launch`:
 
 ```bash
 roslaunch inertial_sense_ros test_yaml_params.launch
