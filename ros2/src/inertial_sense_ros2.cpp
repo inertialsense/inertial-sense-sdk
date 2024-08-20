@@ -241,10 +241,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back("/dev/ttyACM0");
     }
 
-    factory_reset_ = nh_->declare_parameter<bool>("factory_reset", false);
+    //factory_reset_ = nh_->declare_parameter<bool>("factory_reset", false);
     ph.nodeParam("factory_reset", factory_reset_, false);
 
-    baudrate_ = nh_->declare_parameter<int>("baudrate", 921600);
+   // baudrate_ = nh_->declare_parameter<int>("baudrate", 921600);
     ph.nodeParam("baudrate", baudrate_, 921600);
 
 
@@ -268,7 +268,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("mag_declination", magDeclination_);
 
   //  refLla_ = nh_->declare_parameter<double[]>("ref_lla");
-  //  ph.nodeParamVec("ref_lla", 3, refLla_);
+    ph.nodeParamVec("ref_lla", 3, refLla_);
 
     //ph.nodeParam("publishTf", publishTf_);
 
@@ -328,7 +328,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
     rs_.gps1.type = nh_->declare_parameter<std::string>("type1", "");
-    ph.nodeParam("type1", rs_.gps1.type);
+    ph.nodeParam("type", rs_.gps1.type);
 
     gpsTimeUserDelay_ = nh_->declare_parameter<float>("gpsTimeUserDelay", 0);
     ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_);
@@ -347,7 +347,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     YAML::Node gps2Node = ph.node(node, "gps2");
 
     rs_.gps2.type = nh_->declare_parameter<std::string>("type2", "");
-    ph.nodeParam("type2", rs_.gps2.type);
+    ph.nodeParam("type", rs_.gps2.type);
 
 
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);
@@ -1234,7 +1234,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
                 ixVector3d llaPosRadians;
                 ecef2lla(msg->ecef, llaPosRadians);
                 ixVector3 ned;
-                ixVector3d refLlaRadians;            
+                ixVector3d refLlaRadians;
                 lla_Deg2Rad_d(refLlaRadians, refLla_);
                 lla2ned_d(refLlaRadians, llaPosRadians, ned);
 
@@ -1360,7 +1360,7 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
                 msg_odom_enu.twist.twist.angular.y = result[1];
                 msg_odom_enu.twist.twist.angular.z = result[2];
                 rs_.odom_ins_enu.pub_odometry->publish(msg_odom_enu);
-                
+
                // if (publishTf_)
                // {
                //     // Calculate the TF from the pose...
@@ -1422,7 +1422,7 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
 void InertialSenseROS::INS_covariance_callback(eDataIDs DID, const ros_covariance_pose_twist_t *const msg)
 {
     STREAMING_CHECK(insCovarianceStreaming_, DID);
-    
+
     float poseCovIn[36];
     int ind1, ind2;
 
@@ -1464,7 +1464,7 @@ void InertialSenseROS::INS_covariance_callback(eDataIDs DID, const ros_covarianc
 
 void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg)
 {
-    static eDataIDs primaryGpsDid = DID_GPS2_POS;  // Use GPS2 if GPS1 is disabled 
+    static eDataIDs primaryGpsDid = DID_GPS2_POS;  // Use GPS2 if GPS1 is disabled
 
     switch (DID)
     {
@@ -1672,7 +1672,7 @@ void InertialSenseROS::GPS_info_callback(eDataIDs DID, const gps_sat_t *const ms
     }
     // rs_.gps1_info.streamingCheck(DID);
     // rs_.gps2_info.streamingCheck(DID);
-    if (abs(GPS_towOffset_) < 0.001) 
+    if (abs(GPS_towOffset_) < 0.001)
     { // Wait for valid msg->timeOfWeekMs
         return;
     }
@@ -1860,7 +1860,7 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
     case DID_GPS2_RTK_CMP_REL:
         rs_.rtk_cmp.streamingCheck(DID, rs_.rtk_cmp.streamingRel);
         rs_.rtk_cmp.pubRel->publish(rtk_rel);
-        
+
         diagnostics_.rtkCmp_timeStamp = msg->timeOfWeekMs;
         diagnostics_.rtkCmp_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkCmp_diffAge = rtk_rel.differential_age;
@@ -2044,7 +2044,7 @@ void InertialSenseROS::GPS_eph_callback(eDataIDs DID, const eph_t *const msg)
     eph.a_dot = msg->Adot;
     eph.ndot = msg->ndot;
     switch (DID)
-    { 
+    {
     case DID_GPS1_RAW:      rs_.gps1_raw.pubEph->publish(eph);        break;
     case DID_GPS2_RAW:      rs_.gps2_raw.pubEph->publish(eph);        break;
     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubEph->publish(eph);    break;
@@ -2077,7 +2077,7 @@ void InertialSenseROS::GPS_geph_callback(eDataIDs DID, const geph_t *const msg)
     geph.gamn = msg->gamn;
     geph.dtaun = msg->dtaun;
     switch (DID)
-    { 
+    {
     case DID_GPS1_RAW:      rs_.gps1_raw.pubGEp->publish(geph);       break;
     case DID_GPS2_RAW:      rs_.gps2_raw.pubGEp->publish(geph);       break;
     case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubGEp->publish(geph);   break;
@@ -2100,7 +2100,7 @@ void InertialSenseROS::diagnostics_callback(/*const ros::TimerEvent &event */)
     rtkDiagnostics.name = "RTK Diagnostics";
     rtkDiagnostics.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
     rtkDiagnostics.message = "RTK Rel Data";
-    
+
     // CNO mean
     diagnostic_msgs::msg::KeyValue cno_mean;
     cno_mean.key = "CNO Mean";
