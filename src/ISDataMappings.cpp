@@ -3218,9 +3218,10 @@ bool cISDataMappings::CanGetFieldData(const data_info_t& info, const p_data_hdr_
     }
     int32_t fullSize = (hdr->size == 0 ? GetSize(hdr->id) : hdr->size);
     int32_t offset = (int32_t)info.dataOffset - (int32_t)hdr->offset;
-    if (offset >= 0 && offset <= fullSize - (int32_t)info.dataSize)
+    if (offset >= 0 && 
+        offset <= (fullSize - (int32_t)info.dataSize))
     {
-        ptr = (buf + offset);
+        ptr = buf + offset;
         return true;
     }
     ptr = NULL;
