@@ -86,7 +86,7 @@ void InertialSenseROS::terminate()
     IS_.CloseServerConnection();
     sdk_connected_ = false;
 
-    // ROS equivelant to shutdown advertisers, etc.
+    // ROS equivalent to shutdown advertisers, etc.
 }
 
 void InertialSenseROS::initializeIS(bool configFlashParameters)
@@ -230,7 +230,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         for (auto it = portNode.begin(); it != portNode.end(); it++)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
-        std::string param = "";
+        std::string param = nh_->declare_parameter<std::string>("port", "dev/ttyACM0");
         ph.nodeParam("port", param, "/dev/ttyACM0");
         ports_.push_back(param);
     }
@@ -241,39 +241,42 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back("/dev/ttyACM0");
     }
 
-    //factory_reset_ = nh_->declare_parameter<bool>("factory_reset", false);
-    ph.nodeParam("factory_reset", factory_reset_, false);
+    factory_reset_ = nh_->declare_parameter<bool>("factory_reset", false);
+    ph.nodeParam("factory_reset", factory_reset_, factory_reset_);
 
-   // baudrate_ = nh_->declare_parameter<int>("baudrate", 921600);
-    ph.nodeParam("baudrate", baudrate_, 921600);
+    baudrate_ = nh_->declare_parameter<int>("baudrate", 921600);
+    ph.nodeParam("baudrate", baudrate_, baudrate_);
 
 
     frame_id_ = nh_->declare_parameter<std::string>("frame_id", "body");
-    ph.nodeParam("frame_id", frame_id_, "body");
+    ph.nodeParam("frame_id", frame_id_, frame_id_);
     log_enabled_ = nh_->declare_parameter<bool>("enable_log", false);
-    ph.nodeParam("enable_log", log_enabled_, false);
+    ph.nodeParam("enable_log", log_enabled_, log_enabled_);
 
 
     // advanced Parameters
     ioConfigBits_ = nh_->declare_parameter<int>("io_config", 0);
-    setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, 0);
+    setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, ioConfigBits_);
 
     rtkConfigBits_ = nh_->declare_parameter<int>("RTKCfgBits", 0);
-    ph.nodeParam("RTKCfgBits", rtkConfigBits_, 0);            // rtk config bits
+    ph.nodeParam("RTKCfgBits", rtkConfigBits_, rtkConfigBits_);            // rtk config bits
 
     wheelConfigBits_ = nh_->declare_parameter<int>("wheelCfgBits", 0);
-    ph.nodeParam("wheelCfgBits", wheelConfigBits_, 0);        // wheel-encoder config bits
+    ph.nodeParam("wheelCfgBits", wheelConfigBits_, wheelConfigBits_);        // wheel-encoder config bits
 
     magDeclination_ = nh_->declare_parameter<float>("mag_declination", 0);
-    ph.nodeParam("mag_declination", magDeclination_);
+    ph.nodeParam("mag_declination", magDeclination_, magDeclination_);
 
-  //  refLla_ = nh_->declare_parameter<double[]>("ref_lla");
-    ph.nodeParamVec("ref_lla", 3, refLla_);
+    std::vector<double> refLla_vector = nh_->declare_parameter<std::vector<double>>("ref_lla", {0.0, 0.0, 0.0});
+    if (refLla_vector.size() == 3) {
+        std::copy(refLla_vector.begin(), refLla_vector.end(), refLla_);
+    }
+    ph.nodeParamVec("ref_lla", 3, refLla_, refLla_);
 
     //ph.nodeParam("publishTf", publishTf_);
 
     platformConfig_ = nh_->declare_parameter<int>("platformConfig", 0);
-    setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_);
+    setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_, platformConfig_);
 
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
@@ -288,14 +291,20 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // INS
     YAML::Node insNode = ph.node(node, "ins");
 
-    //insRotation_ = nh_->declare_parameter<float[3]>("rotation", {0});
-    ph.nodeParamVec("rotation", 3, insRotation_);
+    std::vector<double> insRotation_vector = nh_->declare_parameter<std::vector<double>>("rotation", {0.0, 0.0, 0.0});
+    if (insRotation_vector.size() == 3) {
+        std::copy(insRotation_vector.begin(), insRotation_vector.end(), insRotation_);
+    }
+    ph.nodeParamVec("rotation", 3, insRotation_, insRotation_);
 
-    //insOffset_ = nh_->declare_parameter<float[3]>("offset");
-    //ph.nodeParamVec("offset", 3, insOffset_);
+    std::vector<double> insOffset_vector = nh_->declare_parameter<std::vector<double>>("offset", {0.0, 0.0, 0.0});
+    if (insOffset_vector.size() == 3) {
+        std::copy(insOffset_vector.begin(), insOffset_vector.end(), insOffset_);
+    }
+    ph.nodeParamVec("offset", 3, insOffset_, insOffset_);
 
     ins_nav_dt_ms_ = nh_->declare_parameter<float>("navigation_dt_ms", 8);
-    ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, 8);
+    ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, ins_nav_dt_ms_);
 
     std::vector<std::string> dyn_model_set{ "DYNAMIC_MODEL_PORTABLE",
                                             " << UNKNOWN >> ",
@@ -309,10 +318,11 @@ void InertialSenseROS::load_params(YAML::Node &node)
                                             "DYNAMIC_MODEL_WRIST",
                                             "DYNAMIC_MODEL_INDOOR" };
 
-    ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, DYNAMIC_MODEL_AIRBORNE_4G);
+    dynamicModel_ = nh_->declare_parameter<int>("dynamic_model", DYNAMIC_MODEL_AIRBORNE_4G);
+    ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, dynamicModel_);
 
     covariance_enabled_ = nh_->declare_parameter<bool>("enable_covariance", false);
-    ph.nodeParam("enable_covariance", covariance_enabled_, false);
+    ph.nodeParam("enable_covariance", covariance_enabled_, covariance_enabled_);
 
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
     ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu", "", true, 1, true);
@@ -328,13 +338,16 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
     rs_.gps1.type = nh_->declare_parameter<std::string>("type1", "");
-    ph.nodeParam("type", rs_.gps1.type);
+    ph.nodeParam("type", rs_.gps1.type, rs_.gps1.type);
 
     gpsTimeUserDelay_ = nh_->declare_parameter<float>("gpsTimeUserDelay", 0);
-    ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_);
+    ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_, gpsTimeUserDelay_);
 
-
-    ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset);
+    std::vector<double>offset_vec = nh_->declare_parameter<std::vector<double>>("antenna_offset_gps1", {0,0,0});
+    if (offset_vec.size() == 3) {
+        std::copy(offset_vec.begin(), offset_vec.end(), rs_.gps1.antennaOffset);
+    }
+    ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset, rs_.gps1.antennaOffset);
     YAML::Node gps1Msgs = ph.node(gps1Node, "messages", 2);
     ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel", true, 1, true);
     ph.msgParams(rs_.gps1_info, "info", "gps1/info", true, 1, true);
@@ -349,7 +362,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
     rs_.gps2.type = nh_->declare_parameter<std::string>("type2", "");
     ph.nodeParam("type", rs_.gps2.type);
 
-
+    std::vector<double>offset_vec2 = nh_->declare_parameter<std::vector<double>>("antenna_offset_gps2", {0,0,0});
+    if (offset_vec.size() == 3) {
+        std::copy(offset_vec2.begin(), offset_vec2.end(), rs_.gps2.antennaOffset);
+    }
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
     ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, true);
@@ -361,10 +377,10 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     YAML::Node evbNode = ph.node(node, "evb");
     evb_.cb_preset = nh_->declare_parameter<int>("cb_preset", 2);
-    ph.nodeParam("cb_preset", evb_.cb_preset, 2);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
+    ph.nodeParam("cb_preset", evb_.cb_preset, evb_.cb_preset);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
 
     evb_.cb_options = nh_->declare_parameter<int>("cb_options", 0);
-    ph.nodeParam("cb_options", evb_.cb_options, 0);
+    ph.nodeParam("cb_options", evb_.cb_options, evb_.cb_options);
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
     if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
@@ -375,7 +391,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
         RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     YAML::Node diagNode = ph.node(node, "diagnostics");
-    ph.nodeParam("enable", rs_.diagnostics.enabled);
+    rs_.diagnostics.enabled = nh_->declare_parameter<bool>("enable", false);
+    ph.nodeParam("enable", rs_.diagnostics.enabled, rs_.diagnostics.enabled);
 
     // Print entire yaml node tree
      //printf("Node Tree:\n");
