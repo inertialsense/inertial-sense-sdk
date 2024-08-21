@@ -1663,7 +1663,7 @@ int decodeGSV(char* a, int aSize)
 
     int msgNum = NMEA_MSG_ID_GNGSV_START;
     
-    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
+    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GNGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
@@ -1783,7 +1783,7 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
     case NMEA_MSG_ID_PASHR:	memcpy(str, "PASHR", 5);	return 0;
     case NMEA_MSG_ID_PSTRB:	memcpy(str, "PSTRB", 5);	return 0;
     case NMEA_MSG_ID_INFO:	memcpy(str, "INFO", 4);		return 0;
-    case NMEA_MSG_ID_GxGSV:	memcpy(str, "GxGSV", 5);	return 0;
+    case NMEA_MSG_ID_GNGSV:	memcpy(str, "GNGSV", 5);	return 0;
     case NMEA_MSG_ID_GxVTG:	memcpy(str, "GxVTG", 5);	return 0;
     case NMEA_MSG_ID_INTEL:	memcpy(str, "INTEL", 5);	return 0;
 
@@ -2011,7 +2011,7 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 
 /**
  * Sets ASCE special case for GSV messages.
- * returns NMEA_MSG_ID_GxGSV if successful 
+ * returns NMEA_MSG_ID_GNGSV if successful 
  * returns 0 if unsuccessful
 */
 int parseASCE_GSV(int inId)
@@ -2052,7 +2052,7 @@ int parseASCE_GSV(int inId)
             return 0;
     }
 
-    return NMEA_MSG_ID_GxGSV;
+    return NMEA_MSG_ID_GNGSV;
 }
 
 uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
@@ -2100,7 +2100,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         }
 
         // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
+        if (id == NMEA_MSG_ID_GNGSV)
             parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
@@ -2176,7 +2176,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         }
 
         // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
+        if (id == NMEA_MSG_ID_GNGSV)
             parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
@@ -2532,8 +2532,8 @@ char* nmea_parse_gsv(const char a[], const int aSize, gps_sat_t *gpsSat, gps_sig
     }
 
     (void)aSize;
-    char *ptr = (char *)&a[7];	// $GxGSV,
-    // $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
+    char *ptr = (char *)&a[7];	// $GNGSV,
+    // $GNGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
         
     int32_t numMsgs, msgNum, numSigs;
     ptr = ASCII_to_i32(&numMsgs, ptr);			// 1 - number of messages

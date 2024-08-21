@@ -702,7 +702,7 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 	[DID_IMU_RAW]               = NMEA_RMC_BITS_PRIMU,
 	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
-	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GxGSV,
+	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GNGSV,
 	[DID_GPS1_POS]				=
 		NMEA_RMC_BITS_INTEL  |
 		NMEA_RMC_BITS_PGPSP |

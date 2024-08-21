@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     // NMEA_MSG_ID_PASHR     = 11, 
     // NMEA_MSG_ID_PSTRB     = 12,
     // NMEA_MSG_ID_INFO      = 13,
-    // NMEA_MSG_ID_GxGSV     = 14,
+    // NMEA_MSG_ID_GNGSV     = 14,
     // NMEA_MSG_ID_GxVTG     = 15,
     // NMEA_MSG_ID_INTEL     = 16,
 

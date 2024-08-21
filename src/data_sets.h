@@ -1815,7 +1815,7 @@ enum eNmeaMsgId
     NMEA_MSG_ID_PASHR     = 12,
     NMEA_MSG_ID_PSTRB     = 13,
     NMEA_MSG_ID_INFO      = 14,
-    NMEA_MSG_ID_GxGSV     = 15,
+    NMEA_MSG_ID_GNGSV     = 15,
     NMEA_MSG_ID_GxVTG     = 16,
     NMEA_MSG_ID_INTEL     = 17,
     NMEA_MSG_ID_COUNT,
@@ -1831,14 +1831,14 @@ enum eNmeaMsgId
     NMEA_MSG_ID_STPC,         // "STPC" - Stop broadcasts on current port
 
     // Special case messages for each supported base message those with ID less than NMEA_MSG_ID_COUNT. 
-    // Each base message get a 256 range of ID's for their special cases. Example for NMEA_MSG_ID_GxGSV:
-    // NMEA_MSG_ID_GNGSV_START = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
+    // Each base message get a 256 range of ID's for their special cases. Example for NMEA_MSG_ID_GNGSV:
+    // NMEA_MSG_ID_GNGSV_START = NMEA_MSG_ID_GNGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
     NMEA_MSG_ID_SPECIAL_CASE_START = 256,
 
-    // Filtered GxGSV NMEA Message IDs:
+    // Filtered GNGSV NMEA Message IDs:
 
     // GNGSV - All constellations
-    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840) Used for reference only
+    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GNGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840) Used for reference only
     NMEA_MSG_ID_GNGSV_0         = NMEA_MSG_ID_GNGSV_START,                                                                                                                  // GNGSV_0 (3840) Clear all constellations and frequencies
     NMEA_MSG_ID_GNGSV_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),                                                                                    // GNGSV_1 (3841) Enable all constellations band1
     NMEA_MSG_ID_GNGSV_2         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),                                                                                    // GNGSV_2 (3842) Enable all constellations band2
@@ -1854,8 +1854,7 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GNGSV_5_3       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT),                                                            // GNGSV_5_3 (3852) Enable all constellations band3, band5
     NMEA_MSG_ID_GNGSV_5_3_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                // GNGSV_5_3_1 (3853) Enable all constellations band1, band3, band5
     NMEA_MSG_ID_GNGSV_5_3_2     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                // GNGSV_5_3_2 (3854) Enable all constellations band2, band3, band5
-    NMEA_MSG_ID_GNGSV_5_3_2_1   = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),    // GNGSV_5_3_2_1 (3855) Enable all constellations band1, band2, band3, band5
-    NMEA_MSG_ID_GNGSV           = NMEA_MSG_ID_GNGSV_5_3_2_1,                                                                                                                // GNGSV (3855) Enable all constellations and frequencies
+    NMEA_MSG_ID_GNGSV_5_3_2_1   = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),    // GNGSV_5_3_2_1 (3855) Enable all constellations band1, band2, band3, band5                                                                                                              // GNGSV (3855) Enable all constellations and frequencies
 
     // GPGSV - GPS
     NMEA_MSG_ID_GPGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GPS_OFFSET ),   // GPGSV_0 (3856) Disable all GPS frequencies
@@ -1925,7 +1924,7 @@ enum eNmeaMsgId
 #define NMEA_RMC_BITS_PASHR         (1<<NMEA_MSG_ID_PASHR)
 #define NMEA_RMC_BITS_PSTRB         (1<<NMEA_MSG_ID_PSTRB)
 #define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
-#define NMEA_RMC_BITS_GxGSV         (1<<NMEA_MSG_ID_GxGSV)
+#define NMEA_RMC_BITS_GNGSV         (1<<NMEA_MSG_ID_GNGSV)
 #define NMEA_RMC_BITS_GxVTG         (1<<NMEA_MSG_ID_GxVTG)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
