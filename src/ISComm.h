@@ -648,8 +648,8 @@ typedef struct {
     port_monitor_set_t* stats;          //! stats associated with this port
     is_comm_instance_t comm;            //! Comm instance
 #if defined(GPX_1)
-    #define COM_BUFFER_SIZE 2800
-    uint8_t buffer[COM_BUFFER_SIZE];       //! Comm instance data buffer
+    #define GPX_COM_BUFFER_SIZE 2800
+    uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
 #else
     uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
 #endif
