@@ -61,7 +61,7 @@ You will need to run this command on every new shell you open to have access to 
 ros2 run inertial_sense_ros2 new_target
 ```
 
-For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html).  Note: Parameters may only be set after the program has been started.
+For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html).  
 
 ```bash
 ros2 param set nh_ navigation_dt_ms 16.0
@@ -71,19 +71,25 @@ ros2 param list //lists all parameters that can be changed
 
 ```
 
-To set parameters and topic remapping from a launch file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the the sample launch files in this repository, `ros2/launch/test_param_srv.launch` or  `ros2/launch/test_YAML_params.launch`:
+To set parameters before starting ROS2:
 
 ```bash
-roslaunch inertial_sense_ros test_yaml_params.launch
+
+ros2 run inertial_sense_ros2 new_target --ros-args -r __node:=nh_ -p [parameter_name]:=[parameter_value]
+
 ```
 
+To set parameters and topic remapping from a YAML file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the sample YAML files in this repository, `ros2/launch/example_params.yaml` or  `ros2/launch/test_config.yaml`:
+
 ```bash
-roslaunch inertial_sense_ros test_param_srv.launch
+ros2 run demo_nodes_cpp parameter_blackboard --ros-args --params-file [file_name].yaml
 ```
+
+
 
 ## Timestamps
 
-If GPS is available, all header timestamps are calculated with respect to the GPS clock but are translated into UNIX time to be consistent with the other topics in a ROS network.  If GPS is unvailable, then a constant offset between IMX time and system time is estimated during operation and is applied to IMU and INS message timestamps as they arrive.  There is often a small drift in these timestamps (on the order of a microsecond per second) due to variance in measurement streams and the difference between IMX and system clocks, however this is more accurate than stamping the measurements with ROS time as they arrive.  
+If GPS is available, all header timestamps are calculated with respect to the GPS clock but are translated into UNIX time to be consistent with the other topics in a ROS network.  If GPS is unavailable, then a constant offset between IMX time and system time is estimated during operation and is applied to IMU and INS message timestamps as they arrive.  There is often a small drift in these timestamps (on the order of a microsecond per second) due to variance in measurement streams and the difference between IMX and system clocks, however this is more accurate than stamping the measurements with ROS time as they arrive.  
 
 Ideally there should be no jump in timestamps when GPS is first acquired because the timestamps should be identical.  However, due to inaccuracies in the system time, there will likely be a small jump in message timestamps after the first GPS fix.
 
