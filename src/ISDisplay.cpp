@@ -1975,7 +1975,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 		{
 			// val = std::stof(m_editData.field);
 			m_editData.info = m_editData.mapInfoSelection->second;
-			int radix = (m_editData.info.dataFlags == DATA_FLAG_DISPLAY_HEX ? 16 : 10);
+            int radix = (m_editData.info.dataFlags == DATA_FLAGS_DISPLAY_HEX ? 16 : 10);
 			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize, radix);
 			m_editData.uploadNeeded = true;
 

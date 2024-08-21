@@ -33,7 +33,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#define SYMBOL_DEGREES     "°"
+#define SYM_DEG             "°"
+#define SYM_DEG_DEG_M       "°,°,m"
+
+const char insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GpsMagUsed,Variance,VarianceCoarse]";
+const char hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GpsSatRx,Motion]";
 
 
 #if PLATFORM_IS_EMBEDDED
@@ -79,7 +83,7 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 #if CPP11_IS_ENABLED
 
 // dataSize can be 0 for default size, must be set for string type
-#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), dataType, (eDataFlags)flags, name, units, description, conversion }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
+#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
 
 // note when passing member type for arrays, it must be a reference, i.e. float&
 #define ADD_MAP_4(name, member, dataType, fieldType) \
@@ -399,7 +403,7 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], map_inde
     ADD_MAP_4("acc[0]", I.acc[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("acc[1]", I.acc[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("acc[2]", I.acc[2], DATA_TYPE_F32, float&);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -409,7 +413,7 @@ static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     INIT_MAP(imu3_t, dataId);
 
     ADD_MAP_4("time", time, DATA_TYPE_F64, double);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("I0.pqr[0]", I[0].pqr[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("I0.pqr[1]", I[0].pqr[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("I0.pqr[2]", I[0].pqr[2], DATA_TYPE_F32, float&);
@@ -437,8 +441,8 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], ma
     INIT_MAP(sys_params_t, DID_SYS_PARAMS);
     
     ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("imuTemp", imuTemp, DATA_TYPE_F32, float);
     ADD_MAP_4("baroTemp", baroTemp, DATA_TYPE_F32, float);
     ADD_MAP_4("mcuTemp", mcuTemp, DATA_TYPE_F32, float);
@@ -448,7 +452,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_4("sensorTruePeriod", sensorTruePeriod, DATA_TYPE_F64, double);
     ADD_MAP_4("flashCfgChecksum", flashCfgChecksum, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("navUpdatePeriodMs", navUpdatePeriodMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("genFaultCode", genFaultCode, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("genFaultCode", genFaultCode, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("upTime", upTime, DATA_TYPE_F64, double);
 
     ASSERT_SIZE(totalSize);
@@ -485,8 +489,8 @@ static void PopulateRMCMappings(map_name_to_info_t mappings[DID_COUNT], map_inde
 {
     INIT_MAP(rmc_t, DID_RMC);
     
-    ADD_MAP_5("bits", bits, DATA_TYPE_UINT64, uint64_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("options", options, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("bits", bits, DATA_TYPE_UINT64, uint64_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("options", options, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -495,22 +499,23 @@ static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
 {
     INIT_MAP(ins_1_t, DID_INS_1);
     
-    ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_4("theta[0]", theta[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("theta[1]", theta[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("theta[2]", theta[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[0]", uvw[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[1]", uvw[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[2]", uvw[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("lla[0]", lla[0], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lla[1]", lla[1], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lla[2]", lla[2], DATA_TYPE_F64, double&);
-    ADD_MAP_4("ned[0]", ned[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("ned[1]", ned[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("ned[2]", ned[2], DATA_TYPE_F32, float&);
+    uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
+    ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
+    ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_8("theta[0]", theta[0], DATA_TYPE_F32, float&, SYM_DEG, "Euler angle - roll",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
+    ADD_MAP_8("theta[1]", theta[1], DATA_TYPE_F32, float&, SYM_DEG, "Euler angle - pitch",  flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
+    ADD_MAP_8("theta[2]", theta[2], DATA_TYPE_F32, float&, SYM_DEG, "Euler angle - yaw",    flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_HEADING);
+    ADD_MAP_7("uvw[0]", uvw[0], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("uvw[1]", uvw[1], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("uvw[2]", uvw[2], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("ned[0]", ned[0], DATA_TYPE_F32, float&, "m", "North offset from reference LLA", flags);
+    ADD_MAP_7("ned[1]", ned[1], DATA_TYPE_F32, float&, "m", "East offset from reference LLA", flags);
+    ADD_MAP_7("ned[2]", ned[2], DATA_TYPE_F32, float&, "m", "Down offset from reference LLA", flags);
+    ADD_MAP_7("lla[0]", lla[0], DATA_TYPE_F64, double&, SYM_DEG, "WGS84 coordinate - latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("lla[1]", lla[1], DATA_TYPE_F64, double&, SYM_DEG, "WGS84 coordinate - longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("lla[2]", lla[2], DATA_TYPE_F64, double&, "m", "WGS84 coordinate - ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
 
     ASSERT_SIZE(totalSize);
 }
@@ -521,8 +526,8 @@ static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     
     ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("qn2b[2]", qn2b[2], DATA_TYPE_F32, float&);
@@ -543,8 +548,8 @@ static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     
     ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("qn2b[2]", qn2b[2], DATA_TYPE_F32, float&);
@@ -566,8 +571,8 @@ static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     
     ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("qe2b[0]", qe2b[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("qe2b[1]", qe2b[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("qe2b[2]", qe2b[2], DATA_TYPE_F32, float&);
@@ -588,7 +593,7 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], map_i
     
     ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("ecef[0]", ecef[0], DATA_TYPE_F64, double&);
     ADD_MAP_4("ecef[1]", ecef[1], DATA_TYPE_F64, double&);
     ADD_MAP_4("ecef[2]", ecef[2], DATA_TYPE_F64, double&);
@@ -618,7 +623,7 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], map_i
     ADD_MAP_4("vel[1]", vel[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("vel[2]", vel[2], DATA_TYPE_F32, float&);
     ADD_MAP_4("sAcc", sAcc, DATA_TYPE_F32, float);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -806,7 +811,7 @@ static void PopulateIMUDeltaThetaVelocityMappings(map_name_to_info_t mappings[DI
     ADD_MAP_4("vel[1]", vel[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("vel[2]", vel[2], DATA_TYPE_F32, float&);
     ADD_MAP_4("dt", dt, DATA_TYPE_F32, float);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -859,7 +864,7 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT], m
     INIT_MAP(infield_cal_t, DID_INFIELD_CAL);
     
     ADD_MAP_4("state", state, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("sampleTimeMs", sampleTimeMs, DATA_TYPE_UINT32, uint32_t);
 
     ADD_MAP_4("imu[0].pqr[0]", imu[0].pqr[0], DATA_TYPE_F32, float&);
@@ -952,7 +957,7 @@ static void PopulateReferenceIMUMappings(map_name_to_info_t mappings[DID_COUNT],
     INIT_MAP(imu_t, DID_REFERENCE_IMU);
     
     ADD_MAP_4("time", time, DATA_TYPE_F64, double);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("I.pqr[0]", I.pqr[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("I.pqr[1]", I.pqr[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("I.pqr[2]", I.pqr[2], DATA_TYPE_F32, float&);
@@ -968,7 +973,7 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT],
     INIT_MAP(wheel_encoder_t, DID_WHEEL_ENCODER);
     
     ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("theta_l", theta_l, DATA_TYPE_F32, float);
     ADD_MAP_4("omega_l", omega_l, DATA_TYPE_F32, float);
     ADD_MAP_4("theta_r", theta_r, DATA_TYPE_F32, float);
@@ -986,7 +991,7 @@ static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT]
     ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("status", status, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("mode", mode, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("wheelConfig.bits", wheelConfig.bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("wheelConfig.bits", wheelConfig.bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("wheelConfig.transform.e_b2w[0]", wheelConfig.transform.e_b2w[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("wheelConfig.transform.e_b2w[1]", wheelConfig.transform.e_b2w[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("wheelConfig.transform.e_b2w[2]", wheelConfig.transform.e_b2w[2], DATA_TYPE_F32, float&);
@@ -1019,7 +1024,6 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], 
 {
     INIT_MAP(nvm_flash_cfg_t, DID_FLASH_CONFIG);
     
-    string degrees = SYMBOL_DEGREES;
     string str;
     ADD_MAP_6("startupImuDtMs", startupImuDtMs, DATA_TYPE_UINT32, uint32_t, "ms", "IMU sample (system input data) period set on startup. Cannot be larger than startupInsDtMs. Zero disables sensor/IMU sampling.");
     ADD_MAP_6("startupNavDtMs", startupNavDtMs, DATA_TYPE_UINT32, uint32_t, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
@@ -1028,9 +1032,9 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], 
     ADD_MAP_6("ser1BaudRate", ser1BaudRate, DATA_TYPE_UINT32, uint32_t, "bps", "Serial port 1 baud rate");
     ADD_MAP_6("ser2BaudRate", ser2BaudRate, DATA_TYPE_UINT32, uint32_t, "bps", "Serial port 2 baud rate");
     str = "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.";
-    ADD_MAP_6("insRotation[0]", insRotation[0], DATA_TYPE_F32, float&, degrees, "Roll "  + str); // , 0, C_RAD2DEG);
-    ADD_MAP_6("insRotation[1]", insRotation[1], DATA_TYPE_F32, float&, degrees, "Pitch " + str); // , 0, C_RAD2DEG);
-    ADD_MAP_6("insRotation[2]", insRotation[2], DATA_TYPE_F32, float&, degrees, "Yaw "   + str); // , 0, C_RAD2DEG);
+    ADD_MAP_8("insRotation[0]", insRotation[0], DATA_TYPE_F32, float&, SYM_DEG, "Roll "  + str, 0, C_RAD2DEG);
+    ADD_MAP_8("insRotation[1]", insRotation[1], DATA_TYPE_F32, float&, SYM_DEG, "Pitch " + str, 0, C_RAD2DEG);
+    ADD_MAP_8("insRotation[2]", insRotation[2], DATA_TYPE_F32, float&, SYM_DEG, "Yaw "   + str, 0, C_RAD2DEG);
     str = "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.";
     ADD_MAP_6("insOffset[0]", insOffset[0], DATA_TYPE_F32, float&, "m", "X " + str);
     ADD_MAP_6("insOffset[1]", insOffset[1], DATA_TYPE_F32, float&, "m", "Y " + str);
@@ -1045,9 +1049,9 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], 
     ADD_MAP_6("gps2AntOffset[2]", gps2AntOffset[2], DATA_TYPE_F32, float&, "m", "Z " + str);
 
     ADD_MAP_8("gpsTimeSyncPeriodMs", gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, uint32_t, "ms", "GPS time synchronization pulse period.", 0, 1.0);
-    ADD_MAP_8("gpsTimeUserDelay", gpsTimeUserDelay, DATA_TYPE_F32, float, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAG_FIXED_DECIMAL_3, 1.0);
-    ADD_MAP_8("gpsMinimumElevation", gpsMinimumElevation, DATA_TYPE_F32, float, degrees, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAG_FIXED_DECIMAL_1, C_RAD2DEG);
-    ADD_MAP_8("gnssSatSigConst", gnssSatSigConst, DATA_TYPE_UINT16, uint16_t, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAG_DISPLAY_HEX, 1.0);
+    ADD_MAP_8("gpsTimeUserDelay", gpsTimeUserDelay, DATA_TYPE_F32, float, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
+    ADD_MAP_8("gpsMinimumElevation", gpsMinimumElevation, DATA_TYPE_F32, float, SYM_DEG, "GPS minimum elevation of a satellite above the horizon to be used in the solution.", DATA_FLAGS_FIXED_DECIMAL_1, C_RAD2DEG);
+    ADD_MAP_8("gnssSatSigConst", gnssSatSigConst, DATA_TYPE_UINT16, uint16_t, "", "GNSS constellations used. 0x0003=GPS, 0x000C=QZSS, 0x0030=Galileo, 0x00C0=Beidou, 0x0300=GLONASS, 0x1000=SBAS (see eGnssSatSigConst)", DATA_FLAGS_DISPLAY_HEX, 1.0);
 
     ADD_MAP_8("dynamicModel", dynamicModel, DATA_TYPE_UINT8, uint8_t, "", "0:port, 2:stationary, 3:walk, 4:ground vehicle, 5:sea, 6:air<1g, 7:air<2g, 8:air<4g, 9:wrist", 0, 1.0);
     str = "AutobaudOff [0x1=Ser0, 0x2=Ser1], 0x4=AutoMagRecal, 0x8=DisableMagDecEst, ";
@@ -1055,61 +1059,61 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], 
     str += "0x100=1AxisMagRecal, ";
     str += "FusionOff [0x1000=Mag, 0x2000=Baro, 0x4000=GPS], ";
     str += "0x10000=enZeroVel, 0x100000=enNavStrobeOutput";
-    ADD_MAP_5("sysCfgBits", sysCfgBits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_7("sysCfgBits", sysCfgBits, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAGS_DISPLAY_HEX);
     str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
     str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
-    ADD_MAP_5("RTKCfgBits", RTKCfgBits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("ioConfig", ioConfig, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("platformConfig", platformConfig, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_7("RTKCfgBits", RTKCfgBits, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("ioConfig", ioConfig, DATA_TYPE_UINT32, uint32_t, "", "(see enum eIoConfig) IMU disable: 0x1000000,0x20000000,0x4000000", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("platformConfig", platformConfig, DATA_TYPE_UINT32, uint32_t, "", "Hardware platform (IMX carrier board, i.e. RUG, EVB, IG) configuration bits (see ePlatformConfig)", DATA_FLAGS_DISPLAY_HEX);
     str =  "Gyr FS (deg/s) 0x7:[0=250, 1=500, 2=1000, 3=2000, 4=4000], ";
     str += "Acc FS 0x30:[0=2g, 1=4g, 2=8g, 3=16g], ";
     str += "Gyr DLPF (Hz) 0x0F00:[0=250, 1=184, 2=92, 3=41, 4=20, 5=10, 6=5], ";
     str += "Acc DLPF (Hz) 0xF000:[0=218, 1=218, 2=99, 3=45, 4=21, 5=10, 6=5], ";
-    ADD_MAP_7("sensorConfig", sensorConfig, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_7("sensorConfig", sensorConfig, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAGS_DISPLAY_HEX);
 
-    ADD_MAP_4("refLla[0]", refLla[0], DATA_TYPE_F64, double&);
-    ADD_MAP_4("refLla[1]", refLla[1], DATA_TYPE_F64, double&);
-    ADD_MAP_4("refLla[2]", refLla[2], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lastLla[0]", lastLla[0], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lastLla[1]", lastLla[1], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lastLla[2]", lastLla[2], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lastLlaTimeOfWeekMs", lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("lastLlaWeek", lastLlaWeek, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("lastLlaUpdateDistance", lastLlaUpdateDistance, DATA_TYPE_F32, float);
-    ADD_MAP_4("magDeclination", magDeclination, DATA_TYPE_F32, float);
+    ADD_MAP_7("refLla[0]", refLla[0], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Reference latitude, longitude, ellipsoid altitude for north east down (NED) calculations", DATA_FLAGS_FIXED_DECIMAL_9);
+    ADD_MAP_7("refLla[1]", refLla[1], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Reference latitude, longitude, ellipsoid altitude for north east down (NED) calculations", DATA_FLAGS_FIXED_DECIMAL_9);
+    ADD_MAP_7("refLla[2]", refLla[2], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Reference latitude, longitude, ellipsoid altitude for north east down (NED) calculations", DATA_FLAGS_FIXED_DECIMAL_9);
+    ADD_MAP_7("lastLla[0]", lastLla[0], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Last latitude, longitude, ellipsoid altitude. (Aids GPS startup)", DATA_FLAGS_FIXED_DECIMAL_9);
+    ADD_MAP_7("lastLla[1]", lastLla[1], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Last latitude, longitude, ellipsoid altitude. (Aids GPS startup)", DATA_FLAGS_FIXED_DECIMAL_9);
+    ADD_MAP_7("lastLla[2]", lastLla[2], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Last latitude, longitude, ellipsoid altitude. (Aids GPS startup)", DATA_FLAGS_FIXED_DECIMAL_9);
+    ADD_MAP_6("lastLlaTimeOfWeekMs", lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Last LLA update time since Sunday morning");
+    ADD_MAP_6("lastLlaWeek", lastLlaWeek, DATA_TYPE_UINT32, uint32_t, "week", "Last LLA update Weeks since Jan 6, 1980");
+    ADD_MAP_6("lastLlaUpdateDistance", lastLlaUpdateDistance, DATA_TYPE_F32, float, "m", "Distance between current and last LLA that triggers an update of lastLLA)");
+    ADD_MAP_8("magDeclination", magDeclination, DATA_TYPE_F32, float,  SYM_DEG, "Magnetic north declination (heading offset from true north)", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
+	ADD_MAP_6("magInterferenceThreshold", magInterferenceThreshold, DATA_TYPE_F32, float, "", "Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection.");
+	ADD_MAP_6("magCalibrationQualityThreshold", magCalibrationQualityThreshold, DATA_TYPE_F32, float, "", "Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good.");
     str = "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll.";
-    ADD_MAP_4("zeroVelRotation[0]", zeroVelRotation[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("zeroVelRotation[1]", zeroVelRotation[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("zeroVelRotation[2]", zeroVelRotation[2], DATA_TYPE_F32, float&);
+    ADD_MAP_8("zeroVelRotation[0]", zeroVelRotation[0], DATA_TYPE_F32, float&, SYM_DEG, "Roll " + str, 0, C_RAD2DEG);
+    ADD_MAP_8("zeroVelRotation[1]", zeroVelRotation[1], DATA_TYPE_F32, float&, SYM_DEG, "Pitch " + str, 0, C_RAD2DEG);
+    ADD_MAP_8("zeroVelRotation[2]", zeroVelRotation[2], DATA_TYPE_F32, float&, SYM_DEG, "Yaw " + str, 0, C_RAD2DEG);
     str = "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.";
-    ADD_MAP_4("zeroVelOffset[0]", zeroVelOffset[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("zeroVelOffset[1]", zeroVelOffset[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("zeroVelOffset[2]", zeroVelOffset[2], DATA_TYPE_F32, float&);
-    ADD_MAP_5("wheelConfig.bits", wheelConfig.bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_4("wheelConfig.transform.e_b2w[0]", wheelConfig.transform.e_b2w[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.e_b2w[1]", wheelConfig.transform.e_b2w[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.e_b2w[2]", wheelConfig.transform.e_b2w[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.e_b2w_sigma[0]", wheelConfig.transform.e_b2w_sigma[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.e_b2w_sigma[1]", wheelConfig.transform.e_b2w_sigma[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.e_b2w_sigma[2]", wheelConfig.transform.e_b2w_sigma[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.t_b2w[0]", wheelConfig.transform.t_b2w[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.t_b2w[1]", wheelConfig.transform.t_b2w[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.t_b2w[2]", wheelConfig.transform.t_b2w[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.t_b2w_sigma[0]", wheelConfig.transform.t_b2w_sigma[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.t_b2w_sigma[1]", wheelConfig.transform.t_b2w_sigma[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.transform.t_b2w_sigma[2]", wheelConfig.transform.t_b2w_sigma[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("wheelConfig.track_width", wheelConfig.track_width, DATA_TYPE_F32, float);
-    ADD_MAP_4("wheelConfig.radius", wheelConfig.radius, DATA_TYPE_F32, float);
-	ADD_MAP_4("magInterferenceThreshold", magInterferenceThreshold, DATA_TYPE_F32, float);
-	ADD_MAP_4("magCalibrationQualityThreshold", magCalibrationQualityThreshold, DATA_TYPE_F32, float);
+    ADD_MAP_6("zeroVelOffset[0]", zeroVelOffset[0], DATA_TYPE_F32, float&, "m", "X " + str);
+    ADD_MAP_6("zeroVelOffset[1]", zeroVelOffset[1], DATA_TYPE_F32, float&, "m", "Y " + str);
+    ADD_MAP_6("zeroVelOffset[2]", zeroVelOffset[2], DATA_TYPE_F32, float&, "m", "Z " + str);
+    ADD_MAP_7("wheelConfig.bits", wheelConfig.bits, DATA_TYPE_UINT32, uint32_t, "", "Wheel encoder config bits: 0x1 enable encoders, 0x2 kinematic constraints", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("wheelConfig.transform.e_b2w[0]", wheelConfig.transform.e_b2w[0], DATA_TYPE_F32, float&, "rad", "Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
+    ADD_MAP_7("wheelConfig.transform.e_b2w[1]", wheelConfig.transform.e_b2w[1], DATA_TYPE_F32, float&, "rad", "Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
+    ADD_MAP_7("wheelConfig.transform.e_b2w[2]", wheelConfig.transform.e_b2w[2], DATA_TYPE_F32, float&, "rad", "Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
+    ADD_MAP_7("wheelConfig.transform.e_b2w_sigma[0]", wheelConfig.transform.e_b2w_sigma[0], DATA_TYPE_F32, float&, "m", "Standard deviation of Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
+    ADD_MAP_7("wheelConfig.transform.e_b2w_sigma[1]", wheelConfig.transform.e_b2w_sigma[1], DATA_TYPE_F32, float&, "m", "Standard deviation of Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
+    ADD_MAP_7("wheelConfig.transform.e_b2w_sigma[2]", wheelConfig.transform.e_b2w_sigma[2], DATA_TYPE_F32, float&, "m", "Standard deviation of Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
+    ADD_MAP_7("wheelConfig.transform.t_b2w[0]", wheelConfig.transform.t_b2w[0], DATA_TYPE_F32, float&, "m", "Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("wheelConfig.transform.t_b2w[1]", wheelConfig.transform.t_b2w[1], DATA_TYPE_F32, float&, "m", "Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("wheelConfig.transform.t_b2w[2]", wheelConfig.transform.t_b2w[2], DATA_TYPE_F32, float&, "m", "Translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("wheelConfig.transform.t_b2w_sigma[0]", wheelConfig.transform.t_b2w_sigma[0], DATA_TYPE_F32, float&, "rad", "Standard deviation of translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("wheelConfig.transform.t_b2w_sigma[1]", wheelConfig.transform.t_b2w_sigma[1], DATA_TYPE_F32, float&, "rad", "Standard deviation of translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("wheelConfig.transform.t_b2w_sigma[2]", wheelConfig.transform.t_b2w_sigma[2], DATA_TYPE_F32, float&, "rad", "Standard deviation of translation from the imu (body) to the wheel frame origin (center of the non-steering axle), expressed in the imu (body) frame", DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_6("wheelConfig.track_width", wheelConfig.track_width, DATA_TYPE_F32, float, "m", "Distance between the left and right wheels");
+    ADD_MAP_6("wheelConfig.radius", wheelConfig.radius, DATA_TYPE_F32, float, "m", "Wheel radius");
     ADD_MAP_4("debug", debug, DATA_TYPE_UINT8, uint8_t);
 
     // Keep at end
-    ADD_MAP_4("size", size, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("checksum", checksum, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("key", key, DATA_TYPE_UINT32, uint32_t);
+    ADD_MAP_6("size", size, DATA_TYPE_UINT32, uint32_t, "", "Flash group size. Set to 1 to reset this flash group.");
+    ADD_MAP_6("checksum", checksum, DATA_TYPE_UINT32, uint32_t, "", "Flash checksum");
+    ADD_MAP_6("key", key, DATA_TYPE_UINT32, uint32_t, "", "Flash key");
 
     ASSERT_SIZE(totalSize);
 }
@@ -1150,13 +1154,13 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
     ADD_MAP_4("gps2AntOffset[0]", gps2AntOffset[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("gps2AntOffset[1]", gps2AntOffset[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("gps2AntOffset[2]", gps2AntOffset[2], DATA_TYPE_F32, float&);
-    ADD_MAP_5("gnssSatSigConst", gnssSatSigConst, DATA_TYPE_UINT16, uint16_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("gnssSatSigConst", gnssSatSigConst, DATA_TYPE_UINT16, uint16_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("dynamicModel", dynamicModel, DATA_TYPE_UINT8, uint8_t);
     ADD_MAP_4("debug", debug, DATA_TYPE_UINT8, uint8_t);
     ADD_MAP_4("gpsTimeSyncPeriodMs", gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("gpsTimeUserDelay", gpsTimeUserDelay, DATA_TYPE_F32, float);
     ADD_MAP_4("gpsMinimumElevation", gpsMinimumElevation, DATA_TYPE_F32, float);
-    ADD_MAP_5("RTKCfgBits", RTKCfgBits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("RTKCfgBits", RTKCfgBits, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1196,7 +1200,7 @@ static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_4("firmwareVer[1]", firmwareVer[1], DATA_TYPE_UINT8, uint8_t&);
     ADD_MAP_4("firmwareVer[2]", firmwareVer[2], DATA_TYPE_UINT8, uint8_t&);
     ADD_MAP_4("firmwareVer[3]", firmwareVer[3], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_5("evbStatus", evbStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("evbStatus", evbStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("loggerMode", loggerMode, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("loggerElapsedTimeMs", loggerElapsedTimeMs, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("wifiIpAddr", wifiIpAddr, DATA_TYPE_UINT32, uint32_t);
@@ -1217,20 +1221,20 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
     ADD_MAP_4("reserved1[0]", reserved1[0], DATA_TYPE_UINT8, uint8_t&);
     ADD_MAP_4("reserved1[1]", reserved1[1], DATA_TYPE_UINT8, uint8_t&);
     ADD_MAP_4("reserved1[2]", reserved1[2], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_5("cbf[0]", cbf[0], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[1]", cbf[1], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[2]", cbf[2], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[3]", cbf[3], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[4]", cbf[4], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[5]", cbf[5], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[6]", cbf[6], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[7]", cbf[7], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[8]", cbf[8], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbf[9]", cbf[9], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("cbOptions", cbOptions, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("bits", bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("radioPID", radioPID, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("radioNID", radioNID, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("cbf[0]", cbf[0], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[1]", cbf[1], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[2]", cbf[2], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[3]", cbf[3], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[4]", cbf[4], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[5]", cbf[5], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[6]", cbf[6], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[7]", cbf[7], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[8]", cbf[8], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbf[9]", cbf[9], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("cbOptions", cbOptions, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("bits", bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("radioPID", radioPID, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("radioNID", radioNID, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("radioPowerLevel", radioPowerLevel, DATA_TYPE_UINT32, uint32_t);
 
     ADD_MAP_4("wifi[0].ssid", wifi[0].ssid, DATA_TYPE_STRING, char[WIFI_SSID_PSK_SIZE]);
@@ -1257,7 +1261,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
 
     ADD_MAP_4("encoderTickToWheelRad", encoderTickToWheelRad, DATA_TYPE_F32, float);
     ADD_MAP_4("CANbaud_kbps", CANbaud_kbps, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("can_receive_address", can_receive_address, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("can_receive_address", can_receive_address, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("uinsComPort", uinsComPort, DATA_TYPE_UINT8, uint8_t);
     ADD_MAP_4("uinsAuxPort", uinsAuxPort, DATA_TYPE_UINT8, uint8_t);
     ADD_MAP_4("reserved2[0]", reserved2[0], DATA_TYPE_UINT8, uint8_t&);
@@ -1267,7 +1271,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
     ADD_MAP_4("h3sp330BaudRate", h3sp330BaudRate, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("h4xRadioBaudRate", h4xRadioBaudRate, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("h8gpioBaudRate", h8gpioBaudRate, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("wheelCfgBits", wheelCfgBits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("wheelCfgBits", wheelCfgBits, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("velocityControlPeriodMs", velocityControlPeriodMs, DATA_TYPE_UINT32, uint32_t);
 
     ASSERT_SIZE(totalSize);
@@ -1311,7 +1315,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     ADD_MAP_4("size", size, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("checksum", checksum, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("key", key, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("bits", bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("bits", bits, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("minLatGeofence", minLatGeofence, DATA_TYPE_F64, double);
     ADD_MAP_4("maxLatGeofence", maxLatGeofence, DATA_TYPE_F64, double);
     ADD_MAP_4("minLonGeofence", minLonGeofence, DATA_TYPE_F64, double);
@@ -1385,9 +1389,9 @@ static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT],
     INIT_MAP(evb_luna_status_t, DID_EVB_LUNA_STATUS);
     
     ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("evbLunaStatus", evbLunaStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("motorState", motorState, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("remoteKillMode", remoteKillMode, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("evbLunaStatus", evbLunaStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("motorState", motorState, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("remoteKillMode", remoteKillMode, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("supplyVoltage", supplyVoltage, DATA_TYPE_F32, float);
 
     ASSERT_SIZE(totalSize);
@@ -1419,7 +1423,7 @@ static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[D
     ADD_MAP_4("timeMs", timeMs, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("dt", dt, DATA_TYPE_F32, float);
     ADD_MAP_4("current_mode", current_mode, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("vehicle.velCmd_f", vehicle.velCmd_f, DATA_TYPE_F32, float);
     ADD_MAP_4("vehicle.velCmd_w", vehicle.velCmd_w, DATA_TYPE_F32, float);
     ADD_MAP_4("vehicle.velCmdMnl_f", vehicle.velCmdMnl_f, DATA_TYPE_F32, float);
@@ -1497,7 +1501,7 @@ static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_4("baseToRoverDistance", baseToRoverDistance, DATA_TYPE_F32, float);
     ADD_MAP_4("baseToRoverHeading", baseToRoverHeading, DATA_TYPE_F32, float);
     ADD_MAP_4("baseToRoverHeadingAcc", baseToRoverHeadingAcc, DATA_TYPE_F32, float);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1716,36 +1720,36 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_4("can_period_mult[CID_GPS1_RTK_POS_REL]", can_period_mult[CID_GPS1_RTK_POS_REL], DATA_TYPE_UINT16, uint16_t&);
     ADD_MAP_4("can_period_mult[CID_GPS2_RTK_CMP_REL]", can_period_mult[CID_GPS2_RTK_CMP_REL], DATA_TYPE_UINT16, uint16_t&);
     ADD_MAP_4("can_period_mult[CID_ROLL_ROLLRATE]", can_period_mult[CID_ROLL_ROLLRATE], DATA_TYPE_UINT16, uint16_t&);
-    ADD_MAP_5("can_transmit_address[CID_INS_TIME]", can_transmit_address[CID_INS_TIME], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_STATUS]", can_transmit_address[CID_INS_STATUS], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_EULER]", can_transmit_address[CID_INS_EULER], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_QUATN2B]", can_transmit_address[CID_INS_QUATN2B], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_QUATE2B]", can_transmit_address[CID_INS_QUATE2B], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_UVW]", can_transmit_address[CID_INS_UVW], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_VE]", can_transmit_address[CID_INS_VE], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_LAT]", can_transmit_address[CID_INS_LAT], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_LON]", can_transmit_address[CID_INS_LON], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_ALT]", can_transmit_address[CID_INS_ALT], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_NORTH_EAST]", can_transmit_address[CID_INS_NORTH_EAST], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_DOWN]", can_transmit_address[CID_INS_DOWN], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_ECEF_X]", can_transmit_address[CID_INS_ECEF_X], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_ECEF_Y]", can_transmit_address[CID_INS_ECEF_Y], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_ECEF_Z]", can_transmit_address[CID_INS_ECEF_Z], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_INS_MSL]", can_transmit_address[CID_INS_MSL], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_PREINT_PX]", can_transmit_address[CID_PREINT_PX], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_PREINT_QY]", can_transmit_address[CID_PREINT_QY], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_PREINT_RZ]", can_transmit_address[CID_PREINT_RZ], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_DUAL_PX]", can_transmit_address[CID_DUAL_PX], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_DUAL_QY]", can_transmit_address[CID_DUAL_QY], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_DUAL_RZ]", can_transmit_address[CID_DUAL_RZ], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_GPS1_POS]", can_transmit_address[CID_GPS1_POS], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_GPS2_POS]", can_transmit_address[CID_GPS2_POS], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_GPS1_RTK_POS_REL]", can_transmit_address[CID_GPS1_RTK_POS_REL], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_GPS2_RTK_CMP_REL]", can_transmit_address[CID_GPS2_RTK_CMP_REL], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
-    ADD_MAP_5("can_transmit_address[CID_ROLL_ROLLRATE]", can_transmit_address[CID_ROLL_ROLLRATE], DATA_TYPE_UINT32, uint32_t&, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_TIME]", can_transmit_address[CID_INS_TIME], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_STATUS]", can_transmit_address[CID_INS_STATUS], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_EULER]", can_transmit_address[CID_INS_EULER], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_QUATN2B]", can_transmit_address[CID_INS_QUATN2B], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_QUATE2B]", can_transmit_address[CID_INS_QUATE2B], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_UVW]", can_transmit_address[CID_INS_UVW], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_VE]", can_transmit_address[CID_INS_VE], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_LAT]", can_transmit_address[CID_INS_LAT], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_LON]", can_transmit_address[CID_INS_LON], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_ALT]", can_transmit_address[CID_INS_ALT], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_NORTH_EAST]", can_transmit_address[CID_INS_NORTH_EAST], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_DOWN]", can_transmit_address[CID_INS_DOWN], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_ECEF_X]", can_transmit_address[CID_INS_ECEF_X], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_ECEF_Y]", can_transmit_address[CID_INS_ECEF_Y], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_ECEF_Z]", can_transmit_address[CID_INS_ECEF_Z], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_INS_MSL]", can_transmit_address[CID_INS_MSL], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_PREINT_PX]", can_transmit_address[CID_PREINT_PX], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_PREINT_QY]", can_transmit_address[CID_PREINT_QY], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_PREINT_RZ]", can_transmit_address[CID_PREINT_RZ], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_DUAL_PX]", can_transmit_address[CID_DUAL_PX], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_DUAL_QY]", can_transmit_address[CID_DUAL_QY], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_DUAL_RZ]", can_transmit_address[CID_DUAL_RZ], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_GPS1_POS]", can_transmit_address[CID_GPS1_POS], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_GPS2_POS]", can_transmit_address[CID_GPS2_POS], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_GPS1_RTK_POS_REL]", can_transmit_address[CID_GPS1_RTK_POS_REL], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_GPS2_RTK_CMP_REL]", can_transmit_address[CID_GPS2_RTK_CMP_REL], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("can_transmit_address[CID_ROLL_ROLLRATE]", can_transmit_address[CID_ROLL_ROLLRATE], DATA_TYPE_UINT32, uint32_t&, DATA_FLAGS_DISPLAY_HEX);
 
     ADD_MAP_4("can_baudrate_kbps", can_baudrate_kbps, DATA_TYPE_UINT16, uint16_t);
-    ADD_MAP_5("can_receive_address", can_receive_address, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("can_receive_address", can_receive_address, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2006,7 +2010,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT], 
 
     ADD_MAP_4("sampleCount", sampleCount, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("calState", calState, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAG_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("alignAccel[0]", alignAccel[0], DATA_TYPE_F32, float&);
     ADD_MAP_4("alignAccel[1]", alignAccel[1], DATA_TYPE_F32, float&);
     ADD_MAP_4("alignAccel[2]", alignAccel[2], DATA_TYPE_F32, float&);
@@ -3069,56 +3073,56 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
     switch (dataType)
     {
     case DATA_TYPE_INT8:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(int8_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)ptr);
         break;
 
     case DATA_TYPE_UINT8:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(uint8_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint8_t*)ptr);
         break;
 
     case DATA_TYPE_INT16:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(int16_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int16_t*)ptr);
         break;
 
     case DATA_TYPE_UINT16:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(uint16_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint16_t*)ptr);
         break;
 
     case DATA_TYPE_INT32:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(int32_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int32_t*)ptr);
         break;
 
     case DATA_TYPE_UINT32:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(uint32_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint32_t*)ptr);        
         break;
 
     case DATA_TYPE_INT64:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (long long)*(uint64_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)ptr);
         break;
 
     case DATA_TYPE_UINT64:
-        if (dataFlags == DATA_FLAG_DISPLAY_HEX)
+        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (unsigned long long)*(uint64_t*)ptr);
         else
             SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)ptr);
