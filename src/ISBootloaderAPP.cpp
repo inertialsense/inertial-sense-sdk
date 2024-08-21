@@ -193,6 +193,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
         else serialPortFlush(m_port);
     }
 
+    SLEEP_MS(5000); // we need about 5 seconds for the targeted device to reboot back into the IS-bootloader mode
     return IS_OP_OK;
 }
 

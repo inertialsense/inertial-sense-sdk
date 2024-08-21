@@ -170,10 +170,6 @@ std::vector<port_handle_t> comManagerGetPorts() {
 
 // __attribute__((optimize("O0")))
 std::vector<port_handle_t> ISComManager::getPorts() {
-    if (!ports.empty()) {
-        port_handle_t tmp = ports[0];
-        int type = portType(tmp);
-    }
     return ports;
 }
 

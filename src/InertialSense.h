@@ -39,12 +39,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
 
-#define DEBUG_LOGGING
-// #define debug_message(...)
-#ifndef debug_message
-    #define debug_message printf
+// #define DEBUG_LOGGING
+#ifndef DEBUG_LOGGING
+    #define debug_message(...)
+#else
+    #ifndef debug_message
+        #define debug_message printf
+    #endif
 #endif
-
 
 extern "C"
 {
@@ -137,7 +139,13 @@ public:
     /**
     * Get all open serial port names
     */
-    std::vector<std::string> GetPorts();
+    std::vector<std::string> GetPortNames();
+
+    /**
+     * @return a vector of available ports
+     * NOTE that this may return ports which do not have a corresponding ISDevice
+     */
+    std::vector<port_handle_t> getPorts();
 
     /**
     * Get the number of open devices
@@ -325,9 +333,20 @@ public:
      * the serial number.
      * @param devInfo
      * @param filterFlags
-     * @return a vector of ISDevice which match the filter criteria
+     * @return a vector of ISDevice* which match the filter criteria (devInfo/filterFlags)
      */
     std::vector<ISDevice*> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
+
+    /**
+     * Returns a subset of connected devices filtered by the passed hardware id.
+     * Note that any HdwId component (TYPE, MAJOR, MINOR) which bit mask is all ones, will
+     * be ignored in the filter criteria.  Ie, to filter on ALL IMX devices, regardless of
+     * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
+     * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
+     * @param hdwId
+     * @return a vector of ISDevice* which match the filter criteria (hdwId)
+     */
+    std::vector<ISDevice*> selectByHdwId(const uint16_t hdwId = 0xFFFF);
 
     /**
     * Get the device info

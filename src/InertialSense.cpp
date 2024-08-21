@@ -442,6 +442,18 @@ size_t InertialSense::DeviceCount()
 }
 
 /**
+ * @return a vector of available ports
+ * NOTE that this may return ports which do not have a corresponding ISDevice
+ */
+std::vector<port_handle_t> InertialSense::getPorts() {
+    std::vector<port_handle_t> ports;
+    for (auto port : m_serialPorts) {
+        ports.push_back((port_handle_t)&port);
+    }
+    return ports;
+}
+
+/**
  * Returns a vector of available, connected devices
  * @return
  */
@@ -690,7 +702,6 @@ bool InertialSense::UpdateClient()
     }
     m_clientBufferBytesToSend = 0;
 
-
     return true;
 }
 
@@ -732,7 +743,7 @@ void InertialSense::Close()
     m_serialPorts.clear();
 }
 
-vector<string> InertialSense::GetPorts()
+vector<string> InertialSense::GetPortNames()
 {
     vector<string> ports;
     for (auto& device : m_comManagerState.devices)
@@ -1538,7 +1549,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     vector<string> ports;
     size_t maxCount = UINT32_MAX;
 
-    debug_message("Initializing comManager...\n");
+    debug_message("[DBG] Initializing comManager...\n");
     comManagerInit(10, staticProcessRxData, 0, 0, 0, &m_cmBufBcastMsg);
     comManagerRegisterProtocolHandler(_PTYPE_NMEA, staticProcessRxNmea);
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
@@ -1549,7 +1560,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     if (portPattern[0] == '*')
     {
         // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
-        debug_message("[DGB] Querying OS for available serial ports.\n");
+        debug_message("[DBG] Querying OS for available serial ports.\n");
         cISSerialPort::GetComPorts(ports);
         if (portPattern[1] != '\0')
         {
@@ -1568,8 +1579,10 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // check to see if this port should be ignored
         bool skipPort = false;
         for (auto ignored : m_ignoredPorts) {
-            if (ignored == curPortName)
+            if (ignored == curPortName) {
+                debug_message("[DBG] Ignoring port %s\n", curPortName.c_str());
                 skipPort = true;
+            }
         }
         if (skipPort)
             continue;   // skip this one...
@@ -1577,7 +1590,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // check is this port already exists, and is open...
         port_handle_t newPort = 0;
         for (auto& port : comManagerGetPorts()) {
-            debug_message("[DGB] Serial port '%s' has already been allocated.\n", curPortName.c_str());
+            debug_message("[DBG] Serial port '%s' has already been allocated.\n", curPortName.c_str());
             if (portName(port) && (portName(port) == curPortName)) {
                 newPort = port;
                 break;
@@ -1585,13 +1598,14 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
 
         if (!newPort) {
-            debug_message("[DGB] Allocating serial port instance for %s\n", curPortName.c_str());
+            debug_message("[DBG] Allocating serial port instance for %s\n", curPortName.c_str());
             newPort = allocateSerialPort(PORT_TYPE__COMM);
         }
 
         if (!serialPortIsOpen(newPort)) {
-            debug_message("[DGB] OpeningSerial port '%s' has already been allocated.\n", curPortName.c_str());
+            debug_message("[DBG] Opening serial port '%s'\n", curPortName.c_str());
             if (serialPortOpen(newPort, curPortName.c_str(), baudRate, 0) == 0) {
+                debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", curPortName.c_str(), SERIAL_PORT(newPort)->error);
                 serialPortClose(newPort);           // failed to open
                 m_ignoredPorts.push_back(curPortName);     // record this port name as bad, so we don't try and reopen it again
             } else {
@@ -1631,18 +1645,21 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                         //comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
                         break;
                 }
-                if ((device.hdwId != 0) && (device.hdwRunState != 0))
+                if ((device.hdwId != 0) && (device.hdwRunState != 0)) {
+                    debug_message("[DBG] Received response from serial port '%s'. Registering device.\n", SERIAL_PORT(port)->portName);
                     registerDevice(&device);
-                else if (SERIAL_PORT(port)->errorCode) {
+                } else if (SERIAL_PORT(port)->errorCode) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+                    debug_message("[DBG] There was an error accessing serial port '%s': %s\n", SERIAL_PORT(port)->portName, SERIAL_PORT(port)->error);
                     comManagerRemovePort(port);
+                }
+
+                for (int i = 0; i < 3; i++) {
+                    SLEEP_MS(20);
+                    comManagerStep();
                 }
             }
 
-            for (int i = 0; i < 3; i++) {
-                SLEEP_MS(100);
-                comManagerStep();
-            }
 
             checkType = (checkType + 1) % 4;
         } while (!HasReceivedDeviceInfoFromAllDevices());
@@ -1652,6 +1669,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         std::vector<ISDevice*> deadDevices;
         for (auto& device : m_comManagerState.devices) {
             if (!HasReceivedDeviceInfo(device)) {
+                debug_message("[DBG] Failed to receive response on serial port '%s'\n", portName(device.port));
                 deadPorts.push_back(((serial_port_t*)device.port)->portName);
                 deadDevices.push_back(&device);
             }
@@ -1668,15 +1686,12 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
         // We don't remove the device above while still iterating over the list of devices.
         for (auto deadDevice : deadDevices) {
-            RemoveDevice(deadDevice);
+            if (deadDevice) {
+                debug_message("[DBG] Deallocating device associated with port '%s'\n", portName(deadDevice->port));
+                RemoveDevice(deadDevice);
+            }
         }
         deadDevices.clear();
-
-        // if no devices left, all failed, we return failure
-        if (m_comManagerState.devices.size() == 0) {
-            CloseSerialPorts();
-            return false;
-        }
     }
 
     // request extended device info for remaining connected devices...
@@ -1689,7 +1704,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
     }
 
-    return m_comManagerState.devices.size() != 0;
+    return (m_enableDeviceValidation ? !m_comManagerState.devices.empty() : !m_serialPorts.empty());
 }
 
 void InertialSense::CloseSerialPorts()
@@ -1970,7 +1985,7 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
  */
 ISDevice* InertialSense::DeviceByPort(port_handle_t port) {
     if (port == nullptr)
-        return nullptr;
+        return (!m_comManagerState.devices.empty() ? &(m_comManagerState.devices[0]) : nullptr);
 
     for (auto& device: m_comManagerState.devices) {
         if (device.port == port)
@@ -2093,4 +2108,38 @@ std::vector<ISDevice*> InertialSense::selectByDevInfo(const dev_info_t& devInfo,
             selected.push_back(&device);
     }
     return selected;
+}
+
+/**
+ * Returns a subset of connected devices filtered by the passed hardware id.
+ * Note that any HdwId component (TYPE, MAJOR, MINOR) which bit mask is all ones, will
+ * be ignored in the filter criteria.  Ie, to filter on ALL IMX devices, regardless of
+ * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
+ * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
+ * @param hdwId
+ * @return a vector of ISDevice* which match the filter criteria (hdwId)
+ */
+std::vector<ISDevice*> InertialSense::selectByHdwId(const uint16_t hdwId) {
+    dev_info_t devInfo = { };
+    uint32_t filterFlags = 0;
+
+    // filter hdw type
+    devInfo.hardwareType = DECODE_HDW_TYPE(hdwId);
+    if (devInfo.hardwareType != (HDW_TYPE__MASK >> HDW_TYPE__SHIFT)) {
+        filterFlags |= (1 << 1);
+    }
+
+    // filter major hdw version
+    devInfo.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
+    if (devInfo.hardwareVer[0] != (HDW_MAJOR__MASK >> HDW_MAJOR__SHIFT)) {
+        filterFlags |= (1 << 4);
+    }
+
+    // filter minor hdw version
+    devInfo.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
+    if (devInfo.hardwareVer[1] != (HDW_MINOR__MASK >> HDW_MINOR__SHIFT)) {
+        filterFlags |= (1 << 5);
+    }
+
+    return selectByDevInfo(devInfo, filterFlags);
 }

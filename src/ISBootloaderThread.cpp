@@ -395,7 +395,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     while(m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
-        SLEEP_MS(10);
+        SLEEP_MS(100);
 
         cISSerialPort::GetComPorts(portNames);
 
@@ -436,12 +436,14 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "mode_thread_serial_app discovered device on port %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
-                m_serial_threads.push_back(new_thread);
-                m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
+                if (new_thread->serialPort.errorCode == 0) {
+                    m_serial_threads.push_back(new_thread);
+                    m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_app, m_serial_threads[m_serial_threads.size() - 1]);
 
-                m_serial_devicesActive++;
+                    m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "mode_thread_serial_app found viable port: %s", port_name.c_str());
+                    m_serial_devicesActive++;
+                }
             }
         }
 
@@ -556,7 +558,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "get_device_isb_version_thread found device on port %s", port_name.c_str());
+                m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "get_device_isb_version_thread found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(get_device_isb_version_thread, m_serial_threads[m_serial_threads.size() - 1]);
@@ -739,7 +741,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "mode_thread_serial_isb found device on port %s", port_name.c_str());
+                m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "mode_thread_serial_isb found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(mode_thread_serial_isb, m_serial_threads[m_serial_threads.size() - 1]);
@@ -879,7 +881,7 @@ is_operation_result cISBootloaderThread::update(
 
             if (!found)
             {
-                m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "update_thread_serial found device on port %s", port_name.c_str());
+                m_infoProgress(NULL, IS_LOG_LEVEL_DEBUG, "update_thread_serial found viable port: %s", port_name.c_str());
                 thread_serial_t* new_thread = new thread_serial_t(port_name, force_isb_update); // (thread_serial_t*)malloc(sizeof(thread_serial_t));
                 m_serial_threads.push_back(new_thread);
                 m_serial_threads[m_serial_threads.size() - 1]->thread = threadCreateAndStart(update_thread_serial, m_serial_threads[m_serial_threads.size() - 1]);
@@ -911,7 +913,7 @@ is_operation_result cISBootloaderThread::update(
         {
             m_continue_update = false;
 
-            tmp = "Update timeout... Timeout of " + to_string(((double)timeout) / 1000) + " Seconds reached.";
+            tmp = "\nUpdate timeout... Timeout of " + to_string(((double)timeout) / 1000) + " Seconds reached.";
 
             m_infoProgress(NULL, IS_LOG_LEVEL_ERROR, tmp.c_str());
         }
@@ -919,7 +921,7 @@ is_operation_result cISBootloaderThread::update(
 
     timeDeltaMs = current_timeMs() - beginTimeMs;
 
-    tmp = "Update run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
+    tmp = "\nUpdate run time: " + to_string(((double)timeDeltaMs) / 1000) + " Seconds.";
 
     m_infoProgress(NULL, IS_LOG_LEVEL_INFO, tmp.c_str());
 
