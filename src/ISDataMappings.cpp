@@ -34,6 +34,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 #define SYM_DEG             "°"
+#define SYM_DEG_C           "°C"
 #define SYM_DEG_DEG_M       "°,°,m"
 
 const char insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GpsMagUsed,Variance,VarianceCoarse]";
@@ -265,32 +266,32 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], m
     
     ADD_MAP_4("reserved", reserved, DATA_TYPE_UINT16, uint16_t);
     ADD_MAP_4("reserved2", reserved2, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("hardwareType", hardwareType, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("serialNumber", serialNumber, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("hardwareVer[0]", hardwareVer[0], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("hardwareVer[1]", hardwareVer[1], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("hardwareVer[2]", hardwareVer[2], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("hardwareVer[3]", hardwareVer[3], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("firmwareVer[0]", firmwareVer[0], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("firmwareVer[1]", firmwareVer[1], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("firmwareVer[2]", firmwareVer[2], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("firmwareVer[3]", firmwareVer[3], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("buildNumber", buildNumber, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("protocolVer[0]", protocolVer[0], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("protocolVer[1]", protocolVer[1], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("protocolVer[2]", protocolVer[2], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("protocolVer[3]", protocolVer[3], DATA_TYPE_UINT8, uint8_t&);
-    ADD_MAP_4("repoRevision", repoRevision, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("manufacturer", manufacturer, DATA_TYPE_STRING, char[DEVINFO_MANUFACTURER_STRLEN]);
-    ADD_MAP_4("buildType", buildType, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildYear", buildYear, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildMonth", buildMonth, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildDay", buildDay, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildHour", buildHour, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildMinute", buildMinute, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildSecond", buildSecond, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("buildMillisecond", buildMillisecond, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("addInfo", addInfo, DATA_TYPE_STRING, char[DEVINFO_ADDINFO_STRLEN]);
+    ADD_MAP_7("hardwareType", hardwareType, DATA_TYPE_UINT8,  uint8_t,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("serialNumber", serialNumber, DATA_TYPE_UINT32, uint32_t, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("hardwareVer[0]", hardwareVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Hardware version", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("hardwareVer[1]", hardwareVer[1], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("hardwareVer[2]", hardwareVer[2], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("hardwareVer[3]", hardwareVer[3], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("firmwareVer[0]", firmwareVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Firmware version", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("firmwareVer[1]", firmwareVer[1], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("firmwareVer[2]", firmwareVer[2], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("firmwareVer[3]", firmwareVer[3], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildNumber", buildNumber, DATA_TYPE_UINT32, uint32_t, "", "Build number (0xFFFFF000 = Host key, 0x00000FFF = Build #)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("protocolVer[0]", protocolVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Communications protocol version", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("protocolVer[1]", protocolVer[1], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("protocolVer[2]", protocolVer[2], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("protocolVer[3]", protocolVer[3], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("repoRevision", repoRevision, DATA_TYPE_UINT32, uint32_t, "", "Repo revision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("manufacturer", manufacturer, DATA_TYPE_STRING, char[DEVINFO_MANUFACTURER_STRLEN], "", "manufacturer", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildType", buildType, DATA_TYPE_UINT8, uint8_t, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '*'(42)=dirty", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildYear", buildYear, DATA_TYPE_UINT8, uint8_t, "", "Build year-2000", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildMonth", buildMonth, DATA_TYPE_UINT8, uint8_t, "", "Build month", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildDay", buildDay, DATA_TYPE_UINT8, uint8_t, "", "Build day", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildHour", buildHour, DATA_TYPE_UINT8, uint8_t, "", "Build hour", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildMinute", buildMinute, DATA_TYPE_UINT8, uint8_t, "", "Build minute", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildSecond", buildSecond, DATA_TYPE_UINT8, uint8_t, "", "Build second", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("buildMillisecond", buildMillisecond, DATA_TYPE_UINT8, uint8_t, "", "Build millisecond", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("addInfo", addInfo, DATA_TYPE_STRING, char[DEVINFO_ADDINFO_STRLEN], "", "Additional info", DATA_FLAGS_READ_ONLY);
     // TODO: dev_info_t.firmwareMD5Hash support
     // ADD_MAP_4("firmwareMD5Hash[0]", firmwareMD5Hash[0], DATA_TYPE_UINT32, uint32_t&);
     // ADD_MAP_4("firmwareMD5Hash[1]", firmwareMD5Hash[1], DATA_TYPE_UINT32, uint32_t&);
@@ -304,17 +305,17 @@ static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_CO
 {
     INIT_MAP(manufacturing_info_t, DID_MANUFACTURING_INFO);
 
-    ADD_MAP_4("serialNumber", serialNumber, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("hardwareId", hardwareId, DATA_TYPE_UINT16, uint16_t);
-    ADD_MAP_4("lotNumber", lotNumber, DATA_TYPE_UINT16, uint16_t);
-    ADD_MAP_4("date", date, DATA_TYPE_STRING, char[16]);
-    ADD_MAP_4("key", key, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("platformType", platformType, DATA_TYPE_INT32, int32_t);
-    ADD_MAP_4("reserved", reserved, DATA_TYPE_INT32, int32_t);
-    ADD_MAP_4("uid[0]", uid[0], DATA_TYPE_UINT32, uint32_t&);
-    ADD_MAP_4("uid[1]", uid[1], DATA_TYPE_UINT32, uint32_t&);
-    ADD_MAP_4("uid[2]", uid[2], DATA_TYPE_UINT32, uint32_t&);
-    ADD_MAP_4("uid[3]", uid[3], DATA_TYPE_UINT32, uint32_t&);
+    ADD_MAP_7("serialNumber", serialNumber, DATA_TYPE_UINT32, uint32_t, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("hardwareId", hardwareId, DATA_TYPE_UINT16, uint16_t, "", "Hardware Id", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("lotNumber", lotNumber, DATA_TYPE_UINT16, uint16_t, "", "Lot number", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("date", date, DATA_TYPE_STRING, char[16], "", "Manufacturing date (YYYYMMDDHHMMSS)", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("key", key, DATA_TYPE_UINT32, uint32_t, "", "key (times OTP area was set, 15 max)", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("platformType", platformType, DATA_TYPE_INT32, int32_t, "", "Platform type (carrier board)", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("reserved", reserved, DATA_TYPE_INT32, int32_t, "", "Reserved", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("uid[0]", uid[0], DATA_TYPE_UINT32, uint32_t&, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("uid[1]", uid[1], DATA_TYPE_UINT32, uint32_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("uid[2]", uid[2], DATA_TYPE_UINT32, uint32_t&, "", "\"", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("uid[3]", uid[3], DATA_TYPE_UINT32, uint32_t&, "", "\"", DATA_FLAGS_READ_ONLY);
 
     ASSERT_SIZE(totalSize);
 }
@@ -440,20 +441,20 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], ma
 {
     INIT_MAP(sys_params_t, DID_SYS_PARAMS);
     
-    ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_4("imuTemp", imuTemp, DATA_TYPE_F32, float);
-    ADD_MAP_4("baroTemp", baroTemp, DATA_TYPE_F32, float);
-    ADD_MAP_4("mcuTemp", mcuTemp, DATA_TYPE_F32, float);
-    ADD_MAP_4("sysStatus", sysStatus, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("imuSamplePeriodMs", imuSamplePeriodMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("navOutputPeriodMs", navOutputPeriodMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("sensorTruePeriod", sensorTruePeriod, DATA_TYPE_F64, double);
-    ADD_MAP_4("flashCfgChecksum", flashCfgChecksum, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("navUpdatePeriodMs", navUpdatePeriodMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("genFaultCode", genFaultCode, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_4("upTime", upTime, DATA_TYPE_F64, double);
+    ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("imuTemp", imuTemp, DATA_TYPE_F32, float, "", "Sys status flags", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("baroTemp", baroTemp, DATA_TYPE_F32, float,  SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    ADD_MAP_7("mcuTemp", mcuTemp, DATA_TYPE_F32, float,  SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    ADD_MAP_7("sysStatus", sysStatus, DATA_TYPE_UINT32, uint32_t,  SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    ADD_MAP_6("imuSamplePeriodMs", imuSamplePeriodMs, DATA_TYPE_UINT32, uint32_t, "ms", "IMU sample period. Zero disables sensor sampling.");
+    ADD_MAP_6("navOutputPeriodMs", navOutputPeriodMs, DATA_TYPE_UINT32, uint32_t, "ms", "Nav/AHRS filter ouput period.");
+    ADD_MAP_7("sensorTruePeriod", sensorTruePeriod, DATA_TYPE_F64, double, "ms", "Nav/AHRS filter update period.", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_8("flashCfgChecksum", flashCfgChecksum, DATA_TYPE_UINT32, uint32_t, "us", "Actual sample period relative to GPS PPS.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1.0e6);
+    ADD_MAP_7("navUpdatePeriodMs", navUpdatePeriodMs, DATA_TYPE_UINT32, uint32_t,  "", "Flash config checksum used for synchronization", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("genFaultCode", genFaultCode, DATA_TYPE_UINT32, uint32_t, "", "General fault code descriptor", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("upTime", upTime, DATA_TYPE_F64, double, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
 
     ASSERT_SIZE(totalSize);
 }
@@ -524,20 +525,21 @@ static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
 {
     INIT_MAP(ins_2_t, DID_INS_2);
     
-    ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_4("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qn2b[2]", qn2b[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qn2b[3]", qn2b[3], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[0]", uvw[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[1]", uvw[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[2]", uvw[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("lla[0]", lla[0], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lla[1]", lla[1], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lla[2]", lla[2], DATA_TYPE_F64, double&);
+    uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
+    ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
+    ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qn2b[2]", qn2b[2], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qn2b[3]", qn2b[3], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("uvw[0]", uvw[0], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("uvw[1]", uvw[1], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("uvw[2]", uvw[2], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("lla[0]", lla[0], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("lla[1]", lla[1], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("lla[2]", lla[2], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
 
     ASSERT_SIZE(totalSize);
 }
@@ -546,21 +548,22 @@ static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
 {
     INIT_MAP(ins_3_t, DID_INS_3);
     
-    ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_4("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qn2b[2]", qn2b[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qn2b[3]", qn2b[3], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[0]", uvw[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[1]", uvw[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("uvw[2]", uvw[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("lla[0]", lla[0], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lla[1]", lla[1], DATA_TYPE_F64, double&);
-    ADD_MAP_4("lla[2]", lla[2], DATA_TYPE_F64, double&);
-    ADD_MAP_4("msl", msl, DATA_TYPE_F32, float);
+    uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
+    ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
+    ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qn2b[2]", qn2b[2], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qn2b[3]", qn2b[3], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("uvw[0]", uvw[0], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("uvw[1]", uvw[1], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("uvw[2]", uvw[2], DATA_TYPE_F32, float&, "m/s", "Velocity in body frame", flags);
+    ADD_MAP_7("lla[0]", lla[0], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("lla[1]", lla[1], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("lla[2]", lla[2], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    ADD_MAP_7("msl", msl, DATA_TYPE_F32, float, "m", "Height above mean sea level (MSL)", flags);
 
     ASSERT_SIZE(totalSize);
 }
@@ -569,20 +572,21 @@ static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
 {
     INIT_MAP(ins_4_t, DID_INS_4);
     
-    ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double);
-    ADD_MAP_5("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_5("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_4("qe2b[0]", qe2b[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qe2b[1]", qe2b[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qe2b[2]", qe2b[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("qe2b[3]", qe2b[3], DATA_TYPE_F32, float&);
-    ADD_MAP_4("ve[0]", ve[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("ve[1]", ve[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("ve[2]", ve[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("ecef[0]", ecef[0], DATA_TYPE_F64, double&);
-    ADD_MAP_4("ecef[1]", ecef[1], DATA_TYPE_F64, double&);
-    ADD_MAP_4("ecef[2]", ecef[2], DATA_TYPE_F64, double&);
+    uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
+    ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
+    ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("qe2b[0]", qe2b[0], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qe2b[1]", qe2b[1], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qe2b[2]", qe2b[2], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("qe2b[3]", qe2b[3], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("ve[0]", ve[0], DATA_TYPE_F32, float&, "m/s", "Velocity in ECEF (earth-centered earth-fixed) frame", flags);
+    ADD_MAP_7("ve[1]", ve[1], DATA_TYPE_F32, float&, "m/s", "Velocity in ECEF (earth-centered earth-fixed) frame", flags);
+    ADD_MAP_7("ve[2]", ve[2], DATA_TYPE_F32, float&, "m/s", "Velocity in ECEF (earth-centered earth-fixed) frame", flags);
+    ADD_MAP_7("ecef[0]", ecef[0], DATA_TYPE_F64, double&, "m", "Position in ECEF (earth-centered earth-fixed) frame", flags);
+    ADD_MAP_7("ecef[1]", ecef[1], DATA_TYPE_F64, double&, "m", "Position in ECEF (earth-centered earth-fixed) frame", flags);
+    ADD_MAP_7("ecef[2]", ecef[2], DATA_TYPE_F64, double&, "m", "Position in ECEF (earth-centered earth-fixed) frame", flags);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2648,8 +2652,8 @@ const char* const cISDataMappings::m_dataIdNames[] =
     "DID_REFERENCE_IMU",                // 95 
     "DID_IMU3_RAW",                     // 96 
     "DID_IMU_RAW",                      // 97 
-    "UNUSED_98",                        // 98 
-    "UNUSED_99",                        // 99 
+    "DID_FIRMWARE_UPDATE",              // 98 
+    "DID_RUNTIME_PROFILER",             // 99 
     "UNUSED_100",                       // 100
     "UNUSED_101",                       // 101
     "UNUSED_102",                       // 102
