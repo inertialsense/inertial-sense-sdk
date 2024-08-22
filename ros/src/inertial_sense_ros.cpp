@@ -225,12 +225,9 @@ void InertialSenseROS::load_params(YAML::Node &node)
     if (portNode.IsSequence()) {
         for (auto it = portNode.begin(); it != portNode.end(); it++)
             ports_.push_back((*it).as<std::string>());
-            ROS_INFO("Ports detected");
-            printf("Ports detected!");
-            sleep(10);
     } else if (portNode.IsScalar()) {
         std::string param = "";
-        ph.nodeParam("port", param, "/dev/ttyACM1");
+        ph.nodeParam("port", param, "/dev/ttyACM0");
         ports_.push_back(param);
     }
 
@@ -238,9 +235,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     {
         //No ports specified. Use default
         ports_.push_back("/dev/ttyACM0");
-        ROS_INFO("No ports detected");
-        printf("\nNo Ports detected!");
-        sleep(1000);
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
