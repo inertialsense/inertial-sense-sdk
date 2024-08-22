@@ -227,7 +227,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
             ports_.push_back((*it).as<std::string>());
             ROS_INFO("Ports detected");
             printf("Ports detected!");
-            sleep(1000);
+            sleep(10);
     } else if (portNode.IsScalar()) {
         std::string param = "";
         ph.nodeParam("port", param, "/dev/ttyACM1");
