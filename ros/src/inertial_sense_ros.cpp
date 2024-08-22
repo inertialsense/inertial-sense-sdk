@@ -235,6 +235,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
     {
         //No ports specified. Use default
         ports_.push_back("/dev/ttyACM0");
+        ROS_INFO("No ports detected");
+        sleep(1000);
     }
 
     ph.nodeParam("factory_reset", factory_reset_, false);
