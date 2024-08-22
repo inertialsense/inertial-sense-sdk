@@ -325,13 +325,20 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("enable_covariance", covariance_enabled_, covariance_enabled_);
 
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
-    ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu", "", true, 1, true);
-    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned", "", true, 1, true);
-    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef", "", true, 1, true);
-    ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned", true, 1, true);
-    ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla", true, 1, true);
-    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true, 1, true);
-    ph.msgParams(rs_.inl2_states, "inl2_states", "", true, 1, true);
+    bool rs_odom_ins_enu_enable = nh_->declare_parameter<bool>("odom_ins_enu", true);
+    ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu", "", true, 1, rs_odom_ins_enu_enable);
+    bool rs_odom_ins_ned_enable = nh_->declare_parameter<bool>("odom_ins_ned", true);
+    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned", "", true, 1, rs_odom_ins_ned_enable);
+    bool rs_odom_ins_ecef_enable = nh_->declare_parameter<bool>("odom_ins_ecef", true);
+    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef", "", true, 1, rs_odom_ins_ecef_enable);
+    bool did_ins1_enable = nh_->declare_parameter<bool>("did_ins1", true);
+    ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned", true, 1, did_ins1_enable);
+    bool did_ins2_enable = nh_->declare_parameter<bool>("did_ins2", true);
+    ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla", true, 1, did_ins2_enable);
+    bool did_ins4_enable = nh_->declare_parameter<bool>("did_ins4", true);
+    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true, 1, did_ins4_enable);
+    bool did_inl2_enable = nh_->declare_parameter<bool>("inl2_states", true);
+    ph.msgParams(rs_.inl2_states, "inl2_states", "", true, 1, did_inl2_enable);
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
 
@@ -349,10 +356,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
     }
     ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset, rs_.gps1.antennaOffset);
     YAML::Node gps1Msgs = ph.node(gps1Node, "messages", 2);
-    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel", true, 1, true);
-    ph.msgParams(rs_.gps1_info, "info", "gps1/info", true, 1, true);
-    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw", true, 1, true);
-    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix", true, 1, true);
+    bool rs_gps1_enable = nh_->declare_parameter<bool>("gps1/pos_vel", true);
+    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel", true, 1, rs_gps1_enable);
+    bool rs_gps1_info_enable = nh_->declare_parameter<bool>("gps1/info", true);
+    ph.msgParams(rs_.gps1_info, "info", "gps1/info", true, 1, rs_gps1_info_enable);
+    bool rs_gps1_raw_enable = nh_->declare_parameter<bool>("gps1/raw", true);
+    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw", true, 1, rs_gps1_raw_enable);
+    bool rs_gps1_navsatfix_enable = nh_->declare_parameter<bool>("gps1/NavSatFix", true);
+    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix", true, 1, rs_gps1_navsatfix_enable);
     gps1Node["messages"] = gps1Msgs;
     node["gps1"] = gps1Node;
 
@@ -368,10 +379,14 @@ void InertialSenseROS::load_params(YAML::Node &node)
     }
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
-    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, true);
-    ph.msgParams(rs_.gps2_info, "info", "gps2/info", true, 1, true);
-    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, true);
-    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", true, 1, true);
+    bool rs_gps2_enable = nh_->declare_parameter<bool>("gps2/pos_vel", true);
+    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, rs_gps2_enable);
+    bool rs_gps2_info = nh_->declare_parameter<bool>("gps2/info", true);
+    ph.msgParams(rs_.gps2_info, "info", "gps2/info", true, 1, rs_gps2_info);
+    bool rs_gps2_raw = nh_->declare_parameter<bool>("gps2/raw", true);
+    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, rs_gps2_raw);
+    bool rs_gps2_nsf = nh_->declare_parameter<bool>("gps2/NavSatFix", true);
+    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", true, 1, rs_gps2_nsf);
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 
