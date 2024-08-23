@@ -184,7 +184,7 @@ static int doDFUFirmwareUpdate(int argc, char* argv[]) {
             bool finalization_needed = false; // true if we actually did something that needs finalizing
 
             if (!imx_firmware.empty()) {
-                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 24576);
+                fw_result = device->updateFirmware(imx_firmware, 0x08000000 + 0x6000);
                 if (fw_result != dfu::DFU_ERROR_NONE)
                     fwUpdateStatus(nullptr, IS_LOG_LEVEL_ERROR, "(%s) ERROR: Firmware update finished with status: %s", device->getDescription(), dfu_errors[-fw_result]);
                 finalization_needed = true;
