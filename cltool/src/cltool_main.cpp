@@ -381,7 +381,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
 
-        // Delay to allow serial data to sent before closing port 
+        // Delay to allow transmit time before port gets closed 
         SLEEP_MS(1000);
         return false;
     }
