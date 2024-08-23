@@ -1131,7 +1131,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
     ADD_MAP(m, totalSize, "Message ID", msgTypeID, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeInt8, int8_t, 0);
     ADD_MAP(m, totalSize, "Length", length, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
