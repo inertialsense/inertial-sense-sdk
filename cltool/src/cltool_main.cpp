@@ -251,7 +251,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         g_inertialSenseDisplay.ProcessData(data);
 }
 
-// Where we tell the uINS what data to send and at what rate.  
+// Where we tell the IMX what data to send and at what rate.  
 // "cltool_dataCallback()" is registered as the callback functions for all received data.
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
@@ -264,16 +264,18 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         return true;
     }
 
-    // check for any compatible (protocol version 2) devices
-    for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-        if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
-            printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
-            // let's print the dev info for all connected devices (so the user can identify the errant device)
-            for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
-                printf("%s\n", devInfo.c_str());
+    if (!g_commandLineOptions.disableDeviceValidation)
+    {   // check for any compatible (protocol version 2) devices
+        for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
+            if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
+                printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
+                // let's print the dev info for all connected devices (so the user can identify the errant device)
+                for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
+                    std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
+                    printf("%s\n", devInfo.c_str());
+                }
+                return false;
             }
-            return false;
         }
     }
 
@@ -651,6 +653,7 @@ static int cltool_dataStreaming()
     // Create InertialSense object, passing in data callback function pointer.
     InertialSense inertialSenseInterface(cltool_dataCallback);
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
+    inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
