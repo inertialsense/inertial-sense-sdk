@@ -771,7 +771,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 
         m_comManagerState.devices[pHandle].sysCmd.command = command;
         m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
-        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.
+        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
         comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
     }
 }
