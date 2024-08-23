@@ -36,7 +36,6 @@ This ROS2 (Jazzy) package, uses the inertial-sense-sdk as a submodule. Clone thi
 mkdir -p ros2_ws/src
 cd ros2_ws/src
 git clone https://github.com/inertialsense/inertial-sense-sdk
-cd ..
 ```
 then, create a symbolic link to the `ros2` directory in the `ros2_ws/src` directory using the command `sudo ln -s inertial-sense-sdk/ros2` (run this from `ros2_ws/src`). This
 allows `colcon build` to find the appropriate package to build.
@@ -55,34 +54,29 @@ You will need to run this command on every new shell you open to have access to 
 
 **Firmware Version** - The IMX/uINS should be updated with the latest firmware found on the Inertial Sense [release page](https://github.com/inertialsense/inertial-sense-sdk/releases).  Download the appropriate `.hex` file and use the Inertial Sense EvalTool, CLTool, or SDK to upload the firmware.
 
+**Dialout Group** - The user must be a member of the `dialout` group, or the user won't have access to the serial port.
+
 ## Execution
 
 ```bash
 ros2 run inertial_sense_ros2 new_target
 ```
 
-For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html).  
+For instructions on changing parameter values and topic remapping from the command line while using `ros2 run` refer to [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html). For proper operation, all parameters should be set before execution.
 
 ```bash
-ros2 param set nh_ navigation_dt_ms 16.0
-ros2 param set nh_ ref_lla "[40.25, -111.67, 1556.59]"
 
-ros2 param list //lists all parameters that can be changed
+ros2 run inertial_sense_ros2 new_target --ros-args -r __node:=nh_ -p [parameter_name]:=[parameter_value] #one parameter
+
+ros2 run inertial_sense_ros2 new_target --ros-args -r __node:=nh_ -p [parameter_name1]:=[parameter_value1] -p [parameter_name2]:=[parameter_value2] -p [parameter_name3]:=[parameter_value3] #Multiple parameters
 
 ```
 
-To set parameters before starting ROS2:
+To set parameters and topic remapping from a YAML file, refer to the [Node Arguments](https://docs.ros.org/en/jazzy/How-To-Guides/Node-arguments.html) page, or use one of the sample YAML files in this repository, `src/ros2/launch/example_params.yaml` or  `src/ros2/launch/test_config.yaml`:
 
 ```bash
+ros2 run inertial_sense_ros2 new_target "[path to YAML parameter file]"
 
-ros2 run inertial_sense_ros2 new_target --ros-args -r __node:=nh_ -p [parameter_name]:=[parameter_value]
-
-```
-
-To set parameters and topic remapping from a YAML file, refer to the [Roslaunch for Larger Projects](http://wiki.ros.org/roslaunch/Tutorials/Roslaunch%20tips%20for%20larger%20projects) page, or use one of the sample YAML files in this repository, `ros2/launch/example_params.yaml` or  `ros2/launch/test_config.yaml`:
-
-```bash
-ros2 run demo_nodes_cpp parameter_blackboard --ros-args --params-file [file_name].yaml
 ```
 
 
@@ -112,13 +106,13 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
 - `inl2_states` (inertial_sense_ros2/msg/INL2States)
    -  INS Extended Kalman Filter (EKF) states [DID_INL2_STATES](https://docs.inertialsense.com/user-manual/com-protocol/DID-descriptions/#did_inl2_states) Definition
 
-- `imu`(sensor_msgs/Imu)
+- `imu`(sensor_msgs/msg/Imu)
    -  Raw Imu measurements from IMU1 (NED frame)
-- `pimu` (inertial_sense_ros/pimu)
+- `pimu` (inertial_sense_ros2/msg/pimu)
    -  preintegrated coning and sculling integrals of IMU measurements
-- `mag` (sensor_msgs/MagneticField)
+- `mag` (sensor_msgs/msg/MagneticField)
    -  Raw magnetic field measurement from magnetometer 1
-- `baro` (sensor_msgs/FluidPressure)
+- `baro` (sensor_msgs/msg/FluidPressure)
    -  Raw barometer measurements in kPa
 
 - `NavSatFix`(sensor_msgs/msg/NavSatFix)
@@ -140,9 +134,9 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
 - `RTK_cmp/rel` (inertial_sense_ros2/msg/RTKRel)
    -  Relative measurement between RTK compassing moving base and rover
 
-- `strobe_in` (std_msgs/Header)
+- `strobe_in` (std_msgs/msg/Header)
    -  Timestamp of strobe in message header
-- `diagnostics` (diagnostic_msgs/DiagnosticArray)
+- `diagnostics` (diagnostic_msgs/msg/DiagnosticArray)
    -  Diagnostic message of RTK status.
 
 
@@ -156,10 +150,12 @@ __*Note: RTK positioning or RTK compassing mode must be enabled to stream any ra
 
 ## Parameters
 
-The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/...`  (i.e. `/inertial_sense_ros/navigation_dt_ms`).
+The Inertial Sense ROS parameters must contain the prefix `nh_`  (i.e. `nh_ navigation_dt_ms`).
 
 - `~port` (string, default: "/dev/ttyACM0")
-  - Serial port to connect to
+  - Serial port to connect to if YAML file specified
+- `~port_1` (string, default: "/dev/ttyACM0")
+  - Serial port to connect to if YAML file not specified
 - `~baudrate` (int, default: 921600)
   - baudrate of serial communication
 - `~frame_id` (string, default "body")
@@ -238,14 +234,18 @@ The Inertial Sense ROS parameters must contain the prefix `/inertial_sense_ros/.
    - Flag to stream GPS1 raw messages
 - `~msg/gps2_raw/enable` (bool, default: false)
    - Flag to stream GPS2 raw messages
+- `~msg/gps2_raw/period` (int, default: 1)
+   - Configures period multiple of data set stream rate
 - `~msg/gps1_raw/period` (int, default: 1)
    - Configures period multiple of data set stream rate
-- `~msg/navsatfix/enable` (bool, default: false)
-   - Flag to stream NavSatFix message
-- `~msg/navsatfix/period` (int, default: 1)
-   - Configures period multiple of data set stream rate.  Data is based on GPS2 if GPS1 is disabled.
-- `~publishTf`(bool, default: true)
-   - Flag to publish Tf transformations 'ins' to 'body_link'
+- `~msg/gps1_navsatfix/enable` (bool, default: false)
+   - Flag to stream NavSatFix message (GPS1)
+- `~msg/gps1_navsatfix/period` (int, default: 1)
+   - Configures period multiple of data set stream rate (GPS1)
+- `~msg/gps2_navsatfix/enable` (bool, default: false)
+   - Flag to stream NavSatFix message (GPS2)
+- `~msg/gps2_navsatfix/period` (int, default: 1)
+   - Configures period multiple of data set stream rate (GPS2)
 - `~msg/diagnostics/enable` (bool, default: true)
    - Flag to stream diagnostics data
 - `~msg/diagnostics/period` (int, default: 1)
@@ -351,13 +351,13 @@ __*Note: These values must be clear for TCP configuration to work__
       -  Ser1 (H6-5) = 0x02
 
 ## Services
-- `single_axis_mag_cal` (std_srvs/Trigger)
+- `single_axis_mag_cal` (std_srvs/srv/Trigger)
   - Put INS into single axis magnetometer calibration mode.  This is typically used if the uINS is rigidly mounted to a heavy vehicle that will not undergo large roll or pitch motions, such as a car. After this call, the uINS must perform a single orbit around one axis (i.g. drive in a circle) to calibrate the magnetometer [more info](https://docs.inertialsense.com/user-manual/reference/magnetometer/)
-- `multi_axis_mag_cal` (std_srvs/Trigger)
+- `multi_axis_mag_cal` (std_srvs/srv/Trigger)
   - Put INS into multi axis magnetometer calibration mode.  This is typically used if the uINS is not mounted to a vehicle, or a lightweight vehicle such as a drone.  Simply rotate the uINS around all axes until the light on the uINS turns blue [more info](https://docs.inertialsense.com/user-manual/reference/magnetometer/)
-- `firmware_update` (inertial_sense_ros/FirmwareUpdate)
+- `firmware_update` (inertial_sense_ros2/srv/FirmwareUpdate)
   - Updates firmware to the `.hex` file supplied (use absolute filenames)
-- `set_refLLA_current` (std_srvs/Trigger)
+- `set_refLLA_current` (std_srvs/srv/Trigger)
   - Takes the current estimated position and sets it as the `refLLA`.  Use this to set a base position after a survey, or to zero out the `ins` topic.1
-- `set_refLLA_value` (std_srvs/Trigger)
+- `set_refLLA_value` (std_srvs/srv/Trigger)
   - Sets `refLLA` to the values passed as service arguments of type float64[3].  Use this to set refLLA to a known value.

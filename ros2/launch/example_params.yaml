@@ -27,7 +27,7 @@
 ########################
 
 
-topic: "inertialsense"
+#topic: "inertialsense"
 port: [/dev/ttyACM0, /dev/ttyACM1, /dev/ttyACM2]
 baudrate: 921600
 enable_log: false
@@ -101,7 +101,7 @@ sensors:
   messages:  
     imu:              # Publish IMU angular rates and linear acceleration
       topic: "imu"
-      enable: true
+      enable: false
       period: 1
     pimu:             # Publish preintegrated IMU delta theta and delta velocity
       topic: "pimu"

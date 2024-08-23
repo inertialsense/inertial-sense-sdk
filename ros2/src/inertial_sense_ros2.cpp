@@ -230,15 +230,17 @@ void InertialSenseROS::load_params(YAML::Node &node)
         for (auto it = portNode.begin(); it != portNode.end(); it++)
             ports_.push_back((*it).as<std::string>());
     } else if (portNode.IsScalar()) {
-        std::string param = nh_->declare_parameter<std::string>("port", "dev/ttyACM0");
-        ph.nodeParam("port", param, "/dev/ttyACM0");
+        std::string param = nh_->declare_parameter<std::string>("port", "/dev/ttyACM0");
+        ph.nodeParam("port", param, param);
         ports_.push_back(param);
     }
 
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        ports_.push_back("/dev/ttyACM0");
+        std::string param_1 = nh_->declare_parameter<std::string>("port_1", "/dev/ttyACM1");
+        ph.nodeParam("port_1", param_1, param_1);
+        ports_.push_back(param_1);
     }
 
     factory_reset_ = nh_->declare_parameter<bool>("factory_reset", false);
@@ -281,10 +283,23 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
     YAML::Node sensorsMsgs = ph.node(sensorsNode, "messages", 2);
-    ph.msgParams(rs_.imu, "imu", "", true, 1, true);
-    ph.msgParams(rs_.pimu, "pimu", "", true, 1, true);
-    ph.msgParams(rs_.magnetometer, "magnetometer", "mag", true, 1, true);
-    ph.msgParams(rs_.barometer, "barometer", "baro", true, 1, true);
+
+    bool imu_enable = nh_->declare_parameter<bool>("msg/imu/enable", false);
+    int imu_period = nh_->declare_parameter<int>("msg/imu/period", 1);
+    ph.msgParams(rs_.imu, "imu", "", false, imu_period, imu_enable);
+
+    bool pimu_enable = nh_->declare_parameter<bool>("msg/pimu/enable", false);
+    int pimu_period = nh_->declare_parameter<int>("msg/pimu/period", 1);
+    ph.msgParams(rs_.pimu, "pimu", "", false, pimu_period, pimu_enable);
+
+    bool mag_enable = nh_->declare_parameter<bool>("msg/mag/enable", false);
+    int mag_period = nh_->declare_parameter<int>("msg/mag/period", 1);
+    ph.msgParams(rs_.magnetometer, "magnetometer", "mag", false, mag_period, mag_enable);
+
+    bool baro_enable = nh_->declare_parameter<bool>("msg/baro/enable", false);
+    int baro_period = nh_->declare_parameter<int>("msg/baro/period", 1);
+    ph.msgParams(rs_.barometer, "barometer", "baro", false, baro_period, baro_enable);
+
     ph.msgParams(rs_.strobe_in, "strobe_in");
     node["sensors"]["messages"] = sensorsMsgs;
 
@@ -325,20 +340,33 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("enable_covariance", covariance_enabled_, covariance_enabled_);
 
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
-    bool rs_odom_ins_enu_enable = nh_->declare_parameter<bool>("odom_ins_enu", true);
-    ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu", "", true, 1, rs_odom_ins_enu_enable);
-    bool rs_odom_ins_ned_enable = nh_->declare_parameter<bool>("odom_ins_ned", true);
-    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned", "", true, 1, rs_odom_ins_ned_enable);
-    bool rs_odom_ins_ecef_enable = nh_->declare_parameter<bool>("odom_ins_ecef", true);
-    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef", "", true, 1, rs_odom_ins_ecef_enable);
-    bool did_ins1_enable = nh_->declare_parameter<bool>("did_ins1", true);
-    ph.msgParams(rs_.did_ins1, "did_ins1", "ins_eul_uvw_ned", true, 1, did_ins1_enable);
-    bool did_ins2_enable = nh_->declare_parameter<bool>("did_ins2", true);
-    ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla", true, 1, did_ins2_enable);
-    bool did_ins4_enable = nh_->declare_parameter<bool>("did_ins4", true);
-    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", true, 1, did_ins4_enable);
-    bool did_inl2_enable = nh_->declare_parameter<bool>("inl2_states", true);
-    ph.msgParams(rs_.inl2_states, "inl2_states", "", true, 1, did_inl2_enable);
+    bool rs_odom_ins_enu_enable = nh_->declare_parameter<bool>("msg/odom_ins_enu/enable", false);
+    int rs_odom_ins_enu_period = nh_->declare_parameter<int>("msg/odom_ins_enu/period", 1);
+    ph.msgParams(rs_.odom_ins_enu, "odom_ins_enu", "", false, rs_odom_ins_enu_period, rs_odom_ins_enu_enable);
+
+    bool rs_odom_ins_ned_enable = nh_->declare_parameter<bool>("msg/odom_ins_ned/enable", true);
+    int rs_odom_ins_ned_period = nh_->declare_parameter<int>("msg/odom_ins_ned/period", 1);
+    ph.msgParams(rs_.odom_ins_ned, "odom_ins_ned", "", true, rs_odom_ins_ned_period, rs_odom_ins_ned_enable);
+
+    bool rs_odom_ins_ecef_enable = nh_->declare_parameter<bool>("msg/odom_ins_ecef/enable", false);
+    int rs_odom_ins_ecef_period = nh_->declare_parameter<int>("msg/odom_ins_ecef/period", 1);
+    ph.msgParams(rs_.odom_ins_ecef, "odom_ins_ecef", "", false, rs_odom_ins_ecef_period, rs_odom_ins_ecef_enable);
+
+    bool did_ins1_enable = nh_->declare_parameter<bool>("msg/did_ins1/enable", false);
+    int did_ins1_period = nh_->declare_parameter<int>("msg/did_ins1/period", 1);
+    ph.msgParams(rs_.did_ins1, "msg/did_ins1/enable", "ins_eul_uvw_ned", false, did_ins1_period, did_ins1_enable);
+
+    bool did_ins2_enable = nh_->declare_parameter<bool>("msg/did_ins2/enable", false);
+    int did_ins2_period = nh_->declare_parameter<int>("msg/did_ins2/period", 1);
+    ph.msgParams(rs_.did_ins2, "did_ins2", "ins_quat_uvw_lla", false, did_ins2_period, did_ins2_enable);
+
+    bool did_ins4_enable = nh_->declare_parameter<bool>("msg/did_ins4/enable", false);
+    int did_ins4_period = nh_->declare_parameter<int>("msg/did_ins4/period", 1);
+    ph.msgParams(rs_.did_ins4, "did_ins4", "ins_quat_ve_ecef", false, did_ins4_period, did_ins4_enable);
+
+    bool did_inl2_enable = nh_->declare_parameter<bool>("msg/inl2_states/enable", false);
+    int did_inl2_period = nh_->declare_parameter<int>("msg/inls2_states/period", 1);
+    ph.msgParams(rs_.inl2_states, "inl2_states", "", false, did_inl2_period, did_inl2_enable);
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
 
@@ -356,14 +384,23 @@ void InertialSenseROS::load_params(YAML::Node &node)
     }
     ph.nodeParamVec("antenna_offset", 3, rs_.gps1.antennaOffset, rs_.gps1.antennaOffset);
     YAML::Node gps1Msgs = ph.node(gps1Node, "messages", 2);
-    bool rs_gps1_enable = nh_->declare_parameter<bool>("gps1/pos_vel", true);
-    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel", true, 1, rs_gps1_enable);
-    bool rs_gps1_info_enable = nh_->declare_parameter<bool>("gps1/info", true);
-    ph.msgParams(rs_.gps1_info, "info", "gps1/info", true, 1, rs_gps1_info_enable);
-    bool rs_gps1_raw_enable = nh_->declare_parameter<bool>("gps1/raw", true);
-    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw", true, 1, rs_gps1_raw_enable);
-    bool rs_gps1_navsatfix_enable = nh_->declare_parameter<bool>("gps1/NavSatFix", true);
-    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix", true, 1, rs_gps1_navsatfix_enable);
+
+    bool rs_gps1_enable = nh_->declare_parameter<bool>("msg/gps1/enable", true);
+    int rs_gps1_period = nh_->declare_parameter<int>("msg/gps1/period", 1) ;
+    ph.msgParams(rs_.gps1, "pos_vel", "gps1/pos_vel", true, rs_gps1_period, rs_gps1_enable);
+
+    bool rs_gps1_info_enable = nh_->declare_parameter<bool>("msg/gps1_info/enable", false);
+    int rs_gps1_info_period = nh_->declare_parameter<int>("msg/gps1_info/period", 1);
+    ph.msgParams(rs_.gps1_info, "info", "gps1/info", false, rs_gps1_info_period, rs_gps1_info_enable);
+
+    bool rs_gps1_raw_enable = nh_->declare_parameter<bool>("msg/gps1_raw/enable", false);
+    int rs_gps1_raw_period = nh_->declare_parameter<int>("msg/gps1_raw/period", 1);
+    ph.msgParams(rs_.gps1_raw, "raw", "gps1/raw", false, rs_gps1_raw_period, rs_gps1_raw_enable);
+
+    bool rs_gps1_navsatfix_enable = nh_->declare_parameter<bool>("msg/gps1_navsatfix/enable", false);
+    int rs_gps1_navsatfix_period = nh_->declare_parameter<int>("msg/gps1_navsatfix/period", 1);
+    ph.msgParams(rs_.gps1_navsatfix, "navsatfix", "gps1/NavSatFix", false, rs_gps1_navsatfix_period, rs_gps1_navsatfix_enable);
+
     gps1Node["messages"] = gps1Msgs;
     node["gps1"] = gps1Node;
 
@@ -379,14 +416,23 @@ void InertialSenseROS::load_params(YAML::Node &node)
     }
     ph.nodeParamVec("antenna_offset", 3, rs_.gps2.antennaOffset);
     YAML::Node gps2Msgs = ph.node(gps2Node, "messages", 2);
-    bool rs_gps2_enable = nh_->declare_parameter<bool>("gps2/pos_vel", true);
-    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", true, 1, rs_gps2_enable);
-    bool rs_gps2_info = nh_->declare_parameter<bool>("gps2/info", true);
-    ph.msgParams(rs_.gps2_info, "info", "gps2/info", true, 1, rs_gps2_info);
-    bool rs_gps2_raw = nh_->declare_parameter<bool>("gps2/raw", true);
-    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", true, 1, rs_gps2_raw);
-    bool rs_gps2_nsf = nh_->declare_parameter<bool>("gps2/NavSatFix", true);
-    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", true, 1, rs_gps2_nsf);
+
+    bool rs_gps2_enable = nh_->declare_parameter<bool>("msg/gps2/enable", false);
+    int rs_gps2_period = nh_->declare_parameter<int>("msg/gps2/period", 1);
+    ph.msgParams(rs_.gps2, "pos_vel", "gps2/pos_vel", false, rs_gps2_period, rs_gps2_enable);
+
+    bool rs_gps2_info = nh_->declare_parameter<bool>("msg/gps2_info/enable", false);
+    int rs_gps2_info_period = nh_->declare_parameter<int>("msg/gps2_info/period", 1);
+    ph.msgParams(rs_.gps2_info, "info", "gps2/info", false, rs_gps2_info_period, rs_gps2_info);
+
+    bool rs_gps2_raw = nh_->declare_parameter<bool>("msg/gps2_raw/enable", false);
+    int rs_gps2_raw_period = nh_->declare_parameter<int>("gps2/raw/period", 1);
+    ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw", false, rs_gps2_raw_period, rs_gps2_raw);
+
+    bool rs_gps2_nsf = nh_->declare_parameter<bool>("msg/gps2_navsatfix/enable", false);
+    int rs_gps2_nsf_period = nh_->declare_parameter<int>("msg/gps2_navsatfix/period", 1);
+    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", false, 1, rs_gps2_nsf);
+
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 
@@ -406,7 +452,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     YAML::Node diagNode = ph.node(node, "diagnostics");
-    rs_.diagnostics.enabled = nh_->declare_parameter<bool>("enable", false);
+    rs_.diagnostics.enabled = nh_->declare_parameter<bool>("msg/diagnostics/enable", false);
     ph.nodeParam("enable", rs_.diagnostics.enabled, rs_.diagnostics.enabled);
 
     // Print entire yaml node tree
