@@ -528,6 +528,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
+        else if (startsWith(a, "-vd"))
+        {
+            g_commandLineOptions.disableDeviceValidation = true;
+        }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
             cout << cltool_version() << endl;
@@ -624,10 +628,11 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
-    cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
-    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
+    cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
+    cout << "    -vd" << boldOff << "             Disable device validate.  Use to keep port(s) open even if device response is not received." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
