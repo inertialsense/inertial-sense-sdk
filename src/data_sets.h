@@ -74,7 +74,7 @@ typedef uint32_t eDataIDs;
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** INTERNAL USE ONLY (gps_timepulse_t) */
+#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** (gps_timepulse_t) GPS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
@@ -222,10 +222,8 @@ enum eInsStatusFlags
     INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
-
-    /** Unused */
-    INS_STATUS_UNUSED                           = (int)0x00000400,
-
+    /** Reference IMU used in EKF */
+    INS_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
@@ -347,8 +345,8 @@ enum eHdwStatusFlags
 
     /** System Reset is Required for proper function */
     HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
-    /** Reference IMU used in EKF */
-    HDW_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00002000,
+    /** GPS PPS timepulse signal has noise and occurred too frequently */
+    HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
     HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
     /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, tipically 150-250 ms. */
@@ -385,7 +383,7 @@ enum eHdwStatusFlags
     HDW_STATUS_SPI_INTERFACE_ENABLED            = (int)0x08000000,
 
     /** Fault reset cause */
-    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,
     /** Reset from Backup mode (low-power state w/ CPU off) */
     HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
     /** Reset from Watchdog */
@@ -868,9 +866,10 @@ enum eImuStatus
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
-    /** Magnetometer sample occured */
+    /** Magnetometer sample ocurred */
     IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
-    
+    /** Data was received at least once from Reference IMU */
+    IMU_STATUS_REFERENCE_IMU_PRESENT			= (int)0x00000200,
     /** Reserved */
     // IMU_STATUS_RESERVED2						= (int)0x00000400,
 
@@ -1024,7 +1023,11 @@ enum eSatSvStatus
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,	
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
 
-    SAT_SV_STATUS_RTK_EPH_PULSE                     = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTCM_PULSE                = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE             = 0x2000,   // Set when eph is added to RTK LIB for this SV 
+    SAT_SV_STATUS_RTK_EPH_PULSE_MASK                = SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE | SAT_SV_STATUS_RTK_EPH_RTCM_PULSE,   // Set when eph is Rx for this SV and cleared by next message send
+
+    SAT_SV_STATUS_RTK_EPH_SEND_PULSE                = 0x4000,   // Set when eph is Tx'd from device
 
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
@@ -1530,7 +1533,7 @@ enum eSerialPortBridge
 
 typedef struct nmeaBroadcastMsgPair
 {
-    /** Message ID. (see eNmeaAsciiMsgId) */
+    /** Message ID. (see eNmeaMsgId) */
     uint8_t msgID;
 
 	/** Message period multiple. */
@@ -1545,7 +1548,7 @@ typedef struct PACKED
     /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistent] (see RMC_OPTIONS_...) */
     uint32_t				options;
 
-    /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaAsciiMsgId) */
+    /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaMsgId) */
     nmeaBroadcastMsgPair_t	nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
@@ -1760,6 +1763,9 @@ typedef struct PACKED
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
                                         | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_GPX_DEBUG \
+                                        | RMC_BITS_GPS1_SAT \
+                                        | RMC_BITS_GPS2_SAT \
                                         | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
@@ -1779,18 +1785,18 @@ typedef struct PACKED
     /** IMU and Integrated IMU data transmit period is set using DID_SYS_PARAMS.navPeriodMs */
 } rmc_t;
 
-#define NMEA_GNGSV_FREQ_BAND1_BIT    (0x01)
-#define NMEA_GNGSV_FREQ_BAND2_BIT    (0x01 << 1)
-#define NMEA_GNGSV_FREQ_BAND3_BIT    (0x01 << 2)
-#define NMEA_GNGSV_FREQ_5_BIT    (0x01 << 3)
+#define NMEA_GNGSV_FREQ_BAND1_BIT   (0x01)
+#define NMEA_GNGSV_FREQ_BAND2_BIT   (0x01 << 1)
+#define NMEA_GNGSV_FREQ_BAND3_BIT   (0x01 << 2)
+#define NMEA_GNGSV_FREQ_5_BIT       (0x01 << 3)
 
-#define NMEA_GNGSV_GPS_OFFSET    (SAT_SV_GNSS_ID_GPS << 4)
-#define NMEA_GNGSV_GAL_OFFSET    (SAT_SV_GNSS_ID_GAL << 4)
-#define NMEA_GNGSV_BEI_OFFSET    (SAT_SV_GNSS_ID_BEI << 4)
-#define NMEA_GNGSV_QZS_OFFSET    (SAT_SV_GNSS_ID_QZS << 4)
-#define NMEA_GNGSV_GLO_OFFSET    (SAT_SV_GNSS_ID_GLO << 4)
+#define NMEA_GNGSV_GPS_OFFSET       (SAT_SV_GNSS_ID_GPS << 4)
+#define NMEA_GNGSV_GAL_OFFSET       (SAT_SV_GNSS_ID_GAL << 4)
+#define NMEA_GNGSV_BEI_OFFSET       (SAT_SV_GNSS_ID_BEI << 4)
+#define NMEA_GNGSV_QZS_OFFSET       (SAT_SV_GNSS_ID_QZS << 4)
+#define NMEA_GNGSV_GLO_OFFSET       (SAT_SV_GNSS_ID_GLO << 4)
 
-enum eNmeaAsciiMsgId
+enum eNmeaMsgId
 {
     NMEA_MSG_ID_INVALID   = 0,
     NMEA_MSG_ID_PIMU      = 1,
@@ -1824,83 +1830,84 @@ enum eNmeaAsciiMsgId
 
     // Special case messages for each supported base message those with ID less than NMEA_MSG_ID_COUNT. 
     // Each base message get a 256 range of ID's for their special cases. Example for NMEA_MSG_ID_GxGSV:
-    // NMEA_GNGSV_START = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
+    // NMEA_MSG_ID_GNGSV_START = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START giving a message ID 0x0f00 (3,840)
     NMEA_MSG_ID_SPECIAL_CASE_START = 256,
 
-    // GxGSV special cases
+    // Filtered GxGSV NMEA Message IDs:
+
     // GNGSV - All constellations
-    NMEA_GNGSV_START    = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,
-    NMEA_GNGSV_0        = NMEA_GNGSV_START, // Clear all constellations and frequencies
-    NMEA_GNGSV_1        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_2        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),
-    NMEA_GNGSV_2_1      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_3        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT),
-    NMEA_GNGSV_3_1      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_3_2      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),
-    NMEA_GNGSV_3_2_1    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_5        = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT),
-    NMEA_GNGSV_5_1      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_5_2      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),
-    NMEA_GNGSV_5_2_1    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_5_3      = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT),
-    NMEA_GNGSV_5_3_1    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV_5_3_2    = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),
-    NMEA_GNGSV_5_3_2_1  = (NMEA_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),
-    NMEA_GNGSV          = NMEA_GNGSV_5_3_2_1, // Enable all constellations and frequencys
+    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840) Used for reference only
+    NMEA_MSG_ID_GNGSV_0         = NMEA_MSG_ID_GNGSV_START,                                                                                                                  // GNGSV_0 (3840) Clear all constellations and frequencies
+    NMEA_MSG_ID_GNGSV_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),                                                                                    // GNGSV_1 (3841) Enable all constellations band1
+    NMEA_MSG_ID_GNGSV_2         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),                                                                                    // GNGSV_2 (3842) Enable all constellations band2
+    NMEA_MSG_ID_GNGSV_2_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                                        // GNGSV_2_1 (3843) Enable all constellations band1, band2
+    NMEA_MSG_ID_GNGSV_3         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT),                                                                                    // GNGSV_3 (3844) Enable all constellations band3
+    NMEA_MSG_ID_GNGSV_3_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                                        // GNGSV_3_1 (3845) Enable all constellations band1, band3
+    NMEA_MSG_ID_GNGSV_3_2       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                                        // GNGSV_3_2 (3846) Enable all constellations band2, band3
+    NMEA_MSG_ID_GNGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                            // GNGSV_3_2_1 (3847) Enable all constellations band1, band2, band3
+    NMEA_MSG_ID_GNGSV_5         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT),                                                                                        // GNGSV_5 (3848) Enable all constellations band5
+    NMEA_MSG_ID_GNGSV_5_1       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                                            // GNGSV_5_1 (3849) Enable all constellations band1, band5
+    NMEA_MSG_ID_GNGSV_5_2       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                                            // GNGSV_5_2 (3850) Enable all constellations band2, band5
+    NMEA_MSG_ID_GNGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                // GNGSV_5_2_1 (3851) Enable all constellations band1, band2, band5
+    NMEA_MSG_ID_GNGSV_5_3       = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT),                                                            // GNGSV_5_3 (3852) Enable all constellations band3, band5
+    NMEA_MSG_ID_GNGSV_5_3_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                // GNGSV_5_3_1 (3853) Enable all constellations band1, band3, band5
+    NMEA_MSG_ID_GNGSV_5_3_2     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                // GNGSV_5_3_2 (3854) Enable all constellations band2, band3, band5
+    NMEA_MSG_ID_GNGSV_5_3_2_1   = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),    // GNGSV_5_3_2_1 (3855) Enable all constellations band1, band2, band3, band5
+    NMEA_MSG_ID_GNGSV           = NMEA_MSG_ID_GNGSV_5_3_2_1,                                                                                                                // GNGSV (3855) Enable all constellations and frequencies
 
     // GPGSV - GPS
-    NMEA_GPGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_GPS_OFFSET ), // Disable all GPS frequencys
-    NMEA_GPGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV_5        = (NMEA_GNGSV_5 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV_5_1      = (NMEA_GNGSV_5_1 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV_5_2      = (NMEA_GNGSV_5_2 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV_5_2_1    = (NMEA_GNGSV_5_2_1 + NMEA_GNGSV_GPS_OFFSET),
-    NMEA_GPGSV          = (NMEA_GNGSV + NMEA_GNGSV_GPS_OFFSET ), // Enable all GPS frequencys
+    NMEA_MSG_ID_GPGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GPS_OFFSET ),   // GPGSV_0 (3856) Disable all GPS frequencies
+    NMEA_MSG_ID_GPGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_1 (3857) Enable GPS L1
+    NMEA_MSG_ID_GPGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_2 (3858) Enable GPS L2
+    NMEA_MSG_ID_GPGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_2_1 (3859) Enable GPS L1, L2
+    NMEA_MSG_ID_GPGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_5 (3864) Enable GPS L5
+    NMEA_MSG_ID_GPGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_5_1 (3865) Enable GPS L1, L5
+    NMEA_MSG_ID_GPGSV_5_2       = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_5_2 (3866) Enable GPS L2, L5
+    NMEA_MSG_ID_GPGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_GPS_OFFSET),    // GPGSV_5_2_1 (3867) Enable GPS L1, L2, L5
+    NMEA_MSG_ID_GPGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GPS_OFFSET ),         // GPGSV (3871) Enable all GPS frequencies
 
     // GAGSV - Galileo
-    NMEA_GAGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_GAL_OFFSET), // Disable all Galileo frequencys
-    NMEA_GAGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_GAL_OFFSET),
-    NMEA_GAGSV_5        = (NMEA_GNGSV_5 + NMEA_GNGSV_GAL_OFFSET),
-    NMEA_GAGSV_5_1      = (NMEA_GNGSV_5_1 + NMEA_GNGSV_GAL_OFFSET),
-    NMEA_GAGSV          = (NMEA_GNGSV + NMEA_GNGSV_GAL_OFFSET), // Enable all Galileo frequencys
+    NMEA_MSG_ID_GAGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GAL_OFFSET),    // GAGSV_0 (3888) Disable all Galileo frequencies
+    NMEA_MSG_ID_GAGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GAL_OFFSET),        // GAGSV_1 (3889) Enable Galileo E1
+    NMEA_MSG_ID_GAGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GAL_OFFSET),        // GAGSV_5 (3896) Enable Galileo E5
+    NMEA_MSG_ID_GAGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GAL_OFFSET),      // GAGSV_5_1 (3897) Enable Galileo E1, E5
+    NMEA_MSG_ID_GAGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GAL_OFFSET),          // GAGSV (3903) Enable all Galileo frequencies
 
     // GBGSV - Beido
-    NMEA_GBGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_BEI_OFFSET), // Disable all Beidou frequencys
-    NMEA_GBGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV_3        = (NMEA_GNGSV_3 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV_3_1      = (NMEA_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV_3_2      = (NMEA_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV_3_2_1    = (NMEA_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),
-    NMEA_GBGSV          = (NMEA_GNGSV + NMEA_GNGSV_BEI_OFFSET), // Enable all Beidou frequencys
+    NMEA_MSG_ID_GBGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_0 (3904) Disable all Beidou frequencies
+    NMEA_MSG_ID_GBGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_1 (3905) Enable Beidou B1
+    NMEA_MSG_ID_GBGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_2 (3906) Enable Beidou B2
+    NMEA_MSG_ID_GBGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_2_1 (3907) Enable Beidou B1, B2
+    NMEA_MSG_ID_GBGSV_3         = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_3 (3908) Enable Beidou B3 
+    NMEA_MSG_ID_GBGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_3_1 (3909) Enable Beidou B1, B3
+    NMEA_MSG_ID_GBGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_3_2 (3910) Enable Beidou B2, B3
+    NMEA_MSG_ID_GBGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_3_2_1 (3911) Enable Beidou B1, B2, B3
+    NMEA_MSG_ID_GBGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_BEI_OFFSET),          // GBGSV (3919) Enable all Beidou frequencies
 
     // GQGSV - QZSS
-    NMEA_GQGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_QZS_OFFSET), // Disable all QZSS frequencys
-    NMEA_GQGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV_5        = (NMEA_GNGSV_5 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV_5_1      = (NMEA_GNGSV_5_1 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV_5_2      = (NMEA_GNGSV_5_2 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV_5_2_1    = (NMEA_GNGSV_5_2_1 + NMEA_GNGSV_QZS_OFFSET),
-    NMEA_GQGSV          = (NMEA_GNGSV + NMEA_GNGSV_QZS_OFFSET), // Enable all QZSS frequencys
+    NMEA_MSG_ID_GQGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_0 (3920) Disable all QZSS frequencies
+    NMEA_MSG_ID_GQGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_1 (3921) Enable QZSS L1
+    NMEA_MSG_ID_GQGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_2 (3922) Enable QZSS L2
+    NMEA_MSG_ID_GQGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_2_1 (3923) Enable QZSS L1, L2
+    NMEA_MSG_ID_GQGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_5 (3928) Enable QZSS L5
+    NMEA_MSG_ID_GQGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_5_1 (3929) Enable QZSS L1, L5
+    NMEA_MSG_ID_GQGSV_5_2       = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_5_2 (3930) Enable QZSS L2, L5
+    NMEA_MSG_ID_GQGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_5_2_1 (3931) Enable QZSS L1, L2, L5
+    NMEA_MSG_ID_GQGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_QZS_OFFSET),          // GQGSV (3935) Enable all QZSS frequencies
 
     // GLGSV - Glonass
-    NMEA_GLGSV_0        = (NMEA_GNGSV_START + NMEA_GNGSV_GLO_OFFSET), // Disable all Glonass frequencys
-    NMEA_GLGSV_1        = (NMEA_GNGSV_1 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV_2        = (NMEA_GNGSV_2 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV_2_1      = (NMEA_GNGSV_2_1 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV_3        = (NMEA_GNGSV_3 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV_3_1      = (NMEA_GNGSV_3_1 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV_3_2      = (NMEA_GNGSV_3_2 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV_3_2_1    = (NMEA_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),
-    NMEA_GLGSV          = (NMEA_GNGSV + NMEA_GNGSV_GLO_OFFSET), // Enable all Glonass frequencys
+    NMEA_MSG_ID_GLGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_0 (3936) Disable all Glonass frequencies
+    NMEA_MSG_ID_GLGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_1 (3937) Enable Glonass L1
+    NMEA_MSG_ID_GLGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_2 (3938) Enable Glonass L2
+    NMEA_MSG_ID_GLGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_2_1 (3939) Enable Glonass L1, L2
+    NMEA_MSG_ID_GLGSV_3         = (NMEA_MSG_ID_GNGSV_3 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_3 (3940) Enable Glonass L3
+    NMEA_MSG_ID_GLGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_3_1 (3941) Enable Glonass L1, L3
+    NMEA_MSG_ID_GLGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_3_2 (3942) Enable Glonass L2, L3
+    NMEA_MSG_ID_GLGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_3_2_1 (3943) Enable Glonass L1, L2, L3
+    NMEA_MSG_ID_GLGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GLO_OFFSET),          // GLGSV (3951) Enable all Glonass frequencies
     
-    NMEA_GNGSV_END      = NMEA_GLGSV,
-}; 
+    NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // (3951) Used for reference only
+};
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
 #define NMEA_RMC_BITS_PPIMU         (1<<NMEA_MSG_ID_PPIMU)
@@ -4196,8 +4203,8 @@ typedef struct
     /*! Counter for GPS PPS interrupt re-initalization. */
     uint8_t		ppsInterruptReinitCount;
 
-    /*! */
-    uint8_t		unused;			
+    /*! Counter of GPS PPS via GPIO, not interrupt. */
+    uint8_t		plsCount;
 
     /*! (ms) Local timestamp of last valid PPS sync. */
     uint32_t	lastSyncTimeMs;		
@@ -4890,7 +4897,7 @@ typedef struct
     uint16_t        senderHdwId;
     
     /** see eEventPriority */
-    uint8_t         priority;
+    int8_t          priority;
     uint8_t         res8;
 
     /** see eEventMsgTypeID */

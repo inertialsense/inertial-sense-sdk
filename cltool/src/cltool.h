@@ -112,6 +112,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
 	EVFContainer_t evFCont = {0};
 	EVOContainer_t evOCont;
+
+	bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

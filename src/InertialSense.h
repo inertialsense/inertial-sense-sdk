@@ -206,14 +206,14 @@ public:
 	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
-	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
+	* Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
 	bool OpenConnectionToServer(const std::string& connectionString);
 
     /**
-    * Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
+    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
     * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
     * @return true if success, false if error
     */
@@ -255,7 +255,7 @@ public:
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
 
     /**
-    * Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+    * Send data to the IMX - this is usually only used for advanced or special cases, normally you won't use this method
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -264,7 +264,7 @@ public:
     void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
     /**
-    * Send raw data to the uINS - (byte swapping disabled)
+    * Send raw data to the IMX - (byte swapping disabled)
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -312,7 +312,7 @@ public:
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle = -1);
 
     /**
-    * Get the flash config, returns the latest flash config read from the uINS flash memory
+    * Get the flash config, returns the latest flash config read from the IMX flash memory
     * @param flashCfg the flash config value
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
@@ -354,7 +354,7 @@ public:
     } 
 
     /**
-    * Set the flash config and update flash config on the uINS flash memory
+    * Set the flash config and update flash config on the IMX flash memory
     * @param flashCfg the flash config
     * @param pHandle the pHandle to set flash config for
     * @return true if success

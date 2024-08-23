@@ -1651,7 +1651,7 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 
 /**
  * decodes the NMEA GSV family of messages
- * Returns: message id (see eNmeaAsciiMsgId)
+ * Returns: message id (see eNmeaMsgId)
  *  Error   -1 for NMEA head not found 
  * 	        -2 for invalid length
  *          -3 other error 
@@ -1661,9 +1661,9 @@ int decodeGSV(char* a, int aSize)
     if(aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
         return -2;
 
-    int msgNum = NMEA_GNGSV_START;
+    int msgNum = NMEA_MSG_ID_GNGSV_START;
     
-    if(a[1] == 'x')        return NMEA_MSG_ID_GxGSV;
+    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
     else if (a[1] == 'N')  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
@@ -1672,7 +1672,7 @@ int decodeGSV(char* a, int aSize)
     else if (a[1] == 'L')  msgNum += NMEA_GNGSV_GLO_OFFSET;
     else                   return -3;
 
-    // Parse freqencys
+    // Parse freqencies
     // Enable all Freqs ie GNGSV,
     if(a[5] == ',' || a[5] == '*')
         msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
@@ -2019,7 +2019,7 @@ int parseASCE_GSV(int inId)
     uint8_t constTarget = (inId & 0xf0) >> 4;
     uint8_t freqMask = (inId & 0x0f);
 
-    if(inId < NMEA_GNGSV_START || inId > NMEA_GNGSV_END)
+    if(inId < NMEA_MSG_ID_GNGSV_START || inId > NMEA_MSG_ID_GNGSV_END)
         return 0;
 
     switch (constTarget)
@@ -2101,7 +2101,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         
@@ -2177,7 +2177,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         

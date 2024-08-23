@@ -99,9 +99,9 @@ jobs:
       - name: Build SDK Examples
         run: ./build_sdk_examples.bat
 
-  ros1-bridge-tests:
-    name: "ROS1 Bridge Tests"
-    runs-on: [self-hosted, Linux, X64, docker]
+  ros-bridge-tests:
+    name: "ROS Bridge Tests"
+    runs-on: [self-hosted, Linux, X64, docker, focal]
     # if: false  # disable this job
 
     env:
