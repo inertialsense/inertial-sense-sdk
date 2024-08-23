@@ -652,6 +652,8 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
+		else	// Default view
+			str = DatasetToString(&m_editData.pData);
 		break;
 	}
 
@@ -1944,8 +1946,7 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	// printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
 	// return;
 
-	if ((c >= '0' && c <= '9') || 
-		(c >= 'a' && c <= 'f') || c == '.' || c == '-' )
+	if (!m_editData.readOnlyMode && ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || c == '.' || c == '-' ))
 	{	// Number
 		m_editData.field += (char)c;
 		m_editData.editEnabled = true;
@@ -1954,11 +1955,12 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	{
 	case 8:		// Backspace
 	case 127:	// Delete
-		m_editData.field.pop_back();
+		if (!m_editData.readOnlyMode)
+			m_editData.field.pop_back();
 		break;
 	case 10:
 	case 13:	// Enter	// Convert string to number
-		if (m_editData.editEnabled)
+		if (!m_editData.readOnlyMode && m_editData.editEnabled)
 		{
 			// val = std::stof(m_editData.field);
 			m_editData.info = m_editData.mapInfoSelection->second;
@@ -1990,8 +1992,9 @@ void cInertialSenseDisplay::GetKeyboardInput()
 }
 
 
-void cInertialSenseDisplay::SelectEditDataset(int did)
+void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 {
+	m_editData.readOnlyMode = readOnlyMode;
 	m_editData.did = did;
 	m_editData.mapInfo = cISDataMappings::GetMapInfo(did);
 	m_editData.mapInfoSelection = m_editData.mapInfo->begin();

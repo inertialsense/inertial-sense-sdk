@@ -74,7 +74,7 @@ typedef uint32_t eDataIDs;
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** INTERNAL USE ONLY (gps_timepulse_t) */
+#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** (gps_timepulse_t) GPS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */

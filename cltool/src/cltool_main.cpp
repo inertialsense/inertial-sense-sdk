@@ -289,7 +289,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     else
     {
         while (g_commandLineOptions.datasets.size())
-        {   // Datasets to stream
+        {   // Datasets to stream            
+            g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.back().did, true);     // Select DID for generic display
+
             inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
             switch (g_commandLineOptions.datasets.back().did)
             {
