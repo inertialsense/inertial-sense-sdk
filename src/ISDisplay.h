@@ -43,6 +43,7 @@ public:
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
 
+		bool            readOnlyMode;
 		bool            editEnabled;
 		std::string     field;
 		uint32_t        did;
@@ -130,7 +131,7 @@ public:
 	std::string DatasetToString(const p_data_t* data);
 
 	void GetKeyboardInput();
-	void SelectEditDataset(int did);
+	void SelectEditDataset(int did, bool readOnlyMode=false);
 	void VarSelectIncrement();
 	void VarSelectDecrement();
 	void StopEditing();

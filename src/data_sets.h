@@ -74,7 +74,7 @@ typedef uint32_t eDataIDs;
 #define DID_RTOS_INFO                   (eDataIDs)38 /** (rtos_info_t) RTOS information. */
 #define DID_DEBUG_ARRAY                 (eDataIDs)39 /** INTERNAL USE ONLY (debug_array_t) */
 #define DID_SENSORS_MCAL                (eDataIDs)40 /** INTERNAL USE ONLY (sensors_w_temp_t) Temperature compensated and motion calibrated IMU output. */
-#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** INTERNAL USE ONLY (gps_timepulse_t) */
+#define DID_GPS1_TIMEPULSE              (eDataIDs)41 /** (gps_timepulse_t) GPS1 PPS time synchronization. */
 #define DID_CAL_SC                      (eDataIDs)42 /** INTERNAL USE ONLY (sensor_cal_t) */
 #define DID_CAL_TEMP_COMP               (eDataIDs)43 /** INTERNAL USE ONLY (sensor_tcal_group_t) */
 #define DID_CAL_MOTION                  (eDataIDs)44 /** INTERNAL USE ONLY (sensor_mcal_group_t) */
@@ -222,10 +222,8 @@ enum eInsStatusFlags
     INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
     /** GPS update event occurred in solution, potentially causing discontinuity in position path */
     INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
-
-    /** Unused */
-    INS_STATUS_UNUSED                           = (int)0x00000400,
-
+    /** Reference IMU used in EKF */
+    INS_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00000400,
     /** Heading aided by magnetic heading */
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
 
@@ -347,8 +345,8 @@ enum eHdwStatusFlags
 
     /** System Reset is Required for proper function */
     HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
-    /** Reference IMU used in EKF */
-    HDW_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00002000,
+    /** GPS PPS timepulse signal has noise and occurred too frequently */
+    HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,
     /** Magnetometer recalibration has finished (when INS_STATUS_MAG_RECALIBRATING is unset).  */
     HDW_STATUS_MAG_RECAL_COMPLETE               = (int)0x00004000,
     /** System flash write staging or occurring now.  Processor will pause and not respond during a flash write, tipically 150-250 ms. */
@@ -385,7 +383,7 @@ enum eHdwStatusFlags
     HDW_STATUS_SPI_INTERFACE_ENABLED            = (int)0x08000000,
 
     /** Fault reset cause */
-    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,    
+    HDW_STATUS_FAULT_RESET_MASK                 = (int)0x70000000,
     /** Reset from Backup mode (low-power state w/ CPU off) */
     HDW_STATUS_FAULT_RESET_BACKUP_MODE          = (int)0x10000000,
     /** Reset from Watchdog */
@@ -4194,8 +4192,8 @@ typedef struct
     /*! Counter for GPS PPS interrupt re-initalization. */
     uint8_t		ppsInterruptReinitCount;
 
-    /*! */
-    uint8_t		unused;			
+    /*! Counter of GPS PPS via GPIO, not interrupt. */
+    uint8_t		plsCount;
 
     /*! (ms) Local timestamp of last valid PPS sync. */
     uint32_t	lastSyncTimeMs;		
@@ -4888,7 +4886,7 @@ typedef struct
     uint16_t        senderHdwId;
     
     /** see eEventPriority */
-    uint8_t         priority;
+    int8_t          priority;
     uint8_t         res8;
 
     /** see eEventMsgTypeID */
