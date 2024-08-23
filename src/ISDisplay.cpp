@@ -695,8 +695,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 		(hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
 		(hdwStatus & HDW_STATUS_BIT_FAULT) != 0);
 
-    // ptr += SNPRINTF(ptr, ptrEnd - ptr, "\thdwStatus: 0x%x", hdwStatus);
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tFlags (0x%08X)", hdwStatus);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\thdwStatus (0x%08X)", hdwStatus);
     std::string statusStr;
     if (hdwStatus & HDW_STATUS_SYSTEM_RESET_REQUIRED) {
         statusStr = statusStr + (statusStr.length() > 0 ? " | " : "") + "RESET REQUIRED";
