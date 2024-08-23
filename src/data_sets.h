@@ -4886,7 +4886,7 @@ typedef struct
     uint16_t        senderHdwId;
     
     /** see eEventPriority */
-    uint8_t         priority;
+    int8_t          priority;
     uint8_t         res8;
 
     /** see eEventMsgTypeID */
