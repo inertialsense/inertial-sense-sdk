@@ -134,6 +134,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPS2_SIG] = sizeof(gps_sig_t);
     sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
     sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
+    sizeMap[DID_GPS1_TIMEPULSE] = sizeof(gps_timepulse_t);    
     sizeMap[DID_GPS1_RTK_POS] = sizeof(gps_pos_t);
     sizeMap[DID_GPS1_RTK_POS_REL] = sizeof(gps_rtk_rel_t);
     sizeMap[DID_GPS1_RTK_POS_MISC] = sizeof(gps_rtk_misc_t);
@@ -612,6 +613,26 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ADD_MAP(m, totalSize, "vel[2]", vel[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "sAcc", sAcc, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+{
+    typedef gps_timepulse_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[id];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "towOffset", towOffset, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "towGps", towGps, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "timeMcu", timeMcu, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "msgTimeMs", msgTimeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "plsTimeMs", plsTimeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "syncCount", syncCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "badPulseAgeCount", badPulseAgeCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "ppsInterruptReinitCount", ppsInterruptReinitCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "plsCount", plsCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "lastSyncTimeMs", lastSyncTimeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "sinceLastSyncTimeMs", sinceLastSyncTimeMs, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1110,7 +1131,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
     ADD_MAP(m, totalSize, "Message ID", msgTypeID, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeInt8, int8_t, 0);
     ADD_MAP(m, totalSize, "Length", length, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
@@ -2726,6 +2747,7 @@ cISDataMappings::cISDataMappings()
     PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_RTK_POS);
     PopulateGpsVelMappings(m_lookupInfo, DID_GPS1_VEL);
     PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
+    PopulateGpsTimepulseMappings(m_lookupInfo, DID_GPS1_TIMEPULSE);
 #if 0	// Too much data, we don't want to log this. WHJ
     PopulateGpsSatMappings(m_lookupInfo, DID_GPS1_SAT);
     PopulateGpsSatMappings(m_lookupInfo, DID_GPS2_SAT);

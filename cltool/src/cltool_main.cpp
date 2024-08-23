@@ -41,6 +41,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
+
 static bool g_killThreadsNow = false;
 int g_devicesUpdating = 0;
 
@@ -251,7 +253,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         g_inertialSenseDisplay.ProcessData(data);
 }
 
-// Where we tell the uINS what data to send and at what rate.  
+// Where we tell the IMX what data to send and at what rate.  
 // "cltool_dataCallback()" is registered as the callback functions for all received data.
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
@@ -264,16 +266,18 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         return true;
     }
 
-    // check for any compatible (protocol version 2) devices
-    for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-        if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
-            printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
-            // let's print the dev info for all connected devices (so the user can identify the errant device)
-            for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
-                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
-                printf("%s\n", devInfo.c_str());
+    if (!g_commandLineOptions.disableDeviceValidation)
+    {   // check for any compatible (protocol version 2) devices
+        for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
+            if (inertialSenseInterface.DeviceInfo(i).protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
+                printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
+                // let's print the dev info for all connected devices (so the user can identify the errant device)
+                for (int i = inertialSenseInterface.DeviceCount() - 1; i >= 0; i--) {
+                    std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(inertialSenseInterface.DeviceInfo(i), true);
+                    printf("%s\n", devInfo.c_str());
+                }
+                return false;
             }
-            return false;
         }
     }
 
@@ -289,7 +293,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     else
     {
         while (g_commandLineOptions.datasets.size())
-        {   // Datasets to stream
+        {   // Datasets to stream            
+            g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.back().did, true);     // Select DID for generic display
+
             inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
             switch (g_commandLineOptions.datasets.back().did)
             {
@@ -331,11 +337,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // Issue software reset
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
+        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
         cout << "Sending system command: " << g_commandLineOptions.sysCommand;
+        bool manfUnlock = false;
         switch(g_commandLineOptions.sysCommand)
         {
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1:
@@ -344,23 +352,40 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE:
                 cout << " Enable serial bridge"; break;
             case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
-                cout << "Disable serial bridge"; break;
-            case SYS_CMD_MANF_FACTORY_RESET:            cout << " Factory Reset";           break;
-            case SYS_CMD_MANF_CHIP_ERASE:               cout << " Chip Erase";              break;
-            case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    cout << " Downgrade Calibration";   break;
+                cout << " Disable serial bridge"; break;
+            case SYS_CMD_MANF_FACTORY_RESET:            manfUnlock = true;  cout << " Factory Reset";           break;
+            case SYS_CMD_MANF_CHIP_ERASE:               manfUnlock = true;  cout << " Chip Erase";              break;
+            case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    manfUnlock = true;  cout << " Downgrade Calibration";   break;
+            case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:    manfUnlock = true;  cout << " Enable ROM Bootloader";   break;
         }
         cout << endl;
         system_command_t cfg;
 
-        cfg.command = SYS_CMD_MANF_UNLOCK;
-        cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        if (manfUnlock)
+        {
+            cfg.command = SYS_CMD_MANF_UNLOCK;
+            cfg.invCommand = ~cfg.command;
+            inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        }
 
         cfg.command = g_commandLineOptions.sysCommand;
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
     if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
@@ -373,6 +398,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         manfInfo.platformType = g_commandLineOptions.platformType;
         // Write key (uint32_t) and platformType (int32_t), 8 bytes
         inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
+        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
 
@@ -651,6 +677,7 @@ static int cltool_dataStreaming()
     // Create InertialSense object, passing in data callback function pointer.
     InertialSense inertialSenseInterface(cltool_dataCallback);
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
+    inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))

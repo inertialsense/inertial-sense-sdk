@@ -771,7 +771,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 
         m_comManagerState.devices[pHandle].sysCmd.command = command;
         m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
-        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.
+        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
         comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
     }
 }
@@ -1089,7 +1089,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (int i = 0; i < (int)m_comManagerState.devices.size(); i++)
         {
-            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the uINS.
+            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the IMX.
             comManagerDisableData(i, dataId);
         }
     }
@@ -1097,9 +1097,10 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (int i = 0; i < (int)m_comManagerState.devices.size(); i++)
         {
-            // [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
+            // [C COMM INSTRUCTION]  3.) Request a specific data set from the IMX.  "periodMultiple" specifies the interval
             // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0 || !m_enableDeviceValidation) 
+            {
                 comManagerGetData(i, dataId, 0, 0, periodMultiple);
             }
         }
