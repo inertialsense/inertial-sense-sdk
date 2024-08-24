@@ -238,7 +238,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
-        std::string param_1 = nh_->declare_parameter<std::string>("port_1", "/dev/ttyACM1");
+        std::string param_1 = nh_->declare_parameter<std::string>("port_1", "/dev/ttyACM0");
         ph.nodeParam("port_1", param_1, param_1);
         ports_.push_back(param_1);
     }
