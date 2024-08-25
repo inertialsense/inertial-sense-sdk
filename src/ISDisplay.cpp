@@ -470,13 +470,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 		break;
 
-		case DMODE_EDIT:
-		if (m_editData.did == data->hdr.id)
-		{
-			m_editData.pData = *data;
-		}
-		break;
-
 	case DMODE_STATS:
 		DataToStats(data);
 		break;
@@ -525,7 +518,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 			cout << Connected() << endl;
 
 		// Generic column format
-		cout << DatasetToString(&m_editData.pData);
+		cout << DatasetToString(m_editData.pData);
 		return true;
 
 	case DMODE_STATS:
@@ -600,6 +593,11 @@ void cInertialSenseDisplay::PrintStats()
 
 string cInertialSenseDisplay::DataToString(const p_data_t* data)
 {
+	if (data->hdr.id == 0 || data->hdr.size == 0 || data->ptr == 0)
+	{
+		return "";
+	}
+
 	uDatasets d = {};
 
 	// Copy only new data
@@ -652,8 +650,10 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
-		else	// Default view
-			str = DatasetToString(&m_editData.pData);
+		else if (m_editData.did == data->hdr.id)	
+		{	// Default view
+			str = DatasetToString(m_editData.pData = data);
+		}
 		break;
 	}
 
@@ -1399,7 +1399,8 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C   Baro %4.1f C   MCU %4.1f C   UpTime: %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
 	}
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X", sys.flashCfgChecksum);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X\n", sys.flashCfgChecksum);
+
     return buf;
 }
 
@@ -1877,7 +1878,8 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
-	if (m_editData.mapInfo == NULL || data->ptr == NULL)
+	if (m_editData.mapInfo == NULL || data == NULL || 
+		data->ptr == NULL || data->hdr.id == 0 || data->hdr.size == 0)
 	{
 		return "";
 	}
@@ -1969,10 +1971,11 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			m_editData.uploadNeeded = true;
 
 			// Copy data into local Rx buffer
-			if (m_editData.pData.hdr.id == m_editData.did &&
-				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
+			if (m_editData.pData!=NULL && 
+				m_editData.pData->hdr.id == m_editData.did &&
+				m_editData.pData->hdr.size+ m_editData.pData->hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData->ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
 			}
 		}
 		StopEditing();
@@ -2013,12 +2016,17 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 		m_editData.mapInfoEnd = ++it;
 	}
 
-	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+	if (!readOnlyMode)
+	{
+		SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+	}
 
 	// Stuff zeros in so that write-only datasets will appear
 	p_data_t data = {};
 	data.hdr.id = did;
 	data.hdr.size = cISDataMappings::GetSize(did);
+	uint8_t buf[PKT_BUF_SIZE] = {0};
+	data.ptr = buf;
 	ProcessData(&data);
 }
 
