@@ -240,7 +240,6 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
     if (g_commandLineOptions.outputOnceDid) {
         if (data->hdr.id != g_commandLineOptions.outputOnceDid)
             return;
-        g_inertialSenseDisplay.showRawData(true);
     }
 
     (void)i;
@@ -798,6 +797,9 @@ static int cltool_dataStreaming()
                 if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration)) {
                     break;
                 }
+
+                // Prevent processor overload
+                SLEEP_MS(1);
             }
         }
         catch (...)
