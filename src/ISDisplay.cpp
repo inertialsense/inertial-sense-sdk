@@ -2030,6 +2030,7 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 		SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
 	}
 
+#if 0	// Disabled because it causes zeros to be read on the single did (i.e. -did 1=0) 
 	// Stuff zeros in so that write-only datasets will appear
 	p_data_t data = {};
 	data.hdr.id = did;
@@ -2037,6 +2038,7 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 	uint8_t buf[PKT_BUF_SIZE] = {0};
 	data.ptr = buf;
 	ProcessData(&data);
+#endif
 }
 
 

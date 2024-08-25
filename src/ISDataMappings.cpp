@@ -2966,7 +2966,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
     case DID_INL2_STATES:
     case DID_ROS_COVARIANCE_POSE_TWIST:
     case DID_INL2_MAG_OBS_INFO:
-        return 100;     // (10 ms)
+        return 100;     // (100ms, 10 Hz)
 
     default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.
         return 1;
