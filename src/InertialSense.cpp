@@ -671,11 +671,7 @@ void InertialSense::Close()
         StopBroadcasts();
         SLEEP_MS(100);
     }
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-    {
-        serialPortClose(&m_comManagerState.devices[i].serialPort);
-    }
-    m_comManagerState.devices.clear();
+    CloseSerialPorts(true); // allow all opened ports to transmit all buffered data
 }
 
 vector<string> InertialSense::GetPorts()
@@ -1549,11 +1545,14 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     return m_comManagerState.devices.size() != 0;
 }
 
-void InertialSense::CloseSerialPorts()
+void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 {
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    for (auto& device : m_comManagerState.devices)
     {
-        serialPortClose(&m_comManagerState.devices[i].serialPort);
+        if (drainBeforeClose)
+            serialPortDrain(&device.serialPort);
+
+        serialPortClose(&device.serialPort);
     }
     m_comManagerState.devices.clear();
 }

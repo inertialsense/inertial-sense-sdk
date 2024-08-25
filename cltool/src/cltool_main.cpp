@@ -818,8 +818,9 @@ static int cltool_dataStreaming()
 
     // [C++ COMM INSTRUCTION] STEP 6: Close interface
     // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
-    inertialSenseInterface.Close();
-    inertialSenseInterface.CloseServerConnection();
+    // Both of these calls actually get made by InertialSense::~InertialSense()
+    // inertialSenseInterface.Close();
+    // inertialSenseInterface.CloseServerConnection();
 
     return exitCode;
 }
