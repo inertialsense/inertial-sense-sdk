@@ -1893,35 +1893,42 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 
 	data_mapping_string_t tmp;
-	for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
+	if (m_editData.mapInfo->empty())
 	{
-        if (it == m_editData.mapInfoEnd)
-            break;
-
-		// Print value
-		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
-		{	// Show keyboard value
-			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
-		}
-		else
-		{	// Show received value
-			cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
-			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
-		}
-
-		// Print selection marker
-		if (it == m_editData.mapInfoSelection)
+		DISPLAY_SNPRINTF("     (output not defined)\n");	// Data to string not defined in either ISDataMappings.cpp or ISDisplay.cpp
+	}
+	else
+	{
+		for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 		{
-			if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
-			else                        { DISPLAY_SNPRINTF("*"); }
-		}
-		else
-		{
-			DISPLAY_SNPRINTF(" ");
-		}
+			if (it == m_editData.mapInfoEnd)
+				break;
 
-		// Print value name
-		DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
+			// Print value
+			if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
+			{	// Show keyboard value
+				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+			}
+			else
+			{	// Show received value
+				cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
+				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+			}
+
+			// Print selection marker
+			if (it == m_editData.mapInfoSelection)
+			{
+				if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+				else                        { DISPLAY_SNPRINTF("*"); }
+			}
+			else
+			{
+				DISPLAY_SNPRINTF(" ");
+			}
+
+			// Print value name
+			DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
+		}
 	}
 
 	return buf;
