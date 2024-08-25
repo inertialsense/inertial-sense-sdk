@@ -2968,7 +2968,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
     case DID_INL2_MAG_OBS_INFO:
         return 100;     // (10 ms)
 
-    default:    // DIDs not specified like RMC should be 1
+    default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.
         return 1;
     }
 }
