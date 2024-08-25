@@ -1890,15 +1890,17 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
+	DISPLAY_SNPRINTF("(%d) %s:      ", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 
 	data_mapping_string_t tmp;
 	if (m_editData.mapInfo->empty())
 	{
-		DISPLAY_SNPRINTF("     (output not defined)\n");	// Data to string not defined in either ISDataMappings.cpp or ISDisplay.cpp
+		DISPLAY_SNPRINTF("(output not defined)\n");    // Data to string not defined in either ISDataMappings.cpp or ISDisplay.cpp
 	}
 	else
 	{
+		DISPLAY_SNPRINTF("W up, S down\n");
+
 		for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 		{
 			if (it == m_editData.mapInfoEnd)
