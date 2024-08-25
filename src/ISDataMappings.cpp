@@ -2913,6 +2913,67 @@ uint32_t cISDataMappings::GetSize(uint32_t dataId)
 }
 
 
+uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
+{
+    switch (dataId)
+    {
+    case DID_DEV_INFO:
+    case DID_GPS1_VERSION:
+    case DID_GPS2_VERSION:
+    case DID_GPS1_TIMEPULSE:
+    case DID_SYS_SENSORS:
+    case DID_SENSORS_ADC:
+    case DID_SENSORS_ADC_SIGMA:
+    case DID_SENSORS_TC_BIAS:
+    case DID_SENSORS_UCAL:
+    case DID_SENSORS_TCAL:
+    case DID_SENSORS_MCAL:
+    case DID_SCOMP:
+    case DID_HDW_PARAMS:
+    case DID_SYS_PARAMS:
+    case DID_NVR_MANAGE_USERPAGE:
+    case DID_NVR_USERPAGE_SN:
+    case DID_NVR_USERPAGE_G0:
+    case DID_NVR_USERPAGE_G1:
+    case DID_FLASH_CONFIG:
+    case DID_CAL_SC_INFO:
+    case DID_CAL_SC:
+    case DID_CAL_TEMP_COMP:
+    case DID_CAL_MOTION:
+    case DID_RTOS_INFO:
+    case DID_SYS_CMD:
+    case DID_NMEA_BCAST_PERIOD:
+    case DID_RMC:
+    case DID_DEBUG_STRING:
+    case DID_DEBUG_ARRAY:
+    case DID_IO:
+    case DID_MAG_CAL:
+    case DID_COMMUNICATIONS_LOOPBACK:
+    case DID_BIT:
+    case DID_WHEEL_ENCODER:
+    case DID_SYS_FAULT:
+    case DID_SURVEY_IN:
+    case DID_PORT_MONITOR:
+    case DID_CAN_CONFIG:
+    case DID_INFIELD_CAL:
+    case DID_REFERENCE_IMU:
+    case DID_REFERENCE_PIMU:
+    case DID_REFERENCE_MAGNETOMETER:
+    case DID_RUNTIME_PROFILER:
+    case DID_INL2_COVARIANCE_LD:
+    case DID_INL2_STATUS:
+    case DID_INL2_MISC:
+    case DID_INL2_STATES:
+    case DID_ROS_COVARIANCE_POSE_TWIST:
+    case DID_INL2_MAG_OBS_INFO:
+        return 100;     // (10 ms)
+
+    default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.
+        return 1;
+    }
+}
+
+
 bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int radix, bool json)
 {
     const uint8_t* ptr;
