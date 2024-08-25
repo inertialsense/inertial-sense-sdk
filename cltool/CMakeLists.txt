@@ -1,11 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-# Specify the C and C++ compilers
-# set(CMAKE_SYSROOT           /opt/intellian-ti-toolchain/armv7at2hf-neon-linux-gnueabi)
-# set(CMAKE_FIND_ROOT_PATH    /opt/intellian-ti-toolchain/armv7at2hf-neon-linux-gnueabi)
-# set(CMAKE_C_COMPILER        /opt/intellian-ti-toolchain/gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf/bin/arm-none-linux-gnueabihf-gcc)
-# set(CMAKE_CXX_COMPILER      /opt/intellian-ti-toolchain/gcc-arm-9.2-2019.12-x86_64-arm-none-linux-gnueabihf/bin/arm-none-linux-gnueabihf-g++)
-
 project(cltool)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
