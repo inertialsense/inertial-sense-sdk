@@ -173,7 +173,7 @@ public:
 	static uint32_t GetSize(uint32_t dataId);
 
 	/**
-	* Get the default period multiple for the specified data set.
+	* Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  
 	* @param dataId the data id
 	* @return the default period multiple
 	*/
