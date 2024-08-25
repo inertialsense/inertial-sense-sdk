@@ -229,7 +229,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 if (g_commandLineOptions.outputOnceDid)
                 {
-                    i++;
+                    i++; // if we've previously parsed a "onceDid" then ignore all others (and all before it)
                 }
                 else
                 {
@@ -478,8 +478,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-stats"))
         {
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
-            enable_display_mode();
+            enable_display_mode(cInertialSenseDisplay::DMODE_STATS);
         }
         else if (startsWith(a, "-survey="))
         {
