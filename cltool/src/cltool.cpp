@@ -13,9 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 #include <string.h>
 #include "ISDataMappings.h"
-
-#include "../version/repositoryInfo.h"
-#include "../version/buildInfo.h"
+#include "version/version.h"
 
 using namespace std;
 
