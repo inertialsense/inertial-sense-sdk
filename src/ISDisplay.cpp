@@ -470,13 +470,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 		break;
 
-		case DMODE_EDIT:
-		if (m_editData.did == data->hdr.id)
-		{
-			m_editData.pData = *data;
-		}
-		break;
-
 	case DMODE_STATS:
 		DataToStats(data);
 		break;
@@ -525,7 +518,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 			cout << Connected() << endl;
 
 		// Generic column format
-		cout << DatasetToString(&m_editData.pData);
+		cout << DatasetToString(m_editData.pData);
 		return true;
 
 	case DMODE_STATS:
@@ -600,6 +593,11 @@ void cInertialSenseDisplay::PrintStats()
 
 string cInertialSenseDisplay::DataToString(const p_data_t* data)
 {
+	if (data->hdr.id == 0 || data->hdr.size == 0 || data->ptr == 0)
+	{
+		return "";
+	}
+
 	uDatasets d = {};
 
 	// Copy only new data
@@ -652,8 +650,10 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
-		else	// Default view
-			str = DatasetToString(&m_editData.pData);
+		else if (m_editData.did == data->hdr.id)	
+		{	// Default view
+			str = DatasetToString(m_editData.pData = data);
+		}
 		break;
 	}
 
@@ -1399,7 +1399,8 @@ string cInertialSenseDisplay::DataToStringSysParams(const sys_params_t& sys, con
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tTemp:  IMU %4.1f C   Baro %4.1f C   MCU %4.1f C   UpTime: %4.1lf s\n", sys.imuTemp, sys.baroTemp, sys.mcuTemp, sys.upTime);
 	}
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X", sys.flashCfgChecksum);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tConfig Chksum: 0x%08X\n", sys.flashCfgChecksum);
+
     return buf;
 }
 
@@ -1877,7 +1878,8 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
-	if (m_editData.mapInfo == NULL || data->ptr == NULL)
+	if (m_editData.mapInfo == NULL || data == NULL || 
+		data->ptr == NULL || data->hdr.id == 0 || data->hdr.size == 0)
 	{
 		return "";
 	}
@@ -1888,38 +1890,47 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
+	DISPLAY_SNPRINTF("(%d) %s:      ", data->hdr.id, cISDataMappings::GetDataSetName(data->hdr.id));
 
-	data_mapping_string_t tmp;
-	for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
+	if (m_editData.mapInfo->empty())
 	{
-        if (it == m_editData.mapInfoEnd)
-            break;
+		DISPLAY_SNPRINTF("(output not defined)\n");    // Data to string not defined in either ISDataMappings.cpp or ISDisplay.cpp
+	}
+	else
+	{
+		DISPLAY_SNPRINTF("W up, S down\n");
 
-		// Print value
-		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
-		{	// Show keyboard value
-			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
-		}
-		else
-		{	// Show received value
-			cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
-			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
-		}
-
-		// Print selection marker
-		if (it == m_editData.mapInfoSelection)
+		data_mapping_string_t tmp;
+		for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 		{
-			if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
-			else                        { DISPLAY_SNPRINTF("*"); }
-		}
-		else
-		{
-			DISPLAY_SNPRINTF(" ");
-		}
+			if (it == m_editData.mapInfoEnd)
+				break;
 
-		// Print value name
-		DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
+			// Print value
+			if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
+			{	// Show keyboard value
+				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+			}
+			else
+			{	// Show received value
+				cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
+				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+			}
+
+			// Print selection marker
+			if (it == m_editData.mapInfoSelection)
+			{
+				if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+				else                        { DISPLAY_SNPRINTF("*"); }
+			}
+			else
+			{
+				DISPLAY_SNPRINTF(" ");
+			}
+
+			// Print value name
+			DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
+		}
 	}
 
 	return buf;
@@ -1969,10 +1980,11 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			m_editData.uploadNeeded = true;
 
 			// Copy data into local Rx buffer
-			if (m_editData.pData.hdr.id == m_editData.did &&
-				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
+			if (m_editData.pData!=NULL && 
+				m_editData.pData->hdr.id == m_editData.did &&
+				m_editData.pData->hdr.size+ m_editData.pData->hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData->ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
 			}
 		}
 		StopEditing();
@@ -2013,13 +2025,20 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 		m_editData.mapInfoEnd = ++it;
 	}
 
-	SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+	if (!readOnlyMode)
+	{
+		SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
+	}
 
+#if 0	// Disabled because it causes zeros to be read on the single did (i.e. -did 1=0) 
 	// Stuff zeros in so that write-only datasets will appear
 	p_data_t data = {};
 	data.hdr.id = did;
 	data.hdr.size = cISDataMappings::GetSize(did);
+	uint8_t buf[PKT_BUF_SIZE] = {0};
+	data.ptr = buf;
 	ProcessData(&data);
+#endif
 }
 
 

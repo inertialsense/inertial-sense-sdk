@@ -91,7 +91,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
     if (did > DID_NULL && did < DID_COUNT)
     {   // DID is valid
         dataset->did = did;
-        dataset->periodMultiple = 1;
+        dataset->periodMultiple = cISDataMappings::DefaultPeriodMultiple(did);      // Use default to prevent 1ms period streaming for non-rmc messages
 
         if (pos != std::string::npos)
         {   // Contains '='
