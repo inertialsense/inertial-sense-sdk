@@ -1190,11 +1190,15 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gnss1.RunState", gnsssStatus[0].runState, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "gnss1.fwUpdateState", gnsssStatus[0].fwUpdateState, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "gnss1.initState", gnsssStatus[0].initState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.reserved", gnsssStatus[0].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "gnss2.RunState", gnsssStatus[1].runState, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "gnss2.fwUpdateState", gnsssStatus[1].fwUpdateState, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "gnss2.initState", gnsssStatus[1].initState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.reserved", gnsssStatus[1].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "SourcePort", gpxSourcePort, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "upTime", upTime, 0, DataTypeDouble, double, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
