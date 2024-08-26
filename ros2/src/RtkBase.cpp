@@ -17,9 +17,11 @@
  ***************************************************************************************/
 
 #include "RtkBase.h"
-
+//rclcpp::Node::SharedPtr rtk_base_node = std::make_shared<rclcpp::Node>("rtk_node");
+//rclcpp::spin_some(rtk_base_node);
 RtkBaseProvider::base_gps_source RtkBaseProvider::gpsSourceParamToEnum(YAML::Node& n, std::string v, std::string d) {
     std::string param = d;
+
     ph_.nodeParam(n, v, param, d);
     std::transform(param.begin(), param.end(), param.begin(), ::tolower);
     return (param == "gps1" ? GPS1 : (param == "gps2" ? GPS2 : OFF));
@@ -28,9 +30,12 @@ RtkBaseProvider::base_gps_source RtkBaseProvider::gpsSourceParamToEnum(YAML::Nod
 void RtkBaseProvider::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
         ph_.setCurrentNode(node);
-        ph_.nodeParam(node, "enable", enable, true);
-        ph_.nodeParam(node, "compassing_enable", compassing_enable_, false);
-        ph_.nodeParam(node, "positioning_enable", positioning_enable_, false);
+        enable = nh_->declare_parameter<bool>("enable", true);
+        ph_.nodeParam(node, "enable", enable, enable);
+        compassing_enable_ = nh_->declare_parameter<bool>("compassing_enable", false);
+        ph_.nodeParam(node, "compassing_enable", compassing_enable_, compassing_enable_);
+        positioning_enable_ = nh_->declare_parameter<bool>("positioning_enable", false);
+        ph_.nodeParam(node, "positioning_enable", positioning_enable_, positioning_enable_);
 
         YAML::Node rtkBaseSource = ph_.node(node, "correction_source");
         source_gps__serial0_ = gpsSourceParamToEnum(rtkBaseSource, "imx_serial_0");
@@ -86,6 +91,7 @@ RtkBaseCorrectionProvider* RtkBaseProvider::getProvidersByType(std::string type)
 void RtkBaseCorrectionProvider_Ntrip::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
         ph_.setCurrentNode(node);
+
         ph_.nodeParam("ip_address", ip_);
         ph_.nodeParam("ip_port", port_);
         ph_.nodeParam("mount_mount", mount_point_);

@@ -248,32 +248,16 @@ The Inertial Sense ROS parameters must contain the prefix `nh_`  (i.e. `nh_ navi
    - Configures period multiple of data set stream rate (GPS2)
 - `~msg/diagnostics/enable` (bool, default: true)
    - Flag to stream diagnostics data
-- `~msg/diagnostics/period` (int, default: 1)
-   - Configures period multiple of data set stream rate
-- `~msg/rtk_pos/period` (int, default: 1)
-   - Configures period multiple of data set stream rate
-- `~msg/rtk_cmp/period` (int, default: 1)
-   - Configures period multiple of data set stream rate
 
 ## RTK Configuration
 
 - `~rtk_compass` (bool, default: false)
    - Enables RTK rover mode (requires base corrections from an RTK base)
-- `~rtk_base_USB` (bool, default: false)
-   - Makes the connected uINS a RTK base station and enables the publishing of corrections our of Serial2 port
-- `~rtk_base_serial` (bool, default: false)
-   - Makes the connected uINS a RTK base station and enables the publishing of corrections out the USB port
-- `~rtk_base_TCP` (bool, default: false)
-   - Makes the connected uINS a RTK base station and creates a TCP server with which to publish corrections
-- `~gnss_compass` (bool, default: false)
-   - Uses both GPS antennas in a dual-GNSS configuration
-- `~rtk_rover_radio_enable` (bool, default: false)
-   - Enable radio on EVB2 for base corrections
 - `~rtk_correction_protocol` (string, default: RTCM3)
    - Options are RTCM3 and UBLOX (for M8 receiver).  Rover and base must match.
-- `~rtk_connection_attempt_limit` (string, default: RTCM3)
+- `~rtk_connection_attempt_limit` (int, default: 1)
    - Number of times to attempt NTRIP connection
-- `~rtk_connection_attempt_backoff` (string, default: RTCM3)
+- `~rtk_connection_attempt_backoff` (int, default: 2)
    - Sleep duration parameter. Sleep duration = attempt limit x attempt backoff
 - `rtk_connectivity_watchdog_enabled` (bool default: false)
    - Data reception watchdog
@@ -308,13 +292,9 @@ __*Note: These values must be clear for TCP configuration to work__
    -  Which receiver type: "F9P" or "M8"
 - `gps2_type` (string, default: "F9P")
    -  Which receiver type: "F9P" or "M8"
-- `~msg/gps1/topic` (string, default: "gps1")
-   -  ROS topic name of GPS1 stream
-- `~msg/gps2/topic` (string, default: "gps2")
-   -  ROS topic name of GPS1 stream
-- `~gps1_ant_xyz` (vector(3), default: {0, 0, 0})
+- `~antenna_offset_gps1` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the GPS 1 antenna (wrt INS frame)
-- `~gps2_ant_xyz` (vector(3), default: {0, 0, 0})
+- `~antenna_offset_gps2` (vector(3), default: {0, 0, 0})
    -  The NED translation vector between the INS frame and the GPS 2 antenna (wrt INS frame)
 - `~ref_lla` (vector(3), default: {0, 0, 0})
    -  The Reference longitude, latitude and altitude for NED calculation in degrees, degrees and meters (use the `set_refLLA` service to update this automatically)
@@ -333,6 +313,7 @@ __*Note: These values must be clear for TCP configuration to work__
       -  7 = airborne 2G
       -  8 = airborne 4G
       -  9 = wrist
+      - 10 = indoor
 
 **NMEA Output Configuration - NOT CURRENTLY SUPPORTED**
 - `~ser1_baud_rate` (int, default: 921600)
@@ -355,9 +336,5 @@ __*Note: These values must be clear for TCP configuration to work__
   - Put INS into single axis magnetometer calibration mode.  This is typically used if the uINS is rigidly mounted to a heavy vehicle that will not undergo large roll or pitch motions, such as a car. After this call, the uINS must perform a single orbit around one axis (i.g. drive in a circle) to calibrate the magnetometer [more info](https://docs.inertialsense.com/user-manual/reference/magnetometer/)
 - `multi_axis_mag_cal` (std_srvs/srv/Trigger)
   - Put INS into multi axis magnetometer calibration mode.  This is typically used if the uINS is not mounted to a vehicle, or a lightweight vehicle such as a drone.  Simply rotate the uINS around all axes until the light on the uINS turns blue [more info](https://docs.inertialsense.com/user-manual/reference/magnetometer/)
-- `firmware_update` (inertial_sense_ros2/srv/FirmwareUpdate)
-  - Updates firmware to the `.hex` file supplied (use absolute filenames)
-- `set_refLLA_current` (std_srvs/srv/Trigger)
-  - Takes the current estimated position and sets it as the `refLLA`.  Use this to set a base position after a survey, or to zero out the `ins` topic.1
 - `set_refLLA_value` (std_srvs/srv/Trigger)
   - Sets `refLLA` to the values passed as service arguments of type float64[3].  Use this to set refLLA to a known value.

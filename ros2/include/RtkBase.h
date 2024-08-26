@@ -27,6 +27,7 @@
 class RtkBaseCorrectionProvider {
 protected:
     ParamHelper ph_;
+    rclcpp::Node::SharedPtr nh_;
 
 public:
     std::string type_;
@@ -76,7 +77,7 @@ public:
 class RtkBaseProvider {
 protected:
     ParamHelper ph_;
-
+    rclcpp::Node::SharedPtr nh_;
 public:
 
     typedef enum {

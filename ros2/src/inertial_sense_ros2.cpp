@@ -257,7 +257,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
 
     // advanced Parameters
-    ioConfigBits_ = nh_->declare_parameter<int>("io_config", 0);
+    ioConfigBits_ = nh_->declare_parameter<int>("io_config", 39624800);
     setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, ioConfigBits_);
 
     rtkConfigBits_ = nh_->declare_parameter<int>("RTKCfgBits", 0);
@@ -266,7 +266,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     wheelConfigBits_ = nh_->declare_parameter<int>("wheelCfgBits", 0);
     ph.nodeParam("wheelCfgBits", wheelConfigBits_, wheelConfigBits_);        // wheel-encoder config bits
 
-    magDeclination_ = nh_->declare_parameter<float>("mag_declination", 0);
+    magDeclination_ = nh_->declare_parameter<float>("mag_declination", 0.20007290992);
     ph.nodeParam("mag_declination", magDeclination_, magDeclination_);
 
     std::vector<double> refLla_vector = nh_->declare_parameter<std::vector<double>>("ref_lla", {0.0, 0.0, 0.0});
@@ -306,13 +306,13 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // INS
     YAML::Node insNode = ph.node(node, "ins");
 
-    std::vector<double> insRotation_vector = nh_->declare_parameter<std::vector<double>>("rotation", {0.0, 0.0, 0.0});
+    std::vector<double> insRotation_vector = nh_->declare_parameter<std::vector<double>>("ins_rotation", {0.0, 0.0, 0.0});
     if (insRotation_vector.size() == 3) {
         std::copy(insRotation_vector.begin(), insRotation_vector.end(), insRotation_);
     }
     ph.nodeParamVec("rotation", 3, insRotation_, insRotation_);
 
-    std::vector<double> insOffset_vector = nh_->declare_parameter<std::vector<double>>("offset", {0.0, 0.0, 0.0});
+    std::vector<double> insOffset_vector = nh_->declare_parameter<std::vector<double>>("ins_offset", {0.0, 0.0, 0.0});
     if (insOffset_vector.size() == 3) {
         std::copy(insOffset_vector.begin(), insOffset_vector.end(), insOffset_);
     }
@@ -372,7 +372,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
-    rs_.gps1.type = nh_->declare_parameter<std::string>("type1", "");
+    rs_.gps1.type = nh_->declare_parameter<std::string>("gps1_type", "F9P");
     ph.nodeParam("type", rs_.gps1.type, rs_.gps1.type);
 
     gpsTimeUserDelay_ = nh_->declare_parameter<float>("gpsTimeUserDelay", 0);
@@ -407,7 +407,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     // GPS 2
     YAML::Node gps2Node = ph.node(node, "gps2");
 
-    rs_.gps2.type = nh_->declare_parameter<std::string>("type2", "");
+    rs_.gps2.type = nh_->declare_parameter<std::string>("gps2_type", "F9P");
     ph.nodeParam("type", rs_.gps2.type);
 
     std::vector<double>offset_vec2 = nh_->declare_parameter<std::vector<double>>("antenna_offset_gps2", {0,0,0});
@@ -431,7 +431,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     bool rs_gps2_nsf = nh_->declare_parameter<bool>("msg/gps2_navsatfix/enable", false);
     int rs_gps2_nsf_period = nh_->declare_parameter<int>("msg/gps2_navsatfix/period", 1);
-    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", false, 1, rs_gps2_nsf);
+    ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", false, rs_gps2_nsf_period, rs_gps2_nsf);
 
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
