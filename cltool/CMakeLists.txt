@@ -41,11 +41,11 @@ target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
 
 # Update build and repo info in is-common/cpp/hdw-src/GPX-1/IS_GPX-1/src/version
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-    execute_process(COMMAND cmd /c "scripts/lib/update_version_files.bat SDK/cltool/src/version"
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../..
+    execute_process(COMMAND cmd /c "scripts/lib/update_version_files.bat cltool/src/version"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 else()
-    execute_process(COMMAND bash -c "scripts/lib/update_version_files.sh SDK/cltool/src/version"
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../..
+    execute_process(COMMAND bash -c "scripts/lib/update_version_files.sh cltool/src/version"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 endif()
