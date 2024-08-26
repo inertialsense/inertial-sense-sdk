@@ -699,11 +699,7 @@ static int cltool_createHost()
     }
     cout << "Shutting down..." << endl;
 
-    // close the interface cleanly, this ensures serial port and any logging are shutdown properly
-    // Note the following two lines are called by the InertialSense destructor, which will be called when this function exits
-    // inertialSenseInterface.Close();
-    // inertialSenseInterface.CloseServerConnection();
-
+    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
     return 0;
 }
 
@@ -768,9 +764,7 @@ static int cltool_dataStreaming()
         if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
         {
             cout << "Failed to setup logger!" << endl;
-            // Note the following two lines are called by the InertialSense destructor, which will be called when this function exits
-            // inertialSenseInterface.Close();
-            // inertialSenseInterface.CloseServerConnection();
+            // No need to Close() the InertialSense class interface; It will be closed when destroyed.
             return -1;
         }
         try
@@ -786,9 +780,7 @@ static int cltool_dataStreaming()
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
                 ) != IS_OP_OK) {
-                    // Note the following two lines are called by the InertialSense destructor, which will be called when this function exits
-                    // inertialSenseInterface.Close();
-                    // inertialSenseInterface.CloseServerConnection();
+                    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
                     return -1;
                 };
             }
@@ -870,10 +862,7 @@ static int cltool_dataStreaming()
     }
 
     // [C++ COMM INSTRUCTION] STEP 6: Close interface
-    // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
-    // Note the following two lines are called by the InertialSense destructor, which will be called when this function exits
-    // inertialSenseInterface.Close();
-    // inertialSenseInterface.CloseServerConnection();
+    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
 
     return exitCode;
 }
