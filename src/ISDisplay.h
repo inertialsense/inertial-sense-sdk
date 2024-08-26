@@ -50,8 +50,9 @@ public:
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
-		uint8_t			pDataBuffer[MAX_DATASET_SIZE];
-		p_data_t		pData = {{},pDataBuffer};
+		uint8_t			aeroPDataBuf[MAX_DATASET_SIZE];
+		p_data_t 		zeroPData = {{},aeroPDataBuf};
+		const p_data_t*	pData = &zeroPData;
 	} edit_data_t;
 
 	enum eDisplayMode

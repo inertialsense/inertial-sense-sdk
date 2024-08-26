@@ -16,7 +16,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-
 cmd_options_t g_commandLineOptions = {};
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
@@ -88,7 +87,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
     if (did > DID_NULL && did < DID_COUNT)
     {   // DID is valid
         dataset->did = did;
-        dataset->periodMultiple = 1;
+        dataset->periodMultiple = cISDataMappings::DefaultPeriodMultiple(did);      // Use default to prevent 1ms period streaming for non-rmc messages
 
         if (pos != std::string::npos)
         {   // Contains '='
@@ -222,7 +221,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 if (g_commandLineOptions.outputOnceDid)
                 {
-                    i++;
+                    i++; // if we've previously parsed a "onceDid" then ignore all others (and all before it)
                 }
                 else
                 {
@@ -495,8 +494,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-stats"))
         {
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
-            enable_display_mode();
+            enable_display_mode(cInertialSenseDisplay::DMODE_STATS);
         }
         else if (startsWith(a, "-survey="))
         {

@@ -637,7 +637,7 @@ private:
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
     bool OpenSerialPorts(const char* port, int baudRate);
-    void CloseSerialPorts();
+    void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
