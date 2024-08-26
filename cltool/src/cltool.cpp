@@ -13,10 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "cltool.h"
 #include <string.h>
 #include "ISDataMappings.h"
-#include "version/version.h"
 
 using namespace std;
-
 
 cmd_options_t g_commandLineOptions = {};
 serial_port_t g_serialPort;
@@ -112,13 +110,9 @@ string cltool_version()
 	string info;
 #if defined(IS_SDK_DESCRIBE_TAG)
 	info += string("") + IS_SDK_DESCRIBE_TAG;
-#else
-    info += string("") + REPO_VERSION_NO_META;
 #endif
 #if defined(IS_SDK_BUILD_DATE) && defined(IS_SDK_BUILD_TIME)
 	info += string(" ") + IS_SDK_BUILD_DATE + " " + IS_SDK_BUILD_TIME;
-#else
-    info += string(" ") + BUILD_DATE + " " + BUILD_TIME;
 #endif
 	return info;
 }
