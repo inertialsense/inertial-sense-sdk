@@ -49,6 +49,10 @@ typedef struct
 {
 	eDataIDs	did;
 	int			periodMultiple;
+    struct {
+        uint64_t    lastRxTime;
+        double      rxCount;
+    }           rxStats;
 } stream_did_t;
 
 typedef struct
