@@ -462,12 +462,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	case DMODE_PRETTY:
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
-		if (m_outputOnceDid == data->hdr.id)
-		{	// Exit as soon as we display DID
-			Home();
-			cout << VectortoString();
-			exit(0);
-		}
 		break;
 
 	case DMODE_STATS:
@@ -479,18 +473,25 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		cout << DataToString(data) << endl;
 		break;
 	}
+
+    // if we are doing a onceDid for any other display type, and we got it, shutdown normally, ASAP, but not immediately...
+    if (m_outputOnceDid == data->hdr.id)
+    {
+        SetExitProgram();
+    }
 }
 
 // Print data to standard out at the following refresh rate.  Return true to refresh display.
 bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 {
 	unsigned int curTimeMs = current_timeMs();
-	static unsigned int timeSinceRefreshMs = 0;
+	static unsigned int timeSinceRefreshMs = curTimeMs;
 
 	// Limit display refresh rate
-	if (curTimeMs - timeSinceRefreshMs < refreshPeriodMs)
+	if ((curTimeMs - timeSinceRefreshMs) < refreshPeriodMs)
 	{
-		return false;
+        if (!s_exitProgram) // if we are about to exit, allow this as a final Display update.
+		    return false;
 	}
 	timeSinceRefreshMs = curTimeMs;
 

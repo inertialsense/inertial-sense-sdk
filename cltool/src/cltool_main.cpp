@@ -239,17 +239,68 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
     if (g_commandLineOptions.outputOnceDid) {
         if (data->hdr.id != g_commandLineOptions.outputOnceDid)
-            return;
+            return; // ignore all other received data, except the "onceDid"
     }
 
     (void)i;
     (void)pHandle;
 
+    // track which DIDs we've received and when, and how frequently
+    for (stream_did_t& did : g_commandLineOptions.datasets) {
+        if (did.did == data->hdr.id) {
+            did.rxStats.lastRxTime = current_timeMs();
+            did.rxStats.rxCount++;
+        }
+    }
+
     // Print data to terminal - but only if we aren't doing a firmware update...
     if (g_devicesUpdating)
         cout.flush();
-    else
+    else if (!g_inertialSenseDisplay.ExitProgram()) // don't process any additional data once we've been told to exit
         g_inertialSenseDisplay.ProcessData(data);
+}
+
+
+/**
+ * requests any data which is not being actively received
+ * @param inertialSenseInterface
+ * @param datasets a vector of stream_did_t indicating the set of DIDs which should be requested and the rate to be requested at.
+ * @return the number of did which were actually requested. This maybe less than the number of items in the specified dataset
+ *  if those DIDs have already been recently received. If 0 is returned, it indicates that all requested DIDs are already
+ *  streaming.
+ */
+int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<stream_did_t>& datasets) {
+    int didRequested = 0;
+    unsigned int currentTime = current_timeMs();
+
+    for (stream_did_t& dataItem : datasets)
+    {   // Datasets to stream
+
+        unsigned int thresholdRate = (dataItem.periodMultiple * cISDataMappings::DefaultPeriodMultiple(dataItem.did) * 3) + 100; // minimum 100ms
+        if ((currentTime - dataItem.rxStats.lastRxTime) < thresholdRate) {
+            // FIXME: the "500" above should probably be the specific base period for the DID * 5, or something
+            //  basically, we want to know how often we should expect that DID, based on its base rate * the periodMultiple,
+            //  and then we should re-request if we've exceeded that by, say, 3x? 5x? 10x?
+            // we've already received this message recently, so its probably already been requested...
+            continue; // so, let's skip it.
+        }
+
+        didRequested++;
+        g_inertialSenseDisplay.SelectEditDataset(dataItem.did, true);     // Select DID for generic display
+
+        inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
+        switch (dataItem.did)
+        {
+            case DID_RTOS_INFO:
+                system_command_t cfg;
+                cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+                cfg.invCommand = ~cfg.command;
+                inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+                break;
+        }
+    }
+
+    return didRequested;
 }
 
 // Where we tell the IMX what data to send and at what rate.  
@@ -291,22 +342,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     else
     {
-        while (g_commandLineOptions.datasets.size())
-        {   // Datasets to stream            
-            g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.back().did, true);     // Select DID for generic display
-
-            inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
-            switch (g_commandLineOptions.datasets.back().did)
-            {
-                case DID_RTOS_INFO:
-                    system_command_t cfg;
-                    cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
-                    cfg.invCommand = ~cfg.command;
-                    inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-                    break;
-            }
-            g_commandLineOptions.datasets.pop_back();
-        }
+        cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
     }
     if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
     {
@@ -663,10 +699,7 @@ static int cltool_createHost()
     }
     cout << "Shutting down..." << endl;
 
-    // close the interface cleanly, this ensures serial port and any logging are shutdown properly
-    inertialSenseInterface.Close();
-    inertialSenseInterface.CloseServerConnection();
-
+    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
     return 0;
 }
 
@@ -731,8 +764,7 @@ static int cltool_dataStreaming()
         if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
         {
             cout << "Failed to setup logger!" << endl;
-            inertialSenseInterface.Close();
-            inertialSenseInterface.CloseServerConnection();
+            // No need to Close() the InertialSense class interface; It will be closed when destroyed.
             return -1;
         }
         try
@@ -748,8 +780,7 @@ static int cltool_dataStreaming()
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
                 ) != IS_OP_OK) {
-                    inertialSenseInterface.Close();
-                    inertialSenseInterface.CloseServerConnection();
+                    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
                     return -1;
                 };
             }
@@ -760,23 +791,33 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.portMask,
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
+            // before we start, if we are doing a run-once, set a default runDuration, so we don't hang indefinitely
+            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDuration)
+                g_commandLineOptions.runDuration = 30000; // 30 second timeout, if none is specified
+
             // Main loop. Could be in separate thread if desired.
-            uint32_t startTime = current_timeMs();
-            while (!g_inertialSenseDisplay.ExitProgram())
+            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDuration;
+            uint32_t nextDataSetCheck = current_timeMs() + 250;
+
+            // yield to allow comms
+            SLEEP_MS(1);
+
+            // [C++ COMM INSTRUCTION] STEP 4: Read data
+            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDuration || (current_timeMs() < exitTime)))
             {
+
+                if (!inertialSenseInterface.Update())
+                {   // device disconnected, exit
+                    exitCode = -2;
+                    break;
+                }
+
                 g_inertialSenseDisplay.GetKeyboardInput();
 
                 if (g_inertialSenseDisplay.UploadNeeded())
                 {
                     cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
                     inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
-                }
-
-                // [C++ COMM INSTRUCTION] STEP 4: Read data
-                if (!inertialSenseInterface.Update())
-                {   // device disconnected, exit
-                    exitCode = -2;
-                    break;
                 }
 
                 // If updating firmware, and all devices have finished, Exit
@@ -793,9 +834,11 @@ static int cltool_dataStreaming()
                     display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                 }
 
-                // If the user specified a runDuration, then exit after that time has elapsed
-                if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration)) {
-                    break;
+                if (current_timeMs() > nextDataSetCheck) {
+                    if (cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets))
+                        nextDataSetCheck = current_timeMs() + 1000; // still waiting on some, so check more frequently
+                    else
+                        nextDataSetCheck = current_timeMs() + 5000; // we've received everything we're expecting for, so we can back off the re-requests
                 }
 
                 // Prevent processor overload
@@ -804,7 +847,7 @@ static int cltool_dataStreaming()
         }
         catch (...)
         {
-            cout << "Unknown exception...";
+            cout << "Unknown exception..." << endl;
         }
     }
 
@@ -819,9 +862,7 @@ static int cltool_dataStreaming()
     }
 
     // [C++ COMM INSTRUCTION] STEP 6: Close interface
-    // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
-    inertialSenseInterface.Close();
-    inertialSenseInterface.CloseServerConnection();
+    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
 
     return exitCode;
 }
