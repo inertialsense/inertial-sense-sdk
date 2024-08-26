@@ -88,6 +88,7 @@ typedef struct
 
 } serialPortHandle;
 
+static int serialPortSleepPlatform(int sleepMilliseconds);
 static int serialPortFlushPlatform(serial_port_t* serialPort);
 static int serialPortDrainPlatform(serial_port_t* serialPort);
 static int serialPortReadTimeoutPlatform(serial_port_t* serialPort, unsigned char* buffer, int readCount, int timeoutMilliseconds);
@@ -739,6 +740,7 @@ static int serialPortWritePlatform(serial_port_t* serialPort, const unsigned cha
             if ((errno == EINTR) ||     // Interrupted by signal, continue writing
                 (errno == EAGAIN) || (errno == EWOULDBLOCK))  // Non-blocking mode, and no data written, continue trying
             {
+                serialPortSleepPlatform(1);
                 retry++;
                 continue;
             }
