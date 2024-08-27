@@ -393,8 +393,8 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 			gpsTowMsOffset = (unsigned int)(1000.0 * d.gpsPos.towOffset);
 			isTowMode = false;
 			break;
-
-			// Time since boot - double
+		
+		// Time since boot - double
 		case DID_MAGNETOMETER:
 		case DID_BAROMETER:
 		case DID_SYS_SENSORS:
@@ -406,6 +406,10 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 				msgTimeMs = (unsigned int)(1000.0 * d.imu.time) + gpsTowMsOffset;
 			else
 				msgTimeMs = (unsigned int)(1000.0 * d.imu.time);
+			break;
+
+		case DID_EVENT:
+
 			break;
 
 			// Unidentified data type

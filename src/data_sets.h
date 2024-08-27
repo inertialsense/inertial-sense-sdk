@@ -866,9 +866,10 @@ enum eImuStatus
     /** Sensor saturation mask */
     IMU_STATUS_SATURATION_MASK                  = (int)0x0000003F,
 
-    /** Magnetometer sample occured */
+    /** Magnetometer sample ocurred */
     IMU_STATUS_MAG_UPDATE						= (int)0x00000100,
-    
+    /** Data was received at least once from Reference IMU */
+    IMU_STATUS_REFERENCE_IMU_PRESENT			= (int)0x00000200,
     /** Reserved */
     // IMU_STATUS_RESERVED2						= (int)0x00000400,
 
@@ -987,7 +988,6 @@ typedef struct PACKED
 
     /** (see eSatSvStatus) */
     uint16_t				status;
-
 } gps_sat_sv_t;
 
 /** Sat SV - GNSS System ID */
@@ -1022,6 +1022,12 @@ enum eSatSvStatus
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_OFFSET         = 8,
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FLOAT          = 1,	
     SAT_SV_STATUS_RTK_SOL_FIX_STATUS_FIX            = 2,	
+
+    SAT_SV_STATUS_RTK_EPH_RTCM_PULSE                = 0x1000,   // Set when eph is Rx for this SV and cleared by next message send
+    SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE             = 0x2000,   // Set when eph is added to RTK LIB for this SV 
+    SAT_SV_STATUS_RTK_EPH_PULSE_MASK                = SAT_SV_STATUS_RTK_EPH_RTK_LIB_PULSE | SAT_SV_STATUS_RTK_EPH_RTCM_PULSE,   // Set when eph is Rx for this SV and cleared by next message send
+
+    SAT_SV_STATUS_RTK_EPH_SEND_PULSE                = 0x4000,   // Set when eph is Tx'd from device
 
     // SAT_SV_STATUS_HEALTH_MASK                       = 0x00000030,
     // NAV_SAT_FLAGS_HEALTH_OFFSET                     = 4,
@@ -1757,6 +1763,9 @@ typedef struct PACKED
                                         | RMC_BITS_RTK_STATE \
                                         | RMC_BITS_RTK_CODE_RESIDUAL \
                                         | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                        | RMC_BITS_GPX_DEBUG \
+                                        | RMC_BITS_GPS1_SAT \
+                                        | RMC_BITS_GPS2_SAT \
                                         | RMC_BITS_EVENT)
 #define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
                                         | RMC_BITS_WHEEL_ENCODER \
@@ -1827,7 +1836,7 @@ enum eNmeaMsgId
     // Filtered GxGSV NMEA Message IDs:
 
     // GNGSV - All constellations
-    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // Used for reference only
+    NMEA_MSG_ID_GNGSV_START     = NMEA_MSG_ID_GxGSV * NMEA_MSG_ID_SPECIAL_CASE_START,                                                                                       // (3840) Used for reference only
     NMEA_MSG_ID_GNGSV_0         = NMEA_MSG_ID_GNGSV_START,                                                                                                                  // GNGSV_0 (3840) Clear all constellations and frequencies
     NMEA_MSG_ID_GNGSV_1         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND1_BIT),                                                                                    // GNGSV_1 (3841) Enable all constellations band1
     NMEA_MSG_ID_GNGSV_2         = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_BAND2_BIT),                                                                                    // GNGSV_2 (3842) Enable all constellations band2
@@ -1844,10 +1853,10 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GNGSV_5_3_1     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),                                // GNGSV_5_3_1 (3853) Enable all constellations band1, band3, band5
     NMEA_MSG_ID_GNGSV_5_3_2     = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT),                                // GNGSV_5_3_2 (3854) Enable all constellations band2, band3, band5
     NMEA_MSG_ID_GNGSV_5_3_2_1   = (NMEA_MSG_ID_GNGSV_START | NMEA_GNGSV_FREQ_5_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND1_BIT),    // GNGSV_5_3_2_1 (3855) Enable all constellations band1, band2, band3, band5
-    NMEA_MSG_ID_GNGSV           = NMEA_MSG_ID_GNGSV_5_3_2_1,                                                                                                                // GNGSV (3855) Enable all constellations and frequencys
+    NMEA_MSG_ID_GNGSV           = NMEA_MSG_ID_GNGSV_5_3_2_1,                                                                                                                // GNGSV (3855) Enable all constellations and frequencies
 
     // GPGSV - GPS
-    NMEA_MSG_ID_GPGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GPS_OFFSET ),   // GPGSV_0 (3856) Disable all GPS frequencys
+    NMEA_MSG_ID_GPGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GPS_OFFSET ),   // GPGSV_0 (3856) Disable all GPS frequencies
     NMEA_MSG_ID_GPGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_1 (3857) Enable GPS L1
     NMEA_MSG_ID_GPGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GPS_OFFSET),        // GPGSV_2 (3858) Enable GPS L2
     NMEA_MSG_ID_GPGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_2_1 (3859) Enable GPS L1, L2
@@ -1855,17 +1864,17 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GPGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_5_1 (3865) Enable GPS L1, L5
     NMEA_MSG_ID_GPGSV_5_2       = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_GPS_OFFSET),      // GPGSV_5_2 (3866) Enable GPS L2, L5
     NMEA_MSG_ID_GPGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_GPS_OFFSET),    // GPGSV_5_2_1 (3867) Enable GPS L1, L2, L5
-    NMEA_MSG_ID_GPGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GPS_OFFSET ),         // GPGSV (3871) Enable all GPS frequencys
+    NMEA_MSG_ID_GPGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GPS_OFFSET ),         // GPGSV (3871) Enable all GPS frequencies
 
     // GAGSV - Galileo
-    NMEA_MSG_ID_GAGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GAL_OFFSET),    // GAGSV_0 (3888) Disable all Galileo frequencys
+    NMEA_MSG_ID_GAGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GAL_OFFSET),    // GAGSV_0 (3888) Disable all Galileo frequencies
     NMEA_MSG_ID_GAGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GAL_OFFSET),        // GAGSV_1 (3889) Enable Galileo E1
     NMEA_MSG_ID_GAGSV_5         = (NMEA_MSG_ID_GNGSV_5 + NMEA_GNGSV_GAL_OFFSET),        // GAGSV_5 (3896) Enable Galileo E5
     NMEA_MSG_ID_GAGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_GAL_OFFSET),      // GAGSV_5_1 (3897) Enable Galileo E1, E5
-    NMEA_MSG_ID_GAGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GAL_OFFSET),          // GAGSV (3903) Enable all Galileo frequencys
+    NMEA_MSG_ID_GAGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GAL_OFFSET),          // GAGSV (3903) Enable all Galileo frequencies
 
     // GBGSV - Beido
-    NMEA_MSG_ID_GBGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_0 (3904) Disable all Beidou frequencys
+    NMEA_MSG_ID_GBGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_0 (3904) Disable all Beidou frequencies
     NMEA_MSG_ID_GBGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_1 (3905) Enable Beidou B1
     NMEA_MSG_ID_GBGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_BEI_OFFSET),        // GBGSV_2 (3906) Enable Beidou B2
     NMEA_MSG_ID_GBGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_2_1 (3907) Enable Beidou B1, B2
@@ -1873,10 +1882,10 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GBGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_3_1 (3909) Enable Beidou B1, B3
     NMEA_MSG_ID_GBGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_BEI_OFFSET),      // GBGSV_3_2 (3910) Enable Beidou B2, B3
     NMEA_MSG_ID_GBGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_BEI_OFFSET),    // GBGSV_3_2_1 (3911) Enable Beidou B1, B2, B3
-    NMEA_MSG_ID_GBGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_BEI_OFFSET),          // GBGSV (3919) Enable all Beidou frequencys
+    NMEA_MSG_ID_GBGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_BEI_OFFSET),          // GBGSV (3919) Enable all Beidou frequencies
 
     // GQGSV - QZSS
-    NMEA_MSG_ID_GQGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_0 (3920) Disable all QZSS frequencys
+    NMEA_MSG_ID_GQGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_0 (3920) Disable all QZSS frequencies
     NMEA_MSG_ID_GQGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_1 (3921) Enable QZSS L1
     NMEA_MSG_ID_GQGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_QZS_OFFSET),        // GQGSV_2 (3922) Enable QZSS L2
     NMEA_MSG_ID_GQGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_2_1 (3923) Enable QZSS L1, L2
@@ -1884,10 +1893,10 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GQGSV_5_1       = (NMEA_MSG_ID_GNGSV_5_1 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_5_1 (3929) Enable QZSS L1, L5
     NMEA_MSG_ID_GQGSV_5_2       = (NMEA_MSG_ID_GNGSV_5_2 + NMEA_GNGSV_QZS_OFFSET),      // GQGSV_5_2 (3930) Enable QZSS L2, L5
     NMEA_MSG_ID_GQGSV_5_2_1     = (NMEA_MSG_ID_GNGSV_5_2_1 + NMEA_GNGSV_QZS_OFFSET),    // GQGSV_5_2_1 (3931) Enable QZSS L1, L2, L5
-    NMEA_MSG_ID_GQGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_QZS_OFFSET),          // GQGSV (3935) Enable all QZSS frequencys
+    NMEA_MSG_ID_GQGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_QZS_OFFSET),          // GQGSV (3935) Enable all QZSS frequencies
 
     // GLGSV - Glonass
-    NMEA_MSG_ID_GLGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_0 (3936) Disable all Glonass frequencys
+    NMEA_MSG_ID_GLGSV_0         = (NMEA_MSG_ID_GNGSV_START + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_0 (3936) Disable all Glonass frequencies
     NMEA_MSG_ID_GLGSV_1         = (NMEA_MSG_ID_GNGSV_1 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_1 (3937) Enable Glonass L1
     NMEA_MSG_ID_GLGSV_2         = (NMEA_MSG_ID_GNGSV_2 + NMEA_GNGSV_GLO_OFFSET),        // GLGSV_2 (3938) Enable Glonass L2
     NMEA_MSG_ID_GLGSV_2_1       = (NMEA_MSG_ID_GNGSV_2_1 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_2_1 (3939) Enable Glonass L1, L2
@@ -1895,9 +1904,9 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GLGSV_3_1       = (NMEA_MSG_ID_GNGSV_3_1 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_3_1 (3941) Enable Glonass L1, L3
     NMEA_MSG_ID_GLGSV_3_2       = (NMEA_MSG_ID_GNGSV_3_2 + NMEA_GNGSV_GLO_OFFSET),      // GLGSV_3_2 (3942) Enable Glonass L2, L3
     NMEA_MSG_ID_GLGSV_3_2_1     = (NMEA_MSG_ID_GNGSV_3_2_1 + NMEA_GNGSV_GLO_OFFSET),    // GLGSV_3_2_1 (3943) Enable Glonass L1, L2, L3
-    NMEA_MSG_ID_GLGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GLO_OFFSET),          // GLGSV (3951) Enable all Glonass frequencys
+    NMEA_MSG_ID_GLGSV           = (NMEA_MSG_ID_GNGSV + NMEA_GNGSV_GLO_OFFSET),          // GLGSV (3951) Enable all Glonass frequencies
     
-    NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // Used for reference only
+    NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // (3951) Used for reference only
 };
 
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
@@ -3438,24 +3447,26 @@ typedef struct PACKED
     uint8_t reserved2;
     uint8_t raw_ptr_queue_overrun;
     uint8_t raw_dat_queue_overrun;
-    uint8_t obs_unhealthy;   // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
+    uint8_t obs_unhealthy;          // number of satellites marked as "unhealthy" by rover (nonzero terms in svh)
 
-    uint8_t obs_rover_avail; // nu - total number of satellites with observations to rover in relpos() before selsat()
-    uint8_t obs_base_avail;  // nr - total number of satellites with observations to base in relpos() before selsat()
-    uint8_t obs_pairs_used_float; // number of satellite pairs used to compute the float solution
-    uint8_t obs_pairs_used_ar;    // number of satellite pairs used to compute the fixed solution
+    uint8_t obs_rover_avail;        // nu - total number of satellites with observations to rover in relpos() before selsat()
+    uint8_t obs_base_avail;         // nr - total number of satellites with observations to base in relpos() before selsat()
+    uint8_t obs_pairs_used_float;   // number of satellite pairs used to compute the float solution
+    uint8_t obs_pairs_used_ar;      // number of satellite pairs used to compute the fixed solution
 
-    uint8_t obs_eph_avail;       // number of satellites with ephemeris available (min is 0, max is nu)
-    uint8_t obs_low_snr_rover;   // number of satellites with low snr at rover
-    uint8_t obs_low_snr_base;    // number of satellites with low snr at base
-    uint8_t obs_high_snr_parity; // number of satellites with high difference between snr at rover and snr at base
+    uint8_t obs_eph_avail;          // number of satellites with ephemeris available (min is 0, max is nu)
+    uint8_t obs_low_snr_rover;      // number of satellites with low snr at rover
+    uint8_t obs_low_snr_base;       // number of satellites with low snr at base
+    uint8_t obs_high_snr_parity;    // number of satellites with high difference between snr at rover and snr at base
 
-    uint8_t obs_zero_L1_rover;   // number of satellites with zero L1 pseudorange or phase at rover
-    uint8_t obs_zero_L1_base;    // number of satellites with zero L1 pseudorange or phase at base
-    uint8_t obs_low_elev_rover;  // number of satellites with low elevation at rover
-    uint8_t obs_low_elev_base;   // number of satellites with low elevation at base
+    uint8_t obs_zero_L1_rover;      // number of satellites with zero L1 pseudorange or phase at rover
+    uint8_t obs_zero_L1_base;       // number of satellites with zero L1 pseudorange or phase at base
+    uint8_t obs_low_elev_rover;     // number of satellites with low elevation at rover
+    uint8_t obs_low_elev_base;      // number of satellites with low elevation at base
 
-    uint8_t reserved[4];
+    uint8_t eph1RxCnt;              // total ephem recieved for reciever 1 before RTCM3 parse per period
+    uint8_t eph2RxCnt;              // total ephem recieved for reciever 2 before RTCM3 parse per period
+    uint8_t reserved[2];
 } rtk_debug_t;
 
 POP_PACK
@@ -5307,6 +5318,7 @@ typedef union PACKED
     debug_array_t           imxDebugArray;
     debug_array_t           gpxDebugArray;
     port_monitor_t          portMonitor;
+    did_event_t             event;
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     evb_luna_velocity_control_t     wheelController;
