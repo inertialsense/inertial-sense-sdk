@@ -4431,13 +4431,14 @@ typedef enum {
 }eGPXGnssRunState;
 
 #define GNSS_RECEIVER_COUNT 2
+
 typedef struct 
 {
     uint8_t reserved;
     uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
     uint8_t initState;          /** GNSS status (see InitSteps) **/
     uint8_t runState;           /** GNSS run status (see RunState) **/
-}gpx_gnss_status_t;
+} gpx_gnss_status_t;
 
 /**
 * (DID_GPX_STATUS) GPX status.
