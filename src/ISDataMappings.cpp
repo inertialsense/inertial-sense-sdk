@@ -1125,7 +1125,6 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     map_name_to_info_t& m = mappings[DID_EVENT];
     uint32_t totalSize = 0;
 
-
     ADD_MAP(m, totalSize, "Time stamp of message (System Up seconds)", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
@@ -1136,6 +1135,8 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
     ADD_MAP(m, totalSize, "Reserved 8 bit", res8, 0, DataTypeUInt8, uint8_t, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
