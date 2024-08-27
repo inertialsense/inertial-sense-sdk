@@ -4428,7 +4428,7 @@ typedef enum {
     kShutdown,
     kReinit,
     kHardReset,
-}eGPXGnssRunState;
+} eGPXGnssRunState;
 
 #define GNSS_RECEIVER_COUNT 2
 
