@@ -2101,7 +2101,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GNGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV_5_3_2_1); // enable all 
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         
