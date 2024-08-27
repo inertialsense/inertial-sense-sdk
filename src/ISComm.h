@@ -899,6 +899,7 @@ char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int max
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
 char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize);
+char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int maxsize);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);

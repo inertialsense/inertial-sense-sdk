@@ -44,6 +44,7 @@ using namespace std;
 #define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
 
 static bool g_killThreadsNow = false;
+static bool g_enableRx = false;
 int g_devicesUpdating = 0;
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
@@ -237,9 +238,14 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-    if (g_commandLineOptions.outputOnceDid) {
-        if (data->hdr.id != g_commandLineOptions.outputOnceDid)
-            return; // ignore all other received data, except the "onceDid"
+    if (!g_enableRx)
+    {   // Receive disabled
+        return;
+    }
+
+    if (g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid != data->hdr.id)
+    {   // ignore all other received data, except the "onceDid"
+        return; 
     }
 
     (void)i;
@@ -269,23 +275,11 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
  *  if those DIDs have already been recently received. If 0 is returned, it indicates that all requested DIDs are already
  *  streaming.
  */
-int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<stream_did_t>& datasets) {
-    int didRequested = 0;
+void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<stream_did_t>& datasets) {
     unsigned int currentTime = current_timeMs();
 
     for (stream_did_t& dataItem : datasets)
     {   // Datasets to stream
-
-        unsigned int thresholdRate = (dataItem.periodMultiple * cISDataMappings::DefaultPeriodMultiple(dataItem.did) * 3) + 100; // minimum 100ms
-        if ((currentTime - dataItem.rxStats.lastRxTime) < thresholdRate) {
-            // FIXME: the "500" above should probably be the specific base period for the DID * 5, or something
-            //  basically, we want to know how often we should expect that DID, based on its base rate * the periodMultiple,
-            //  and then we should re-request if we've exceeded that by, say, 3x? 5x? 10x?
-            // we've already received this message recently, so its probably already been requested...
-            continue; // so, let's skip it.
-        }
-
-        didRequested++;
         g_inertialSenseDisplay.SelectEditDataset(dataItem.did, true);     // Select DID for generic display
 
         inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
@@ -299,8 +293,6 @@ int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<st
                 break;
         }
     }
-
-    return didRequested;
 }
 
 // Where we tell the IMX what data to send and at what rate.  
@@ -308,7 +300,10 @@ int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<st
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
-    inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
+    // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
+    inertialSenseInterface.StopBroadcasts();
+    SLEEP_MS(100);
+    g_enableRx = true;
 
     if (g_commandLineOptions.asciiMessages.size() != 0)
     {
@@ -797,7 +792,7 @@ static int cltool_dataStreaming()
 
             // Main loop. Could be in separate thread if desired.
             uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDuration;
-            uint32_t nextDataSetCheck = current_timeMs() + 250;
+            uint32_t requestDataSetsTimeMs = 0;
 
             // yield to allow comms
             SLEEP_MS(1);
@@ -834,11 +829,10 @@ static int cltool_dataStreaming()
                     display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                 }
 
-                if (current_timeMs() > nextDataSetCheck) {
-                    if (cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets))
-                        nextDataSetCheck = current_timeMs() + 1000; // still waiting on some, so check more frequently
-                    else
-                        nextDataSetCheck = current_timeMs() + 5000; // we've received everything we're expecting for, so we can back off the re-requests
+                if (current_timeMs() > requestDataSetsTimeMs + 1000) {
+                    // Re-request data every 1s
+                    requestDataSetsTimeMs = current_timeMs(); 
+                    cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
                 }
 
                 // Prevent processor overload
