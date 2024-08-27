@@ -453,12 +453,17 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 	}
 
+	if (m_editData.did == data->hdr.id)
+	{	// Copy data 
+		copyDataPToDataP(&m_editData.pData, data, MAX_DATASET_SIZE);
+	}
+
 	// Save data to be displayed from PrintData()
 	switch (m_displayMode)
 	{
 	default:
-		m_displayMode = DMODE_PRETTY;
-		// fall through
+		break;
+
 	case DMODE_PRETTY:
 		// Data stays at fixed location (no scroll history)
 		DataToVector(data);
@@ -499,8 +504,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	switch (m_displayMode)
 	{
 	default:	// Do not display
-		break;
-
+		// fall through
 	case DMODE_PRETTY:
 		Home();
 		if (m_enableReplay)
@@ -519,7 +523,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 			cout << Connected() << endl;
 
 		// Generic column format
-		cout << DatasetToString(m_editData.pData);
+		cout << DatasetToString(&m_editData.pData);
 		return true;
 
 	case DMODE_STATS:
@@ -653,7 +657,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
 		else if (m_editData.did == data->hdr.id)	
 		{	// Default view
-			str = DatasetToString(m_editData.pData = data);
+			str = DatasetToString(&m_editData.pData);
 		}
 		break;
 	}
@@ -1653,9 +1657,12 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " %.3lfs", gpxStatus.timeOfWeekMs / 1000.0);
 #endif
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, ", status: 0x%08x, hdwStatus: 0x%08x, gnss1.runState: %d, gnss1.FwUpState: %d, gnss1.initState: %d, gnss2.runState: %d, gnss2.FwUpState: %d, gnss2.initState: %d, mcuTemp: %0.3lf, upTime: %lf\n",
-                    gpxStatus.status, gpxStatus.hdwStatus, gpxStatus.gnsssStatus[0].runState, gpxStatus.gnsssStatus[0].fwUpdateState, gpxStatus.gnsssStatus[0].initState, gpxStatus.gnsssStatus[1].runState, 
-					gpxStatus.gnsssStatus[1].fwUpdateState, gpxStatus.gnsssStatus[1].initState,	gpxStatus.mcuTemp, gpxStatus.upTime );
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, ",  status 0x%08x,  hdwStatus 0x%08x\n", gpxStatus.status, gpxStatus.hdwStatus);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n", 
+		gpxStatus.gnsssStatus[0].runState, 		gpxStatus.gnsssStatus[1].runState, 
+		gpxStatus.gnsssStatus[0].fwUpdateState, gpxStatus.gnsssStatus[1].fwUpdateState, 
+		gpxStatus.gnsssStatus[0].initState,		gpxStatus.gnsssStatus[1].initState);
+	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
 
     return buf;
 }
@@ -1981,11 +1988,10 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			m_editData.uploadNeeded = true;
 
 			// Copy data into local Rx buffer
-			if (m_editData.pData!=NULL && 
-				m_editData.pData->hdr.id == m_editData.did &&
-				m_editData.pData->hdr.size+ m_editData.pData->hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
+			if (m_editData.pData.hdr.id == m_editData.did &&
+				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData->ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
 			}
 		}
 		StopEditing();
