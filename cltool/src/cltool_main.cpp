@@ -44,7 +44,7 @@ using namespace std;
 #define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
 
 static bool g_killThreadsNow = false;
-static bool g_enableRx = false;
+static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
@@ -238,7 +238,7 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-    if (!g_enableRx)
+    if (!g_enableDataCallback)
     {   // Receive disabled
         return;
     }
@@ -303,7 +303,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
     inertialSenseInterface.StopBroadcasts();
     SLEEP_MS(100);
-    g_enableRx = true;
+    g_enableDataCallback = true;
 
     if (g_commandLineOptions.asciiMessages.size() != 0)
     {
