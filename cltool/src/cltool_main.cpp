@@ -831,7 +831,7 @@ static int cltool_dataStreaming()
                     display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                 }
 
-                if (current_timeMs() > requestDataSetsTimeMs + 1000) {
+                if ((current_timeMs() - requestDataSetsTimeMs) > 1000) {
                     // Re-request data every 1s
                     requestDataSetsTimeMs = current_timeMs(); 
                     cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
