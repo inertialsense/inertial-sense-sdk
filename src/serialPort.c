@@ -90,6 +90,15 @@ int serialPortFlush(serial_port_t* serialPort)
 	return serialPort->pfnFlush(serialPort);
 }
 
+int serialPortDrain(serial_port_t* serialPort)
+{
+    if (serialPort == 0 || serialPort->handle == 0 || serialPort->pfnDrain == 0)
+    {
+        return 0;
+    }
+    return serialPort->pfnDrain(serialPort);
+}
+
 int serialPortRead(serial_port_t* serialPort, unsigned char* buffer, int readCount)
 {
 	return serialPortReadTimeout(serialPort, buffer, readCount, -1);

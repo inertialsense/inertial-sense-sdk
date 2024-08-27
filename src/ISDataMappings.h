@@ -173,6 +173,13 @@ public:
 	static uint32_t GetSize(uint32_t dataId);
 
 	/**
+	* Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  
+	* @param dataId the data id
+	* @return the default period multiple
+	*/
+	static uint32_t DefaultPeriodMultiple(uint32_t dataId);
+
+	/**
 	* Convert a string to a data field inside a data set.
 	* @param stringBuffer the null terminated string to convert, must not be NULL
 	* @param stringLength the number of chars in stringBuffer
