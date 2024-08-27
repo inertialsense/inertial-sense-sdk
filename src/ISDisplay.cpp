@@ -453,6 +453,11 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 		}
 	}
 
+	if (m_editData.did == data->hdr.id)
+	{	// Copy data 
+		copyDataPToDataP(&m_editData.pData, data, MAX_DATASET_SIZE);
+	}
+
 	// Save data to be displayed from PrintData()
 	switch (m_displayMode)
 	{
@@ -472,11 +477,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	case DMODE_SCROLL:	// Scroll display
 		cout << DataToString(data) << endl;
 		break;
-	}
-
-	if (m_editData.did == data->hdr.id)
-	{	// Copy data 
-		copyDataPToDataP(&m_editData.pData, data, MAX_DATASET_SIZE);
 	}
 
     // if we are doing a onceDid for any other display type, and we got it, shutdown normally, ASAP, but not immediately...
@@ -657,7 +657,6 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
 		else if (m_editData.did == data->hdr.id)	
 		{	// Default view
-			copyDataPToDataP(&m_editData.pData, data, MAX_DATASET_SIZE);
 			str = DatasetToString(&m_editData.pData);
 		}
 		break;
