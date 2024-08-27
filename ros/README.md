@@ -125,7 +125,7 @@ Topics are enabled and disabled using parameters.  By default, only the `ins` to
    -  satelite information and carrier noise ratio array for each satelite
 - `gps2/info`(inertial_sense_ros/gps2/info)
    -  satelite information and carrier noise ratio array for each satelite
-- `RTK_pos/info` (inertial_sense_ros/RTKInfo)
+- `RTK_pos/info` (inertial_sense_ros2/RTKInfo)
    -  information about RTK positioning status
 - `RTK_pos/rel` (inertial_sense_ros/RTKRel)
    -  Relative measurement between RTK positioning base and rover

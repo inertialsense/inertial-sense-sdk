@@ -19,6 +19,7 @@ CMakeFiles/
 *.so
 *.o
 *.user
+*.ninja
 .vs
 .vscode
 .venv
