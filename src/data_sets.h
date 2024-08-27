@@ -4430,6 +4430,7 @@ typedef enum {
     kHardReset,
 }eGPXGnssRunState;
 
+#define GNSS_RECEIVER_COUNT 2
 typedef struct 
 {
     uint8_t reserved;
@@ -4437,7 +4438,6 @@ typedef struct
     uint8_t initState;          /** GNSS status (see InitSteps) **/
     uint8_t runState;           /** GNSS run status (see RunState) **/
 }gpx_gnss_status_t;
-
 
 /**
 * (DID_GPX_STATUS) GPX status.
@@ -4476,7 +4476,7 @@ typedef struct
     /** RTK Mode bits (see eRTKConfigBits) **/
     uint32_t                rtkMode;
 
-    gpx_gnss_status_t       gnsssStatus[2];
+    gpx_gnss_status_t       gnsssStatus[GNSS_RECEIVER_COUNT];
 
     /** port */
     uint8_t                 gpxSourcePort;
