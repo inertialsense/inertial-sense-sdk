@@ -280,8 +280,6 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
 
     for (stream_did_t& dataItem : datasets)
     {   // Datasets to stream
-        g_inertialSenseDisplay.SelectEditDataset(dataItem.did, true);     // Select DID for generic display
-
         inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
         switch (dataItem.did)
         {
@@ -337,6 +335,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     else
     {
+        g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.front().did, true);  // Select DID for generic display, which support viewing only one DID.
         cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
     }
     if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
