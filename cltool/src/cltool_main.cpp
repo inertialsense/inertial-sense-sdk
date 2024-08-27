@@ -335,7 +335,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     else
     {
-        g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.front().did, true);  // Select DID for generic display, which support viewing only one DID.
+        if (g_commandLineOptions.datasets.size() > 0)
+        {   // Select DID for generic display, which support viewing only one DID.
+            g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.front().did, true);  
+        }
         cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
     }
     if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
