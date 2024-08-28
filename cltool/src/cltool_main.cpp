@@ -788,19 +788,19 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.portMask,
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
-            // before we start, if we are doing a run-once, set a default runDuration, so we don't hang indefinitely
-            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDuration)
-                g_commandLineOptions.runDuration = 30000; // 30 second timeout, if none is specified
+            // before we start, if we are doing a run-once, set a default runDurationMs, so we don't hang indefinitely
+            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDurationMs)
+                g_commandLineOptions.runDurationMs = 10000; // 10 second timeout, if none is specified
 
             // Main loop. Could be in separate thread if desired.
-            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDuration;
+            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDurationMs;
             uint32_t requestDataSetsTimeMs = 0;
 
             // yield to allow comms
             SLEEP_MS(1);
 
             // [C++ COMM INSTRUCTION] STEP 4: Read data
-            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDuration || (current_timeMs() < exitTime)))
+            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
 
                 if (!inertialSenseInterface.Update())

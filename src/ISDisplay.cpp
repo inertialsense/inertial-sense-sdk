@@ -779,7 +779,7 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 			ins1.theta[0] * C_RAD2DEG_F,	// Roll
 			ins1.theta[1] * C_RAD2DEG_F,	// Pitch
 			ins1.theta[2] * C_RAD2DEG_F);	// Yaw
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUVW\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins1.uvw[0],					// U body velocity
 			ins1.uvw[1],					// V body velocity
@@ -835,7 +835,7 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUVW\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins2.uvw[0],					// U body velocity
 			ins2.uvw[1],					// V body velocity
@@ -891,7 +891,7 @@ string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUVW\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins3.uvw[0],					// U body velocity
 			ins3.uvw[1],					// V body velocity
@@ -1044,12 +1044,12 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, co
 	}
 	else
 	{	// Spacious format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\ttheta\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
 			imu.theta[0] * C_RAD2DEG_F,		// IMU1 P angular rate
 			imu.theta[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
 			imu.theta[2] * C_RAD2DEG_F);		// IMU1 R angular rate
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tvel\t");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
             imu.vel[0],						// IMU1 X acceleration
             imu.vel[1],						// IMU1 Y acceleration
