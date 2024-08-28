@@ -2975,6 +2975,14 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
     case DID_INL2_STATES:
     case DID_ROS_COVARIANCE_POSE_TWIST:
     case DID_INL2_MAG_OBS_INFO:
+    case DID_GPX_DEV_INFO:
+    case DID_GPX_FLASH_CFG:
+    case DID_GPX_RTOS_INFO:
+    case DID_GPX_STATUS:
+    case DID_GPX_DEBUG_ARRAY:
+    case DID_GPX_BIT:
+    case DID_GPX_RMC:
+    case DID_GPX_PORT_MONITOR:
         return 100;     // (100ms, 10 Hz)
 
     default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.
