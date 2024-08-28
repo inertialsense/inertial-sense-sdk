@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "data_sets.h"
 #include "ISConstants.h"
 #include "ISDataMappings.h"
+#include "serialPortPlatform.h"
 
 #if !PLATFORM_IS_WINDOWS
 
@@ -138,6 +139,8 @@ public:
 	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
 	edit_data_t *EditData() { return &m_editData; }
 	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
+	void SetSerialPort(serial_port_t* port) { m_port = port; }
+	void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
 private:
 	std::string VectortoString();
@@ -146,7 +149,9 @@ private:
 	bool m_nonblockingkeyboard = false;
 	std::vector<std::string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_QUIET;
-	uint16_t m_rxCount = 0;
+	uint32_t m_startMs = 0;
+	serial_port_t* m_port = NULL;
+	is_comm_instance_t* m_comm = NULL;
 
 	bool m_enableReplay = false;
 	double m_replaySpeedX = 1.0;

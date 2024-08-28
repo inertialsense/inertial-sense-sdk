@@ -225,19 +225,41 @@ void cInertialSenseDisplay::GoToColumnAndRow(int x, int y)
 
 string cInertialSenseDisplay::Hello()
 {
-	return "$ Inertial Sense.  Press CTRL-C to terminate.\n";
+	return "$ Inertial Sense.  CTRL-C to terminate.\n";
 }
 
 string cInertialSenseDisplay::Connected()
 {
-	return string("$ Inertial Sense.  Connected.  Press CTRL-C to terminate.  Rx ") + std::to_string(m_rxCount) + "\n";
+	if (m_startMs==0)
+	{
+		m_startMs = current_timeMs();
+	}
+
+	// cltool runtime
+	double runtime = 0.001 * (current_timeMs() - m_startMs);
+
+	std::ostringstream stream;
+
+	stream << "$ Inertial Sense.  Connected.  CTRL-C to terminate.  ";
+
+    stream << std::fixed << std::setprecision(1) << runtime << "s, ";
+	stream << "Tx " + (m_comm==NULL ? "" : std::to_string(m_comm->txPktCount)) + ", ";
+	stream << "Rx " + (m_comm==NULL ? "" : std::to_string(m_comm->rxPktCount));
+
+	if (m_port)
+	{
+		stream << " (" << m_port->rxBytes << " bytes)";
+	}
+	stream << std::endl;
+
+	return stream.str();
 }
 
 string cInertialSenseDisplay::Replay(double speed)
 {
 	char buf[BUF_SIZE];
 
-	SNPRINTF(buf, BUF_SIZE, "$ Inertial Sense.  Replay mode at %.1lfx speed.  Press CTRL-C to terminate.\n", speed);
+	SNPRINTF(buf, BUF_SIZE, "$ Inertial Sense.  Replay mode at %.1lfx speed.  CTRL-C to terminate.\n", speed);
 
 	return buf;
 }
@@ -344,7 +366,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	}
 
 	unsigned int curTimeMs = current_timeMs();
-	m_rxCount++;
 
 	m_enableReplay = enableReplay;
 	m_replaySpeedX = replaySpeedX;

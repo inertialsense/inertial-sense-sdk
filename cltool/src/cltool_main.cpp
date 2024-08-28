@@ -264,7 +264,7 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
         cout.flush();
     else if (!g_inertialSenseDisplay.ExitProgram()) // don't process any additional data once we've been told to exit
         g_inertialSenseDisplay.ProcessData(data);
-}
+    }
 
 
 /**
@@ -713,6 +713,12 @@ static int cltool_dataStreaming()
     {
         cout << "Failed to open serial port at " << g_commandLineOptions.comPort.c_str() << endl;
         return -1;    // Failed to open serial port
+    }
+    g_inertialSenseDisplay.SetSerialPort(inertialSenseInterface.SerialPort());
+    com_manager_t* cm = (com_manager_t*)comManagerGetGlobal();
+    if (cm != NULL && cm->numPorts > 0 && cm->ports)
+    {
+        g_inertialSenseDisplay.SetCommInstance(&(cm->ports->comm));
     }
 
     if (g_commandLineOptions.list_devices) {
