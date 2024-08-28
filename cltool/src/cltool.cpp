@@ -206,10 +206,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.disableBroadcastsOnClose = true;
         }
-        else if (startsWith(a, "-durMs="))
-        {
-            g_commandLineOptions.runDurationMs = (uint32_t)(atof(&a[7]));
-        }
         else if (startsWith(a, "-dur="))
         {
             g_commandLineOptions.runDurationMs = (uint32_t)(atof(&a[5])*1000.0);
@@ -813,7 +809,6 @@ void cltool_outputUsage()
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -dur=" << boldOff << "DURATION   Run DURATION in seconds before exiting cltool.  Default is 0, no limit." << endlbOn;
-	cout << "    -durMs=" << boldOff << "DURATION Run DURATION in milliseconds before exiting cltool.  Default is 0, no limit." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validate.  Use to keep port(s) open even if device response is not received." << endlbOn;
