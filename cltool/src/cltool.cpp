@@ -56,9 +56,9 @@ static bool matches(const char* str, const char* pre)
 }
 
 #define CL_DEFAULT_BAUD_RATE                IS_BAUDRATE_DEFAULT
-#define CL_DEFAULT_DEVICE_PORT                 "*"
+#define CL_DEFAULT_DEVICE_PORT              "*"
 #define CL_DEFAULT_DISPLAY_MODE             cInertialSenseDisplay::DMODE_SCROLL
-#define CL_DEFAULT_LOG_TYPE                 "dat"
+#define CL_DEFAULT_LOG_TYPE                 "raw"
 #define CL_DEFAULT_LOGS_DIRECTORY           DEFAULT_LOGS_DIRECTORY
 #define CL_DEFAULT_ENABLE_LOGGING           false
 #define CL_DEFAULT_MAX_LOG_FILE_SIZE        1024 * 1024 * 5
@@ -675,7 +675,7 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: dat (default), raw, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;

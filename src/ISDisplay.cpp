@@ -223,34 +223,31 @@ void cInertialSenseDisplay::GoToColumnAndRow(int x, int y)
 
 }
 
+string cInertialSenseDisplay::Header()
+{
+	return "$ Inertial Sense.  CTRL-C to terminate.  ";
+}
+
 string cInertialSenseDisplay::Hello()
 {
-	return "$ Inertial Sense.  CTRL-C to terminate.\n";
+	return Header() + "\n";
 }
 
 string cInertialSenseDisplay::Connected()
 {
-	if (m_startMs==0)
-	{
-		m_startMs = current_timeMs();
-	}
-
 	// cltool runtime
 	double runtime = 0.001 * (current_timeMs() - m_startMs);
 
 	std::ostringstream stream;
-
-	stream << "$ Inertial Sense.  Connected.  CTRL-C to terminate.  ";
-
-    stream << std::fixed << std::setprecision(1) << runtime << "s, ";
-	stream << "Tx " + (m_comm==NULL ? "" : std::to_string(m_comm->txPktCount)) + ", ";
-	stream << "Rx " + (m_comm==NULL ? "" : std::to_string(m_comm->rxPktCount));
-
+	stream << Header() << "Connected.  ";
+    stream << std::fixed << std::setprecision(1) << runtime << "s";
+	stream << ", Tx " << (m_comm ? std::to_string(m_comm->txPktCount) : "--");
+	stream << ", Rx " << (m_comm ? std::to_string(m_comm->rxPktCount) : "--");
 	if (m_port)
 	{
 		stream << " (" << m_port->rxBytes << " bytes)";
 	}
-	stream << std::endl;
+	stream << "     " << std::endl;
 
 	return stream.str();
 }
@@ -259,7 +256,7 @@ string cInertialSenseDisplay::Replay(double speed)
 {
 	char buf[BUF_SIZE];
 
-	SNPRINTF(buf, BUF_SIZE, "$ Inertial Sense.  Replay mode at %.1lfx speed.  CTRL-C to terminate.\n", speed);
+	SNPRINTF(buf, BUF_SIZE, "%sReplay mode at %.1lfx speed.  \n", Header().c_str(), speed);
 
 	return buf;
 }
@@ -1711,19 +1708,23 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n index");
     for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "          %d", i);
+    }
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   i[]");
+    for (int i = 0; i < 9; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10d", debug.i[i]);
     }
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   f[]");
     for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10.4f", debug.f[i]);
     }
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  lf[]");
     for (int i = 0; i < 3; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10.4lf", debug.lf[i]);
     }
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 

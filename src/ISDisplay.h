@@ -77,6 +77,7 @@ public:
 	void Home(void);
 	void GoToRow(int y);
 	void GoToColumnAndRow(int x, int y);
+	std::string Header();
 	std::string Hello();
 	std::string Connected();
 	std::string Replay(double speed=1.0);
@@ -149,7 +150,7 @@ private:
 	bool m_nonblockingkeyboard = false;
 	std::vector<std::string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_QUIET;
-	uint32_t m_startMs = 0;
+	uint32_t m_startMs = current_timeMs();
 	serial_port_t* m_port = NULL;
 	is_comm_instance_t* m_comm = NULL;
 
