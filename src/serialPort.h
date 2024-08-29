@@ -209,8 +209,12 @@ int serialPortClose(port_handle_t port);
  */
 int serialPortFlush(port_handle_t port);
 
-// blocks until all pending TX writes have completed, and the TX buffer is empty.
-int serialPortDrain(serial_port_t* serialPort);
+/**
+ * blocks until all pending TX writes have completed, and the TX buffer is empty.
+ * @param port
+ * @return 1 if success, 0 if failure
+ */
+int serialPortDrain(port_handle_t port);
 
 /**
  * read up to readCount bytes into buffer

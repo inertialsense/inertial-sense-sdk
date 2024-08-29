@@ -489,6 +489,11 @@ static int serialPortFlushPlatform(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    if (handle == 0)
+    {
+        // not open, no close needed
+        return 0;
+    }
 
 #if PLATFORM_IS_WINDOWS
 
@@ -509,9 +514,15 @@ static int serialPortFlushPlatform(port_handle_t port)
     return 1;
 }
 
-static int serialPortDrainPlatform(serial_port_t* serialPort)
+static int serialPortDrainPlatform(port_handle_t port)
 {
+    serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+    if (handle == 0)
+    {
+        // not open, no close needed
+        return 0;
+    }
 
 #if PLATFORM_IS_WINDOWS
 

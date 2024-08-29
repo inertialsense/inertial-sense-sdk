@@ -161,11 +161,6 @@ int serialPortRead(port_handle_t port, unsigned char* buffer, int readCount)
     return count;
 }
 
-int serialPortRead(serial_port_t* serialPort, unsigned char* buffer, int readCount)
-{
-	return serialPortReadTimeout(serialPort, buffer, readCount, -1);
-}
-
 int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
