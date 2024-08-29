@@ -155,15 +155,19 @@ bool ISDevice::queryDeviceInfoISbl() {
  * @param dev
  * @return
  */
-std::string ISDevice::getId() {
+std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
     const char *typeName = "\?\?\?";
-    switch (DECODE_HDW_TYPE(hdwId)) {
+    switch (devInfo.hardwareType) {
         case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
         case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
         default: typeName = "\?\?\?"; break;
     }
-    return utils::string_format("%s-%d.%d::SN%ld", typeName, DECODE_HDW_MAJOR(hdwId), DECODE_HDW_MINOR(hdwId), devInfo.serialNumber);
+    return utils::string_format("%s-%d.%d::SN%ld", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
+}
+
+std::string ISDevice::getIdAsString() {
+    return getIdAsString(devInfo);
 }
 
 std::string ISDevice::getName(const dev_info_t &devInfo) {
@@ -254,4 +258,3 @@ std::string ISDevice::getFirmwareInfo(int detail) {
 std::string ISDevice::getDescription() {
     return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), portName(port));
 }
-

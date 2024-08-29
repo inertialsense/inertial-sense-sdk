@@ -41,21 +41,57 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ISComManager s_cm;
 
-int initComManagerInstanceInternal
-(
-    com_manager_t* cmInstance,
-    port_handle_t port,
-    int stepPeriodMilliseconds,
-    pfnComManagerPostRead pstRxFnc,
-    pfnComManagerPostAck pstAckFnc,
-    pfnComManagerDisableBroadcasts disableBcastFnc,
-    std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers
-);
-
 static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, comm_port_t* port, protocol_type_t ptype);
 
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
+int ISComManager::init(
+        std::unordered_set<port_handle_t>* portSet,
+        int stepPeriodMillis,
+        pfnComManagerPostRead pstRxFncCb,
+        pfnComManagerPostAck pstAckFncCb,
+        pfnComManagerRmcHandler rmcHandler,
+        pfnComManagerDisableBroadcasts disableBcastFncCb,
+        broadcast_msg_array_t* bcastBuffers)
+{
+    pstRxFnc = pstRxFncCb;
+    pstAckFnc = pstAckFncCb;
+    disableBcastFnc = disableBcastFncCb;
+    stepPeriodMilliseconds = stepPeriodMillis;
+
+    cmMsgHandlerRmc = rmcHandler;
+
+    // Buffer: message broadcasts
+    broadcastMessages = bcastBuffers;
+
+    defaultCbs = {};
+    defaultCbs.all = comManagerProcessBinaryRxPacket;
+
+    // if (!portSet) portSet = new std::vector<port_handle_t>();
+    ports = portSet;
+
+    return 0;
+}
+
+int comManagerInit(
+        std::unordered_set<port_handle_t>* portSet,
+        int stepPeriodMilliseconds,
+        pfnComManagerPostRead pstRxFnc,
+        pfnComManagerPostAck pstAckFnc,
+        pfnComManagerRmcHandler rmcHandler,
+        pfnComManagerDisableBroadcasts disableBcastFnc,
+        std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS>* buffers) {
+    return s_cm.init(
+            portSet,
+            stepPeriodMilliseconds,
+            pstRxFnc,
+            pstAckFnc,
+            rmcHandler,
+            disableBcastFnc,
+            buffers);
+}
+
+/*
 int comManagerInit(
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
@@ -73,66 +109,12 @@ int comManagerInit(
             disableBcastFnc,
             buffers);
 }
+*/
 
-int comManagerInit(
-	port_handle_t port,
-    int stepPeriodMilliseconds,
-    pfnComManagerPostRead pstRxFnc,
-    pfnComManagerPostAck pstAckFnc,
-    pfnComManagerRmcHandler rmcHandler,
-    pfnComManagerDisableBroadcasts disableBcastFnc,
-    broadcast_msg_array_t* buffers)
-{
-    return s_cm.init(
-        port,
-        stepPeriodMilliseconds,
-        pstRxFnc,
-        pstAckFnc,
-        rmcHandler,
-        disableBcastFnc,
-        buffers);
-}
-
-int ISComManager::init
-(	port_handle_t port,
-    int stepPeriodMillis,
-    pfnComManagerPostRead pstRxFncCb,
-    pfnComManagerPostAck pstAckFncCb,
-    pfnComManagerRmcHandler rmcHandler,
-    pfnComManagerDisableBroadcasts disableBcastFncCb,
-    broadcast_msg_array_t* bcastBuffers)
-{
-    pstRxFnc = pstRxFncCb;
-    pstAckFnc = pstAckFncCb;
-    disableBcastFnc = disableBcastFncCb;
-    stepPeriodMilliseconds = stepPeriodMillis;
-
-    cmMsgHandlerRmc = rmcHandler;
-
-    // Buffer: message broadcasts
-    broadcastMessages = bcastBuffers;
-
-    defaultCbs = {};
-    defaultCbs.all = comManagerProcessBinaryRxPacket;
-
-    if (port)
-        registerPort(port, &defaultCbs);
-
-    return 0;
-}
 
 pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port) {
     return s_cm.registerProtocolHandler(ptype, cbHandler, port);
 }
-
-bool comManagerRegisterPort(port_handle_t port) {
-    return s_cm.registerPort(port, NULL);
-}
-
-bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* cbs) {
-    return s_cm.registerPort(port, cbs);
-}
-
 
 /**
  *
@@ -159,32 +141,60 @@ bool ISComManager::registerPort(port_handle_t port, is_comm_callbacks_t* cbs) {
 #endif
     }
 
-    ports.push_back(port);
+    if (ports)
+        ports->insert(port);
+
     return true;
 }
 
+bool comManagerRegisterPort(port_handle_t port) {
+    return s_cm.registerPort(port, NULL);
+}
 
-std::vector<port_handle_t> comManagerGetPorts() {
+bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* cbs) {
+    return s_cm.registerPort(port, cbs);
+}
+
+
+std::unordered_set<port_handle_t>& ISComManager::getPorts() {
+    return *ports;
+}
+
+std::unordered_set<port_handle_t>& comManagerGetPorts() {
     return s_cm.getPorts();
 }
 
-// __attribute__((optimize("O0")))
-std::vector<port_handle_t> ISComManager::getPorts() {
-    return ports;
+
+bool ISComManager::removePort(port_handle_t port) {
+    auto found = std::find(ports->begin(), ports->end(), port);
+    if (found == ports->end())
+        return false;
+
+    if (port) {
+        serialPortClose(port);
+        // ports->erase(found);
+    }
+
+    return true;
 }
 
 bool comManagerRemovePort(port_handle_t port) {
     return s_cm.removePort(port);
 }
 
-bool ISComManager::removePort(port_handle_t port) {
-    auto found = std::find(ports.begin(), ports.end(), port);
-    if (found == ports.end())
-        return false;
-
-    ports.erase(found);
+bool ISComManager::removeAllPorts() {
+//    for (auto port : ports) {
+//        removePort(port);
+//        // TODO delete (serial_port_s*)port;
+//    }
+    ports->clear();
     return true;
 }
+
+bool comManagerReleaseAllPorts() {
+    return s_cm.removeAllPorts();
+}
+
 
 int asciiMessageCompare(const void* elem1, const void* elem2)
 {
@@ -241,7 +251,7 @@ void ISComManager::step()
 
 void ISComManager::stepRx(uint32_t timeMs)
 {
-    for (port_handle_t port : ports)
+    for (port_handle_t port : *ports)
     {
         // Read data directly into comm buffer and call callback functions
         is_comm_port_parse_messages(port);
@@ -912,10 +922,10 @@ pfnIsCommIsbDataHandler ISComManager::registerIsbDataHandler(pfnIsCommIsbDataHan
         return is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
     }
 
-    if (!port) {
+    if (ports && !port) {
         // if port is null, set this for all available ports
         defaultCbs.isbData = cbHandler;
-        for (auto port : ports) {
+        for (auto port : *ports) {
             if (port && portType(port) & PORT_TYPE__COMM) {
                 is_comm_register_isb_handler(&COMM_PORT(port)->comm, cbHandler);
             }
@@ -929,10 +939,10 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
         return is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
     }
 
-    if (!port) {
+    if (ports && !port) {
         // if port is null, set this for all available ports
         defaultCbs.generic[ptype] = cbHandler; // TODO: range check this
-        for (auto port : ports) {
+        for (auto port : *ports) {
             if (port && portType(port) & PORT_TYPE__COMM) {
                 is_comm_register_msg_handler(&COMM_PORT(port)->comm, ptype, cbHandler);
             }

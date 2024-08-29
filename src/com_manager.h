@@ -14,6 +14,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define COM_MANAGER_H
 
 #include <array>
+#include <list>
+#include <unordered_set>
 #include <vector>
 #include <map>
 
@@ -140,7 +142,10 @@ typedef struct
 
 typedef struct
 {
-	// reads n bytes into buffer from the source (usually a serial port)
+    // Array of port
+    std::unordered_set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
+
+    // reads n bytes into buffer from the source (usually a serial port)
 	// pfnIsCommPortRead portRead;
 
 	// write data to the destination (usually a serial port)
@@ -164,13 +169,6 @@ typedef struct
 	// Pointer to local data and data specific callback functions  ::  NOTE: https://howardhinnant.github.io/stack_alloc.html  if using this in embedded environments and dynamic allocation is a concern
 	std::map<int, registered_data_t> didRegistrationMap;
 	
-	// Array of port
-    std::vector<port_handle_t> ports;
-	//com_manager_port_t *ports;
-
-	// Number of communication ports
-	// int32_t numPorts;
-
     broadcast_msg_array_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
 
 	// processing interval
@@ -214,7 +212,7 @@ typedef struct
 * @endcode
 */
 int comManagerInit(
-        port_handle_t port,
+        std::unordered_set<port_handle_t>* portSet,
         int stepPeriodMilliseconds,
         pfnComManagerPostRead pstRxFnc,
         pfnComManagerPostAck pstAckFnc,
@@ -242,6 +240,10 @@ int comManagerInit(
 
 pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port = NULL);
 
+
+port_handle_t comManagerAllocatePort(int ptype);
+
+
 /**
  * registered a port with the comm manager (allowing the port to be managed by ISComManager.
  * @param port
@@ -261,7 +263,7 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* callbacks);
 /**
  * @return a vector of all registered ports
  */
-std::vector<port_handle_t> comManagerGetPorts();
+std::unordered_set<port_handle_t>& comManagerGetPorts();
 
 
 /**
@@ -271,6 +273,12 @@ std::vector<port_handle_t> comManagerGetPorts();
  */
 bool comManagerRemovePort(port_handle_t port);
 
+
+/**
+ *
+ * @return
+ */
+bool comManagerReleaseAllPorts();
 
 /**
 * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.
@@ -498,7 +506,7 @@ public:
     * The global com manager is used by the functions that do not have the Instance suffix and first parameter of void* cmInstance.
     * The instance functions can be ignored, unless you have a reason to have two com managers in the same process.
     *
-    * @param numPorts the max number of serial ports possible
+    * @param portSet a pointer to a container which manages all available ports
     * @param stepPeriodMilliseconds how many milliseconds you are waiting in between calls to comManagerStep
     * @param readFnc read data from the serial port represented by port
     * @param sendFnc send data to the serial port represented by port
@@ -515,7 +523,7 @@ public:
     * @endcode
     */
     int init(
-            port_handle_t port,
+            std::unordered_set<port_handle_t>* portSet,
             int stepPeriodMilliseconds,
             pfnComManagerPostRead pstRxFnc,
             pfnComManagerPostAck pstAckFnc,
@@ -530,6 +538,14 @@ public:
     void setErrorHandler(pfnComManagerParseErrorHandler errorCb) { errorHandlerFnc = errorCb; }
 
     /**
+     * Allocates and registers a new port.
+     * @param ptype
+     * @return
+     */
+    port_handle_t allocatePort(int ptype);
+
+
+    /**
      * registered a port with the comm manager (allowing the port to be managed by ISComManager.
      * @param port
      * @return true if this port was registered, otherwise false
@@ -540,7 +556,15 @@ public:
     /**
      * @return a vector of all registered ports
      */
-    std::vector<port_handle_t> getPorts();
+    std::unordered_set<port_handle_t>& getPorts();
+
+
+    /**
+     * Assigns the passed vector of port_handle_t as the set of registered ports used by the comManager
+     * @param newPorts
+     * @return returns the difference in ports between the old set and the new
+     */
+    int setPorts(std::list<port_handle_t> newPorts);
 
 
     /**
@@ -550,6 +574,12 @@ public:
      */
     bool removePort(port_handle_t port);
 
+
+    /**
+     * Close and release(free/delete) all registered/allocated ports
+     * @return
+     */
+    bool removeAllPorts();
 
     /**
     * Performs one round of sending and receiving message. Call as frequently as needed to send and receive data.

@@ -36,6 +36,7 @@ public:
     };
 
     static ISDevice invalidRef;
+    static std::string getIdAsString(const dev_info_t& devInfo);
     static std::string getName(const dev_info_t& devInfo);
     static std::string getFirmwareInfo(const dev_info_t& devInfo, int detail = 1, eHdwRunStates hdwRunState = eHdwRunStates::HDW_STATE_APP);
 
@@ -48,7 +49,7 @@ public:
         port = _port;
     }
 
-    ISDevice(const ISDevice& src) {
+    ISDevice(const ISDevice& src) : devLogger(src.devLogger) {
         port = src.port;
         hdwId = src.hdwId;
         hdwRunState = src.hdwRunState;
@@ -58,7 +59,7 @@ public:
         flashCfgUploadChecksum = src.flashCfgUploadChecksum;
         evbFlashCfg = src.evbFlashCfg;
         sysCmd = src.sysCmd;
-        devLogger = src.devLogger;
+        // devLogger = src.devLogger.get();
         closeStatus = src.closeStatus;
     }
 
@@ -70,7 +71,7 @@ public:
         hdwRunState = HDW_STATE_UNKNOWN;
     }
 
-    std::string getId();
+    std::string getIdAsString();
     std::string getName();
     std::string getFirmwareInfo(int detail = 1);
     std::string getDescription();
@@ -89,7 +90,7 @@ public:
     evb_flash_cfg_t evbFlashCfg = { };
     system_command_t sysCmd = { };
 
-    std::shared_ptr<cDeviceLog> devLogger;
+    std::shared_ptr<cDeviceLog> devLogger = { };
     fwUpdate::update_status_e closeStatus = { };
 
 

@@ -59,9 +59,6 @@ enum eSerialPortOptions
 	SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
 };
 
-typedef struct serial_port_s serial_port_t;
-#define SERIAL_PORT(n)  ((serial_port_t*)n)
-
 typedef int(*pfnSerialPortOpen)(port_handle_t port, const char* portName, int baudRate, int blocking);
 typedef int(*pfnSerialPortIsOpen)(port_handle_t port);
 typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, int len);
@@ -143,6 +140,10 @@ struct serial_port_s
     pfnSerialPortOnErrorCB pfnError;
 };
 
+typedef struct serial_port_s serial_port_t;
+#define SERIAL_PORT(n)  ((serial_port_t*)n)
+
+
 void serialPortInit(port_handle_t, int id, int type);
 
 // set the port name for a serial port, in case you are opening it later
@@ -157,7 +158,7 @@ const char *serialPortName(port_handle_t port);
 
 /**
  * open a serial port
- * port is null terminated, i.e. COM1\0, COM2\0, etc.
+ * portName is null terminated, i.e. COM1\0, COM2\0, etc.
  * use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
  * uses such as a boot loader where a write would then require n bytes to be read in a single operation.
  * blocking simply determines the default timeout value of the serialPortRead function
@@ -172,7 +173,7 @@ int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int b
 
 /**
  * open a serial port with retry
- * port is null terminated, i.e. COM1\0, COM2\0, etc.
+ * portName is null terminated, i.e. COM1\0, COM2\0, etc.
  * use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
  * uses such as a boot loader where a write would then require n bytes to be read in a single operation.
  * blocking simply determines the default timeout value of the serialPortRead function

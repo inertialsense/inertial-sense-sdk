@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 
 #include "ISConstants.h"
@@ -75,7 +76,7 @@ public:
     struct com_manager_cpp_state_t
     {
         // per device vars
-        std::vector<ISDevice> devices;
+        std::list<ISDevice> devices;
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
@@ -157,14 +158,14 @@ public:
      * Returns a vector of available, connected devices
      * @return
      */
-    std::vector<ISDevice>& getDevices();
+    std::list<ISDevice>& getDevices();
 
 
     /**
      * Returns a reference to an is_device_t struct that contains information about the specified device
      * @return
      */
-    ISDevice* getDevice(uint32_t index);
+    // ISDevice* getDevice(uint32_t index);
     ISDevice* getDevice(port_handle_t port);
 
     /**
@@ -397,7 +398,7 @@ public:
     {
         ISDevice* device = NULL;
         if (!port) {
-            device = &m_comManagerState.devices[0];
+            device = &m_comManagerState.devices.front();
         } else {
             device = DeviceByPort(port);
         }
@@ -419,7 +420,7 @@ public:
     {
         ISDevice* device = NULL;
         if (!port) {
-            device = &m_comManagerState.devices[0];
+            device = &m_comManagerState.devices.front();
         } else {
             device = DeviceByPort(port);
         }
@@ -531,7 +532,7 @@ public:
         }
         // if no argument are passed, return the first device's port...
         if (!m_comManagerState.devices.empty())
-            return (serial_port_t*)(m_comManagerState.devices[0].port);
+            return (serial_port_t*)(m_comManagerState.devices.front().port);
 
         // or nullptr if there are no devices
         return nullptr;
@@ -712,12 +713,13 @@ private:
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
 
+    // these are used for RTCM3 corrections for RTK/NTRIP streams.
     is_comm_instance_t m_gpComm;
     uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
-    std::vector<serial_port_t> m_serialPorts;   //! actual initialized serial ports
-    std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
     port_handle_t allocateSerialPort(int ptype);
+    std::unordered_set<port_handle_t> m_serialPorts;   //! actual initialized serial ports
+    std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
 
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg = {}; // [MAX_NUM_BCAST_MSGS];
 
