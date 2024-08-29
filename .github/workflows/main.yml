@@ -169,4 +169,4 @@ jobs:
           source devel/setup.bash
           roscore &
           catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
-          catkin_test_results || (rostest --text inertial_sense_ros test_ros_bridge.launch && catkin_test_results && false)
+          catkin_test_results
