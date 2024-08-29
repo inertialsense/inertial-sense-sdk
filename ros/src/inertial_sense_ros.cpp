@@ -1685,12 +1685,14 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *con
     {
     case DID_GPS1_RTK_POS_MISC:
         rs_.rtk_pos.streamingCheck(DID);
-        rs_.rtk_pos.pubInfo.publish(rtk_info);
+        if (rs_.rtk_pos.pubInfo.getNumSubscribers() > 0)
+            rs_.rtk_pos.pubInfo.publish(rtk_info);
         break;
 
     case DID_GPS2_RTK_CMP_MISC:
         rs_.rtk_cmp.streamingCheck(DID);
-        rs_.rtk_cmp.pubInfo.publish(rtk_info);
+        if (rs_.rtk_cmp.pubInfo.getNumSubscribers() > 0)
+            rs_.rtk_cmp.pubInfo.publish(rtk_info);
         break;
     }
 }
