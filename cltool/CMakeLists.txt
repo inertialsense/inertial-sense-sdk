@@ -38,4 +38,3 @@ find_package(Threads REQUIRED)
 
 # Link InertialSenseSDK static library to the executable
 target_link_libraries(${PROJECT_NAME} InertialSenseSDK Threads::Threads)
-

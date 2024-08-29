@@ -13,7 +13,7 @@ extern "C"
 #include "../../libs-int/rtklib/src/rtklib.h"
 	extern gtime_t g_gps_latest_time;
 	extern int decode_rtcm3(rtcm_t *rtcm);
-	extern int decode_ubx(raw_t* raw, int doChecksum);
+	extern int decode_ubx(raw_t* raw);
 }
 #endif
 
@@ -201,7 +201,7 @@ static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
 	raw.len = msgSize;
 
 	int j = 0;
-	switch (decode_ubx(&raw, 0))
+	switch (decode_ubx(&raw))
 	{
 	case DATA_TYPE_OBSERVATION:
 	case DATA_TYPE_EPHEMERIS:

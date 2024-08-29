@@ -89,7 +89,9 @@ typedef struct
 
 } serialPortHandle;
 
+static int serialPortSleepPlatform(int sleepMilliseconds);
 static int serialPortFlushPlatform(port_handle_t port);
+static int serialPortDrainPlatform(port_handle_t port);
 static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 // static int serialPortReadTimeoutPlatformLinux(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds);
 
@@ -507,6 +509,28 @@ static int serialPortFlushPlatform(port_handle_t port)
     return 1;
 }
 
+static int serialPortDrainPlatform(serial_port_t* serialPort)
+{
+    serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
+
+#if PLATFORM_IS_WINDOWS
+
+    if(!FlushFileBuffers(handle->platformHandle))
+    {
+        return 0;
+    }
+
+#else
+
+    if (tcdrain(handle->fd) < 0)
+        serialPort->errorCode = errno;
+
+#endif
+
+    return 1;
+}
+
+
 #if PLATFORM_IS_WINDOWS
 
 static int serialPortReadTimeoutPlatformWindows(serialPortHandle* handle, unsigned char* buffer, int readCount, int timeoutMilliseconds)
@@ -764,18 +788,17 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
     // Ensure all data is queued by OS for sending.  This step is necessary because of O_NONBLOCK non-blocking mode. 
     // Note that this only blocks for partial writes until the OS accepts all input data.  This does NOT block until 
     // the data is physically transmitted.
-    int bytes_written = 0;
-    while (bytes_written < writeCount) 
+    int bytes_written = 0, retry = 0;
+    while ((bytes_written < writeCount) && (retry < 10))
     {
         ssize_t result = write(handle->fd, buffer + bytes_written, writeCount - bytes_written);
         if (result < 0) 
         {
-            if (errno == EINTR) 
-            {   // Interrupted by signal, continue writing
-                continue;
-            }
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {    // Non-blocking mode, and no data written, continue trying
+            if ((errno == EINTR) ||     // Interrupted by signal, continue writing
+                (errno == EAGAIN) || (errno == EWOULDBLOCK))  // Non-blocking mode, and no data written, continue trying
+            {
+                serialPortSleepPlatform(1);
+                retry++;
                 continue;
             }
             // Other errors
@@ -888,6 +911,7 @@ int serialPortPlatformInit(port_handle_t port) // unsigned int portOptions
 
     serialPort->pfnClose = serialPortClosePlatform;
     serialPort->pfnFlush = serialPortFlushPlatform;
+    serialPort->pfnDrain = serialPortDrainPlatform;
     serialPort->pfnOpen = serialPortOpenPlatform;
     serialPort->pfnIsOpen = serialPortIsOpenPlatform;
     serialPort->pfnReadTimeout = serialPortReadTimeoutPlatform;

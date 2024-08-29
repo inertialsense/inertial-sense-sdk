@@ -41,7 +41,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
+#define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
+
 static bool g_killThreadsNow = false;
+static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
@@ -236,30 +239,72 @@ static int cltool_errorCallback(port_handle_t port)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t port)
 {
-    if (g_commandLineOptions.outputOnceDid) {
-        if (data->hdr.id != g_commandLineOptions.outputOnceDid)
-            return 0;
-        g_inertialSenseDisplay.showRawData(true);
+    if (!g_enableDataCallback)
+    {   // Receive disabled
+        return;
+    }
+
+    if (g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid != data->hdr.id)
+    {   // ignore all other received data, except the "onceDid"
+        return;
     }
 
     (void)i;
     (void)port;
 
+    // track which DIDs we've received and when, and how frequently
+    for (stream_did_t& did : g_commandLineOptions.datasets) {
+        if (did.did == data->hdr.id) {
+            did.rxStats.lastRxTime = current_timeMs();
+            did.rxStats.rxCount++;
+        }
+    }
+
     // Print data to terminal - but only if we aren't doing a firmware update...
     if (g_devicesUpdating)
         cout.flush();
-    else
+    else if (!g_inertialSenseDisplay.ExitProgram()) // don't process any additional data once we've been told to exit
         g_inertialSenseDisplay.ProcessData(data);
 
     return 0;
 }
 
-// Where we tell the uINS what data to send and at what rate.  
+
+/**
+ * requests any data which is not being actively received
+ * @param inertialSenseInterface
+ * @param datasets a vector of stream_did_t indicating the set of DIDs which should be requested and the rate to be requested at.
+ * @return the number of did which were actually requested. This maybe less than the number of items in the specified dataset
+ *  if those DIDs have already been recently received. If 0 is returned, it indicates that all requested DIDs are already
+ *  streaming.
+ */
+void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<stream_did_t>& datasets) {
+    unsigned int currentTime = current_timeMs();
+
+    for (stream_did_t& dataItem : datasets)
+    {   // Datasets to stream
+        inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
+        switch (dataItem.did)
+        {
+            case DID_RTOS_INFO:
+                system_command_t cfg;
+                cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
+                cfg.invCommand = ~cfg.command;
+                inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+                break;
+        }
+    }
+}
+
+// Where we tell the IMX what data to send and at what rate.
 // "cltool_dataCallback()" is registered as the callback functions for all received data.
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
-    inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
+    // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
+    inertialSenseInterface.StopBroadcasts();
+    SLEEP_MS(100);
+    g_enableDataCallback = true;
 
     if (inertialSenseInterface.DeviceCount() <= 0)
         return false;
@@ -271,16 +316,18 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         return true;
     }
 
-    // check for any compatible (protocol version 2) devices
-    for (auto& device : inertialSenseInterface.getDevices()) {
-        if (device.devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
-            printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
-            // let's print the dev info for all connected devices (so the user can identify the errant device)
+    if (!g_commandLineOptions.disableDeviceValidation)
+    {   // check for any compatible (protocol version 2) devices
+        for (auto& device : inertialSenseInterface.getDevices()) {
+            if (device.devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
+                printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
+                // let's print the dev info for all connected devices (so the user can identify the errant device)
             for (auto& device : inertialSenseInterface.getDevices()) {
                 std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(device.devInfo, true);
-                printf("%s\n", devInfo.c_str());
+                    printf("%s\n", devInfo.c_str());
+                }
+                return false;
             }
-            return false;
         }
     }
 
@@ -295,20 +342,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     else
     {
-        while (g_commandLineOptions.datasets.size())
-        {   // Datasets to stream
-            inertialSenseInterface.BroadcastBinaryData(g_commandLineOptions.datasets.back().did, g_commandLineOptions.datasets.back().periodMultiple);
-            switch (g_commandLineOptions.datasets.back().did)
-            {
-                case DID_RTOS_INFO:
-                    system_command_t cfg;
-                    cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
-                    cfg.invCommand = ~cfg.command;
-                    inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
-                    break;
-            }
-            g_commandLineOptions.datasets.pop_back();
+        if (g_commandLineOptions.datasets.size() > 0)
+        {   // Select DID for generic display, which support viewing only one DID.
+            g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.front().did, true);
         }
+        cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
     }
     if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
     {
@@ -338,11 +376,13 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     {   // Issue software reset
         cout << "Sending software reset." << endl;
         inertialSenseInterface.SendRaw((uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
+        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
     if (g_commandLineOptions.sysCommand != 0)
     {   // Send system command to IMX
         cout << "Sending system command: " << g_commandLineOptions.sysCommand;
+        bool manfUnlock = false;
         switch(g_commandLineOptions.sysCommand)
         {
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_GPS1:
@@ -351,23 +391,40 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER1:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_TO_SER2:
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_TO_GPS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_GPS2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_USB:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER0:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER1:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_TO_SER2:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_USB_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER0_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER1_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_SER2_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK:
+            case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE:
                 cout << " Enable serial bridge"; break;
             case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
-                cout << "Disable serial bridge"; break;
-            case SYS_CMD_MANF_FACTORY_RESET:            cout << " Factory Reset";           break;
-            case SYS_CMD_MANF_CHIP_ERASE:               cout << " Chip Erase";              break;
-            case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    cout << " Downgrade Calibration";   break;
+                cout << " Disable serial bridge"; break;
+            case SYS_CMD_MANF_FACTORY_RESET:            manfUnlock = true;  cout << " Factory Reset";           break;
+            case SYS_CMD_MANF_CHIP_ERASE:               manfUnlock = true;  cout << " Chip Erase";              break;
+            case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    manfUnlock = true;  cout << " Downgrade Calibration";   break;
+            case SYS_CMD_MANF_ENABLE_ROM_BOOTLOADER:    manfUnlock = true;  cout << " Enable ROM Bootloader";   break;
         }
         cout << endl;
         system_command_t cfg;
 
-        cfg.command = SYS_CMD_MANF_UNLOCK;
-        cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        if (manfUnlock)
+        {
+            cfg.command = SYS_CMD_MANF_UNLOCK;
+            cfg.invCommand = ~cfg.command;
+            inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        }
 
         cfg.command = g_commandLineOptions.sysCommand;
         cfg.invCommand = ~cfg.command;
         inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
     if (g_commandLineOptions.platformType >= 0 && g_commandLineOptions.platformType < PLATFORM_CFG_TYPE_COUNT)
@@ -380,6 +437,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         manfInfo.platformType = g_commandLineOptions.platformType;
         // Write key (uint32_t) and platformType (int32_t), 8 bytes
         inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
+        SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
 
@@ -645,10 +703,7 @@ static int cltool_createHost()
     }
     cout << "Shutting down..." << endl;
 
-    // close the interface cleanly, this ensures serial port and any logging are shutdown properly
-    inertialSenseInterface.Close();
-    inertialSenseInterface.CloseServerConnection();
-
+    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
     return 0;
 }
 
@@ -658,6 +713,7 @@ static int cltool_dataStreaming()
     // Create InertialSense object, passing in data callback function pointer.
     InertialSense inertialSenseInterface(cltool_dataCallback);
     inertialSenseInterface.setErrorHandler(cltool_errorCallback);
+    inertialSenseInterface.EnableDeviceValidation(!g_commandLineOptions.disableDeviceValidation);
 
     // [C++ COMM INSTRUCTION] STEP 2: Open serial port
     if (!inertialSenseInterface.Open(g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, g_commandLineOptions.disableBroadcastsOnClose))
@@ -700,8 +756,7 @@ static int cltool_dataStreaming()
         if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
         {
             cout << "Failed to setup logger!" << endl;
-            inertialSenseInterface.Close();
-            inertialSenseInterface.CloseServerConnection();
+            // No need to Close() the InertialSense class interface; It will be closed when destroyed.
             return -1;
         }
         try
@@ -717,8 +772,7 @@ static int cltool_dataStreaming()
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
                 ) != IS_OP_OK) {
-                    inertialSenseInterface.Close();
-                    inertialSenseInterface.CloseServerConnection();
+                    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
                     return -1;
                 };
             }
@@ -729,23 +783,33 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.portMask,
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
+            // before we start, if we are doing a run-once, set a default runDuration, so we don't hang indefinitely
+            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDuration)
+                g_commandLineOptions.runDuration = 30000; // 30 second timeout, if none is specified
+
             // Main loop. Could be in separate thread if desired.
-            uint32_t startTime = current_timeMs();
-            while (!g_inertialSenseDisplay.ExitProgram())
+            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDuration;
+            uint32_t requestDataSetsTimeMs = 0;
+
+            // yield to allow comms
+            SLEEP_MS(1);
+
+            // [C++ COMM INSTRUCTION] STEP 4: Read data
+            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDuration || (current_timeMs() < exitTime)))
             {
+
+                if (!inertialSenseInterface.Update())
+                {   // device disconnected, exit
+                    exitCode = -2;
+                    break;
+                }
+
                 g_inertialSenseDisplay.GetKeyboardInput();
 
                 if (g_inertialSenseDisplay.UploadNeeded())
                 {
                     cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
                     inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
-                }
-
-                // [C++ COMM INSTRUCTION] STEP 4: Read data
-                if (!inertialSenseInterface.Update())
-                {   // device disconnected, exit
-                    exitCode = -2;
-                    break;
                 }
 
                 // If updating firmware, and all devices have finished, Exit
@@ -762,15 +826,19 @@ static int cltool_dataStreaming()
                     display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                 }
 
-                // If the user specified a runDuration, then exit after that time has elapsed
-                if (g_commandLineOptions.runDuration && ((current_timeMs() - startTime) > g_commandLineOptions.runDuration)) {
-                    break;
+                if ((current_timeMs() - requestDataSetsTimeMs) > 1000) {
+                    // Re-request data every 1s
+                    requestDataSetsTimeMs = current_timeMs();
+                    cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
                 }
+
+                // Prevent processor overload
+                SLEEP_MS(1);
             }
         }
         catch (...)
         {
-            cout << "Unknown exception...";
+            cout << "Unknown exception..." << endl;
         }
     }
 
@@ -785,9 +853,7 @@ static int cltool_dataStreaming()
     }
 
     // [C++ COMM INSTRUCTION] STEP 6: Close interface
-    // Close cleanly to ensure serial port and logging are shutdown properly.  (optional)
-    inertialSenseInterface.Close();
-    inertialSenseInterface.CloseServerConnection();
+    // No need to Close() the InertialSense class interface; It will be closed when destroyed.
 
     return exitCode;
 }

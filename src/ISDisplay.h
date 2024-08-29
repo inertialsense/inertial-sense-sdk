@@ -43,14 +43,15 @@ public:
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
 
+		bool            readOnlyMode;
 		bool            editEnabled;
 		std::string     field;
 		uint32_t        did;
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
-		uint8_t			pDataBuffer[MAX_DATASET_SIZE];
-		p_data_t		pData = {{},pDataBuffer};
+		uint8_t			pDataBuf[MAX_DATASET_SIZE];
+		p_data_t		pData = {{}, pDataBuf};
 	} edit_data_t;
 
 	enum eDisplayMode
@@ -130,7 +131,7 @@ public:
 	std::string DatasetToString(const p_data_t* data);
 
 	void GetKeyboardInput();
-	void SelectEditDataset(int did);
+	void SelectEditDataset(int did, bool readOnlyMode=false);
 	void VarSelectIncrement();
 	void VarSelectDecrement();
 	void StopEditing();

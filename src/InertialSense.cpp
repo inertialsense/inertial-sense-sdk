@@ -720,12 +720,13 @@ void InertialSense::Close()
         StopBroadcasts();
         SLEEP_MS(100);
     }
-    for (auto& device : m_comManagerState.devices)
-    {
-        serialPortClose(device.port);
-    }
-    m_comManagerState.devices.clear();
-    m_serialPorts.clear();
+//    for (auto& device : m_comManagerState.devices)
+//    {
+//        serialPortClose(device.port);
+//    }
+//    m_comManagerState.devices.clear();
+//    m_serialPorts.clear();
+    CloseSerialPorts(true); // allow all opened ports to transmit all buffered data
 }
 
 vector<string> InertialSense::GetPortNames()
@@ -822,7 +823,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
 
         device->sysCmd.command = command;
         device->sysCmd.invCommand = ~command;
-        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.
+        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
         comManagerSendData(port, &device->sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
     }
 }
@@ -1177,7 +1178,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (auto& device : m_comManagerState.devices)
         {
-            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the uINS.
+            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the IS device.
             comManagerDisableData(device.port, dataId);
         }
     }
@@ -1185,9 +1186,9 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (auto& device : m_comManagerState.devices)
         {
-            // [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
+            // [C COMM INSTRUCTION]  3.) Request a specific data set from the IMX.  "periodMultiple" specifies the interval
             // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            if (device.devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+            if ((device.devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) || !m_enableDeviceValidation) {
                 comManagerGetData(device.port, dataId, 0, 0, periodMultiple);
             }
         }
@@ -1391,7 +1392,7 @@ is_operation_result InertialSense::BootloadFile(
     }
 
     #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+    fputs("\e[?25l", stdout);	// Turn off cursor during firmware update
     #endif
 
     printf("\n\r");
@@ -1687,14 +1688,19 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     return (m_enableDeviceValidation ? !m_comManagerState.devices.empty() : !m_serialPorts.empty());
 }
 
-void InertialSense::CloseSerialPorts()
+void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 {
     debug_message("Closing all serial ports.\n");
 
     // Note the distinction here; we are closing ports, not devices...  Maybe we should do this differently though?
-    for (auto port : m_serialPorts)
-        if (port)
+    for (auto port : m_serialPorts) {
+        if (port) {
+            if (drainBeforeClose) {
+                serialPortDrain(port);
+            }
             serialPortClose(port);
+        }
+    }
 
     // TODO: we should find the associated port in the m_comManagerState.devices, and remove the port reference
     // TODO: we need to provide a notification mechanism to inform consumers (ie, test_common framework) to clean up as well.

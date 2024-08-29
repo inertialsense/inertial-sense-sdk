@@ -125,8 +125,11 @@ struct serial_port_s
     // close the serial port
     pfnSerialPortClose pfnClose;
 
-    // remove all data from all buffers
+	// discard all data from all buffers
     pfnSerialPortFlush pfnFlush;
+
+    // block until all queued TX data has been sent
+    pfnSerialPortFlush pfnDrain;
 
     // get number of bytes in the receive buffer that can be read
     pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
@@ -205,6 +208,9 @@ int serialPortClose(port_handle_t port);
  * @return 1 if success, 0 if failure
  */
 int serialPortFlush(port_handle_t port);
+
+// blocks until all pending TX writes have completed, and the TX buffer is empty.
+int serialPortDrain(serial_port_t* serialPort);
 
 /**
  * read up to readCount bytes into buffer

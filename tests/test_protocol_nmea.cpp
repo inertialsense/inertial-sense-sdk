@@ -804,7 +804,7 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
 
     nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
 
-    string buf = "$ASCE,0,GxGSV,1*44\r\n";
+    string buf = "$ASCE,0,GXGSV,1*64\r\n";
 
     rmci_t rmci[NUM_COM_PORTS] = {};
     std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };

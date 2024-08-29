@@ -49,6 +49,10 @@ typedef struct
 {
 	eDataIDs	did;
 	int			periodMultiple;
+    struct {
+        uint64_t    lastRxTime;
+        double      rxCount;
+    }           rxStats;
 } stream_did_t;
 
 typedef struct
@@ -113,6 +117,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     int verbose = 0;                        // incremented for each -verbose argument found
 	EVFContainer_t evFCont = {0};
 	EVOContainer_t evOCont;
+
+	bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

@@ -1281,9 +1281,11 @@ class logPlot:
 
         for i, d in enumerate(self.active_devs):
             rtkRelTime = getTimeFromTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
+            if len(rtkRelTime) == 0:
+                continue
             # rtkMiscTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_MISC, 'timeOfWeekMs'))
             if not self.log.compassing:
-                gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+                gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'), 1)
                 fixType = self.getData(d, DID_GPS1_POS, 'status') >> 8 & 0x1F
                 ax[0].plot(gps1PosTime, fixType, label=self.log.serials[d])
             else:

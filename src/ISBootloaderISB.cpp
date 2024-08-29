@@ -66,7 +66,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     serialPortFlush(m_port);
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    sync(m_port);
+    handshake_sync(m_port);
 
     SLEEP_MS(100);
 
@@ -239,7 +239,7 @@ is_operation_result cISBootloaderISB::reboot()
 
 uint32_t cISBootloaderISB::get_device_info()
 {
-    sync(m_port);
+    handshake_sync(m_port);
     serialPortFlush(m_port);
 
 	// Send command
@@ -306,7 +306,7 @@ uint32_t cISBootloaderISB::get_device_info()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderISB::sync(port_handle_t port)
+is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
 {
     static const uint8_t handshakerChar = 'U';
 
@@ -321,6 +321,7 @@ is_operation_result cISBootloaderISB::sync(port_handle_t port)
 
         if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            status_update("(ISB) Handshake", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
@@ -333,11 +334,13 @@ is_operation_result cISBootloaderISB::sync(port_handle_t port)
     {
         if (serialPortWriteAndWaitForTimeout(port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            status_update("(ISB) Handshake v5a", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
 #endif
 
+    status_update("(ISB) Handshake w/o response", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
