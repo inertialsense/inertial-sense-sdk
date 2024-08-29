@@ -69,7 +69,7 @@
 #define UNIX_TO_GPS_OFFSET (GPS_UNIX_OFFSET - LEAP_SECONDS)
 #define REPO_VERSION_MAJOR 2
 #define REPO_VERSION_MINOR 1   // The repo/firmware version should originate from git tag (like repositoryInfo.h used in EvalTool).  For now we set these manually.
-#define REPO_VERSION_REVIS 0
+#define REPO_VERSION_REVIS 2
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
     IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
