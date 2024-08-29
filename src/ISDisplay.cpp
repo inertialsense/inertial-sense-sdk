@@ -223,21 +223,45 @@ void cInertialSenseDisplay::GoToColumnAndRow(int x, int y)
 
 }
 
+string cInertialSenseDisplay::Header()
+{
+	return "$ Inertial Sense.  CTRL-C to terminate.  ";
+}
+
 string cInertialSenseDisplay::Hello()
 {
-	return "$ Inertial Sense.  Press CTRL-C to terminate.\n";
+	return Header() + "\n";
 }
 
 string cInertialSenseDisplay::Connected()
 {
-	return string("$ Inertial Sense.  Connected.  Press CTRL-C to terminate.  Rx ") + std::to_string(m_rxCount) + "\n";
+	if (m_startMs==0)
+	{	// Initialize start time
+		m_startMs = current_timeMs();
+	}
+
+	// cltool runtime
+	double runtime = 0.001 * (current_timeMs() - m_startMs);
+
+	std::ostringstream stream;
+	stream << Header() << "Connected.  ";
+    stream << std::fixed << std::setprecision(1) << runtime << "s";
+	stream << ", Tx " << (m_comm ? std::to_string(m_comm->txPktCount) : "--");
+	stream << ", Rx " << (m_comm ? std::to_string(m_comm->rxPktCount) : "--");
+	if (m_port)
+	{
+		stream << " (" << m_port->rxBytes << " bytes)";
+	}
+	stream << "     " << std::endl;
+
+	return stream.str();
 }
 
 string cInertialSenseDisplay::Replay(double speed)
 {
 	char buf[BUF_SIZE];
 
-	SNPRINTF(buf, BUF_SIZE, "$ Inertial Sense.  Replay mode at %.1lfx speed.  Press CTRL-C to terminate.\n", speed);
+	SNPRINTF(buf, BUF_SIZE, "%sReplay mode at %.1lfx speed.  \n", Header().c_str(), speed);
 
 	return buf;
 }
@@ -344,7 +368,6 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	}
 
 	unsigned int curTimeMs = current_timeMs();
-	m_rxCount++;
 
 	m_enableReplay = enableReplay;
 	m_replaySpeedX = replaySpeedX;
@@ -775,7 +798,7 @@ string cInertialSenseDisplay::DataToStringINS1(const ins_1_t &ins1, const p_data
 			ins1.theta[0] * C_RAD2DEG_F,	// Roll
 			ins1.theta[1] * C_RAD2DEG_F,	// Pitch
 			ins1.theta[2] * C_RAD2DEG_F);	// Yaw
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUVW\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins1.uvw[0],					// U body velocity
 			ins1.uvw[1],					// V body velocity
@@ -831,7 +854,7 @@ string cInertialSenseDisplay::DataToStringINS2(const ins_2_t &ins2, const p_data
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUVW\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins2.uvw[0],					// U body velocity
 			ins2.uvw[1],					// V body velocity
@@ -887,7 +910,7 @@ string cInertialSenseDisplay::DataToStringINS3(const ins_3_t &ins3, const p_data
 			theta[0] * C_RAD2DEG_F,			// Roll
 			theta[1] * C_RAD2DEG_F,			// Pitch
 			theta[2] * C_RAD2DEG_F);		// Yaw
-		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUWV\t");
+		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tUVW\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			ins3.uvw[0],					// U body velocity
 			ins3.uvw[1],					// V body velocity
@@ -1040,19 +1063,17 @@ string cInertialSenseDisplay::DataToStringPreintegratedImu(const pimu_t &imu, co
 	}
 	else
 	{	// Spacious format
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\tIMU1 theta\t");
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n\ttheta\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
-			imu.theta[0] * C_RAD2DEG_F,		// IMU1 P angular rate
-			imu.theta[1] * C_RAD2DEG_F,		// IMU1 Q angular rate
-			imu.theta[2] * C_RAD2DEG_F);		// IMU1 R angular rate
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tIMU1 vel\t");
+			imu.theta[0] * C_RAD2DEG_F,     // P angular rate
+			imu.theta[1] * C_RAD2DEG_F,     // Q angular rate
+			imu.theta[2] * C_RAD2DEG_F);    // R angular rate
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tvel\t");
         ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P3 "\n",
-            imu.vel[0],						// IMU1 X acceleration
-            imu.vel[1],						// IMU1 Y acceleration
-            imu.vel[2]);						// IMU1 Z acceleration
-	}
-
-	return buf;
+            imu.vel[0],                     // X acceleration
+            imu.vel[1],                     // Y acceleration
+            imu.vel[2]);                    // Z acceleration
+	}	return buf;
 }
 
 string cInertialSenseDisplay::DataToStringBarometer(const barometer_t &baro, const p_data_hdr_t& hdr)
@@ -1690,19 +1711,23 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n index");
     for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "          %d", i);
+    }
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   i[]");
+    for (int i = 0; i < 9; i++) {
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10d", debug.i[i]);
     }
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   f[]");
     for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10.4f", debug.f[i]);
     }
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  lf[]");
     for (int i = 0; i < 3; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10.4lf", debug.lf[i]);
     }
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 

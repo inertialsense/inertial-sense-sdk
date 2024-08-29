@@ -303,6 +303,14 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     SLEEP_MS(100);
     g_enableDataCallback = true;
 
+    // Point display to serial port and is_comm_instance to print debug info
+    g_inertialSenseDisplay.SetSerialPort(inertialSenseInterface.SerialPort());
+    com_manager_t* cm = (com_manager_t*)comManagerGetGlobal();
+    if (cm != NULL && cm->numPorts > 0 && cm->ports)
+    {
+        g_inertialSenseDisplay.SetCommInstance(&(cm->ports->comm));
+    }
+
     if (g_commandLineOptions.asciiMessages.size() != 0)
     {
         serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
