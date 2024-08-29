@@ -150,7 +150,7 @@ private:
 	bool m_nonblockingkeyboard = false;
 	std::vector<std::string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_QUIET;
-	uint32_t m_startMs = current_timeMs();
+	uint32_t m_startMs = 0;
 	serial_port_t* m_port = NULL;
 	is_comm_instance_t* m_comm = NULL;
 

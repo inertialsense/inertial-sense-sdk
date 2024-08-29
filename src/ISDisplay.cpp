@@ -235,6 +235,11 @@ string cInertialSenseDisplay::Hello()
 
 string cInertialSenseDisplay::Connected()
 {
+	if (m_startMs==0)
+	{	// Initialize start time
+		m_startMs = current_timeMs();
+	}
+
 	// cltool runtime
 	double runtime = 0.001 * (current_timeMs() - m_startMs);
 
