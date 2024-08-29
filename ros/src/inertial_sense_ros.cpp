@@ -535,21 +535,36 @@ bool InertialSenseROS::connect(float timeout)
 {
     uint32_t end_time = ros::Time::now().toSec() + timeout;
     auto ports_iterator = ports_.begin();
+    std::string serialNum;
 
     do {
         std::string cur_port = *ports_iterator;
         /// Connect to the IMX
         ROS_INFO("InertialSenseROS: Connecting to serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
         sdk_connected_ = IS_.Open(cur_port.c_str(), baudrate_);
-        if (!sdk_connected_) {
+        if (sdk_connected_)
+        {
+            serialNum = IS_.DeviceInfo().serialNumber;
+        }
+        
+        if (!sdk_connected_) 
+        {
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
-            sleep(1); // is this a good idea?
-        } else {
+            usleep(500000); // is this a good idea?
+        }
+        else if (serialNum == "0")
+        {
+            ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+            sdk_connected_ = false;
+        }
+         
+        else 
+        {
             ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
             port_ = cur_port;
             break;
         }
-        if ((ports_.size() > 1) && (ports_iterator != ports_.end()))
+        if ((ports_.size() > 1) && (*ports_iterator != ports_.back()))
             ports_iterator++;
         else
             ports_iterator = ports_.begin(); // just keep looping until we timeout below

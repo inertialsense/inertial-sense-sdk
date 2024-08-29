@@ -25,6 +25,7 @@ TEST(test_main, basic)
 
     InertialSenseROS isROS(config);
     isROS.initialize();
+    EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
 
     bool success = false;
     unsigned int startTimeMs = current_timeMs(), prevTimeMs = 0, nowTimeMs;
@@ -98,6 +99,7 @@ TEST(test_main, gps_ins_time_sync)
 
     InertialSenseROS isROS(config);
     isROS.initialize();
+    EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
 
     testNode.quiet = true;
 
