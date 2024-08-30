@@ -36,6 +36,8 @@ using namespace std;
 #define SYM_DEG             "°"
 #define SYM_DEG_C           "°C"
 #define SYM_DEG_DEG_M       "°,°,m"
+#define SYM_DEG_PER_S       "°/s"
+#define SYM_M_PER_S         "m/s"
 
 const char insStatusDescription[] = "INS Status flags [0,0,MagStatus,SolStatus,     NavMode,GpsMagUsed,Variance,VarianceCoarse]";
 const char hdwStatusDescription[] = "Hdw Status flags [Fault,BIT,RxErrCount,ComErr, SenSatHist,SensorSat,GpsSatRx,Motion]";
@@ -324,39 +326,39 @@ static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT], map_index
 {
     INIT_MAP(io_t, DID_IO);
 
-    ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("gpioStatus", gpioStatus, DATA_TYPE_UINT32, uint32_t);
+    ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("gpioStatus", gpioStatus, DATA_TYPE_UINT32, uint32_t, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
+
+// Stringify the macro value
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT])
 {
     INIT_MAP(bit_t, DID_BIT);
 
-    ADD_MAP_4("command", command, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("lastCommand", lastCommand, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("state", state, DATA_TYPE_UINT8, uint8_t);
+    ADD_MAP_6("command", command, DATA_TYPE_UINT8, uint8_t, "", "[cmd: " TOSTRING(BIT_CMD_FULL_STATIONARY) "=start full, " TOSTRING(BIT_CMD_BASIC_MOVING) "=start basic, " TOSTRING(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) "=start full HA, " TOSTRING(BIT_CMD_OFF) "=off]");
+    ADD_MAP_7("lastCommand", lastCommand, DATA_TYPE_UINT8, uint8_t, "", "Last input command", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("state", state, DATA_TYPE_UINT8, uint8_t, "", "[state: " TOSTRING(BIT_STATE_RUNNING) "=running " TOSTRING(BIT_STATE_DONE) "=done]", DATA_FLAGS_READ_ONLY);
     ADD_MAP_4("reserved", reserved, DATA_TYPE_UINT8, uint8_t);
-
-    ADD_MAP_4("hdwBitStatus", hdwBitStatus, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("calBitStatus", calBitStatus, DATA_TYPE_UINT32, uint32_t);
-
-    ADD_MAP_4("tcPqrBias", tcPqrBias, DATA_TYPE_F32, float);
-    ADD_MAP_4("tcAccBias", tcAccBias, DATA_TYPE_F32, float);
-    ADD_MAP_4("tcPqrSlope", tcPqrSlope, DATA_TYPE_F32, float);
-    ADD_MAP_4("tcAccSlope", tcAccSlope, DATA_TYPE_F32, float);
-    ADD_MAP_4("tcPqrLinearity", tcPqrLinearity, DATA_TYPE_F32, float);
-    ADD_MAP_4("tcAccLinearity", tcAccLinearity, DATA_TYPE_F32, float);
-
-    ADD_MAP_4("pqr", pqr, DATA_TYPE_F32, float);
-    ADD_MAP_4("acc", acc, DATA_TYPE_F32, float);
-    ADD_MAP_4("pqrSigma", pqrSigma, DATA_TYPE_F32, float);
-    ADD_MAP_4("accSigma", accSigma, DATA_TYPE_F32, float);
-
-    ADD_MAP_4("testMode", testMode, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("testVar", testVar, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("detectedHardwareId", detectedHardwareId, DATA_TYPE_UINT16, uint16_t);
+    ADD_MAP_7("hdwBitStatus", hdwBitStatus, DATA_TYPE_UINT32, uint32_t, "", "Hardware built-in test status. See eHdwBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("calBitStatus", calBitStatus, DATA_TYPE_UINT32, uint32_t, "", "Calibration built-in test status. See eCalBitStatusFlags for info.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_8("tcPqrBias", tcPqrBias, DATA_TYPE_F32, float, SYM_DEG_PER_S, "Gyro temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_8("tcAccBias", tcAccBias, DATA_TYPE_F32, float, SYM_DEG_PER_S "/C", "Gyro temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_8("tcPqrSlope", tcPqrSlope, DATA_TYPE_F32, float, SYM_DEG_PER_S "/C", "Gyro temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_7("tcAccSlope", tcAccSlope, DATA_TYPE_F32, float, SYM_M_PER_S, "Accel temp cal bias", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("tcPqrLinearity", tcPqrLinearity, DATA_TYPE_F32, float, SYM_M_PER_S "/C", "Accel temp cal slope", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("tcAccLinearity", tcAccLinearity, DATA_TYPE_F32, float, SYM_M_PER_S "/C", "Accel temp cal linearity", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_8("pqr", pqr, DATA_TYPE_F32, float, SYM_DEG_PER_S, "Angular rate error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_7("acc", acc, DATA_TYPE_F32, float, SYM_M_PER_S, "Acceleration error", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_8("pqrSigma", pqrSigma, DATA_TYPE_F32, float, SYM_DEG_PER_S, "Angular rate standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_7("accSigma", accSigma, DATA_TYPE_F32, float, SYM_M_PER_S, "Acceleration standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_6("testMode", testMode, DATA_TYPE_UINT8, uint8_t, "", "Test Mode: " TOSTRING(BIT_TEST_MODE_SIM_GPS_NOISE) "=GPS noise, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_RX_OVERFLOW) "=Rx overflow, " TOSTRING(BIT_TEST_MODE_SERIAL_DRIVER_TX_OVERFLOW) "=Tx overflow");
+    ADD_MAP_7("testVar", testVar, DATA_TYPE_UINT8, uint8_t, "", "Test Mode variable (port number)", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("detectedHardwareId", detectedHardwareId, DATA_TYPE_UINT16, uint16_t, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 
     ASSERT_SIZE(totalSize);
 }
@@ -365,12 +367,12 @@ static void PopulateGpxBitMappings(map_name_to_info_t mappings[DID_COUNT], map_i
 {
     INIT_MAP(gpx_bit_t, DID_GPX_BIT);
 
-    ADD_MAP_4("results", results, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_4("command", command, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("port", port, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("testMode", testMode, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("state", state, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_4("detectedHardwareId", detectedHardwareId, DATA_TYPE_UINT16, uint16_t);
+    ADD_MAP_7("results", results, DATA_TYPE_UINT32, uint32_t, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_6("command", command, DATA_TYPE_UINT8, uint8_t, "", "Command (see eGPXBit_CMD)");
+    ADD_MAP_6("port", port, DATA_TYPE_UINT8, uint8_t, "", "Port used with the test");
+    ADD_MAP_6("testMode", testMode, DATA_TYPE_UINT8, uint8_t, "", "Self-test mode: 102=TxOverflow, 103=RxOverflow (see eGPXBit_test_mode)");
+    ADD_MAP_6("state", state, DATA_TYPE_UINT8, uint8_t, "", "Built-in self-test state (see eGPXBit_state)");
+    ADD_MAP_7("detectedHardwareId", detectedHardwareId, DATA_TYPE_UINT16, uint16_t, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_4("reserved[0]", reserved[0], DATA_TYPE_UINT8, uint8_t&);
     ADD_MAP_4("reserved[1]", reserved[1], DATA_TYPE_UINT8, uint8_t&);
 
@@ -442,7 +444,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], ma
     INIT_MAP(sys_params_t, DID_SYS_PARAMS);
     
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("imuTemp", imuTemp, DATA_TYPE_F32, float, "", "Sys status flags", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("baroTemp", baroTemp, DATA_TYPE_F32, float,  SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
@@ -463,25 +465,25 @@ static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT], m
 {
     INIT_MAP(sys_sensors_t, DID_SYS_SENSORS);
     
-    ADD_MAP_4("time", time, DATA_TYPE_F64, double);
-    ADD_MAP_4("temp", temp, DATA_TYPE_F32, float);
-    ADD_MAP_4("pqr[0]", pqr[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("pqr[1]", pqr[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("pqr[2]", pqr[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("acc[0]", acc[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("acc[1]", acc[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("acc[2]", acc[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("mag[0]", mag[0], DATA_TYPE_F32, float&);
-    ADD_MAP_4("mag[1]", mag[1], DATA_TYPE_F32, float&);
-    ADD_MAP_4("mag[2]", mag[2], DATA_TYPE_F32, float&);
-    ADD_MAP_4("bar", bar, DATA_TYPE_F32, float);
-    ADD_MAP_4("barTemp", barTemp, DATA_TYPE_F32, float);
-    ADD_MAP_4("mslBar", mslBar, DATA_TYPE_F32, float);
-    ADD_MAP_4("humidity", humidity, DATA_TYPE_F32, float);
-    ADD_MAP_4("vin", vin, DATA_TYPE_F32, float);
-    ADD_MAP_4("ana1", ana1, DATA_TYPE_F32, float);
-    ADD_MAP_4("ana3", ana1, DATA_TYPE_F32, float);
-    ADD_MAP_4("ana4", ana1, DATA_TYPE_F32, float);
+    ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("temp", temp, DATA_TYPE_F32, float, SYM_DEG_C, "System temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_8("pqr[0]", pqr[0], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_8("pqr[1]", pqr[1], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_8("pqr[2]", pqr[2], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
+    ADD_MAP_7("acc[0]", acc[0], DATA_TYPE_F32, float&, SYM_M_PER_S, "Linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("acc[1]", acc[1], DATA_TYPE_F32, float&, SYM_M_PER_S, "Linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("acc[2]", acc[2], DATA_TYPE_F32, float&, SYM_M_PER_S, "Linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("mag[0]", mag[0], DATA_TYPE_F32, float&, "", "Magnetometer normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("mag[1]", mag[1], DATA_TYPE_F32, float&, "", "Magnetometer normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("mag[2]", mag[2], DATA_TYPE_F32, float&, "", "Magnetometer normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("bar", bar, DATA_TYPE_F32, float, "kPa", "Barometric pressure", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
+    ADD_MAP_7("barTemp", barTemp, DATA_TYPE_F32, float, "m", "Barometer MSL altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2 );
+    ADD_MAP_7("mslBar", mslBar, DATA_TYPE_F32, float, "C", "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("humidity", humidity, DATA_TYPE_F32, float, "%rH", "Relative humidity, 0%-100%", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    ADD_MAP_7("vin", vin, DATA_TYPE_F32, float, "V", "System input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2 );
+    ADD_MAP_7("ana1", ana1, DATA_TYPE_F32, float, "V", "ADC analog 1 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
+    ADD_MAP_7("ana3", ana1, DATA_TYPE_F32, float, "V", "ADC analog 3 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
+    ADD_MAP_7("ana4", ana1, DATA_TYPE_F32, float, "V", "ADC analog 4 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
 
     ASSERT_SIZE(totalSize);
 }
@@ -503,7 +505,7 @@ static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
-    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_8("theta[0]", theta[0], DATA_TYPE_F32, float&, SYM_DEG, "Euler angle - roll",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
     ADD_MAP_8("theta[1]", theta[1], DATA_TYPE_F32, float&, SYM_DEG, "Euler angle - pitch",  flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
@@ -528,7 +530,7 @@ static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
-    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -551,7 +553,7 @@ static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
-    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("qn2b[0]", qn2b[0], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("qn2b[1]", qn2b[1], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -575,7 +577,7 @@ static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], map_ind
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
-    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t,  "", insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t,  "", hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("qe2b[0]", qe2b[0], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("qe2b[1]", qe2b[1], DATA_TYPE_F32, float&, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -597,7 +599,7 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], map_i
     
     ADD_MAP_4("week", week, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
     ADD_MAP_4("ecef[0]", ecef[0], DATA_TYPE_F64, double&);
     ADD_MAP_4("ecef[1]", ecef[1], DATA_TYPE_F64, double&);
     ADD_MAP_4("ecef[2]", ecef[2], DATA_TYPE_F64, double&);
@@ -1505,7 +1507,7 @@ static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_4("baseToRoverDistance", baseToRoverDistance, DATA_TYPE_F32, float);
     ADD_MAP_4("baseToRoverHeading", baseToRoverHeading, DATA_TYPE_F32, float);
     ADD_MAP_4("baseToRoverHeadingAcc", baseToRoverHeadingAcc, DATA_TYPE_F32, float);
-    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_5("status", status, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
 
     ASSERT_SIZE(totalSize);
 }
@@ -3074,70 +3076,50 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 
 bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
 {
+    int precision;
     switch (dataType)
     {
     case DATA_TYPE_INT8:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(int8_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(int8_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)ptr);
         break;
-
     case DATA_TYPE_UINT8:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(uint8_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint8_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(uint8_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint8_t*)ptr);
         break;
-
     case DATA_TYPE_INT16:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(int16_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int16_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(int16_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int16_t*)ptr);
         break;
-
     case DATA_TYPE_UINT16:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(uint16_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint16_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(uint16_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint16_t*)ptr);
         break;
-
     case DATA_TYPE_INT32:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(int32_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int32_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(int32_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int32_t*)ptr);
         break;
-
     case DATA_TYPE_UINT32:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(uint32_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint32_t*)ptr);        
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(uint32_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint32_t*)ptr);        
         break;
-
     case DATA_TYPE_INT64:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (long long)*(uint64_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (long long)*(uint64_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)ptr);
         break;
-
     case DATA_TYPE_UINT64:
-        if (dataFlags == DATA_FLAGS_DISPLAY_HEX)
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (unsigned long long)*(uint64_t*)ptr);
-        else
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (unsigned long long)*(uint64_t*)ptr);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)ptr);
         break;
-
     case DATA_TYPE_F32:
-        SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.9g", *(float*)ptr);
+        precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
+        if (precision == 0) { precision = 9;  }     // Default to 9 digits
+        SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(float*)ptr);
         break;
-
-    case DATA_TYPE_F64:
-        SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", *(double*)ptr);
+    case DATA_TYPE_F64:                             
+        precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
+        if (precision == 0) { precision = 17; }     // Default to 17 digits
+        SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(double*)ptr);
         break;
 
     case DATA_TYPE_STRING:
