@@ -557,7 +557,6 @@ bool InertialSenseROS::connect(float timeout)
             ROS_ERROR("InertialSenseROS: False connection \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sdk_connected_ = false;
         }
-         
         else 
         {
             ROS_INFO("InertialSenseROS: Connected to IMX SN%d on \"%s\", at %d baud", IS_.DeviceInfo().serialNumber, cur_port.c_str(), baudrate_);
@@ -1206,8 +1205,6 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
                     rs_.odom_ins_ned.pub.publish(msg_odom_ned);
 
                 }
-                
-                
                 if (publishTf_)
                 {
                     // Calculate the TF from the pose...
@@ -1686,8 +1683,6 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
     {
         rs_.barometer.pub.publish(baro_msg);
     }
-    
-    
 }
 
 void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg)
@@ -1839,7 +1834,6 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
         {
             rs_.rtk_cmp.pubRel.publish(rtk_rel);
         }
-
         diagnostics_.rtkCmp_timeStamp = msg->timeOfWeekMs;
         diagnostics_.rtkCmp_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkCmp_diffAge = rtk_rel.differential_age;
@@ -1974,8 +1968,6 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
             {
                 rs_.gps2_raw.pubObs.publish(gps2_obs_Vec_);
             }
-            
-            
             gps2_obs_Vec_.obs.clear();
         }
     }
@@ -2090,24 +2082,24 @@ void InertialSenseROS::GPS_geph_callback(eDataIDs DID, const geph_t *const msg)
     switch (DID)
     { 
     case DID_GPS1_RAW:
-    if (rs_.gps1_raw.pubGEp)
-    {
-        rs_.gps1_raw.pubGEp.publish(geph);
-    }
+        if (rs_.gps1_raw.pubGEp)
+        {
+            rs_.gps1_raw.pubGEp.publish(geph);
+        }
         break;
     case DID_GPS2_RAW:
-    if (rs_.gps2_raw.pubGEp)
-    {
-        rs_.gps2_raw.pubGEp.publish(geph);
-    }
-    break;
-    case DID_GPS_BASE_RAW:
-    if (rs_.gpsbase_raw.pubGEp)
-    {
-        rs_.gpsbase_raw.pubGEp.publish(geph);
-    }
+        if (rs_.gps2_raw.pubGEp)
+        {
+            rs_.gps2_raw.pubGEp.publish(geph);
+        }
         break;
-    }
+    case DID_GPS_BASE_RAW:
+        if (rs_.gpsbase_raw.pubGEp)
+        {
+            rs_.gpsbase_raw.pubGEp.publish(geph);
+        }
+            break;
+        }
 }
 
 void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
