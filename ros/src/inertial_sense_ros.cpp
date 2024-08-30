@@ -552,7 +552,7 @@ bool InertialSenseROS::connect(float timeout)
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             usleep(500000); // is this a good idea?
         }
-        else if (serialNum == "0")
+        else if (serialNum.length() < 5)
         {
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sdk_connected_ = false;
