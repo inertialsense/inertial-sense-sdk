@@ -535,7 +535,7 @@ bool InertialSenseROS::connect(float timeout)
 {
     uint32_t end_time = ros::Time::now().toSec() + timeout;
     auto ports_iterator = ports_.begin();
-    std::string serialNum;
+    auto serialNum = 0;
 
     do {
         std::string cur_port = *ports_iterator;
@@ -552,9 +552,9 @@ bool InertialSenseROS::connect(float timeout)
             ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             usleep(500000); // is this a good idea?
         }
-        else if (serialNum == "0")
+        else if (serialNum == 0)
         {
-            ROS_ERROR("InertialSenseROS: Unable to open serial port \"%s\", at %d baud", cur_port.c_str(), baudrate_);
+            ROS_ERROR("InertialSenseROS: False connection \"%s\", at %d baud", cur_port.c_str(), baudrate_);
             sdk_connected_ = false;
         }
          
