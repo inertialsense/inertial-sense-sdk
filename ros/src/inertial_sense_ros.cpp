@@ -973,7 +973,12 @@ void InertialSenseROS::INS1_callback(eDataIDs DID, const ins_1_t *const msg)
         msg_did_ins1.ned[1] = msg->ned[1];
         msg_did_ins1.ned[2] = msg->ned[2];
         if (rs_.did_ins1.pub.getNumSubscribers() > 0)
-            rs_.did_ins1.pub.publish(msg_did_ins1);
+        {
+            if (rs_.did_ins1.pub)
+            {
+                rs_.did_ins1.pub.publish(msg_did_ins1);
+            }
+        }
     }
 }
 
@@ -1000,7 +1005,12 @@ void InertialSenseROS::INS2_callback(eDataIDs DID, const ins_2_t *const msg)
         msg_did_ins2.lla[1] = msg->lla[1];
         msg_did_ins2.lla[2] = msg->lla[2];
         if (rs_.did_ins2.pub.getNumSubscribers() > 0)
-            rs_.did_ins2.pub.publish(msg_did_ins2);
+        {
+            if (rs_.did_ins2.pub)
+            {
+                rs_.did_ins2.pub.publish(msg_did_ins2);
+            }
+        }
     }
 }
 
@@ -1027,7 +1037,12 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
         msg_did_ins4.ecef[1] = msg->ecef[1];
         msg_did_ins4.ecef[2] = msg->ecef[2];
         if (rs_.did_ins4.pub.getNumSubscribers() > 0)
-            rs_.did_ins4.pub.publish(msg_did_ins4);
+        {
+            if (rs_.did_ins4.pub)
+            {
+                rs_.did_ins4.pub.publish(msg_did_ins4);
+            }
+        }
     }
 
     if (rs_.odom_ins_ned.enabled || rs_.odom_ins_enu.enabled || rs_.odom_ins_ecef.enabled)
@@ -1096,7 +1111,10 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
             msg_odom_ecef.twist.twist.angular.x = result[0];
             msg_odom_ecef.twist.twist.angular.y = result[1];
             msg_odom_ecef.twist.twist.angular.z = result[2];
-            rs_.odom_ins_ecef.pub.publish(msg_odom_ecef);
+            if (rs_.odom_ins_ecef.pub)
+            {
+                rs_.odom_ins_ecef.pub.publish(msg_odom_ecef);
+            }
 
             if (publishTf_)
             {
@@ -1183,8 +1201,13 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
                 msg_odom_ned.twist.twist.angular.x = result[0];
                 msg_odom_ned.twist.twist.angular.y = result[1];
                 msg_odom_ned.twist.twist.angular.z = result[2];
-                rs_.odom_ins_ned.pub.publish(msg_odom_ned);
+                if (rs_.odom_ins_ned.pub)
+                {
+                    rs_.odom_ins_ned.pub.publish(msg_odom_ned);
 
+                }
+                
+                
                 if (publishTf_)
                 {
                     // Calculate the TF from the pose...
@@ -1277,7 +1300,10 @@ void InertialSenseROS::INS4_callback(eDataIDs DID, const ins_4_t *const msg)
                 msg_odom_enu.twist.twist.angular.x = result[0];
                 msg_odom_enu.twist.twist.angular.y = result[1];
                 msg_odom_enu.twist.twist.angular.z = result[2];
-                rs_.odom_ins_enu.pub.publish(msg_odom_enu);
+                if (rs_.odom_ins_enu.pub)
+                {
+                    rs_.odom_ins_enu.pub.publish(msg_odom_enu);
+                }
                 
                 if (publishTf_)
                 {
@@ -1330,7 +1356,11 @@ void InertialSenseROS::INL2_states_callback(eDataIDs DID, const inl2_states_t *c
     if (rs_.inl2_states.enabled)
     {
         if (rs_.inl2_states.pub.getNumSubscribers() > 0)
-            rs_.inl2_states.pub.publish(msg_inl2_states);
+        {    if (rs_.inl2_states.pub)
+            {
+                rs_.inl2_states.pub.publish(msg_inl2_states);
+            }
+        }
     }
 }
 
@@ -1473,7 +1503,10 @@ void InertialSenseROS::GPS_pos_callback(eDataIDs DID, const gps_pos_t *const msg
             msg_NavSatFix.position_covariance[4] = varH;
             msg_NavSatFix.position_covariance[8] = varV;
             msg_NavSatFix.position_covariance_type = COVARIANCE_TYPE_DIAGONAL_KNOWN;
-            rs_.gps1_navsatfix.pub.publish(msg_NavSatFix);
+            if (rs_.gps1_navsatfix.pub)
+            {
+                rs_.gps1_navsatfix.pub.publish(msg_NavSatFix);
+            }
         }
     }
 }
@@ -1518,7 +1551,12 @@ void InertialSenseROS::publishGPS1()
         msg_gps1.velEcef = gps1_velEcef.vector;
         msg_gps1.sAcc = gps1_vel.sAcc;
         if (rs_.gps1.pub.getNumSubscribers() > 0)
-            rs_.gps1.pub.publish(msg_gps1);
+        {
+            if (rs_.gps1.pub)
+            {
+                rs_.gps1.pub.publish(msg_gps1);
+            }
+        }
     }
 }
 
@@ -1530,7 +1568,13 @@ void InertialSenseROS::publishGPS2()
         msg_gps2.velEcef = gps2_velEcef.vector;
         msg_gps2.sAcc = gps2_vel.sAcc;
         if (rs_.gps2.pub.getNumSubscribers() > 0)
-            rs_.gps2.pub.publish(msg_gps2);
+        {
+            if (rs_.gps2.pub)
+            {
+                rs_.gps2.pub.publish(msg_gps2);
+            }
+            
+        }    
     }
 }
 
@@ -1557,7 +1601,10 @@ void InertialSenseROS::strobe_in_time_callback(eDataIDs DID, const strobe_in_tim
         {
             std_msgs::Header strobe_msg;
             strobe_msg.stamp = ros_time_from_week_and_tow(msg->week, msg->timeOfWeekMs * 1.0e-3);
-            strobe_pub_.publish(strobe_msg);
+            if (strobe_pub_)
+            {
+                strobe_pub_.publish(strobe_msg);
+            }
         }
         break;
     }
@@ -1587,8 +1634,18 @@ void InertialSenseROS::GPS_info_callback(eDataIDs DID, const gps_sat_t *const ms
 
     switch (DID)
     {
-    case DID_GPS1_SAT:  rs_.gps1_info.pub.publish(msg_gps1_info);    break;
-    case DID_GPS2_SAT:  rs_.gps2_info.pub.publish(msg_gps1_info);    break;
+    case DID_GPS1_SAT:
+        if (rs_.gps1_info.pub)
+        {
+            rs_.gps1_info.pub.publish(msg_gps1_info);
+        }
+        break;
+    case DID_GPS2_SAT:
+        if (rs_.gps2_info.pub)
+        {
+           rs_.gps2_info.pub.publish(msg_gps1_info);
+        }
+        break;
     }
 }
 
@@ -1606,7 +1663,10 @@ void InertialSenseROS::mag_callback(eDataIDs DID, const magnetometer_t *const ms
     mag_msg.magnetic_field.x = msg->mag[0];
     mag_msg.magnetic_field.y = msg->mag[1];
     mag_msg.magnetic_field.z = msg->mag[2];
-    rs_.magnetometer.pub.publish(mag_msg);
+    if (rs_.magnetometer.pub)
+    {
+        rs_.magnetometer.pub.publish(mag_msg);
+    }
 }
 
 void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
@@ -1622,7 +1682,12 @@ void InertialSenseROS::baro_callback(eDataIDs DID, const barometer_t *const msg)
     baro_msg.header.frame_id = frame_id_;
     baro_msg.fluid_pressure = msg->bar;
     baro_msg.variance = msg->barTemp;
-    rs_.barometer.pub.publish(baro_msg);
+    if (rs_.barometer.pub)
+    {
+        rs_.barometer.pub.publish(baro_msg);
+    }
+    
+    
 }
 
 void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg)
@@ -1641,7 +1706,10 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
         msg_pimu.dvel.y = msg->vel[1];
         msg_pimu.dvel.z = msg->vel[2];
         msg_pimu.dt = msg->dt;
-        rs_.pimu.pub.publish(msg_pimu);
+        if (rs_.pimu.pub)
+        {
+            rs_.pimu.pub.publish(msg_pimu);
+        }
     }
 
     if (rs_.imu.enabled)
@@ -1658,7 +1726,10 @@ void InertialSenseROS::preint_IMU_callback(eDataIDs DID, const pimu_t *const msg
             msg_imu.linear_acceleration.x = msg->vel[0] * div;
             msg_imu.linear_acceleration.y = msg->vel[1] * div;
             msg_imu.linear_acceleration.z = msg->vel[2] * div;
-            rs_.imu.pub.publish(msg_imu);
+            if (rs_.imu.pub)
+            {
+                rs_.imu.pub.publish(msg_imu);
+            }
         }
     }
 }
@@ -1685,14 +1756,18 @@ void InertialSenseROS::RTK_Misc_callback(eDataIDs DID, const gps_rtk_misc_t *con
     {
     case DID_GPS1_RTK_POS_MISC:
         rs_.rtk_pos.streamingCheck(DID);
-        if (rs_.rtk_pos.pubInfo.getNumSubscribers() > 0)
+        if (rs_.rtk_pos.pubInfo)
+        {
             rs_.rtk_pos.pubInfo.publish(rtk_info);
+        }
         break;
 
     case DID_GPS2_RTK_CMP_MISC:
         rs_.rtk_cmp.streamingCheck(DID);
-        if (rs_.rtk_cmp.pubInfo.getNumSubscribers() > 0)
+        if (rs_.rtk_cmp.pubInfo)
+        {
             rs_.rtk_cmp.pubInfo.publish(rtk_info);
+        }
         break;
     }
 }
@@ -1744,7 +1819,10 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
     {
     case DID_GPS1_RTK_POS_REL:
         rs_.rtk_pos.streamingCheck(DID, rs_.rtk_pos.streamingRel);
-        rs_.rtk_pos.pubRel.publish(rtk_rel);
+        if (rs_.rtk_pos.pubRel)
+        {
+            rs_.rtk_pos.pubRel.publish(rtk_rel);
+        }
 
         diagnostics_.rtkPos_timeStamp = msg->timeOfWeekMs;
         diagnostics_.rtkPos_arRatio = rtk_rel.ar_ratio;
@@ -1757,8 +1835,11 @@ void InertialSenseROS::RTK_Rel_callback(eDataIDs DID, const gps_rtk_rel_t *const
 
     case DID_GPS2_RTK_CMP_REL:
         rs_.rtk_cmp.streamingCheck(DID, rs_.rtk_cmp.streamingRel);
-        rs_.rtk_cmp.pubRel.publish(rtk_rel);
-        
+        if (rs_.rtk_cmp.pubRel)
+        {
+            rs_.rtk_cmp.pubRel.publish(rtk_rel);
+        }
+
         diagnostics_.rtkCmp_timeStamp = msg->timeOfWeekMs;
         diagnostics_.rtkCmp_arRatio = rtk_rel.ar_ratio;
         diagnostics_.rtkCmp_diffAge = rtk_rel.differential_age;
@@ -1872,7 +1953,10 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
         {
             gps1_obs_Vec_.header.stamp = ros_time_from_gtime(gps1_obs_Vec_.obs[0].time.time, gps1_obs_Vec_.obs[0].time.sec);
             gps1_obs_Vec_.time = gps1_obs_Vec_.obs[0].time;
-            rs_.gps1_raw.pubObs.publish(gps1_obs_Vec_);
+            if (rs_.gps1_raw.pubObs)
+            {
+                rs_.gps1_raw.pubObs.publish(gps1_obs_Vec_);
+            }
             gps1_obs_Vec_.obs.clear();
         }
     }
@@ -1882,7 +1966,16 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
         {
             gps2_obs_Vec_.header.stamp = ros_time_from_gtime(gps2_obs_Vec_.obs[0].time.time, gps2_obs_Vec_.obs[0].time.sec);
             gps2_obs_Vec_.time = gps2_obs_Vec_.obs[0].time;
-            rs_.gps2_raw.pubObs.publish(gps2_obs_Vec_);
+            if (rs_.gps2_raw.pubObs)
+            {
+                rs_.gps2_raw.pubObs.publish(gps2_obs_Vec_);
+            }
+            if (rs_.gps2_raw.pubObs)
+            {
+                rs_.gps2_raw.pubObs.publish(gps2_obs_Vec_);
+            }
+            
+            
             gps2_obs_Vec_.obs.clear();
         }
     }
@@ -1892,7 +1985,10 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback(const ros::TimerEvent &e)
         {
             base_obs_Vec_.header.stamp = ros_time_from_gtime(base_obs_Vec_.obs[0].time.time, base_obs_Vec_.obs[0].time.sec);
             base_obs_Vec_.time = base_obs_Vec_.obs[0].time;
-            rs_.gpsbase_raw.pubObs.publish(base_obs_Vec_);
+            if (rs_.gpsbase_raw.pubObs)
+            {
+                rs_.gpsbase_raw.pubObs.publish(base_obs_Vec_);
+            }
             base_obs_Vec_.obs.clear();
         }
     }
@@ -1943,9 +2039,26 @@ void InertialSenseROS::GPS_eph_callback(eDataIDs DID, const eph_t *const msg)
     eph.ndot = msg->ndot;
     switch (DID)
     { 
-    case DID_GPS1_RAW:      rs_.gps1_raw.pubEph.publish(eph);        break;
-    case DID_GPS2_RAW:      rs_.gps2_raw.pubEph.publish(eph);        break;
-    case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubEph.publish(eph);    break;
+    case DID_GPS1_RAW:
+        if (rs_.gps1_raw.pubEph)
+        {
+            rs_.gps1_raw.pubEph.publish(eph);
+        }
+        break;
+    case DID_GPS2_RAW:
+        if (rs_.gps2_raw.pubEph)
+        {
+            rs_.gps2_raw.pubEph.publish(eph);
+        }
+        
+        
+        break;
+    case DID_GPS_BASE_RAW:
+        if (rs_.gpsbase_raw.pubEph)
+        {
+            rs_.gpsbase_raw.pubEph.publish(eph);
+        }
+        break;
     }
 }
 
@@ -1976,9 +2089,24 @@ void InertialSenseROS::GPS_geph_callback(eDataIDs DID, const geph_t *const msg)
     geph.dtaun = msg->dtaun;
     switch (DID)
     { 
-    case DID_GPS1_RAW:      rs_.gps1_raw.pubGEp.publish(geph);       break;
-    case DID_GPS2_RAW:      rs_.gps2_raw.pubGEp.publish(geph);       break;
-    case DID_GPS_BASE_RAW:  rs_.gpsbase_raw.pubGEp.publish(geph);   break;
+    case DID_GPS1_RAW:
+    if (rs_.gps1_raw.pubGEp)
+    {
+        rs_.gps1_raw.pubGEp.publish(geph);
+    }
+        break;
+    case DID_GPS2_RAW:
+    if (rs_.gps2_raw.pubGEp)
+    {
+        rs_.gps2_raw.pubGEp.publish(geph);
+    }
+    break;
+    case DID_GPS_BASE_RAW:
+    if (rs_.gpsbase_raw.pubGEp)
+    {
+        rs_.gpsbase_raw.pubGEp.publish(geph);
+    }
+        break;
     }
 }
 
@@ -2078,7 +2206,10 @@ void InertialSenseROS::diagnostics_callback(const ros::TimerEvent &event)
     rtkDiagnostics.values.push_back(rtkCmp_distanceToRover);
 
     diag_array.status.push_back(rtkDiagnostics);
-    rs_.diagnostics.pub.publish(diag_array);
+    if (rs_.diagnostics.pub)
+    {
+        rs_.diagnostics.pub.publish(diag_array);
+    }
 }
 
 bool InertialSenseROS::set_current_position_as_refLLA(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
