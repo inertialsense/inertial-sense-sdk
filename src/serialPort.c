@@ -118,6 +118,7 @@ int serialPortReadTimeout(serial_port_t* serialPort, unsigned char* buffer, int 
 		return 0;
 	}
 
+	serialPort->rxBytes += count;
 	return count;
 }
 
@@ -128,7 +129,15 @@ int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer,
 		return 0;
 	}
 
-	return serialPort->pfnAsyncRead(serialPort, buffer, readCount, completion);
+	int count = serialPort->pfnAsyncRead(serialPort, buffer, readCount, completion);
+
+	if (count < 0)
+	{
+		return 0;
+	}
+
+	serialPort->rxBytes += count;
+	return count;
 }
 
 int serialPortReadLine(serial_port_t* serialPort, unsigned char* buffer, int bufferLength)
@@ -230,6 +239,7 @@ int serialPortWrite(serial_port_t* serialPort, const unsigned char* buffer, int 
 		return 0;
 	}
 
+	serialPort->txBytes += count;
 	return count;
 }
 
