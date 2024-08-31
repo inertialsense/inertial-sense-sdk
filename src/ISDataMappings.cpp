@@ -1123,6 +1123,8 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT], map_
     ADD_MAP_6("Length", length, DATA_TYPE_UINT16, uint16_t, "bytes", "");
     ADD_MAP_7("data", data, DATA_TYPE_STRING, uint8_t[MEMBERSIZE(MAP_TYPE, data)], "", "", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_6("Reserved 8 bit", res8, DATA_TYPE_UINT8, uint8_t, "", "");
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT])
@@ -1154,6 +1156,11 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
     ADD_MAP_7("RTKCfgBits", RTKCfgBits, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAGS_DISPLAY_HEX);
 
+    // Keep at end
+    ADD_MAP_6("size", size, DATA_TYPE_UINT32, uint32_t, "", "Flash group size. Set to 1 to reset this flash group.");
+    ADD_MAP_6("checksum", checksum, DATA_TYPE_UINT32, uint32_t, "", "Flash checksum");
+    ADD_MAP_6("key", key, DATA_TYPE_UINT32, uint32_t, "", "Flash key");
+
     ASSERT_SIZE(totalSize);
 }
 
@@ -1167,14 +1174,17 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_7("grmcBitsSer1", grmcBitsSer1, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("grmcBitsSer2", grmcBitsSer2, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit Serial 2", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("grmcBitsUSB", grmcBitsUSB, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+ 
     ADD_MAP_7("grmcNMEABitsSer0", grmcNMEABitsSer0, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("grmcNMEABitsSer1", grmcNMEABitsSer1, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("grmcNMEABitsSer2", grmcNMEABitsSer2, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("grmcNMEABitsUSB", grmcNMEABitsUSB, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+ 
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, "", "Hardware status eHdwStatusFlags", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("mcuTemp", mcuTemp, DATA_TYPE_F32, float, SYM_DEG_C, "MCU temperature", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("navOutputPeriodMs", navOutputPeriodMs, DATA_TYPE_UINT32, uint32_t, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("flashCfgChecksum", flashCfgChecksum, DATA_TYPE_UINT32, uint32_t, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
+ 
     string str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
     str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
@@ -1182,6 +1192,7 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], ma
     ADD_MAP_7("rtkMode", rtkMode, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("gnss1RunState", gnss1RunState, DATA_TYPE_UINT32, uint32_t, "", "GNSS1 status (see RunState)", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("gnss2RunState", gnss2RunState, DATA_TYPE_UINT32, uint32_t, "", "GNSS2 status (see RunState)", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("SourcePort", gpxSourcePort, DATA_TYPE_UINT8, uint8_t, "", "Port", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("upTime", upTime, DATA_TYPE_F64, double, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
 
     ASSERT_SIZE(totalSize);
@@ -1508,8 +1519,6 @@ static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], m
     INIT_MAP(gps_rtk_misc_t, id);
 
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("correctionChecksumFailures", correctionChecksumFailures, DATA_TYPE_UINT32, uint32_t, "int", "Correction input checksum failures", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("timeToFirstFixMs", timeToFirstFixMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time to first RTK fix", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("accuracyPos[0]", accuracyPos[0], DATA_TYPE_F32, float&, "m", "Accuracy in meters north, east, up (standard deviation)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("accuracyPos[1]", accuracyPos[1], DATA_TYPE_F32, float&, "m", "Accuracy in meters north, east, up (standard deviation)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("accuracyPos[2]", accuracyPos[2], DATA_TYPE_F32, float&, "m", "Accuracy in meters north, east, up (standard deviation)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1524,28 +1533,39 @@ static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], m
     ADD_MAP_7("baseLla[1]", baseLla[1], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Base position in latitude, longitude, altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_7);
     ADD_MAP_7("baseLla[2]", baseLla[2], DATA_TYPE_F64, double&, SYM_DEG_DEG_M, "Base position in latitude, longitude, altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_7);
     ADD_MAP_7("cycleSlipCount", cycleSlipCount, DATA_TYPE_UINT32, uint32_t, "int", "Cycle slip counter", DATA_FLAGS_READ_ONLY);
+
     ADD_MAP_7("roverGpsObservationCount", roverGpsObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseGpsObservationCount", baseGpsObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Base gps observation element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("roverGlonassObservationCount", roverGlonassObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover glonass observation element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseGlonassObservationCount", baseGlonassObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Base glonass observation element counter", DATA_FLAGS_READ_ONLY);
+
     ADD_MAP_7("roverGalileoObservationCount", roverGalileoObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover galileo observation element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseGalileoObservationCount", baseGalileoObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Base galileo observation element counter", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("roverBeidouObservationCount", roverBeidouObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover beidou observation element counter", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("baseBeidouObservationCount", baseBeidouObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Base beidou observation element counter", DATA_FLAGS_READ_ONLY);
+
     ADD_MAP_7("roverQzsObservationCount", roverQzsObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover qzs observation element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseQzsObservationCount", baseQzsObservationCount, DATA_TYPE_UINT32, uint32_t, "int", "Base qzs observation element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("roverGpsEphemerisCount", roverGpsEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseGpsEphemerisCount", baseGpsEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Base gps ephemeris element counter", DATA_FLAGS_READ_ONLY);
+
     ADD_MAP_7("roverGlonassEphemerisCount", roverGlonassEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseGlonassEphemerisCount", baseGlonassEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Base glonass ephemeris element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("roverGalileoEphemerisCount", roverGalileoEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover galileo ephemeris element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseGalileoEphemerisCount", baseGalileoEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Base galileo ephemeris element counter", DATA_FLAGS_READ_ONLY);
+
+    ADD_MAP_7("roverBeidouEphemerisCount", roverBeidouEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover beidou ephemeris element counter", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("baseBeidouEphemerisCount", baseBeidouEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Base beidou ephemeris element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("roverQzsEphemerisCount", roverQzsEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover qzs ephemeris element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseQzsEphemerisCount", baseQzsEphemerisCount, DATA_TYPE_UINT32, uint32_t, "int", "Base qzs ephemeris element counter", DATA_FLAGS_READ_ONLY);
+
     ADD_MAP_7("roverSbasCount", roverSbasCount, DATA_TYPE_UINT32, uint32_t, "int", "Rover sbas element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseSbasCount", baseSbasCount, DATA_TYPE_UINT32, uint32_t, "int", "Base sbas element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("baseAntennaCount", baseAntennaCount, DATA_TYPE_UINT32, uint32_t, "int", "Base antenna position element counter", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("ionUtcAlmCount", ionUtcAlmCount, DATA_TYPE_UINT32, uint32_t, "int", "Ion model / utc / alm element counter", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("correctionChecksumFailures", correctionChecksumFailures, DATA_TYPE_UINT32, uint32_t, "int", "Base antenna position element counter", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("timeToFirstFixMs", timeToFirstFixMs, DATA_TYPE_UINT32, uint32_t, "int", "Ion model / utc / alm element counter", DATA_FLAGS_READ_ONLY);
+
+    ADD_MAP_7("correctionChecksumFailures", correctionChecksumFailures, DATA_TYPE_UINT32, uint32_t, "int", "Correction input checksum failures", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("timeToFirstFixMs", timeToFirstFixMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time to first RTK fix", DATA_FLAGS_READ_ONLY);
 
     ASSERT_SIZE(totalSize);
 }

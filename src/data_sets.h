@@ -4030,11 +4030,13 @@ typedef struct PACKED
     float					vDop;
 
     /** Base Position - latitude, longitude, height (degrees, meters) */
-     double					baseLla[3];
+    double					baseLla[3];
 
     /** Cycle slip counter */
     uint32_t                cycleSlipCount;
     
+
+
     /** Rover gps observation element counter */
     uint32_t				roverGpsObservationCount;
 
@@ -4046,6 +4048,7 @@ typedef struct PACKED
 
     /** Base station glonass observation element counter */
     uint32_t				baseGlonassObservationCount;
+
 
     /** Rover galileo observation element counter */
     uint32_t				roverGalileoObservationCount;
@@ -4059,6 +4062,7 @@ typedef struct PACKED
     /** Base station beidou observation element counter */
     uint32_t				baseBeidouObservationCount;
 
+
     /** Rover qzs observation element counter */
     uint32_t				roverQzsObservationCount;
 
@@ -4070,6 +4074,7 @@ typedef struct PACKED
 
     /** Base station gps ephemeris element counter */
     uint32_t				baseGpsEphemerisCount;
+
 
     /** Rover glonass ephemeris element counter */
     uint32_t				roverGlonassEphemerisCount;
@@ -4083,6 +4088,7 @@ typedef struct PACKED
     /** Base station galileo ephemeris element counter */
     uint32_t				baseGalileoEphemerisCount;
 
+
     /** Rover beidou ephemeris element counter */
     uint32_t				roverBeidouEphemerisCount;
 
@@ -4095,6 +4101,7 @@ typedef struct PACKED
     /** Base station qzs ephemeris element counter */
     uint32_t				baseQzsEphemerisCount;
 
+
     /** Rover sbas element counter */
     uint32_t				roverSbasCount;
 
@@ -4106,6 +4113,7 @@ typedef struct PACKED
 
     /** Ionosphere model, utc and almanac count */
     uint32_t				ionUtcAlmCount;
+    
     
     /** Number of checksum failures from received corrections */
     uint32_t				correctionChecksumFailures;
