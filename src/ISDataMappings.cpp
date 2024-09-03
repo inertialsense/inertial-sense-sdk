@@ -27,7 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
-// #define USE_IS_INTERNAL
+#define USE_IS_INTERNAL
 
 #ifdef USE_IS_INTERNAL
 #include "../../cpp/libs/families/imx/IS_internal.h"
@@ -98,23 +98,29 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_INS_2] = sizeof(ins_2_t);
     sizeMap[DID_INS_3] = sizeof(ins_3_t);
     sizeMap[DID_INS_4] = sizeof(ins_4_t);
-    sizeMap[DID_GPS1_POS] = sizeof(gps_pos_t);
-    sizeMap[DID_GPS1_RCVR_POS] = sizeof(gps_pos_t);
-    sizeMap[DID_GPS1_VEL] = sizeof(gps_vel_t);
-    sizeMap[DID_GPS2_POS] = sizeof(gps_pos_t);
-    sizeMap[DID_GPS2_VEL] = sizeof(gps_vel_t);
-    sizeMap[DID_GPS1_SAT] = sizeof(gps_sat_t);
-    sizeMap[DID_GPS2_SAT] = sizeof(gps_sat_t);
-    sizeMap[DID_GPS1_SIG] = sizeof(gps_sig_t);
-    sizeMap[DID_GPS2_SIG] = sizeof(gps_sig_t);
-    sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
-    sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
+    sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
+
     sizeMap[DID_GPS1_RTK_POS] = sizeof(gps_pos_t);
     sizeMap[DID_GPS1_RTK_POS_REL] = sizeof(gps_rtk_rel_t);
     sizeMap[DID_GPS1_RTK_POS_MISC] = sizeof(gps_rtk_misc_t);
     sizeMap[DID_GPS2_RTK_CMP_REL] = sizeof(gps_rtk_rel_t);
     sizeMap[DID_GPS2_RTK_CMP_MISC] = sizeof(gps_rtk_misc_t);
-    sizeMap[DID_SYS_PARAMS] = sizeof(sys_params_t);
+
+    sizeMap[DID_GPS1_POS] = sizeof(gps_pos_t);
+    sizeMap[DID_GPS2_POS] = sizeof(gps_pos_t);
+    sizeMap[DID_GPS1_VEL] = sizeof(gps_vel_t);
+    sizeMap[DID_GPS2_VEL] = sizeof(gps_vel_t);
+    sizeMap[DID_GPS1_RCVR_POS] = sizeof(gps_pos_t);
+
+    sizeMap[DID_GPS1_SAT] = sizeof(gps_sat_t);
+    sizeMap[DID_GPS2_SAT] = sizeof(gps_sat_t);
+    sizeMap[DID_GPS1_SIG] = sizeof(gps_sig_t);
+    sizeMap[DID_GPS2_SIG] = sizeof(gps_sig_t);
+
+    sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
+    sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
+    sizeMap[DID_GPS1_TIMEPULSE] = sizeof(gps_timepulse_t);
+
     sizeMap[DID_SYS_SENSORS] = sizeof(sys_sensors_t);
     sizeMap[DID_FLASH_CONFIG] = sizeof(nvm_flash_cfg_t);
     sizeMap[DID_GPS_BASE_RAW] = sizeof(gps_raw_t);
@@ -131,8 +137,10 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
 
     sizeMap[DID_INL2_MAG_OBS_INFO] = sizeof(inl2_mag_obs_info_t);
     sizeMap[DID_INL2_STATES] = sizeof(inl2_states_t);
+    sizeMap[DID_INL2_NED_SIGMA] = sizeof(inl2_ned_sigma_t);    
 
     sizeMap[DID_SENSORS_ADC] = sizeof(sys_sensors_adc_t);
+    sizeMap[DID_SENSORS_ADC_SIGMA] = sizeof(sys_sensors_adc_t);
     sizeMap[DID_SENSORS_UCAL] = sizeof(sensors_w_temp_t);
     sizeMap[DID_SENSORS_TCAL] = sizeof(sensors_w_temp_t);
     sizeMap[DID_SENSORS_MCAL] = sizeof(sensors_w_temp_t);
@@ -157,13 +165,13 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPX_PORT_MONITOR] = sizeof(port_monitor_t);
     
 #ifdef USE_IS_INTERNAL
+    sizeMap[DID_INL2_STATUS] = sizeof(inl2_status_t);
+    sizeMap[DID_NVR_USERPAGE_G0] = sizeof(nvm_group_0_t);
+    sizeMap[DID_NVR_USERPAGE_G1] = sizeof(nvm_group_1_t);
     sizeMap[DID_RTK_DEBUG] = sizeof(rtk_debug_t);
 //     sizeMap[DID_RTK_STATE] = sizeof(rtk_state_t);
     sizeMap[DID_RTK_CODE_RESIDUAL] = sizeof(rtk_residual_t);
     sizeMap[DID_RTK_PHASE_RESIDUAL] = sizeof(rtk_residual_t);
-    sizeMap[DID_NVR_USERPAGE_G0] = sizeof(nvm_group_0_t);
-    sizeMap[DID_NVR_USERPAGE_G1] = sizeof(nvm_group_1_t);
-    sizeMap[DID_INL2_STATUS] = sizeof(inl2_status_t);
     sizeMap[DID_INL2_MISC] = sizeof(inl2_misc_t);
     sizeMap[DID_RTK_DEBUG_2] = sizeof(rtk_debug_2_t);
 #endif
@@ -675,6 +683,37 @@ static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], map_i
     ADD_MAP_SAT_SIG(47);
     ADD_MAP_SAT_SIG(48);
     ADD_MAP_SAT_SIG(49);
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpsVersionMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+{
+    INIT_MAP(gps_version_t, did);
+    ADD_MAP_6("swVersion", swVersion, DATA_TYPE_STRING, uint8_t[30], "", "Software version");
+    ADD_MAP_6("hwVersion", hwVersion, DATA_TYPE_STRING, uint8_t[10], "", "Hardware version");
+//    ADD_MAP_6("extension[0]", extension[0], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
+//    ADD_MAP_6("extension[1]", extension[1], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
+//    ADD_MAP_6("extension[2]", extension[2], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
+//    ADD_MAP_6("extension[3]", extension[3], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
+//    ADD_MAP_6("extension[4]", extension[4], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
+//    ADD_MAP_6("extension[5]", extension[5], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
+//    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+{
+    INIT_MAP(gps_timepulse_t, did);
+    ADD_MAP_7("towOffset", towOffset, DATA_TYPE_F64, double, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("towGps", towGps, DATA_TYPE_F64, double, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_7("timeMcu", timeMcu, DATA_TYPE_F64, double, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_6("msgTimeMs", msgTimeMs, DATA_TYPE_UINT32, uint32_t, "ms", "Local timestamp of TIM-TP message used to validate timepulse.");
+    ADD_MAP_6("plsTimeMs", plsTimeMs, DATA_TYPE_UINT32, uint32_t, "ms", "Local timestamp of time sync pulse external interrupt used to validate timepulse.");
+    ADD_MAP_6("syncCount", syncCount, DATA_TYPE_UINT8, uint8_t, "", "Counter for successful timesync events.");
+    ADD_MAP_6("badPulseAgeCount", badPulseAgeCount, DATA_TYPE_UINT8, uint8_t, "", "Counter for failed timesync events.");
+    ADD_MAP_6("ppsInterruptReinitCount", ppsInterruptReinitCount, DATA_TYPE_UINT8, uint8_t, "", "Counter for GPS PPS interrupt re-initalization.");
+    ADD_MAP_6("unused", unused, DATA_TYPE_UINT8, uint8_t, "", "");
+    ADD_MAP_6("lastSyncTimeMs", lastSyncTimeMs, DATA_TYPE_UINT32, uint32_t, "ms", "Local timestamp of last valid PPS sync.");
+    ADD_MAP_6("sinceLastSyncTimeMs", sinceLastSyncTimeMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time since last valid PPS sync.");			
     ASSERT_SIZE(totalSize);
 }
 
@@ -1625,7 +1664,7 @@ static void PopulateDiagMsgMappings(map_name_to_info_t mappings[DID_COUNT], map_
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT])
+static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(sys_sensors_adc_t, DID_SENSORS_ADC);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -1942,6 +1981,80 @@ static void PopulateInl2StatesMappings(map_name_to_info_t mappings[DID_COUNT], m
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateInl2NedSigmaMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT])
+{
+    INIT_MAP(inl2_ned_sigma_t, DID_INL2_NED_SIGMA);
+    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
+    ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    ADD_MAP_8("StdAttNed[0]", StdAttNed[0], DATA_TYPE_F32, float&, SYM_DEG, "NED attitude error standard deviation", flags, C_RAD2DEG);
+    ADD_MAP_8("StdAttNed[1]", StdAttNed[1], DATA_TYPE_F32, float&, SYM_DEG, "NED attitude error standard deviation", flags, C_RAD2DEG);
+    ADD_MAP_8("StdAttNed[2]", StdAttNed[2], DATA_TYPE_F32, float&, SYM_DEG, "NED attitude error standard deviation", flags, C_RAD2DEG);
+    ADD_MAP_7("StdVelNed[0]", StdVelNed[0], DATA_TYPE_F32, float&, "m/s", "NED velocity error standard deviation", flags);
+    ADD_MAP_7("StdVelNed[1]", StdVelNed[1], DATA_TYPE_F32, float&, "m/s", "NED velocity error standard deviation", flags);
+    ADD_MAP_7("StdVelNed[2]", StdVelNed[2], DATA_TYPE_F32, float&, "m/s", "NED velocity error standard deviation", flags);
+    ADD_MAP_7("StdPosNed[0]", StdPosNed[0], DATA_TYPE_F32, float&, "m", "NED position error standard deviation", flags);
+    ADD_MAP_7("StdPosNed[1]", StdPosNed[1], DATA_TYPE_F32, float&, "m", "NED position error standard deviation", flags);
+    ADD_MAP_7("StdPosNed[2]", StdPosNed[2], DATA_TYPE_F32, float&, "m", "NED position error standard deviation", flags);
+    ADD_MAP_7("StdAccBias[0]", StdAccBias[0], DATA_TYPE_F32, float&, SYM_M_PER_S_2, "Acceleration bias error standard deviation", flags);
+    ADD_MAP_7("StdAccBias[1]", StdAccBias[1], DATA_TYPE_F32, float&, SYM_M_PER_S_2, "Acceleration bias error standard deviation", flags);
+    ADD_MAP_7("StdAccBias[2]", StdAccBias[2], DATA_TYPE_F32, float&, SYM_M_PER_S_2, "Acceleration bias error standard deviation", flags);
+    ADD_MAP_8("StdGyrBias[0]", StdGyrBias[0], DATA_TYPE_F32, float&, SYM_DEG, "Angular rate bias error standard deviation", flags, C_RAD2DEG);
+    ADD_MAP_8("StdGyrBias[1]", StdGyrBias[1], DATA_TYPE_F32, float&, SYM_DEG, "Angular rate bias error standard deviation", flags, C_RAD2DEG);
+    ADD_MAP_8("StdGyrBias[2]", StdGyrBias[2], DATA_TYPE_F32, float&, SYM_DEG, "Angular rate bias error standard deviation", flags, C_RAD2DEG);
+    ADD_MAP_7("StdBarBias", StdBarBias, DATA_TYPE_F32, float, "m", "Barometric altitude bias error standard deviation", flags);
+    ADD_MAP_8("StdMagDeclination", StdMagDeclination, DATA_TYPE_F32, float, SYM_DEG, "Mag declination error standard deviation", flags, C_RAD2DEG);
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateRosCovariancePoseTwistMappings(map_name_to_info_t mappings[DID_COUNT], map_index_to_info_t indices[DID_COUNT])
+{
+    INIT_MAP(ros_covariance_pose_twist_t, DID_ROS_COVARIANCE_POSE_TWIST);
+    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
+    ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", flags);
+    ADD_MAP_7("covPoseLD[0]", covPoseLD[0], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[1]", covPoseLD[1], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[2]", covPoseLD[2], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[3]", covPoseLD[3], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[4]", covPoseLD[4], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[5]", covPoseLD[5], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[6]", covPoseLD[6], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[7]", covPoseLD[7], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[8]", covPoseLD[8], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[9]", covPoseLD[9], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[10]", covPoseLD[10], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[11]", covPoseLD[11], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[12]", covPoseLD[12], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[13]", covPoseLD[13], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[14]", covPoseLD[14], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[15]", covPoseLD[15], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[16]", covPoseLD[16], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[17]", covPoseLD[17], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[18]", covPoseLD[18], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[19]", covPoseLD[19], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covPoseLD[20]", covPoseLD[20], DATA_TYPE_F32, float&, "(rad^2, m^2)", "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
+    ADD_MAP_7("covTwistLD[0]", covTwistLD[0], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[1]", covTwistLD[1], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[2]", covTwistLD[2], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[3]", covTwistLD[3], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[4]", covTwistLD[4], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[5]", covTwistLD[5], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[6]", covTwistLD[6], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[7]", covTwistLD[7], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[8]", covTwistLD[8], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[9]", covTwistLD[9], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[10]", covTwistLD[10], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[11]", covTwistLD[11], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[12]", covTwistLD[12], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[13]", covTwistLD[13], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[14]", covTwistLD[14], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[15]", covTwistLD[15], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[16]", covTwistLD[16], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[17]", covTwistLD[17], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[18]", covTwistLD[18], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[19]", covTwistLD[19], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ADD_MAP_7("covTwistLD[20]", covTwistLD[20], DATA_TYPE_F32, float&, "(m/s)^2, (rad/s)^2)", "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
+    ASSERT_SIZE(totalSize);
+}
 
 
 const char* const cISDataMappings::m_dataIdNames[] =
@@ -2103,29 +2216,38 @@ cISDataMappings::cISDataMappings()
     PopulateSysParamsMappings(m_lookupInfo, m_indexInfo);
     PopulateSysSensorsMappings(m_lookupInfo, m_indexInfo);
     PopulateRMCMappings(m_lookupInfo, m_indexInfo);
+
     PopulateINS1Mappings(m_lookupInfo, m_indexInfo);
     PopulateINS2Mappings(m_lookupInfo, m_indexInfo);
     PopulateINS3Mappings(m_lookupInfo, m_indexInfo);
     PopulateINS4Mappings(m_lookupInfo, m_indexInfo);
-    PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS1_POS);
-    PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RCVR_POS);
-    PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS2_POS);
+
     PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RTK_POS);
+    PopulateGpsRtkRelMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RTK_POS_REL);
+    PopulateGpsRtkMiscMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RTK_POS_MISC);
+    PopulateGpsRtkRelMappings(m_lookupInfo, m_indexInfo, DID_GPS2_RTK_CMP_REL);
+    PopulateGpsRtkMiscMappings(m_lookupInfo, m_indexInfo, DID_GPS2_RTK_CMP_MISC);
+
+    PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS1_POS);
+    PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS2_POS);
     PopulateGpsVelMappings(m_lookupInfo, m_indexInfo, DID_GPS1_VEL);
     PopulateGpsVelMappings(m_lookupInfo, m_indexInfo, DID_GPS2_VEL);
+    PopulateGpsPosMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RCVR_POS);
+
+    PopulateGpsVersionMappings(m_lookupInfo, m_indexInfo, DID_GPS1_VERSION);
+    PopulateGpsVersionMappings(m_lookupInfo, m_indexInfo, DID_GPS2_VERSION);
+
+    PopulateGpsTimepulseMappings(m_lookupInfo, m_indexInfo, DID_GPS1_TIMEPULSE);
+
+    PopulateGpsRawMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RAW);
+    PopulateGpsRawMappings(m_lookupInfo, m_indexInfo, DID_GPS2_RAW);
+    PopulateGpsRawMappings(m_lookupInfo, m_indexInfo, DID_GPS_BASE_RAW);
 #if 0	// Too much data, we don't want to log this. WHJ
     PopulateGpsSatMappings(m_lookupInfo, m_indexInfo, DID_GPS1_SAT);
     PopulateGpsSatMappings(m_lookupInfo, m_indexInfo, DID_GPS2_SAT);
     PopulateGpsSigMappings(m_lookupInfo, m_indexInfo, DID_GPS1_SIG);
     PopulateGpsSigMappings(m_lookupInfo, m_indexInfo, DID_GPS2_SIG);
 #endif
-    PopulateGpsRtkRelMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RTK_POS_REL);
-    PopulateGpsRtkRelMappings(m_lookupInfo, m_indexInfo, DID_GPS2_RTK_CMP_REL);
-    PopulateGpsRtkMiscMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RTK_POS_MISC);
-    PopulateGpsRtkMiscMappings(m_lookupInfo, m_indexInfo, DID_GPS2_RTK_CMP_MISC);
-    PopulateGpsRawMappings(m_lookupInfo, m_indexInfo, DID_GPS1_RAW);
-    PopulateGpsRawMappings(m_lookupInfo, m_indexInfo, DID_GPS2_RAW);
-    PopulateGpsRawMappings(m_lookupInfo, m_indexInfo, DID_GPS_BASE_RAW);
     PopulateGroundVehicleMappings(m_lookupInfo, m_indexInfo);
     PopulateConfigMappings(m_lookupInfo, m_indexInfo);
     PopulateFlashConfigMappings(m_lookupInfo, m_indexInfo);
@@ -2141,8 +2263,11 @@ cISDataMappings::cISDataMappings()
     PopulateInfieldCalMappings(m_lookupInfo, m_indexInfo);
     PopulateInl2MagObsInfo(m_lookupInfo, m_indexInfo);
     PopulateInl2StatesMappings(m_lookupInfo, m_indexInfo);
+    PopulateInl2NedSigmaMappings(m_lookupInfo, m_indexInfo);
+    PopulateRosCovariancePoseTwistMappings(m_lookupInfo, m_indexInfo);
 
-    PopulateSensorsADCMappings(m_lookupInfo, m_indexInfo);
+    PopulateSensorsADCMappings(m_lookupInfo, m_indexInfo, DID_SENSORS_ADC);
+    PopulateSensorsADCMappings(m_lookupInfo, m_indexInfo, DID_SENSORS_ADC_SIGMA);
     PopulateSensorsISMappings(m_lookupInfo, m_indexInfo, DID_SENSORS_UCAL);
     PopulateSensorsISMappings(m_lookupInfo, m_indexInfo, DID_SENSORS_TCAL);
     PopulateSensorsISMappings(m_lookupInfo, m_indexInfo, DID_SENSORS_MCAL);
@@ -2162,6 +2287,8 @@ cISDataMappings::cISDataMappings()
     PopulateCanConfigMappings(m_lookupInfo, m_indexInfo);
 
 #ifdef USE_IS_INTERNAL
+    PopulateInl2StatusMappings(m_lookupInfo, m_indexInfo);
+    PopulateInl2MiscMappings(m_lookupInfo, m_indexInfo);
     PopulateUserPage0Mappings(m_lookupInfo, m_indexInfo);
     PopulateUserPage1Mappings(m_lookupInfo, m_indexInfo);
 //     PopulateRtkStateMappings(m_lookupInfo, m_indexInfo);
