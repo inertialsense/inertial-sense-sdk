@@ -2239,10 +2239,10 @@ cISDataMappings::cISDataMappings()
     PopulateDebugArrayMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_ARRAY);
     PopulateDebugArrayMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEBUG_ARRAY);
 #ifdef USE_IS_INTERNAL
-    PopulateRtkDebugMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
+    PopulateRtkDebugMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
     PopulateRtkDebugMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
     // PopulateRtkDebug2Mappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG_2);
-    // m_lookupSize[DID_RUNTIME_PROFILER] = sizeof(runtime_profiler_t);
+    PopulateRuntimeProfileMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RUNTIME_PROFILER);
 #endif
     // PopulateDiagMsgMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DIAGNOSTIC_MESSAGE);
 
