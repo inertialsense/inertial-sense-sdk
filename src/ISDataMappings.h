@@ -30,16 +30,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 typedef enum
 {
-	DATA_TYPE_INT8,
-	DATA_TYPE_UINT8,
-	DATA_TYPE_INT16,
-	DATA_TYPE_UINT16,
-	DATA_TYPE_INT32,
-	DATA_TYPE_UINT32,
-	DATA_TYPE_INT64,
-	DATA_TYPE_UINT64,
-	DATA_TYPE_F32,
-	DATA_TYPE_F64,
+	DATA_TYPE_INT8,		// 8-bit  signed 	integer
+	DATA_TYPE_UINT8,	// 8-bit  unsigned 	integer
+	DATA_TYPE_INT16,	// 16-bit signed 	integer
+	DATA_TYPE_UINT16,	// 16-bit unsigned 	integer
+	DATA_TYPE_INT32,	// 32-bit signed 	integer
+	DATA_TYPE_UINT32,	// 32-bit unsigned 	integer
+	DATA_TYPE_INT64,	// 64-bit signed 	integer
+	DATA_TYPE_UINT64,	// 64-bit unsigned 	integer
+	DATA_TYPE_F32,		// 32-bit float 
+	DATA_TYPE_F64,		// 64-bit float
 	DATA_TYPE_STRING,
 	DATA_TYPE_BINARY,
 
@@ -109,7 +109,8 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
     map_name_to_info_t& map = mappings[(id)]; \
     map_index_to_info_t& idx = indices[(id)]; \
     uint32_t totalSize = 0; \
-    uint32_t fieldCount = 0;
+    uint32_t fieldCount = 0; \
+	lookupSize[(id)] = sizeof(dtype);
 
 #if CPP11_IS_ENABLED
 
