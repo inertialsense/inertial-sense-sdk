@@ -18,6 +18,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <inttypes.h>
 #include "com_manager.h"
 
+#include <type_traits>
+#include <cstdint>
+#include <cstddef>
+
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
 #endif
@@ -227,6 +231,100 @@ struct sCaseInsensitiveCompare
 	}
 };
 
+
+// map of field name to data info
+typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
+typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;
+typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
+
+
+
+template <typename Dtype>
+class DataMapper
+{
+public:
+    typedef Dtype MAP_TYPE;  // Make MAP_TYPE a class-wide typedef
+
+    DataMapper(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t id) : map(mappings[id]), idx(indices[id]), totalSize(0), fieldCount(0)
+    {
+        lookupSize[id] = sizeof(MAP_TYPE);
+    }
+
+    // Combined function for all ADD_MAP macros
+    template <typename MemberType>
+	 void AddMap(const std::string& name, 
+                MemberType member,
+				eDataType dataType,
+                const std::string& units = "", 
+				const std::string& description = "",
+                eDataFlags dataFlags = eDataFlags(0), 
+				double conversion = 1.0) 	
+    {
+        using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
+
+        uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
+
+        // Populate the map with the new entry
+        map[name] = { 
+            offset,
+            (uint32_t)sizeof(FieldType), 
+            dataType, 
+            dataFlags, 
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+        idx[fieldCount++] = &(map[name]);
+        totalSize += sizeof(FieldType);
+
+        // Static assertions for type and size validation
+        static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+        assert(((s_eDataTypeSizes[dataType] == 0) || ((uint32_t)sizeof(FieldType) == s_eDataTypeSizes[dataType])) && "Data type size mismatch");
+    }
+
+private:
+    map_name_to_info_t& map;  // Reference to the specific mapping for this instance
+    map_index_to_info_t& idx; // Reference to the specific index for this instance
+    uint32_t totalSize;    // Tracks total size of mapped fields
+    uint32_t fieldCount;   // Tracks the count of fields
+
+    // Static data type sizes array (assuming this is already defined somewhere)
+    // static uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT];
+};
+
+// Static initialization (for the sake of example)
+// uint32_t DataMapper::s_eDataTypeSizes[DATA_TYPE_COUNT] = 
+// { 
+//     1, 1, 2, 2, 4, 4, 8, 8, 4, 8, 0, 0 
+// };  // Assuming sizes for each data type
+
+// Example usage
+struct MyStruct 
+{
+    int32_t myMember;
+    uint32_t myOtherMember;
+};
+
+// void exampleUsage() {
+//     DataMapper mapper;
+
+//     // Initialize a mapping for a specific data type and id
+//     mapper.InitMap<MyStruct>(1);
+
+//     // Add a field to the mapping (replaces ADD_MAP_4, ADD_MAP_5, etc.)
+//     mapper.AddMap<MyStruct, int32_t>("MyMember", &MyStruct::myMember, DATA_TYPE_INT32);
+
+//     // Add another field with flags (replaces ADD_MAP_5)
+//     mapper.AddMap<MyStruct, uint32_t>("MyOtherMember", &MyStruct::myOtherMember, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
+// }
+
+
+
+
 /*
 template <>
 struct equal_to<std::string> : public unary_function<std::string, bool>
@@ -259,10 +357,6 @@ struct equal_to<std::string> : public unary_function<std::string, bool>
 };
 */
 
-// map of field name to data info
-typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
-typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;
-typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 class cISDataMappings
 {

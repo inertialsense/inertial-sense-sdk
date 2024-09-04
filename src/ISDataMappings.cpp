@@ -90,45 +90,6 @@ static void PopulateTimestampField(uint32_t id, const data_info_t** timestamps, 
     timestamps[id] = NULLPTR; // ensure value is not garbage
 }
 
-static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
-{
-    INIT_MAP(dev_info_t, did);
-    ADD_MAP_4("reserved", reserved, DATA_TYPE_UINT16, uint16_t);
-    ADD_MAP_4("reserved2", reserved2, DATA_TYPE_UINT8, uint8_t);
-    ADD_MAP_7("hardwareType", hardwareType, DATA_TYPE_UINT8,  uint8_t,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("serialNumber", serialNumber, DATA_TYPE_UINT32, uint32_t, "", "Serial number", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("hardwareVer[0]", hardwareVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Hardware version", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("hardwareVer[1]", hardwareVer[1], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("hardwareVer[2]", hardwareVer[2], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("hardwareVer[3]", hardwareVer[3], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("firmwareVer[0]", firmwareVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Firmware version", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("firmwareVer[1]", firmwareVer[1], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("firmwareVer[2]", firmwareVer[2], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("firmwareVer[3]", firmwareVer[3], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildNumber", buildNumber, DATA_TYPE_UINT32, uint32_t, "", "Build number (0xFFFFF000 = Host key, 0x00000FFF = Build #)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_7("protocolVer[0]", protocolVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Communications protocol version", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("protocolVer[1]", protocolVer[1], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("protocolVer[2]", protocolVer[2], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("protocolVer[3]", protocolVer[3], DATA_TYPE_UINT8, uint8_t&, "", "\"", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("repoRevision", repoRevision, DATA_TYPE_UINT32, uint32_t, "", "Repo revision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    ADD_MAP_7("manufacturer", manufacturer, DATA_TYPE_STRING, char[DEVINFO_MANUFACTURER_STRLEN], "", "manufacturer", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildType", buildType, DATA_TYPE_UINT8, uint8_t, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '*'(42)=dirty", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildYear", buildYear, DATA_TYPE_UINT8, uint8_t, "", "Build year-2000", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildMonth", buildMonth, DATA_TYPE_UINT8, uint8_t, "", "Build month", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildDay", buildDay, DATA_TYPE_UINT8, uint8_t, "", "Build day", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildHour", buildHour, DATA_TYPE_UINT8, uint8_t, "", "Build hour", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildMinute", buildMinute, DATA_TYPE_UINT8, uint8_t, "", "Build minute", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildSecond", buildSecond, DATA_TYPE_UINT8, uint8_t, "", "Build second", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("buildMillisecond", buildMillisecond, DATA_TYPE_UINT8, uint8_t, "", "Build millisecond", DATA_FLAGS_READ_ONLY);
-    ADD_MAP_7("addInfo", addInfo, DATA_TYPE_STRING, char[DEVINFO_ADDINFO_STRLEN], "", "Additional info", DATA_FLAGS_READ_ONLY);
-    // TODO: dev_info_t.firmwareMD5Hash support
-    // ADD_MAP_4("firmwareMD5Hash[0]", firmwareMD5Hash[0], DATA_TYPE_UINT32, uint32_t&);
-    // ADD_MAP_4("firmwareMD5Hash[1]", firmwareMD5Hash[1], DATA_TYPE_UINT32, uint32_t&);
-    // ADD_MAP_4("firmwareMD5Hash[2]", firmwareMD5Hash[2], DATA_TYPE_UINT32, uint32_t&);
-    // ADD_MAP_4("firmwareMD5Hash[3]", firmwareMD5Hash[3], DATA_TYPE_UINT32, uint32_t&);
-    ASSERT_SIZE(totalSize);
-}
-
 static void PopulateHdwParamsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
 #if 0
