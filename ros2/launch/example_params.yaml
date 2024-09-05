@@ -217,7 +217,7 @@ rtk_rover:
     gps3: none                                  # Disable RTK corrections at GPS3
 
   positioning_enable: true                     # Enable RTK precision positioning at GPS1
-  compassing_enable: true                      # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
+  compassing_enable: false                      # Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
   correction_input:
     select: ntrip_example                       # Select correction input settings
 

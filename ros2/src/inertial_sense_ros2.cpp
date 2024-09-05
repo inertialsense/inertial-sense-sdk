@@ -243,31 +243,31 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param_1);
     }
 
-    factory_reset_ = nh_->declare_parameter<bool>("factory_reset", false);
-    ph.nodeParam("factory_reset", factory_reset_, factory_reset_);
+    bool factory_reset = nh_->declare_parameter<bool>("factory_reset", false);
+    ph.nodeParam("factory_reset", factory_reset_, factory_reset);
 
-    baudrate_ = nh_->declare_parameter<int>("baudrate", 921600);
-    ph.nodeParam("baudrate", baudrate_, baudrate_);
+    int baud_rate = nh_->declare_parameter<int>("baudrate", 921600);
+    ph.nodeParam("baudrate", baudrate_, baud_rate);
 
 
-    frame_id_ = nh_->declare_parameter<std::string>("frame_id", "body");
-    ph.nodeParam("frame_id", frame_id_, frame_id_);
-    log_enabled_ = nh_->declare_parameter<bool>("enable_log", false);
-    ph.nodeParam("enable_log", log_enabled_, log_enabled_);
+    std::string frame_id = nh_->declare_parameter<std::string>("frame_id", "body");
+    ph.nodeParam("frame_id", frame_id_, frame_id);
+    bool log_enabled = nh_->declare_parameter<bool>("enable_log", false);
+    ph.nodeParam("enable_log", log_enabled_, log_enabled);
 
 
     // advanced Parameters
-    ioConfigBits_ = nh_->declare_parameter<int>("io_config", 39624800);
-    setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, ioConfigBits_);
+    int io_config_bits = nh_->declare_parameter<int>("io_config", 39624800);
+    setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, io_config_bits);
 
-    rtkConfigBits_ = nh_->declare_parameter<int>("RTKCfgBits", 0);
-    ph.nodeParam("RTKCfgBits", rtkConfigBits_, rtkConfigBits_);            // rtk config bits
+    int rtk_config_bits = nh_->declare_parameter<int>("RTKCfgBits", 0);
+    ph.nodeParam("RTKCfgBits", rtkConfigBits_, rtk_config_bits);            // rtk config bits
 
-    wheelConfigBits_ = nh_->declare_parameter<int>("wheelCfgBits", 0);
-    ph.nodeParam("wheelCfgBits", wheelConfigBits_, wheelConfigBits_);        // wheel-encoder config bits
+    int wheel_config_bits = nh_->declare_parameter<int>("wheelCfgBits", 0);
+    ph.nodeParam("wheelCfgBits", wheelConfigBits_, wheel_config_bits);        // wheel-encoder config bits
 
-    magDeclination_ = nh_->declare_parameter<float>("mag_declination", 0.20007290992);
-    ph.nodeParam("mag_declination", magDeclination_, magDeclination_);
+    float mag_declination = nh_->declare_parameter<float>("mag_declination", 0.20007290992);
+    ph.nodeParam("mag_declination", magDeclination_, mag_declination);
 
     std::vector<double> refLla_vector = nh_->declare_parameter<std::vector<double>>("ref_lla", {0.0, 0.0, 0.0});
     if (refLla_vector.size() == 3) {
@@ -277,8 +277,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     //ph.nodeParam("publishTf", publishTf_);
 
-    platformConfig_ = nh_->declare_parameter<int>("platformConfig", 0);
-    setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_, platformConfig_);
+    int platform_config = nh_->declare_parameter<int>("platformConfig", 0);
+    setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_, platform_config);
 
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
@@ -318,8 +318,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
     }
     ph.nodeParamVec("offset", 3, insOffset_, insOffset_);
 
-    ins_nav_dt_ms_ = nh_->declare_parameter<float>("navigation_dt_ms", 8);
-    ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, ins_nav_dt_ms_);
+    float ins_nav_dt_ms = nh_->declare_parameter<float>("navigation_dt_ms", 8);
+    ph.nodeParam("navigation_dt_ms", ins_nav_dt_ms_, ins_nav_dt_ms);
 
     std::vector<std::string> dyn_model_set{ "DYNAMIC_MODEL_PORTABLE",
                                             " << UNKNOWN >> ",
@@ -333,11 +333,11 @@ void InertialSenseROS::load_params(YAML::Node &node)
                                             "DYNAMIC_MODEL_WRIST",
                                             "DYNAMIC_MODEL_INDOOR" };
 
-    dynamicModel_ = nh_->declare_parameter<int>("dynamic_model", DYNAMIC_MODEL_AIRBORNE_4G);
-    ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, dynamicModel_);
+    int dynamic_model = nh_->declare_parameter<int>("dynamic_model", DYNAMIC_MODEL_AIRBORNE_4G);
+    ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, dynamic_model);
 
-    covariance_enabled_ = nh_->declare_parameter<bool>("enable_covariance", false);
-    ph.nodeParam("enable_covariance", covariance_enabled_, covariance_enabled_);
+    bool cov_enabled = nh_->declare_parameter<bool>("enable_covariance", false);
+    ph.nodeParam("enable_covariance", covariance_enabled_, cov_enabled);
 
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
     bool rs_odom_ins_enu_enable = nh_->declare_parameter<bool>("msg/odom_ins_enu/enable", false);
@@ -372,11 +372,11 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
-    rs_.gps1.type = nh_->declare_parameter<std::string>("gps1_type", "F9P");
-    ph.nodeParam("type", rs_.gps1.type, rs_.gps1.type);
+    std::string rs_gps1_type = nh_->declare_parameter<std::string>("gps1_type", "F9P");
+    ph.nodeParam("type", rs_.gps1.type, rs_gps1_type);
 
-    gpsTimeUserDelay_ = nh_->declare_parameter<float>("gpsTimeUserDelay", 0);
-    ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_, gpsTimeUserDelay_);
+    float gps_time_user_delay = nh_->declare_parameter<float>("gpsTimeUserDelay", 0);
+    ph.nodeParam("gpsTimeUserDelay", gpsTimeUserDelay_, gps_time_user_delay);
 
     std::vector<double>offset_vec = nh_->declare_parameter<std::vector<double>>("antenna_offset_gps1", {0,0,0});
     if (offset_vec.size() == 3) {
@@ -437,11 +437,11 @@ void InertialSenseROS::load_params(YAML::Node &node)
     node["gps2"] = gps2Node;
 
     YAML::Node evbNode = ph.node(node, "evb");
-    evb_.cb_preset = nh_->declare_parameter<int>("cb_preset", 2);
-    ph.nodeParam("cb_preset", evb_.cb_preset, evb_.cb_preset);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
+    int evb_cb_preset = nh_->declare_parameter<int>("cb_preset", 2);
+    ph.nodeParam("cb_preset", evb_.cb_preset, evb_cb_preset);        // 2=RS232(default), 3=XBee Radio On, 4=WiFi On & RS422, 5=SPI, 6=USB hub, 7=USB hub w/ RS422, 8=all off but USB
 
-    evb_.cb_options = nh_->declare_parameter<int>("cb_options", 0);
-    ph.nodeParam("cb_options", evb_.cb_options, evb_.cb_options);
+    int evb_cb_options = nh_->declare_parameter<int>("cb_options", 0);
+    ph.nodeParam("cb_options", evb_.cb_options, evb_cb_options);
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
     if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
@@ -452,8 +452,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
         RTK_base_ = new RtkBaseProvider(rtkBaseNode);
 
     YAML::Node diagNode = ph.node(node, "diagnostics");
-    rs_.diagnostics.enabled = nh_->declare_parameter<bool>("msg/diagnostics/enable", false);
-    ph.nodeParam("enable", rs_.diagnostics.enabled, rs_.diagnostics.enabled);
+    bool rs_diagnostics_enabled = nh_->declare_parameter<bool>("msg/diagnostics/enable", false);
+    ph.nodeParam("enable", rs_.diagnostics.enabled, rs_diagnostics_enabled);
 
     // Print entire yaml node tree
      //printf("Node Tree:\n");
@@ -790,7 +790,7 @@ void InertialSenseROS::configure_flash_parameters()
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
     IS_.FlashConfig(current_flash_cfg);
-    //RCLCPP_INFO("InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
+    //RCLCPP_INFO(rclcpp::get_logger("E"),"InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {

@@ -94,8 +94,8 @@ ament_add_gtest(test_new_target
         test/test_basic_unit_tests.cpp
         test/test_client_reconnect.cpp
         test/test_communications.cpp
-       # test/test_main.cpp
-       # test/test_main.h
+        #test/test_main.cpp
+        #test/test_main.h
         test/gtest_helpers.h
 )
 add_dependencies(new_target RunScript)
