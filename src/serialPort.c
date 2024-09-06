@@ -90,6 +90,15 @@ int serialPortFlush(serial_port_t* serialPort)
 	return serialPort->pfnFlush(serialPort);
 }
 
+int serialPortDrain(serial_port_t* serialPort)
+{
+    if (serialPort == 0 || serialPort->handle == 0 || serialPort->pfnDrain == 0)
+    {
+        return 0;
+    }
+    return serialPort->pfnDrain(serialPort);
+}
+
 int serialPortRead(serial_port_t* serialPort, unsigned char* buffer, int readCount)
 {
 	return serialPortReadTimeout(serialPort, buffer, readCount, -1);
@@ -109,6 +118,7 @@ int serialPortReadTimeout(serial_port_t* serialPort, unsigned char* buffer, int 
 		return 0;
 	}
 
+	serialPort->rxBytes += count;
 	return count;
 }
 
@@ -119,7 +129,15 @@ int serialPortReadTimeoutAsync(serial_port_t* serialPort, unsigned char* buffer,
 		return 0;
 	}
 
-	return serialPort->pfnAsyncRead(serialPort, buffer, readCount, completion);
+	int count = serialPort->pfnAsyncRead(serialPort, buffer, readCount, completion);
+
+	if (count < 0)
+	{
+		return 0;
+	}
+
+	serialPort->rxBytes += count;
+	return count;
 }
 
 int serialPortReadLine(serial_port_t* serialPort, unsigned char* buffer, int bufferLength)
@@ -221,6 +239,7 @@ int serialPortWrite(serial_port_t* serialPort, const unsigned char* buffer, int 
 		return 0;
 	}
 
+	serialPort->txBytes += count;
 	return count;
 }
 

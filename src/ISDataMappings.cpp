@@ -134,6 +134,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_GPS2_SIG] = sizeof(gps_sig_t);
     sizeMap[DID_GPS1_VERSION] = sizeof(gps_version_t);
     sizeMap[DID_GPS2_VERSION] = sizeof(gps_version_t);
+    sizeMap[DID_GPS1_TIMEPULSE] = sizeof(gps_timepulse_t);    
     sizeMap[DID_GPS1_RTK_POS] = sizeof(gps_pos_t);
     sizeMap[DID_GPS1_RTK_POS_REL] = sizeof(gps_rtk_rel_t);
     sizeMap[DID_GPS1_RTK_POS_MISC] = sizeof(gps_rtk_misc_t);
@@ -612,6 +613,26 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ADD_MAP(m, totalSize, "vel[2]", vel[2], 0, DataTypeFloat, float&, 0);
     ADD_MAP(m, totalSize, "sAcc", sAcc, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "status", status, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t id)
+{
+    typedef gps_timepulse_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[id];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "towOffset", towOffset, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "towGps", towGps, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "timeMcu", timeMcu, 0, DataTypeDouble, double, 0);
+    ADD_MAP(m, totalSize, "msgTimeMs", msgTimeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "plsTimeMs", plsTimeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "syncCount", syncCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "badPulseAgeCount", badPulseAgeCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "ppsInterruptReinitCount", ppsInterruptReinitCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "plsCount", plsCount, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "lastSyncTimeMs", lastSyncTimeMs, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "sinceLastSyncTimeMs", sinceLastSyncTimeMs, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1104,17 +1125,18 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     map_name_to_info_t& m = mappings[DID_EVENT];
     uint32_t totalSize = 0;
 
-
     ADD_MAP(m, totalSize, "Time stamp of message (System Up seconds)", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
 
     ADD_MAP(m, totalSize, "Message ID", msgTypeID, 0, DataTypeUInt16, uint16_t, 0);
-    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "Priority", priority, 0, DataTypeInt8, int8_t, 0);
     ADD_MAP(m, totalSize, "Length", length, 0, DataTypeUInt16, uint16_t, 0);
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
     ADD_MAP(m, totalSize, "Reserved 8 bit", res8, 0, DataTypeUInt8, uint8_t, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -1166,10 +1188,18 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "navOutputPeriodMs", navOutputPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "rtkMode", rtkMode, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "gnss1RunState", gnss1RunState, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "gnss2RunState", gnss2RunState, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.RunState", gnsssStatus[0].runState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.fwUpdateState", gnsssStatus[0].fwUpdateState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.initState", gnsssStatus[0].initState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.reserved", gnsssStatus[0].reserved, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.RunState", gnsssStatus[1].runState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.fwUpdateState", gnsssStatus[1].fwUpdateState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.initState", gnsssStatus[1].initState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.reserved", gnsssStatus[1].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "SourcePort", gpxSourcePort, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "upTime", upTime, 0, DataTypeDouble, double, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2726,6 +2756,7 @@ cISDataMappings::cISDataMappings()
     PopulateGpsPosMappings(m_lookupInfo, DID_GPS1_RTK_POS);
     PopulateGpsVelMappings(m_lookupInfo, DID_GPS1_VEL);
     PopulateGpsVelMappings(m_lookupInfo, DID_GPS2_VEL);
+    PopulateGpsTimepulseMappings(m_lookupInfo, DID_GPS1_TIMEPULSE);
 #if 0	// Too much data, we don't want to log this. WHJ
     PopulateGpsSatMappings(m_lookupInfo, DID_GPS1_SAT);
     PopulateGpsSatMappings(m_lookupInfo, DID_GPS2_SAT);
@@ -2889,6 +2920,75 @@ uint32_t cISDataMappings::GetSize(uint32_t dataId)
 
 #endif
 
+}
+
+
+uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
+{
+    switch (dataId)
+    {
+    case DID_DEV_INFO:
+    case DID_GPS1_VERSION:
+    case DID_GPS2_VERSION:
+    case DID_GPS1_TIMEPULSE:
+    case DID_SYS_SENSORS:
+    case DID_SENSORS_ADC:
+    case DID_SENSORS_ADC_SIGMA:
+    case DID_SENSORS_TC_BIAS:
+    case DID_SENSORS_UCAL:
+    case DID_SENSORS_TCAL:
+    case DID_SENSORS_MCAL:
+    case DID_SCOMP:
+    case DID_HDW_PARAMS:
+    case DID_SYS_PARAMS:
+    case DID_NVR_MANAGE_USERPAGE:
+    case DID_NVR_USERPAGE_SN:
+    case DID_NVR_USERPAGE_G0:
+    case DID_NVR_USERPAGE_G1:
+    case DID_FLASH_CONFIG:
+    case DID_CAL_SC_INFO:
+    case DID_CAL_SC:
+    case DID_CAL_TEMP_COMP:
+    case DID_CAL_MOTION:
+    case DID_RTOS_INFO:
+    case DID_SYS_CMD:
+    case DID_NMEA_BCAST_PERIOD:
+    case DID_RMC:
+    case DID_DEBUG_STRING:
+    case DID_DEBUG_ARRAY:
+    case DID_IO:
+    case DID_MAG_CAL:
+    case DID_COMMUNICATIONS_LOOPBACK:
+    case DID_BIT:
+    case DID_WHEEL_ENCODER:
+    case DID_SYS_FAULT:
+    case DID_SURVEY_IN:
+    case DID_PORT_MONITOR:
+    case DID_CAN_CONFIG:
+    case DID_INFIELD_CAL:
+    case DID_REFERENCE_IMU:
+    case DID_REFERENCE_PIMU:
+    case DID_REFERENCE_MAGNETOMETER:
+    case DID_RUNTIME_PROFILER:
+    case DID_INL2_COVARIANCE_LD:
+    case DID_INL2_STATUS:
+    case DID_INL2_MISC:
+    case DID_INL2_STATES:
+    case DID_ROS_COVARIANCE_POSE_TWIST:
+    case DID_INL2_MAG_OBS_INFO:
+    case DID_GPX_DEV_INFO:
+    case DID_GPX_FLASH_CFG:
+    case DID_GPX_RTOS_INFO:
+    case DID_GPX_STATUS:
+    case DID_GPX_DEBUG_ARRAY:
+    case DID_GPX_BIT:
+    case DID_GPX_RMC:
+    case DID_GPX_PORT_MONITOR:
+        return 100;     // (100ms, 10 Hz)
+
+    default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.
+        return 1;
+    }
 }
 
 

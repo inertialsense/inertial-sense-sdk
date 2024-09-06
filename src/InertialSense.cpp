@@ -671,11 +671,7 @@ void InertialSense::Close()
         StopBroadcasts();
         SLEEP_MS(100);
     }
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
-    {
-        serialPortClose(&m_comManagerState.devices[i].serialPort);
-    }
-    m_comManagerState.devices.clear();
+    CloseSerialPorts(true); // allow all opened ports to transmit all buffered data
 }
 
 vector<string> InertialSense::GetPorts()
@@ -771,7 +767,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
 
         m_comManagerState.devices[pHandle].sysCmd.command = command;
         m_comManagerState.devices[pHandle].sysCmd.invCommand = ~command;
-        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.
+        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
         comManagerSendData(pHandle, &m_comManagerState.devices[pHandle].sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
     }
 }
@@ -1089,7 +1085,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (int i = 0; i < (int)m_comManagerState.devices.size(); i++)
         {
-            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the uINS.
+            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the IMX.
             comManagerDisableData(i, dataId);
         }
     }
@@ -1097,9 +1093,10 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (int i = 0; i < (int)m_comManagerState.devices.size(); i++)
         {
-            // [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
+            // [C COMM INSTRUCTION]  3.) Request a specific data set from the IMX.  "periodMultiple" specifies the interval
             // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+            if (m_comManagerState.devices[i].devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0 || !m_enableDeviceValidation) 
+            {
                 comManagerGetData(i, dataId, 0, 0, periodMultiple);
             }
         }
@@ -1561,11 +1558,14 @@ bool InertialSense::OpenSerialPorts(const char* port, int baudRate)
     return m_comManagerState.devices.size() != 0;
 }
 
-void InertialSense::CloseSerialPorts()
+void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 {
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    for (auto& device : m_comManagerState.devices)
     {
-        serialPortClose(&m_comManagerState.devices[i].serialPort);
+        if (drainBeforeClose)
+            serialPortDrain(&device.serialPort);
+
+        serialPortClose(&device.serialPort);
     }
     m_comManagerState.devices.clear();
 }

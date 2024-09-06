@@ -16,7 +16,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-
 cmd_options_t g_commandLineOptions = {};
 serial_port_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
@@ -57,9 +56,9 @@ static bool matches(const char* str, const char* pre)
 }
 
 #define CL_DEFAULT_BAUD_RATE                IS_BAUDRATE_DEFAULT
-#define CL_DEFAULT_DEVICE_PORT                 "*"
+#define CL_DEFAULT_DEVICE_PORT              "*"
 #define CL_DEFAULT_DISPLAY_MODE             cInertialSenseDisplay::DMODE_SCROLL
-#define CL_DEFAULT_LOG_TYPE                 "dat"
+#define CL_DEFAULT_LOG_TYPE                 "raw"
 #define CL_DEFAULT_LOGS_DIRECTORY           DEFAULT_LOGS_DIRECTORY
 #define CL_DEFAULT_ENABLE_LOGGING           false
 #define CL_DEFAULT_MAX_LOG_FILE_SIZE        1024 * 1024 * 5
@@ -88,7 +87,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
     if (did > DID_NULL && did < DID_COUNT)
     {   // DID is valid
         dataset->did = did;
-        dataset->periodMultiple = 1;
+        dataset->periodMultiple = cISDataMappings::DefaultPeriodMultiple(did);      // Use default to prevent 1ms period streaming for non-rmc messages
 
         if (pos != std::string::npos)
         {   // Contains '='
@@ -162,7 +161,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.outputOnceDid = 0;
     g_commandLineOptions.platformType = -1;
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
-    g_commandLineOptions.runDuration = 0; // run until interrupted, by default
+    g_commandLineOptions.runDurationMs = 0; // run until interrupted, by default
 
     if(argc <= 1)
     {   // Display usage menu if no options are provided
@@ -209,7 +208,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-dur="))
         {
-            g_commandLineOptions.runDuration = (uint32_t)(atof(&a[5])*1000.0);
+            g_commandLineOptions.runDurationMs = (uint32_t)(atof(&a[5])*1000.0);
         }
         else if (startsWith(a, "-dids"))
         {
@@ -222,7 +221,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 if (g_commandLineOptions.outputOnceDid)
                 {
-                    i++;
+                    i++; // if we've previously parsed a "onceDid" then ignore all others (and all before it)
                 }
                 else
                 {
@@ -495,8 +494,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-stats"))
         {
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
-            enable_display_mode();
+            enable_display_mode(cInertialSenseDisplay::DMODE_STATS);
         }
         else if (startsWith(a, "-survey="))
         {
@@ -551,6 +549,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
+        }
+        else if (startsWith(a, "-vd"))
+        {
+            g_commandLineOptions.disableDeviceValidation = true;
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
@@ -804,10 +806,12 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
-    cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
-    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
+	cout << "    -dur=" << boldOff << "DURATION   Run DURATION in seconds before exiting cltool.  Default is 0, no limit." << endlbOn;
+    cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
+    cout << "    -vd" << boldOff << "             Disable device validate.  Use to keep port(s) open even if device response is not received." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
@@ -852,7 +856,7 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: dat (default), raw, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;

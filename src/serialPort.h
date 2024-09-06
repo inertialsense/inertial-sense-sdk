@@ -89,6 +89,12 @@ struct serial_port_t
 	// length of error
 	int errorLength;
 
+	// Number of bytes sent
+	int txBytes;
+
+	// Number of bytes received
+	int rxBytes;
+
 	// Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
     uint32_t options;
 
@@ -110,8 +116,11 @@ struct serial_port_t
 	// close the serial port
 	pfnSerialPortClose pfnClose;
 
-	// remove all data from all buffers
+	// discard all data from all buffers
 	pfnSerialPortFlush pfnFlush;
+
+    // block until all queued TX data has been sent
+    pfnSerialPortFlush pfnDrain;
 
 	// get number of bytes in the receive buffer that can be read
 	pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
@@ -151,6 +160,9 @@ int serialPortClose(serial_port_t* serialPort);
 
 // clear all buffers and pending reads and writes - returns 1 if success, 0 if failure
 int serialPortFlush(serial_port_t* serialPort);
+
+// blocks until all pending TX writes have completed, and the TX buffer is empty.
+int serialPortDrain(serial_port_t* serialPort);
 
 // read up to readCount bytes into buffer
 // call is forwarded to serialPortReadTimeout with timeoutMilliseconds of 0 for non-blocking, or SERIAL_PORT_DEFAULT_TIMEOUT for blocking.  Returns number of bytes read which is less than or equal to readCount.
