@@ -22,11 +22,24 @@ cDataChunk::cDataChunk()
 {
 	Clear();
 	m_hdr.marker = DATA_CHUNK_MARKER;
+    #ifdef CHUNK_VER_1
 	m_hdr.version = 1;
 	m_hdr.classification = ' ' << 8 | 'U';
 	m_hdr.grpNum = 0;				//!< Chunk group number
 	m_hdr.devSerialNum = 0;			//!< Serial number
-	m_hdr.reserved = 0;				//!< Reserved 
+	m_hdr.reserved = 0;				//!< Reserved
+    #else
+    m_hdr.version = 2;
+    m_hdr.dataSize = 34;
+    m_hdr.protocolVersion[0] = PROTOCOL_VERSION_CHAR0;
+    m_hdr.protocolVersion[1] = PROTOCOL_VERSION_CHAR1;
+    m_hdr.grpNum = 0;				//!< Chunk group number
+    m_hdr.devSerialNum = 0;			//!< Serial number
+    m_hdr.fwVersion[0] = 0;			//!< clear firmware
+    m_hdr.fwVersion[1] = 0;			//!< clear firmware
+    m_hdr.fwVersion[2] = 0;			//!< clear firmware
+    m_hdr.fwVersion[3] = 0;			//!< clear firmware
+    #endif
     m_buffTail = m_buffHead + DEFAULT_CHUNK_DATA_SIZE;
 	m_dataHead = m_buffHead;
 	m_dataTail = m_buffHead;
@@ -53,6 +66,17 @@ void cDataChunk::SetName(const char name[4])
 	m_hdr.invName[1] = ~m_hdr.name[1];
 	m_hdr.invName[2] = ~m_hdr.name[2];
 	m_hdr.invName[3] = ~m_hdr.name[3];
+}
+
+void cDataChunk::SetDevInfo(const dev_info_t& devInfo)
+{
+    m_hdr.devSerialNum = devInfo.serialNumber;
+    #ifndef CHUNK_VER_1
+    m_hdr.fwVersion[0] = devInfo.firmwareVer[0];
+    m_hdr.fwVersion[1] = devInfo.firmwareVer[1];
+    m_hdr.fwVersion[2] = devInfo.firmwareVer[2];
+    m_hdr.fwVersion[3] = devInfo.firmwareVer[3];
+    #endif
 }
 
 
@@ -183,7 +207,8 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 	if (readHeader)
 	{
 		// Read chunk header
-		nBytes += static_cast<int32_t>(pFile->read(&m_hdr, sizeof(sChunkHeader)));
+        auto hdrSize = sizeof(sChunkHeader);
+		nBytes += static_cast<int32_t>(pFile->read(&m_hdr, hdrSize));
 
 		// Error checking
 		if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
@@ -233,7 +258,7 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 	#if LOG_CHUNK_STATS
 			static bool start = true;
 			int totalBytes = 0;
-			for (int id = 0; id < DID_COUNT; id++)
+			for (eDataIDs id = 0; id < DID_COUNT; id++)
 				if (m_stats[id].total)
 				{
 					if (start)
@@ -256,7 +281,7 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 			logStats("================================================\n");
 			logStats("            *.dat Data Log File\n");
 			logStats("================================================\n");
-			m_Hdr.print();
+			m_hdr.print();
 	#if LOG_CHUNK_STATS==2
 			logStats("------------------------------------------------\n");
 			logStats("Chunk Data\n");
