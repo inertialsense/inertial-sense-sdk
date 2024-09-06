@@ -60,6 +60,7 @@ TEST(ROSCommunicationsTests, test_navsatfix )
 
     InertialSenseROS isROS(config);
     isROS.initialize();
+    EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
 
     double now = ros::Time::now().toSec();
     double expires = now + 5.0, nextMsg = now + 1.0;
