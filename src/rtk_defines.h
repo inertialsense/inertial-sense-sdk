@@ -12,14 +12,11 @@
 #define NFREQ       2       // Number of carrier frequencies
 #define NEXOBS      0       // Number of extended obs codes
 
-#ifdef GPX_GNSS_TYPE
-    #if (GPX_GNSS_TYPE == GPX_GNSS_F9P)
-        #define L1_L5_RTK   0		// Use second slot for L2 
-    #else
-        #define L1_L5_RTK   1		// Use second slot for L5 
-    #endif
+#if defined(GPX_GNSS_F9P)
+    #error "F9P defined. Are you sur: RTKDefines.h"
+    #define L1_L5_RTK   0		// Use second slot for L2 
 #else
-    #define L1_L5_RTK       1	
+    #define L1_L5_RTK   1		// Use second slot for L5 
 #endif
 
 // #if defined(RTK_EMBEDDED)
