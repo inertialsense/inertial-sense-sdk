@@ -85,7 +85,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	survey_in_t surveyIn;
 	std::string asciiMessages;
 	double replaySpeed;
-	int displayMode;	
+	int displayMode;
+    int verboseLevel = 0;
 	
 	uint64_t rmcPreset;
 	bool persistentMessages;
