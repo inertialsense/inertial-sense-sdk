@@ -4835,7 +4835,7 @@ typedef struct
 typedef struct
 {
     /** Prioity mask (see eEventPriority) */
-    uint8_t priorityLevel;
+    int8_t priorityLevel;
       
     /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
     uint32_t msgTypeIdMask;
