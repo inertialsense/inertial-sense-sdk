@@ -186,7 +186,7 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
 {
     // Clear buffer and initialize buffer pointers
-    if (c->rxBuf.size != bufferSize) { return -1; }
+    if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
     if (c->rxBuf.start != buffer) { return -1; }
     if (c->rxBuf.end != buffer + bufferSize) { return -1; }
     if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -1; }
