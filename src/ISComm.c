@@ -182,6 +182,46 @@ void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
     c->rxErrorState = 1;
 }
 
+
+int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+{
+    // Clear buffer and initialize buffer pointers
+    if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
+    if (c->rxBuf.start != buffer) { return -1; }
+    if (c->rxBuf.end != buffer + bufferSize) { return -1; }
+    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -1; }
+    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -1; }
+    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -1; }
+    
+    // Set parse enable flags
+    if (c->config.enabledMask != 
+        (ENABLE_PROTOCOL_ISB
+        | ENABLE_PROTOCOL_NMEA
+        | ENABLE_PROTOCOL_UBLOX
+        | ENABLE_PROTOCOL_RTCM3
+        // | ENABLE_PROTOCOL_SONY
+        // | ENABLE_PROTOCOL_SPARTN 
+        )) { return -1; }
+    
+    if (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end) { return -1; }
+
+    // Everything matches
+    return 0;
+}
+
+int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit)
+{
+    int result = is_comm_check(c, buffer, bufferSize);
+
+    if (result || forceInit)
+    {   // Mismatch or forced init
+        is_comm_init(c, buffer, bufferSize);
+    }
+
+    // 0 on match, -1 on mismatch
+    return result;
+}
+
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
     is_comm_parser_t *p = &(c->parser);
