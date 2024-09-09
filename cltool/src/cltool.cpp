@@ -554,6 +554,16 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.disableDeviceValidation = true;
         }
+        else if (startsWith(a, "-verbose"))
+        {
+            g_commandLineOptions.verboseLevel=1;
+            for (char *p = argv[i]+7; *p != 0; p++) {
+                if (*p == '+')
+                    g_commandLineOptions.verboseLevel++;
+                else if (*p == '!')
+                    g_commandLineOptions.verboseLevel = 255;
+            }
+        }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
             cout << cltool_version() << endl;
