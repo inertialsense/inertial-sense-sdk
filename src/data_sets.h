@@ -1487,10 +1487,12 @@ enum eSystemCommand
     SYS_CMD_GPX_HARD_RESET_GNSS1                        = 36,           // (uint32 inv: 4294967259)
     SYS_CMD_GPX_HARD_RESET_GNSS2                        = 37,           // (uint32 inv: 4294967258)
     SYS_CMD_GPX_SOFT_RESET_GPX                          = 38,           // (uint32 inv: 4294967257)
-    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX.
-    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967260) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK  = 39,           // (uint32 inv: 4294967256) // Enables serial bridge on IMX to GPX and loopback on GPX.
+    SYS_CMD_GPX_ENABLE_SERIAL_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE  = 40,  // (uint32 inv: 4294967255) // Enables serial bridge on IMX to GPX and loopback on GPX (driver test mode).
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
+    SYS_CMD_TEST_CHECK_INIT_SER0                        = 65,           // (uint32 inv: 4294967230)
+    SYS_CMD_TEST_FORCE_INIT_SER0                        = 66,           // (uint32 inv: 4294967230)
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -4844,7 +4846,7 @@ typedef struct
 typedef struct
 {
     /** Prioity mask (see eEventPriority) */
-    uint8_t priorityLevel;
+    int8_t priorityLevel;
       
     /** ID mask field (see eEventProtocol ie 0x01 << eEventProtocol) */
     uint32_t msgTypeIdMask;

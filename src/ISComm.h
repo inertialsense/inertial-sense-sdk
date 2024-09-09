@@ -659,6 +659,13 @@ void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_inst
 void is_comm_port_parse_messages(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t *comm, is_comm_callbacks_t *callbacks);
 
 /**
+* Check that simple communications interface is valid and if not re-initializes.
+* @param instance communications instance, please ensure that you have set the buffer and bufferSize
+* @return 0 if parameters match, -1 if there are mismatches and is_comm is not valid.
+*/
+int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit);
+
+/**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
 * @param instance the comm instance passed to is_comm_init
 * @param byte the byte to decode
