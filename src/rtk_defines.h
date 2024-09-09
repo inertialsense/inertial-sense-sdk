@@ -13,7 +13,7 @@
 #define NEXOBS      0       // Number of extended obs codes
 
 #if defined(GPX_GNSS_F9P)
-    #error "F9P defined. Are you sure what to do this?  If so comment this line out in rtk_defines.h"
+    #error "F9P defined. Are you sure want to do this?  If so comment this line out in rtk_defines.h"
     #define L1_L5_RTK   0		// Use second slot for L2 
 #else
     #define L1_L5_RTK   1		// Use second slot for L5 
