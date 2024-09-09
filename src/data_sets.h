@@ -1807,16 +1807,16 @@ enum eNmeaMsgId
     NMEA_MSG_ID_PINS1     = 4,
     NMEA_MSG_ID_PINS2     = 5,
     NMEA_MSG_ID_PGPSP     = 6,
-    NMEA_MSG_ID_GxGGA     = 7,
-    NMEA_MSG_ID_GxGLL     = 8,
-    NMEA_MSG_ID_GxGSA     = 9,
-    NMEA_MSG_ID_GxRMC     = 10,
-    NMEA_MSG_ID_GxZDA     = 11,
+    NMEA_MSG_ID_GNGGA     = 7,
+    NMEA_MSG_ID_GNGLL     = 8,
+    NMEA_MSG_ID_GNGSA     = 9,
+    NMEA_MSG_ID_GNRMC     = 10,
+    NMEA_MSG_ID_GNZDA     = 11,
     NMEA_MSG_ID_PASHR     = 12,
     NMEA_MSG_ID_PSTRB     = 13,
     NMEA_MSG_ID_INFO      = 14,
     NMEA_MSG_ID_GNGSV     = 15,
-    NMEA_MSG_ID_GxVTG     = 16,
+    NMEA_MSG_ID_GNVTG     = 16,
     NMEA_MSG_ID_INTEL     = 17,
     NMEA_MSG_ID_COUNT,
 
@@ -1916,16 +1916,16 @@ enum eNmeaMsgId
 #define NMEA_RMC_BITS_PINS1         (1<<NMEA_MSG_ID_PINS1)
 #define NMEA_RMC_BITS_PINS2         (1<<NMEA_MSG_ID_PINS2)
 #define NMEA_RMC_BITS_PGPSP         (1<<NMEA_MSG_ID_PGPSP)
-#define NMEA_RMC_BITS_GxGGA         (1<<NMEA_MSG_ID_GxGGA)
-#define NMEA_RMC_BITS_GxGLL         (1<<NMEA_MSG_ID_GxGLL)
-#define NMEA_RMC_BITS_GxGSA         (1<<NMEA_MSG_ID_GxGSA)
-#define NMEA_RMC_BITS_GxRMC         (1<<NMEA_MSG_ID_GxRMC)
-#define NMEA_RMC_BITS_GxZDA         (1<<NMEA_MSG_ID_GxZDA)
+#define NMEA_RMC_BITS_GNGGA         (1<<NMEA_MSG_ID_GNGGA)
+#define NMEA_RMC_BITS_GNGLL         (1<<NMEA_MSG_ID_GNGLL)
+#define NMEA_RMC_BITS_GNGSA         (1<<NMEA_MSG_ID_GNGSA)
+#define NMEA_RMC_BITS_GNRMC         (1<<NMEA_MSG_ID_GNRMC)
+#define NMEA_RMC_BITS_GNZDA         (1<<NMEA_MSG_ID_GNZDA)
 #define NMEA_RMC_BITS_PASHR         (1<<NMEA_MSG_ID_PASHR)
 #define NMEA_RMC_BITS_PSTRB         (1<<NMEA_MSG_ID_PSTRB)
 #define NMEA_RMC_BITS_INFO          (1<<NMEA_MSG_ID_INFO)
 #define NMEA_RMC_BITS_GNGSV         (1<<NMEA_MSG_ID_GNGSV)
-#define NMEA_RMC_BITS_GxVTG         (1<<NMEA_MSG_ID_GxVTG)
+#define NMEA_RMC_BITS_GNVTG         (1<<NMEA_MSG_ID_GNVTG)
 #define NMEA_RMC_BITS_INTEL         (1<<NMEA_MSG_ID_INTEL)
 
 typedef struct PACKED

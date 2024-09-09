@@ -140,8 +140,8 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
     int id = getNmeaMsgId(msg, msgSize);
     switch(id)
     {
-    case NMEA_MSG_ID_GxGGA:     TestNmeaGga(msg, msgSize);      break;
-    case NMEA_MSG_ID_GxZDA:     TestNmeaZda(msg, msgSize);      break;
+    case NMEA_MSG_ID_GNGGA:     TestNmeaGga(msg, msgSize);      break;
+    case NMEA_MSG_ID_GNZDA:     TestNmeaZda(msg, msgSize);      break;
     }
 }
 

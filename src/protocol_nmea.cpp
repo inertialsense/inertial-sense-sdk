@@ -1720,14 +1720,14 @@ int getNmeaMsgId(const void *a, int aSize)
         break;
 
     case 'G':
-        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
-        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }
-        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GxGSA; }
+        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GNGGA; }
+        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GNGLL; }
+        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GNGSA; }
         else if (UINT32_MATCH(talker+2,"GSV,"))     { return decodeGSV(talker, aSize-1); }
         else if (UINT32_MATCH(talker+2,"GSV_"))     { return decodeGSV(talker, aSize-1); }
-        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GxRMC; }
-        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GxVTG; }
-        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GxZDA; }
+        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GNRMC; }
+        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GNVTG; }
+        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GNZDA; }
         break;
 
     case 'I':
@@ -1774,16 +1774,16 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
     case NMEA_MSG_ID_PINS1:	memcpy(str, "PINS1", 5);	return 0;
     case NMEA_MSG_ID_PINS2:	memcpy(str, "PINS2", 5);	return 0;
     case NMEA_MSG_ID_PGPSP:	memcpy(str, "PGPSP", 5);	return 0;
-    case NMEA_MSG_ID_GxGGA:	memcpy(str, "GxGGA", 5);	return 0;
-    case NMEA_MSG_ID_GxGLL:	memcpy(str, "GxGLL", 5);	return 0;
-    case NMEA_MSG_ID_GxGSA:	memcpy(str, "GxGSA", 5);	return 0;
-    case NMEA_MSG_ID_GxRMC:	memcpy(str, "GxRMC", 5);	return 0;
-    case NMEA_MSG_ID_GxZDA:	memcpy(str, "GxZDA", 5);	return 0;
+    case NMEA_MSG_ID_GNGGA:	memcpy(str, "GNGGA", 5);	return 0;
+    case NMEA_MSG_ID_GNGLL:	memcpy(str, "GNGLL", 5);	return 0;
+    case NMEA_MSG_ID_GNGSA:	memcpy(str, "GNGSA", 5);	return 0;
+    case NMEA_MSG_ID_GNRMC:	memcpy(str, "GNRMC", 5);	return 0;
+    case NMEA_MSG_ID_GNZDA:	memcpy(str, "GNZDA", 5);	return 0;
     case NMEA_MSG_ID_PASHR:	memcpy(str, "PASHR", 5);	return 0;
     case NMEA_MSG_ID_PSTRB:	memcpy(str, "PSTRB", 5);	return 0;
     case NMEA_MSG_ID_INFO:	memcpy(str, "INFO", 4);		return 0;
     case NMEA_MSG_ID_GNGSV:	memcpy(str, "GNGSV", 5);	return 0;
-    case NMEA_MSG_ID_GxVTG:	memcpy(str, "GxVTG", 5);	return 0;
+    case NMEA_MSG_ID_GNVTG:	memcpy(str, "GNVTG", 5);	return 0;
     case NMEA_MSG_ID_INTEL:	memcpy(str, "INTEL", 5);	return 0;
 
     case NMEA_MSG_ID_ASCE:	memcpy(str, "ASCE", 4);		return 0;
