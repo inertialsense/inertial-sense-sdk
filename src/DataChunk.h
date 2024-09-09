@@ -29,11 +29,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 void logStats(const char *format, ...);
 
+// #define CHUNK_VER_1
+
 //!< Chunk Header
 PUSH_PACK_1
 
 struct sChunkHeader 
 {
+#ifdef CHUNK_VER_1
 	uint32_t	marker;				//!< Chunk marker (0xFC05EA32)
 	uint16_t	version;			//!< Chunk Version
 	uint16_t	classification;		//!< Chunk classification
@@ -45,10 +48,33 @@ struct sChunkHeader
 	uint32_t	devSerialNum;		//!< Device serial number
 	uint32_t	pHandle;			//!< Device port handle
 	uint32_t	reserved;			//!< Unused
+#else
+    uint32_t marker = DATA_CHUNK_MARKER;         //!< Chunk marker (0xFC05EA32)
+    uint8_t version = 2;                         //!< Chunk Version
+    uint8_t dataOffset = 34;                     //!< offset from this position until the start of the chunk data (34 = sum of all hdr bytes following this byte, upto the chnk data, or sizeof(sChunkHeader) - 6).
+    char protocolVersion[2] = {                  //!< major/minor version of the underlying line/protocol
+            PROTOCOL_VERSION_CHAR0,
+            PROTOCOL_VERSION_CHAR1
+    };
+    char name[4];                                //!< Chunk name
+    char invName[4];                             //!< Bitwise inverse of chunk name
+    uint32_t dataSize;                           //!< Chunk data length in bytes
+    uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
+    uint32_t grpNum = 0;                         //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
+    uint32_t devSerialNum = 0;                   //!< Device serial number
+    #ifndef port_handle_t
+    uint32_t	pHandle;                         //!< Device port handle
+    #else
+    uint16_t portId = 0xFFFF;                    //!< Device port id
+    uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
+    #endif
+    char fwVersion[4] = {};                      //!< Device firmware version
+#endif
 
 #if LOG_CHUNK_STATS
 	void print()
 	{
+    #ifdef CHUNK_VER_1
 		logStats( "Chunk Header\n" );
 		logStats( "         marker:  %u (0x%x)\n", marker, marker );
 		logStats( "        version:  %d\n", version );
@@ -61,6 +87,26 @@ struct sChunkHeader
 		logStats( "   devSerialNum:  %d\n", devSerialNum );
 		logStats( "        pHandle:  %d\n", pHandle );
 		logStats( "       reserved:  %d\n", reserved );
+    #else
+		logStats( "Chunk Header\n" );
+		logStats( "         marker:  %u (0x%x)\n", marker, marker );
+		logStats( "        version:  %d\n", version );
+		logStats( "     dataOffset:  %d\n", dataOffset );
+        logStats( "protocolVersion:  %c.%c", protocolVersion[0], protocolVersion[1] );
+		logStats( "           name:  %c%c%c%c\n", name[0], name[1], name[2], name[3] );
+		logStats( "        invName:  %c%c%c%c\n", invName[0], invName[1], invName[2], invName[3] );
+		logStats( "       dataSize:  %d\n", dataSize );
+		logStats( "    invDataSize:  %d\n", invDataSize );
+		logStats( "         grpNum:  %d\n", grpNum );
+		logStats( "   devSerialNum:  %d\n", devSerialNum );
+        #ifndef port_handle_t
+        logStats( "        pHandle:  %d\n", pHandle );
+        #else
+        logStats( "         portId:  %d\n", portId);
+		logStats( "       portType:  %04X\n", portType);
+        #endif
+		logStats( "firmwareVersion:  %c.%c.%c.%c\n", fwVersion[0], fwVersion[1], fwVersion[2], fwVersion[3] );
+    #endif
 	}
 #endif
 };
@@ -77,6 +123,7 @@ public:
     int32_t GetBuffFree() { return (int32_t)(m_buffTail - m_dataTail); }
     int32_t GetDataSize() { return (int32_t)(m_dataTail - m_dataHead); }
     void SetName(const char name[4]);
+    void SetDevInfo(const dev_info_t& devInfo);
 	uint8_t* GetDataPtr();
 	bool PopFront(int32_t size);
     int32_t WriteToFile(cISLogFileBase* pFile, int groupNumber = 0, bool writeHeader = true); // Returns number of bytes written to file and clears the chunk
