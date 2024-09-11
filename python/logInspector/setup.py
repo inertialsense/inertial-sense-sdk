@@ -6,6 +6,8 @@ import setuptools
 __version__ = '0.0.1'
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
 
+import distutils.command.build
+
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
 
@@ -48,9 +50,11 @@ ext_modules = [
          '../../src/ihex.c',
          '../../src/ISComm.c',
          '../../src/ISDataMappings.cpp',
+         '../../src/ISDevice.cpp',
          '../../src/ISDisplay.cpp',
          '../../src/ISEarth.c',
          '../../src/ISFileManager.cpp',
+         '../../src/ISFirmwareUpdater.cpp',
          '../../src/ISLogFile.cpp',
          '../../src/ISLogger.cpp',
          '../../src/ISLogStats.cpp',
@@ -70,6 +74,7 @@ ext_modules = [
          '../../src/tinyxmlerror.cpp',
          '../../src/tinyxmlparser.cpp',
          '../../src/util/md5.cpp',
+         '../../src/yaml-cpp/exceptions.cpp'
          ],
         include_dirs = [
             # Path to pybind11 headers
@@ -113,6 +118,13 @@ def cpp_flag(compiler):
     else:
         raise RuntimeError('Unsupported compiler -- at least C++11 support '
                            'is needed!')
+
+
+# Override build command
+class BuildCommand(distutils.command.build.build):
+    def initialize_options(self):
+        distutils.command.build.build.initialize_options(self)
+        self.build_base = '/tmp/log_inspector-build'
 
 
 class BuildExt(build_ext):
@@ -160,6 +172,6 @@ setup(
         'simplekml',
         'tqdm'],
     setup_requires=['pybind11>=2.2'],
-    cmdclass={'build_ext': BuildExt},
+    cmdclass={'build': BuildCommand, 'build_ext': BuildExt},
     zip_safe=False,
 )
