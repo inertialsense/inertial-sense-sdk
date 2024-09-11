@@ -379,7 +379,7 @@ public:
      *       port: Send in target COM port.
      *                If arg is < 0 default port will be used 
     */
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port = 0);
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port = 0);
 
     /**
     * Get the flash config, returns the latest flash config read from the IMX flash memory

@@ -85,7 +85,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	survey_in_t surveyIn;
 	std::string asciiMessages;
 	double replaySpeed;
-	int displayMode;	
+	int displayMode;
+    int verboseLevel = 0;
 	
 	uint64_t rmcPreset;
 	bool persistentMessages;
@@ -112,7 +113,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	int32_t platformType;
     fwUpdate::target_t updateFirmwareTarget = fwUpdate::TARGET_HOST;
     uint32_t updateFirmwareSlot = 0;
-	uint32_t runDuration = 0;				// Run for this many millis before exiting (0 = indefinitely)
+	uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
 	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
     int verbose = 0;                        // incremented for each -verbose argument found
 	EVFContainer_t evFCont = {0};

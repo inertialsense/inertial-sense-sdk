@@ -837,7 +837,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
  *       port: Send in target COM port.
  *                If arg is < 0 default port will be used 
 */
-void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port)
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};

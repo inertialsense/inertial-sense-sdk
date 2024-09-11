@@ -259,7 +259,6 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
         case LOGTYPE_DAT:   device.devLogger = make_shared<cDeviceLogSerial>(&device);  break;
         case LOGTYPE_RAW:   device.devLogger = make_shared<cDeviceLogRaw>(&device);     break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_SDAT:  device.devLogger = make_shared<cDeviceLogSorted>(&device);  break;
         case LOGTYPE_CSV:   device.devLogger = make_shared<cDeviceLogCSV>(&device);     break;
         case LOGTYPE_JSON:  device.devLogger = make_shared<cDeviceLogJSON>(&device);    break;
         case LOGTYPE_KML:   device.devLogger = make_shared<cDeviceLogKML>(&device);     break;
@@ -279,7 +278,6 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
         case LOGTYPE_DAT:   deviceLog = make_shared<cDeviceLogSerial>(hdwId, serialNo);  break;
         case LOGTYPE_RAW:   deviceLog = make_shared<cDeviceLogRaw>(hdwId, serialNo);     break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_SDAT:  deviceLog = make_shared<cDeviceLogSorted>(hdwId, serialNo);  break;
         case LOGTYPE_CSV:   deviceLog = make_shared<cDeviceLogCSV>(hdwId, serialNo);     break;
         case LOGTYPE_JSON:  deviceLog = make_shared<cDeviceLogJSON>(hdwId, serialNo);    break;
         case LOGTYPE_KML:   deviceLog = make_shared<cDeviceLogKML>(hdwId, serialNo);     break;
@@ -443,7 +441,6 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
                         case cISLogger::LOGTYPE_DAT:    deviceLog = make_shared<cDeviceLogSerial>(0, serialNum); break;
                         case cISLogger::LOGTYPE_RAW:    deviceLog = make_shared<cDeviceLogRaw>(0, serialNum); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-                        case cISLogger::LOGTYPE_SDAT:   deviceLog = make_shared<cDeviceLogSorted>(0, serialNum); break;
                         case cISLogger::LOGTYPE_CSV:    deviceLog = make_shared<cDeviceLogCSV>(0, serialNum); break;
                         case cISLogger::LOGTYPE_JSON:   deviceLog = make_shared<cDeviceLogJSON>(0, serialNum); break;
 #endif
@@ -731,6 +728,7 @@ int g_copyReadDid;
  * @param enableCsvIns2ToIns1Conversion
  * @return
  */
+// __attribute__((optimize("O0")))
 bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();

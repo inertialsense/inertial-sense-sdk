@@ -171,13 +171,13 @@ int serialPortReadTimeout(port_handle_t port, unsigned char* buffer, int readCou
 	}
 
 	int count = serialPort->pfnReadTimeout(port, buffer, readCount, timeoutMilliseconds);
-
 	if (count < 0)
 	{
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
 		return 0;
 	}
 
+	//serialPort->rxBytes += count; // FIXME: this should already be handled internally by the port
 	return count;
 }
 
@@ -190,7 +190,14 @@ int serialPortReadTimeoutAsync(port_handle_t port, unsigned char* buffer, int re
 		return 0;
 	}
 
-	return serialPort->pfnAsyncRead(port, buffer, readCount, completion);
+	int count = serialPort->pfnAsyncRead(port, buffer, readCount, completion);
+	if (count < 0)
+	{
+		return 0;
+	}
+
+    //serialPort->rxBytes += count; // FIXME: this should already be handled internally by the port
+	return count;
 }
 
 int serialPortReadLine(port_handle_t port, unsigned char* buffer, int bufferLength)
@@ -300,6 +307,7 @@ int serialPortWrite(port_handle_t port, const unsigned char* buffer, int writeCo
         return 0;
 	}
 
+	serialPort->txBytes += count;
 	return count;
 }
 

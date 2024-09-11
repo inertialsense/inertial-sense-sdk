@@ -309,6 +309,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (inertialSenseInterface.DeviceCount() <= 0)
         return false;
 
+    for (auto& device : inertialSenseInterface.getDevices()) {
+        // FIXME: don't assign a commInstance, but assign a device or port
+        g_inertialSenseDisplay.SetCommInstance(device.port);
+    }
+
     if (g_commandLineOptions.asciiMessages.size() != 0)
     {
         ISDevice &device = inertialSenseInterface.getDevices()[0];
@@ -641,13 +646,15 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         cout << buffer << endl;
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
-        if (buffer[0] || ((g_commandLineOptions.verbose && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
+        if (buffer[0] || (g_commandLineOptions.verboseLevel > level) || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
             printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, portName(fwCtx->port), fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();
                 int num = fwCtx->fwUpdate_getNextChunkID();
                 float percent = num / (float) (tot) * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
+            } else {
+                printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
             }
             if (buffer[0])
                 printf(" :: %s", buffer);
@@ -783,19 +790,19 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.portMask,
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
-            // before we start, if we are doing a run-once, set a default runDuration, so we don't hang indefinitely
-            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDuration)
-                g_commandLineOptions.runDuration = 30000; // 30 second timeout, if none is specified
+            // before we start, if we are doing a run-once, set a default runDurationMs, so we don't hang indefinitely
+            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDurationMs)
+                g_commandLineOptions.runDurationMs = 10000; // 10 second timeout, if none is specified
 
             // Main loop. Could be in separate thread if desired.
-            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDuration;
+            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDurationMs;
             uint32_t requestDataSetsTimeMs = 0;
 
             // yield to allow comms
             SLEEP_MS(1);
 
             // [C++ COMM INSTRUCTION] STEP 4: Read data
-            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDuration || (current_timeMs() < exitTime)))
+            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
 
                 if (!inertialSenseInterface.Update())

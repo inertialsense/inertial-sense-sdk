@@ -33,7 +33,8 @@ cDeviceLogSerial::cDeviceLogSerial() : cDeviceLog() {
 
 cDeviceLogSerial::cDeviceLogSerial(const ISDevice *dev) : cDeviceLog(dev) {
     m_chunk.Clear();
-    m_chunk.m_hdr.devSerialNum = SerialNumber();
+    m_chunk.SetDevInfo(dev->devInfo);
+    m_chunk.m_hdr.devSerialNum = SerialNumber();    // set this seperately, in case the devInfo above doesn't contain it
     if (device) {
         m_chunk.m_hdr.portId = portId(device->port);
         m_chunk.m_hdr.portType = portType(device->port);

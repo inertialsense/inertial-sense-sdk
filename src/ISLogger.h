@@ -25,7 +25,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DeviceLogRaw.h"
  
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-#include "DeviceLogSorted.h"
 #include "DeviceLogCSV.h"
 #include "DeviceLogJSON.h"
 #include "DeviceLogKML.h"
@@ -53,7 +52,7 @@ public:
 	{
 		LOGTYPE_DAT = 0,	// serial
 		LOGTYPE_RAW,		// packetized serial
-		LOGTYPE_SDAT,		// sorted
+		LOGTYPE_SDAT,		// sorted -- unsupported/deprecated, DO NOT USE!
 		LOGTYPE_CSV,
 		LOGTYPE_KML,
 		LOGTYPE_JSON
