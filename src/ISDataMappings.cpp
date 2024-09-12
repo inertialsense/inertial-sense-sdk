@@ -92,7 +92,7 @@ static void PopulateTimestampField(uint32_t id, const data_info_t** timestamps, 
 
 static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    DataMapper<dev_info_t> mapper(mappings, lookupSize, indices, did);
+    DataMapper<dev_info_t> mapper(mappings, lookupSize, indices> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT16);
     mapper.AddMember("reserved2", &dev_info_t::reserved2, DATA_TYPE_UINT8);
     mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
@@ -111,13 +111,13 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     mapper.AddMember("buildMinute", &dev_info_t::buildMinute, DATA_TYPE_UINT8, "", "Build minute", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildSecond", &dev_info_t::buildSecond, DATA_TYPE_UINT8, "", "Build second", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("buildMillisecond", &dev_info_t::buildMillisecond, DATA_TYPE_UINT8, "", "Build millisecond", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("addInfo", &dev_info_t::addInfo, DATA_TYPE_STRING, "", "Additional info", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("addInfo", &dev_info_t::addInfo, DATA_TYPE_STRING, char[DEVINFO_ADDINFO_STRLEN], "", "Additional info", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateHdwParamsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
 #if 0
-    INIT_MAP(hdw_params_t, did);
+    DataMapper<hdw_params_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("I.pqrDot", I.pqrDot, DATA_TYPE_F32, float, SYM_DEG_PER_S + "/s", "IMU1 PQR derivative", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
     ADD_MAP_7("I.accDot", I.accDot, DATA_TYPE_F32, float, SYM_M_PER_S_2 + "/s", "IMU1 accel derivative", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -149,7 +149,7 @@ static void PopulateHdwParamsMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(manufacturing_info_t, did);
+    DataMapper<manufacturing_info_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("serialNumber", serialNumber, DATA_TYPE_UINT32, uint32_t, "", "Serial number", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("hardwareId", hardwareId, DATA_TYPE_UINT16, uint16_t, "", "Hardware Id", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("lotNumber", lotNumber, DATA_TYPE_UINT16, uint16_t, "", "Lot number", DATA_FLAGS_READ_ONLY);
@@ -166,7 +166,7 @@ static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_CO
 
 static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(io_t, did);
+    DataMapper<io_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("gpioStatus", gpioStatus, DATA_TYPE_UINT32, uint32_t, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
     ASSERT_SIZE(totalSize);
@@ -174,7 +174,7 @@ static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t 
 
 static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(bit_t, did);
+    DataMapper<bit_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("command", command, DATA_TYPE_UINT8, uint8_t, "", "[cmd: " TOSTRING(BIT_CMD_FULL_STATIONARY) "=start full, " TOSTRING(BIT_CMD_BASIC_MOVING) "=start basic, " TOSTRING(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) "=start full HA, " TOSTRING(BIT_CMD_OFF) "=off]");
     ADD_MAP_7("lastCommand", lastCommand, DATA_TYPE_UINT8, uint8_t, "", "Last input command", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("state", state, DATA_TYPE_UINT8, uint8_t, "", "[state: " TOSTRING(BIT_STATE_RUNNING) "=running " TOSTRING(BIT_STATE_DONE) "=done]", DATA_FLAGS_READ_ONLY);
@@ -199,7 +199,7 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
 
 static void PopulateGpxBitMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gpx_bit_t, did);
+    DataMapper<gpx_bit_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("results", results, DATA_TYPE_UINT32, uint32_t, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_6("command", command, DATA_TYPE_UINT8, uint8_t, "", "Command (see eGPXBit_CMD)");
     ADD_MAP_6("port", port, DATA_TYPE_UINT8, uint8_t, "", "Port used with the test");
@@ -213,7 +213,7 @@ static void PopulateGpxBitMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(system_fault_t, did);
+    DataMapper<system_fault_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_DISPLAY_HEX;
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "Bits: 23:20[flashMigMrk, code, stkOverflow, malloc] 19:16[busFlt, memMng, usageFlt, hardFlt] 7:4[flashMig, softRst] 3:0[bootldrRst, userRst]", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_6("g1Task", g1Task, DATA_TYPE_UINT32, uint32_t, "", "Active task at fault");
@@ -228,7 +228,7 @@ static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT], uin
 
 void PopulatePortMonitorMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(port_monitor_t, did);
+    DataMapper<port_monitor_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("activePorts", activePorts, DATA_TYPE_UINT8, uint8_t, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
 
     ADD_MAP_7("[0].portInfo",           port[0].portInfo, DATA_TYPE_UINT8, uint8_t, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -302,7 +302,7 @@ void PopulatePortMonitorMappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 void PopulateNmeaBCastPeriodMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(nmea_msgs_t, did);
+    DataMapper<nmea_msgs_t> mapper(mappings, lookupSize, indices, did);
 //    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
     ADD_MAP_7("options", options, DATA_TYPE_UINT32, uint32_t, "", "Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB]. (see RMC_OPTIONS_...)", DATA_FLAGS_DISPLAY_HEX);    
     // for( int i=0; i<MAX_nmeaBroadcastMsgPairs; i++)
@@ -315,7 +315,7 @@ void PopulateNmeaBCastPeriodMappings(map_name_to_info_t mappings[DID_COUNT], uin
 
 static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
 {
-    INIT_MAP(imu_t, did);
+    DataMapper<imu_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_8("pqr[0]", I.pqr[0], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     ADD_MAP_8("pqr[1]", I.pqr[1], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
@@ -329,7 +329,7 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
 
 static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
 {
-    INIT_MAP(imu3_t, did);
+    DataMapper<imu3_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_8("I0.pqr[0]", I[0].pqr[0], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "IMU 1 angular rate.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
@@ -355,7 +355,7 @@ static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(sys_params_t, did);
+    DataMapper<sys_params_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("insStatus", insStatus, DATA_TYPE_UINT32, uint32_t, "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
@@ -375,7 +375,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(sys_sensors_t, did);
+    DataMapper<sys_sensors_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_7("temp", temp, DATA_TYPE_F32, float, SYM_DEG_C, "System temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_8("pqr[0]", pqr[0], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
@@ -400,7 +400,7 @@ static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateRmcMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(rmc_t, did);
+    DataMapper<rmc_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_5("bits", bits, DATA_TYPE_UINT64, uint64_t, DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_5("options", options, DATA_TYPE_UINT32, uint32_t, DATA_FLAGS_DISPLAY_HEX);
     ASSERT_SIZE(totalSize);
@@ -408,7 +408,7 @@ static void PopulateRmcMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
 
 static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(ins_1_t, did);
+    DataMapper<ins_1_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
@@ -431,7 +431,7 @@ static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(ins_2_t, did);
+    DataMapper<ins_2_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
@@ -452,7 +452,7 @@ static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(ins_3_t, did);
+    DataMapper<ins_3_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
@@ -474,7 +474,7 @@ static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(ins_4_t, did);
+    DataMapper<ins_4_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", flags );
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
@@ -495,7 +495,7 @@ static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_pos_t, did);
+    DataMapper<gps_pos_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -520,7 +520,7 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_vel_t, did);
+    DataMapper<gps_vel_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("vel[0]", vel[0], DATA_TYPE_F32, float&, "m/s", "Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0 or 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     ADD_MAP_7("vel[1]", vel[1], DATA_TYPE_F32, float&, "m/s", "Velocity in ECEF {vx,vy,vz} or NED {vN, vE, 0} if status GPS_STATUS_FLAGS_GPS_NMEA_DATA = 0 or 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
@@ -532,7 +532,7 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateGpsSatMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_sat_t, did);
+    DataMapper<gps_sat_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("numSats", numSats, DATA_TYPE_UINT32, uint32_t, "", "Number of satellites in sky", DATA_FLAGS_READ_ONLY);
 
@@ -603,7 +603,7 @@ static void PopulateGpsSatMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_sig_t, did);
+    DataMapper<gps_sig_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("numSigs", numSigs, DATA_TYPE_UINT32, uint32_t, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
 
@@ -674,7 +674,7 @@ static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateGpsVersionMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_version_t, did);
+    DataMapper<gps_version_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("swVersion", swVersion, DATA_TYPE_STRING, uint8_t[30], "", "Software version");
     ADD_MAP_6("hwVersion", hwVersion, DATA_TYPE_STRING, uint8_t[10], "", "Hardware version");
 //    ADD_MAP_6("extension[0]", extension[0], DATA_TYPE_STRING, uint8_t[30], "", "Extension 30 bytes array description.");
@@ -688,7 +688,7 @@ static void PopulateGpsVersionMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_timepulse_t, did);
+    DataMapper<gps_timepulse_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("towOffset", towOffset, DATA_TYPE_F64, double, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("towGps", towGps, DATA_TYPE_F64, double, "s", "Week seconds for next timepulse (from start of GPS week)", DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("timeMcu", timeMcu, DATA_TYPE_F64, double, "s", "Local MCU week seconds.", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -705,7 +705,7 @@ static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT],
 
 static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(magnetometer_t, did);
+    DataMapper<magnetometer_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("mag[0]", mag[0], DATA_TYPE_F32, float&, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_7("mag[1]", mag[1], DATA_TYPE_F32, float&, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -715,7 +715,7 @@ static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT],
 
 static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(barometer_t, did);
+    DataMapper<barometer_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("bar", bar, DATA_TYPE_F32, float, "kPa", "Barometric pressure", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_7("mslBar", mslBar, DATA_TYPE_F32, float, "m", "MSL altitude from barometric pressure sensor", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
@@ -726,7 +726,7 @@ static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulatePIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
 {
-    INIT_MAP(pimu_t, did);
+    DataMapper<pimu_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("dt", dt, DATA_TYPE_F32, float, "s", "Integration period.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", s_imuStatusDescription, DATA_FLAGS_DISPLAY_HEX);
@@ -741,7 +741,7 @@ static void PopulatePIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_
 
 static void PopulatePimuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(pimu_mag_t, did);
+    DataMapper<pimu_mag_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("imutime", pimu.time, DATA_TYPE_F64, double, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_8("theta[0]", pimu.theta[0], DATA_TYPE_F32, float&, SYM_DEG, "IMU delta theta coning and sculling integrals in body/IMU frame.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     ADD_MAP_8("theta[1]", pimu.theta[1], DATA_TYPE_F32, float&, SYM_DEG, "IMU delta theta coning and sculling integrals in body/IMU frame.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
@@ -760,7 +760,7 @@ static void PopulatePimuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint
 
 static void PopulateImuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(imu_mag_t, did);
+    DataMapper<imu_mag_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("imutime", imu.time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_8("pqr[0]", imu.I.pqr[0], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "IMU Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
     ADD_MAP_8("pqr[1]", imu.I.pqr[1], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "IMU Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
@@ -778,7 +778,7 @@ static void PopulateImuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateMagCalMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(mag_cal_t, did);
+    DataMapper<mag_cal_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("state", state, DATA_TYPE_UINT32, uint32_t, "", "Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState)");
     ADD_MAP_7("progress", progress, DATA_TYPE_F32, float, "%", "Mag recalibration progress indicator: 0-100 %", DATA_FLAGS_FIXED_DECIMAL_1);
     ADD_MAP_8("declination", declination, DATA_TYPE_F32, float, SYM_DEG, "Magnetic declination estimate", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
@@ -787,7 +787,7 @@ static void PopulateMagCalMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(infield_cal_t, did);
+    DataMapper<infield_cal_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("state", state, DATA_TYPE_UINT32, uint32_t, "", "0=off, init[1=IMU, 2=gyro, 3=accel], init align INS[4, 5=+IMU, 6=+gyro, 7=+accel], 8=sample, 9=finish (see eInfieldCalState)");
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "Infield cal status (see eInfieldCalStatus)", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_6("sampleTimeMs", sampleTimeMs, DATA_TYPE_UINT32, uint32_t, "ms", "Duration of IMU sample averaging. sampleTimeMs = 0 means \"imu\" member contains the IMU bias from flash.");
@@ -878,7 +878,7 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(wheel_encoder_t, did);
+    DataMapper<wheel_encoder_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of measurement wrt current week", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_8("theta_l", theta_l, DATA_TYPE_F32, float, SYM_DEG, "Left wheel angle", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
@@ -892,7 +892,7 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT],
 
 static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(ground_vehicle_t, did);
+    DataMapper<ground_vehicle_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "", DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_READ_ONLY);
     ADD_MAP_6("mode", mode, DATA_TYPE_UINT32, uint32_t, "", "1=learning; Commands[2=start, 3=resume, 4=clear&start, 5=stop&save, 6=cancel]");
@@ -916,7 +916,7 @@ static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT]
 
 static void PopulateSysCmdMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(system_command_t, did);
+    DataMapper<system_command_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("command", command, DATA_TYPE_UINT32, uint32_t, "", "99=software reset, 5=zero sensors");
     ADD_MAP_6("invCommand", invCommand, DATA_TYPE_UINT32, uint32_t, "", "Bitwise inverse of command (-command - 1) required to process command.");
     ASSERT_SIZE(totalSize);
@@ -924,7 +924,7 @@ static void PopulateSysCmdMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(nvm_flash_cfg_t, did);
+    DataMapper<nvm_flash_cfg_t> mapper(mappings, lookupSize, indices, did);
     string str;
     ADD_MAP_6("startupImuDtMs", startupImuDtMs, DATA_TYPE_UINT32, uint32_t, "ms", "IMU sample (system input data) period set on startup. Cannot be larger than startupInsDtMs. Zero disables sensor/IMU sampling.");
     ADD_MAP_6("startupNavDtMs", startupNavDtMs, DATA_TYPE_UINT32, uint32_t, "ms", "GPS measurement (system input data) update period in milliseconds set on startup. 200ms minimum (5Hz max).");
@@ -1023,7 +1023,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], 
 */
 static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(did_event_t, did);
+    DataMapper<did_event_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("Time stamp of message (System Up seconds)", time, DATA_TYPE_F64, double, "sec", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     ADD_MAP_6("Senders serial number", senderSN, DATA_TYPE_UINT32, uint32_t, "", "");
     ADD_MAP_6("Sender hardware type", senderHdwId, DATA_TYPE_UINT16, uint16_t, "", "Hardware: 0=Host, 1=uINS, 2=EVB, 3=IMX, 4=GPX (see eIsHardwareType)");
@@ -1037,7 +1037,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT], uint
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gpx_flash_cfg_t, did);
+    DataMapper<gpx_flash_cfg_t> mapper(mappings, lookupSize, indices, did);
     string str;
     ADD_MAP_6("ser0BaudRate", ser0BaudRate, DATA_TYPE_UINT32, uint32_t, "bps", "Serial port 0 baud rate");
     ADD_MAP_6("ser1BaudRate", ser1BaudRate, DATA_TYPE_UINT32, uint32_t, "bps", "Serial port 1 baud rate");
@@ -1072,7 +1072,7 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gpx_status_t, did);
+    DataMapper<gpx_status_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "(see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_7("grmcBitsSer0", grmcBitsSer0, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -1105,7 +1105,7 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], ui
 static void PopulateSurveyInMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
 #if 0
-    INIT_MAP(survey_in_t, did);
+    DataMapper<survey_in_t> mapper(mappings, lookupSize, indices, did);
     {
     storage->registerInt32("state", offsetof(survey_in_t, state), "", QString().asprintf("[status: %d=off, %d-%d=running, %d=done], [cmd: %d=cancel, start: %d=3D,%d=float,%d=fix]",
         SURVEY_IN_STATE_OFF, SURVEY_IN_STATE_RUNNING_3D, SURVEY_IN_STATE_RUNNING_FIX, SURVEY_IN_STATE_DONE, 
@@ -1123,7 +1123,7 @@ static void PopulateSurveyInMappings(map_name_to_info_t mappings[DID_COUNT], uin
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_status_t, did);
+    DataMapper<evb_status_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("firmwareVer[0]", firmwareVer[0], DATA_TYPE_UINT8, uint8_t&, "", "Firmware version", DATA_FLAGS_READ_ONLY);
@@ -1141,7 +1141,7 @@ static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_flash_cfg_t, did);
+    DataMapper<evb_flash_cfg_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("cbPreset", cbPreset, DATA_TYPE_UINT8, uint8_t, "", 
         TOSTRING(EVB2_CB_PRESET_RS232) "=Wireless Off, " 
         TOSTRING(EVB2_CB_PRESET_RS232_XBEE) "=XBee On, " 
@@ -1212,13 +1212,13 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    DataMapper<debug_array_t> mapper(mappings, lookupSize, indices, did);
+    DataMapper<debug_array_t> mapper(mappings, lookupSize, indices> mapper(mappings, lookupSize, indices, did);
     mapper.AddArray("i", &debug_array_t::i, DATA_TYPE_UINT32, DEBUG_I_ARRAY_SIZE);
     mapper.AddArray("f", &debug_array_t::f, DATA_TYPE_F32, DEBUG_F_ARRAY_SIZE);
     mapper.AddArray("lf", &debug_array_t::lf, DATA_TYPE_F64, DEBUG_LF_ARRAY_SIZE);
 
 
-    // INIT_MAP(debug_array_t, did);
+    // DataMapper<debug_array_t> mapper(mappings, lookupSize, indices, did);
     // ADD_MAP_4("i[0]", i[0], DATA_TYPE_INT32, int32_t&);
     // ADD_MAP_4("i[1]", i[1], DATA_TYPE_INT32, int32_t&);
     // ADD_MAP_4("i[2]", i[2], DATA_TYPE_INT32, int32_t&);
@@ -1245,7 +1245,7 @@ static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateDebugStringMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(debug_string_t, did);
+    DataMapper<debug_string_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("s", s, DATA_TYPE_STRING, uint8_t[DEBUG_STRING_SIZE], "", "");
     ASSERT_SIZE(totalSize);
 }
@@ -1254,7 +1254,7 @@ static void PopulateDebugStringMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_luna_flash_cfg_t, did); 
+    DataMapper<evb_luna_flash_cfg_t> mapper(mappings, lookupSize, indices, did); 
     ADD_MAP_7("bits", bits, DATA_TYPE_UINT32, uint32_t, "", "0x1 geof, 0x2 bump, 0x4 prox, 0x100 rkill, 0x200 rkclient, 0x400 rkclient2", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_6("minLatGeofence", minLatGeofence, DATA_TYPE_F64, double, "deg", "Geofence Min Latitude");
     ADD_MAP_6("maxLatGeofence", maxLatGeofence, DATA_TYPE_F64, double, "deg", "Geofence Max Latitude");
@@ -1327,7 +1327,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
 
 static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_luna_status_t, did);
+    DataMapper<evb_luna_status_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "GPS time of week (since Sunday morning).");
     ADD_MAP_7("evbLunaStatus", evbLunaStatus, DATA_TYPE_UINT32, uint32_t, "", "", DATA_FLAGS_DISPLAY_HEX);
     ADD_MAP_6("motorState", motorState, DATA_TYPE_UINT32, uint32_t, "", "");
@@ -1338,7 +1338,7 @@ static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT],
 
 static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_luna_sensors_t, did);
+    DataMapper<evb_luna_sensors_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "s", "GPS time of week (since Sunday morning).");
     ADD_MAP_7("proxSensorOutput[0]", proxSensorOutput[0], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("proxSensorOutput[1]", proxSensorOutput[1], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1355,7 +1355,7 @@ static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT
 
 static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_luna_velocity_control_t, did);
+    DataMapper<evb_luna_velocity_control_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("timeMs", timeMs, DATA_TYPE_UINT32, uint32_t, "ms", "");
     ADD_MAP_7("dt", dt, DATA_TYPE_F32, float, "s", "", DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "", DATA_FLAGS_DISPLAY_HEX);
@@ -1397,7 +1397,7 @@ static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[D
 
 static void PopulateEvbLunaVelocityCommandMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_luna_velocity_command_t, did);
+    DataMapper<evb_luna_velocity_command_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("timeMs", timeMs, DATA_TYPE_UINT32, uint32_t, "ms", "");
     ADD_MAP_6("modeCmd", modeCmd, DATA_TYPE_UINT32, uint32_t, "", "0 disable, 1 stop, 2 enable, 3 enable w/o watchdog (eLunaVelocityControlMode)");
     ADD_MAP_6("fwd_vel", fwd_vel, DATA_TYPE_F32, float, "rad/s", "", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1407,7 +1407,7 @@ static void PopulateEvbLunaVelocityCommandMappings(map_name_to_info_t mappings[D
 
 static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(evb_luna_aux_command_t, did);
+    DataMapper<evb_luna_aux_command_t> mapper(mappings, lookupSize, indices, did);
     
     ADD_MAP_4("command", command, DATA_TYPE_UINT32, uint32_t, "", "0 blade off, 1 blade on, 2 ebrake on, 3 ebrake off, 4 beep (eLunaAuxCommands)");
 
@@ -1418,7 +1418,7 @@ static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT]
 
 static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_rtk_rel_t, did);
+    DataMapper<gps_rtk_rel_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("baseToRoverVector[0]", baseToRoverVector[0], DATA_TYPE_F32, float&, "m", "Vector from base to rover in ECEF.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     ADD_MAP_7("baseToRoverVector[1]", baseToRoverVector[1], DATA_TYPE_F32, float&, "m", "Vector from base to rover in ECEF.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
@@ -1434,7 +1434,7 @@ static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_rtk_misc_t, did);
+    DataMapper<gps_rtk_misc_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("accuracyPos[0]", accuracyPos[0], DATA_TYPE_F32, float&, "m", "Accuracy in meters north, east, up (standard deviation)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_7("accuracyPos[1]", accuracyPos[1], DATA_TYPE_F32, float&, "m", "Accuracy in meters north, east, up (standard deviation)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1488,7 +1488,7 @@ static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateGpsRawMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(gps_raw_t, did);
+    DataMapper<gps_raw_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("receiveIndex", receiverIndex, DATA_TYPE_UINT8, uint8_t, "", "Receiver index (1=Rover, 2=Base). RTK positioning or RTK compassing must be enabled to stream raw GPS data.", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("dataType", dataType, DATA_TYPE_UINT8, uint8_t, "", "Type of data (eRawDataType: 1=observations, 2=ephemeris, 3=glonassEphemeris, 4=SBAS, 5=baseAntenna, 6=IonosphereModel)", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("obsCount", obsCount, DATA_TYPE_UINT8, uint8_t, "", "Number of observations in array (obsd_t) when dataType==1", DATA_FLAGS_READ_ONLY);
@@ -1499,7 +1499,7 @@ static void PopulateGpsRawMappings(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateStrobeInTimeMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(strobe_in_time_t, did);
+    DataMapper<strobe_in_time_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("week", week, DATA_TYPE_UINT32, uint32_t, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("pin", pin, DATA_TYPE_UINT16, uint16_t, "", "STROBE input pin number", DATA_FLAGS_READ_ONLY);
@@ -1509,7 +1509,7 @@ static void PopulateStrobeInTimeMappings(map_name_to_info_t mappings[DID_COUNT],
 
 static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(rtos_info_t, did);
+    DataMapper<rtos_info_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("freeHeapSize", freeHeapSize, DATA_TYPE_UINT32, uint32_t, "", "Heap unused bytes (high-water mark)", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("mallocSize", mallocSize, DATA_TYPE_UINT32, uint32_t, "", "Total memory allocated using malloc()", DATA_FLAGS_READ_ONLY);
     ADD_MAP_7("freeSize", freeSize, DATA_TYPE_UINT32, uint32_t, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
@@ -1613,7 +1613,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT], uin
 }
 static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(can_config_t, did);
+    DataMapper<can_config_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_6("can_period_mult[CID_INS_TIME]", can_period_mult[CID_INS_TIME], DATA_TYPE_UINT16, uint16_t&, " ", "Broadcast Period Multiple for CID_INS_TIME Messages");
     ADD_MAP_6("can_period_mult[CID_INS_STATUS]", can_period_mult[CID_INS_STATUS], DATA_TYPE_UINT16, uint16_t&, " ", "Broadcast Period Multiple for CID_INS_STATUS Messages");
     ADD_MAP_6("can_period_mult[CID_INS_EULER]", can_period_mult[CID_INS_EULER], DATA_TYPE_UINT16, uint16_t&, " ", "Broadcast Period Multiple for CID_INS_EULER Messages");
@@ -1677,7 +1677,7 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateDiagMsgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(diag_msg_t, did);
+    DataMapper<diag_msg_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_4("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("messageLength", messageLength, DATA_TYPE_UINT32, uint32_t);
     ADD_MAP_4("message", message, DATA_TYPE_STRING, char[MEMBERSIZE(diag_msg_t, message)]);
@@ -1686,7 +1686,7 @@ static void PopulateDiagMsgMappings(map_name_to_info_t mappings[DID_COUNT], uint
 
 static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(sys_sensors_adc_t, DID_SENSORS_ADC);
+    DataMapper<sys_sensors_adc_t, DID_SENSORS_ADC);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_7("pqr1[0]", imu[0].pqr[0], DATA_TYPE_F32, float&, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     ADD_MAP_7("pqr1[1]", imu[0].pqr[1], DATA_TYPE_F32, float&, "LSB", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
@@ -1727,7 +1727,7 @@ static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(sensors_w_temp_t, did);
+    DataMapper<sensors_w_temp_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
     ADD_MAP_7("imu3.time", imu3.time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     ADD_MAP_7("imu3.status", imu3.status, DATA_TYPE_UINT32, uint32_t, "", "Status", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
@@ -1763,7 +1763,7 @@ static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateSensorsTCMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(sensors_t, did);
+    DataMapper<sensors_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     ADD_MAP_6("time", time, DATA_TYPE_F64, double, "s", "GPS time of week (since Sunday morning).");
     ADD_MAP_7("pqr0[0]", mpu[0].pqr[0], DATA_TYPE_F32, float&, SYM_DEG_PER_S, "Temperature compensation bias", flags);
@@ -1798,7 +1798,7 @@ static void PopulateSensorsTCMappings(map_name_to_info_t mappings[DID_COUNT], ui
 
 static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(sensor_compensation_t, did);
+    DataMapper<sensor_compensation_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
     string str = 
         TOSTRING(SC_RUNTIME) "=Runtime, Tcal["
@@ -1944,7 +1944,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 static void PopulateInl2MagObsInfo(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(inl2_mag_obs_info_t, did);
+    DataMapper<inl2_mag_obs_info_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_6("Ncal_samples", Ncal_samples, DATA_TYPE_UINT32, uint32_t, "", "");
     ADD_MAP_6("ready", ready, DATA_TYPE_UINT32, uint32_t, "", "Data ready to be processed");
@@ -1976,7 +1976,7 @@ static void PopulateInl2MagObsInfo(map_name_to_info_t mappings[DID_COUNT], uint3
 
 static void PopulateInl2StatesMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(inl2_states_t, DID_BIT);
+    DataMapper<inl2_states_t, DID_BIT);
     int flags = DATA_FLAGS_FIXED_DECIMAL_4;
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", flags);
     ADD_MAP_7("qe2b[0]", qe2b[0], DATA_TYPE_F32, float&, "", "Quaternion rotation from ECEF to body frame", flags);
@@ -2003,7 +2003,7 @@ static void PopulateInl2StatesMappings(map_name_to_info_t mappings[DID_COUNT], u
 
 static void PopulateInl2NedSigmaMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(inl2_ned_sigma_t, did);
+    DataMapper<inl2_ned_sigma_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     ADD_MAP_8("StdAttNed[0]", StdAttNed[0], DATA_TYPE_F32, float&, SYM_DEG, "NED attitude error standard deviation", flags, C_RAD2DEG);
@@ -2031,7 +2031,7 @@ static void PopulateRosCovariancePoseTwistMappings(map_name_to_info_t mappings[D
 #define COV_POSE_UNITS      "rad², m²"
 #define COV_TWIST_UNITS     "(m/s)², (rad/s)²"
 
-    INIT_MAP(ros_covariance_pose_twist_t, did);
+    DataMapper<ros_covariance_pose_twist_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
     ADD_MAP_7("timeOfWeek", timeOfWeek, DATA_TYPE_F64, double, "s", "Time of week since Sunday morning, GMT", flags);
     ADD_MAP_7("covPoseLD[0]", covPoseLD[0], DATA_TYPE_F32, float&, COV_POSE_UNITS, "EKF attitude and position error covariance matrix lower diagonal in body (attitude) and ECEF (position) frames", flags);
