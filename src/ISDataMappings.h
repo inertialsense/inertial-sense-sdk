@@ -247,10 +247,15 @@ class DataMapper
 public:
     typedef Dtype MAP_TYPE;
 
-    DataMapper(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t id) : map(mappings[id]), idx(indices[id]), totalSize(0), fieldCount(0)
+    DataMapper(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t id) : map(mappings[id]), idx(indices[id]), mappedSize(0), fieldCount(0)
     {
-        lookupSize[id] = sizeof(MAP_TYPE);
+        lookupSize[id] = structSize = sizeof(MAP_TYPE);
     }
+
+    ~DataMapper()
+	{
+        assert((mappedSize == structSize) && "Size of mapped fields does not match struct size");
+	}
 
     template <typename MemberType>
 	void AddMember(const std::string& name, 
@@ -258,7 +263,7 @@ public:
 		eDataType dataType,
 		const std::string& units = "", 
 		const std::string& description = "",
-		eDataFlags dataFlags = eDataFlags(0), 
+		int dataFlags = 0, 
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
@@ -274,7 +279,7 @@ public:
             dataType,
 			elementCount,
             elementSize,
-            dataFlags, 
+            eDataFlags(dataFlags), 
             name, 
             units, 
             description, 
@@ -284,13 +289,16 @@ public:
         // Add the entry to the index
 		data_info_t &dinfo = map[name];
         idx[fieldCount++] = &dinfo;
-        totalSize += dinfo.dataSize;
+        mappedSize += dataSize;
 
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
-        assert((s_eDataTypeSizes[dataType] != 0) && "Data type size invalid");
-        assert((s_eDataTypeSizes[dataType] == dinfo.dataSize) && "Data type size mismatch");
+		if (dataType != DATA_TYPE_STRING)
+		{
+			assert((s_eDataTypeSizes[dataType] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSizes[dataType] == dinfo.dataSize) && "Data type size mismatch");
+		}
     }
 
     template <typename MemberType>
@@ -300,7 +308,7 @@ public:
 		uint32_t elementCount,
 		const std::string& units = "", 
 		const std::string& description = "",
-		eDataFlags dataFlags = eDataFlags(0), 
+		int dataFlags = 0, 
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
@@ -315,7 +323,7 @@ public:
             dataType,
 			elementCount,
 			elementSize,
-            dataFlags, 
+            eDataFlags(dataFlags), 
             name, 
             units, 
             description, 
@@ -324,7 +332,7 @@ public:
 
         // Add the entry to the index
         idx[fieldCount++] = &(map[name]);
-        totalSize += dataSize;
+        mappedSize += dataSize;
 
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
@@ -334,9 +342,11 @@ public:
     }
 
 private:
+	uint32_t did;
     map_name_to_info_t& map;  		// Reference to the specific mapping for this instance
     map_index_to_info_t& idx; 		// Reference to the specific index for this instance
-    uint32_t totalSize;    			// Tracks total size of mapped fields
+    uint32_t structSize;    		// Size of the data set struct
+    uint32_t mappedSize;    		// Size of all mapped fields
     uint32_t fieldCount;   			// Tracks the count of fields
 };
 
