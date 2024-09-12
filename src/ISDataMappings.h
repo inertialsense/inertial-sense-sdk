@@ -123,6 +123,7 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 // dataSize can be 0 for default size, must be set for string type
 #define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
 
+#if 1
 // note when passing member type for arrays, it must be a reference, i.e. float&
 #define ADD_MAP_4(name, member, dataType, fieldType) \
     ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, "", "", 0, 1.0); \
@@ -155,6 +156,16 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
     static_assert((uint32_t)sizeof(fieldType) == sizeof(MAP_TYPE::member), "Field type is an unexpected size, sizeof(MAP_TYPE::member)"); \
     static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)sizeof(fieldType) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
 #define ASSERT_SIZE(s) assert(s == sizeof(MAP_TYPE))
+#else
+#define ADD_MAP_4(name, member, dataType, fieldType) 
+#define ADD_MAP_5(name, member, dataType, fieldType, units) 
+#define ADD_MAP_6(name, member, dataType, fieldType, units, description) 
+#define ADD_MAP_7(name, member, dataType, fieldType, units, description, dataFlags) 
+#define ADD_MAP_8(name, member, dataType, fieldType, units, description, dataFlags, conversion) 
+#define ASSERT_SIZE(s) 
+
+#endif
+
 
 #else
 
