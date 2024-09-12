@@ -227,6 +227,7 @@ static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT], uin
 }
 
 void PopulatePortMonitorMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+void PopulatePortMonitorMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<port_monitor_t> mapper(mappings, lookupSize, indices, did);
     ADD_MAP_7("activePorts", activePorts, DATA_TYPE_UINT8, uint8_t, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
@@ -310,7 +311,6 @@ void PopulateNmeaBCastPeriodMappings(map_name_to_info_t mappings[DID_COUNT], uin
     //     ADD_MAP_6("[0].ID",     nmeaBroadcastMsgs[0].msgID,     DATA_TYPE_UINT8, uint8_t, "", "NMEA_ID (See eNmeaAsciiMsgId)");
     //     ADD_MAP_6("[0].Period", nmeaBroadcastMsgs[0].msgPeriod, DATA_TYPE_UINT8, uint8_t, "", "NMEA_PerieNmeaMsgIdin multiples of 200ms. Ie value of 1 is 200ms or 5 is 1000ms/1s. A value of 0 stops the message broadcast.");
     // }
-//    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
@@ -608,12 +608,12 @@ static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ADD_MAP_7("numSigs", numSigs, DATA_TYPE_UINT32, uint32_t, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
 
 #define ADD_MAP_SAT_SIG(n) \
-    ADD_MAP_4("sig" #n ".gnssId",    sig[n].gnssId,    DATA_TYPE_UINT8, uint8_t); \
-    ADD_MAP_4("sig" #n ".svId",      sig[n].svId,      DATA_TYPE_UINT8, uint8_t); \
-    ADD_MAP_4("sig" #n ".sigId",     sig[n].sigId,     DATA_TYPE_UINT8, uint8_t); \
-    ADD_MAP_4("sig" #n ".cno",       sig[n].cno,       DATA_TYPE_UINT8, uint8_t); \
-    ADD_MAP_4("sig" #n ".quality",   sig[n].quality,   DATA_TYPE_UINT8, uint8_t); \
-    ADD_MAP_4("sig" #n ".status",    sig[n].status,    DATA_TYPE_UINT16, uint16_t);
+    mapper.AddMember("sig" #n ".gnssId",    &gps_sig_t::sig[n].gnssId,    DATA_TYPE_UINT8); \
+    mapper.AddMember("sig" #n ".svId",      &gps_sig_t::sig[n].svId,      DATA_TYPE_UINT8); \
+    mapper.AddMember("sig" #n ".sigId",     &gps_sig_t::sig[n].sigId,     DATA_TYPE_UINT8); \
+    mapper.AddMember("sig" #n ".cno",       &gps_sig_t::sig[n].cno,       DATA_TYPE_UINT8); \
+    mapper.AddMember("sig" #n ".quality",   &gps_sig_t::sig[n].quality,   DATA_TYPE_UINT8); \
+    mapper.AddMember("sig" #n ".status",    &gps_sig_t::sig[n].status,    DATA_TYPE_UINT16);
 
     ADD_MAP_SAT_SIG(0);
     ADD_MAP_SAT_SIG(1);
