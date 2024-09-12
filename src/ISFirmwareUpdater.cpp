@@ -249,7 +249,10 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
 
 bool ISFirmwareUpdater::fwUpdate_isDone()
 {
-    return !(hasPendingCommands() || requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)));
+    bool cmdsPending = hasPendingCommands();
+    bool in_progress = ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
+    bool is_done = !(cmdsPending || requestPending || in_progress);
+    return is_done;
 }
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)
@@ -392,6 +395,8 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     VSNPRINTF(buffer, sizeof(buffer), errMsg, args);
     va_end(args);
 
+    stepErrors.emplace_back(activeStep, cmd, buffer);
+
     if(pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, buffer);
 
@@ -455,7 +460,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                         err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
                         break;
                 }
-                handleCommandError(args[0], err_result, "Error processing firmware package [%s]: %d :: %s", args[1].c_str(), err_result, err_msg);
+                handleCommandError(args[0], err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", args[1].c_str(), err_result, err_msg);
 
             }
         } else if ((args[0] == "target") && (args.size() == 2)) {
@@ -560,6 +565,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                 pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Issuing 'RESET'");
         } else if (args[0][0] == ':') {
             // new step section/target - we should reset certain states here if needed
+            activeStep = args[0];
             session_target = target = fwUpdate::TARGET_HOST;
             session_image_slot = slotNum = 0;
             failLabel.clear();
@@ -688,19 +694,30 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
-    YAML::Node manifest = YAML::LoadFile(manifest_file);
-    if (manifest.IsNull())
-        return PKG_ERR_PACKAGE_FILE_ERROR;
+    try {
+        YAML::Node manifest = YAML::LoadFile(manifest_file);
 
-    // always process the manifest from the manifest's path
-    std::string parentDir;
-    if (ISFileManager::getParentDirectory(manifest_file, parentDir)) {
-        if( chdir(parentDir.c_str()) )
-        {   // Handle error
+        if (manifest.IsNull())
+            return PKG_ERR_PACKAGE_FILE_ERROR;
+
+        // always process the manifest from the manifest's path
+        std::string parentDir;
+        if (ISFileManager::getParentDirectory(manifest_file, parentDir)) {
+            if( chdir(parentDir.c_str()) )
+            {   // Handle error
+            }
         }
-    }
 
-    return processPackageManifest(manifest);
+        return processPackageManifest(manifest);
+    } catch (YAML::BadFile& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+    } catch (YAML::ParserException& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+    } catch (YAML::BadConversion& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;;
+    } catch (YAML::RepresentationException& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+    }
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {

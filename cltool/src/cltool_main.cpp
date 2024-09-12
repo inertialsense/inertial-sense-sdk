@@ -830,7 +830,7 @@ static int cltool_dataStreaming()
                 // If updating firmware, and all devices have finished, Exit
                 if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
                     if (inertialSenseInterface.isFirmwareUpdateFinished()) {
-                        exitCode = 0;
+                        exitCode = inertialSenseInterface.isFirmwareUpdateSuccessful() ? 0 : -3;
                         break;
                     }
                 } else {  // Only print the usual output if we AREN'T updating firmware...
@@ -858,7 +858,7 @@ static int cltool_dataStreaming()
     }
 
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto& device : inertialSenseInterface.getDevices()) {
             if (device.fwUpdate.hasError) {
                 exitCode = -3;
