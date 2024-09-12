@@ -84,7 +84,8 @@ typedef struct
 	uint32_t    dataOffset;
 	uint32_t    dataSize;
 	eDataType   dataType;
-	uint32_t    arraySize;
+	uint32_t    elementCount;
+	uint32_t    elementSize;
 	eDataFlags  dataFlags;
 	std::string name;
 	std::string units;			// Units (after conversion)
@@ -120,7 +121,7 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 #if CPP11_IS_ENABLED
 
 // dataSize can be 0 for default size, must be set for string type
-#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
+#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
 
 // note when passing member type for arrays, it must be a reference, i.e. float&
 #define ADD_MAP_4(name, member, dataType, fieldType) \
@@ -262,13 +263,17 @@ public:
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
+		uint32_t dataSize = (uint32_t)sizeof(FieldType);
+		uint32_t elementCount = 0; 	// Zero for single element 
+		uint32_t elementSize = dataSize;
 
         // Populate the map with the new entry
         map[name] = { 
             offset,
-            (uint32_t)sizeof(FieldType), 
-            dataType, 
-			0, 
+            dataSize,
+            dataType,
+			elementCount,
+            elementSize,
             dataFlags, 
             name, 
             units, 
@@ -292,7 +297,7 @@ public:
 	void AddArray(const std::string& name, 
 		MemberType member,
 		eDataType dataType,
-		uint32_t arraySize,
+		uint32_t elementCount,
 		const std::string& units = "", 
 		const std::string& description = "",
 		eDataFlags dataFlags = eDataFlags(0), 
@@ -300,13 +305,16 @@ public:
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
+		uint32_t dataSize = (uint32_t)sizeof(FieldType);
+		uint32_t elementSize = dataSize/elementCount;
 
         // Populate the map with the new entry
         map[name] = { 
             offset,
-            (uint32_t)sizeof(FieldType), 
-            dataType, 
-			arraySize,
+            dataSize, 
+            dataType,
+			elementCount,
+			elementSize,
             dataFlags, 
             name, 
             units, 
@@ -316,13 +324,13 @@ public:
 
         // Add the entry to the index
         idx[fieldCount++] = &(map[name]);
-        totalSize += sizeof(FieldType);
+        totalSize += dataSize;
 
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
         assert(((s_eDataTypeSizes[dataType]) != 0) && "Data type size invalid");
-        assert(((s_eDataTypeSizes[dataType]*arraySize) == (uint32_t)sizeof(FieldType)) && "Data type size mismatch");
+        assert(((s_eDataTypeSizes[dataType]*elementCount) == dataSize) && "Data type size mismatch");
     }
 
 private:
@@ -445,10 +453,12 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param datasetBuffer packet buffer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param elementIndex index into array
+	* @param elementSize size of elements in array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex = 0, int elementSize = 0, bool json = false);
 
 	/**
 	* Convert a variable to a string
@@ -456,10 +466,12 @@ public:
 	* @param dataFlags data flags 
 	* @param dataBuffer data buffer pointer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param elementIndex index into array
+	* @param elementSize size of elements in array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, int elementIndex = 0, int elementSize = 0, bool json = false);
 
 	/**
 	* Get a timestamp from data if available

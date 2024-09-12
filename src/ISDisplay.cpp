@@ -1907,30 +1907,66 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
         if (it == m_editData.mapInfoEnd)
             break;
 
-		// Print value
-		if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
-		{	// Show keyboard value
-			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+		const data_info_t& info = it->second;
+
+		if (info.elementCount)
+		{	// Array
+			for (uint32_t i=0; i < info.elementCount; i++)
+			{
+				// Print value
+				if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
+				{	// Show keyboard value
+					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+				}
+				else
+				{	// Show received value
+					cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp, i, info.elementSize);
+					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+				}
+
+				// Print selection marker
+				if ((it == m_editData.mapInfoSelection) && (i == m_editData.selectionArrayIdx))
+				{
+					if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+					else                        { DISPLAY_SNPRINTF("*"); }
+				}
+				else
+				{
+					DISPLAY_SNPRINTF(" ");
+				}
+
+				// Print value name
+				DISPLAY_SNPRINTF(" %s[%d]\n", it->first.c_str(), i);
+			}
 		}
 		else
-		{	// Show received value
-			cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
-			DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
-		}
+		{	// Single element
 
-		// Print selection marker
-		if (it == m_editData.mapInfoSelection)
-		{
-			if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
-			else                        { DISPLAY_SNPRINTF("*"); }
-		}
-		else
-		{
-			DISPLAY_SNPRINTF(" ");
-		}
+			// Print value
+			if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
+			{	// Show keyboard value
+				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+			}
+			else
+			{	// Show received value
+				cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp);
+				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+			}
 
-		// Print value name
-		DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
+			// Print selection marker
+			if (it == m_editData.mapInfoSelection)
+			{
+				if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+				else                        { DISPLAY_SNPRINTF("*"); }
+			}
+			else
+			{
+				DISPLAY_SNPRINTF(" ");
+			}
+
+			// Print value name
+			DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
+		}
 	}
 
 	return buf;
@@ -2007,9 +2043,10 @@ void cInertialSenseDisplay::SelectEditDataset(int did)
 {
 	m_editData.did = did;
 	m_editData.mapInfo = cISDataMappings::GetMapInfo(did);
+	m_editData.mapInfoBegin 	= m_editData.mapInfo->begin();
+    m_editData.mapInfoEnd 		= m_editData.mapInfo->end();
 	m_editData.mapInfoSelection = m_editData.mapInfo->begin();
-	m_editData.mapInfoBegin = m_editData.mapInfo->begin();
-    m_editData.mapInfoEnd = m_editData.mapInfo->end();
+	m_editData.selectionArrayIdx = 0;
 
 	// Set m_editData.mapInfoBegin to end or DATASET_VIEW_NUM_ROWSth element, whichever is smaller.
 	int i=0;
@@ -2040,16 +2077,28 @@ void cInertialSenseDisplay::VarSelectIncrement()
 		return;
 	}
 
+	const data_info_t& info = m_editData.mapInfoSelection->second;
+	if (info.elementCount)
+	{	// Array
+		if (m_editData.selectionArrayIdx < (info.elementCount-1))
+		{
+			m_editData.selectionArrayIdx++;
+			return;
+		}		
+	}
+	
 	map_name_to_info_t::const_iterator mapInfoEnd = m_editData.mapInfoEnd;
 	if (m_editData.mapInfoSelection != --(mapInfoEnd))
 	{
 		m_editData.mapInfoSelection++;
+		m_editData.selectionArrayIdx = 0;
 	}
 	else if (m_editData.mapInfoEnd != m_editData.mapInfo->end())
 	{
 		m_editData.mapInfoBegin++;
 		m_editData.mapInfoEnd++;
 		m_editData.mapInfoSelection++;
+		m_editData.selectionArrayIdx = 0;
 		Clear();
 	}
 
@@ -2064,18 +2113,30 @@ void cInertialSenseDisplay::VarSelectDecrement()
 		return;
 	}
 
+	const data_info_t& info = m_editData.mapInfoSelection->second;
+	if (info.elementCount)
+	{	// Array
+		if (m_editData.selectionArrayIdx > 0)
+		{
+			m_editData.selectionArrayIdx--;
+			return;
+		}		
+	}
+
 	if (m_editData.mapInfoSelection != m_editData.mapInfoBegin)
 	{
 		m_editData.mapInfoSelection--;
+		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.elementCount-1);
 	}
 	else if (m_editData.mapInfoBegin != m_editData.mapInfo->begin())
 	{
 		m_editData.mapInfoBegin--;
 		m_editData.mapInfoEnd--;
 		m_editData.mapInfoSelection--;
+		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.elementCount-1);
 		Clear();
 	}
-	
+
 	m_editData.editEnabled = false; 
 }
 

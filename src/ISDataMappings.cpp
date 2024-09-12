@@ -2635,7 +2635,7 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex, int elementSize, bool json)
 {
     const uint8_t* ptr;
     if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
@@ -2668,12 +2668,17 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.dataType, info.dataFlags, ptr, datasetBuffer, info.dataSize, stringBuffer, json);
+    return VariableToString(info.dataType, info.dataFlags, ptr, datasetBuffer, info.dataSize, stringBuffer, elementIndex, elementSize, json);
 }
 
 
-bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, int elementIndex, int elementSize, bool json)
 {
+    if (elementIndex)
+    {   // Offset pointer into array
+        ptr += elementSize * elementIndex;
+    }
+
     int precision;
     switch (dataType)
     {
