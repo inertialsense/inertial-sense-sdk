@@ -81,10 +81,11 @@ typedef enum
 */
 typedef struct
 {
-	uint32_t dataOffset;
-	uint32_t dataSize;
-	eDataType dataType;
-	eDataFlags dataFlags;
+	uint32_t    dataOffset;
+	uint32_t    dataSize;
+	eDataType   dataType;
+	uint32_t    arraySize;
+	eDataFlags  dataFlags;
 	std::string name;
 	std::string units;			// Units (after conversion)
 	std::string description;
@@ -119,7 +120,7 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 #if CPP11_IS_ENABLED
 
 // dataSize can be 0 for default size, must be set for string type
-#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
+#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
 
 // note when passing member type for arrays, it must be a reference, i.e. float&
 #define ADD_MAP_4(name, member, dataType, fieldType) \
@@ -243,25 +244,23 @@ template <typename Dtype>
 class DataMapper
 {
 public:
-    typedef Dtype MAP_TYPE;  // Make MAP_TYPE a class-wide typedef
+    typedef Dtype MAP_TYPE;
 
     DataMapper(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t id) : map(mappings[id]), idx(indices[id]), totalSize(0), fieldCount(0)
     {
         lookupSize[id] = sizeof(MAP_TYPE);
     }
 
-    // Combined function for all ADD_MAP macros
     template <typename MemberType>
-	 void AddMap(const std::string& name, 
-                MemberType member,
-				eDataType dataType,
-                const std::string& units = "", 
-				const std::string& description = "",
-                eDataFlags dataFlags = eDataFlags(0), 
-				double conversion = 1.0) 	
+	void AddMember(const std::string& name, 
+		MemberType member,
+		eDataType dataType,
+		const std::string& units = "", 
+		const std::string& description = "",
+		eDataFlags dataFlags = eDataFlags(0), 
+		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
-
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
 
         // Populate the map with the new entry
@@ -269,6 +268,45 @@ public:
             offset,
             (uint32_t)sizeof(FieldType), 
             dataType, 
+			0, 
+            dataFlags, 
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t &dinfo = map[name];
+        idx[fieldCount++] = &dinfo;
+        totalSize += dinfo.dataSize;
+
+        // Static assertions for type and size validation
+        static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+        assert((s_eDataTypeSizes[dataType] != 0) && "Data type size invalid");
+        assert((s_eDataTypeSizes[dataType] == dinfo.dataSize) && "Data type size mismatch");
+    }
+
+    template <typename MemberType>
+	void AddArray(const std::string& name, 
+		MemberType member,
+		eDataType dataType,
+		uint32_t arraySize,
+		const std::string& units = "", 
+		const std::string& description = "",
+		eDataFlags dataFlags = eDataFlags(0), 
+		double conversion = 1.0) 	
+    {
+        using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
+        uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
+
+        // Populate the map with the new entry
+        map[name] = { 
+            offset,
+            (uint32_t)sizeof(FieldType), 
+            dataType, 
+			arraySize,
             dataFlags, 
             name, 
             units, 
@@ -283,45 +321,16 @@ public:
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
-        assert(((s_eDataTypeSizes[dataType] == 0) || ((uint32_t)sizeof(FieldType) == s_eDataTypeSizes[dataType])) && "Data type size mismatch");
+        assert(((s_eDataTypeSizes[dataType]) != 0) && "Data type size invalid");
+        assert(((s_eDataTypeSizes[dataType]*arraySize) == (uint32_t)sizeof(FieldType)) && "Data type size mismatch");
     }
 
 private:
-    map_name_to_info_t& map;  // Reference to the specific mapping for this instance
-    map_index_to_info_t& idx; // Reference to the specific index for this instance
-    uint32_t totalSize;    // Tracks total size of mapped fields
-    uint32_t fieldCount;   // Tracks the count of fields
-
-    // Static data type sizes array (assuming this is already defined somewhere)
-    // static uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT];
+    map_name_to_info_t& map;  		// Reference to the specific mapping for this instance
+    map_index_to_info_t& idx; 		// Reference to the specific index for this instance
+    uint32_t totalSize;    			// Tracks total size of mapped fields
+    uint32_t fieldCount;   			// Tracks the count of fields
 };
-
-// Static initialization (for the sake of example)
-// uint32_t DataMapper::s_eDataTypeSizes[DATA_TYPE_COUNT] = 
-// { 
-//     1, 1, 2, 2, 4, 4, 8, 8, 4, 8, 0, 0 
-// };  // Assuming sizes for each data type
-
-// Example usage
-struct MyStruct 
-{
-    int32_t myMember;
-    uint32_t myOtherMember;
-};
-
-// void exampleUsage() {
-//     DataMapper mapper;
-
-//     // Initialize a mapping for a specific data type and id
-//     mapper.InitMap<MyStruct>(1);
-
-//     // Add a field to the mapping (replaces ADD_MAP_4, ADD_MAP_5, etc.)
-//     mapper.AddMap<MyStruct, int32_t>("MyMember", &MyStruct::myMember, DATA_TYPE_INT32);
-
-//     // Add another field with flags (replaces ADD_MAP_5)
-//     mapper.AddMap<MyStruct, uint32_t>("MyOtherMember", &MyStruct::myOtherMember, DATA_TYPE_UINT32, "", "", DATA_FLAGS_READ_ONLY);
-// }
-
 
 
 

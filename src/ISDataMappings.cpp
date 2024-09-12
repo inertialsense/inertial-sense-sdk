@@ -27,7 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
-#define USE_IS_INTERNAL
+// #define USE_IS_INTERNAL
 
 #ifdef USE_IS_INTERNAL
 #include "../../cpp/libs/families/imx/IS_internal.h"
@@ -88,6 +88,39 @@ static void PopulateTimestampField(uint32_t id, const data_info_t** timestamps, 
     }
 
     timestamps[id] = NULLPTR; // ensure value is not garbage
+}
+
+static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+{
+    DataMapper<dev_info_t> mapper(mappings, lookupSize, indices, did);
+    mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT16);
+    mapper.AddMember("reserved2", &dev_info_t::reserved2, DATA_TYPE_UINT8);
+    mapper.AddMember("hardwareType", &dev_info_t::hardwareType, DATA_TYPE_UINT8,  "", "Hardware type: 1=uINS, 2=EVB, 3=IMX, 4=GPX", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("serialNumber", &dev_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
+    mapper.AddArray("hardwareVer", &dev_info_t::hardwareVer, DATA_TYPE_UINT8, 4, "", "Hardware version", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("hardwareVer[1]", &dev_info_t::hardwareVer[1], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("hardwareVer[2]", &dev_info_t::hardwareVer[2], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("hardwareVer[3]", &dev_info_t::hardwareVer[3], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("firmwareVer[0]", &dev_info_t::firmwareVer[0], DATA_TYPE_UINT8, "", "Firmware version", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("firmwareVer[1]", &dev_info_t::firmwareVer[1], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("firmwareVer[2]", &dev_info_t::firmwareVer[2], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("firmwareVer[3]", &dev_info_t::firmwareVer[3], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildNumber", &dev_info_t::buildNumber, DATA_TYPE_UINT32, "", "Build number (0xFFFFF000 = Host key, 0x00000FFF = Build #)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    // mapper.AddMember("protocolVer[0]", &dev_info_t::protocolVer[0], DATA_TYPE_UINT8, "", "Communications protocol version", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("protocolVer[1]", &dev_info_t::protocolVer[1], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("protocolVer[2]", &dev_info_t::protocolVer[2], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("protocolVer[3]", &dev_info_t::protocolVer[3], DATA_TYPE_UINT8, "", "\"", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("repoRevision", &dev_info_t::repoRevision, DATA_TYPE_UINT32, "", "Repo revision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    // mapper.AddMember("manufacturer", &dev_info_t::manufacturer, DATA_TYPE_STRING, char[DEVINFO_MANUFACTURER_STRLEN], "", "manufacturer", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildType", &dev_info_t::buildType, DATA_TYPE_UINT8, "", "'a'(97)=ALPHA, 'b'(98)=BETA, 'c'(99)=CANDIDATE, 'r'(114)=PRODUCTION, 'd'(100)=develop, 's'(115)=snapshot, '*'(42)=dirty", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildYear", &dev_info_t::buildYear, DATA_TYPE_UINT8, "", "Build year-2000", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildMonth", &dev_info_t::buildMonth, DATA_TYPE_UINT8, "", "Build month", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildDay", &dev_info_t::buildDay, DATA_TYPE_UINT8, "", "Build day", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildHour", &dev_info_t::buildHour, DATA_TYPE_UINT8, "", "Build hour", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildMinute", &dev_info_t::buildMinute, DATA_TYPE_UINT8, "", "Build minute", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildSecond", &dev_info_t::buildSecond, DATA_TYPE_UINT8, "", "Build second", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("buildMillisecond", &dev_info_t::buildMillisecond, DATA_TYPE_UINT8, "", "Build millisecond", DATA_FLAGS_READ_ONLY);
+    // mapper.AddMember("addInfo", &dev_info_t::addInfo, DATA_TYPE_STRING, char[DEVINFO_ADDINFO_STRLEN], "", "Additional info", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateHdwParamsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
@@ -1188,29 +1221,35 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    INIT_MAP(debug_array_t, did);
-    ADD_MAP_4("i[0]", i[0], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[1]", i[1], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[2]", i[2], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[3]", i[3], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[4]", i[4], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[5]", i[5], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[6]", i[6], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[7]", i[7], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_4("i[8]", i[8], DATA_TYPE_INT32, int32_t&);
-    ADD_MAP_7("f[0]", f[0], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[1]", f[1], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[2]", f[2], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[3]", f[3], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[4]", f[4], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[5]", f[5], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[6]", f[6], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[7]", f[7], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("f[8]", f[8], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
-    ADD_MAP_7("lf[0]", lf[0], DATA_TYPE_F64, double&, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
-    ADD_MAP_7("lf[1]", lf[1], DATA_TYPE_F64, double&, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
-    ADD_MAP_7("lf[2]", lf[2], DATA_TYPE_F64, double&, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
-    ASSERT_SIZE(totalSize);
+    DataMapper<debug_array_t> mapper(mappings, lookupSize, indices, did);
+    mapper.AddArray("i", &debug_array_t::i, DATA_TYPE_UINT32, DEBUG_I_ARRAY_SIZE);
+    mapper.AddArray("f", &debug_array_t::f, DATA_TYPE_F32, DEBUG_F_ARRAY_SIZE);
+    mapper.AddArray("lf", &debug_array_t::lf, DATA_TYPE_F64, DEBUG_LF_ARRAY_SIZE);
+
+
+    // INIT_MAP(debug_array_t, did);
+    // ADD_MAP_4("i[0]", i[0], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[1]", i[1], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[2]", i[2], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[3]", i[3], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[4]", i[4], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[5]", i[5], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[6]", i[6], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[7]", i[7], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_4("i[8]", i[8], DATA_TYPE_INT32, int32_t&);
+    // ADD_MAP_7("f[0]", f[0], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[1]", f[1], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[2]", f[2], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[3]", f[3], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[4]", f[4], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[5]", f[5], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[6]", f[6], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[7]", f[7], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("f[8]", f[8], DATA_TYPE_F32, float&, "", "", DATA_FLAGS_FIXED_DECIMAL_4);
+    // ADD_MAP_7("lf[0]", lf[0], DATA_TYPE_F64, double&, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
+    // ADD_MAP_7("lf[1]", lf[1], DATA_TYPE_F64, double&, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
+    // ADD_MAP_7("lf[2]", lf[2], DATA_TYPE_F64, double&, "", "", DATA_FLAGS_FIXED_DECIMAL_9);
+    // ASSERT_SIZE(totalSize);
 }
 
 static void PopulateDebugStringMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
