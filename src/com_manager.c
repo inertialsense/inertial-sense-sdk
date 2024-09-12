@@ -609,19 +609,24 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
 
     case PKT_TYPE_GET_DATA:
         #ifdef IMX_5
-    {
-        p_data_get_t *gdata = (p_data_get_t*)(comm->rxPkt.data.ptr);
-        // Forward to gpx
-        if(IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
-            (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) ||
-            gdata->id == DID_RTK_DEBUG))
         {
-            comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, gdata->id, gdata->size, gdata->offset, gdata->period);
+            p_data_get_t *gdata = (p_data_get_t*)(comm->rxPkt.data.ptr);
+            // Forward to gpx
+            if(IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
+                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) ||
+                gdata->id == DID_RTK_DEBUG))
+            {
+                comManagerGetDataInstance(comManagerGetGlobal(), COM0_PORT_NUM, gdata->id, gdata->size, gdata->offset, gdata->period);
 
-            if (gdata->id == DID_RTK_DEBUG && gdata->period != 0)
-                g_GpxRtkDebugReq |= 0x01 << pHandle; 
-        }
-    }        
+                if (gdata->id == DID_RTK_DEBUG)
+                {
+                    if (gdata->period != 0)
+                        g_GpxRtkDebugReq |= 0x01 << pHandle;
+                    else
+                       g_GpxRtkDebugReq |= 0x01 << (pHandle + 4); 
+                }  
+            }
+        } 
         #endif
         
         if (comManagerGetDataRequestInstance(cmInstance, pHandle, (p_data_get_t*)(comm->rxPkt.data.ptr)))
@@ -639,6 +644,10 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
             cmInstance->disableBcastFnc(-1);
         }
         sendAck(cmInstance, pHandle, &(comm->rxPkt), PKT_TYPE_ACK);
+
+        #ifdef IMX_5
+            g_GpxRtkDebugReq = 0; 
+        #endif
         break;
 
     case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
@@ -650,10 +659,19 @@ int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
             cmInstance->disableBcastFnc(pHandle);
         }
         sendAck(cmInstance, pHandle, &(comm->rxPkt), PKT_TYPE_ACK);
+
+        #ifdef IMX_5
+            g_GpxRtkDebugReq &= ~(0x01 << pHandle); 
+        #endif
         break;
 
     case PKT_TYPE_STOP_DID_BROADCAST:
         disableDidBroadcast(cmInstance, pHandle, comm->rxPkt.hdr.id);
+
+        #ifdef IMX_5
+            if(DID_RTK_DEBUG)
+                g_GpxRtkDebugReq &= ~(0x01 << pHandle);
+        #endif
         break;
 
     case PKT_TYPE_NACK:
