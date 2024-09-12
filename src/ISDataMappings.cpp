@@ -2257,7 +2257,7 @@ uint32_t cISDataMappings::GetSize(uint32_t did)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int radix, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int elementIndex, int elementSize, int radix, bool json)
 {
     const uint8_t* ptr;
     if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
@@ -2265,11 +2265,16 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
         return false;
     }
 
-    return StringToVariable(stringBuffer, stringLength, ptr, info.dataType, info.dataSize, radix, json);
+    return StringToVariable(stringBuffer, stringLength, ptr, info.dataType, info.dataSize, elementIndex, elementSize, radix, json);
 }
 
-bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
+bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex, int elementSize, int radix, bool json)
 {
+    if (elementIndex)
+    {   // Offset pointer into array
+        dataBuffer += elementSize * elementIndex;
+    }
+
     switch (dataType)
     {
     case DATA_TYPE_INT8:

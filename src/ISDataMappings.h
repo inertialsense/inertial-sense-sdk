@@ -450,11 +450,13 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param datasetBuffer packet buffer
 	* @param info metadata about the field to convert
+	* @param elementIndex index into array
+	* @param elementSize size of elements in array
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int elementIndex = 0, int elementSize = 0, int radix = 10, bool json = false);
 
 	/**
 	* Convert a string to a variable.
@@ -462,11 +464,13 @@ public:
 	* @param stringLength the number of chars in stringBuffer
 	* @param dataBuffer data buffer pointer
 	* @param dataType data type
+	* @param elementIndex index into array
+	* @param elementSize size of elements in array
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, bool json = false);
+	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex = 0, int elementSize = 0, int radix = 10, bool json = false);
 
 	/**
 	* Convert dataset field to a string

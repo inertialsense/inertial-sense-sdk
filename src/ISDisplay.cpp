@@ -1914,7 +1914,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 			for (uint32_t i=0; i < info.elementCount; i++)
 			{
 				// Print value
-				if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
+				if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
 				{	// Show keyboard value
 					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
 				}
@@ -2012,14 +2012,14 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			// val = std::stof(m_editData.field);
 			m_editData.info = m_editData.mapInfoSelection->second;
             int radix = (m_editData.info.dataFlags == DATA_FLAGS_DISPLAY_HEX ? 16 : 10);
-			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize, radix);
+			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.dataType, m_editData.info.dataSize, m_editData.selectionArrayIdx, m_editData.info.elementSize, radix);
 			m_editData.uploadNeeded = true;
 
 			// Copy data into local Rx buffer
 			if (m_editData.pData.hdr.id == m_editData.did &&
-				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.dataSize+m_editData.info.dataOffset)
+				m_editData.pData.hdr.size + m_editData.pData.hdr.offset >= m_editData.info.dataSize + m_editData.info.dataOffset)
 			{
-				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.dataSize);
+				memcpy(m_editData.pData.ptr + m_editData.info.dataOffset, m_editData.data, m_editData.info.elementSize);
 			}
 		}
 		StopEditing();
