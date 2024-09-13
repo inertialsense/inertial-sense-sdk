@@ -16,7 +16,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake_gtest REQUIRED)
 find_package(Threads)
 
-set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../scripts/build_is_sdk.sh")
+set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../inertial-sense-sdk/scripts/build_is_sdk.sh")
 get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
 add_custom_target(
 	RunScript
