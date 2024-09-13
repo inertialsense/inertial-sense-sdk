@@ -1902,6 +1902,10 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // Used for reference only
 };
 
+typedef struct {
+    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constellation mask (see eGnGSVIndex)*/
+} gsvMask_t;
+
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
 #define NMEA_RMC_BITS_PPIMU         (1<<NMEA_MSG_ID_PPIMU)
 #define NMEA_RMC_BITS_PRIMU         (1<<NMEA_MSG_ID_PRIMU)

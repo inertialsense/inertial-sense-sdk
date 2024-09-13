@@ -22,10 +22,6 @@ static struct
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 bool gsv_freq_ena(gps_sig_sv_t* sig);
 
-typedef struct {
-    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constilation mask (see eGnGSVIndex)*/
-} gsvMask_t;
-
 static gsvMask_t s_gsvMask = {0};
 
 //////////////////////////////////////////////////////////////////////////
@@ -52,6 +48,32 @@ int ssnprintf(char buf[], int bufSize, const char *fmt, ...)
     int l = VSNPRINTF(buf, bufSize, fmt, args);
     va_end(args);
     return l;
+}
+
+/**
+ * Sets Gsv filter. 
+ * 
+ * @param seedArr - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ */
+void nmea_setGsvFilter(uint8_t* seed)
+{
+    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && seed != nullptr; i++)
+    {
+        s_gsvMask.constMask[i] = seed[i];
+    }
+}
+
+/**
+ * Gets Gsv filter. 
+ * 
+ * @param seedArr - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ */
+void nmea_getGsvFilter(uint8_t* seed)
+{
+    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && seed != nullptr; i++)
+    {
+        seed[i] = s_gsvMask.constMask[i];
+    }
 }
 
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...) 
