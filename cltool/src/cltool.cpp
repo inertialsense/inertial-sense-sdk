@@ -556,12 +556,18 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose"))
         {
-            g_commandLineOptions.verboseLevel=1;
-            for (char *p = argv[i]+7; *p != 0; p++) {
+            if (a[8] != '-')
+                g_commandLineOptions.verboseLevel++;    // +1 for the "-verbose" flag, if it doesn't have a following '-'
+
+            for (char *p = argv[i]+8; *p != 0; p++) {
                 if (*p == '+')
-                    g_commandLineOptions.verboseLevel++;
-                else if (*p == '!')
-                    g_commandLineOptions.verboseLevel = 255;
+                    g_commandLineOptions.verboseLevel++;    // an extra one for each '+'
+                else if (*p == '-')
+                    g_commandLineOptions.verboseLevel--;    // or minus a level for each '-'
+                else if (*p == '!') {
+                    g_commandLineOptions.verboseLevel = 255;  // an "!" rules them all
+                    break;
+                }
             }
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))

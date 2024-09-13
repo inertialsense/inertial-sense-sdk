@@ -1024,7 +1024,6 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
             // we don't respond to messages if we don't already have an active Updater
             if (m_comManagerState.devices[pHandle].fwUpdate.fwUpdater) {
                 m_comManagerState.devices[pHandle].fwUpdate.fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
-                m_comManagerState.devices[pHandle].fwUpdate.update();
             }
             break;
     }
