@@ -70,15 +70,15 @@ TEST(protocol_nmea, nmea_parse_asce)
     rmci_t &r = rmci[port];
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS1] = 2;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU] = 1;
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA] = 1;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGGA] = 1;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = 10;
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGSV] = 7;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGSV] = 7;
     r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS1 |
         NMEA_RMC_BITS_PPIMU |
-        NMEA_RMC_BITS_GxGGA |
+        NMEA_RMC_BITS_GNGGA |
         NMEA_RMC_BITS_PINS2 |
-        NMEA_RMC_BITS_GxGSV;
+        NMEA_RMC_BITS_GNGSV;
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
     char a[ASCII_BUF_LEN] = {};
@@ -86,9 +86,9 @@ TEST(protocol_nmea, nmea_parse_asce)
 	nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", options);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",PINS1,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS1]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",PPIMU,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",GxGGA,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",GNGGA,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGGA]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGSV, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGSV]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSV, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGSV]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
     cout << a << endl;
 
@@ -1258,7 +1258,7 @@ TEST(protocol_nmea, generate_example_nmea_for_user_manual)
 {
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
-    for (int id=0; id<=NMEA_MSG_ID_GxGSV; id++)
+    for (int id=0; id<=NMEA_MSG_ID_GNGSV; id++)
     {
         char a[ASCII_BUF_LEN] = {};
         int n=0;
@@ -1280,11 +1280,11 @@ TEST(protocol_nmea, generate_example_nmea_for_customer)
     char a[ASCII_BUF_LEN] = {};
     int n=0;
     nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", 0);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGGA, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGLL, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGSA, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxZDA, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGSV, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGGA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGLL, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNZDA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSV, 1);
     nmea_sprint_footer(a, ASCII_BUF_LEN, n);
     a[n] = 0;
     printf("%s", a);

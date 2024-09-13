@@ -1658,13 +1658,12 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 */
 int decodeGSV(char* a, int aSize)
 {
-    if(aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
+    if (aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
         return -2;
 
     int msgNum = NMEA_MSG_ID_GNGSV_START;
-    
-    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
-    else if (a[1] == 'N')  {;} // DO NOTHING
+
+    if ((a[1] == 'x') || (a[1] == 'X') || (a[1] == 'N'))  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
     else if (a[1] == 'B')  msgNum += NMEA_GNGSV_BEI_OFFSET;
@@ -1674,17 +1673,17 @@ int decodeGSV(char* a, int aSize)
 
     // Parse freqencies
     // Enable all Freqs ie GNGSV,
-    if(a[5] == ',' || a[5] == '*')
+    if (a[5] == ',' || a[5] == '*')
         msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
     else // special case ie GNGSV_1_2_3_5
     {
-        for(int i = 5; i < aSize; i++)
+        for (int i = 5; i < aSize; i++)
         {
-            if(a[i] == '_')         continue;
-            else if(a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_BAND1_BIT;
-            else if(a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_BAND2_BIT;
-            else if(a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_BAND3_BIT;
-            else if(a[i] == '5')    msgNum |= NMEA_GNGSV_FREQ_5_BIT;
+            if (a[i] == '_')         continue;
+            else if (a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_BAND1_BIT;
+            else if (a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_BAND2_BIT;
+            else if (a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_BAND3_BIT;
+            else if (a[i] == '5')    msgNum |= NMEA_GNGSV_FREQ_5_BIT;
             else                    break;
         }
     }
@@ -1700,7 +1699,7 @@ int decodeGSV(char* a, int aSize)
 */
 int getNmeaMsgId(const void *a, int aSize)
 {
-    if(aSize < 5)     // five characters required (i.e. "$INFO")
+    if (aSize < 5)     // five characters required (i.e. "$INFO")
         return -2;
 
     char *cptr = (char*)a;
@@ -1721,14 +1720,14 @@ int getNmeaMsgId(const void *a, int aSize)
         break;
 
     case 'G':
-        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
-        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }
-        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GxGSA; }
+        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GNGGA; }
+        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GNGLL; }
+        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GNGSA; }
         else if (UINT32_MATCH(talker+2,"GSV,"))     { return decodeGSV(talker, aSize-1); }
         else if (UINT32_MATCH(talker+2,"GSV_"))     { return decodeGSV(talker, aSize-1); }
-        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GxRMC; }
-        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GxVTG; }
-        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GxZDA; }
+        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GNRMC; }
+        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GNVTG; }
+        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GNZDA; }
         break;
 
     case 'I':
@@ -1775,16 +1774,16 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
     case NMEA_MSG_ID_PINS1:	memcpy(str, "PINS1", 5);	return 0;
     case NMEA_MSG_ID_PINS2:	memcpy(str, "PINS2", 5);	return 0;
     case NMEA_MSG_ID_PGPSP:	memcpy(str, "PGPSP", 5);	return 0;
-    case NMEA_MSG_ID_GxGGA:	memcpy(str, "GxGGA", 5);	return 0;
-    case NMEA_MSG_ID_GxGLL:	memcpy(str, "GxGLL", 5);	return 0;
-    case NMEA_MSG_ID_GxGSA:	memcpy(str, "GxGSA", 5);	return 0;
-    case NMEA_MSG_ID_GxRMC:	memcpy(str, "GxRMC", 5);	return 0;
-    case NMEA_MSG_ID_GxZDA:	memcpy(str, "GxZDA", 5);	return 0;
+    case NMEA_MSG_ID_GNGGA:	memcpy(str, "GNGGA", 5);	return 0;
+    case NMEA_MSG_ID_GNGLL:	memcpy(str, "GNGLL", 5);	return 0;
+    case NMEA_MSG_ID_GNGSA:	memcpy(str, "GNGSA", 5);	return 0;
+    case NMEA_MSG_ID_GNRMC:	memcpy(str, "GNRMC", 5);	return 0;
+    case NMEA_MSG_ID_GNZDA:	memcpy(str, "GNZDA", 5);	return 0;
     case NMEA_MSG_ID_PASHR:	memcpy(str, "PASHR", 5);	return 0;
     case NMEA_MSG_ID_PSTRB:	memcpy(str, "PSTRB", 5);	return 0;
     case NMEA_MSG_ID_INFO:	memcpy(str, "INFO", 4);		return 0;
-    case NMEA_MSG_ID_GxGSV:	memcpy(str, "GxGSV", 5);	return 0;
-    case NMEA_MSG_ID_GxVTG:	memcpy(str, "GxVTG", 5);	return 0;
+    case NMEA_MSG_ID_GNGSV:	memcpy(str, "GNGSV", 5);	return 0;
+    case NMEA_MSG_ID_GNVTG:	memcpy(str, "GNVTG", 5);	return 0;
     case NMEA_MSG_ID_INTEL:	memcpy(str, "INTEL", 5);	return 0;
 
     case NMEA_MSG_ID_ASCE:	memcpy(str, "ASCE", 4);		return 0;
@@ -2011,7 +2010,7 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 
 /**
  * Sets ASCE special case for GSV messages.
- * returns NMEA_MSG_ID_GxGSV if successful 
+ * returns NMEA_MSG_ID_GNGSV if successful 
  * returns 0 if unsuccessful
 */
 int parseASCE_GSV(int inId)
@@ -2052,7 +2051,7 @@ int parseASCE_GSV(int inId)
             return 0;
     }
 
-    return NMEA_MSG_ID_GxGSV;
+    return NMEA_MSG_ID_GNGSV;
 }
 
 uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
@@ -2100,8 +2099,8 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         }
 
         // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
+        if (id == NMEA_MSG_ID_GNGSV)
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV_5_3_2_1); // enable all 
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
         
@@ -2176,7 +2175,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         }
 
         // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
+        if (id == NMEA_MSG_ID_GNGSV)
             parseASCE_GSV(NMEA_MSG_ID_GNGSV);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id);
@@ -2532,8 +2531,8 @@ char* nmea_parse_gsv(const char a[], const int aSize, gps_sat_t *gpsSat, gps_sig
     }
 
     (void)aSize;
-    char *ptr = (char *)&a[7];	// $GxGSV,
-    // $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
+    char *ptr = (char *)&a[7];	// $GNGSV,
+    // $GNGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
         
     int32_t numMsgs, msgNum, numSigs;
     ptr = ASCII_to_i32(&numMsgs, ptr);			// 1 - number of messages
