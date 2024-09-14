@@ -1003,7 +1003,7 @@ enum eSatSvGnssId
     SAT_SV_GNSS_ID_GLO          = 6,	// GLONASS (Russia)	
     SAT_SV_GNSS_ID_IRN          = 7,	// IRNSS / NavIC (India)	
     SAT_SV_GNSS_ID_IME          = 8,	// IMES (Japan's Indoor Messaging System)
-    SAT_SV_GNSS_ID_COUNT        = 9,	// Number of constilation
+    SAT_SV_GNSS_ID_COUNT        = 9,	// Number of constellations
 };
 
 /** GPS Sat Status */
@@ -4345,6 +4345,11 @@ enum eGpxStatus
     GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)6,
     GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)7,
     GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)8,
+    GPX_STATUS_FATAL_UNALIGNED_ACCESS                   = (int)9,
+    GPX_STATUS_FATAL_MEMORY_ERROR                       = (int)10,
+    GPX_STATUS_FATAL_BUS_ERROR                          = (int)11,
+    GPX_STATUS_FATAL_USAGE_ERROR                        = (int)12,
+    GPX_STATUS_FATAL_DIV_ZERO                           = (int)13,
 
     GPX_STATUS_FATAL_UNKNOWN                            = (int)0xff,
 };
@@ -4439,7 +4444,7 @@ typedef struct
     uint8_t reserved;
     uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
     uint8_t initState;          /** GNSS status (see InitSteps) **/
-    uint8_t runState;           /** GNSS run status (see RunState) **/
+    uint8_t runState;           /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
 /**

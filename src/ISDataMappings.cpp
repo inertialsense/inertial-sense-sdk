@@ -118,6 +118,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
     sizeMap[DID_GROUND_VEHICLE] = sizeof(ground_vehicle_t);
     sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
+    sizeMap[DID_NMEA_BCAST_PERIOD] = sizeof(nmea_msgs_t);
     sizeMap[DID_RMC] = sizeof(rmc_t);
     sizeMap[DID_INS_1] = sizeof(ins_1_t);
     sizeMap[DID_INS_2] = sizeof(ins_2_t);
@@ -1038,6 +1039,58 @@ static void PopulateConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     uint32_t totalSize = 0;
     ADD_MAP(m, totalSize, "command", command, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "invCommand", invCommand, 0, DataTypeUInt32, uint32_t, 0);
+
+    ASSERT_SIZE(totalSize);
+}
+
+static void PopulateNmeaMsgsMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef nmea_msgs_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_NMEA_BCAST_PERIOD];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "options", options, 0, DataTypeUInt32, uint32_t, 0);
+
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[0].msgID",     nmeaBroadcastMsgs[0].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[0].msgPeriod", nmeaBroadcastMsgs[0].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[1].msgID",     nmeaBroadcastMsgs[1].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[1].msgPeriod", nmeaBroadcastMsgs[1].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[2].msgID",     nmeaBroadcastMsgs[2].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[2].msgPeriod", nmeaBroadcastMsgs[2].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[3].msgID",     nmeaBroadcastMsgs[3].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[3].msgPeriod", nmeaBroadcastMsgs[3].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[4].msgID",     nmeaBroadcastMsgs[4].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[4].msgPeriod", nmeaBroadcastMsgs[4].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[5].msgID",     nmeaBroadcastMsgs[5].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[5].msgPeriod", nmeaBroadcastMsgs[5].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[6].msgID",     nmeaBroadcastMsgs[6].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[6].msgPeriod", nmeaBroadcastMsgs[6].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[7].msgID",     nmeaBroadcastMsgs[7].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[7].msgPeriod", nmeaBroadcastMsgs[7].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[8].msgID",     nmeaBroadcastMsgs[8].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[8].msgPeriod", nmeaBroadcastMsgs[8].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[9].msgID",     nmeaBroadcastMsgs[9].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[9].msgPeriod", nmeaBroadcastMsgs[9].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[10].msgID",     nmeaBroadcastMsgs[10].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[10].msgPeriod", nmeaBroadcastMsgs[10].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[11].msgID",     nmeaBroadcastMsgs[11].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[11].msgPeriod", nmeaBroadcastMsgs[11].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[12].msgID",     nmeaBroadcastMsgs[12].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[12].msgPeriod", nmeaBroadcastMsgs[12].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[13].msgID",     nmeaBroadcastMsgs[13].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[13].msgPeriod", nmeaBroadcastMsgs[13].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[14].msgID",     nmeaBroadcastMsgs[14].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[14].msgPeriod", nmeaBroadcastMsgs[14].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[15].msgID",     nmeaBroadcastMsgs[15].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[15].msgPeriod", nmeaBroadcastMsgs[15].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[16].msgID",     nmeaBroadcastMsgs[16].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[16].msgPeriod", nmeaBroadcastMsgs[16].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[17].msgID",     nmeaBroadcastMsgs[17].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[17].msgPeriod", nmeaBroadcastMsgs[17].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[18].msgID",     nmeaBroadcastMsgs[18].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[18].msgPeriod", nmeaBroadcastMsgs[18].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[19].msgID",     nmeaBroadcastMsgs[19].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[19].msgPeriod", nmeaBroadcastMsgs[19].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -2771,6 +2824,7 @@ cISDataMappings::cISDataMappings()
     PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
     PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
+    PopulateNmeaMsgsMappings(m_lookupInfo);
     PopulateFlashConfigMappings(m_lookupInfo);
     PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
     PopulateEvbStatusMappings(m_lookupInfo);
