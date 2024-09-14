@@ -601,23 +601,21 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
 
     case PKT_TYPE_GET_DATA:
 #ifdef IMX_5
-        // Forward to gpx
-        if(IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX && 
-            (((p_data_get_t*)(pkt->data.ptr))->id == DID_RTK_DEBUG || (
-            (((p_data_get_t*)(pkt->data.ptr))->id >= DID_GPX_FIRST) && 
-            (((p_data_get_t*)(pkt->data.ptr))->id <= DID_GPX_LAST))))
         {
-            comManagerGetData(COM0_PORT, ((p_data_get_t*)(pkt->data.ptr))->id, ((p_data_get_t*)(pkt->data.ptr))->size, ((p_data_get_t*)(pkt->data.ptr))->offset, ((p_data_get_t*)(pkt->data.ptr))->period);
+            p_data_get_t *gdata = ((p_data_get_t *) (pkt->data.ptr));
+            // Forward to gpx
+            if (IO_CONFIG_GPS1_TYPE(g_nvmFlashCfg->ioConfig) == IO_CONFIG_GPS_TYPE_GPX &&
+                (((gdata->id >= DID_GPX_FIRST) && (gdata->id <= DID_GPX_LAST)) || (gdata->id == DID_RTK_DEBUG))) {
+                comManagerGetData(COM0_PORT, gdata->id, gdata->size, gdata->offset, gdata->period);
 
-            if (gdata->id == DID_RTK_DEBUG)
-            {
-                if (gdata->period != 0)
-                    g_GpxRtkDebugReq |= 0x01 << pHandle;
-                else
-                   g_GpxRtkDebugReq |= 0x01 << (pHandle + 4);
+                if (gdata->id == DID_RTK_DEBUG) {
+                    if (gdata->period != 0)
+                        g_GpxRtkDebugReq |= 0x01 << portId(port);
+                    else
+                        g_GpxRtkDebugReq |= 0x01 << (portId(port) + 4);
+                }
             }
         }
-        
 #endif
         if (getDataRequest(port, (p_data_get_t*)(pkt->data.ptr)))
         {
@@ -648,7 +646,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         sendAck(port, pkt, PKT_TYPE_ACK);
 
 #ifdef IMX_5
-        g_GpxRtkDebugReq &= ~(0x01 << pHandle);
+        g_GpxRtkDebugReq &= ~(0x01 << portId(port));
 #endif
         break;
 
@@ -656,7 +654,7 @@ int ISComManager::processBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, po
         disableDidBroadcast(port, pkt->hdr.id);
 #ifdef IMX_5
         if(DID_RTK_DEBUG)
-            g_GpxRtkDebugReq &= ~(0x01 << pHandle);
+            g_GpxRtkDebugReq &= ~(0x01 << portId(port));
 #endif
         break;
 
@@ -971,96 +969,3 @@ pfnIsCommGenMsgHandler ISComManager::registerProtocolHandler(int ptype, pfnIsCom
     }
     return NULL;
 }
-
-
-
-
-/**
-*   @brief Process ISB data packet
-*
-*	@return 0 on success.  -1 on failure.
-*/
-/*
-int processIsb(unsigned int pHandle, is_comm_instance_t *comm)
-{
-    if (s_cmPtr == NULL)
-    {
-        return -1;
-    }
-    com_manager_t* cmInstance = s_cmPtr;
-
-    uint8_t ptype = is_comm_to_isb_pkt_type(comm);
-    switch (ptype)
-    {
-        default:    // Data ID Unknown
-            return -1;
-
-        case PKT_TYPE_SET_DATA:
-        case PKT_TYPE_DATA:
-        {
-            p_data_t data;
-            is_comm_to_isb_p_data(comm, &data);
-
-            // Validate Data
-            if (data.hdr.id >= DID_COUNT || comm->rxPkt.hdr.payloadSize == 0)
-            {
-                return -1;
-            }
-
-            registered_data_t *regData = &(cmInstance->regData[data.hdr.id]);
-
-            // Validate and constrain Rx data size to fit within local data struct
-            if (regData->dataSet.size && (uint32_t)(data.hdr.offset + data.hdr.size) > regData->dataSet.size)
-            {
-                // trim the size down so it fits
-                uint16_t size = (int)(regData->dataSet.size - data.hdr.offset);
-                if (size < 4)
-                {
-                    // we are completely out of bounds, we cannot process this message at all
-                    // the minimum data struct size is 4 bytes
-                    return -1;
-                }
-
-                // Update Rx data size
-                data.hdr.size = _MIN(data.hdr.size, (uint8_t)size);
-            }
-
-#if ENABLE_PACKET_CONTINUATION
-
-            // Consolidate datasets that were broken-up across multiple packets
-        p_data_t* con = &cmInstance->ports[pHandle].con;
-        if (additionalDataAvailable || (con->hdr.size != 0 && con->hdr.id == dataHdr->id))
-        {
-            // New dataset
-            if (con->hdr.id == 0 || con->hdr.size == 0 || con->hdr.id != dataHdr->id || con->hdr.size > dataHdr->offset)
-            {
-                // Reset data consolidation
-                con->hdr.id = dataHdr->id;
-                con->hdr.offset = dataHdr->offset;
-                con->hdr.size = 0;
-            }
-
-            // Ensure data will fit in buffer
-            if ((con->hdr.size + dataHdr->size) < sizeof(con->buf))
-            {
-                // Add data to buffer
-                memcpy(con->buf + con->hdr.size, data->buf, dataHdr->size);
-                con->hdr.size += dataHdr->size;
-            }
-            else
-            {
-                // buffer overflow
-            }
-
-            // Wait for end of data
-            if (additionalDataAvailable)
-            {
-                return 0;
-            }
-
-            // Use consolidated data
-            data = con;
-        }
-
-#else
-
