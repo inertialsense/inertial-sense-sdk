@@ -241,12 +241,12 @@ static int cltool_dataCallback(InertialSense* i, p_data_t* data, port_handle_t p
 {
     if (!g_enableDataCallback)
     {   // Receive disabled
-        return;
+        return 0;
     }
 
     if (g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid != data->hdr.id)
     {   // ignore all other received data, except the "onceDid"
-        return;
+        return 0;
     }
 
     (void)i;
@@ -311,12 +311,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 
     for (auto& device : inertialSenseInterface.getDevices()) {
         // FIXME: don't assign a commInstance, but assign a device or port
-        g_inertialSenseDisplay.SetCommInstance(device.port);
+        g_inertialSenseDisplay.setDevice(&device);
     }
 
     if (g_commandLineOptions.asciiMessages.size() != 0)
     {
-        ISDevice &device = inertialSenseInterface.getDevices()[0];
+        ISDevice &device = inertialSenseInterface.getDevices().front();
         serialPortWriteAscii(device.port, g_commandLineOptions.asciiMessages.c_str(), (int) g_commandLineOptions.asciiMessages.size());
         return true;
     }

@@ -247,12 +247,15 @@ string cInertialSenseDisplay::Connected()
 	std::ostringstream stream;
 	stream << Header() << "Connected.  ";
     stream << std::fixed << std::setprecision(1) << runtime << "s";
-	stream << ", Tx " << (m_comm ? std::to_string(m_comm->txPktCount) : "--");
-	stream << ", Rx " << (m_comm ? std::to_string(m_comm->rxPktCount) : "--");
-	if (m_port)
-	{
-		stream << " (" << m_port->rxBytes << " bytes)";
-	}
+
+    if (m_device && m_device->port && ((portType(m_device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM)) {
+        comm_port_t* comPort = COMM_PORT(m_device->port);
+        stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
+        stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
+        if (comPort->stats) {
+            stream << " (" << (comPort->stats->rxBytes ? std::to_string(comPort->stats->rxBytes) : "--") << " bytes)";
+        }
+    }
 	stream << "     " << std::endl;
 
 	return stream.str();
@@ -1498,9 +1501,6 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
 {
 
     char buf[BUF_SIZE];
-    char* ptr = buf;
-    char* ptrEnd = buf + BUF_SIZE;
-
     sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
     return string(buf);
 

@@ -103,7 +103,7 @@ public:
      */
     ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { };
 
-    ISFirmwareUpdater(ISDevice device) : FirmwareUpdateHost(), port(device.port), devInfo(&device.devInfo) { };
+    ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), port(device.port), devInfo(&device.devInfo) { };
 
     ~ISFirmwareUpdater() override {};
 

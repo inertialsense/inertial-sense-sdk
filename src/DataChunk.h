@@ -63,12 +63,8 @@ struct sChunkHeader
     uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
     uint32_t grpNum = 0;                         //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
     uint32_t devSerialNum = 0;                   //!< Device serial number
-    #ifndef port_handle_t
-    uint32_t	pHandle;                         //!< Device port handle
-    #else
     uint16_t portId = 0xFFFF;                    //!< Device port id
     uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
-    #endif
     char fwVersion[4] = {};                      //!< Device firmware version
 #endif
 

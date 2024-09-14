@@ -258,7 +258,7 @@ int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, u
 
     if (result || forceInit)
     {   // Mismatch or forced init
-        is_comm_init(c, buffer, bufferSize);
+        is_comm_init(c, buffer, bufferSize, c->cb.all);
     }
 
     // 0 on match, -1 on mismatch
@@ -1219,7 +1219,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
-    if ((port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
     {
         return -1;  // can't write if we don't have a valid port, or the port isn't an ISComm
     }
@@ -1246,7 +1246,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
         n += portWrite(port, (uint8_t *) &(pkt->checksum), 2);                   // Footer (checksum)
 
         // Increment Tx count
-        ((comm_port_t *) port)->comm.txPktCount++;
+        COMM_PORT(port)->comm.txPktCount++;
     }
 
     // Check that number of bytes sent matches packet size.  Return number of bytes written on success or -1 on failure.

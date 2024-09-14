@@ -297,31 +297,22 @@ int main(int argc, char* argv[])
                 commands.push_back("upload=" + fileName); // upload image to device
                 commands.push_back("reset"); // reset device
 
-                if (inertialSenseInterface.updateFirmware(
-                        COMNum, // COM port
-                        baudRate, // baud rate
-                        fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
-                        commands, // vector of strings, commands to run when performing the update
-                        uploadProgress,
-                        verifyProgress,
-                        statusText,
-                        NULL) != IS_OP_OK)
-                {
-                    inertialSenseInterface.Close();
-                    inertialSenseInterface.CloseServerConnection();
-                    return -1;
-                }
-                else
-                    cout << "Logger set!\r\n";
+                for (auto& device : inertialSenseInterface.getDevices()) {
+                    if (device.updateFirmware(
+                            fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
+                            commands, // vector of strings, commands to run when performing the update
+                            uploadProgress,
+                            verifyProgress,
+                            statusText,
+                            NULL) != IS_OP_OK)
+                    {
+                        inertialSenseInterface.Close();
+                        inertialSenseInterface.CloseServerConnection();
+                        return -1;
+                    }
+                    else
+                        cout << "Logger set!\r\n";
 
-
-                // get device index assignment for our com number
-                deviceIndex = inertialSenseInterface.getUpdateDeviceIndex(COMNum.c_str());
-
-                // check if we got a valid index
-                if (deviceIndex >= 0)
-                {
-                    // Main loop. Could be in separate thread if desired.
                     do
                     {
                         // [C++ COMM INSTRUCTION] STEP 4: Read data
@@ -331,14 +322,12 @@ int main(int argc, char* argv[])
                             break;
                         }
 
-                        status = inertialSenseInterface.getUpdateStatus(deviceIndex);
+                        status = device.getUpdateStatus();
 
                     } while (status >= fwUpdate::NOT_STARTED && status < fwUpdate::FINISHED);
 
                     cout << "Finished!\r\n";
                 }
-                else
-                    cout << "Bad device index!\r\n";
             }
             else
                 cout << "No file provided!!";

@@ -13,6 +13,28 @@
 
 ISDevice ISDevice::invalidRef;
 
+is_operation_result ISDevice::updateFirmware(
+        fwUpdate::target_t targetDevice,
+        std::vector<std::string> cmds,
+        ISBootloader::pfnBootloadProgress uploadProgress,
+        ISBootloader::pfnBootloadProgress verifyProgress,
+        ISBootloader::pfnBootloadStatus infoProgress,
+        void (*waitAction)()
+)
+{
+    fwUpdater = new ISFirmwareUpdater(*this);
+    fwUpdater->setTarget(targetDevice);
+
+    // TODO: Implement maybe
+    fwUpdater->setUploadProgressCb(uploadProgress);
+    fwUpdater->setVerifyProgressCb(verifyProgress);
+    fwUpdater->setInfoProgressCb(infoProgress);
+
+    fwUpdater->setCommands(cmds);
+
+    return IS_OP_OK;
+}
+
 bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
 
 void ISDevice::fwUpdate() {

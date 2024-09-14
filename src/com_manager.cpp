@@ -67,7 +67,7 @@ int ISComManager::init(
     defaultCbs = {};
     defaultCbs.all = comManagerProcessBinaryRxPacket;
 
-    // if (!portSet) portSet = new std::vector<port_handle_t>();
+    if (!portSet) portSet = new std::unordered_set<port_handle_t>();
     ports = portSet;
 
     return 0;
@@ -251,6 +251,8 @@ void ISComManager::step()
 
 void ISComManager::stepRx(uint32_t timeMs)
 {
+    if (!ports) return;  // nothing to do...
+
     for (port_handle_t port : *ports)
     {
         // Read data directly into comm buffer and call callback functions

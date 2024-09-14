@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "DeviceLog.h"
+#include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
 
 extern "C"
@@ -76,6 +77,13 @@ public:
     std::string getFirmwareInfo(int detail = 1);
     std::string getDescription();
 
+    /**
+    * Gets current update status for selected device index
+    * @param deviceIndex
+    */
+    fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
+
+
     port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
@@ -106,11 +114,14 @@ public:
     std::vector<std::string> target_idents;
     std::vector<std::string> target_messages;
 
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
+            ISBootloader::pfnBootloadProgress uploadProgress, ISBootloader::pfnBootloadProgress verifyProgress, ISBootloader::pfnBootloadStatus infoProgress, void (*waitAction)()
+    );
+
     bool fwUpdateInProgress();
     void fwUpdate();
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
-
 
     bool handshakeISbl();
     bool queryDeviceInfoISbl();

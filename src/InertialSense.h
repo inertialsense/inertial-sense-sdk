@@ -627,11 +627,6 @@ public:
      */
     int getFirmwareUpdatePercent();
 
-    /**
-    * Gets current update status for selected device index
-    * @param deviceIndex
-    */
-    fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
 
     /**
     * Gets device index from COM port
