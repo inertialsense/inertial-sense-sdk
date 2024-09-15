@@ -2330,8 +2330,8 @@ enum eGPXBit_CMD{
     GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,     // Send duplicate message
     GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,     // Cause Tx buffer overflow on current serial port by sending too much data.
     GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,     // Cause watch dog reset by stalling COMM task
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,     // Cause watch dog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,     // Cause watchdog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,     // Cause watchdog reset by stalling RTK task
     GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,     // Cause hard fault
     GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,     // Cause malloc failure
 };
@@ -2345,8 +2345,8 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
     GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
     GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_test_mode_SYS_FAULT_WATCHDOG_COMM_TASK       = (int)104,     // Cause watch dog reset by stalling COMM task
-    GPXBit_test_mode_SYS_FAULT_WATCHDOG_RTK_TASK        = (int)105,     // Cause watch dog reset by stalling RTK task
+    GPXBit_test_mode_SYS_FAULT_WATCHDOG_COMM_TASK       = (int)104,     // Cause watchdog reset by stalling COMM task
+    GPXBit_test_mode_SYS_FAULT_WATCHDOG_RTK_TASK        = (int)105,     // Cause watchdog reset by stalling RTK task
 };
 
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
