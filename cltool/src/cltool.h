@@ -75,7 +75,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool magRecal;
 	uint32_t magRecalMode;
 	survey_in_t surveyIn;
-	std::string asciiMessages;
+	std::string nmeaMessage;				// A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
 	double replaySpeed;
 	int displayMode;	
 	
