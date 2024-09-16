@@ -2063,7 +2063,7 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
  * returns NMEA_MSG_ID_GxGSV if successful 
  * returns 0 if unsuccessful
 */
-int parseASCE_GSV(int inId)
+int parseASCE_GSV(int inId, int period)
 {
     uint8_t constTarget = (inId & 0xf0) >> 4;
     uint8_t freqMask = (inId & 0x0f);
@@ -2071,34 +2071,37 @@ int parseASCE_GSV(int inId)
     if(inId < NMEA_MSG_ID_GNGSV_START || inId > NMEA_MSG_ID_GNGSV_END)
         return 0;
 
-    switch (constTarget)
+    if (period != 0)
     {
-        case SAT_SV_GNSS_ID_GNSS:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_GPS:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_GAL:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_BEI:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_QZS:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_GLO:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
-            break;
-        default:
-            return 0;
+        switch (constTarget)
+        {
+            case SAT_SV_GNSS_ID_GNSS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_GPS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_GAL:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_BEI:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_QZS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_GLO:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+                break;
+            default:
+                return 0;
+        }
     }
 
     return NMEA_MSG_ID_GxGSV;
@@ -2148,12 +2151,6 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
 
-        // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
-        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
-            id = parseASCE_GSV(id);
-        
         ptr = ASCII_find_next_field(ptr);
 
         // end of nmea string
@@ -2163,6 +2160,12 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         // set period multiple and increament ptr to next field
         period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
         ptr = ASCII_find_next_field(ptr);
+
+        // handle GSV cases
+        if (id == NMEA_MSG_ID_GxGSV)
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
+        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
+            id = parseASCE_GSV(id, period);
 
         // Copy tmp to corresponding port(s)
         switch (ports)
@@ -2231,12 +2234,6 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
             char *ptr2 = ptr-1;
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
-
-        // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
-        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
-            id = parseASCE_GSV(id);
         
         ptr = ASCII_find_next_field(ptr);
 
@@ -2247,6 +2244,12 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         // set period multiple and increament ptr to next field
         period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
         ptr = ASCII_find_next_field(ptr);
+
+        // handle GSV cases
+        if (id == NMEA_MSG_ID_GxGSV)
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
+        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
+            id = parseASCE_GSV(id, period);
 
         // Copy tmp to corresponding port(s)
         switch (ports)
