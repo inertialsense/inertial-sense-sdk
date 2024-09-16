@@ -942,6 +942,9 @@ static int inertialSenseMain()
                 printf("%s", (char*)asciiData);
                 printf("\r\n");
             }
+
+            // Scan for "q" press to exit program
+            g_inertialSenseDisplay.GetKeyboardInput();
         }
     }
     else
