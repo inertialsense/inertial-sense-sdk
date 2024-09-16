@@ -240,8 +240,10 @@ string cInertialSenseDisplay::Connected()
 		m_startMs = current_timeMs();
 	}
 
+	unsigned int timeMs = current_timeMs();
+
 	// cltool runtime
-	double runtime = 0.001 * (current_timeMs() - m_startMs);
+	double runtime = 0.001 * (timeMs - m_startMs);
 
 	std::ostringstream stream;
 	stream << Header() << "Connected.  ";
@@ -249,8 +251,17 @@ string cInertialSenseDisplay::Connected()
 	stream << ", Tx " << (m_comm ? std::to_string(m_comm->txPktCount) : "--");
 	stream << ", Rx " << (m_comm ? std::to_string(m_comm->rxPktCount) : "--");
 	if (m_port)
-	{
-		stream << " (" << m_port->rxBytes << " bytes)";
+	{	// Compute data rate in KB/s
+		static unsigned int lastUpdateMs = timeMs;
+		static int bytesLast = 0;
+		static double rxRateKps = 0;
+		if (timeMs - lastUpdateMs >= 1000)
+		{
+			rxRateKps = ((double)(m_port->rxBytes - bytesLast))/1000.0;
+			bytesLast = m_port->rxBytes;
+			lastUpdateMs = timeMs;
+		}
+		stream << " (" << std::fixed << std::setprecision(1) << rxRateKps << " KB/s)";
 	}
 	stream << "     " << std::endl;
 
