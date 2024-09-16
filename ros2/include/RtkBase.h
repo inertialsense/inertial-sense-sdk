@@ -19,16 +19,22 @@
 #ifndef INERTIAL_SENSE_IMX_RTKBASE_H
 #define INERTIAL_SENSE_IMX_RTKBASE_H
 
+#ifdef ROS2
 #include "rclcpp/rclcpp/rclcpp.hpp"
+#endif
 
+#ifdef ROS1
+#include "ros/ros.h"
+#endif
 #include "ParamHelper.h"
 
 
 class RtkBaseCorrectionProvider {
 protected:
     ParamHelper ph_;
+#ifdef ROS2
     rclcpp::Node::SharedPtr nh_;
-
+#endif
 public:
     std::string type_;
     RtkBaseCorrectionProvider(YAML::Node& node, const std::string& t) : ph_(node), type_(t) { };
@@ -48,7 +54,9 @@ public:
 
     RtkBaseCorrectionProvider_Ntrip(YAML::Node& node, std::string proto) : RtkBaseCorrectionProvider(node, "ntrip"), protocol_(proto) { configure(node); }
     virtual void configure(YAML::Node& node);
-    //void validate_credentials() { RCLCPP_WARN(YAML::Node  ,"NOT IMPLEMENTED"); }
+#ifdef ROS1
+    void validate_credentials() { ROS_WARN("NOT IMPLEMENTED"); }
+#endif
     std::string get_connection_string();
 };
 
@@ -77,7 +85,9 @@ public:
 class RtkBaseProvider {
 protected:
     ParamHelper ph_;
+#ifdef ROS2
     rclcpp::Node::SharedPtr nh_;
+#endif
 public:
 
     typedef enum {
@@ -122,7 +132,9 @@ public:
             else if (type == "ros_topic") return new RtkBaseCorrectionProvider_ROS(node);
             else if (type == "evb") return new RtkBaseCorrectionProvider_EVB(node);
         } else {
-           // RCLCPP_ERROR(node get_logger(),"Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined.");
+#ifdef ROS1
+            ROS_ERROR("Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined")
+#endif
         }
         return nullptr;
     }

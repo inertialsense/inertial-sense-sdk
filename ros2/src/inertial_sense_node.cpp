@@ -17,6 +17,12 @@
  ***************************************************************************************/
 
 #include "inertial_sense_ros2.h"
+#ifdef ROS2
+using namespace rclcpp;
+#endif
+#ifdef ROS1
+using namespace ros
+#endif
 int main(int argc, char**argv)
 {
     InertialSenseROS* thing;
@@ -45,9 +51,14 @@ int main(int argc, char**argv)
     }
 
     thing->initialize();
-    while (rclcpp::ok())
+    while (ok())
     {
-        rclcpp::spin_some(thing->nh_);
+#ifdef ROS2
+        spin_some(thing->nh_);
+#endif
+#ifdef ROS1
+        ros::spinOnce();
+#endif
         thing->update();
     }
     return 0;

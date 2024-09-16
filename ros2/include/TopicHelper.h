@@ -22,8 +22,8 @@
 //#include <std_msgs/msg/detail/string__struct.hpp>
 
 #include "InertialSense.h"
+#ifdef ROS2
 #include "rclcpp/rclcpp/rclcpp.hpp"
-//#include "inertial_sense_ros2.h"
 #include <inertial_sense_ros2/msg/didins1.hpp>
 #include <inertial_sense_ros2/msg/didins2.hpp>
 #include <inertial_sense_ros2/msg/didins4.hpp>
@@ -36,7 +36,6 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/magnetic_field.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
-
 #include "diagnostic_msgs/diagnostic_msgs/msg/diagnostic_array.hpp"
 #include "inertial_sense_ros2/msg/rtk_rel.hpp"
 #include "inertial_sense_ros2/msg/rtk_info.hpp"
@@ -44,7 +43,11 @@
 #include "inertial_sense_ros2/msg/gnss_ephemeris.hpp"
 #include "inertial_sense_ros2/msg/gnss_observation.hpp"
 #include "inertial_sense_ros2/msg/gnss_obs_vec.hpp"
+#endif
 
+#ifdef ROS1
+#include "ros/ros.h"
+#endif
 class TopicHelper
 {
 public:
@@ -58,9 +61,14 @@ public:
         if (!stream)
         {
             stream = true;
+#ifdef ROS2
             rclcpp::Logger logger_stream_check = rclcpp::get_logger("stream_check");
             logger_stream_check.set_level(rclcpp::Logger::Level::Debug);
             RCLCPP_DEBUG(logger_stream_check,"%s response received", cISDataMappings::GetDataSetName(did)); //???
+#endif
+#ifdef ROS1
+            ROS_DEBUG("%s response received", cISDataMappings::GetDataSetName(did));
+#endif
         }
     }
 
@@ -68,6 +76,7 @@ public:
     bool enabled = false;
     bool streaming = false;
     int period = 1;             // Period multiple (data rate divisor)
+#ifdef ROS2
     rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr pub_diagnostics;
     rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS1>::SharedPtr pub_didins1;
     rclcpp::Publisher<inertial_sense_ros2::msg::DIDINS2>::SharedPtr pub_didins2;
@@ -82,7 +91,10 @@ public:
     rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_nsf;
     rclcpp::Publisher<inertial_sense_ros2::msg::GPSInfo>::SharedPtr pub_gpsinfo1;
     rclcpp::Publisher<inertial_sense_ros2::msg::GPSInfo>::SharedPtr pub_gpsinfo2;
-
+#endif
+#ifdef ROS1
+    ros::Publisher pub;
+#endif
 };
 
 class TopicHelperGps: public TopicHelper
@@ -99,8 +111,14 @@ class TopicHelperGpsRtk: public TopicHelper
 public:
     bool streamingMisc = false;
     bool streamingRel = false;
+#ifdef ROS2
     rclcpp::Publisher<inertial_sense_ros2::msg::RTKInfo>::SharedPtr pubInfo;
     rclcpp::Publisher<inertial_sense_ros2::msg::RTKRel>::SharedPtr pubRel;
+#endif
+#ifdef ROS1
+    ros::Publisher pubInfo;
+    ros::Publisher pubRel;
+#endif
 };
 
 class TopicHelperGpsRaw: public TopicHelper
@@ -109,11 +127,20 @@ public:
     std::string topicObs;
     std::string topicEph;
     std::string topicGEp;
+#ifdef ROS2
     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSObsVec>::SharedPtr pubObs;
     rclcpp::Publisher<inertial_sense_ros2::msg::GNSSEphemeris>::SharedPtr pubEph;
     rclcpp::Publisher<inertial_sense_ros2::msg::GlonassEphemeris>::SharedPtr pubGEp;
     rclcpp::TimerBase::SharedPtr obs_bundle_timer;
     rclcpp::Time last_obs_time;
+#endif
+#ifdef ROS1
+    ros::Publisher pubObs;
+    ros::Publisher pubEph;
+    ros::Publisher pubGEp;
+    ros::Timer obs_bundle_timer;
+    ros::Time last_obs_time;
+#endif
 };
 
 

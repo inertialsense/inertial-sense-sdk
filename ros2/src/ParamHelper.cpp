@@ -61,33 +61,43 @@ bool ParamHelper::msgParamsImplicit(TopicHelper &th, std::string key, std::strin
     return msgParams(th, key, topicDefault, enabledDefault, periodDefault, enabledDefault);
 }
 
-/*YAML::Node xmlRpcToYamlNode(xmlrpc_c::value &v)
+#ifdef ROS1
+YAML::Node xmlRpcToYamlNode(XmlRpc::XmlRpcValue &v)
 {
     YAML::Node node;
 
-    switch(v.type())
+    switch(v.getType())
     {
-        case xmlrpc_c::value::TYPE_STRING:   node = static_cast<std::string>(v);    break;
-        case xmlrpc_c::value::TYPE_BOOLEAN:  node = static_cast<bool>(v);           break;
-        case xmlrpc_c::value::TYPE_DOUBLE:   node = static_cast<double>(v);         break;
-        case xmlrpc_c::value::TYPE_INT:      node = static_cast<int>(v);            break;
-        case xmlrpc_c::vale::type:
+        case XmlRpc::XmlRpcValue::TypeString:   node = static_cast<std::string>(v);    break;
+        case XmlRpc::XmlRpcValue::TypeBoolean:  node = static_cast<bool>(v);           break;
+        case XmlRpc::XmlRpcValue::TypeDouble:   node = static_cast<double>(v);         break;
+        case XmlRpc::XmlRpcValue::TypeInt:      node = static_cast<int>(v);            break;
+        case XmlRpc::XmlRpcValue::TypeArray:
             for (int i=0; i<v.size(); i++)
             {
                 node[i] = xmlRpcToYamlNode(v[i]);
             }
-            break;
+        break;
     }
 
     return node;
 }
-*/
+#endif
 bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std::string indentStr)
 {
+#ifdef ROS2
     auto nh_ = std::make_shared<rclcpp::Node>("nh_");;
-
+#endif
+#ifdef ROS1
+    ros::NodeHandle nh;
+#endif
     std::vector <std::string> nhKeyList;
+#ifdef ROS2
     nh_->get_parameters(nhKeyList);
+#endif
+#ifdef ROS1
+    nh.getParamNames(nhKeyList);
+#endif
     for (std::string key: nhKeyList)
     {
         std::string::size_type pos = key.find(nhKey);
@@ -103,12 +113,14 @@ bool ParamHelper::paramServerToYamlNode(YAML::Node &node, std::string nhKey, std
         if (pos == std::string::npos)
         {   // Param name
 
-            //XmlRpc::XmlRpcValue v;
-            //if (nh.getParam(key, v))
-            //{
-            //    node[name] = xmlRpcToYamlNode(v);
-            //    continue;
-            //}
+#ifdef ROS1
+            XmlRpc::XmlRpcValue v;
+            if (nh.getParam(key, v))
+            {
+                node[name] = xmlRpcToYamlNode(v);
+                continue;
+            }
+#endif
         }
         else
         {   // Node key

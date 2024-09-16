@@ -18,8 +18,13 @@
 
 #ifndef INERTIAL_SENSE_IMX_RTKROVER_H
 #define INERTIAL_SENSE_IMX_RTKROVER_H
-
+#ifdef ROS2
 #include "rclcpp/rclcpp/rclcpp.hpp"
+#endif
+
+#ifdef ROS1
+#include "ros/ros.h"
+#endif
 
 #include "ParamHelper.h"
 #include "RtkBase.h"
@@ -28,9 +33,12 @@ class RtkRoverCorrectionProvider {
 protected:
     ParamHelper ph_;
     InertialSense* is_;
+#ifdef ROS1
     //ros::NodeHandle* nh_;
+#endif
+#ifdef ROS2
     rclcpp::Node::SharedPtr nh_;
-
+#endif
 public:
     std::string type_;
     std::string protocol_; // format
@@ -58,8 +66,12 @@ public:
     int data_transmission_interruption_limit_ = 5;
     bool connectivity_watchdog_enabled_ = true;
     float connectivity_watchdog_timer_frequency_ = 1;
+#ifdef ROS2
     rclcpp::TimerBase::SharedPtr connectivity_watchdog_timer_;
-
+#endif
+#ifdef ROS1
+    ros::Timer connectivity_watchdog_timer_;
+#endif
     RtkRoverCorrectionProvider_Ntrip(YAML::Node& node) : RtkRoverCorrectionProvider(node, "ntrip") { configure(node); }
     void configure(YAML::Node& node);
     std::string get_connection_string();
@@ -97,9 +109,12 @@ class RtkRoverProvider {
 protected:
     ParamHelper ph_;
     InertialSense* is_;
-    //ros::NodeHandle* nh_;
+#ifdef ROS1
+    ros::NodeHandle* nh_;
+#endif
+#ifdef ROS2
    rclcpp::Node::SharedPtr nh_;
-
+#endif
 public:
     bool enable = true;                 // Enables/Disables the entire provider - enabled until explicitly disabled
     bool compassing_enable = false;     // Enable RTK compassing (dual GNSS moving baseline RTK) at GPS2
@@ -121,7 +136,12 @@ public:
             else if (type == "evb") return new RtkRoverCorrectionProvider_EVB(node);
             else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(node);
         } else {
+#ifdef ROS2
             RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_rrcp"),"Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
+#endif
+#ifdef ROS1
+            ROS_ERROR("Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
+#endif
         }
         return nullptr;
     }
