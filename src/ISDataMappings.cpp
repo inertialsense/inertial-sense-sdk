@@ -1217,6 +1217,7 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gpsTimeUserDelay", gpsTimeUserDelay, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "haltReason", haltReason, 0, DataTypeUInt32, uint32_t);
 
     ASSERT_SIZE(totalSize);
 }
