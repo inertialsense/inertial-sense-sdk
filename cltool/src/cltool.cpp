@@ -151,7 +151,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
     g_commandLineOptions.bootloaderVerify = CL_DEFAULT_BOOTLOAD_VERIFY;
     g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
-    g_commandLineOptions.asciiMessages = "";
+    g_commandLineOptions.nmeaRx = false;
+    g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
 
@@ -180,12 +181,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             a++;
         }
 
-        if (startsWith(a, "-asciiMessages="))
-        {
-            g_commandLineOptions.asciiMessages = &a[15];
-            enable_display_mode();
-        }
-        else if (startsWith(a, "-base="))
+        if (startsWith(a, "-base="))
         {
             g_commandLineOptions.baseConnection = &a[6];
             enable_display_mode();
@@ -390,6 +386,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.magRecal = true;
             g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
             enable_display_mode();
+        }
+        else if (startsWith(a, "-nmea="))
+        {
+            g_commandLineOptions.nmeaMessage = &a[6];
+            g_commandLineOptions.nmeaRx = true;
+        }
+        else if (startsWith(a, "-nmea"))
+        {
+            g_commandLineOptions.nmeaRx = true;
         }
         else if (startsWith(a, "-platform"))
         {
@@ -651,6 +656,8 @@ void cltool_outputUsage()
     cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
     cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
+	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer, then display rx messages.  Example: `-nmea=ASCE,0,GxGGA,1` " << endlbOn;
+	cout << "    -nmea" << boldOff << "           Listen only mode for NMEA message without sending stop all broadcasts `$STP` command." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
 	if (g_internal)
