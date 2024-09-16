@@ -52,27 +52,54 @@ int ssnprintf(char buf[], int bufSize, const char *fmt, ...)
 
 /**
  * Sets Gsv filter. 
- * 
- * @param seedArr - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ *  
+ * @param filter - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ * @param constellation - sets specific constellation (see eSatSvGnssId)
  */
-void nmea_setGsvFilter(uint8_t* seed)
+void nmea_setGsvFilter(int constellation, uint8_t filter)
 {
-    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && seed != nullptr; i++)
+    if (constellation >= SAT_SV_GNSS_ID_GNSS && constellation < SAT_SV_GNSS_ID_COUNT)
+        s_gsvMask.constMask[constellation] = filter;
+}
+
+/**
+ * Sets Gsv filter. 
+ *  
+ * @param filter - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ */
+void nmea_setGsvFilter(uint8_t* filters)
+{
+    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && filters != nullptr; i++)
     {
-        s_gsvMask.constMask[i] = seed[i];
+        s_gsvMask.constMask[i] = filters[i];
     }
 }
 
 /**
  * Gets Gsv filter. 
  * 
- * @param seedArr - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ * @param constellation - gets specific constellation (see eSatSvGnssId)
+ * 
+ * @return filter for requested constellation or -1 if invalid constellation is passed
  */
-void nmea_getGsvFilter(uint8_t* seed)
+int nmea_getGsvFilter(int constellation)
 {
-    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && seed != nullptr; i++)
+    if (constellation >= SAT_SV_GNSS_ID_GNSS && constellation < SAT_SV_GNSS_ID_COUNT)
+        return s_gsvMask.constMask[constellation];
+    
+    return -1;
+}
+
+/**
+ * Gets Gsv filters. 
+ * 
+ * @param filters - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ */
+void nmea_getGsvFilter(uint8_t* filters)
+{
+    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && filters != nullptr; i++)
     {
-        seed[i] = s_gsvMask.constMask[i];
+        filters[i] = s_gsvMask.constMask[i];
     }
 }
 
