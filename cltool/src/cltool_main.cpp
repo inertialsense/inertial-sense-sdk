@@ -923,18 +923,24 @@ static int inertialSenseMain()
     {
         return cltool_createHost();
     }
-    else if (!g_commandLineOptions.nmeaMessage.empty())
+    else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
         serial_port_t port;
         serialPortPlatformInit(&port);
-        serialPortOpen(&port, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
+        if (!serialPortOpen(&port, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0))
+        {   // Failed to open port
+            return -1;
+        }
 
-        sendNmea(port, "STPB");
-        sendNmea(port, g_commandLineOptions.nmeaMessage);
+        if (!g_commandLineOptions.nmeaMessage.empty())
+        {
+            sendNmea(port, "STPB");
+            sendNmea(port, g_commandLineOptions.nmeaMessage);
+        }
 
         unsigned char line[512];
         unsigned char* asciiData;
-        while (!g_inertialSenseDisplay.ExitProgram())
+        while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
         {
             int count = serialPortReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData);
             if (count > 0)
