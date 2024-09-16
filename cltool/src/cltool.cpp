@@ -657,7 +657,7 @@ void cltool_outputUsage()
     cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
 	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer, then display rx messages.  Example: `-nmea=ASCE,0,GxGGA,1` " << endlbOn;
-	cout << "    -nmea" << boldOff << "           Listen only mode for NMEA message without sending $STP command." << endlbOn;
+	cout << "    -nmea" << boldOff << "           Listen only mode for NMEA message without sending stop all broadcasts `$STP` command." << endlbOn;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
 	if (g_internal)
