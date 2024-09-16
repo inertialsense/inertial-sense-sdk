@@ -434,7 +434,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 
     if (periodMultiple)
         bits |=  (nmeaBits);
-    else 
+    else
         bits &= ~(nmeaBits);
 }
 
@@ -2168,7 +2168,15 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         switch (ports)
         {	
         case RMC_OPTIONS_PORT_CURRENT:	nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period); break;
-        case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); } break;
+        case RMC_OPTIONS_PORT_ALL:		
+            for(int i=0; i<NUM_COM_PORTS; i++) 
+            { 
+                nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); 
+                   
+                if (id == NMEA_MSG_ID_GNGSV && period == 0)
+                    nmea_setGsvFilter(i, 0);
+            } 
+            break;
             
         default:	// Current port
             if (ports & RMC_OPTIONS_PORT_SER0)     { nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period); }
@@ -2253,6 +2261,9 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
             { 
                 nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); 
                 rmci[i].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
+
+                if (id == NMEA_MSG_ID_GNGSV && period == 0)
+                    nmea_setGsvFilter(i, 0);
             } 
             break;
             
