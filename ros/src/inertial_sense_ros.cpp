@@ -710,8 +710,10 @@ void InertialSenseROS::configure_flash_parameters()
 
     if  (reboot)
     {
-        sleep(3);
+        sleep(1);
         reset_device();
+        sleep(1);
+        connect();
     }
 }
 
