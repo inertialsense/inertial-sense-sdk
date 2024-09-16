@@ -254,14 +254,14 @@ string cInertialSenseDisplay::Connected()
 	{	// Compute data rate in KB/s
 		static unsigned int lastUpdateMs = timeMs;
 		static int bytesLast = 0;
-		static double rxRateKps = 0;
+		static int bytesPerS = 0;
 		if (timeMs - lastUpdateMs >= 1000)
 		{
-			rxRateKps = ((double)(m_port->rxBytes - bytesLast))/1000.0;
+			bytesPerS = m_port->rxBytes - bytesLast;
 			bytesLast = m_port->rxBytes;
 			lastUpdateMs = timeMs;
 		}
-		stream << " (" << std::fixed << std::setprecision(1) << rxRateKps << " KB/s)";
+		stream << " (" << bytesPerS << " bytes/s)";
 	}
 	stream << "     " << std::endl;
 
