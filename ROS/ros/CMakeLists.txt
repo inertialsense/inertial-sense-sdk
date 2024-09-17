@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
+add_definitions(-DROS1)
 project(inertial_sense_ros)
 
 find_package(yaml-cpp REQUIRED)

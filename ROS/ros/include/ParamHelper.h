@@ -19,7 +19,6 @@
 #ifndef INERTIAL_SENSE_IMX_PARAMHELPER_H
 #define INERTIAL_SENSE_IMX_PARAMHELPER_H
 
-
 #include <yaml-cpp/yaml.h>
 #include "TopicHelper.h"
 

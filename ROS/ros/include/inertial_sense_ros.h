@@ -360,7 +360,7 @@ public:
         std::string rtkPos_fixType = "";
         float rtkPos_hdgBaseToRov = 0;
         float rtkPos_distanceToRover = 0;
-        
+
         uint32_t rtkCmp_timeStamp = 0;
         float rtkCmp_arRatio = 0;
         float rtkCmp_diffAge = 0;
@@ -370,7 +370,7 @@ public:
 
     } diagnostics_container;
 
-    diagnostics_container diagnostics_;    
+    diagnostics_container diagnostics_;
 
     // Data to hold on to in between callbacks
     double lla_[3];
@@ -425,7 +425,7 @@ public:
         int cb_preset;
         int cb_options;
     } evb_ = {};
-    
+
 };
 
 

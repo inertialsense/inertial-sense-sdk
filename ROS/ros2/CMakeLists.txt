@@ -57,10 +57,10 @@ include_directories(include
 #<<<<<<< Updated upstream
   ${XMLRPC_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
-  ../src #This line of CMakeList.txt stays in .external file to reference submodule
-  ../src/libusb/libusb
-  ../src/libusb/linux
-  ../src/yaml-cpp
+  ../../src #This line of CMakeList.txt stays in .external file to reference submodule
+  ../../src/libusb/libusb
+  ../../src/libusb/linux
+  ../../src/yaml-cpp
   ../ros2/build/inertial_sense_ros2/rosidl_generator_cpp/
   /opt/ros/jazzy/include
   /opt/ros/jazzy/include/sensor_msgs
@@ -107,8 +107,8 @@ ament_target_dependencies(test_new_target rclcpp std_msgs geometry_msgs nav_msgs
 
 get_filename_component(RESOLVED_ROS_DIR ${CMAKE_SOURCE_DIR} REALPATH) # Symlink hell
 
-target_link_libraries(new_target ${RESOLVED_ROS_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
-target_link_libraries(test_new_target ${RESOLVED_ROS_DIR}/../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(new_target ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(test_new_target ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 
 
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)

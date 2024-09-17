@@ -68,8 +68,40 @@
 #include "geometry_msgs/geometry_msgs/msg/vector3_stamped.hpp"
 #include "geometry_msgs/geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "diagnostic_msgs/diagnostic_msgs/msg/diagnostic_array.hpp"
-//#include "ISConstants.h"
-//#include "geometry/xform.h"
+#endif
+
+#ifdef ROS1
+#include "ros/ros.h"
+#include "ros/timer.h"
+#include "sensor_msgs/Imu.h"
+#include "sensor_msgs/MagneticField.h"
+#include "sensor_msgs/FluidPressure.h"
+#include "sensor_msgs/JointState.h"
+#include "sensor_msgs/NavSatFix.h"
+#include "inertial_sense_ros/GPS.h"
+#include "data_sets.h"
+#include "inertial_sense_ros/GPSInfo.h"
+#include "inertial_sense_ros/PIMU.h"
+#include "inertial_sense_ros/FirmwareUpdate.h"
+#include "inertial_sense_ros/refLLAUpdate.h"
+#include "inertial_sense_ros/RTKRel.h"
+#include "inertial_sense_ros/RTKInfo.h"
+#include "inertial_sense_ros/GNSSEphemeris.h"
+#include "inertial_sense_ros/GlonassEphemeris.h"
+#include "inertial_sense_ros/GNSSObservation.h"
+#include "inertial_sense_ros/GNSSObsVec.h"
+#include "inertial_sense_ros/INL2States.h"
+#include "inertial_sense_ros/DID_INS2.h"
+#include "inertial_sense_ros/DID_INS1.h"
+#include "inertial_sense_ros/DID_INS4.h"
+#include "nav_msgs/Odometry.h"
+#include "std_srvs/Trigger.h"
+#include "std_msgs/Header.h"
+#include "geometry_msgs/Vector3Stamped.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.h"
+#include "diagnostic_msgs/DiagnosticArray.h"
+#include <tf/transform_broadcaster.h>
+#include "ISConstants.h"
 #endif
 using namespace std::chrono_literals;
 #define GPS_UNIX_OFFSET 315964800 // GPS time started on 6/1/1980 while UNIX time started 1/1/1970 this is the difference between those in seconds
@@ -189,8 +221,8 @@ public:
     inertial_sense_ros::GNSSObsVec gps2_obs_Vec_;
     inertial_sense_ros::GNSSObsVec base_obs_Vec_;
 #endif
-    RtkRoverProvider* RTK_rover_ = {};
-    RtkBaseProvider* RTK_base_ = {};
+    RtkRoverProvider* RTK_rover_;
+    RtkBaseProvider* RTK_base_;
 
     bool GNSS_Compass_ = false;
 
