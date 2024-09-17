@@ -22,8 +22,10 @@ enum eNmeaProtocolVersion
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
-void nmea_setGsvFilter(uint8_t* seed);
-void nmea_getGsvFilter(uint8_t* seed);
+void nmea_setGsvFilter(int constellation, uint8_t filter);
+void nmea_setGsvFilter(uint8_t* filters);
+int nmea_getGsvFilter(int constellation);
+void nmea_getGsvFilter(uint8_t* filters);
 void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_t periodMultiple);
 void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
