@@ -556,19 +556,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-verbose"))
         {
-            if (a[8] != '-')
-                g_commandLineOptions.verboseLevel++;    // +1 for the "-verbose" flag, if it doesn't have a following '-'
-
-            for (char *p = argv[i]+8; *p != 0; p++) {
-                if (*p == '+')
-                    g_commandLineOptions.verboseLevel++;    // an extra one for each '+'
-                else if (*p == '-')
-                    g_commandLineOptions.verboseLevel--;    // or minus a level for each '-'
-                else if (*p == '!') {
-                    g_commandLineOptions.verboseLevel = 255;  // an "!" rules them all
-                    break;
-                }
-            }
+            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
+            if (a[8] == '=')
+                g_commandLineOptions.verboseLevel = atoi(&a[9]);
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
@@ -828,6 +818,7 @@ void cltool_outputUsage()
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
     cout << "    -vd" << boldOff << "             Disable device validate.  Use to keep port(s) open even if device response is not received." << endlbOn;
+    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
