@@ -406,7 +406,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
             case SYS_CMD_ENABLE_SERIAL_PORT_BRIDGE_CUR_PORT_LOOPBACK_TESTMODE:
                 cout << " Enable serial bridge"; break;
             case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
-                cout << " Disable serial bridge"; g_commandLineOptions.disableDeviceValidation = true;          break;
+                cout << " Disable serial bridge"; break;
             case SYS_CMD_MANF_FACTORY_RESET:            manfUnlock = true;  cout << " Factory Reset";           break;
             case SYS_CMD_MANF_CHIP_ERASE:               manfUnlock = true;  cout << " Chip Erase";              break;
             case SYS_CMD_MANF_DOWNGRADE_CALIBRATION:    manfUnlock = true;  cout << " Downgrade Calibration";   break;

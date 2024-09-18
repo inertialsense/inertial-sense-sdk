@@ -491,6 +491,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-sysCmd="))
         {
             g_commandLineOptions.sysCommand = (uint32_t)strtoul(&a[8], NULL, 10);
+            switch(g_commandLineOptions.sysCommand)
+            {   // Disable device validation
+                case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:        g_commandLineOptions.disableDeviceValidation = true;    break;
+            }
         }
         else if (startsWith(a, "-s"))
         {
