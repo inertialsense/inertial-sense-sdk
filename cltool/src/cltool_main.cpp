@@ -311,9 +311,9 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         g_inertialSenseDisplay.SetCommInstance(&(cm->ports->comm));
     }
 
-    if (g_commandLineOptions.asciiMessages.size() != 0)
+    if (g_commandLineOptions.nmeaMessage.size() != 0)
     {
-        serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
+        serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.nmeaMessage.c_str(), (int)g_commandLineOptions.nmeaMessage.size());
         return true;
     }
 
@@ -768,7 +768,7 @@ static int cltool_dataStreaming()
         }
 
         // [LOGGER INSTRUCTION] Setup and start data logger
-        if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
+        if (g_commandLineOptions.nmeaMessage.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
         {
             cout << "Failed to setup logger!" << endl;
             // No need to Close() the InertialSense class interface; It will be closed when destroyed.
@@ -880,6 +880,22 @@ static void sigint_cb(int sig)
     signal(SIGINT, SIG_DFL);
 }
 
+// Create and send full NMEA message with terminator w/ checksum trailer
+static void sendNmea(serial_port_t &port, string nmeaMsg)
+{
+    char buf[1024] = {0};
+    int n = 0; 
+    if (nmeaMsg[0] != '$')
+    {   // Append header
+        nmeaMsg = "$" + nmeaMsg;
+    }
+    memcpy(buf, nmeaMsg.c_str(), nmeaMsg.size());
+    n += nmeaMsg.size();
+    nmea_sprint_footer(buf, sizeof(buf), n);
+    printf("Sending: %.*s\\r\\n\n", n-2, buf);
+    serialPortWrite(&port, (unsigned char*)buf, n);
+}
+
 static int inertialSenseMain()
 {
     // clear display
@@ -916,23 +932,34 @@ static int inertialSenseMain()
     {
         return cltool_createHost();
     }
-    else if (g_commandLineOptions.asciiMessages.size() != 0)
+    else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
-        serial_port_t serialForAscii;
-        serialPortPlatformInit(&serialForAscii);
-        serialPortOpen(&serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
-        serialPortWriteAscii(&serialForAscii, "STPB", 4);
-        serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
+        serial_port_t port;
+        serialPortPlatformInit(&port);
+        if (!serialPortOpen(&port, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0))
+        {   // Failed to open port
+            return -1;
+        }
+
+        if (!g_commandLineOptions.nmeaMessage.empty())
+        {
+            sendNmea(port, "STPB");
+            sendNmea(port, g_commandLineOptions.nmeaMessage);
+        }
+
         unsigned char line[512];
         unsigned char* asciiData;
-        while (!g_inertialSenseDisplay.ExitProgram())
+        while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
         {
-            int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
+            int count = serialPortReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData);
             if (count > 0)
             {
                 printf("%s", (char*)asciiData);
                 printf("\r\n");
             }
+
+            // Scan for "q" press to exit program
+            g_inertialSenseDisplay.GetKeyboardInput();
         }
     }
     else
