@@ -30,6 +30,7 @@ public:
     ISFirmwareUpdater* fwUpdater;
     float percent;
     bool hasError;
+    std::vector<std::tuple<std::string, std::string, std::string>> errors;
     uint16_t lastSlot;
     fwUpdate::target_t lastTarget;
     fwUpdate::update_status_e lastStatus;
@@ -39,7 +40,8 @@ public:
     std::vector<std::string> target_messages;
 
     bool inProgress();
-    void update();
+    bool update();
+    // void getErrors() { return (fwUpdater != NULL ? fwUpdater->hasErrors() : hasError); }
 };
 
 class ISDevice {

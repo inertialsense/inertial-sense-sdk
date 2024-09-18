@@ -642,15 +642,15 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         cout << buffer << endl;
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
-        if (buffer[0] || (g_commandLineOptions.verboseLevel > level) || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
+        if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) || ((g_commandLineOptions.verboseLevel >= ISBootloader::eLogLevel::IS_LOG_LEVEL_MORE_INFO) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
             printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();
                 int num = fwCtx->fwUpdate_getNextChunkID();
                 float percent = num / (float) (tot) * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
-            } else {
-                printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
+            } else if (g_commandLineOptions.verboseLevel > ISBootloader::eLogLevel::IS_LOG_LEVEL_MORE_INFO) {
+                // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
             }
             if (buffer[0])
                 printf(" :: %s", buffer);
@@ -830,7 +830,7 @@ static int cltool_dataStreaming()
                 // If updating firmware, and all devices have finished, Exit
                 if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
                     if (inertialSenseInterface.isFirmwareUpdateFinished()) {
-                        exitCode = 0;
+                        exitCode = inertialSenseInterface.isFirmwareUpdateSuccessful() ? 0 : -3;
                         break;
                     }
                 } else {  // Only print the usual output if we AREN'T updating firmware...
@@ -858,7 +858,7 @@ static int cltool_dataStreaming()
     }
 
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto& device : inertialSenseInterface.getDevices()) {
             if (device.fwUpdate.hasError) {
                 exitCode = -3;
