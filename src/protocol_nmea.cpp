@@ -22,10 +22,6 @@ static struct
 uint8_t nmea2p3_svid_to_sigId(uint8_t gnssId, uint16_t svId);
 bool gsv_freq_ena(gps_sig_sv_t* sig);
 
-typedef struct {
-    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constilation mask (see eGnGSVIndex)*/
-} gsvMask_t;
-
 static gsvMask_t s_gsvMask = {0};
 
 //////////////////////////////////////////////////////////////////////////
@@ -52,6 +48,59 @@ int ssnprintf(char buf[], int bufSize, const char *fmt, ...)
     int l = VSNPRINTF(buf, bufSize, fmt, args);
     va_end(args);
     return l;
+}
+
+/**
+ * Sets Gsv filter. 
+ *  
+ * @param filter - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ * @param constellation - sets specific constellation (see eSatSvGnssId)
+ */
+void nmea_setGsvFilter(int constellation, uint8_t filter)
+{
+    if (constellation >= SAT_SV_GNSS_ID_GNSS && constellation < SAT_SV_GNSS_ID_COUNT)
+        s_gsvMask.constMask[constellation] = filter;
+}
+
+/**
+ * Sets Gsv filter. 
+ *  
+ * @param filter - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ */
+void nmea_setGsvFilter(uint8_t* filters)
+{
+    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && filters != nullptr; i++)
+    {
+        s_gsvMask.constMask[i] = filters[i];
+    }
+}
+
+/**
+ * Gets Gsv filter. 
+ * 
+ * @param constellation - gets specific constellation (see eSatSvGnssId)
+ * 
+ * @return filter for requested constellation or -1 if invalid constellation is passed
+ */
+int nmea_getGsvFilter(int constellation)
+{
+    if (constellation >= SAT_SV_GNSS_ID_GNSS && constellation < SAT_SV_GNSS_ID_COUNT)
+        return s_gsvMask.constMask[constellation];
+    
+    return -1;
+}
+
+/**
+ * Gets Gsv filters. 
+ * 
+ * @param filters - filters for each constellation (uint8_t seedArr[SAT_SV_GNSS_ID_COUNT])
+ */
+void nmea_getGsvFilter(uint8_t* filters)
+{
+    for (int i = 0; i < SAT_SV_GNSS_ID_COUNT && filters != nullptr; i++)
+    {
+        filters[i] = s_gsvMask.constMask[i];
+    }
 }
 
 void nmea_sprint(char buf[], int bufSize, int &offset, const char *fmt, ...) 
@@ -385,7 +434,7 @@ void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_
 
     if (periodMultiple)
         bits |=  (nmeaBits);
-    else 
+    else
         bits &= ~(nmeaBits);
 }
 
@@ -1658,13 +1707,12 @@ int nmea_gsv(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig)
 */
 int decodeGSV(char* a, int aSize)
 {
-    if(aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
+    if (aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
         return -2;
 
     int msgNum = NMEA_MSG_ID_GNGSV_START;
-    
-    if(a[1] == 'x' || a[1] == 'X')        return NMEA_MSG_ID_GxGSV;
-    else if (a[1] == 'N')  {;} // DO NOTHING
+
+    if ((a[1] == 'x') || (a[1] == 'X') || (a[1] == 'N'))  {;} // DO NOTHING
     else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
     else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
     else if (a[1] == 'B')  msgNum += NMEA_GNGSV_BEI_OFFSET;
@@ -1674,17 +1722,17 @@ int decodeGSV(char* a, int aSize)
 
     // Parse freqencies
     // Enable all Freqs ie GNGSV,
-    if(a[5] == ',' || a[5] == '*')
+    if (a[5] == ',' || a[5] == '*')
         msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
     else // special case ie GNGSV_1_2_3_5
     {
-        for(int i = 5; i < aSize; i++)
+        for (int i = 5; i < aSize; i++)
         {
-            if(a[i] == '_')         continue;
-            else if(a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_BAND1_BIT;
-            else if(a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_BAND2_BIT;
-            else if(a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_BAND3_BIT;
-            else if(a[i] == '5')    msgNum |= NMEA_GNGSV_FREQ_5_BIT;
+            if (a[i] == '_')         continue;
+            else if (a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_BAND1_BIT;
+            else if (a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_BAND2_BIT;
+            else if (a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_BAND3_BIT;
+            else if (a[i] == '5')    msgNum |= NMEA_GNGSV_FREQ_5_BIT;
             else                    break;
         }
     }
@@ -1700,7 +1748,7 @@ int decodeGSV(char* a, int aSize)
 */
 int getNmeaMsgId(const void *a, int aSize)
 {
-    if(aSize < 5)     // five characters required (i.e. "$INFO")
+    if (aSize < 5)     // five characters required (i.e. "$INFO")
         return -2;
 
     char *cptr = (char*)a;
@@ -1721,14 +1769,14 @@ int getNmeaMsgId(const void *a, int aSize)
         break;
 
     case 'G':
-        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GxGGA; }
-        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GxGLL; }
-        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GxGSA; }
+        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GNGGA; }
+        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GNGLL; }
+        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GNGSA; }
         else if (UINT32_MATCH(talker+2,"GSV,"))     { return decodeGSV(talker, aSize-1); }
         else if (UINT32_MATCH(talker+2,"GSV_"))     { return decodeGSV(talker, aSize-1); }
-        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GxRMC; }
-        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GxVTG; }
-        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GxZDA; }
+        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GNRMC; }
+        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GNVTG; }
+        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GNZDA; }
         break;
 
     case 'I':
@@ -1775,16 +1823,16 @@ int nmeaMsgIdToTalker(int msgId, void *str, int strSize)
     case NMEA_MSG_ID_PINS1:	memcpy(str, "PINS1", 5);	return 0;
     case NMEA_MSG_ID_PINS2:	memcpy(str, "PINS2", 5);	return 0;
     case NMEA_MSG_ID_PGPSP:	memcpy(str, "PGPSP", 5);	return 0;
-    case NMEA_MSG_ID_GxGGA:	memcpy(str, "GxGGA", 5);	return 0;
-    case NMEA_MSG_ID_GxGLL:	memcpy(str, "GxGLL", 5);	return 0;
-    case NMEA_MSG_ID_GxGSA:	memcpy(str, "GxGSA", 5);	return 0;
-    case NMEA_MSG_ID_GxRMC:	memcpy(str, "GxRMC", 5);	return 0;
-    case NMEA_MSG_ID_GxZDA:	memcpy(str, "GxZDA", 5);	return 0;
+    case NMEA_MSG_ID_GNGGA:	memcpy(str, "GNGGA", 5);	return 0;
+    case NMEA_MSG_ID_GNGLL:	memcpy(str, "GNGLL", 5);	return 0;
+    case NMEA_MSG_ID_GNGSA:	memcpy(str, "GNGSA", 5);	return 0;
+    case NMEA_MSG_ID_GNRMC:	memcpy(str, "GNRMC", 5);	return 0;
+    case NMEA_MSG_ID_GNZDA:	memcpy(str, "GNZDA", 5);	return 0;
     case NMEA_MSG_ID_PASHR:	memcpy(str, "PASHR", 5);	return 0;
     case NMEA_MSG_ID_PSTRB:	memcpy(str, "PSTRB", 5);	return 0;
     case NMEA_MSG_ID_INFO:	memcpy(str, "INFO", 4);		return 0;
-    case NMEA_MSG_ID_GxGSV:	memcpy(str, "GxGSV", 5);	return 0;
-    case NMEA_MSG_ID_GxVTG:	memcpy(str, "GxVTG", 5);	return 0;
+    case NMEA_MSG_ID_GNGSV:	memcpy(str, "GNGSV", 5);	return 0;
+    case NMEA_MSG_ID_GNVTG:	memcpy(str, "GNVTG", 5);	return 0;
     case NMEA_MSG_ID_INTEL:	memcpy(str, "INTEL", 5);	return 0;
 
     case NMEA_MSG_ID_ASCE:	memcpy(str, "ASCE", 4);		return 0;
@@ -2011,10 +2059,10 @@ int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const
 
 /**
  * Sets ASCE special case for GSV messages.
- * returns NMEA_MSG_ID_GxGSV if successful 
+ * returns NMEA_MSG_ID_GNGSV if successful 
  * returns 0 if unsuccessful
 */
-int parseASCE_GSV(int inId)
+int parseASCE_GSV(int inId, int period)
 {
     uint8_t constTarget = (inId & 0xf0) >> 4;
     uint8_t freqMask = (inId & 0x0f);
@@ -2022,37 +2070,40 @@ int parseASCE_GSV(int inId)
     if(inId < NMEA_MSG_ID_GNGSV_START || inId > NMEA_MSG_ID_GNGSV_END)
         return 0;
 
-    switch (constTarget)
+    if (period != 0)
     {
-        case SAT_SV_GNSS_ID_GNSS:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_GPS:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_GAL:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_BEI:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_QZS:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
-            break;
-        case SAT_SV_GNSS_ID_GLO:
-            s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
-            break;
-        default:
-            return 0;
+        switch (constTarget)
+        {
+            case SAT_SV_GNSS_ID_GNSS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GNSS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_SBS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_GPS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GPS] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_GAL:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GAL] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_BEI:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_BEI] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_QZS:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_QZS] = freqMask;
+                break;
+            case SAT_SV_GNSS_ID_GLO:
+                s_gsvMask.constMask[SAT_SV_GNSS_ID_GLO] = freqMask;
+                break;
+            default:
+                return 0;
+        }
     }
 
-    return NMEA_MSG_ID_GxGSV;
+    return NMEA_MSG_ID_GNGSV;
 }
 
 uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS])
@@ -2099,12 +2150,6 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
 
-        // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
-        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
-            id = parseASCE_GSV(id);
-        
         ptr = ASCII_find_next_field(ptr);
 
         // end of nmea string
@@ -2115,11 +2160,29 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
         ptr = ASCII_find_next_field(ptr);
 
+        // handle GSV cases
+        if (id == NMEA_MSG_ID_GNGSV)
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
+        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
+            id = parseASCE_GSV(id, period);
+
         // Copy tmp to corresponding port(s)
         switch (ports)
         {	
         case RMC_OPTIONS_PORT_CURRENT:	nmea_enable_stream(rmci[pHandle].rmcNmea.nmeaBits, rmci[pHandle].rmcNmea.nmeaPeriod, id, period); break;
-        case RMC_OPTIONS_PORT_ALL:		for(int i=0; i<NUM_COM_PORTS; i++) { nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); } break;
+        case RMC_OPTIONS_PORT_ALL:
+            for(int i=0; i<NUM_COM_PORTS; i++) 
+            { 
+                nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period);                 
+            } 
+
+            if (id == NMEA_MSG_ID_GNGSV && period == 0)
+            {
+                for(int i = SAT_SV_GNSS_ID_GNSS; i < SAT_SV_GNSS_ID_COUNT; i++) 
+                    s_gsvMask.constMask[i] = 0;
+            }
+
+            break;
             
         default:	// Current port
             if (ports & RMC_OPTIONS_PORT_SER0)     { nmea_enable_stream(rmci[0].rmcNmea.nmeaBits, rmci[0].rmcNmea.nmeaPeriod, id, period); }
@@ -2174,12 +2237,6 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
             char *ptr2 = ptr-1;
             id = getNmeaMsgId(ptr2, end-ptr2);
         }
-
-        // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV);
-        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
-            id = parseASCE_GSV(id);
         
         ptr = ASCII_find_next_field(ptr);
 
@@ -2190,6 +2247,12 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         // set period multiple and increament ptr to next field
         period = ((*ptr==',') ? 0 : (uint8_t)atoi(ptr));	
         ptr = ASCII_find_next_field(ptr);
+
+        // handle GSV cases
+        if (id == NMEA_MSG_ID_GNGSV)
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
+        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
+            id = parseASCE_GSV(id, period);
 
         // Copy tmp to corresponding port(s)
         switch (ports)
@@ -2205,6 +2268,12 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
                 nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period); 
                 rmci[i].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
             } 
+            
+            if (id == NMEA_MSG_ID_GNGSV && period == 0)
+            {
+                for(int i = SAT_SV_GNSS_ID_GNSS; i < SAT_SV_GNSS_ID_COUNT; i++) 
+                    s_gsvMask.constMask[i] = 0;
+            }
             break;
             
         default:	// Current port
@@ -2532,8 +2601,8 @@ char* nmea_parse_gsv(const char a[], const int aSize, gps_sat_t *gpsSat, gps_sig
     }
 
     (void)aSize;
-    char *ptr = (char *)&a[7];	// $GxGSV,
-    // $GxGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
+    char *ptr = (char *)&a[7];	// $GNGSV,
+    // $GNGSV, numMsgs, msgNum, numSats, {,svid,elv,az,cno}, signalId *checksum <CR><LF>
         
     int32_t numMsgs, msgNum, numSigs;
     ptr = ASCII_to_i32(&numMsgs, ptr);			// 1 - number of messages

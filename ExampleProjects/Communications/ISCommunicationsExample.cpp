@@ -231,7 +231,7 @@ int main(int argc, char* argv[])
 			case _PTYPE_NMEA:
 				switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.dataHdr.size))
 				{
-                case NMEA_MSG_ID_GxGGA:
+                case NMEA_MSG_ID_GNGGA:
 					// Access NMEA message here:
 					// comm.dataPtr 
 					// comm.dataHdr.size

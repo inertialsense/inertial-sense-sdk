@@ -44,6 +44,7 @@ using namespace std;
 #define XMIT_CLOSE_DELAY_MS    1000     // (ms) delay prior to cltool close to ensure data transmission
 
 static bool g_killThreadsNow = false;
+static bool g_enableDataCallback = false;
 int g_devicesUpdating = 0;
 
 static void display_server_client_status(InertialSense* i, bool server=false, bool showMessageSummary=false, bool refreshDisplay=false)
@@ -237,9 +238,14 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 // [C++ COMM INSTRUCTION] STEP 5: Handle received data 
 static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
 {
-    if (g_commandLineOptions.outputOnceDid) {
-        if (data->hdr.id != g_commandLineOptions.outputOnceDid)
-            return; // ignore all other received data, except the "onceDid"
+    if (!g_enableDataCallback)
+    {   // Receive disabled
+        return;
+    }
+
+    if (g_commandLineOptions.outputOnceDid && g_commandLineOptions.outputOnceDid != data->hdr.id)
+    {   // ignore all other received data, except the "onceDid"
+        return; 
     }
 
     (void)i;
@@ -269,25 +275,11 @@ static void cltool_dataCallback(InertialSense* i, p_data_t* data, int pHandle)
  *  if those DIDs have already been recently received. If 0 is returned, it indicates that all requested DIDs are already
  *  streaming.
  */
-int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<stream_did_t>& datasets) {
-    int didRequested = 0;
+void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<stream_did_t>& datasets) {
     unsigned int currentTime = current_timeMs();
 
     for (stream_did_t& dataItem : datasets)
     {   // Datasets to stream
-
-        unsigned int thresholdRate = (dataItem.periodMultiple * cISDataMappings::DefaultPeriodMultiple(dataItem.did) * 3) + 100; // minimum 100ms
-        if ((currentTime - dataItem.rxStats.lastRxTime) < thresholdRate) {
-            // FIXME: the "500" above should probably be the specific base period for the DID * 5, or something
-            //  basically, we want to know how often we should expect that DID, based on its base rate * the periodMultiple,
-            //  and then we should re-request if we've exceeded that by, say, 3x? 5x? 10x?
-            // we've already received this message recently, so its probably already been requested...
-            continue; // so, let's skip it.
-        }
-
-        didRequested++;
-        g_inertialSenseDisplay.SelectEditDataset(dataItem.did, true);     // Select DID for generic display
-
         inertialSenseInterface.BroadcastBinaryData(dataItem.did, dataItem.periodMultiple);
         switch (dataItem.did)
         {
@@ -299,8 +291,6 @@ int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<st
                 break;
         }
     }
-
-    return didRequested;
 }
 
 // Where we tell the IMX what data to send and at what rate.  
@@ -308,11 +298,22 @@ int cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<st
 // All DID messages are found in data_sets.h
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
-    inertialSenseInterface.StopBroadcasts();    // Stop streaming any prior messages
+    // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
+    inertialSenseInterface.StopBroadcasts();
+    SLEEP_MS(100);
+    g_enableDataCallback = true;
 
-    if (g_commandLineOptions.asciiMessages.size() != 0)
+    // Point display to serial port and is_comm_instance to print debug info
+    g_inertialSenseDisplay.SetSerialPort(inertialSenseInterface.SerialPort());
+    com_manager_t* cm = (com_manager_t*)comManagerGetGlobal();
+    if (cm != NULL && cm->numPorts > 0 && cm->ports)
     {
-        serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.asciiMessages.c_str(), (int)g_commandLineOptions.asciiMessages.size());
+        g_inertialSenseDisplay.SetCommInstance(&(cm->ports->comm));
+    }
+
+    if (g_commandLineOptions.nmeaMessage.size() != 0)
+    {
+        serialPortWriteAscii(inertialSenseInterface.SerialPort(), g_commandLineOptions.nmeaMessage.c_str(), (int)g_commandLineOptions.nmeaMessage.size());
         return true;
     }
 
@@ -342,6 +343,10 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     }
     else
     {
+        if (g_commandLineOptions.datasets.size() > 0)
+        {   // Select DID for generic display, which support viewing only one DID.
+            g_inertialSenseDisplay.SelectEditDataset(g_commandLineOptions.datasets.front().did, true);  
+        }
         cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
     }
     if (g_commandLineOptions.timeoutFlushLoggerSeconds > 0)
@@ -637,13 +642,15 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         cout << buffer << endl;
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
-        if (buffer[0] || (((g_commandLineOptions.displayMode != cInertialSenseDisplay::DMODE_QUIET) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)))) {
+        if ((buffer[0] && (level <= g_commandLineOptions.verboseLevel)) || ((g_commandLineOptions.verboseLevel >= ISBootloader::eLogLevel::IS_LOG_LEVEL_MORE_INFO) && (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS))) {
             printf("[%5.2f] [%s:SN%07d > %s]", current_timeMs() / 1000.0f, fwCtx->portName, fwCtx->devInfo->serialNumber, fwCtx->fwUpdate_getSessionTargetName());
             if (fwCtx->fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS) {
                 int tot = fwCtx->fwUpdate_getTotalChunks();
                 int num = fwCtx->fwUpdate_getNextChunkID();
                 float percent = num / (float) (tot) * 100.f;
                 printf(" :: Progress %d/%d (%0.1f%%)", num, tot, percent);
+            } else if (g_commandLineOptions.verboseLevel > ISBootloader::eLogLevel::IS_LOG_LEVEL_MORE_INFO) {
+                // printf(" :: %s", fwCtx->fwUpdate_getSessionStatusName());
             }
             if (buffer[0])
                 printf(" :: %s", buffer);
@@ -761,7 +768,7 @@ static int cltool_dataStreaming()
         }
 
         // [LOGGER INSTRUCTION] Setup and start data logger
-        if (g_commandLineOptions.asciiMessages.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
+        if (g_commandLineOptions.nmeaMessage.size() == 0 && !cltool_setupLogger(inertialSenseInterface))
         {
             cout << "Failed to setup logger!" << endl;
             // No need to Close() the InertialSense class interface; It will be closed when destroyed.
@@ -791,19 +798,19 @@ static int cltool_dataStreaming()
                     g_commandLineOptions.evFCont.evFilter.portMask,
                     g_commandLineOptions.evFCont.evFilter.eventMask.priorityLevel);
 
-            // before we start, if we are doing a run-once, set a default runDuration, so we don't hang indefinitely
-            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDuration)
-                g_commandLineOptions.runDuration = 30000; // 30 second timeout, if none is specified
+            // before we start, if we are doing a run-once, set a default runDurationMs, so we don't hang indefinitely
+            if (g_commandLineOptions.outputOnceDid && !g_commandLineOptions.runDurationMs)
+                g_commandLineOptions.runDurationMs = 10000; // 10 second timeout, if none is specified
 
             // Main loop. Could be in separate thread if desired.
-            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDuration;
-            uint32_t nextDataSetCheck = current_timeMs() + 250;
+            uint32_t exitTime = current_timeMs() + g_commandLineOptions.runDurationMs;
+            uint32_t requestDataSetsTimeMs = 0;
 
             // yield to allow comms
             SLEEP_MS(1);
 
             // [C++ COMM INSTRUCTION] STEP 4: Read data
-            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDuration || (current_timeMs() < exitTime)))
+            while (!g_inertialSenseDisplay.ExitProgram() && (!g_commandLineOptions.runDurationMs || (current_timeMs() < exitTime)))
             {
 
                 if (!inertialSenseInterface.Update())
@@ -823,7 +830,7 @@ static int cltool_dataStreaming()
                 // If updating firmware, and all devices have finished, Exit
                 if (g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) {
                     if (inertialSenseInterface.isFirmwareUpdateFinished()) {
-                        exitCode = 0;
+                        exitCode = inertialSenseInterface.isFirmwareUpdateSuccessful() ? 0 : -3;
                         break;
                     }
                 } else {  // Only print the usual output if we AREN'T updating firmware...
@@ -834,11 +841,10 @@ static int cltool_dataStreaming()
                     display_server_client_status(&inertialSenseInterface, false, false, refreshDisplay);
                 }
 
-                if (current_timeMs() > nextDataSetCheck) {
-                    if (cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets))
-                        nextDataSetCheck = current_timeMs() + 1000; // still waiting on some, so check more frequently
-                    else
-                        nextDataSetCheck = current_timeMs() + 5000; // we've received everything we're expecting for, so we can back off the re-requests
+                if ((current_timeMs() - requestDataSetsTimeMs) > 1000) {
+                    // Re-request data every 1s
+                    requestDataSetsTimeMs = current_timeMs(); 
+                    cltool_requestDataSets(inertialSenseInterface, g_commandLineOptions.datasets);
                 }
 
                 // Prevent processor overload
@@ -852,7 +858,7 @@ static int cltool_dataStreaming()
     }
 
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
-    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.updateAppFirmwareFilename.empty()) {
+    if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
         for (auto& device : inertialSenseInterface.getDevices()) {
             if (device.fwUpdate.hasError) {
                 exitCode = -3;
@@ -872,6 +878,22 @@ static void sigint_cb(int sig)
     g_killThreadsNow = true;
     cltool_bootloadUpdateInfo(NULL, ISBootloader::eLogLevel::IS_LOG_LEVEL_ERROR, "Update cancelled, killing threads and exiting...");
     signal(SIGINT, SIG_DFL);
+}
+
+// Create and send full NMEA message with terminator w/ checksum trailer
+static void sendNmea(serial_port_t &port, string nmeaMsg)
+{
+    char buf[1024] = {0};
+    int n = 0; 
+    if (nmeaMsg[0] != '$')
+    {   // Append header
+        nmeaMsg = "$" + nmeaMsg;
+    }
+    memcpy(buf, nmeaMsg.c_str(), nmeaMsg.size());
+    n += nmeaMsg.size();
+    nmea_sprint_footer(buf, sizeof(buf), n);
+    printf("Sending: %.*s\\r\\n\n", n-2, buf);
+    serialPortWrite(&port, (unsigned char*)buf, n);
 }
 
 static int inertialSenseMain()
@@ -910,23 +932,34 @@ static int inertialSenseMain()
     {
         return cltool_createHost();
     }
-    else if (g_commandLineOptions.asciiMessages.size() != 0)
+    else if (!g_commandLineOptions.nmeaMessage.empty() || g_commandLineOptions.nmeaRx)
     {
-        serial_port_t serialForAscii;
-        serialPortPlatformInit(&serialForAscii);
-        serialPortOpen(&serialForAscii, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0);
-        serialPortWriteAscii(&serialForAscii, "STPB", 4);
-        serialPortWriteAscii(&serialForAscii, ("ASCB," + g_commandLineOptions.asciiMessages).c_str(), (int)(5 + g_commandLineOptions.asciiMessages.size()));
+        serial_port_t port;
+        serialPortPlatformInit(&port);
+        if (!serialPortOpen(&port, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0))
+        {   // Failed to open port
+            return -1;
+        }
+
+        if (!g_commandLineOptions.nmeaMessage.empty())
+        {
+            sendNmea(port, "STPB");
+            sendNmea(port, g_commandLineOptions.nmeaMessage);
+        }
+
         unsigned char line[512];
         unsigned char* asciiData;
-        while (!g_inertialSenseDisplay.ExitProgram())
+        while (!g_inertialSenseDisplay.ExitProgram() && g_commandLineOptions.nmeaRx)
         {
-            int count = serialPortReadAsciiTimeout(&serialForAscii, line, sizeof(line), 100, &asciiData);
+            int count = serialPortReadAsciiTimeout(&port, line, sizeof(line), 10, &asciiData);
             if (count > 0)
             {
                 printf("%s", (char*)asciiData);
                 printf("\r\n");
             }
+
+            // Scan for "q" press to exit program
+            g_inertialSenseDisplay.GetKeyboardInput();
         }
     }
     else

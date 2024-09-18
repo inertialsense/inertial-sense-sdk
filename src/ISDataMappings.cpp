@@ -118,6 +118,7 @@ static void PopulateSizeMappings(uint32_t sizeMap[DID_COUNT])
     sizeMap[DID_WHEEL_ENCODER] = sizeof(wheel_encoder_t);
     sizeMap[DID_GROUND_VEHICLE] = sizeof(ground_vehicle_t);
     sizeMap[DID_SYS_CMD] = sizeof(system_command_t);
+    sizeMap[DID_NMEA_BCAST_PERIOD] = sizeof(nmea_msgs_t);
     sizeMap[DID_RMC] = sizeof(rmc_t);
     sizeMap[DID_INS_1] = sizeof(ins_1_t);
     sizeMap[DID_INS_2] = sizeof(ins_2_t);
@@ -1042,6 +1043,58 @@ static void PopulateConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ASSERT_SIZE(totalSize);
 }
 
+static void PopulateNmeaMsgsMappings(map_name_to_info_t mappings[DID_COUNT])
+{
+    typedef nmea_msgs_t MAP_TYPE;
+    map_name_to_info_t& m = mappings[DID_NMEA_BCAST_PERIOD];
+    uint32_t totalSize = 0;
+    ADD_MAP(m, totalSize, "options", options, 0, DataTypeUInt32, uint32_t, 0);
+
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[0].msgID",     nmeaBroadcastMsgs[0].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[0].msgPeriod", nmeaBroadcastMsgs[0].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[1].msgID",     nmeaBroadcastMsgs[1].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[1].msgPeriod", nmeaBroadcastMsgs[1].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[2].msgID",     nmeaBroadcastMsgs[2].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[2].msgPeriod", nmeaBroadcastMsgs[2].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[3].msgID",     nmeaBroadcastMsgs[3].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[3].msgPeriod", nmeaBroadcastMsgs[3].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[4].msgID",     nmeaBroadcastMsgs[4].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[4].msgPeriod", nmeaBroadcastMsgs[4].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[5].msgID",     nmeaBroadcastMsgs[5].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[5].msgPeriod", nmeaBroadcastMsgs[5].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[6].msgID",     nmeaBroadcastMsgs[6].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[6].msgPeriod", nmeaBroadcastMsgs[6].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[7].msgID",     nmeaBroadcastMsgs[7].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[7].msgPeriod", nmeaBroadcastMsgs[7].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[8].msgID",     nmeaBroadcastMsgs[8].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[8].msgPeriod", nmeaBroadcastMsgs[8].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[9].msgID",     nmeaBroadcastMsgs[9].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[9].msgPeriod", nmeaBroadcastMsgs[9].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[10].msgID",     nmeaBroadcastMsgs[10].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[10].msgPeriod", nmeaBroadcastMsgs[10].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[11].msgID",     nmeaBroadcastMsgs[11].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[11].msgPeriod", nmeaBroadcastMsgs[11].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[12].msgID",     nmeaBroadcastMsgs[12].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[12].msgPeriod", nmeaBroadcastMsgs[12].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[13].msgID",     nmeaBroadcastMsgs[13].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[13].msgPeriod", nmeaBroadcastMsgs[13].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[14].msgID",     nmeaBroadcastMsgs[14].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[14].msgPeriod", nmeaBroadcastMsgs[14].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[15].msgID",     nmeaBroadcastMsgs[15].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[15].msgPeriod", nmeaBroadcastMsgs[15].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[16].msgID",     nmeaBroadcastMsgs[16].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[16].msgPeriod", nmeaBroadcastMsgs[16].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[17].msgID",     nmeaBroadcastMsgs[17].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[17].msgPeriod", nmeaBroadcastMsgs[17].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[18].msgID",     nmeaBroadcastMsgs[18].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[18].msgPeriod", nmeaBroadcastMsgs[18].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[19].msgID",     nmeaBroadcastMsgs[19].msgID, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "nmeaBroadcastMsgs[19].msgPeriod", nmeaBroadcastMsgs[19].msgPeriod, 0, DataTypeUInt8, uint8_t, 0);
+
+    ASSERT_SIZE(totalSize);
+}
+
 static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
 {
     typedef nvm_flash_cfg_t MAP_TYPE;
@@ -1125,7 +1178,6 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     map_name_to_info_t& m = mappings[DID_EVENT];
     uint32_t totalSize = 0;
 
-
     ADD_MAP(m, totalSize, "Time stamp of message (System Up seconds)", time, 0, DataTypeDouble, double, 0);
     ADD_MAP(m, totalSize, "Senders serial number", senderSN, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "Sender hardware type", senderHdwId, 0, DataTypeUInt16, uint16_t, 0);
@@ -1136,6 +1188,8 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "data", data, 0, DataTypeString, uint8_t[MEMBERSIZE(MAP_TYPE, data)], 0);
 
     ADD_MAP(m, totalSize, "Reserved 8 bit", res8, 0, DataTypeUInt8, uint8_t, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -1163,6 +1217,7 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "gpsTimeUserDelay", gpsTimeUserDelay, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "gpsMinimumElevation", gpsMinimumElevation, 0, DataTypeFloat, float, 0);
     ADD_MAP(m, totalSize, "RTKCfgBits", RTKCfgBits, 0, DataTypeUInt32, uint32_t, DataFlagsDisplayHex);
+    ADD_MAP(m, totalSize, "haltReason", haltReason, 0, DataTypeUInt32, uint32_t, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1187,10 +1242,18 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "navOutputPeriodMs", navOutputPeriodMs, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "flashCfgChecksum", flashCfgChecksum, 0, DataTypeUInt32, uint32_t, 0);
     ADD_MAP(m, totalSize, "rtkMode", rtkMode, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "gnss1RunState", gnss1RunState, 0, DataTypeUInt32, uint32_t, 0);
-    ADD_MAP(m, totalSize, "gnss2RunState", gnss2RunState, 0, DataTypeUInt32, uint32_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.RunState", gnsssStatus[0].runState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.fwUpdateState", gnsssStatus[0].fwUpdateState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.initState", gnsssStatus[0].initState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss1.reserved", gnsssStatus[0].reserved, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.RunState", gnsssStatus[1].runState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.fwUpdateState", gnsssStatus[1].fwUpdateState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.initState", gnsssStatus[1].initState, 0, DataTypeUInt8, uint8_t, 0);
+    ADD_MAP(m, totalSize, "gnss2.reserved", gnsssStatus[1].reserved, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "SourcePort", gpxSourcePort, 0, DataTypeUInt8, uint8_t, 0);
     ADD_MAP(m, totalSize, "upTime", upTime, 0, DataTypeDouble, double, 0);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT])
@@ -2763,6 +2826,7 @@ cISDataMappings::cISDataMappings()
     PopulateGpsRawMappings(m_lookupInfo, DID_GPS_BASE_RAW);
     PopulateGroundVehicleMappings(m_lookupInfo);
     PopulateConfigMappings(m_lookupInfo);
+    PopulateNmeaMsgsMappings(m_lookupInfo);
     PopulateFlashConfigMappings(m_lookupInfo);
     PopulateDebugArrayMappings(m_lookupInfo, DID_DEBUG_ARRAY);
     PopulateEvbStatusMappings(m_lookupInfo);
@@ -2967,6 +3031,14 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
     case DID_INL2_STATES:
     case DID_ROS_COVARIANCE_POSE_TWIST:
     case DID_INL2_MAG_OBS_INFO:
+    case DID_GPX_DEV_INFO:
+    case DID_GPX_FLASH_CFG:
+    case DID_GPX_RTOS_INFO:
+    case DID_GPX_STATUS:
+    case DID_GPX_DEBUG_ARRAY:
+    case DID_GPX_BIT:
+    case DID_GPX_RMC:
+    case DID_GPX_PORT_MONITOR:
         return 100;     // (100ms, 10 Hz)
 
     default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.

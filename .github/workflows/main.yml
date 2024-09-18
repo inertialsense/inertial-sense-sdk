@@ -110,6 +110,7 @@ jobs:
 
     container:
       image: ros:noetic
+      #options: --privileged -v /dev:/dev
       options: --device-cgroup-rule="c 166:* rmw"
       volumes:
         - "/dev:/dev"
@@ -169,8 +170,9 @@ jobs:
       - name: Run Functional/Integration Tests (via hardware)
         run: |
           source devel/setup.bash
-          rostest inertial_sense_ros test_ros_bridge.launch
-          catkin_test_results || (rostest --text inertial_sense_ros test_ros_bridge.launch && catkin_test_results && false)
+          roscore &
+          catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
+          catkin_test_results
 
   ros2-bridge-tests:
     name: "ROS2 Bridge Tests"
@@ -187,7 +189,7 @@ jobs:
       run:
         working-directory: ../ros2_ws # This is outside the scope of git
         shell: bash
-        
+
     steps:
       - name: Install libboost
         run: |

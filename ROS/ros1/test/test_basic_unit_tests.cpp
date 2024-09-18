@@ -70,6 +70,7 @@ TEST(BasicTestSuite, test_rtk_rover)
     EXPECT_EQ(ntrip->connectivity_watchdog_enabled_, true);
 
     isROS.initialize();
+    EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
     nvm_flash_cfg_t flashCfg;
     isROS.IS_.WaitForFlashSynced();
     isROS.IS_.FlashConfig(flashCfg);
@@ -231,6 +232,7 @@ TEST(BasicTestSuite, test_rtk_base)
     EXPECT_EQ(ntrip->get_connection_string(), "TCP:RTCM3:127.0.0.1:7777");
 
     isROS.initialize();
+    EXPECT_TRUE(isROS.sdk_connected_) << "Unable to connect to device.";
     nvm_flash_cfg_t flashCfg;
     isROS.IS_.WaitForFlashSynced();
     isROS.IS_.FlashConfig(flashCfg);

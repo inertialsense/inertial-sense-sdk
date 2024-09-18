@@ -432,15 +432,11 @@ bool InertialSense::Update()
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (auto& device : m_comManagerState.devices) {
                 if (serialPortIsOpen(&(device.serialPort)) && device.fwUpdate.fwUpdater != nullptr) {
-                    device.fwUpdate.fwUpdater->fwUpdate_step();
-
-                    if (!device.fwUpdate.inProgress()) {
-                        fwUpdate::update_status_e status = device.fwUpdate.lastStatus;
-                        if (status < fwUpdate::NOT_STARTED) {
+                    if (!device.fwUpdate.update()) {
+                        if (device.fwUpdate.lastStatus < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
-
 
 #ifdef DEBUG_CONSOLELOGGING
                         } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
@@ -781,7 +777,7 @@ void InertialSense::SetSysCmd(const uint32_t command, int pHandle)
  *       pHandle: Send in target COM port. 
  *                If arg is < 0 default port will be used 
 */
-void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, int pHandle)
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, int pHandle)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
@@ -1028,7 +1024,6 @@ void InertialSense::ProcessRxData(int pHandle, p_data_t* data)
             // we don't respond to messages if we don't already have an active Updater
             if (m_comManagerState.devices[pHandle].fwUpdate.fwUpdater) {
                 m_comManagerState.devices[pHandle].fwUpdate.fwUpdater->fwUpdate_processMessage(data->ptr, data->hdr.size);
-                m_comManagerState.devices[pHandle].fwUpdate.update();
             }
             break;
     }
@@ -1196,7 +1191,14 @@ bool InertialSense::isFirmwareUpdateFinished() {
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : m_comManagerState.devices) {
         ISFirmwareUpdater *fwUpdater = device.fwUpdate.fwUpdater;
-        if (fwUpdater != nullptr && !fwUpdater->fwUpdate_isDone() && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) 
+        if (device.fwUpdate.hasError ||
+            (   (fwUpdater != nullptr) &&
+                fwUpdater->fwUpdate_isDone() &&
+                (
+                    (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) ||
+                    fwUpdater->hasErrors()
+                )
+            ))
             return false;
     }
     return true;
