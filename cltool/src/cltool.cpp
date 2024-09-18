@@ -641,7 +641,7 @@ void cltool_outputUsage()
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
-	cout << "    -nmea" << boldOff << "           Listen only mode for NMEA message without sending stop all broadcasts `$STP` command." << endlbOn;
+	cout << "    -nmea" << boldOff << "           Listen only mode for NMEA message without sending stop all broadcasts command `$STP` at start." << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
