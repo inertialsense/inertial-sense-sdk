@@ -16,7 +16,7 @@
  *
  ***************************************************************************************/
 
-#include "inertial_sense_ros2.h"
+#include "inertial_sense_ros.h"
 #ifdef ROS2
 using namespace rclcpp;
 #endif

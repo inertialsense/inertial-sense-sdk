@@ -16,7 +16,7 @@
  *
  ***************************************************************************************/
 
-#include "inertial_sense_ros2.h"
+#include "inertial_sense_ros.h"
 
 #include <chrono>
 #include <stddef.h>

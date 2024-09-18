@@ -34,7 +34,7 @@ protected:
     ParamHelper ph_;
     InertialSense* is_;
 #ifdef ROS1
-    //ros::NodeHandle* nh_;
+    ros::NodeHandle* nh_;
 #endif
 #ifdef ROS2
     rclcpp::Node::SharedPtr nh_;

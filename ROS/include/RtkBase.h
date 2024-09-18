@@ -21,9 +21,8 @@
 
 #ifdef ROS2
 #include "rclcpp/rclcpp/rclcpp.hpp"
-#endif
 
-#ifdef ROS1
+#elif defined (ROS1)
 #include "ros/ros.h"
 #endif
 #include "ParamHelper.h"
@@ -32,9 +31,6 @@
 class RtkBaseCorrectionProvider {
 protected:
     ParamHelper ph_;
-#ifdef ROS2
-    rclcpp::Node::SharedPtr nh_;
-#endif
 public:
     std::string type_;
     RtkBaseCorrectionProvider(YAML::Node& node, const std::string& t) : ph_(node), type_(t) { };
