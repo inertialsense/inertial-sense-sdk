@@ -2161,7 +2161,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         ptr = ASCII_find_next_field(ptr);
 
         // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
+        if (id == NMEA_MSG_ID_GNGSV)
             parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id, period);
@@ -2176,7 +2176,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
                 nmea_enable_stream(rmci[i].rmcNmea.nmeaBits, rmci[i].rmcNmea.nmeaPeriod, id,  period);                 
             } 
 
-            if (id == NMEA_MSG_ID_GxGSV && period == 0)
+            if (id == NMEA_MSG_ID_GNGSV && period == 0)
             {
                 for(int i = SAT_SV_GNSS_ID_GNSS; i < SAT_SV_GNSS_ID_COUNT; i++) 
                     s_gsvMask.constMask[i] = 0;
@@ -2249,7 +2249,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
         ptr = ASCII_find_next_field(ptr);
 
         // handle GSV cases
-        if (id == NMEA_MSG_ID_GxGSV)
+        if (id == NMEA_MSG_ID_GNGSV)
             parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
         else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
             id = parseASCE_GSV(id, period);
@@ -2269,7 +2269,7 @@ uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t r
                 rmci[i].rmc.options |= (options & RMC_OPTIONS_PERSISTENT);
             } 
             
-            if (id == NMEA_MSG_ID_GxGSV && period == 0)
+            if (id == NMEA_MSG_ID_GNGSV && period == 0)
             {
                 for(int i = SAT_SV_GNSS_ID_GNSS; i < SAT_SV_GNSS_ID_COUNT; i++) 
                     s_gsvMask.constMask[i] = 0;
