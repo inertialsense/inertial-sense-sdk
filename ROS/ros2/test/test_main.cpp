@@ -1,6 +1,5 @@
 #include "gtest_helpers.h"
 #include "test_main.h"
-#include "inertial_sense_ros2.h"
 
 //auto testNode = std::make_shared<cTestNode>();
 TEST(test_main, basic)

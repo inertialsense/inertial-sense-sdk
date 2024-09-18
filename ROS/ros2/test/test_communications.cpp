@@ -4,7 +4,7 @@
 #include <filesystem>
 
 #include "gtest_helpers.h"
-#include "inertial_sense_ros2.h"
+#include "inertial_sense_ros.h"
 
 #define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ros/launch/test_config.yaml"
 

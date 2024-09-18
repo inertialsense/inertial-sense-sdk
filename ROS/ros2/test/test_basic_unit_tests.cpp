@@ -8,7 +8,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "../include/inertial_sense_ros2.h"
+#include "../include/inertial_sense_ros.h"
 
 #define PARAM_YAML_FILE "./src/ros2/launch/test_config.yaml"
 

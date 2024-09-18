@@ -6,7 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "inertial_sense_ros2.h"
+#include "inertial_sense_ros.h"
 
 class cTestNode : public rclcpp::Node
 {
