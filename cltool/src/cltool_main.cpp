@@ -985,15 +985,5 @@ int main(int argc, char* argv[])
 
     g_inertialSenseDisplay.ShutDown();
 
-    // Stop all broadcasts
-    serial_port_t port;
-    serialPortPlatformInit(&port);
-    if (!serialPortOpen(&port, g_commandLineOptions.comPort.c_str(), g_commandLineOptions.baudRate, 0))
-    {   // Failed to open port
-        return -1;
-    }
-    serialPortWrite(&port, (unsigned char*)NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS, NMEA_CMD_SIZE);
-    SLEEP_MS(1000);
-
     return result;
 }
