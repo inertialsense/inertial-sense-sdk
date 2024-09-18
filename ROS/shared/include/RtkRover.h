@@ -39,6 +39,7 @@ protected:
 #ifdef ROS2
     rclcpp::Node::SharedPtr nh_;
 #endif
+
 public:
     std::string type_;
     std::string protocol_; // format
@@ -137,7 +138,7 @@ public:
             else if (type == "ros_topic") return new RtkRoverCorrectionProvider_ROS(node);
         } else {
 #ifdef ROS2
-            RCLCPP_ERROR(rclcpp::get_logger("unable_to_config_rrcp"),"Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
+            RCLCPP_ERROR(rclcpp::get_logger("Inertial_Sense_ROS"),"Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");
 #endif
 #ifdef ROS1
             ROS_ERROR("Unable to configure RosRoverCorrectionProvider. The YAML node was null or undefined.");

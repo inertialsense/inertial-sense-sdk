@@ -26,7 +26,7 @@ using namespace ros
 int main(int argc, char**argv)
 {
     InertialSenseROS* thing;
-    rclcpp::init(argc, argv);
+    init(argc, argv);
     //auto nh_ = std::make_shared<rclcpp::Node>("nh_");
     if (argc > 1)
     {

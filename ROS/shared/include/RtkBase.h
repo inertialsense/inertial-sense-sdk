@@ -21,12 +21,12 @@
 
 #ifdef ROS2
 #include "rclcpp/rclcpp/rclcpp.hpp"
-
-#elif defined (ROS1)
+#endif
+#ifdef ROS1
 #include "ros/ros.h"
 #endif
-#include "ParamHelper.h"
 
+#include "ParamHelper.h"
 
 class RtkBaseCorrectionProvider {
 protected:
@@ -50,9 +50,16 @@ public:
 
     RtkBaseCorrectionProvider_Ntrip(YAML::Node& node, std::string proto) : RtkBaseCorrectionProvider(node, "ntrip"), protocol_(proto) { configure(node); }
     virtual void configure(YAML::Node& node);
+
+    void validate_credentials() {
 #ifdef ROS1
-    void validate_credentials() { ROS_WARN("NOT IMPLEMENTED"); }
+        ROS_WARN("NOT IMPLEMENTED");
 #endif
+#ifdef ROS2
+        RCLCPP_WARN(rclcpp::get_logger("Inertial_Sense_ROS"),"NOT IMPLEMENTED");
+#endif
+    }
+
     std::string get_connection_string();
 };
 
@@ -130,6 +137,9 @@ public:
         } else {
 #ifdef ROS1
             ROS_ERROR("Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined")
+#endif
+#ifdef ROS2
+            RCLCPP_ERROR(rclcpp::get_logger("Inertial_Sense_ROS"),"Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined");
 #endif
         }
         return nullptr;

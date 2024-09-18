@@ -17,8 +17,7 @@
  ***************************************************************************************/
 
 #include "ParamHelper.h"
-//#include "xmlrpc-c/xml.hpp"
-//#include "xmlrpc.h"
+
 void ParamHelper::setCurrentNode(YAML::Node node)
 {
     node ? currentNode_.reset(node) : currentNode_.reset(YAML::Node());

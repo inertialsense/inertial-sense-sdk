@@ -46,15 +46,16 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "srv/RefLLAUpdate.srv"
         DEPENDENCIES std_msgs geometry_msgs diagnostic_msgs builtin_interfaces
 )
-ament_export_include_directories(include)
+ament_export_include_directories(shared/include)
 ament_export_libraries(inertial_sense_ros2)
 ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs diagnostic_msgs)
 
 # We don't need the example projects
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
-include_directories(include
-#<<<<<<< Updated upstream
+include_directories(
+  shared/include
+  include
   ${XMLRPC_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
   ../../src #This line of CMakeList.txt stays in .external file to reference submodule
@@ -76,21 +77,19 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLA
 
 add_executable(new_target
         src/inertial_sense_ros2.cpp
-        src/inertial_sense_node.cpp
-        src/ParamHelper.cpp
+		shared/src/inertial_sense_node.cpp
+		shared/src/ParamHelper.cpp
         # src/serial.cpp
-        include/TopicHelper.cpp
-        src/RtkRover.cpp
-        src/RtkBase.cpp
+		shared/src/RtkRover.cpp
+		shared/src/RtkBase.cpp
         #include/TopicHelper.h
 )
 
 ament_add_gtest(test_new_target
         src/inertial_sense_ros2.cpp
-        src/ParamHelper.cpp
-        include/TopicHelper.cpp
-        src/RtkRover.cpp
-        src/RtkBase.cpp
+		shared/src/ParamHelper.cpp
+		shared/src/RtkRover.cpp
+		shared/src/RtkBase.cpp
         test/test_basic_unit_tests.cpp
         test/test_client_reconnect.cpp
         test/test_communications.cpp
@@ -106,6 +105,7 @@ rosidl_target_interfaces(test_new_target ${PROJECT_NAME} rosidl_typesupport_cpp)
 ament_target_dependencies(test_new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
 get_filename_component(RESOLVED_ROS_DIR ${CMAKE_SOURCE_DIR} REALPATH) # Symlink hell
+message(RESOLVED_ROS_DIR="${RESOLVED_ROS_DIR}")
 
 target_link_libraries(new_target ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 target_link_libraries(test_new_target ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
