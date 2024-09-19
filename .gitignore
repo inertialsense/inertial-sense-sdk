@@ -32,3 +32,4 @@ scripts/.venv/
 python/venv/
 python/logInspector/.eggs/
 
+ExampleProjects/LogReader_RegCmp/Log/
