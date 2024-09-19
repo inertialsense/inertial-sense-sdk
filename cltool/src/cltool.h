@@ -110,6 +110,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	EVFContainer_t evFCont = {0};
 
 	bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
+	bool listenMode = false;				// Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

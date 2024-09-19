@@ -299,7 +299,10 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
 static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
 {
     // Stop streaming any messages, wait for buffer to clear, and enable Rx callback
-    inertialSenseInterface.StopBroadcasts();
+    if (!g_commandLineOptions.listenMode)
+    {   
+        inertialSenseInterface.StopBroadcasts();
+    }
     SLEEP_MS(100);
     g_enableDataCallback = true;
 
