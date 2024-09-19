@@ -476,15 +476,6 @@ int main(int argc, char* argv[])
                     sprintf((char*)evScratch, "CTR3:\t0x%08x\r\n", tmpUartDmaReg.CTR3);
                     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-                    sprintf((char*)evScratch, "RESERVED1:\t0x%08x\r\n", tmpUartDmaReg.RESERVED1);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "RESERVED2:\t0x%08x\r\n", tmpUartDmaReg.RESERVED2);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "RESERVED3:\t0x%08x\r\n", tmpUartDmaReg.RESERVED3);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
                     sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Reg-------------\r\n\r\n");
                     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
@@ -551,7 +542,7 @@ int main(int argc, char* argv[])
                     sprintf((char*)evScratch, "coding.baud:\t\t0x%08x\r\n", tmpUartCfg.coding.baudRate);
                     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-                    sprintf((char*)evScratch, "coding.parity:\t0x%08x\r\n", tmpUartCfg.coding.parity);
+                    sprintf((char*)evScratch, "coding.parity:\t\t0x%08x\r\n", tmpUartCfg.coding.parity);
                     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
                     sprintf((char*)evScratch, "coding.stopBits:\t0x%08x\r\n", tmpUartCfg.coding.stopBits);
