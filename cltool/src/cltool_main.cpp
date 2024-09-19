@@ -134,11 +134,11 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 		return;
 	}
 
-    float logSize = logger.LogSizeAll() * 0.001;
-    if (logSize < 5000.0)
-        printf("\nLogging %.1f MB to: %s\n", logSize, logger.LogDirectory().c_str());
+    float logSize = logger.LogSizeAll();
+    if (logSize < 5.0e6f)
+        printf("\nLogging %.1f KB to: %s\n", logSize * 1.0e-3f, logger.LogDirectory().c_str());
     else
-        printf("\nLogging %.2f KB to: %s\n", logSize * 0.001f, logger.LogDirectory().c_str());
+        printf("\nLogging %.2f MB to: %s\n", logSize * 1.0e-6f, logger.LogDirectory().c_str());
 }
 
 static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)

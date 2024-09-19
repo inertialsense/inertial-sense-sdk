@@ -230,6 +230,7 @@ bool cDeviceLogSorted::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, p
 	}
 
 	// Add data header and data buffer to chunk
+	m_logSize += dataHdr->size;
 	int nBytes = chunk->PushBack((unsigned char*)&(m_dataSerNum), sizeof(uint32_t), (unsigned char*)dataBuf, dataHdr->size);
 	if (nBytes <= 0)
 	{
@@ -283,7 +284,6 @@ bool cDeviceLogSorted::WriteChunkToFile(uint32_t id)
 	}
 
 	m_fileSize += nBytes;
-	m_logSize += nBytes;
 
 	// Remove data
 	m_chunks[id]->Clear();
