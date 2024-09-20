@@ -47,7 +47,7 @@ generate_messages(
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include shared/include
   LIBRARIES inertial_sense_ros
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs
 )
@@ -56,6 +56,7 @@ catkin_package(
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
 include_directories(include
+  shared/include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
   ../src #This line of CMakeList.txt stays in .external file to reference submodule
@@ -67,9 +68,9 @@ include_directories(include
 add_subdirectory(.. devel)
 
 add_library(inertial_sense_ros
-    src/ParamHelper.cpp
-    src/RtkRover.cpp
-    src/RtkBase.cpp
+    shared/src/ParamHelper.cpp
+    shared/src/RtkRover.cpp
+    shared/src/RtkBase.cpp
     src/inertial_sense_ros.cpp
 )
 
@@ -84,7 +85,7 @@ target_link_libraries(inertial_sense_ros InertialSenseSDK ${catkin_LIBRARIES} ${
 target_include_directories(inertial_sense_ros PUBLIC include)
 add_dependencies(inertial_sense_ros inertial_sense_ros_generate_messages_cpp)
 
-add_executable(inertial_sense_node src/inertial_sense_node.cpp)
+add_executable(inertial_sense_node shared/src/inertial_sense_node.cpp)
 target_link_libraries(inertial_sense_node inertial_sense_ros ${catkin_LIBRARIES})
 
 catkin_add_gtest(test_unit_tests test/test_basic_unit_tests.cpp)
