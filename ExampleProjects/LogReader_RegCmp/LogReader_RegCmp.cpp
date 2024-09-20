@@ -274,17 +274,71 @@ typedef struct
     uint32_t SECCFGR;     /*!< GPIO secure configuration register,    Address offset: 0x30      */
 } GPIO_TypeDef;
 
+typedef struct
+{
+    uint32_t MODER;       /*!< GPIO port mode register,               Address offset: 0x00      */
+    uint32_t OTYPER;      /*!< GPIO port output type register,        Address offset: 0x04      */
+    uint32_t OSPEEDR;     /*!< GPIO port output speed register,       Address offset: 0x08      */
+    uint32_t PUPDR;       /*!< GPIO port pull-up/pull-down register,  Address offset: 0x0C      */
+    uint32_t IDR;         /*!< GPIO port input data register,         Address offset: 0x10      */
+    uint32_t ODR;         /*!< GPIO port output data register,        Address offset: 0x14      */
+    uint32_t BSRR;        /*!< GPIO port bit set/reset  register,     Address offset: 0x18      */
+    uint32_t LCKR;        /*!< GPIO port configuration lock register, Address offset: 0x1C      */
+    uint32_t AFR[2];      /*!< GPIO alternate function registers,     Address offset: 0x20-0x24 */
+    uint32_t BRR;         /*!< GPIO Bit Reset register,               Address offset: 0x28      */
+
+} GPIO_TypeDef_IMX;
+
+typedef struct
+{
+    uint32_t CCR;         /*!< DMA channel x configuration register        */
+    uint32_t CNDTR;       /*!< DMA channel x number of data register       */
+    uint32_t CPAR;        /*!< DMA channel x peripheral address register   */
+    uint32_t CMAR;        /*!< DMA channel x memory address register       */
+} DMA_Channel_TypeDef_IMX;
+
+typedef struct
+{
+    DMA_Channel_TypeDef*    instance;
+    uint8_t*                ptr_start;
+    uint8_t*                ptr_end;
+    uint16_t 		        active_tx_len;
+    bool 			        done;							// Currently only used in TX
+    dma_config_t			cfg;
+    int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+    uint8_t					overflow;						// Buffer overflow
+} dma_ch_t_IMX;
+
+typedef struct
+{
+    uint32_t CR1;         /*!< USART Control register 1,                 Address offset: 0x00 */
+    uint32_t CR2;         /*!< USART Control register 2,                 Address offset: 0x04 */
+    uint32_t CR3;         /*!< USART Control register 3,                 Address offset: 0x08 */
+    uint32_t BRR;         /*!< USART Baud rate register,                 Address offset: 0x0C */
+    uint16_t GTPR;        /*!< USART Guard time and prescaler register,  Address offset: 0x10 */
+    uint16_t  RESERVED2;       /*!< Reserved, 0x12                                                 */
+    uint32_t RTOR;        /*!< USART Receiver Time Out register,         Address offset: 0x14 */
+    uint16_t RQR;         /*!< USART Request register,                   Address offset: 0x18 */
+    uint16_t  RESERVED3;       /*!< Reserved, 0x1A                                                 */
+    uint32_t ISR;         /*!< USART Interrupt and status register,      Address offset: 0x1C */
+    uint32_t ICR;         /*!< USART Interrupt flag Clear register,      Address offset: 0x20 */
+    uint16_t RDR;         /*!< USART Receive Data register,              Address offset: 0x24 */
+    uint16_t  RESERVED4;       /*!< Reserved, 0x26                                                 */
+    uint16_t TDR;         /*!< USART Transmit Data register,             Address offset: 0x28 */
+    uint16_t  RESERVED5;       /*!< Reserved, 0x2A                                                 */
+} USART_TypeDef_IMX;
+
+
 DMA_Channel_TypeDef tmpUartDmaReg;
 USART_TypeDef tmpUartReg;
 usart_cfg_t tmpUartCfg;
 dma_ch_t tmpUartDmaChan;
 GPIO_TypeDef tmpUartGpio;
 
-static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
-{
-	static uint64_t dataCount;
-	printf("Data count: %" PRIu64 "          \r", ++dataCount);
-}
+DMA_Channel_TypeDef_IMX tmpIMXUartDmaReg;
+USART_TypeDef_IMX tmpIMXUartReg;
+dma_ch_t_IMX tmpIMXUartDmaChan;
+GPIO_TypeDef_IMX tmpIMXUartGpio;
 
 int printCurString(char* c)
 {
@@ -301,6 +355,447 @@ void event_outputEvToFile(std::string fileName, uint8_t* data, int len)
     outfile.open(fileName, std::ios_base::app | std::ios_base::binary); // append instead of overwrite
     outfile.write((const char*)data, len);
     outfile.close();
+}
+
+void writeIMXGpioReg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start IMX GPIP Tx0 Reg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "AFR[0]:\t\t0x%08x\r\n", tmpIMXUartGpio.AFR[0]);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "AFR[1]:\t\t0x%08x\r\n", tmpIMXUartGpio.AFR[1]);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpIMXUartGpio.BRR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "BSRR:\t\t0x%08x\r\n", tmpIMXUartGpio.BSRR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "IDR:\t\t0x%08x\r\n", tmpIMXUartGpio.IDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "LCKR:\t\t0x%08x\r\n", tmpIMXUartGpio.LCKR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "MODER:\t\t0x%08x\r\n", tmpIMXUartGpio.MODER);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ODR:\t\t0x%08x\r\n", tmpIMXUartGpio.ODR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "OSPEEDR:\t0x%08x\r\n", tmpIMXUartGpio.OSPEEDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "OTYPER:\t\t0x%08x\r\n", tmpIMXUartGpio.OTYPER);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "PUPDR:\t\t0x%08x\r\n", tmpIMXUartGpio.PUPDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End IMX GPIP Tx0 Reg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+void writeIMXDmaTx0Chan(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start IMX Dma Tx0 Channel-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "active_tx_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.active_tx_len);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.buf);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.buf_len);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.interrupt);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.interrupt_priority);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.mode:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.mode);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.parent);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.periph_reg);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.priority);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.request_num:\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.request_num);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.tc_handler:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.cfg.tc_handler);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "done:\t\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.done);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "instance:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.instance);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.lastDmaUsed);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.overflow);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.ptr_end);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaChan.ptr_start);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End IMX Dma Tx0 Channel-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+}
+
+void writeIMXSer0TxCfg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start IMX Ser0 Cfg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "coding.baud:\t\t0x%08x\r\n", tmpUartCfg.coding.baudRate);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "coding.parity:\t\t0x%08x\r\n", tmpUartCfg.coding.parity);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "coding.stopBits:\t0x%08x\r\n", tmpUartCfg.coding.stopBits);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "interrupt:\t\t\t0x%08x\r\n", tmpUartCfg.interrupt);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End IMX Ser0 Cfg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+}
+
+void writeIMXSer0TxReg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start IMX Ser0 Reg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpIMXUartReg.BRR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CR1:\t\t0x%08x\r\n", tmpIMXUartReg.CR1);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CR2:\t\t0x%08x\r\n", tmpIMXUartReg.CR2);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CR3:\t\t0x%08x\r\n", tmpIMXUartReg.CR3);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "GTPR:\t\t0x%08x\r\n", tmpIMXUartReg.GTPR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ICR:\t\t0x%08x\r\n", tmpIMXUartReg.ICR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ISR:\t\t0x%08x\r\n", tmpIMXUartReg.ISR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RDR:\t\t0x%08x\r\n", tmpIMXUartReg.RDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RQR:\t\t0x%08x\r\n", tmpIMXUartReg.RQR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RTOR:\t\t0x%08x\r\n", tmpIMXUartReg.RTOR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "TDR:\t\t0x%08x\r\n", tmpIMXUartReg.TDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RESERVED2:\t0x%08x\r\n", tmpIMXUartReg.RESERVED2);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RESERVED3:\t0x%08x\r\n", tmpIMXUartReg.RESERVED3);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RESERVED4:\t0x%08x\r\n", tmpIMXUartReg.RESERVED4);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RESERVED5:\t0x%08x\r\n", tmpIMXUartReg.RESERVED5);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End IMX Ser0 Reg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+}
+
+void writeIMXDmaTx0Reg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start IMX Dma Tx0 Reg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CCR:\t0x%08x\r\n", tmpIMXUartDmaReg.CCR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CMAR:\t0x%08x\r\n", tmpIMXUartDmaReg.CMAR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CNDTR:\t0x%08x\r\n", tmpIMXUartDmaReg.CNDTR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CPAR:\t0x%08x\r\n", tmpIMXUartDmaReg.CPAR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End IMX Dma Rx0 Reg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+void writeDmaRx0Reg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start Dma Rx0 Reg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CBR1:\t0x%08x\r\n", tmpUartDmaReg.CBR1);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CBR2:\t0x%08x\r\n", tmpUartDmaReg.CBR2);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CCR:\t0x%08x\r\n", tmpUartDmaReg.CCR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CDAR:\t0x%08x\r\n", tmpUartDmaReg.CDAR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CFCR:\t0x%08x\r\n", tmpUartDmaReg.CFCR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CLBAR:\t0x%08x\r\n", tmpUartDmaReg.CLBAR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CLLR:\t0x%08x\r\n", tmpUartDmaReg.CLLR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CSAR:\t0x%08x\r\n", tmpUartDmaReg.CSAR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CSR:\t0x%08x\r\n", tmpUartDmaReg.CSR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CTR1:\t0x%08x\r\n", tmpUartDmaReg.CTR1);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CTR2:\t0x%08x\r\n", tmpUartDmaReg.CTR2);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CTR3:\t0x%08x\r\n", tmpUartDmaReg.CTR3);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Reg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+void writeSer0RxReg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start Ser0 Reg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CR1:\t0x%08x\r\n", tmpUartReg.CR1);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CR2:\t0x%08x\r\n", tmpUartReg.CR2);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "CR3:\t0x%08x\r\n", tmpUartReg.CR3);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "BRR:\t0x%08x\r\n", tmpUartReg.BRR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "GTPR:\t0x%08x\r\n", tmpUartReg.GTPR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RTOR:\t0x%08x\r\n", tmpUartReg.RTOR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RQR:\t0x%08x\r\n", tmpUartReg.RQR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ISR:\t0x%08x\r\n", tmpUartReg.ISR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ICR:\t0x%08x\r\n", tmpUartReg.ICR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "RDR:\t0x%08x\r\n", tmpUartReg.RDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "TDR:\t0x%08x\r\n", tmpUartReg.TDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "PRESC:\t0x%08x\r\n", tmpUartReg.PRESC);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "AUTOCR:\t0x%08x\r\n", tmpUartReg.AUTOCR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End Ser0 Reg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+void writeSer0RxCfg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start Ser0 Cfg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "coding.baud:\t\t0x%08x\r\n", tmpUartCfg.coding.baudRate);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "coding.parity:\t\t0x%08x\r\n", tmpUartCfg.coding.parity);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "coding.stopBits:\t0x%08x\r\n", tmpUartCfg.coding.stopBits);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "interrupt:\t\t\t0x%08x\r\n", tmpUartCfg.interrupt);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End Ser0 Cfg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+void writeDma0RxChan(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start Dma Rx0 Channel-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.buf);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.buf_len);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.interrupt);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpUartDmaChan.cfg.interrupt_priority);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.mode:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.mode);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.parent);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.periph_reg);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.priority);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.request_num:\t\t0x%08x\r\n", tmpUartDmaChan.cfg.request_num);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.tc_handler:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.tc_handler);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "instance:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.instance);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpUartDmaChan.lastDmaUsed);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "lli.rx:\t\t\t\t\t0x%08x\r\n", tmpUartDmaChan.lli.rx);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "lli.tx:\t\t\t\t\t0x%08x\r\n", tmpUartDmaChan.lli.tx);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.overflow);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.ptr_end);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.ptr_start);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "txState.active_tx_len:\t0x%08x\r\n", tmpUartDmaChan.txState.active_tx_len);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "txState.dma_running:\t0x%08x\r\n", tmpUartDmaChan.txState.dma_running);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "txState.lli_head:\t\t0x%08x\r\n", tmpUartDmaChan.txState.lli_head);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "txState.lli_tail:\t\t0x%08x\r\n", tmpUartDmaChan.txState.lli_tail);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Channel-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+void writeGpioRxReg(uint8_t* evScratch, std::string fileName)
+{
+    sprintf((char*)evScratch, "------------Start GPIP Rx0 Reg-------------\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "AFR[0]:\t\t0x%08x\r\n", tmpUartGpio.AFR[0]);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "AFR[1]:\t\t0x%08x\r\n", tmpUartGpio.AFR[1]);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpUartGpio.BRR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "BSRR:\t\t0x%08x\r\n", tmpUartGpio.BSRR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "HSLVR:\t\t0x%08x\r\n", tmpUartGpio.HSLVR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "IDR:\t\t0x%08x\r\n", tmpUartGpio.IDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "LCKR:\t\t0x%08x\r\n", tmpUartGpio.LCKR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "MODER:\t\t0x%08x\r\n", tmpUartGpio.MODER);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ODR:\t\t0x%08x\r\n", tmpUartGpio.ODR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "OSPEEDR:\t0x%08x\r\n", tmpUartGpio.OSPEEDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "OTYPER:\t\t0x%08x\r\n", tmpUartGpio.OTYPER);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "PUPDR:\t\t0x%08x\r\n", tmpUartGpio.PUPDR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "SECCFGR:\t0x%08x\r\n", tmpUartGpio.SECCFGR);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End GPIP Rx0 Reg-------------\r\n\r\n");
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+}
+
+static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
+{
+	static uint64_t dataCount;
+	printf("Data count: %" PRIu64 "          \r", ++dataCount);
 }
 
 int main(int argc, char* argv[])
@@ -411,6 +906,11 @@ int main(int argc, char* argv[])
                 memcpy(&tmpUartDmaChan, evScratch, ev->length);
                 memcpy(&tmpUartGpio, evScratch, ev->length);
 
+                memcpy(&tmpIMXUartDmaReg, evScratch, ev->length);
+                memcpy(&tmpIMXUartReg, evScratch, ev->length);
+                memcpy(&tmpIMXUartDmaChan, evScratch, ev->length);
+                memcpy(&tmpIMXUartGpio, evScratch, ev->length);
+
                 std::string fileName;
 
                 switch (ev->msgTypeID)
@@ -434,250 +934,60 @@ int main(int argc, char* argv[])
                 case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
                 case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
 
+                case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_REG:
+                    fileName = deviceFolder + "/IMX_DMA0_reg.txt";
+                    writeIMXDmaTx0Reg(evScratch, fileName);
+                    logged = true;
+                    break;
+                case EVENT_MSG_TYPE_ID_IMX_SER0_REG:
+                    fileName = deviceFolder + "/IMX_SER0_reg.txt";
+                    writeIMXSer0TxReg(evScratch, fileName);
+                    logged = true;
+                    break;
+                case  EVENT_MSG_TYPE_ID_IMX_SER0_CFG:
+                    fileName = deviceFolder + "/IMX_SER0_chan.txt";
+                    writeIMXSer0TxCfg(evScratch, fileName);
+                    logged = true;
+                    break;
+                case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN:
+                    fileName = deviceFolder + "/IMX_DMA0_chan.txt";
+                    writeIMXDmaTx0Chan(evScratch, fileName);
+                    logged = true;
+                    break;
+                case EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG:
+                    fileName = deviceFolder + "/IMX_GPIO.txt";
+                    writeIMXGpioReg(evScratch, fileName);
+                    logged = true;
+                    break;
+
                 case EVENT_MSG_TYPE_ID_DMA_RX_0_REG:
                     fileName = deviceFolder + "/DMA0_reg.txt";
-
-                    sprintf((char*)evScratch, "------------Start Dma Rx0 Reg-------------\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CBR1:\t0x%08x\r\n", tmpUartDmaReg.CBR1);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CBR2:\t0x%08x\r\n", tmpUartDmaReg.CBR2);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CCR:\t0x%08x\r\n", tmpUartDmaReg.CCR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CDAR:\t0x%08x\r\n", tmpUartDmaReg.CDAR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CFCR:\t0x%08x\r\n", tmpUartDmaReg.CFCR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CLBAR:\t0x%08x\r\n", tmpUartDmaReg.CLBAR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CLLR:\t0x%08x\r\n", tmpUartDmaReg.CLLR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CSAR:\t0x%08x\r\n", tmpUartDmaReg.CSAR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CSR:\t0x%08x\r\n", tmpUartDmaReg.CSR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CTR1:\t0x%08x\r\n", tmpUartDmaReg.CTR1);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CTR2:\t0x%08x\r\n", tmpUartDmaReg.CTR2);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CTR3:\t0x%08x\r\n", tmpUartDmaReg.CTR3);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Reg-------------\r\n\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+                    writeDmaRx0Reg(evScratch, fileName);
                     logged = true;
                     break;
 
                 case EVENT_MSG_TYPE_ID_SER0_REG: 
                     fileName = deviceFolder + "/Ser0_reg.txt"; 
-
-                    sprintf((char*)evScratch, "------------Start Ser0 Reg-------------\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CR1:\t0x%08x\r\n", tmpUartReg.CR1);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CR2:\t0x%08x\r\n", tmpUartReg.CR2);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "CR3:\t0x%08x\r\n", tmpUartReg.CR3);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "BRR:\t0x%08x\r\n", tmpUartReg.BRR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "GTPR:\t0x%08x\r\n", tmpUartReg.GTPR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "RTOR:\t0x%08x\r\n", tmpUartReg.RTOR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "RQR:\t0x%08x\r\n", tmpUartReg.RQR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "ISR:\t0x%08x\r\n", tmpUartReg.ISR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "ICR:\t0x%08x\r\n", tmpUartReg.ICR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "RDR:\t0x%08x\r\n", tmpUartReg.RDR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "TDR:\t0x%08x\r\n", tmpUartReg.TDR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "PRESC:\t0x%08x\r\n", tmpUartReg.PRESC);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "AUTOCR:\t0x%08x\r\n", tmpUartReg.AUTOCR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-                    
-                    sprintf((char*)evScratch, "\r\n------------End Ser0 Reg-------------\r\n\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+                    writeSer0RxReg(evScratch, fileName);
                     logged = true;
                     break;
 
                 case EVENT_MSG_TYPE_ID_SER0_CFG: 
-                    fileName = deviceFolder + "/Ser0_cfg.txt";                     
-
-                    sprintf((char*)evScratch, "------------Start Ser0 Cfg-------------\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "coding.baud:\t\t0x%08x\r\n", tmpUartCfg.coding.baudRate);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "coding.parity:\t\t0x%08x\r\n", tmpUartCfg.coding.parity);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "coding.stopBits:\t0x%08x\r\n", tmpUartCfg.coding.stopBits);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "interrupt:\t\t\t0x%08x\r\n", tmpUartCfg.interrupt);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "\r\n------------End Ser0 Cfg-------------\r\n\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+                    fileName = deviceFolder + "/Ser0_cfg.txt";
+                    writeSer0RxCfg(evScratch, fileName);
                     logged = true;
                     break;
 
                 case EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN:
                     fileName = deviceFolder + "/DMA0_chan.txt";
-
-                    sprintf((char*)evScratch, "------------Start Dma Rx0 Channel-------------\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.buf);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.buf_len);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.interrupt);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpUartDmaChan.cfg.interrupt_priority);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.mode:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.mode);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.parent);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.periph_reg);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.priority);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.request_num:\t\t0x%08x\r\n", tmpUartDmaChan.cfg.request_num);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "cfg.tc_handler:\t\t\t0x%08x\r\n", tmpUartDmaChan.cfg.tc_handler);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "instance:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.instance);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpUartDmaChan.lastDmaUsed);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "lli.rx:\t\t\t\t\t0x%08x\r\n", tmpUartDmaChan.lli.rx);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "lli.tx:\t\t\t\t\t0x%08x\r\n", tmpUartDmaChan.lli.tx);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.overflow);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.ptr_end);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpUartDmaChan.ptr_start);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "txState.active_tx_len:\t0x%08x\r\n", tmpUartDmaChan.txState.active_tx_len);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "txState.dma_running:\t0x%08x\r\n", tmpUartDmaChan.txState.dma_running);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "txState.lli_head:\t\t0x%08x\r\n", tmpUartDmaChan.txState.lli_head);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "txState.lli_tail:\t\t0x%08x\r\n", tmpUartDmaChan.txState.lli_tail);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "\r\n------------End Dma Rx0 Channel-------------\r\n\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+                    writeDma0RxChan(evScratch, fileName);
                     logged = true;
                     break;
 
 
                 case EVENT_MSG_TYPE_ID_GPIO_RX_0_REG: 
                     fileName = deviceFolder + "/GPIO_Rx0_reg.txt"; 
-
-                    sprintf((char*)evScratch, "------------Start GPIP Rx0 Reg-------------\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "AFR:\t\t0x%08x\r\n", tmpUartGpio.AFR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "BRR:\t\t0x%08x\r\n", tmpUartGpio.BRR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "BSRR:\t\t0x%08x\r\n", tmpUartGpio.BSRR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "HSLVR:\t\t0x%08x\r\n", tmpUartGpio.HSLVR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "IDR:\t\t0x%08x\r\n", tmpUartGpio.IDR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "LCKR:\t\t0x%08x\r\n", tmpUartGpio.LCKR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "MODER:\t\t0x%08x\r\n", tmpUartGpio.MODER);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "ODR:\t\t0x%08x\r\n", tmpUartGpio.ODR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "OSPEEDR:\t0x%08x\r\n", tmpUartGpio.OSPEEDR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "OTYPER:\t\t0x%08x\r\n", tmpUartGpio.OTYPER);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "PUPDR:\t\t0x%08x\r\n", tmpUartGpio.PUPDR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "SECCFGR:\t0x%08x\r\n", tmpUartGpio.SECCFGR);
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
-                    sprintf((char*)evScratch, "\r\n------------End GPIP Rx0 Reg-------------\r\n\r\n");
-                    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
-
+                    writeGpioRxReg(evScratch, fileName);
                     logged = true;
                     break;
                 
