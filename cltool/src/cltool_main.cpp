@@ -135,7 +135,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 	}
 
     float logSize = logger.LogSizeAll();
-    if (logSize < 5.0e6f)
+    if (logSize < 0.5e6f)
         printf("\nLogging %.1f KB to: %s\n", logSize * 1.0e-3f, logger.LogDirectory().c_str());
     else
         printf("\nLogging %.2f MB to: %s\n", logSize * 1.0e-6f, logger.LogDirectory().c_str());
