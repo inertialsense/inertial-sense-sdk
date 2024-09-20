@@ -427,14 +427,19 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
-        else if (startsWith(a, "-presetPPD"))
+        else if (startsWith(a, "-presetGPXPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
-        else if (startsWith(a, "-presetINS2"))
+        else if (startsWith(a, "-presetPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-presetINS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -698,8 +703,9 @@ void cltool_outputUsage()
 	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "    -presetPPD     " << boldOff << " Stream preset post processing datasets (PPD)" << endlbOn;
-	cout << "    -presetINS2    " << boldOff << " Stream preset INS2 datasets" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
+	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;

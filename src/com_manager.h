@@ -283,7 +283,7 @@ void comManagerGetDataInstance(CMHANDLE cmInstance, int port, uint16_t did, uint
 * Make a request to a port handle to broadcast a piece of data at a set interval.
 * 
 * @param pHandle the port handle to request broadcast data from
-* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
+* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_IMX_PPD = post processing data, RMC_PRESET_INS = INS2 and GPS data at full rate
 * @param RMC options to enable data streaming on ports other than the current port. 
 * @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
 * @param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
@@ -291,12 +291,12 @@ void comManagerGetDataInstance(CMHANDLE cmInstance, int port, uint16_t did, uint
 * 
 * Example that enables streaming of all data messages necessary for post processing:
 * @code
-* comManagerGetDataRmc(pHandle, RMC_PRESET_PPD_BITS, 0);
+* comManagerGetDataRmc(pHandle, RMC_PRESET_IMX_PPD, 0);
 * @endcode
 * 
 * Example that broadcasts INS and GPS data at full rate:
 * @code
-* comManagerGetDataRmc(pHandle, RMC_PRESET_INS_BITS, 0);
+* comManagerGetDataRmc(pHandle, RMC_PRESET_INS, 0);
 * @endcode
 */
 void comManagerGetDataRmc(int port, uint64_t rmcBits, uint32_t rmcOptions);
