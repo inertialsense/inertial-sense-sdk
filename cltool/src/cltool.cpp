@@ -362,6 +362,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             cltool_outputUsage();
             return false;
         }
+        else if (startsWith(a, "-list-devices"))
+        {
+            g_commandLineOptions.list_devices = true;
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
+        }
         else if (startsWith(a, "-lms="))
         {
             g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
@@ -374,6 +379,24 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
             enable_display_mode();
+        }
+        else if (startsWith(a, "-lon"))
+        {
+            g_commandLineOptions.enableLogging = true;
+        }
+        else if (startsWith(a, "-lm"))
+        {
+            g_commandLineOptions.listenMode = true;
+            g_commandLineOptions.disableDeviceValidation = true;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-lp") && (i + 1) < argc)
+        {
+            g_commandLineOptions.logPath = argv[++i];    // use next argument;
+        }
+        else if (startsWith(a, "-lt="))
+        {
+            g_commandLineOptions.logType = &a[4];
         }
         else if (startsWith(a, "-lts="))
         {
@@ -390,18 +413,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 g_commandLineOptions.logSubFolder = subFolder;
             }
-        }
-        else if (startsWith(a, "-lp") && (i + 1) < argc)
-        {
-            g_commandLineOptions.logPath = argv[++i];    // use next argument;
-        }
-        else if (startsWith(a, "-lt="))
-        {
-            g_commandLineOptions.logType = &a[4];
-        }
-        else if (startsWith(a, "-lon"))
-        {
-            g_commandLineOptions.enableLogging = true;
         }
         else if (startsWith(a, "-magRecal"))
         {
@@ -439,14 +450,19 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
-        else if (startsWith(a, "-presetPPD"))
+        else if (startsWith(a, "-presetGPXPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
-        else if (startsWith(a, "-presetINS2"))
+        else if (startsWith(a, "-presetPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-presetINS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -553,11 +569,6 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.bootloaderVerify = true;
-        }
-        else if (startsWith(a, "-list-devices"))
-        {
-            g_commandLineOptions.list_devices = true;
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
         else if (startsWith(a, "-vd"))
         {
@@ -822,21 +833,21 @@ void cltool_outputUsage()
 	cout << "OPTIONS (General)" << endl;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
 	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four." << endlbOn;
-	cout << "    -dboc" << boldOff << "           Disable all broadcasting on close by sending `$STPB*15\\r\\n`." << endlbOn;
-	cout << "    -dur=" << boldOff << "DURATION   Run DURATION in seconds before exiting cltool.  Default is 0, no limit." << endlbOn;
+	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
+    cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
 	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
-	cout << "    -nmea" << boldOff << "           Listen only mode for NMEA message without sending stop all broadcasts command `$STP` at start." << endlbOn;
+	cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
     cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
 	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
 	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
-    cout << "    -vd" << boldOff << "             Disable device validate.  Use to keep port(s) open even if device response is not received." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
+    cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
     cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
 	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
 
@@ -879,8 +890,9 @@ void cltool_outputUsage()
 	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "    -presetPPD     " << boldOff << " Stream preset post processing datasets (PPD)" << endlbOn;
-	cout << "    -presetINS2    " << boldOff << " Stream preset INS2 datasets" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
+	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;

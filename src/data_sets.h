@@ -1737,42 +1737,55 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS	100
 
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_BITS_NO_IMU		(RMC_BITS_PRESET \
-                                        | RMC_BITS_INS2 \
-                                        | RMC_BITS_BAROMETER \
-                                        | RMC_BITS_MAGNETOMETER \
-                                        | RMC_BITS_GPS1_POS \
-                                        | RMC_BITS_GPS2_POS \
-                                        | RMC_BITS_GPS1_VEL \
-                                        | RMC_BITS_GPS2_VEL \
-                                        | RMC_BITS_GPS1_RAW \
-                                        | RMC_BITS_GPS2_RAW \
-                                        | RMC_BITS_GPS_BASE_RAW \
-                                        | RMC_BITS_GPS1_RTK_POS_REL \
-                                        | RMC_BITS_GPS1_RTK_HDG_REL \
-                                        | RMC_BITS_INTERNAL_PPD \
-                                        | RMC_BITS_DIAGNOSTIC_MESSAGE)
-#define RMC_PRESET_PPD_BITS				(RMC_PRESET_PPD_BITS_NO_IMU \
-                                        | RMC_BITS_PIMU \
-                                        | RMC_BITS_REFERENCE_PIMU)
-#define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 \
-                                        | RMC_BITS_GPS1_POS \
-                                        | RMC_BITS_PRESET)
-#define RMC_PRESET_PPD_BITS_IMU3		(RMC_PRESET_PPD_BITS_NO_IMU \
-                                        | RMC_BITS_IMU3_UNCAL)
-#define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
-                                        | RMC_BITS_RTK_STATE \
-                                        | RMC_BITS_RTK_CODE_RESIDUAL \
-                                        | RMC_BITS_RTK_PHASE_RESIDUAL \
-                                        | RMC_BITS_GPX_DEBUG \
-                                        | RMC_BITS_GPS1_SAT \
-                                        | RMC_BITS_GPS2_SAT \
-                                        | RMC_BITS_EVENT)
-#define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
-                                        | RMC_BITS_WHEEL_ENCODER \
-                                        | RMC_BITS_GROUND_VEHICLE)
-#define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
-                                        | RMC_BITS_IMU)
+#define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
+                                            | RMC_BITS_INS2 \
+                                            | RMC_BITS_BAROMETER \
+                                            | RMC_BITS_MAGNETOMETER \
+                                            | RMC_BITS_GPS1_POS \
+                                            | RMC_BITS_GPS2_POS \
+                                            | RMC_BITS_GPS1_VEL \
+                                            | RMC_BITS_GPS2_VEL \
+                                            | RMC_BITS_GPS1_RAW \
+                                            | RMC_BITS_GPS2_RAW \
+                                            | RMC_BITS_GPS_BASE_RAW \
+                                            | RMC_BITS_GPS1_RTK_POS_REL \
+                                            | RMC_BITS_GPS1_RTK_HDG_REL \
+                                            | RMC_BITS_INTERNAL_PPD \
+                                            | RMC_BITS_DIAGNOSTIC_MESSAGE)
+#define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_PIMU \
+                                            | RMC_BITS_REFERENCE_PIMU)
+#define RMC_PRESET_INS                      (RMC_BITS_INS2 \
+                                            | RMC_BITS_GPS1_POS \
+                                            | RMC_BITS_PRESET)
+#define RMC_PRESET_IMX_PPD_IMU3             (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_IMU3_UNCAL)
+#define RMC_PRESET_IMX_PPD_RTK_DBG          (RMC_PRESET_IMX_PPD \
+                                            | RMC_BITS_RTK_STATE \
+                                            | RMC_BITS_RTK_CODE_RESIDUAL \
+                                            | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPS1_SAT \
+                                            | RMC_BITS_GPS2_SAT \
+                                            | RMC_BITS_EVENT)
+#define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
+                                            | RMC_BITS_WHEEL_ENCODER \
+                                            | RMC_BITS_GROUND_VEHICLE)
+#define RMC_PRESET_ALLAN_VARIANCE           (RMC_BITS_PRESET \
+                                            | RMC_BITS_IMU)
+#define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
+                                            | RMC_BITS_GPS1_POS \
+                                            | RMC_BITS_GPS2_POS \
+                                            | RMC_BITS_GPS1_VEL \
+                                            | RMC_BITS_GPS2_VEL \
+                                            | RMC_BITS_GPS1_RAW \
+                                            | RMC_BITS_GPS2_RAW \
+                                            | RMC_BITS_GPS_BASE_RAW \
+                                            | RMC_BITS_GPS1_RTK_POS_REL \
+                                            | RMC_BITS_GPS1_RTK_HDG_REL \
+                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPX_PORT_MON \
+                                            | RMC_BITS_EVENT)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -4886,6 +4899,18 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_RTMC3_EXT         = 13,
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
+
+    EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_REG  = 22,
+    EVENT_MSG_TYPE_ID_IMX_SER0_REG      = 23,
+    EVENT_MSG_TYPE_ID_IMX_SER0_CFG      = 24,
+    EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN = 25,
+    EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG = 26,
+
+    EVENT_MSG_TYPE_ID_DMA_RX_0_REG      = 27,
+    EVENT_MSG_TYPE_ID_SER0_REG          = 28,
+    EVENT_MSG_TYPE_ID_SER0_CFG          = 29,
+    EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN     = 30,
+    EVENT_MSG_TYPE_ID_GPIO_RX_0_REG     = 31,
 
     EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
     EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,

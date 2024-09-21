@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 	}
 
     // Enable PPD data stream without disabling other messages
-	stream_configure_rmc_preset(RMC_PRESET_PPD_BITS, RMC_OPTIONS_PRESERVE_CTRL);
+	stream_configure_rmc_preset(RMC_PRESET_IMX_PPD, RMC_OPTIONS_PRESERVE_CTRL);
 
 	cout << "Started logger.  Press ctrl-c to quit." << endl;
 
