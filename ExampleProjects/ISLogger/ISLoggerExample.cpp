@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 2)
 	{
-		printf("Provide the port and optionally log type (dat,raw,sdat,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
+		printf("Provide the port and optionally log type (raw,dat	,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
 		return -1;
 	}

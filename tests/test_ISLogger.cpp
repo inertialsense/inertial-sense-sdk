@@ -204,18 +204,7 @@ TEST(ISLogger, dat_conversion)
 	string logPath = "test_log";
 	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_DAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
-	DELETE_DIRECTORY(logPath);
-}
-
-TEST(ISLogger, sdat_conversion)
-{
-	string logPath = "test_log";
-	GenerateDataLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_SDAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_SDAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_CSV);
 	DELETE_DIRECTORY(logPath);
 }
 
@@ -224,7 +213,6 @@ TEST(ISLogger, raw_conversion)
 	string logPath = "test_log";
 	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_RAW);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_CSV);
 	DELETE_DIRECTORY(logPath);
 }
@@ -240,7 +228,6 @@ TEST(ISLogger, raw_conversion_with_garbage)
 // TEST(ISLogger, dat_conversion_with_multiple_files_issue_Aug_2017)
 // {
 // 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
-// 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
 // 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
 // }
 
