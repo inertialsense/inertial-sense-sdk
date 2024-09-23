@@ -854,6 +854,117 @@ TEST(protocol_nmea, binary_GSV_binary)
     init_sat_and_sig(&gpsSat, &gpsSig);
     clear_GSV_values();
 
+    string buf = "$ASCE,0,15,1*3D\r\n";
+
+    rmci_t outRmci[NUM_COM_PORTS] = {};
+    nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
+
+    {   // Test NMEA protocol 2.3
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
+        for (uint32_t i=0; i<outSat.numSats; i++)
+        {
+            gps_sat_sv_t &src = gpsSat.sat[i];
+            gps_sat_sv_t &dst = outSat.sat[i];
+            // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n", 
+            //     i,
+            //     src.gnssId, dst.gnssId, 
+            //     src.svId, dst.svId, 
+            //     src.cno, dst.cno, 
+            //     src.elev, dst.elev, 
+            //     src.azim, dst.azim);
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.elev == src.elev );
+            ASSERT_TRUE( dst.azim == src.azim );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+
+        ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
+        for (uint32_t i=0; i<outSig.numSigs; i++)
+        {
+            gps_sig_sv_t &src = gpsSig.sig[i];
+            gps_sig_sv_t &dst = outSig.sig[i];
+            // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n", 
+            //     i,
+            //     src.gnssId, dst.gnssId, 
+            //     src.svId, dst.svId, 
+            //     src.sigId, dst.sigId, 
+            //     src.quality, dst.quality,
+            //     src.cno, dst.cno
+            // );
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.sigId == src.sigId );
+            ASSERT_TRUE( dst.quality == src.quality );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+    }
+
+    {   // Test NMEA protocol 4.10
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
+        for (uint32_t i=0; i<outSat.numSats; i++)
+        {
+            gps_sat_sv_t &src = gpsSat.sat[i];
+            gps_sat_sv_t &dst = outSat.sat[i];
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.elev == src.elev );
+            ASSERT_TRUE( dst.azim == src.azim );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+
+        ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
+        for (uint32_t i=0; i<outSig.numSigs; i++)
+        {
+            gps_sig_sv_t &src = gpsSig.sig[i];
+            gps_sig_sv_t &dst = outSig.sig[i];
+            ASSERT_TRUE( dst.gnssId == src.gnssId );
+            ASSERT_TRUE( dst.svId == src.svId );
+            ASSERT_TRUE( dst.sigId == src.sigId );
+            ASSERT_TRUE( dst.quality == src.quality );
+            ASSERT_TRUE( dst.cno == src.cno );
+        }
+    }
+}
+
+TEST(protocol_nmea, GNGSV)
+{
+    gps_sat_t gpsSat = {};
+    gps_sig_t gpsSig = {};
+
+    init_sat_and_sig(&gpsSat, &gpsSig);
+    clear_GSV_values();
+
     string buf = "$ASCE,0,GNGSV,1*72\r\n";
 
     rmci_t outRmci[NUM_COM_PORTS] = {};
