@@ -320,7 +320,7 @@ enum eHdwStatusFlags
     /** Motion mask */
     HDW_STATUS_MOTION_MASK                      = (int)0x0000000F,
 
-    /** GPS satellite signals are being received (antenna and cable are good) */
+    /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
     /** Event occurred on strobe input pin */
     HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
