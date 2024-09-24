@@ -320,7 +320,7 @@ enum eHdwStatusFlags
     /** Motion mask */
     HDW_STATUS_MOTION_MASK                      = (int)0x0000000F,
 
-    /** GPS satellite signals are being received (antenna and cable are good) */
+    /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
     /** Event occurred on strobe input pin */
     HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
@@ -1998,13 +1998,13 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_GPS2_RAW =             15,
     GRMC_BIT_POS_GPS2_VERSION =         16,
     GRMC_BIT_POS_GPS1_RTK_POS =         17,
-    GMRC_BIT_POS_GPS1_RTK_POS_MISC =    18,
-    GMRC_BIT_POS_GPS1_RTK_POS_REL =     19,
-    GMRC_BIT_POS_GPS2_RTK_CMP_MISC =    20,
-    GMRC_BIT_POS_GPS2_RTK_CMP_REL =     21,
-    GMRC_BIT_POS_DID_RTK_DEBUG =        22,
-    GMRC_BIT_POS_DID_PORT_MON =         23,
-    GMRC_BIT_POS_DID_GPX_PORT_MON =     24,
+    GRMC_BIT_POS_GPS1_RTK_POS_MISC =    18,
+    GRMC_BIT_POS_GPS1_RTK_POS_REL =     19,
+    GRMC_BIT_POS_GPS2_RTK_CMP_MISC =    20,
+    GRMC_BIT_POS_GPS2_RTK_CMP_REL =     21,
+    GRMC_BIT_POS_DID_RTK_DEBUG =        22,
+    GRMC_BIT_POS_DID_PORT_MON =         23,
+    GRMC_BIT_POS_DID_GPX_PORT_MON =     24,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2026,13 +2026,13 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GPS2_RAW              (0x0000000000000001 << GRMC_BIT_POS_GPS2_RAW)
 #define GRMC_BITS_GPS2_VERSION          (0x0000000000000001 << GRMC_BIT_POS_GPS2_VERSION)
 #define GRMC_BITS_GPS1_RTK_POS          (0x0000000000000001 << GRMC_BIT_POS_GPS1_RTK_POS)
-#define GMRC_BITS_GPS1_RTK_POS_MISC     (0x0000000000000001 << GMRC_BIT_POS_GPS1_RTK_POS_MISC)
-#define GMRC_BITS_GPS1_RTK_POS_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS1_RTK_POS_REL)
-#define GMRC_BITS_GPS2_RTK_CMP_MISC     (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_MISC)
-#define GMRC_BITS_GPS2_RTK_CMP_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_REL)
-#define GMRC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GMRC_BIT_POS_DID_RTK_DEBUG)
-#define GMRC_BITS_PORT_MON              (0x0000000000000001 << GMRC_BIT_POS_DID_PORT_MON)
-#define GMRC_BITS_GPX_PORT_MON          (0x0000000000000001 << GMRC_BIT_POS_DID_GPX_PORT_MON)
+#define GRMC_BITS_GPS1_RTK_POS_MISC     (0x0000000000000001 << GRMC_BIT_POS_GPS1_RTK_POS_MISC)
+#define GRMC_BITS_GPS1_RTK_POS_REL      (0x0000000000000001 << GRMC_BIT_POS_GPS1_RTK_POS_REL)
+#define GRMC_BITS_GPS2_RTK_CMP_MISC     (0x0000000000000001 << GRMC_BIT_POS_GPS2_RTK_CMP_MISC)
+#define GRMC_BITS_GPS2_RTK_CMP_REL      (0x0000000000000001 << GRMC_BIT_POS_GPS2_RTK_CMP_REL)
+#define GRMC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GRMC_BIT_POS_DID_RTK_DEBUG)
+#define GRMC_BITS_PORT_MON              (0x0000000000000001 << GRMC_BIT_POS_DID_PORT_MON)
+#define GRMC_BITS_GPX_PORT_MON          (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_PORT_MON)
 #define GRMC_BITS_PRESET                (0x8000000000000000)	// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2059,12 +2059,12 @@ enum GRMC_BIT_POS{
                                         | GRMC_BITS_GPS1_VERSION \
                                         | GRMC_BITS_GPS2_VERSION \
                                         /*| GRMC_BITS_GPS1_RTK_POS*/ \
-                                        | GMRC_BITS_GPS2_RTK_CMP_REL \
-                                        | GMRC_BITS_GPS2_RTK_CMP_MISC \
+                                        | GRMC_BITS_GPS2_RTK_CMP_REL \
+                                        | GRMC_BITS_GPS2_RTK_CMP_MISC \
                                         | GRMC_BITS_GPS1_RAW \
                                         | GRMC_BITS_GPS2_RAW )
 
-#define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GMRC_BITS_DID_RTK_DEBUG)
+#define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GRMC_BITS_DID_RTK_DEBUG)
 
 
 typedef struct PACKED 
@@ -4349,6 +4349,9 @@ typedef struct
 
     /** (Internal use only) Reason for system halt (see k_fatal_error_reason and k_fatal_error_reason_arch). Cleared on startup. */
     uint32_t                haltReason;
+    
+    /** (Internal use only) reserved */
+    uint32_t                reserved;           
 
 } gpx_flash_cfg_t;
 
