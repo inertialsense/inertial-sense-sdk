@@ -194,7 +194,7 @@ typedef uint32_t eDataIDs;
 /** INS status flags */
 enum eInsStatusFlags
 {
-    /** Attitude estimate is usable but outside spec (COARSE) */
+    /** Heading estimate is usable but outside spec (COARSE) */
     INS_STATUS_HDG_ALIGN_COARSE                 = (int)0x00000001,
     /** Velocity estimate is usable but outside spec (COARSE) */
     INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
@@ -206,7 +206,7 @@ enum eInsStatusFlags
     /** Velocity aided by wheel sensor */
     INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
-    /** Attitude estimate is within spec (FINE) */
+    /** Heading estimate is within spec (FINE) */
     INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
@@ -343,7 +343,7 @@ enum eHdwStatusFlags
     /** Sensor saturation offset */
     HDW_STATUS_SATURATION_OFFSET                = 8,
 
-    /** System Reset is Required for proper function */
+    /** System Reset is required for proper function */
     HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
     /** GPS PPS timepulse signal has noise and occurred too frequently */
     HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,

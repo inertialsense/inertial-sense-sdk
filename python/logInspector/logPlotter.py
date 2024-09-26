@@ -938,10 +938,10 @@ class logPlot:
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Att Coarse')
+                if r: ax.text(p1, -cnt * 1.5, 'Hdg Coarse')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Att Fine')
+                if r: ax.text(p1, -cnt * 1.5, 'Hdg Fine')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000002) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Vel Coarse')
