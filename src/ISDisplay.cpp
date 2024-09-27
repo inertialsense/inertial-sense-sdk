@@ -1797,7 +1797,7 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
 }
 
 /**
- * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
+ * Formats the specified DID's raw data as a "hexadecimal view". This can be used with any DID that is not
  * otherwise supported.
  * @param raw_data a pointer to the raw DID byte stream
  * @param hdr the DID header
