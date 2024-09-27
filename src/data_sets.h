@@ -206,7 +206,7 @@ enum eInsStatusFlags
     /** Velocity aided by wheel sensor */
     INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
-    /** Heading estimate is within spec (FINE) */
+    /** Heading estimate is within spec (FINE).  `INS_STATUS_HDG_ALIGN_COARSE` and `INS_STATUS_HDG_ALIGN_FINE` flags indicate whether INS heading is aided by any heading sensor (including GPS or magnetometer).  More accurate heading sensors (i.e. GPS) are prioritized over less accurate sensors (i.e. magnetometers) and will fall back to the less accurate sensors when the more accurate sensors are not available.  A momentary blip in these alignment flags may occur during heading transition from higher to lower accuracy aiding sensors (i.e. GPS to magnetometer).  `INS_STATUS_HDG_ALIGN_FINE` and `INS_STATUS_HDG_ALIGN_COARSE` flags will not be set when no heading aiding is available.  */
     INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
