@@ -154,7 +154,7 @@ jobs:
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          catkin_make
+          catkin_make_isolated
           catkin_make test_unit_tests
           catkin_make test_ros_bridge 
 
