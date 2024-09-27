@@ -103,7 +103,8 @@ rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_t
 target_link_libraries(${PROJECT_NAME}_node "${cpp_typesupport_target}")
 ament_target_dependencies(${PROJECT_NAME}_node rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
-rosidl_target_interfaces(test_${PROJECT_NAME}_node ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
+# rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+target_link_libraries(test_${PROJECT_NAME}_node "${cpp_typesupport_target}")
 ament_target_dependencies(test_${PROJECT_NAME}_node rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
 get_filename_component(RESOLVED_ROS_DIR ${CMAKE_SOURCE_DIR} REALPATH) # Symlink hell
@@ -115,4 +116,5 @@ target_link_libraries(test_${PROJECT_NAME}_node ${RESOLVED_ROS_DIR}/../../libIne
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
 install(TARGETS ${PROJECT_NAME}_node test_${PROJECT_NAME}_node
         DESTINATION lib/${PROJECT_NAME})
+
 ament_package()
