@@ -37,7 +37,7 @@ mkdir -p ros2_ws/src
 cd ros2_ws/src
 git clone https://github.com/inertialsense/inertial-sense-sdk
 ```
-then, create a symbolic link to the `ros2` directory in the `ros2_ws/src` directory using the command `sudo ln -s inertial-sense-sdk/ros2` (run this from `ros2_ws/src`). This
+then, create a symbolic link to the `ROS/ros2` directory in the `ros2_ws/src` directory using the command `sudo ln -s inertial-sense-sdk/ROS/ros2` (run this from `ros2_ws/src`). This
 allows `colcon build` to find the appropriate package to build.
 
 Return to the `ros2_ws/src` directory and run `colcon build`.
