@@ -154,7 +154,8 @@ class logInspectorInternal(LogInspectorWindow):
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()
         self.addListItem('GNSS Ephemeris', 'gnssEphemeris')
-        self.addListItem('GPX Debug', 'gpxDebugfArray')
+        self.addListItem('GPX Debug Float', 'gpxDebugfArray')
+        self.addListItem('GPX Debug Int', 'gpxDebugiArray')
 
 def kill_handler(*args):
     instance = QApplication.instance()
