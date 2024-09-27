@@ -65,7 +65,7 @@ include_directories(
   ../src/yaml-cpp
 )
 
-add_subdirectory(.. devel)
+add_subdirectory(../devel)
 
 add_library(inertial_sense_ros
     shared/src/ParamHelper.cpp

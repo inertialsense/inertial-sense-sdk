@@ -15,16 +15,19 @@ find_package(diagnostic_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake_gtest REQUIRED)
 find_package(Threads)
+
 add_definitions(-DROS2)
+
 set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../inertial-sense-sdk/scripts/build_is_sdk.sh")
 get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
+message(ABSOLUTE_SCRIPT_PATH="${ABSOLUTE_SCRIPT_PATH}")
+
 add_custom_target(
-	RunScript
+	Build_InertialSenseSDK
 	COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
     COMMENT "Running custom shell script..."
     VERBATIM
 	)
-
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/GTime.msg"
@@ -97,7 +100,7 @@ ament_add_gtest(test_new_target
         #test/test_main.h
         test/gtest_helpers.h
 )
-add_dependencies(new_target RunScript)
+add_dependencies(new_target Build_InertialSenseSDK)
 rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
 ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
