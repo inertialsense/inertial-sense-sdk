@@ -934,7 +934,7 @@ int main(int argc, char* argv[])
                 case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
                 case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
 
-                case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_REG:
+                case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
                     fileName = deviceFolder + "/IMX_DMA0_reg.txt";
                     writeIMXDmaTx0Reg(evScratch, fileName);
                     logged = true;
@@ -960,7 +960,7 @@ int main(int argc, char* argv[])
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_DMA_RX_0_REG:
+                case EVENT_MSG_TYPE_ID_DMA_RX_0_INST:
                     fileName = deviceFolder + "/DMA0_reg.txt";
                     writeDmaRx0Reg(evScratch, fileName);
                     logged = true;
