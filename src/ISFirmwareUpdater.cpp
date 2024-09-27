@@ -492,7 +492,11 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
         } else if (activeCommand[0] == ':') {
             // new step section/target - we should reset certain states here if needed
             activeStep = std::string(activeCommand.c_str() + 1);
-            session_target = target = fwUpdate::TARGET_HOST;
+            if (activeCommand == ":IMX5") setTarget(fwUpdate::TARGET_IMX5);
+            else if (activeCommand == ":GPX1") setTarget(fwUpdate::TARGET_GPX1);
+            else if (activeCommand == ":GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
+            else if (activeCommand == ":GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
+            else session_target = target = fwUpdate::TARGET_HOST;
             session_image_slot = slotNum = 0;
             failLabel.clear();
         } else if ((activeCommand == "target") && (args.size() == 1)) {
