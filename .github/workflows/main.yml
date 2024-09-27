@@ -154,7 +154,7 @@ jobs:
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          catkin_make_isolated
+          catkin_make -DCATKIN_BLACKLIST_PACKAGES="inertial_sense_ros2"
           catkin_make test_unit_tests
           catkin_make test_ros_bridge 
 
