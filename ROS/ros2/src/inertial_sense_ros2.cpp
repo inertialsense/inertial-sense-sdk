@@ -650,7 +650,7 @@ void InertialSenseROS::start_log()
     std::string filename = getenv("HOME");
     filename += "/Documents/Inertial_Sense/Logs/" + cISLogger::CreateCurrentTimestamp();
     RCLCPP_INFO_STREAM(rclcpp::get_logger("creating_log"),"InertialSenseROS: Creating log in " << filename << " folder");
-    IS_.SetLoggerEnabled(true, filename, cISLogger::LOGTYPE_DAT, RMC_PRESET_PPD_GROUND_VEHICLE);
+    IS_.SetLoggerEnabled(true, filename, cISLogger::LOGTYPE_DAT, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
 }
 
 void InertialSenseROS::configure_ascii_output()
