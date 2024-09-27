@@ -87,12 +87,12 @@ add_executable(${PROJECT_NAME}_node
         shared/src/RtkBase.cpp
 )
 
-add_dependencies(${PROJECT_NAME}_node Build_InertialSenseSDK)
+add_dependencies(${PROJECT_NAME} Build_InertialSenseSDK)
 
-rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
-target_link_libraries(${PROJECT_NAME} "${cpp_typesupport_target}")
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
-target_link_libraries(${PROJECT_NAME} ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}"_node "rosidl_typesupport_cpp")
+target_link_libraries(${PROJECT_NAME}_node "${cpp_typesupport_target}")
+ament_target_dependencies(${PROJECT_NAME}_node rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
+target_link_libraries(${PROJECT_NAME}_node ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 
 
 ament_add_gtest(test_${PROJECT_NAME}
