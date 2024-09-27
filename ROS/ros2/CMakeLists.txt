@@ -77,22 +77,19 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX" )
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
 
-
-add_executable(new_target
+add_executable(${PROJECT_NAME}_node
         src/inertial_sense_ros2.cpp
-		shared/src/inertial_sense_node.cpp
-		shared/src/ParamHelper.cpp
-        # src/serial.cpp
-		shared/src/RtkRover.cpp
-		shared/src/RtkBase.cpp
-        #include/TopicHelper.h
+        shared/src/inertial_sense_node.cpp
+        shared/src/ParamHelper.cpp
+        shared/src/RtkRover.cpp
+        shared/src/RtkBase.cpp
 )
 
-ament_add_gtest(test_new_target
+ament_add_gtest(test_${PROJECT_NAME}_node
         src/inertial_sense_ros2.cpp
-		shared/src/ParamHelper.cpp
-		shared/src/RtkRover.cpp
-		shared/src/RtkBase.cpp
+        shared/src/ParamHelper.cpp
+        shared/src/RtkRover.cpp
+        shared/src/RtkBase.cpp
         test/test_basic_unit_tests.cpp
         test/test_client_reconnect.cpp
         test/test_communications.cpp
@@ -100,21 +97,22 @@ ament_add_gtest(test_new_target
         #test/test_main.h
         test/gtest_helpers.h
 )
-add_dependencies(new_target Build_InertialSenseSDK)
-rosidl_target_interfaces(new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
-ament_target_dependencies(new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
+add_dependencies(${PROJECT_NAME}_node Build_InertialSenseSDK)
 
-rosidl_target_interfaces(test_new_target ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
-ament_target_dependencies(test_new_target rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
+rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+target_link_libraries(${PROJECT_NAME}_node "${cpp_typesupport_target}")
+ament_target_dependencies(${PROJECT_NAME}_node rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
+
+rosidl_target_interfaces(test_${PROJECT_NAME}_node ${PROJECT_NAME} rosidl_typesupport_cpp)  # Ensure this matches your package and type )
+ament_target_dependencies(test_${PROJECT_NAME}_node rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
 
 get_filename_component(RESOLVED_ROS_DIR ${CMAKE_SOURCE_DIR} REALPATH) # Symlink hell
 message(RESOLVED_ROS_DIR="${RESOLVED_ROS_DIR}")
 
-target_link_libraries(new_target ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
-target_link_libraries(test_new_target ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
-
+target_link_libraries(${PROJECT_NAME}_node ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(test_${PROJECT_NAME}_node ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
-install(TARGETS new_target test_new_target
+install(TARGETS ${PROJECT_NAME}_node test_${PROJECT_NAME}_node
         DESTINATION lib/${PROJECT_NAME})
 ament_package()
