@@ -2139,7 +2139,7 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
         if(*ptr == '*')
              break;
         
-        // set id and increament ptr to next field
+        // set id and increment ptr to next field
         if (isdigit(*ptr))
         {	// Is a number.  Read NMEA ID directly
             id = ((*ptr == ',') ? 0 : atoi(ptr));
@@ -2162,8 +2162,8 @@ uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM
 
         // handle GSV cases
         if (id == NMEA_MSG_ID_GNGSV)
-            parseASCE_GSV(NMEA_MSG_ID_GNGSV, period);
-        else if(id >= NMEA_MSG_ID_SPECIAL_CASE_START) 
+            parseASCE_GSV(NMEA_MSG_ID_GNGSV_5_3_2_1, period);
+        else if(id >= NMEA_MSG_ID_GNGSV_START && id <= NMEA_MSG_ID_GNGSV_END)
             id = parseASCE_GSV(id, period);
 
         // Copy tmp to corresponding port(s)

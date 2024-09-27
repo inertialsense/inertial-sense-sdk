@@ -116,7 +116,9 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, p
             CloseAllFiles();
         }
     }
+
     // Add data header and data buffer to chunk
+    m_logSize += dataHdr->size;
     if (!m_chunk.PushBack((unsigned char *) dataHdr, sizeof(p_data_hdr_t), (unsigned char *) dataBuf, dataHdr->size)) {
         return false;
     }
@@ -149,7 +151,6 @@ bool cDeviceLogSerial::WriteChunkToFile() {
 
     // File byte size
     m_fileSize += fileBytes;
-    m_logSize += fileBytes;
 
     return true;
 }

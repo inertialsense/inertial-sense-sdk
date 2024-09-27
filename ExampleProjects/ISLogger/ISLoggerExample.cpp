@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	inertialSense.StopBroadcasts();
 
 	// broadcast the standard set of post processing messages (ins, imu, etc.)
-	inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS_BITS);
+	inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS);
 
 	// instead of the rmc preset (real-time message controller) you can request individual messages...
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
