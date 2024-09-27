@@ -95,12 +95,12 @@ public:
     * @param callbackSpartn Spartn received data callback (optional).
     */
     InertialSense(
-            pfnHandleBinaryData        callbackIsb = NULL,
-            pfnComManagerAsapMsg       callbackRmc = NULL,
-            pfnComManagerGenMsgHandler callbackNmea = NULL,
-            pfnComManagerGenMsgHandler callbackUblox = NULL,
-            pfnComManagerGenMsgHandler callbackRtcm3 = NULL,
-            pfnComManagerGenMsgHandler callbackSpartn = NULL );
+            pfnHandleBinaryData    callbackIsb = NULL,
+            pfnIsCommAsapMsg       callbackRmc = NULL,
+            pfnIsCommGenMsgHandler callbackNmea = NULL,
+            pfnIsCommGenMsgHandler callbackUblox = NULL,
+            pfnIsCommGenMsgHandler callbackRtcm3 = NULL,
+            pfnIsCommGenMsgHandler callbackSpartn = NULL );
 
     /**
     * Destructor
@@ -159,7 +159,7 @@ public:
     /**
      * Register a callback handler for data stream errors.
      */
-    void setErrorHandler(pfnComManagerParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
+    void setErrorHandler(pfnIsCommParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
 
     /**
     * Enable or disable logging - logging is disabled by default
@@ -177,7 +177,7 @@ public:
             bool enable,
             const std::string& path = cISLogger::g_emptyString,
             cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
-            uint64_t rmcPreset = RMC_PRESET_PPD_BITS,
+            uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
             uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
             float maxDiskSpacePercent = 0.5f,
             uint32_t maxFileSize = 1024 * 1024 * 5,
@@ -206,14 +206,14 @@ public:
 	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
-	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
+	* Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
 	bool OpenConnectionToServer(const std::string& connectionString);
 
     /**
-    * Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
+    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
     * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
     * @return true if success, false if error
     */
@@ -255,7 +255,7 @@ public:
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
 
     /**
-    * Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+    * Send data to the IMX - this is usually only used for advanced or special cases, normally you won't use this method
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -264,7 +264,7 @@ public:
     void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
     /**
-    * Send raw data to the uINS - (byte swapping disabled)
+    * Send raw data to the IMX - (byte swapping disabled)
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -301,7 +301,18 @@ public:
     void SetSysCmd(const uint32_t command, int pHandle = -1);
 
     /**
-    * Get the flash config, returns the latest flash config read from the uINS flash memory
+     * Sends message to device to set devices Event Filter
+     * param Target: 0 = device, 
+     *               1 = forward to device GNSS 1 port (ie GPX), 
+     *               2 = forward to device GNSS 2 port (ie GPX),
+     *               else will return
+     *       pHandle: Send in target COM port. 
+     *                If arg is < 0 default port will be used 
+    */
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, int pHandle = -1);
+
+    /**
+    * Get the flash config, returns the latest flash config read from the IMX flash memory
     * @param flashCfg the flash config value
     * @param pHandle the port pHandle to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
@@ -343,7 +354,7 @@ public:
     } 
 
     /**
-    * Set the flash config and update flash config on the uINS flash memory
+    * Set the flash config and update flash config on the IMX flash memory
     * @param flashCfg the flash config
     * @param pHandle the pHandle to set flash config for
     * @return true if success
@@ -380,10 +391,10 @@ public:
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
 
     /**
-    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
+    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
     * @param rmcPreset realtimeMessageController preset
     */
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
 
     /**
     * Get the number of bytes read or written to/from client or server connections
@@ -584,12 +595,12 @@ protected:
 private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
-    pfnComManagerAsapMsg       m_handlerRmc = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
-    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
+    pfnIsCommAsapMsg       m_handlerRmc = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerNmea = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerUblox = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerRtcm3 = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerSpartn = NULLPTR;
+    pfnIsCommParseErrorHandler m_handlerError = NULLPTR;
     cISLogger m_logger;
     void* m_logThread;
     cMutex m_logMutex;
@@ -626,11 +637,12 @@ private:
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
     bool OpenSerialPorts(const char* port, int baudRate);
-    void CloseSerialPorts();
+    void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
+    void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
 };
 
 #endif

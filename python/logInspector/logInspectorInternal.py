@@ -80,6 +80,7 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('Allan Var. Accel', 'allanVarianceAcc')
         self.addListItem('Mag Decl.', 'magDec')
         self.addListItem('Wheel Encoder', 'wheelEncoder')
+        self.addListItem('Ground Vehicle Status', 'groundVehicleStatus')
         self.addListItem('Ground Vehicle', 'groundVehicle')
         self.addListItem('Whl Ctrl Time', 'wheelControllerTime')
         self.addListItem('Whl Ctrl Vel', 'wheelControllerVel')
@@ -100,7 +101,8 @@ class logInspectorInternal(LogInspectorWindow):
         self.addListItem('SComp Acc Resid', 'linearityAcc')
         self.addListItem('Phase Residuals', lambda: self.plot('rtkResiduals', ('phase', self.page)))
         self.addListItem('Code Residuals', lambda: self.plot('rtkResiduals', ('code', self.page)))
-        self.addListItem('RTK Debug', 'rtkDebug')
+        self.addListItem('RTK Debug p1', 'rtkDebugP1')
+        self.addListItem('RTK Debug p2', 'rtkDebugP2')
         self.addListItem('RTK Dbg 2', 'rtkDebug2')
         self.addListItem('RTK Dbg 2 Sat', 'rtkDebug2Sat')
         self.addListItem('RTK Dbg 2 STD', 'rtkDebug2Std')
@@ -151,6 +153,7 @@ class logInspectorInternal(LogInspectorWindow):
 
     def createListGps(self):
         super(logInspectorInternal, self).createListGps()
+        self.addListItem('GNSS Ephemeris', 'gnssEphemeris')
         self.addListItem('GPX Debug', 'gpxDebugfArray')
 
 def kill_handler(*args):

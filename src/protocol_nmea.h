@@ -15,13 +15,17 @@
 
 enum eNmeaProtocolVersion
 {
-	NMEA_PROTOCOL_2P3 		= 0,	// <4.10
-	NMEA_PROTOCOL_4P10 		= 410,	// 4.10
+    NMEA_PROTOCOL_2P3 		= 0,	// <4.10
+    NMEA_PROTOCOL_4P10 		= 410,	// 4.10
 };
 
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
+void nmea_setGsvFilter(int constellation, uint8_t filter);
+void nmea_setGsvFilter(uint8_t* filters);
+int nmea_getGsvFilter(int constellation);
+void nmea_getGsvFilter(uint8_t* filters);
 void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_t periodMultiple);
 void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
@@ -62,7 +66,7 @@ int nmea_rmc(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float ma
 int nmea_zda(char a[], const int aSize, gps_pos_t &pos);
 int nmea_vtg(char a[], const int aSize, gps_pos_t &pos, gps_vel_t &vel, float magVarCorrectionRad=0.0f);
 int nmea_pashr(char a[], const int aSize, gps_pos_t &pos, ins_1_t &ins1, float heave, inl2_ned_sigma_t &sigma);
-int nmea_gsv_gnss(char a[], const int aSize, int &offset, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno=false);
+int nmea_gsv_gnss(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig, uint8_t gnssId, bool noCno=false);
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
 int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel);
 
@@ -89,5 +93,11 @@ int nmea_parse_rmc(const char a[], int aSize, gps_vel_t &gpsVel, utc_time_t &utc
 int nmea_parse_vtg(const char a[], const int aSize, gps_vel_t &vel, const double refLla[3]);
 int nmea_parse_zda(const char a[], const int aSize, uint32_t &gpsTowMs, uint32_t &gpsWeek, utc_date_t &date, utc_time_t &time, int leapS);
 
+/**
+ * Gets GSV constellation mask for a given constellation ID
+ * returns mask if value constellation passed and 0 if
+ * an invalid constellation is passed
+*/
+uint8_t gsv_get_const_mask(uint8_t constellation);
 
 #endif /* PROTOCOL_NMEA_H_ */

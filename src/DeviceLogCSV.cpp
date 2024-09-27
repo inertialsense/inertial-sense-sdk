@@ -123,9 +123,9 @@ bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 	_MKDIR(m_directory.c_str());
 
 	// Open new file
-	uint32_t serNum = SerialNumber();
+	uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
-        return false;
+		return false;
 
 	string fileName;
 	if (readonly)
@@ -223,7 +223,7 @@ bool cDeviceLogCSV::SaveData(p_data_hdr_t* dataHdr, const uint8_t* dataBuf, prot
 	{
 		return false;
 	}
-	else if (dataHdr->id == DID_DEV_INFO)
+	else if (dataHdr->id == DID_DEV_INFO && device)
 	{
 		memcpy((void *)&(device->devInfo), dataBuf, sizeof(dev_info_t));
 	}

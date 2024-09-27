@@ -56,6 +56,7 @@ private:
     ISBootloader::pfnBootloadStatus pfnInfoProgress_cb = nullptr;
 
     std::vector<std::string> commands;
+    std::string activeStep;             //! the name of the currently executing step name, from the manifest when available
     std::string activeCommand;          //! the name (without parameters) of the currently executing command
     std::string failLabel;              //! a label to jump to, when an error occurs
     bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
@@ -71,6 +72,8 @@ private:
     mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
     dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
     dev_info_t remoteDevInfo = {};
+
+    std::vector<std::tuple<std::string, std::string, std::string>> stepErrors;
 
     void runCommand(std::string cmd);
 
@@ -117,6 +120,10 @@ public:
     bool isWaitingResponse() { return requestPending; }
 
     bool hasPendingCommands() { return !commands.empty(); }
+
+    bool hasErrors() { return !stepErrors.empty(); }
+
+    std::vector<std::tuple<std::string, std::string, std::string>> getStepErrors() { return stepErrors; }
 
     int getPendingCommands() { return commands.size(); }
     int getPendingUploads() {

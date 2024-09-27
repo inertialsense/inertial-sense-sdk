@@ -186,9 +186,9 @@ bool cDeviceLog::OpenNewSaveFile()
 
 	// Open new file
 	m_fileCount++;
-    uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
+	uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
-        return false;
+		return false;
 
 	string fileName = GetNewFileName(serNum, m_fileCount, NULL);
 	m_pFile = CreateISLogFile(fileName, "wb");

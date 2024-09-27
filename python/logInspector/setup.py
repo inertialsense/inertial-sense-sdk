@@ -34,7 +34,6 @@ ext_modules = [
          '../../src/com_manager.c',
          '../../src/data_sets.c',
          '../../src/DataChunk.cpp',
-         '../../src/DataChunkSorted.cpp',
          '../../src/DataCSV.cpp',
          '../../src/DataJSON.cpp',
          '../../src/DataKML.cpp',
@@ -44,7 +43,6 @@ ext_modules = [
          '../../src/DeviceLogKML.cpp',
          '../../src/DeviceLogRaw.cpp',
          '../../src/DeviceLogSerial.cpp',
-         '../../src/DeviceLogSorted.cpp',
          '../../src/ihex.c',
          '../../src/ISComm.c',
          '../../src/ISDataMappings.cpp',
@@ -148,7 +146,7 @@ setup(
     long_description='',
     ext_modules=ext_modules,
     install_requires=[
-        'allantools',
+        'allantools<=2019.9',
         'matplotlib', 
         'numpy', 
         'pandas',
@@ -159,6 +157,7 @@ setup(
         'scipy', 
         'simplekml',
         'tqdm'],
+    setup_requires=['pybind11>=2.2'],
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )

@@ -51,8 +51,37 @@ using namespace std;
 const string cISLogger::g_emptyString;
 
 #if !PLATFORM_IS_EMBEDDED
-static std::mutex g_devices_mutex;
+class SimpleMutex {
+private:
+    std::atomic_flag flag = ATOMIC_FLAG_INIT; // Atomic flag for lock status
+
+public:
+    void lock() {
+        // Spin-wait loop until the lock is acquired
+        while (flag.test_and_set(std::memory_order_acquire)) {
+            // Busy-wait until the lock is acquired
+            SLEEP_MS(1);
+        }
+    }
+
+    void unlock() {
+        // Release the lock
+        flag.clear(std::memory_order_release);
+    }
+};
+
+SimpleMutex myMutex;
+
+#define LOCK_MUTEX()        myMutex.lock()
+#define UNLOCK_MUTEX()      myMutex.unlock()
+
+#else
+
+#define LOCK_MUTEX()        
+#define UNLOCK_MUTEX()      
+
 #endif
+
 
 bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
 {
@@ -91,11 +120,10 @@ cISLogger::~cISLogger()
 
 void cISLogger::Cleanup()
 {
-#if !PLATFORM_IS_EMBEDDED
-    const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+    LOCK_MUTEX();
     m_devices.clear();
     m_logStats.Clear();
+    UNLOCK_MUTEX();
 }
 
 
@@ -231,7 +259,6 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
         case LOGTYPE_DAT:   device.devLogger = make_shared<cDeviceLogSerial>(&device);  break;
         case LOGTYPE_RAW:   device.devLogger = make_shared<cDeviceLogRaw>(&device);     break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_SDAT:  device.devLogger = make_shared<cDeviceLogSorted>(&device);  break;
         case LOGTYPE_CSV:   device.devLogger = make_shared<cDeviceLogCSV>(&device);     break;
         case LOGTYPE_JSON:  device.devLogger = make_shared<cDeviceLogJSON>(&device);    break;
         case LOGTYPE_KML:   device.devLogger = make_shared<cDeviceLogKML>(&device);     break;
@@ -251,7 +278,6 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
         case LOGTYPE_DAT:   deviceLog = make_shared<cDeviceLogSerial>(hdwId, serialNo);  break;
         case LOGTYPE_RAW:   deviceLog = make_shared<cDeviceLogRaw>(hdwId, serialNo);     break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_SDAT:  deviceLog = make_shared<cDeviceLogSorted>(hdwId, serialNo);  break;
         case LOGTYPE_CSV:   deviceLog = make_shared<cDeviceLogCSV>(hdwId, serialNo);     break;
         case LOGTYPE_JSON:  deviceLog = make_shared<cDeviceLogJSON>(hdwId, serialNo);    break;
         case LOGTYPE_KML:   deviceLog = make_shared<cDeviceLogKML>(hdwId, serialNo);     break;
@@ -270,13 +296,12 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 
     // Add new devices
     {
-#if !PLATFORM_IS_EMBEDDED
-        const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+        LOCK_MUTEX();
         // for (int i = 0; i < numDevices; i++)
         for (auto& d : devices) {
             registerDevice(d);
         }
+        UNLOCK_MUTEX();
     }
 
     //m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
@@ -288,26 +313,20 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 
 bool nextStreamDigit(stringstream &ss, string &str)
 {
-    char c;
-    if (!(ss >> c))	// Read delimiter
-    {
-        return false;
-    }
-
-    if (isdigit(c))
-    {	// If not delimeter, put first char/digit back
-        ss.unget();
-    }
-
     if (!getline(ss, str, '_'))
     {
-        return false;	// No more data 
+        return false;	// No data 
+    }
+
+    if (str.size() == 0 || !isdigit(str[0]))
+    {
+        return false;	// No numerical data 
     }
 
     return true;
 }
 
-
+// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.  
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -331,15 +350,20 @@ bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, str
         stringstream ss(content);
 
         // Read serial number, date, time, index
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	serialNum = stoi(str);
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	date = str;
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	time = str;
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	index = stoi(str);
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        serialNum = stoi(str);
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        date = str;
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        time = str;
+        if (!nextStreamDigit(ss, str) || str.size()==0) { return false; } 	
+        index = stoi(str);
     }
     else
     {	// No prefix - only index number
         stringstream ss(content);
-        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	index = stoi(str);
+        if (!nextStreamDigit(ss, str) && str.size()) { return false; } 	
+        index = stoi(str);
     }
 
     return true;
@@ -380,7 +404,10 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     for (size_t i = 0; i < files.size(); i++)
     {
         string name = ISFileManager::GetFileName(files[i].name);
-        ParseFilename(name, serialNum, date, time, index);
+        if (!ParseFilename(name, serialNum, date, time, index))
+        {   // Skip invalid filename
+            continue;
+        }
 
         if (serialNum >= 0)
         {
@@ -406,9 +433,7 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
 
                     // Add devices
                     {
-#if !PLATFORM_IS_EMBEDDED
-                        const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+                        LOCK_MUTEX();
                         std::shared_ptr<cDeviceLog> deviceLog;
                         switch (logType)
                         {
@@ -416,13 +441,13 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
                         case cISLogger::LOGTYPE_DAT:    deviceLog = make_shared<cDeviceLogSerial>(0, serialNum); break;
                         case cISLogger::LOGTYPE_RAW:    deviceLog = make_shared<cDeviceLogRaw>(0, serialNum); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-                        case cISLogger::LOGTYPE_SDAT:   deviceLog = make_shared<cDeviceLogSorted>(0, serialNum); break;
                         case cISLogger::LOGTYPE_CSV:    deviceLog = make_shared<cDeviceLogCSV>(0, serialNum); break;
                         case cISLogger::LOGTYPE_JSON:   deviceLog = make_shared<cDeviceLogJSON>(0, serialNum); break;
 #endif
                         }
                         deviceLog->SetupReadInfo(directory, serialNumber, m_timeStamp);
                         m_devices[serialNum] = deviceLog;
+                        UNLOCK_MUTEX();
                     }
 
 #if (LOG_DEBUG_GEN == 2)
@@ -699,6 +724,7 @@ int g_copyReadDid;
  * @param enableCsvIns2ToIns1Conversion
  * @return
  */
+// __attribute__((optimize("O0")))
 bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();

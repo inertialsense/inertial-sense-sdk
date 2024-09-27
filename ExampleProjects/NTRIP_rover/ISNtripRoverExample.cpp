@@ -124,7 +124,7 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 {
 	protocol_type_t ptype;
 
-	// Get available size of comm buffer
+	// Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
@@ -149,7 +149,7 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 {
 	protocol_type_t ptype;
 
-	// Get available size of comm buffer
+	// Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
 	int n = is_comm_free(comm);
 
 	// Read data from RTK Base station
