@@ -1,63 +1,23 @@
-@echo off 
+@echo off
+
+echo Building SDK Unit Tests
+echo.
+
+:: Set SDK_DIR as  directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
 setlocal
 call :init_build_tools
 
-REM MSBUILD_EXECUTABLE, MSBUILD_OPTIONS and NMAKE_EXECUTABLE are set in init_build_tools
-set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Clean /p:Configuration=Release
+pushd "%SDK_DIR%\tests\VS_project\"
+%MSBUILD_EXECUTABLE% "%SDK_DIR%\tests\VS_project\sdk_unit_tests.sln" %MSBUILD_OPTIONS%
+set ERROR_LVL=%errorlevel%
+@REM pushd %~dp0..\..\cpp\testing\unit_tests
+@REM cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=Release" && cmake --build ./build --config Release -j 7
+popd
 
+@REM Set ERRORLEVEL on exit
+exit /b %ERROR_LVL%
 
-::###############################################################################
-::  Builds and Tests
-::###############################################################################
-
-@REM Remove build directory
-rd /S /Q %~dp0\build 2> NUL
-
-call :clean_header "IS_SDK_lib"
-rd /S /Q %~dp0..\build 2> NUL
-rd /S /Q %~dp0..\out 2> NUL
-call :clean_footer
-
-call :clean_header "cltool"
-rd /S /Q %~dp0..\cltool\build 2> NUL
-rd /S /Q %~dp0..\cltool\out 2> NUL
-call :clean_footer
-
-call :clean_header "IS_SDK_Examples"
-rd /S /Q %~dp0..\ExampleProjects\build 2> NUL
-rd /S /Q %~dp0..\ExampleProjects\out 2> NUL
-call :clean_footer
-
-call :clean_header "LogInspector"
-call clean_python_cache.bat
-call clean_log_inspector.bat
-call :clean_footer
-
-call :clean_header "Unit Tests Alt"
-rd /S /Q %~dp0..\tests\sdk_unit_tests 2> NUL
-rd /S /Q %~dp0..\tests\x64 2> NUL
-rd /S /Q %~dp0..\tests\build 2> NUL
-rd /S /Q %~dp0..\tests\out 2> NUL
-call :clean_footer
-
-@REM call :clean_directory "cltool" "%SDK_DIR%\SDK\cltool\VS_project\x64"
-
-
-::###############################################################################
-::  Results Summary
-::###############################################################################
-call :clean_results
-
-:finish
-
-:: Wait for any key press
-rem pause
-:: Pause for 3 seconds
-ping localhost -n 3 >nul
-
-:: Return results: 0 = pass, 1 = fail
-exit /b %EXIT_CODE%
 
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

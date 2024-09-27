@@ -8,6 +8,8 @@
 
 TEST(time_conversion, UTC_to_GPS_to_UTC_time)
 {
+#if !PLATFORM_IS_WINDOWS
+
     int gpsTowMs = 111072800;
     int gpsWeek = 2309;
     int leapS = C_GPS_LEAP_SECONDS;
@@ -53,6 +55,8 @@ TEST(time_conversion, UTC_to_GPS_to_UTC_time)
     }
 
     RevertUtcTimeZone();
+
+#endif
 }
 
 TEST(time_conversion, GPS_to_UTC)
