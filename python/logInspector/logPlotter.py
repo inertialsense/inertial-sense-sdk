@@ -2544,6 +2544,21 @@ class logPlot:
             for a in b:
                 a.grid(True)
 
+    def gpxDebugiArray(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(5,2, sharex=True)
+        fig.suptitle('GPX Debug int array - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            debug_i = self.getData(d, DID_GPX_DEBUG_ARRAY, 'i')
+            for i in range(9):
+                ax[i%5, i//5].set_ylabel('i[' + str(i) +']')
+                ax[i%5, i//5].plot(debug_i[:,i], label=self.log.serials[d])
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for b in ax:
+            for a in b:
+                a.grid(True)
+
     def magDec(self, fig=None):
         if fig is None:
             fig = plt.figure()
