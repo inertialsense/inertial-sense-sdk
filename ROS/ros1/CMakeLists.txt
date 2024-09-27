@@ -47,7 +47,7 @@ generate_messages(
 )
 
 catkin_package(
-  INCLUDE_DIRS include shared/include
+  INCLUDE_DIRS shared/include
   LIBRARIES inertial_sense_ros
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs
 )
@@ -55,7 +55,7 @@ catkin_package(
 # We don't need the example projects
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
-include_directories(include
+include_directories(
   shared/include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
@@ -82,7 +82,7 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFOR
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
 
 target_link_libraries(inertial_sense_ros InertialSenseSDK ${catkin_LIBRARIES} ${YAML_CPP_LIBRARIES} pthread)
-target_include_directories(inertial_sense_ros PUBLIC include)
+target_include_directories(inertial_sense_ros PUBLIC shared/include)
 add_dependencies(inertial_sense_ros inertial_sense_ros_generate_messages_cpp)
 
 add_executable(inertial_sense_node shared/src/inertial_sense_node.cpp)
