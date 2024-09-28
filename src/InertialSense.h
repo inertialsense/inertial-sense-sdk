@@ -49,6 +49,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     #endif
 #endif
 
+#define PRINT_DEBUG 1
+#if PRINT_DEBUG
+#define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
+
+
+
 extern "C"
 {
 // [C COMM INSTRUCTION]  Include data_sets.h and com_manager.h
@@ -403,11 +412,13 @@ public:
             device = DeviceByPort(port);
         }
 
-        if (device)
-            return  (device->flashCfg.checksum == device->sysParams.flashCfgChecksum) &&
-                    (device->flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(device->port);
+        if (!device) return false;
 
-        return false;
+        DEBUG_PRINT("device.flashCfg.checksum:  %08x, device.sysParams.flashCfgChecksum:  %08x, device.flashCfgUploadTimeMs:  %08x, device.flashCfgUploadChecksum: %08x\n", device->flashCfg.checksum, device->sysParams.flashCfgChecksum, device->flashCfgUploadTimeMs, device->flashCfgUploadChecksum);
+
+        return  (device->flashCfg.checksum == device->sysParams.flashCfgChecksum) &&
+                (device->flashCfgUploadTimeMs == 0) &&
+                !(device->flashCfgUploadChecksum && (device->flashCfgUploadChecksum != device->sysParams.flashCfgChecksum));
     }
 
     /**

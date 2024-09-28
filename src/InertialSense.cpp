@@ -25,13 +25,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-#define PRINT_DEBUG 0
-#if PRINT_DEBUG
-#define DEBUG_PRINT(...)    printf("L%d: ", __LINE__); printf(__VA_ARGS__)
-#else
-#define DEBUG_PRINT(...) 
-#endif
-
 static InertialSense *s_is = NULL;
 static InertialSense::com_manager_cpp_state_t *s_cm_state = NULL;
 
@@ -1044,25 +1037,28 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
     unsigned int startMs = current_timeMs();
     while(!FlashConfigSynced(device->port))
     {   // Request and wait for flash config
+        SLEEP_MS(5);  // give some time for the device to respond.
         Update();
+        SLEEP_MS(5);  // give some time for the device to respond.
 
         if ((current_timeMs() - startMs) > SYNC_FLASH_CFG_TIMEOUT_MS)
         {   // Timeout waiting for flash config
             printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
 
             #if PRINT_DEBUG
-            ISDevice& device = m_comManagerState.devices[pHandle];
-            DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
-            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum); 
-            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
-            DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
+            // ISDevice& device = m_comManagerState.devices[pHandle];
+            DEBUG_PRINT("device.flashCfg.checksum:          %u\n", device->flashCfg.checksum);
+            DEBUG_PRINT("device.sysParams.flashCfgChecksum: %u\n", device->sysParams.flashCfgChecksum);
+            DEBUG_PRINT("device.flashCfgUploadTimeMs:       %u\n", device->flashCfgUploadTimeMs);
+            DEBUG_PRINT("device.flashCfgUploadChecksum:     %u\n", device->flashCfgUploadChecksum);
             #endif
             return false;
         }
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            DEBUG_PRINT("Waiting for flash sync...\n");
+            // GetData(DID_FLASH_CONFIG);
+            // DEBUG_PRINT("Waiting for flash sync...\n");
         }
         SLEEP_MS(20);  // give some time for the device to respond.
     }
