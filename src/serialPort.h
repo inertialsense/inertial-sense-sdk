@@ -61,11 +61,11 @@ enum eSerialPortOptions
 
 typedef int(*pfnSerialPortOpen)(port_handle_t port, const char* portName, int baudRate, int blocking);
 typedef int(*pfnSerialPortIsOpen)(port_handle_t port);
-typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, int len);
-typedef int(*pfnSerialPortReadTimeout)(port_handle_t port, unsigned char* buf, int len, int timeoutMs);
-typedef void(*pfnSerialPortAsyncReadCompletion)(port_handle_t port, unsigned char* buf, int len, int errorCode);
-typedef int(*pfnSerialPortAsyncRead)(port_handle_t port, unsigned char* buf, int len, pfnSerialPortAsyncReadCompletion completion);
-typedef int(*pfnSerialPortWrite)(port_handle_t port, const unsigned char* buf, int len);
+typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, unsigned int len);
+typedef int(*pfnSerialPortReadTimeout)(port_handle_t port, unsigned char* buf, unsigned int len, int timeoutMs);
+typedef void(*pfnSerialPortAsyncReadCompletion)(port_handle_t port, unsigned char* buf, unsigned int len, int errorCode);
+typedef int(*pfnSerialPortAsyncRead)(port_handle_t port, unsigned char* buf, unsigned int len, pfnSerialPortAsyncReadCompletion completion);
+typedef int(*pfnSerialPortWrite)(port_handle_t port, const unsigned char* buf, unsigned int len);
 typedef int(*pfnSerialPortClose)(port_handle_t port);
 typedef int(*pfnSerialPortFlush)(port_handle_t port);
 typedef int(*pfnSerialPortGetByteCountAvailableToRead)(port_handle_t port);

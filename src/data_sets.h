@@ -4190,25 +4190,25 @@ typedef struct PACKED
 typedef struct
 {
     /*! (s)	Week seconds offset from MCU to GPS time. */
-    double		towOffset;			
+    double		towOffset;
 
     /*! (s)	Week seconds for next timepulse (from start of GPS week) */
-    double		towGps;				
+    double		towGps;
 
     /*! (s)	Local MCU week seconds */
-    double		timeMcu;			
+    double		timeMcu;
 
     /*! (ms) Local timestamp of TIM-TP message used to validate timepulse. */
-    uint32_t	msgTimeMs;			
+    uint32_t	msgTimeMs;
 
     /*! (ms) Local timestamp of time sync pulse external interrupt used to validate timepulse. */
-    uint32_t	plsTimeMs;			
+    uint32_t	plsTimeMs;
 
     /*! Counter for successful timesync events. */
-    uint8_t		syncCount;			
+    uint8_t		syncCount;
 
     /*! Counter for failed timesync events. */
-    uint8_t		badPulseAgeCount;			
+    uint8_t		badPulseAgeCount;
 
     /*! Counter for GPS PPS interrupt re-initalization. */
     uint8_t		ppsInterruptReinitCount;
@@ -4217,7 +4217,7 @@ typedef struct
     uint8_t		plsCount;
 
     /*! (ms) Local timestamp of last valid PPS sync. */
-    uint32_t	lastSyncTimeMs;		
+    uint32_t	lastSyncTimeMs;
 
     /*! (ms) Time since last valid PPS sync. */
     uint32_t 	sinceLastSyncTimeMs;

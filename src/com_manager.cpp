@@ -38,10 +38,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MSG_PERIOD_SEND_ONCE		-1
 #define MSG_PERIOD_DISABLED			0
 
-
 ISComManager s_cm;
-
-static int comManagerStepRxInstanceHandler(com_manager_t* cmInstance, comm_port_t* port, protocol_type_t ptype);
 
 CMHANDLE comManagerGetGlobal(void) { return &s_cm; }
 
@@ -90,27 +87,6 @@ int comManagerInit(
             disableBcastFnc,
             buffers);
 }
-
-/*
-int comManagerInit(
-        int stepPeriodMilliseconds,
-        pfnComManagerPostRead pstRxFnc,
-        pfnComManagerPostAck pstAckFnc,
-        pfnComManagerRmcHandler rmcHandler,
-        pfnComManagerDisableBroadcasts disableBcastFnc,
-        broadcast_msg_array_t* buffers)
-{
-    return s_cm.init(
-            NULL,
-            stepPeriodMilliseconds,
-            pstRxFnc,
-            pstAckFnc,
-            rmcHandler,
-            disableBcastFnc,
-            buffers);
-}
-*/
-
 
 pfnIsCommGenMsgHandler comManagerRegisterProtocolHandler(int ptype, pfnIsCommGenMsgHandler cbHandler, port_handle_t port) {
     return s_cm.registerProtocolHandler(ptype, cbHandler, port);

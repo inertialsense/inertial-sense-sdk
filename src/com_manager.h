@@ -63,21 +63,11 @@ typedef struct
 	// uint8_t flags;
 } com_manager_status_t;
 
-/** Buffers used in com manager */
-/*
-typedef struct
-{
-	broadcast_msg_t* broadcastMsg;
-	uint32_t broadcastMsgSize;			// MAX_NUM_BCAST_MSGS * sizeof(broadcast_msg_t)
-} com_manager_init_t;
-*/
-
 enum eComManagerErrorType
 {
-	CM_ERROR_FORWARD_OVERRUN = -1, 
-	CM_ERROR_RX_PARSE = -2,
+    CM_ERROR_FORWARD_OVERRUN = -1,
+    CM_ERROR_RX_PARSE = -2,
 };
-
 
 // com manager callback prototypes
 // readFnc read data from the serial port. Returns number of bytes read.
@@ -103,91 +93,6 @@ typedef int(*pfnComManagerRmcHandler)(p_data_get_t* req, port_handle_t port);
 
 // Parse error handler function, return 1 if message handled
 typedef int(*pfnComManagerParseErrorHandler)(port_handle_t port);
-
-
-/* Contains callback information for a before and after send for a data structure */
-typedef struct
-{
-	/* Pointer and size of entire data struct (not sub portion that is communicated) */
-	bufTxRxPtr_t dataSet;
-
-	/* Callback function pointer, used to prepare data before send */
-	pfnComManagerPreSend preTxFnc;
-
-	/* Callback function pointer, used to prepare data after received */
-	pfnComManagerPostRead pstRxFnc;
-
-	/* Packet type to use */
-	uint8_t pktFlags;
-} registered_data_t;
-
-/*
-typedef struct
-{
-	// Comm instances 
-	is_comm_instance_t comm;
-
-	// Comm instance data buffer
-	uint8_t comm_buffer[PKT_BUF_SIZE];
-
-#if ENABLE_PACKET_CONTINUATION
-
-	// Continuation data for packets
-	p_data_t con;
-
-#endif
-	
-} com_manager_port_t;
-*/
-
-typedef struct
-{
-    // Array of port
-    std::unordered_set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
-
-    // reads n bytes into buffer from the source (usually a serial port)
-	// pfnIsCommPortRead portRead;
-
-	// write data to the destination (usually a serial port)
-	// pfnIsCommPortWrite portWrite;
-
-	// bytes free in Tx buffer (used to check if packet, keeps us from overflowing the Tx buffer)
-	pfnComManagerSendBufferAvailableBytes txFree;
-
-	// Callback function pointer, used to respond to data input
-	pfnComManagerPostRead pstRxFnc;
-
-	// Callback function pointer, used to respond to ack
-	pfnComManagerPostAck pstAckFnc;
-
-	// Callback function pointer to disable broadcasts on specified port, or all ports if port is -1
-	pfnComManagerDisableBroadcasts disableBcastFnc;
-
-    // Callback function pointer for parse errors
-    pfnComManagerParseErrorHandler errorHandlerFnc;
-
-	// Pointer to local data and data specific callback functions  ::  NOTE: https://howardhinnant.github.io/stack_alloc.html  if using this in embedded environments and dynamic allocation is a concern
-	std::map<int, registered_data_t> didRegistrationMap;
-	
-    broadcast_msg_array_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
-
-	// processing interval
-	int32_t stepPeriodMilliseconds;
-
-	// user defined pointer
-	void* userPointer;
-
-/*
-    // "Global" handler for any Binary Data which does not have an explicit handler (registerDid)
-    pfnIsCommIsbDataHandler cmMsgHandleDID;
-*/
-
-    // Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
-    pfnComManagerRmcHandler cmMsgHandlerRmc;
-
-    // Error handler
-    pfnComManagerParseErrorHandler cmMsgHandlerError;
-} com_manager_t;
 
 
 /**
@@ -289,8 +194,6 @@ void comManagerStepTimeout(uint32_t timeMs);
 void comManagerStep();
 
 void stepSendMessages(void);
-
-
 
 /**
 * Make a request to a port to broadcast a piece of data at a set interval.
@@ -495,7 +398,7 @@ void comManagerRegister(uint16_t did, pfnComManagerPreSend txFnc, pfnComManagerP
 
 int comManagerProcessBinaryRxPacket(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
-class ISComManager : com_manager_t {
+class ISComManager {
 public:
     void step();
     void stepTx();
@@ -812,6 +715,23 @@ public:
 private:
 // int processAsciiRxPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* start, int count);
 // void parseAsciiPacket(com_manager_t* cmInstance, port_handle_t port, unsigned char* buf, int count);
+
+    /* Contains callback information for a before and after send for a data structure */
+    typedef struct
+    {
+        /* Pointer and size of entire data struct (not sub portion that is communicated) */
+        bufTxRxPtr_t dataSet;
+
+        /* Callback function pointer, used to prepare data before send */
+        pfnComManagerPreSend preTxFnc;
+
+        /* Callback function pointer, used to prepare data after received */
+        pfnComManagerPostRead pstRxFnc;
+
+        /* Packet type to use */
+        uint8_t pktFlags;
+    } registered_data_t;
+
     void enableBroadcastMsg(broadcast_msg_t *msg, int periodMultiple);
     void disableBroadcastMsg(broadcast_msg_t *msg);
     void disableDidBroadcast(port_handle_t port, uint16_t did);
@@ -822,6 +742,48 @@ private:
     int asciiMessageCompare(const void* elem1, const void* elem2);
 
     is_comm_callbacks_t defaultCbs; // local copy of any callbacks passed at init
+
+    // Array of port
+    std::unordered_set<port_handle_t>* ports = NULLPTR;  // this is not a vector of ports, its a pointer to an EXTERNAL set of ports.  This MUST be initialized!!!
+
+    // reads n bytes into buffer from the source (usually a serial port)
+    // pfnIsCommPortRead portRead;
+
+    // write data to the destination (usually a serial port)
+    // pfnIsCommPortWrite portWrite;
+
+    // bytes free in Tx buffer (used to check if packet, keeps us from overflowing the Tx buffer)
+    pfnComManagerSendBufferAvailableBytes txFree;
+
+    // Callback function pointer, used to respond to data input
+    pfnComManagerPostRead pstRxFnc;
+
+    // Callback function pointer, used to respond to ack
+    pfnComManagerPostAck pstAckFnc;
+
+    // Callback function pointer to disable broadcasts on specified port, or all ports if port is -1
+    pfnComManagerDisableBroadcasts disableBcastFnc;
+
+    // Callback function pointer for parse errors
+    pfnComManagerParseErrorHandler errorHandlerFnc;
+
+    // Pointer to local data and data specific callback functions  ::  NOTE: https://howardhinnant.github.io/stack_alloc.html  if using this in embedded environments and dynamic allocation is a concern
+    std::map<int, registered_data_t> didRegistrationMap;
+
+    broadcast_msg_array_t* broadcastMessages; // MAX_NUM_BCAST_MSGS slots
+
+    // processing interval
+    int32_t stepPeriodMilliseconds;
+
+    // user defined pointer
+    void* userPointer;
+
+    // Broadcast message handler.  Called whenever we get a message broadcast request or message disable command.
+    pfnComManagerRmcHandler cmMsgHandlerRmc;
+
+    // Error handler
+    pfnComManagerParseErrorHandler cmMsgHandlerError;
+
 };
 
 extern ISComManager s_cm;
