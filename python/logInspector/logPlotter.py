@@ -414,6 +414,7 @@ class logPlot:
             if len(gpsVelEcef) > 0:
                 qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
                 gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
+                # gpsVelNed = np.copy(gpsVelEcef)   # Override to ECEF
         return [gpsTime, gpsVelNed]
 
     def gpsVelNED(self, fig=None):
@@ -515,6 +516,8 @@ class logPlot:
             qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
             if len(velEcef) > 0:
                 velNed = quatConjRot(qe2n, velEcef)
+            # velNed = np.copy(velEcef)     # Override to ECEF velocity
+
             #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
             #velNed = R.dot(velEcef.T).T
         return velNed

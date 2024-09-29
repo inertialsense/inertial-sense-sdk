@@ -335,7 +335,7 @@ usart_cfg_t tmpUartCfg;
 dma_ch_t tmpUartDmaChan;
 GPIO_TypeDef tmpUartGpio;
 
-DMA_Channel_TypeDef_IMX tmpIMXUartDmaReg;
+eventImxDmaTxInst_t tmpIMXUartDmaInst;
 USART_TypeDef_IMX tmpIMXUartReg;
 dma_ch_t_IMX tmpIMXUartDmaChan;
 GPIO_TypeDef_IMX tmpIMXUartGpio;
@@ -537,24 +537,134 @@ void writeIMXSer0TxReg(uint8_t* evScratch, std::string fileName)
 
 }
 
+void dataToImxDmaInst(uint8_t* inBuf, int len)
+{
+    int startIndex;
+    int endIndex;
+
+    // do inital copy
+    memcpy(&tmpIMXUartDmaInst, inBuf, ((uint32_t)&tmpIMXUartDmaInst.ptr_start) - ((uint32_t)&tmpIMXUartDmaInst));
+
+    // now fix things
+    startIndex = 0x10;
+    tmpIMXUartDmaInst.ptr_start = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
+        (((uint32_t)inBuf[startIndex + 2]) << 16) |
+        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
+
+    startIndex = 0x14;
+    tmpIMXUartDmaInst.ptr_end = (uint8_t*)((((uint32_t)inBuf[startIndex+3]) << 24) | 
+                                (((uint32_t)inBuf[startIndex+2]) << 16) | 
+                                (((uint16_t)inBuf[startIndex+1]) << 8) | inBuf[startIndex]);
+
+    startIndex = 0x18;
+    endIndex = 0x22;
+    memcpy(&tmpIMXUartDmaInst.active_tx_len, &inBuf[startIndex], endIndex - startIndex);
+
+    startIndex = 0x22;
+    tmpIMXUartDmaInst.cfg_parent = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
+        (((uint32_t)inBuf[startIndex + 2]) << 16) |
+        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
+
+    startIndex = 0x26;
+    tmpIMXUartDmaInst.cfg_periph_reg = (uint32_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
+        (((uint32_t)inBuf[startIndex + 2]) << 16) |
+        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
+
+    startIndex = 0x2a;
+    tmpIMXUartDmaInst.cfg_buf = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
+        (((uint32_t)inBuf[startIndex + 2]) << 16) |
+        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
+
+    startIndex = 0x2e;
+    endIndex = 0x31;
+    memcpy(&tmpIMXUartDmaInst.cfg_buf_len, &inBuf[startIndex], endIndex - startIndex);
+
+    startIndex = 0x31;
+    tmpIMXUartDmaInst.cfg_tcie_handler = (uint8_t*)((((uint32_t)inBuf[startIndex + 3]) << 24) |
+        (((uint32_t)inBuf[startIndex + 2]) << 16) |
+        (((uint16_t)inBuf[startIndex + 1]) << 8) | inBuf[startIndex]);
+
+    startIndex = 0x35;
+    endIndex = 0x3a;
+    memcpy(&tmpIMXUartDmaInst.lastDmaUsed, &inBuf[startIndex], endIndex - startIndex);
+
+}
+
 void writeIMXDmaTx0Reg(uint8_t* evScratch, std::string fileName)
 {
-    sprintf((char*)evScratch, "------------Start IMX Dma Tx0 Reg-------------\r\n");
+    sprintf((char*)evScratch, "------------Start IMX Dma Tx0 Inst-------------\r\n");
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CCR:\t0x%08x\r\n", tmpIMXUartDmaReg.CCR);
+    sprintf((char*)evScratch, "inst.CCR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CCR);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CMAR:\t0x%08x\r\n", tmpIMXUartDmaReg.CMAR);
+    sprintf((char*)evScratch, "inst.CNDTR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CNDTR);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CNDTR:\t0x%08x\r\n", tmpIMXUartDmaReg.CNDTR);
+    sprintf((char*)evScratch, "inst.CPAR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CPAR);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "CPAR:\t0x%08x\r\n", tmpIMXUartDmaReg.CPAR);
+    sprintf((char*)evScratch, "inst.CMAR:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.inst_CMAR);
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 
-    sprintf((char*)evScratch, "\r\n------------End IMX Dma Rx0 Reg-------------\r\n\r\n");
+    sprintf((char*)evScratch, "ptr_start:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.ptr_start);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "ptr_end:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.ptr_end);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "active_tx_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.active_tx_len);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "done:\t\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.done);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.dir:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_dir);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.circular:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_circular);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.priority:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_priority);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.interrupt:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_interrupt);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.interrupt_priority:\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_interrupt_priority);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.dma_chan_sel:\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_dma_channel_select);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.parent_type:\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_parent_type);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.parent:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_parent);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.periph_reg:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_periph_reg);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.buf:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_buf);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.buf_len:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_buf_len);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg.linear_buf:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_linear_buf);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "cfg_tcie_handler:\t\t0x%08x\r\n", tmpIMXUartDmaInst.cfg_tcie_handler);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "lastDmaUsed:\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.lastDmaUsed);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "overflow:\t\t\t\t0x%08x\r\n", tmpIMXUartDmaInst.overflow);
+    event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
+
+    sprintf((char*)evScratch, "\r\n------------End IMX Dma Rx0 Inst-------------\r\n\r\n");
     event_outputEvToFile(fileName, evScratch, printCurString((char*)evScratch));
 }
 
@@ -906,7 +1016,6 @@ int main(int argc, char* argv[])
                 memcpy(&tmpUartDmaChan, evScratch, ev->length);
                 memcpy(&tmpUartGpio, evScratch, ev->length);
 
-                memcpy(&tmpIMXUartDmaReg, evScratch, ev->length);
                 memcpy(&tmpIMXUartReg, evScratch, ev->length);
                 memcpy(&tmpIMXUartDmaChan, evScratch, ev->length);
                 memcpy(&tmpIMXUartGpio, evScratch, ev->length);
@@ -934,8 +1043,9 @@ int main(int argc, char* argv[])
                 case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
                 case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
 
-                case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_REG:
-                    fileName = deviceFolder + "/IMX_DMA0_reg.txt";
+                case EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST:
+                    fileName = deviceFolder + "/IMX_DMA0_inst.txt";
+                    dataToImxDmaInst(ev->data, ev->length);
                     writeIMXDmaTx0Reg(evScratch, fileName);
                     logged = true;
                     break;
@@ -960,7 +1070,7 @@ int main(int argc, char* argv[])
                     logged = true;
                     break;
 
-                case EVENT_MSG_TYPE_ID_DMA_RX_0_REG:
+                case EVENT_MSG_TYPE_ID_DMA_RX_0_INST:
                     fileName = deviceFolder + "/DMA0_reg.txt";
                     writeDmaRx0Reg(evScratch, fileName);
                     logged = true;
