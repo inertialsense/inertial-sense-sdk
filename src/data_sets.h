@@ -4337,12 +4337,6 @@ typedef struct
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
 
-    /** (Internal use only) Reason for system halt (see k_fatal_error_reason and k_fatal_error_reason_arch). Cleared on startup. */
-    uint32_t                haltReason;
-    
-    /** (Internal use only) reserved */
-    uint32_t                reserved;           
-
 } gpx_flash_cfg_t;
 
 /** GPX status flags */
@@ -4374,7 +4368,7 @@ enum eGpxStatus
     GPX_STATUS_FATAL_DIV_ZERO                           = (int)13,
     GPX_STATUS_FATAL_SER0_REINIT                        = (int)14,
 
-    GPX_STATUS_FATAL_UNKNOWN                            = (int)0xff,
+    GPX_STATUS_FATAL_UNKNOWN                            = (int)0x1F,    // TODO: Temporarily set to (5 bits). Reset to 0xFF when gpx_flash_cfg.debug is no longer used with fault reporting. (WHJ) 
 };
 
 /** Hardware status flags */
