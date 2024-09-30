@@ -77,13 +77,13 @@ enum eComManagerErrorType
 typedef int(*pfnComManagerSendBufferAvailableBytes)(port_handle_t port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by port
-typedef void(*pfnComManagerPostRead)(p_data_t* dataRead, port_handle_t port);
+typedef int(*pfnComManagerPostRead)(p_data_t* dataRead, port_handle_t port);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by port
 typedef int(*pfnComManagerPostAck)(port_handle_t port, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
-typedef void(*pfnComManagerDisableBroadcasts)(port_handle_t port);
+typedef int(*pfnComManagerDisableBroadcasts)(port_handle_t port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(port_handle_t port, p_data_hdr_t *dataHdr);
@@ -220,7 +220,7 @@ void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t
 * Make a request to a port handle to broadcast a piece of data at a set interval.
 *
 * @param port the port handle to request broadcast data from
-* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_PPD_BITS = post processing data, RMC_PRESET_INS_BITS = INS2 and GPS data at full rate
+* @param RMC bits specifying data messages to stream.  See presets: RMC_PRESET_IMX_PPD = post processing data, RMC_PRESET_INS = INS2 and GPS data at full rate
 * @param RMC options to enable data streaming on ports other than the current port.
 * @param offset offset into the structure for the data id to broadcast - pass offset and size of 0 to receive the entire data set
 * @param size number of bytes in the data structure from offset to broadcast - pass offset and size of 0 to receive the entire data set
@@ -228,12 +228,12 @@ void comManagerGetData(port_handle_t port, uint16_t did, uint16_t size, uint16_t
 *
 * Example that enables streaming of all data messages necessary for post processing:
 * @code
-* comManagerGetDataRmc(port, RMC_PRESET_PPD_BITS, 0);
+* comManagerGetDataRmc(port, RMC_PRESET_IMX_PPD, 0);
 * @endcode
 *
 * Example that broadcasts INS and GPS data at full rate:
 * @code
-* comManagerGetDataRmc(port, RMC_PRESET_INS_BITS, 0);
+* comManagerGetDataRmc(port, RMC_PRESET_INS, 0);
 * @endcode
 */
 void comManagerGetDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmcOptions);

@@ -83,10 +83,11 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool magRecal;
 	uint32_t magRecalMode;
 	survey_in_t surveyIn;
-	std::string asciiMessages;
+	bool nmeaRx;
+	std::string nmeaMessage;				// A full NMEA message with checksum terminator will be automatically added and then nmeaMessage sent 
 	double replaySpeed;
 	int displayMode;
-    int verboseLevel = 0;
+    int verboseLevel = ISBootloader::eLogLevel::IS_LOG_LEVEL_INFO;
 	
 	uint64_t rmcPreset;
 	bool persistentMessages;
@@ -120,6 +121,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	EVOContainer_t evOCont;
 
 	bool disableDeviceValidation = false;	// Keep port(s) open even if no devices response is received.
+	bool listenMode = false;				// Disable device verification and don't send stop-broadcast command on start.
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;

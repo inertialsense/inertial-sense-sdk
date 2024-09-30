@@ -241,8 +241,10 @@ string cInertialSenseDisplay::Connected()
 		m_startMs = current_timeMs();
 	}
 
+	unsigned int timeMs = current_timeMs();
+
 	// cltool runtime
-	double runtime = 0.001 * (current_timeMs() - m_startMs);
+	double runtime = 0.001 * (timeMs - m_startMs);
 
 	std::ostringstream stream;
 	stream << Header() << "Connected.  ";
@@ -253,7 +255,17 @@ string cInertialSenseDisplay::Connected()
         stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
         stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
         if (comPort->stats) {
-            stream << " (" << (comPort->stats->rxBytes ? std::to_string(comPort->stats->rxBytes) : "--") << " bytes)";
+            // TODO: This can probably go away after confirming that it works as expected after the merge
+//            static unsigned int lastUpdateMs = timeMs;
+//            static int bytesLast = 0;
+//            static int bytesPerS = 0;
+//            if (timeMs - lastUpdateMs >= 1000)
+//            {
+//                bytesPerS = m_port->rxBytes - bytesLast;
+//                bytesLast = m_port->rxBytes;
+//                lastUpdateMs = timeMs;
+//            }
+            stream << " (" << (comPort->stats->rxBytesPerSec ? std::to_string(comPort->stats->rxBytesPerSec) : "--") << " bytes/s)";
         }
     }
 	stream << "     " << std::endl;
@@ -1792,7 +1804,7 @@ string cInertialSenseDisplay::DataToStringPortMonitor(const port_monitor_t &port
 }
 
 /**
- * Formats the specified DID's raw data as a "hexidecimal view". This can be used with any DID that is not
+ * Formats the specified DID's raw data as a "hexadecimal view". This can be used with any DID that is not
  * otherwise supported.
  * @param raw_data a pointer to the raw DID byte stream
  * @param hdr the DID header

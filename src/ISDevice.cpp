@@ -35,10 +35,21 @@ is_operation_result ISDevice::updateFirmware(
     return IS_OP_OK;
 }
 
+/**
+ * @return true if this device is in the process of being updated, otherwise returns false.
+ * False is returned regardless of whether the update was successful or not.
+ */
 bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
 
-void ISDevice::fwUpdate() {
+/**
+ * Instructs the device to continue performing its actions.  This should be called regularly to ensure that the update process
+ * does not stall.
+ * @return true if the update is still in progress (calls inProgress()), or false if the update is finished and no further updates are needed.
+ */
+bool ISDevice::fwUpdate() {
     if (fwUpdater) {
+        fwUpdater->fwUpdate_step();
+
         if (fwUpdater->getActiveCommand() == "upload") {
             if (fwUpdater->fwUpdate_getSessionTarget() != fwLastTarget) {
                 fwHasError = false;
@@ -58,7 +69,7 @@ void ISDevice::fwUpdate() {
                 fwLastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
 
                 // check for error
-                if (!fwHasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
+                if (!fwHasError && fwUpdater && ((fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors())) {
                     fwHasError = true;
                 }
             }
@@ -78,22 +89,33 @@ void ISDevice::fwUpdate() {
         }
 
         if (!fwUpdater->hasPendingCommands()) {
-            if (!fwHasError) {
-                fwLastMessage = "Completed successfully.";
-            } else {
+            if (fwUpdater->hasErrors()) {
+                fwHasError = fwUpdater->hasErrors();
+                fwLastMessage = "Error: ";
+                fwLastMessage += "One or more step errors occurred.";
+            } else if (!fwHasError) {
                 fwLastMessage = "Error: ";
                 fwLastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
+            } else {
+                fwLastMessage = "Completed successfully.";
             }
         }
 
         // cleanup if we're done.
-        if (fwUpdater->fwUpdate_isDone()) {
+        bool is_done = fwUpdater->fwUpdate_isDone();
+        if (is_done) {
+            // collect errors before we close out the updater
+            fwErrors = fwUpdater->getStepErrors();
+            fwHasError |= !fwErrors.empty();
+
             delete fwUpdater;
             fwUpdater = nullptr;
         }
     } else {
         fwPercent = 0.0;
     }
+
+    return fwUpdateInProgress();
 }
 
 bool ISDevice::handshakeISbl() {

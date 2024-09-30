@@ -13,8 +13,11 @@
 #include <memory>
 #include <stdexcept>
 
+#include "ISComm.h"
+
 namespace utils {
     std::string getCurrentTimestamp();
+    std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {

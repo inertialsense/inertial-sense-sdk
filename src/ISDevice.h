@@ -106,6 +106,7 @@ public:
     ISFirmwareUpdater* fwUpdater = NULLPTR;
     float fwPercent = 0;
     bool fwHasError = false;
+    std::vector<std::tuple<std::string, std::string, std::string>> fwErrors;
     uint16_t fwLastSlot = 0;
     fwUpdate::target_t fwLastTarget = fwUpdate::TARGET_UNKNOWN;
     fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;

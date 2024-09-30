@@ -151,7 +151,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
     g_commandLineOptions.bootloaderVerify = CL_DEFAULT_BOOTLOAD_VERIFY;
     g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
-    g_commandLineOptions.asciiMessages = "";
+    g_commandLineOptions.nmeaRx = false;
+    g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
 
@@ -180,12 +181,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             a++;
         }
 
-        if (startsWith(a, "-asciiMessages="))
-        {
-            g_commandLineOptions.asciiMessages = &a[15];
-            enable_display_mode();
-        }
-        else if (startsWith(a, "-base="))
+        if (startsWith(a, "-base="))
         {
             g_commandLineOptions.baseConnection = &a[6];
             enable_display_mode();
@@ -366,6 +362,11 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             cltool_outputUsage();
             return false;
         }
+        else if (startsWith(a, "-list-devices"))
+        {
+            g_commandLineOptions.list_devices = true;
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
+        }
         else if (startsWith(a, "-lms="))
         {
             g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
@@ -378,6 +379,24 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
             enable_display_mode();
+        }
+        else if (startsWith(a, "-lon"))
+        {
+            g_commandLineOptions.enableLogging = true;
+        }
+        else if (startsWith(a, "-lm"))
+        {
+            g_commandLineOptions.listenMode = true;
+            g_commandLineOptions.disableDeviceValidation = true;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-lp") && (i + 1) < argc)
+        {
+            g_commandLineOptions.logPath = argv[++i];    // use next argument;
+        }
+        else if (startsWith(a, "-lt="))
+        {
+            g_commandLineOptions.logType = &a[4];
         }
         else if (startsWith(a, "-lts="))
         {
@@ -395,24 +414,21 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.logSubFolder = subFolder;
             }
         }
-        else if (startsWith(a, "-lp") && (i + 1) < argc)
-        {
-            g_commandLineOptions.logPath = argv[++i];    // use next argument;
-        }
-        else if (startsWith(a, "-lt="))
-        {
-            g_commandLineOptions.logType = &a[4];
-        }
-        else if (startsWith(a, "-lon"))
-        {
-            g_commandLineOptions.enableLogging = true;
-        }
         else if (startsWith(a, "-magRecal"))
         {
             g_commandLineOptions.rmcPreset = 0;
             g_commandLineOptions.magRecal = true;
             g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
             enable_display_mode();
+        }
+        else if (startsWith(a, "-nmea="))
+        {
+            g_commandLineOptions.nmeaMessage = &a[6];
+            g_commandLineOptions.nmeaRx = true;
+        }
+        else if (startsWith(a, "-nmea"))
+        {
+            g_commandLineOptions.nmeaRx = true;
         }
         else if (startsWith(a, "-platform"))
         {
@@ -434,14 +450,19 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
-        else if (startsWith(a, "-presetPPD"))
+        else if (startsWith(a, "-presetGPXPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
-        else if (startsWith(a, "-presetINS2"))
+        else if (startsWith(a, "-presetPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-presetINS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -510,6 +531,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-sysCmd="))
         {
             g_commandLineOptions.sysCommand = (uint32_t)strtoul(&a[8], NULL, 10);
+            switch(g_commandLineOptions.sysCommand)
+            {   // Disable device validation
+                case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:        g_commandLineOptions.disableDeviceValidation = true;    break;
+            }
         }
         else if (startsWith(a, "-s"))
         {
@@ -545,24 +570,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.bootloaderVerify = true;
         }
-        else if (startsWith(a, "-list-devices"))
-        {
-            g_commandLineOptions.list_devices = true;
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
-        }
         else if (startsWith(a, "-vd"))
         {
             g_commandLineOptions.disableDeviceValidation = true;
         }
         else if (startsWith(a, "-verbose"))
         {
-            g_commandLineOptions.verboseLevel=1;
-            for (char *p = argv[i]+7; *p != 0; p++) {
-                if (*p == '+')
-                    g_commandLineOptions.verboseLevel++;
-                else if (*p == '!')
-                    g_commandLineOptions.verboseLevel = 255;
-            }
+            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
+            if (a[8] == '=')
+                g_commandLineOptions.verboseLevel = atoi(&a[9]);
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
@@ -815,33 +831,28 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
-	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
-	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
 	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
-	cout << "    -dur=" << boldOff << "DURATION   Run DURATION in seconds before exiting cltool.  Default is 0, no limit." << endlbOn;
+	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four." << endlbOn;
+	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
+	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
-    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
-    cout << "    -vd" << boldOff << "             Disable device validate.  Use to keep port(s) open even if device response is not received." << endlbOn;
+    cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
+	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
+	cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
+    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
 	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
 	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
-    cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
-	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
-	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
-	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
-    cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
-    cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
-    cout << "         target: t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
-    cout << "         portMask: po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
-    cout << "         priorityLevel: pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
-    cout << "             It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors,"  << endlbOn;
-    cout << "         msgTypeIdMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
-    cout << "             at all times to allow broadcast of critical errors." << endlbOn;
 	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
+    cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
+    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
+	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
+
+	cout << endlbOn;
+	cout << "OPTIONS (Special)" << endl;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
 	if (g_internal)
@@ -849,7 +860,25 @@ void cltool_outputUsage()
 	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
 	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
 	}
-	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
+
+	cout << endlbOn;
+	cout << "OPTIONS (Event)" << endl;
+    cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
+    cout << "         target:" << boldOff << "        t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
+    cout << "         portMask:" << boldOff << "      po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
+    cout << "         priorityLevel:" << boldOff << " pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
+    cout << "         " << boldOff << "    It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors."  << endlbOn;
+    cout << "         msgTypeIdMask:" << boldOff << " id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
+    cout << "         " << boldOff << "    See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
+    cout << "         " << boldOff << "    at all times to allow broadcast of critical errors." << endlbOn;
+
+	cout << endlbOn;
+	cout << "OPTIONS (Firmware Update)" << endl;
+    cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
+	cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
+	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
+	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
+    cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
@@ -861,8 +890,9 @@ void cltool_outputUsage()
 	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "    -presetPPD     " << boldOff << " Stream preset post processing datasets (PPD)" << endlbOn;
-	cout << "    -presetINS2    " << boldOff << " Stream preset INS2 datasets" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
+	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;

@@ -385,6 +385,7 @@ namespace fwUpdate {
         uint16_t session_chunk_size = 0;                        //! the negotiated maximum size for each chunk.
         uint16_t session_total_chunks = 0;                      //! the total number of chunks for the given image size
         uint32_t session_image_size = 0;                        //! the total size of the image to be sent
+        uint16_t session_progress_rate = 250;                   //! the number of milliseconds between progress updates
         uint8_t session_image_slot = 0;                         //! the "slot" to which this image will be written in the flash
         uint8_t session_image_flags = 0;                        //! additional flags to be communicated to the device for special processing
         md5hash_t session_md5 = { };                            //! the md5 of the firmware image
