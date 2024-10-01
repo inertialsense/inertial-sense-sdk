@@ -2347,13 +2347,17 @@ enum eGPXBit_CMD{
     GPXBit_CMD_STOP                                     = 6,
 
     GPXBit_CMD_START_SIM_GPS_NOISE                      = 7,
-    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,     // Send duplicate message
-    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,     // Cause Tx buffer overflow on current serial port by sending too much data.
-    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,     // Cause watchdog reset by stalling COMM task
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,     // Cause watchdog reset by stalling RTK task
-    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,     // Cause hard fault
-    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,     // Cause malloc failure
+    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,        // Send duplicate message
+    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,        // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,       // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,       // Cause watchdog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,       // Cause watchdog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,       // Cause hard fault
+    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,       // Cause malloc failure
+
+    GPXBit_CMD_START_GPS_QUICK_TEST                     = 15,       // Starts GPS quick test. Checks to see if 
+
+
 };
 
 enum eGPXBit_test_mode{
@@ -2361,6 +2365,9 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_FAILURE                            = (int)8,
     GPXBit_test_mode_DONE                               = (int)9,
     GPXBit_test_mode_MANUFACTURING                      = (int)10,      // Standard manufacturing
+    GPXBit_test_mode_GPS_QT                             = (int)11,      // Quick GPS function test
+
+
     GPXBit_test_mode_SIM_GPS_NOISE                      = (int)100,     // Simulate CNO noise
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
     GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
