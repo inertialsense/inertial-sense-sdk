@@ -483,7 +483,7 @@ bool InertialSense::Update()
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (auto& device : m_comManagerState.devices) {
                 if (serialPortIsOpen(device.port) && device.fwUpdater != nullptr) {
-                    if (!device.fwUpdater->fwUpdate_step()) // device.fwUpdate.update();
+                    if (!device.fwUpdater->fwUpdate_step()) { // device.fwUpdate.update();
                         if (device.fwLastStatus < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());

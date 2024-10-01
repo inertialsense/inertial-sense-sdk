@@ -120,7 +120,7 @@ public:
     );
 
     bool fwUpdateInProgress();
-    void fwUpdate();
+    bool fwUpdate();
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 

@@ -574,7 +574,7 @@ typedef protocol_type_t (*pFnProcessPkt)(void*);
 typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 // InertialSense binary (ISB) data message handler function
-typedef void(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
+typedef int(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
 
 // broadcast message handler
 // typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);

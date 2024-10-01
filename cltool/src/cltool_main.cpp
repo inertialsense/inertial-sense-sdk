@@ -876,7 +876,7 @@ static void sigint_cb(int sig)
 }
 
 // Create and send full NMEA message with terminator w/ checksum trailer
-static void sendNmea(serial_port_t &port, string nmeaMsg)
+static void sendNmea(port_handle_t port, string nmeaMsg)
 {
     char buf[1024] = {0};
     int n = 0;
@@ -888,7 +888,7 @@ static void sendNmea(serial_port_t &port, string nmeaMsg)
     n += nmeaMsg.size();
     nmea_sprint_footer(buf, sizeof(buf), n);
     printf("Sending: %.*s\\r\\n\n", n-2, buf);
-    serialPortWrite(&port, (unsigned char*)buf, n);
+    portWrite(port, (unsigned char*)buf, n);
 }
 
 static int inertialSenseMain()

@@ -860,7 +860,8 @@ TEST(protocol_nmea, binary_GSV_binary)
 
     string buf = "$ASCE,0,15,1*3D\r\n";
 
-    rmci_t outRmci[NUM_COM_PORTS] = {};
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
     nmea_parse_asce(0, buf.c_str(), buf.size(), outRmci);
 
     {   // Test NMEA protocol 2.3
