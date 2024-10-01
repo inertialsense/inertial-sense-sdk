@@ -81,13 +81,13 @@ typedef void* CMHANDLE;
 typedef int(*pfnComManagerSendBufferAvailableBytes)(unsigned int port);
 
 // pstRxFnc optional, called after data is sent to the serial port represented by pHandle
-typedef void(*pfnComManagerPostRead)(unsigned int port, p_data_t* dataRead);
+typedef int(*pfnComManagerPostRead)(unsigned int port, p_data_t* dataRead);
 
 // pstAckFnc optional, called after an ACK is received by the serial port represented by pHandle
-typedef void(*pfnComManagerPostAck)(unsigned int port, p_ack_t* ack, unsigned char packetIdentifier);
+typedef int(*pfnComManagerPostAck)(unsigned int port, p_ack_t* ack, unsigned char packetIdentifier);
 
 // disableBcastFnc optional, mostly for internal use, this can be left as 0 or NULL.  Set port to -1 for all ports.
-typedef void(*pfnComManagerDisableBroadcasts)(int port);
+typedef int(*pfnComManagerDisableBroadcasts)(int port);
 
 // Called right before data is to be sent.  Data is not sent if this callback returns 0.
 typedef int(*pfnComManagerPreSend)(unsigned int port, p_data_hdr_t *dataHdr);

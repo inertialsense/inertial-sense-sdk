@@ -82,7 +82,7 @@ static int portWrite(unsigned int port, const unsigned char* buf, int len)
 	return len;
 }
 
-static void postRxRead(unsigned int port, p_data_t* dataRead)
+static int postRxRead(unsigned int port, p_data_t* dataRead)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -92,10 +92,12 @@ static void postRxRead(unsigned int port, p_data_t* dataRead)
 	EXPECT_EQ(td.did, dataRead->hdr.id);
 	EXPECT_EQ(td.size, dataRead->hdr.size);
 	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
+    return 0;
 }
 
-static void disableBroadcasts(int port)
+static int disableBroadcasts(int port)
 {
+    return 0;
 }
 
 int prepDevInfo(unsigned int port, p_data_hdr_t* dataHdr)
@@ -103,8 +105,9 @@ int prepDevInfo(unsigned int port, p_data_hdr_t* dataHdr)
 	return 1;
 }
 
-void writeNvrUserpageFlashCfg(unsigned int port, p_data_t* data)
+int writeNvrUserpageFlashCfg(unsigned int port, p_data_t* data)
 {
+    return 0;
 }
 
 // return 1 on success, 0 on failure

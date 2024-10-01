@@ -749,7 +749,7 @@ namespace fwUpdate {
         request.data.req_update.image_flags = session_image_flags = image_flags;
         request.data.req_update.chunk_size = session_chunk_size = chunk_size;
         request.data.req_update.file_size = session_image_size = image_size;
-        request.data.req_update.progress_rate = progress_rate;
+        request.data.req_update.progress_rate = session_progress_rate = progress_rate;
         request.data.req_update.md5_hash = session_md5 = image_md5;
 
         return fwUpdate_sendPayload(request);
@@ -768,6 +768,7 @@ namespace fwUpdate {
         request.data.req_update.image_flags = session_image_flags;
         request.data.req_update.chunk_size = session_chunk_size;
         request.data.req_update.file_size = session_image_size;
+        request.data.req_update.progress_rate = session_progress_rate;
         request.data.req_update.md5_hash = session_md5;
 
         return fwUpdate_sendPayload(request);
