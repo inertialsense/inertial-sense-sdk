@@ -1969,20 +1969,20 @@ cISDataMappings::cISDataMappings()
     memset(m_lookupSize, 0, sizeof(uint32_t) * DID_COUNT);
 
     // CONFIG
-    PopulateMapNvmFlashCfg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_FLASH_CONFIG);
-    PopulateMapGpxFlashCfg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_FLASH_CFG);
+    PopulateMapNvmFlashCfg(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_FLASH_CONFIG);
+    PopulateMapGpxFlashCfg(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_FLASH_CFG);
 
     // DEBUG
-    PopulateMapDebugString(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_STRING);
-    PopulateMapDebugArray(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_ARRAY);
-    PopulateMapDebugArray(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEBUG_ARRAY);
+    PopulateMapDebugString(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_STRING);
+    PopulateMapDebugArray(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_ARRAY);
+    PopulateMapDebugArray(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEBUG_ARRAY);
 #ifdef USE_IS_INTERNAL
-    PopulateMapRtkDebug(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
-    PopulateMapRtkDebug(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
-    // PopulateMapRtkDebug2(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG_2);
-    PopulateMapRuntimeProfile( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RUNTIME_PROFILER);
+    PopulateMapRtkDebug(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
+    PopulateMapRtkDebug(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
+    // PopulateMapRtkDebug2(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG_2);
+    PopulateMapRuntimeProfile(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_RUNTIME_PROFILER);
 #endif
-    // PopulateMapDiagMsg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DIAGNOSTIC_MESSAGE);
+    // PopulateMapDiagMsg(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_DIAGNOSTIC_MESSAGE);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     // LUNA
@@ -1995,66 +1995,66 @@ cISDataMappings::cISDataMappings()
 #endif
 
     // SOLUTION
-    PopulateMapIns1(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_1);
-    PopulateMapIns2(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_2);
-    PopulateMapIns3(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_3);
-    PopulateMapIns4(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_4);
-    PopulateMapSysParams(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_PARAMS);
+    PopulateMapIns1(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_1);
+    PopulateMapIns2(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_2);
+    PopulateMapIns3(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_3);
+    PopulateMapIns4(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_4);
+    PopulateMapSysParams(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_PARAMS);
 
     // EKF
-    PopulateMapInl2States(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATES);
+    PopulateMapInl2States(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATES);
 #ifdef USE_IS_INTERNAL
-    PopulateMapInl2Status(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATUS);
-    PopulateMapInl2Misc(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
+    PopulateMapInl2Status(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATUS);
+    PopulateMapInl2Misc(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
 #endif
-    PopulateMapInl2NedSigma(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_NED_SIGMA);
-    PopulateMapInl2MagObsInfo(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MAG_OBS_INFO);
+    PopulateMapInl2NedSigma(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_NED_SIGMA);
+    PopulateMapInl2MagObsInfo(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MAG_OBS_INFO);
     PopulateMapRosCovariancePoseTwist(m_lookupInfo, m_lookupSize, m_indexInfo, DID_ROS_COVARIANCE_POSE_TWIST);
 #ifdef USE_IS_INTERNAL
-    PopulateMapInl2Misc(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
+    PopulateMapInl2Misc(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
 #endif
     
     // SENSORS
-    PopulateMapPimu(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU, "Preintegrated IMU.");
-    PopulateMapImu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
-    PopulateMapImu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
-    PopulateMapImu3(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
-    PopulateMapImu3(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
+    PopulateMapPimu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU, "Preintegrated IMU.");
+    PopulateMapImu(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
+    PopulateMapImu(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
+    PopulateMapImu3(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
+    PopulateMapImu3(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
 
-    PopulateMapImu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_IMU, "Reference IMU.");
-    PopulateMapPimu(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_PIMU, "Reference PIMU.");
-    PopulateMapMagnetometer(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_MAGNETOMETER);
+    PopulateMapImu(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_IMU, "Reference IMU.");
+    PopulateMapPimu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_PIMU, "Reference PIMU.");
+    PopulateMapMagnetometer(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_MAGNETOMETER);
 
-    PopulateMapMagnetometer(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAGNETOMETER);
-    PopulateMapBarometer(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_BAROMETER);
-    PopulateMapWheelEncoder(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_WHEEL_ENCODER);
+    PopulateMapMagnetometer(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAGNETOMETER);
+    PopulateMapBarometer(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_BAROMETER);
+    PopulateMapWheelEncoder(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_WHEEL_ENCODER);
 
-    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS);
-    PopulateMapGpsRtkRel(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_REL);
-    PopulateMapGpsRtkMisc(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_MISC);
-    PopulateMapGpsRtkRel(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_REL);
-    PopulateMapGpsRtkMisc(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_MISC);
+    PopulateMapGpsPos(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS);
+    PopulateMapGpsRtkRel(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_REL);
+    PopulateMapGpsRtkMisc(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_MISC);
+    PopulateMapGpsRtkRel(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_REL);
+    PopulateMapGpsRtkMisc(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_MISC);
 
-    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_POS);
-    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_POS);
-    PopulateMapGpsVel(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VEL);
-    PopulateMapGpsVel(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VEL);
-    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RCVR_POS);
+    PopulateMapGpsPos(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_POS);
+    PopulateMapGpsPos(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_POS);
+    PopulateMapGpsVel(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VEL);
+    PopulateMapGpsVel(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VEL);
+    PopulateMapGpsPos(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RCVR_POS);
 
 #if 0	// Too much data, we don't want to log this. WHJ
-    PopulateMapGpsSat(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SAT, DID_GPS1_SAT);
-    PopulateMapGpsSat(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SAT, DID_GPS2_SAT);
-    PopulateMapGpsSig(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SIG, DID_GPS1_SIG);
-    PopulateMapGpsSig(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SIG, DID_GPS2_SIG);
+    PopulateMapGpsSat(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SAT, DID_GPS1_SAT);
+    PopulateMapGpsSat(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SAT, DID_GPS2_SAT);
+    PopulateMapGpsSig(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SIG, DID_GPS1_SIG);
+    PopulateMapGpsSig(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SIG, DID_GPS2_SIG);
 #endif
 
-    PopulateMapGpsVersion(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VERSION);
-    PopulateMapGpsVersion(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VERSION);
-    PopulateMapGpsTimepulse(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_TIMEPULSE);
+    PopulateMapGpsVersion(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VERSION);
+    PopulateMapGpsVersion(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VERSION);
+    PopulateMapGpsTimepulse(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_TIMEPULSE);
 
-    PopulateMapGpsRaw(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RAW);
-    PopulateMapGpsRaw(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RAW);
-    PopulateMapGpsRaw(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS_BASE_RAW);
+    PopulateMapGpsRaw(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RAW);
+    PopulateMapGpsRaw(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RAW);
+    PopulateMapGpsRaw(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS_BASE_RAW);
 
 #ifdef USE_IS_INTERNAL
 //     m_lookupSize[DID_RTK_STATE] = sizeof(rtk_state_t);
@@ -2062,73 +2062,73 @@ cISDataMappings::cISDataMappings()
     m_lookupSize[DID_RTK_PHASE_RESIDUAL] = sizeof(rtk_residual_t);
 #endif
 
-    PopulateMapStrobeInTime(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_STROBE_IN_TIME);
-    PopulateMapSysSensors(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_SENSORS);
-    PopulateMapSensorsADC(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC);
-    PopulateMapSensorsADC(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC_SIGMA);
+    PopulateMapStrobeInTime(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_STROBE_IN_TIME);
+    PopulateMapSysSensors(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_SENSORS);
+    PopulateMapSensorsADC(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC);
+    PopulateMapSensorsADC(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC_SIGMA);
 
-    PopulateMapPimuMag(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU_MAG);
-    PopulateMapImuMag(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_MAG);
+    PopulateMapPimuMag(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU_MAG);
+    PopulateMapImuMag(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_MAG);
 
     // CALIBRATION
-    PopulateMapMagCal(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAG_CAL);
-    PopulateMapInfieldCal(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INFIELD_CAL);
-    PopulateMapGroundVehicle(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_GROUND_VEHICLE);
+    PopulateMapMagCal(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAG_CAL);
+    PopulateMapInfieldCal(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_INFIELD_CAL);
+    PopulateMapGroundVehicle(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_GROUND_VEHICLE);
     
     // SYSTEM
-    PopulateMapDeviceInfo(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEV_INFO);
-    PopulateMapDeviceInfo(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEV_INFO);
+    PopulateMapDeviceInfo(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEV_INFO);
+    PopulateMapDeviceInfo(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEV_INFO);
 
-    PopulateMapSystemCommand(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_CMD);
-    PopulateMapBit(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_BIT);
-    PopulateMapGpxBit(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_BIT);
-    PopulateMapGpxStatus(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_STATUS);
-    PopulateMapSurveyIn(m_lookupInfo, m_lookupSize, m_indexInfo, DID_SURVEY_IN);
-    PopulateMapRtosInfo(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTOS_INFO);
+    PopulateMapSystemCommand(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_CMD);
+    PopulateMapBit(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_BIT);
+    PopulateMapGpxBit(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_BIT);
+    PopulateMapGpxStatus(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_STATUS);
+    PopulateMapSurveyIn(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_SURVEY_IN);
+    PopulateMapRtosInfo(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTOS_INFO);
     // m_lookupSize[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
-    PopulateMapSystemFault(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_FAULT);
+    PopulateMapSystemFault(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_FAULT);
 
 #ifdef USE_IS_INTERNAL
-    PopulateMapUserPage0(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G0);
-    PopulateMapUserPage1(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G1);
+    PopulateMapUserPage0(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G0);
+    PopulateMapUserPage1(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G1);
 #endif
 
     // COMMUNICATIONS
-    PopulateMapPortMonitor(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_PORT_MONITOR);
-    PopulateMapPortMonitor(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_PORT_MONITOR);
-    PopulateMapNmeaMsgs(m_lookupInfo, m_lookupSize, m_indexInfo, DID_NMEA_BCAST_PERIOD);
-    PopulateMapCanConfig(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAN_CONFIG);
-    PopulateMapRmc(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_RMC);
-    PopulateMapRmc(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_RMC);
-    PopulateMapIO(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_IO);
-    PopulateMapISEvent(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVENT);
+    PopulateMapPortMonitor(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_PORT_MONITOR);
+    PopulateMapPortMonitor(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_PORT_MONITOR);
+    PopulateMapNmeaMsgs(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_NMEA_BCAST_PERIOD);
+    PopulateMapCanConfig(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAN_CONFIG);
+    PopulateMapRmc(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_RMC);
+    PopulateMapRmc(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_RMC);
+    PopulateMapIO(              m_lookupInfo, m_lookupSize, m_indexInfo, DID_IO);
+    PopulateMapISEvent(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVENT);
 
     // EVB
-    PopulateMapEvbStatus(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_STATUS);
-    PopulateMapEvbFlashCfg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_FLASH_CFG);
-    PopulateMapDebugArray(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEBUG_ARRAY);
-    // PopulateMapEvbRtosInfo( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_RTOS_INFO);
-    PopulateMapDeviceInfo(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEV_INFO);
+    PopulateMapEvbStatus(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_STATUS);
+    PopulateMapEvbFlashCfg(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_FLASH_CFG);
+    PopulateMapDebugArray(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEBUG_ARRAY);
+    // PopulateMapEvbRtosInfo(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_RTOS_INFO);
+    PopulateMapDeviceInfo(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEV_INFO);
 
     // MANUFACTURING
-    PopulateMapHdwParams(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_HDW_PARAMS);
-    PopulateMapManufacturingInfo(m_lookupInfo, m_lookupSize, m_indexInfo, DID_MANUFACTURING_INFO);
-    PopulateMapSensorsWTemp(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_UCAL);
-    PopulateMapSensorsWTemp(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TCAL);
-    PopulateMapSensorsWTemp(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_MCAL);
-    PopulateMapSensors(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TC_BIAS);
-    PopulateMapSensorCompensation(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_SCOMP);
+    PopulateMapHdwParams(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_HDW_PARAMS);
+    PopulateMapManufacturingInfo(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_MANUFACTURING_INFO);
+    PopulateMapSensorsWTemp(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_UCAL);
+    PopulateMapSensorsWTemp(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TCAL);
+    PopulateMapSensorsWTemp(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_MCAL);
+    PopulateMapSensors(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TC_BIAS);
+    PopulateMapSensorCompensation(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_SCOMP);
 #ifdef USE_IS_INTERNAL
     // DID_CAL_SC_INFO
-    PopulateMapSensorTCalGroup(m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_TEMP_COMP);
-    PopulateMapSensorMCalGroup(m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_MOTION);
+    PopulateMapSensorTCalGroup( m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_TEMP_COMP);
+    PopulateMapSensorMCalGroup( m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_MOTION);
 #endif
 
 
 #ifdef USE_IS_INTERNAL
-//     PopulateMapRtkState(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_STATE);
-//     PopulateMapRtkResidual( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_CODE_RESIDUAL);
-//     PopulateMapRtkResidual( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_PHASE_RESIDUAL);
+//     PopulateMapRtkState(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_STATE);
+//     PopulateMapRtkResidual(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_CODE_RESIDUAL);
+//     PopulateMapRtkResidual(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_PHASE_RESIDUAL);
 #endif
 
     // This must come last
