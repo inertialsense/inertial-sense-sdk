@@ -66,7 +66,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     serialPortFlush(m_port);
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    sync(m_port);
+    handshake_sync(m_port);
 
     SLEEP_MS(100);
 
@@ -239,7 +239,7 @@ is_operation_result cISBootloaderISB::reboot()
 
 uint32_t cISBootloaderISB::get_device_info()
 {
-    sync(m_port);
+    handshake_sync(m_port);
     serialPortFlush(m_port);
 
 	// Send command
@@ -306,7 +306,7 @@ uint32_t cISBootloaderISB::get_device_info()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderISB::sync(port_handle_t port)
+is_operation_result cISBootloaderISB::handshake_sync(port_handle_t port)
 {
     static const uint8_t handshakerChar = 'U';
 
@@ -321,6 +321,7 @@ is_operation_result cISBootloaderISB::sync(port_handle_t port)
 
         if (serialPortWaitForTimeout(port, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            // FIXME: status_update("(ISB) Handshake", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
@@ -333,11 +334,13 @@ is_operation_result cISBootloaderISB::sync(port_handle_t port)
     {
         if (serialPortWriteAndWaitForTimeout(port, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            // FIXME: status_update("(ISB) Handshake v5a", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
 #endif
 
+    // FIXME: status_update("(ISB) Handshake w/o response", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
@@ -398,7 +401,7 @@ is_operation_result cISBootloaderISB::erase_flash()
         }
     } 
 
-    status_update("(ISB) Error in erase flash", IS_LOG_LEVEL_ERROR);
+    //status_update("(ISB) Error in erase flash", IS_LOG_LEVEL_ERROR);
     return IS_OP_ERROR;
 }
 
@@ -412,7 +415,7 @@ is_operation_result cISBootloaderISB::select_page(int page)
     checksum(0, changePage, 1, 17, 17, 1);
     if (serialPortWriteAndWaitForTimeout(m_port, changePage, 19, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
-        status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
+        //status_update("(ISB) Failed to select page", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
@@ -432,7 +435,7 @@ is_operation_result cISBootloaderISB::begin_program_for_current_page(int startOf
     checksum(0, programPage, 1, 19, 19, 1);
     if (serialPortWriteAndWaitForTimeout(m_port, programPage, 21, (unsigned char*)".\r\n", 3, BOOTLOADER_TIMEOUT_DEFAULT) == 0)
     {
-        status_update("(ISB) Failed to start programming page", IS_LOG_LEVEL_ERROR);
+        //status_update("(ISB) Failed to start programming page", IS_LOG_LEVEL_ERROR);
         return IS_OP_ERROR;
     }
 
@@ -582,6 +585,9 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
         unsigned char hexData[256];
         memset(hexData, 'F', 256);
 
+        // FIXME: This isn't okay... We have about 32k of additional flash that we can't access because is not the 65k "logical" page size.
+        //  This function should recognize when we are on the last page, and how many bytes are in that page if its not a full page and handle things accordingly.
+        //  until then, we'll return OK in the error condition below, because the bootloader won't let us write out of bounds anyway...
         while (*currentOffset < FLASH_PAGE_SIZE)
         {
             int byteCount = (FLASH_PAGE_SIZE - *currentOffset) * 2;
@@ -594,7 +600,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
             if (upload_hex_page(hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
             {
                 status_update("(ISB) Failed to fill page with bytes", IS_LOG_LEVEL_ERROR);
-                return IS_OP_ERROR;
+                return IS_OP_OK; // FIXME - this should actually be an error
             }
         }
     }
@@ -799,6 +805,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
         {
             if (lineLength > HEX_BUFFER_SIZE * 4)
             {
+                printf("\n");
                 status_update("(ISB) hex file line length too long", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
@@ -816,6 +823,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
                 pad = (subOffset - lastSubOffset);
                 if (outputPtr + pad >= outputPtrEnd)
                 {
+                    printf("\n");
                     status_update("(ISB) FF padding overflowed buffer", IS_LOG_LEVEL_ERROR);
                     return IS_OP_ERROR;
                 }
@@ -832,6 +840,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             pad = lineLength - 11;
             if (outputPtr + pad >= outputPtrEnd)
             {
+                printf("\n");
                 status_update("(ISB) Line data overflowed output buffer", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
@@ -854,6 +863,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // upload this chunk
             if (upload_hex(output, _MIN(MAX_SEND_COUNT, outputSize), &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                printf("\n");
                 status_update("(ISB) Error in upload chunk", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
@@ -862,6 +872,7 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
 
             if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
             {
+                printf("\n");
                 status_update("(ISB) Output size was too large (1)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
@@ -894,27 +905,39 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
 
             if (outputSize < 0 || outputSize > HEX_BUFFER_SIZE)
             {
+                printf("\n");
                 status_update("(ISB) Output size was too large (2)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
             // flush the remainder of data to the page
             if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                printf("\n");
                 status_update("(ISB) Error in upload hex", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
             // // fill the remainder of the current page, the next time that bytes try to be written the page will be automatically incremented
             if (fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                printf("\n");
                 status_update("(ISB) Error in fill page", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
             // change to the next page
             currentOffset = 0;
-            if (select_page(currentPage) != IS_OP_OK || begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
+            if (select_page(currentPage) != IS_OP_OK )
             {
-                status_update("(ISB) Failed to issue select page or to start programming", IS_LOG_LEVEL_ERROR);
+                printf("\n");
+                status_update("(ISB) Failed to issue select page for programming", IS_LOG_LEVEL_ERROR);
+                return IS_OP_ERROR;
+            }
+
+            // start programming
+            if (begin_program_for_current_page(0, FLASH_PAGE_SIZE - 1) != IS_OP_OK)
+            {
+                printf("\n");
+                status_update("(ISB) Failed to start programming of selected page", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
 
@@ -928,11 +951,13 @@ is_operation_result cISBootloaderISB::process_hex_file(FILE* file)
             // flush the remainder of data to the page
             if (upload_hex(output, outputSize, &currentOffset, &currentPage, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                printf("\n");
                 status_update("(ISB) Error in upload hex (last)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }
             if (currentOffset != 0 && fill_current_page(&currentPage, &currentOffset, &totalBytes, &verifyCheckSum) != IS_OP_OK)
             {
+                printf("\n");
                 status_update("(ISB) Error in fill page (last)", IS_LOG_LEVEL_ERROR);
                 return IS_OP_ERROR;
             }

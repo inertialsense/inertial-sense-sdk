@@ -47,7 +47,7 @@ std::string base64Decode(const std::string& encoded_string);
 * @param result cleared and then filled with split strings
 * @return the number of items in result
 */
-size_t splitString(const std::string& str, const char delimiter, std::vector<std::string>& result);
+size_t splitString(const std::string str, const char delimiter, std::vector<std::string>& result);
 
 /**
 * Join vector of strings with character

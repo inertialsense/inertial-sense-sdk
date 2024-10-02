@@ -46,15 +46,15 @@ static int staticReadData(port_handle_t port, uint8_t* buf, int len)
 
 	if (s_is) {	// Save raw data to ISlogger
 		s_is->LogRawData(s_is->DeviceByPort(port), bytesRead, buf);
-	}
+    }
     return bytesRead;
 }
 
-static void staticProcessRxData(p_data_t* data, port_handle_t port)
+static int staticProcessRxData(p_data_t* data, port_handle_t port)
 {
     if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
     {
-        return;
+        return -1;
     }
 
     pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
@@ -90,6 +90,7 @@ static void staticProcessRxData(p_data_t* data, port_handle_t port)
             }
             break;
     }
+    return 0;
 }
 
 static int staticProcessRxNmea(const unsigned char* msg, int msgSize, port_handle_t port)
@@ -117,7 +118,8 @@ InertialSense::InertialSense(
     m_clientStream = NULLPTR;
     m_clientBufferBytesToSend = 0;
     m_clientServerByteCount = 0;
-    m_disableBroadcastsOnClose = false;
+    m_disableBroadcastsOnClose = false;  // For Intellian
+
     for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
     {
         m_comManagerState.binaryCallback[i] = {};
@@ -131,7 +133,8 @@ InertialSense::InertialSense(
     comManagerGetGlobal()->assignUserPointer(&m_comManagerState);
     // memset(&m_cmInit, 0, sizeof(m_cmInit));
     // m_cmPorts = NULLPTR;
-    // is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer));
+
+    is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer), NULL);
 
     // Rx data callback functions
     m_handlerRmc    = handlerRmc;
@@ -139,8 +142,6 @@ InertialSense::InertialSense(
     m_handlerUblox  = handlerUblox;
     m_handlerRtcm3  = handlerRtcm3;
     m_handlerSpartn = handlerSpartn;
-
-    m_serialPorts.reserve(10);
 }
 
 InertialSense::~InertialSense()
@@ -223,11 +224,11 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
         newDevice.port = port;
         newDevice.devInfo = devInfo;
         newDevice.hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-        newDevice.hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev info
+        newDevice.hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev good info
         newDevice.flashCfgUploadChecksum = 0;
         newDevice.sysParams.flashCfgChecksum = 0;
         m_comManagerState.devices.push_back(newDevice);
-        return m_comManagerState.devices.empty() ? NULL : (ISDevice*)&m_comManagerState.devices.back();
+        foundDevice = m_comManagerState.devices.empty() ? NULL : (ISDevice*)&m_comManagerState.devices.back();
     } else {
         // if we found a matching device, but with a different (or unassigned port), should we update its port reference?
         foundDevice->port = port;
@@ -254,16 +255,6 @@ bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
     }
 
     return true;
-}
-
-void InertialSense::RemoveDevice(size_t index)
-{
-    if (index >= m_comManagerState.devices.size())
-    {
-        return;
-    }
-
-    serialPortClose(m_comManagerState.devices[index].port);
 }
 
 void InertialSense::RemoveDevice(ISDevice* device)
@@ -442,15 +433,23 @@ size_t InertialSense::DeviceCount()
 }
 
 /**
+ * @return a vector of available ports
+ * NOTE that this may return ports which do not have a corresponding ISDevice
+ */
+std::vector<port_handle_t> InertialSense::getPorts() {
+    std::vector<port_handle_t> ports;
+    for (auto port : m_serialPorts) {
+        ports.push_back((port_handle_t)&port);
+    }
+    return ports;
+}
+
+/**
  * Returns a vector of available, connected devices
  * @return
  */
-std::vector<ISDevice>& InertialSense::getDevices() {
+std::list<ISDevice>& InertialSense::getDevices() {
     return m_comManagerState.devices;
-}
-
-ISDevice* InertialSense::getDevice(uint32_t deviceIndex) {
-    return &m_comManagerState.devices[deviceIndex];
 }
 
 ISDevice* InertialSense::getDevice(port_handle_t port) {
@@ -484,18 +483,14 @@ bool InertialSense::Update()
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (auto& device : m_comManagerState.devices) {
                 if (serialPortIsOpen(device.port) && device.fwUpdater != nullptr) {
-                    device.fwUpdater->fwUpdate_step();
-
-                    if (!device.fwUpdateInProgress()) {
-                        fwUpdate::update_status_e status = device.fwLastStatus;
-                        if (status < fwUpdate::NOT_STARTED) {
+                    if (!device.fwUpdater->fwUpdate_step()) { // device.fwUpdate.update();
+                        if (device.fwLastStatus < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
 
-
 #ifdef DEBUG_CONSOLELOGGING
-                        } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
+                    } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
                         float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)fwUpdater->getNextChunkID() / (float)fwUpdater->getTotalChunks() * 100.f);
                         float errRt = fwUpdater->getResendRate() * 100.f;
@@ -510,12 +505,12 @@ bool InertialSense::Update()
 
     // if any serial ports have closed, shutdown
     bool anyOpen = false;
-    for (size_t i = 0; i < m_comManagerState.devices.size(); i++)
+    for (auto& device : m_comManagerState.devices)
     {
-        if (!serialPortIsOpen(m_comManagerState.devices[i].port))
+        if (!serialPortIsOpen(device.port))
         {
             // Make sure its closed..
-            serialPortClose(m_comManagerState.devices[i].port);
+            serialPortClose(device.port);
         } else
             anyOpen = true;
     }
@@ -526,7 +521,7 @@ bool InertialSense::Update()
 bool InertialSense::UpdateServer()
 {
     // as a tcp server, only the first serial port is read from
-    port_handle_t port = m_comManagerState.devices[0].port;
+    port_handle_t port = m_comManagerState.devices.front().port;
     is_comm_instance_t *comm = &(COMM_PORT(port)->comm);
     protocol_type_t ptype = _PTYPE_NONE;
 
@@ -690,7 +685,6 @@ bool InertialSense::UpdateClient()
     }
     m_clientBufferBytesToSend = 0;
 
-
     return true;
 }
 
@@ -713,7 +707,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 
 bool InertialSense::IsOpen()
 {
-    return (m_comManagerState.devices.size() != 0 && serialPortIsOpen(m_comManagerState.devices[0].port));
+    return (m_comManagerState.devices.size() != 0 && serialPortIsOpen(m_comManagerState.devices.front().port));
 }
 
 void InertialSense::Close()
@@ -724,15 +718,16 @@ void InertialSense::Close()
         StopBroadcasts();
         SLEEP_MS(100);
     }
-    for (auto& device : m_comManagerState.devices)
-    {
-        serialPortClose(device.port);
-    }
-    m_comManagerState.devices.clear();
-    m_serialPorts.clear();
+//    for (auto& device : m_comManagerState.devices)
+//    {
+//        serialPortClose(device.port);
+//    }
+//    m_comManagerState.devices.clear();
+//    m_serialPorts.clear();
+    CloseSerialPorts(true); // allow all opened ports to transmit all buffered data
 }
 
-vector<string> InertialSense::GetPorts()
+vector<string> InertialSense::GetPortNames()
 {
     vector<string> ports;
     for (auto& device : m_comManagerState.devices)
@@ -826,7 +821,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
 
         device->sysCmd.command = command;
         device->sysCmd.invCommand = ~command;
-        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the uINS.
+        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
         comManagerSendData(port, &device->sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
     }
 }
@@ -840,7 +835,7 @@ void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
  *       port: Send in target COM port.
  *                If arg is < 0 default port will be used 
 */
-void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port)
+void InertialSense::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port)
 {
     #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
     uint8_t data[EVENT_MAX_SIZE] = {0};
@@ -944,7 +939,7 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
 {
     ISDevice* device = NULL;
     if (!port) {
-        device = &m_comManagerState.devices[0];
+        device = &m_comManagerState.devices.front();
     } else {
         device = DeviceByPort(port);
     }
@@ -963,7 +958,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
 {
     ISDevice* device = NULL;
     if (!port) {
-        device = &m_comManagerState.devices[0];
+        device = &m_comManagerState.devices.front();
     } else {
         device = DeviceByPort(port);
     }
@@ -1036,7 +1031,7 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
 {
     ISDevice* device = NULL;
     if (!port) {
-        device = &m_comManagerState.devices[0];
+        device = &m_comManagerState.devices.front();
     } else {
         device = DeviceByPort(port);
     }
@@ -1124,10 +1119,6 @@ void InertialSense::ProcessRxData(port_handle_t port, p_data_t* data)
 // return 0 on success, -1 on failure
 void InertialSense::ProcessRxNmea(port_handle_t port, const uint8_t* msg, int msgSize)
 {
-    if (m_handlerNmea) {
-        m_handlerNmea(msg, msgSize, port);
-    }
-
     switch (getNmeaMsgId(msg, msgSize)) {
         case NMEA_MSG_ID_INFO: {
             // Device Info
@@ -1144,6 +1135,10 @@ void InertialSense::ProcessRxNmea(port_handle_t port, const uint8_t* msg, int ms
             }
         }
         break;
+    }
+
+    if (m_handlerNmea) {
+        m_handlerNmea(msg, msgSize, port);
     }
 }
 
@@ -1181,7 +1176,7 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (auto& device : m_comManagerState.devices)
         {
-            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the uINS.
+            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the IS device.
             comManagerDisableData(device.port, dataId);
         }
     }
@@ -1189,9 +1184,9 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
     {
         for (auto& device : m_comManagerState.devices)
         {
-            // [C COMM INSTRUCTION]  3.) Request a specific data set from the uINS.  "periodMultiple" specifies the interval
+            // [C COMM INSTRUCTION]  3.) Request a specific data set from the IMX.  "periodMultiple" specifies the interval
             // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            if (device.devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) {
+            if ((device.devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) || !m_enableDeviceValidation) {
                 comManagerGetData(device.port, dataId, 0, 0, periodMultiple);
             }
         }
@@ -1290,8 +1285,15 @@ bool InertialSense::isFirmwareUpdateFinished() {
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : m_comManagerState.devices) {
         ISFirmwareUpdater *fwUpdater = device.fwUpdater;
-        if (fwUpdater != nullptr && !fwUpdater->fwUpdate_isDone() && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) 
-            return false;
+        if (device.fwUpdater->hasErrors() ||
+            (   (fwUpdater != nullptr) &&
+                fwUpdater->fwUpdate_isDone() &&
+                (
+                        (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) ||
+                        fwUpdater->hasErrors()
+                )
+            ))
+        return false;
     }
     return true;
 }
@@ -1312,18 +1314,6 @@ int InertialSense::getFirmwareUpdatePercent() {
         return (int)((float)total_percent / (float)total_devices);
 
     return 100;
-}
-
-/**
-* Gets current update status for selected device index
-* @param deviceIndex
-*/
-fwUpdate::update_status_e InertialSense::getUpdateStatus(uint32_t deviceIndex)
-{
-    if (m_comManagerState.devices[deviceIndex].fwUpdater != NULL)
-        return m_comManagerState.devices[deviceIndex].fwUpdater->fwUpdate_getSessionStatus();
-    else
-        return fwUpdate::ERR_UPDATER_CLOSED;
 }
 
 /**
@@ -1407,7 +1397,7 @@ is_operation_result InertialSense::BootloadFile(
     }
 
     #if !PLATFORM_IS_WINDOWS
-    fputs("\e[?25l", stdout);	// Turn off cursor during firmare update
+    fputs("\e[?25l", stdout);	// Turn off cursor during firmware update
     #endif
 
     printf("\n\r");
@@ -1489,18 +1479,27 @@ int InertialSense::OnSerialPortError(port_handle_t port, int errCode, const char
 }
 
 port_handle_t InertialSense::allocateSerialPort(int ptype) {
+//    vector<base_port_t *> serPorts;
+//    serPorts.push_back(0);
+//    base_port_t* tmpPort = serPorts[0];
+//    int pId = portId(tmpPort);
+//    serPorts.clear();
+
     // TODO :: TRYING SOMETHING DIFFERENT
     //   -- rather than using new, m_serialPorts will allocate a new port using a copy constructor.
     //   We'll dereference the internal copy in the vector to a port_handle_t -- this avoids us using new/delete or malloc/free
-    serial_port_t serialPort;
-    serialPort.base.pnum = (uint16_t)m_serialPorts.size(); // m_comManagerState.devices.size();
-    serialPort.base.ptype = (ptype | PORT_TYPE__UART);
+    serial_port_t* serialPort = new serial_port_t;
+    serialPort->base.pnum = (uint16_t)m_serialPorts.size(); // m_comManagerState.devices.size();
+    serialPort->base.ptype = (ptype | PORT_TYPE__UART);
 
-    m_serialPorts.push_back(serialPort);
-    port_handle_t port = (port_handle_t)&m_serialPorts.back();
+    serialPort->pfnError = OnSerialPortError;
+
+    port_handle_t port = (port_handle_t)serialPort;
     serialPortPlatformInit(port);
 
-    serialPort.pfnError = OnSerialPortError;
+    m_serialPorts.insert(port);
+    comManagerRegisterPort(port);    // don't forget to register this port with the comManager and wire callbacks
+
     return port;
 }
 
@@ -1535,11 +1534,11 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     }
 
     // split port on comma in case we need to open multiple serial ports
-    vector<string> ports;
+    vector<string> portNames;
     size_t maxCount = UINT32_MAX;
 
-    debug_message("Initializing comManager...\n");
-    comManagerInit(10, staticProcessRxData, 0, 0, 0, &m_cmBufBcastMsg);
+    debug_message("[DBG] Initializing comManager...\n");
+    comManagerInit(&m_serialPorts, 10, staticProcessRxData, 0, 0, 0, &m_cmBufBcastMsg);
     comManagerRegisterProtocolHandler(_PTYPE_NMEA, staticProcessRxNmea);
     comManagerRegisterProtocolHandler(_PTYPE_UBLOX, m_handlerUblox);
     comManagerRegisterProtocolHandler(_PTYPE_RTCM3, m_handlerRtcm3);
@@ -1549,8 +1548,8 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     if (portPattern[0] == '*')
     {
         // m_enableDeviceValidation = true; // always use device-validation when given the 'all ports' wildcard.    (WHJ) I commented this out.  We don't want to force device verification with the loopback tests.
-        debug_message("[DGB] Querying OS for available serial ports.\n");
-        cISSerialPort::GetComPorts(ports);
+        debug_message("[DBG] Querying OS for available serial ports.\n");
+        cISSerialPort::GetComPorts(portNames);
         if (portPattern[1] != '\0')
         {
             maxCount = atoi(portPattern + 1);
@@ -1560,42 +1559,43 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     else
     {
         // comma separated list of serial ports
-        splitString(portPattern, ',', ports);
+        splitString(portPattern, ',', portNames);
     }
 
     // allocate, register and open serial ports, but don't if its already allocated, registered, and opened.
-    for (std::string curPortName : ports) {
+    for (std::string curPortName : portNames) {
         // check to see if this port should be ignored
         bool skipPort = false;
         for (auto ignored : m_ignoredPorts) {
-            if (ignored == curPortName)
+            if (ignored == curPortName) {
+                debug_message("[DBG] Ignoring port %s\n", curPortName.c_str());
                 skipPort = true;
+            }
         }
         if (skipPort)
             continue;   // skip this one...
 
         // check is this port already exists, and is open...
-        port_handle_t newPort = 0;
-        for (auto& port : comManagerGetPorts()) {
-            debug_message("[DGB] Serial port '%s' has already been allocated.\n", curPortName.c_str());
+        port_handle_t newPort = NULL;
+        for (auto port : m_serialPorts) {
             if (portName(port) && (portName(port) == curPortName)) {
+                debug_message("[DBG] Serial port '%s' has already been allocated.\n", curPortName.c_str());
                 newPort = port;
                 break;
             }
         }
 
         if (!newPort) {
-            debug_message("[DGB] Allocating serial port instance for %s\n", curPortName.c_str());
+            debug_message("[DBG] Allocating serial port instance for %s\n", curPortName.c_str());
             newPort = allocateSerialPort(PORT_TYPE__COMM);
         }
 
         if (!serialPortIsOpen(newPort)) {
-            debug_message("[DGB] OpeningSerial port '%s' has already been allocated.\n", curPortName.c_str());
+            debug_message("[DBG] Opening serial port '%s'\n", curPortName.c_str());
             if (serialPortOpen(newPort, curPortName.c_str(), baudRate, 0) == 0) {
+                debug_message("[DBG] Error opening serial port '%s'.  Ignoring.  Error was: %s\n", curPortName.c_str(), SERIAL_PORT(newPort)->error);
                 serialPortClose(newPort);           // failed to open
                 m_ignoredPorts.push_back(curPortName);     // record this port name as bad, so we don't try and reopen it again
-            } else {
-                comManagerRegisterPort(newPort);    // successful, so register the port, and hopefully data arrives...
             }
         } else {
           // nothing to do, it's already registered and open.
@@ -1614,7 +1614,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                 break;
             }
 
-            for (auto& port : comManagerGetPorts()) {
+            for (auto port : m_serialPorts) {
                 ISDevice device(port);
                 switch (checkType) {
                     case 0 :
@@ -1631,17 +1631,20 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
                         //comManagerGetData(port, DID_DEV_INFO, 0, 0, 0);
                         break;
                 }
-                if ((device.hdwId != 0) && (device.hdwRunState != 0))
+
+                for (int i = 0; i < 3; i++) {
+                    SLEEP_MS(5);
+                    comManagerStep();
+                }
+
+                if ((device.hdwId != 0) && (device.hdwRunState != 0)) {
+                    debug_message("[DBG] Received response from serial port '%s'. Registering device.\n", SERIAL_PORT(port)->portName);
                     registerDevice(&device);
-                else if (SERIAL_PORT(port)->errorCode) {
+                } else if (SERIAL_PORT(port)->errorCode) {
                     // there was some other janky issue with the requested port; even though the device technically exists, its in a bad state. Let's just drop it now.
+                    debug_message("[DBG] There was an error accessing serial port '%s': %s\n", SERIAL_PORT(port)->portName, SERIAL_PORT(port)->error);
                     comManagerRemovePort(port);
                 }
-            }
-
-            for (int i = 0; i < 3; i++) {
-                SLEEP_MS(100);
-                comManagerStep();
             }
 
             checkType = (checkType + 1) % 4;
@@ -1652,6 +1655,7 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         std::vector<ISDevice*> deadDevices;
         for (auto& device : m_comManagerState.devices) {
             if (!HasReceivedDeviceInfo(device)) {
+                debug_message("[DBG] Failed to receive response on serial port '%s'\n", portName(device.port));
                 deadPorts.push_back(((serial_port_t*)device.port)->portName);
                 deadDevices.push_back(&device);
             }
@@ -1668,15 +1672,12 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
 
         // We don't remove the device above while still iterating over the list of devices.
         for (auto deadDevice : deadDevices) {
-            RemoveDevice(deadDevice);
+            if (deadDevice) {
+                debug_message("[DBG] Deallocating device associated with port '%s'\n", portName(deadDevice->port));
+                RemoveDevice(deadDevice);
+            }
         }
         deadDevices.clear();
-
-        // if no devices left, all failed, we return failure
-        if (m_comManagerState.devices.size() == 0) {
-            CloseSerialPorts();
-            return false;
-        }
     }
 
     // request extended device info for remaining connected devices...
@@ -1689,16 +1690,26 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         }
     }
 
-    return m_comManagerState.devices.size() != 0;
+    return (m_enableDeviceValidation ? !m_comManagerState.devices.empty() : !m_serialPorts.empty());
 }
 
-void InertialSense::CloseSerialPorts()
+void InertialSense::CloseSerialPorts(bool drainBeforeClose)
 {
     debug_message("Closing all serial ports.\n");
-    for (auto& dev : m_comManagerState.devices)
-        serialPortClose(dev.port);
 
-    m_comManagerState.devices.clear();
+    // Note the distinction here; we are closing ports, not devices...  Maybe we should do this differently though?
+    for (auto port : m_serialPorts) {
+        if (port) {
+            if (drainBeforeClose) {
+                serialPortDrain(port);
+            }
+            serialPortClose(port);
+        }
+    }
+
+    // TODO: we should find the associated port in the m_comManagerState.devices, and remove the port reference
+    // TODO: we need to provide a notification mechanism to inform consumers (ie, test_common framework) to clean up as well.
+    // TODO: we probably need to make sure all other references to the port are clear and then destroy the underlying port instance
 }
 
 void InertialSense::SaveFlashConfigFile(std::string path, port_handle_t port)
@@ -1970,7 +1981,7 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
  */
 ISDevice* InertialSense::DeviceByPort(port_handle_t port) {
     if (port == nullptr)
-        return nullptr;
+        return (!m_comManagerState.devices.empty() ? &(m_comManagerState.devices.front()) : nullptr);
 
     for (auto& device: m_comManagerState.devices) {
         if (device.port == port)
@@ -2093,4 +2104,38 @@ std::vector<ISDevice*> InertialSense::selectByDevInfo(const dev_info_t& devInfo,
             selected.push_back(&device);
     }
     return selected;
+}
+
+/**
+ * Returns a subset of connected devices filtered by the passed hardware id.
+ * Note that any HdwId component (TYPE, MAJOR, MINOR) which bit mask is all ones, will
+ * be ignored in the filter criteria.  Ie, to filter on ALL IMX devices, regardless of
+ * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
+ * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
+ * @param hdwId
+ * @return a vector of ISDevice* which match the filter criteria (hdwId)
+ */
+std::vector<ISDevice*> InertialSense::selectByHdwId(const uint16_t hdwId) {
+    dev_info_t devInfo = { };
+    uint32_t filterFlags = 0;
+
+    // filter hdw type
+    devInfo.hardwareType = DECODE_HDW_TYPE(hdwId);
+    if (devInfo.hardwareType != (HDW_TYPE__MASK >> HDW_TYPE__SHIFT)) {
+        filterFlags |= (1 << 1);
+    }
+
+    // filter major hdw version
+    devInfo.hardwareVer[0] = DECODE_HDW_MAJOR(hdwId);
+    if (devInfo.hardwareVer[0] != (HDW_MAJOR__MASK >> HDW_MAJOR__SHIFT)) {
+        filterFlags |= (1 << 4);
+    }
+
+    // filter minor hdw version
+    devInfo.hardwareVer[1] = DECODE_HDW_MINOR(hdwId);
+    if (devInfo.hardwareVer[1] != (HDW_MINOR__MASK >> HDW_MINOR__SHIFT)) {
+        filterFlags |= (1 << 5);
+    }
+
+    return selectByDevInfo(devInfo, filterFlags);
 }

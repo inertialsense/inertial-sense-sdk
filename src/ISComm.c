@@ -225,6 +225,46 @@ void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *ca
         is_comm_register_callbacks(&COMM_PORT(port)->comm, callbacks);
 }
 
+
+int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
+{
+    // Clear buffer and initialize buffer pointers
+    if (c->rxBuf.size != (uint32_t)bufferSize) { return -1; }
+    if (c->rxBuf.start != buffer) { return -1; }
+    if (c->rxBuf.end != buffer + bufferSize) { return -1; }
+    if (c->rxBuf.head < c->rxBuf.start || c->rxBuf.head > c->rxBuf.end) { return -1; }
+    if (c->rxBuf.tail < c->rxBuf.start || c->rxBuf.tail > c->rxBuf.end) { return -1; }
+    if (c->rxBuf.scan < c->rxBuf.start || c->rxBuf.scan > c->rxBuf.end) { return -1; }
+    
+    // Set parse enable flags
+    if (c->config.enabledMask != 
+        (ENABLE_PROTOCOL_ISB
+        | ENABLE_PROTOCOL_NMEA
+        | ENABLE_PROTOCOL_UBLOX
+        | ENABLE_PROTOCOL_RTCM3
+        // | ENABLE_PROTOCOL_SONY
+        // | ENABLE_PROTOCOL_SPARTN 
+        )) { return -1; }
+    
+    if (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end) { return -1; }
+
+    // Everything matches
+    return 0;
+}
+
+int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit)
+{
+    int result = is_comm_check(c, buffer, bufferSize);
+
+    if (result || forceInit)
+    {   // Mismatch or forced init
+        is_comm_init(c, buffer, bufferSize, c->cb.all);
+    }
+
+    // 0 on match, -1 on mismatch
+    return result;
+}
+
 void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
 {
     is_comm_parser_t *p = &(c->parser);
@@ -1179,7 +1219,7 @@ int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size, is_comm
 
 int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
 {
-    if ((port == NULL) || !(((base_port_t*)port)->ptype & PORT_TYPE__COMM))
+    if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
     {
         return -1;  // can't write if we don't have a valid port, or the port isn't an ISComm
     }
@@ -1206,7 +1246,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
         n += portWrite(port, (uint8_t *) &(pkt->checksum), 2);                   // Footer (checksum)
 
         // Increment Tx count
-        ((comm_port_t *) port)->comm.txPktCount++;
+        COMM_PORT(port)->comm.txPktCount++;
     }
 
     // Check that number of bytes sent matches packet size.  Return number of bytes written on success or -1 on failure.
@@ -1277,6 +1317,20 @@ char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned 
     if ((unsigned int)(data->hdr.size + data->hdr.offset) <= maxsize)
     {
         memcpy((uint8_t*)sptr + data->hdr.offset, data->buf, data->hdr.size);
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int maxsize)
+{
+    if (src->hdr.size <= maxsize)
+    {
+        dst->hdr = src->hdr;
+        memcpy(dst->ptr, src->ptr, src->hdr.size);
         return 0;
     }
     else

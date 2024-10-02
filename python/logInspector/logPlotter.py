@@ -1280,9 +1280,11 @@ class logPlot:
 
         for i, d in enumerate(self.active_devs):
             rtkRelTime = getTimeFromTowMs(self.getData(d, relDid, 'timeOfWeekMs'))
+            if len(rtkRelTime) == 0:
+                continue
             # rtkMiscTime = getTimeFromTowMs(self.getData(d, DID_GPS1_RTK_CMP_MISC, 'timeOfWeekMs'))
             if not self.log.compassing:
-                gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
+                gps1PosTime = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'), 1)
                 fixType = self.getData(d, DID_GPS1_POS, 'status') >> 8 & 0x1F
                 ax[0].plot(gps1PosTime, fixType, label=self.log.serials[d])
             else:
@@ -2547,6 +2549,21 @@ class logPlot:
             for i in range(9):
                 ax[i%5, i//5].set_ylabel('f[' + str(i) +']')
                 ax[i%5, i//5].plot(debug_f[:,i], label=self.log.serials[d])
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for b in ax:
+            for a in b:
+                a.grid(True)
+
+    def gpxDebugiArray(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(5,2, sharex=True)
+        fig.suptitle('GPX Debug int array - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            debug_i = self.getData(d, DID_GPX_DEBUG_ARRAY, 'i')
+            for i in range(9):
+                ax[i%5, i//5].set_ylabel('i[' + str(i) +']')
+                ax[i%5, i//5].plot(debug_i[:,i], label=self.log.serials[d])
         self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
             for a in b:

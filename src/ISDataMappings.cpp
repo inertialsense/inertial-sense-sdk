@@ -634,7 +634,7 @@ static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT],
     mapper.AddMember("syncCount", &gps_timepulse_t::syncCount, DATA_TYPE_UINT8, "", "Counter for successful timesync events.");
     mapper.AddMember("badPulseAgeCount", &gps_timepulse_t::badPulseAgeCount, DATA_TYPE_UINT8, "", "Counter for failed timesync events.");
     mapper.AddMember("ppsInterruptReinitCount", &gps_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GPS PPS interrupt re-initalization.");
-    mapper.AddMember("unused", &gps_timepulse_t::unused, DATA_TYPE_UINT8, "", "");
+    mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "");
     mapper.AddMember("lastSyncTimeMs", &gps_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
     mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");			
 }
@@ -990,33 +990,41 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
-    DataMapper<gpx_status_t> mapper(mappings, lookupSize, indices, did);
-    mapper.AddMember("timeOfWeekMs", &gpx_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status", &gpx_status_t::status, DATA_TYPE_UINT32, "", "(see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsSer0", &gpx_status_t::grmcBitsSer0, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsSer1", &gpx_status_t::grmcBitsSer1, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsSer2", &gpx_status_t::grmcBitsSer2, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 2", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcBitsUSB", &gpx_status_t::grmcBitsUSB, DATA_TYPE_UINT64, "", "GPX RMC bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    INIT_MAP(gpx_status_t, did);
+    ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("status", status, DATA_TYPE_UINT32, uint32_t, "", "(see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcBitsSer0", grmcBitsSer0, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcBitsSer1", grmcBitsSer1, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcBitsSer2", grmcBitsSer2, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit Serial 2", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcBitsUSB",  grmcBitsUSB,  DATA_TYPE_UINT64, uint64_t, "", "GPX RMC bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
  
-    mapper.AddMember("grmcNMEABitsSer0", &gpx_status_t::grmcNMEABitsSer0, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcNMEABitsSer1", &gpx_status_t::grmcNMEABitsSer1, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcNMEABitsSer2", &gpx_status_t::grmcNMEABitsSer2, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("grmcNMEABitsUSB", &gpx_status_t::grmcNMEABitsUSB, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcNMEABitsSer0", grmcNMEABitsSer0, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcNMEABitsSer1", grmcNMEABitsSer1, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcNMEABitsSer2", grmcNMEABitsSer2, DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("grmcNMEABitsUSB",  grmcNMEABitsUSB,  DATA_TYPE_UINT64, uint64_t, "", "GPX RMC NMEA bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
  
-    mapper.AddMember("hdwStatus", &gpx_status_t::hdwStatus, DATA_TYPE_UINT32, "", "Hardware status eHdwStatusFlags", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("mcuTemp", &gpx_status_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("navOutputPeriodMs", &gpx_status_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("flashCfgChecksum", &gpx_status_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("hdwStatus", hdwStatus, DATA_TYPE_UINT32, uint32_t, "", "Hardware status eHdwStatusFlags", DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_7("mcuTemp", mcuTemp, DATA_TYPE_F32, float, SYM_DEG_C, "MCU temperature", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("navOutputPeriodMs", navOutputPeriodMs, DATA_TYPE_UINT32, uint32_t, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("flashCfgChecksum", flashCfgChecksum, DATA_TYPE_UINT32, uint32_t, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
  
     string str = "Rover [0x1=G1, 0x2=G2], 0x8=GCompass, ";
     str += "BaseOutG1 [0x10=UbxS0, 0x20=UbxS1, 0x40=RtcmS0, 0x80=RtcmS1], ";
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
-    mapper.AddMember("rtkMode", &gpx_status_t::rtkMode, DATA_TYPE_UINT32, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("gnss1RunState", &gpx_status_t::gnss1RunState, DATA_TYPE_UINT32, "", "GNSS1 status (see RunState)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("gnss2RunState", &gpx_status_t::gnss2RunState, DATA_TYPE_UINT32, "", "GNSS2 status (see RunState)", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("SourcePort", &gpx_status_t::gpxSourcePort, DATA_TYPE_UINT8, "", "Port", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("upTime", &gpx_status_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    ADD_MAP_7("rtkMode", rtkMode, DATA_TYPE_UINT32, uint32_t, "", str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    ADD_MAP_6("gnssStatus[0].reserved",      gnssStatus[0].reserved,      DATA_TYPE_UINT8, uint8_t, "", "");
+    ADD_MAP_6("gnssStatus[0].fwUpdateState", gnssStatus[0].fwUpdateState, DATA_TYPE_UINT8, uint8_t, "", "GNSS FW update status (see FirmwareUpdateState)");
+    ADD_MAP_6("gnssStatus[0].initState",     gnssStatus[0].initState,     DATA_TYPE_UINT8, uint8_t, "", "GNSS init status (see InitSteps)");
+    ADD_MAP_6("gnssStatus[0].runState",      gnssStatus[0].runState,      DATA_TYPE_UINT8, uint8_t, "", "GNSS run status (see eGPXGnssRunState)");
+    ADD_MAP_6("gnssStatus[1].reserved",      gnssStatus[1].reserved,      DATA_TYPE_UINT8, uint8_t, "", "");
+    ADD_MAP_6("gnssStatus[1].fwUpdateState", gnssStatus[1].fwUpdateState, DATA_TYPE_UINT8, uint8_t, "", "GNSS FW update status (see FirmwareUpdateState)");
+    ADD_MAP_6("gnssStatus[1].initState",     gnssStatus[1].initState,     DATA_TYPE_UINT8, uint8_t, "", "GNSS init status (see InitSteps)");
+    ADD_MAP_6("gnssStatus[1].runState",      gnssStatus[1].runState,      DATA_TYPE_UINT8, uint8_t, "", "GNSS run status (see eGPXGnssRunState)");
+    ADD_MAP_7("SourcePort", gpxSourcePort, DATA_TYPE_UINT8, uint8_t, "", "Port", DATA_FLAGS_READ_ONLY);
+    ADD_MAP_7("upTime", upTime, DATA_TYPE_F64, double, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+
+    ASSERT_SIZE(totalSize);
 }
 
 static void PopulateSurveyInMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
@@ -2254,6 +2262,75 @@ uint32_t cISDataMappings::GetSize(uint32_t did)
 #else
     return s_map.m_lookupSize[did];
 #endif
+}
+
+
+uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
+{
+    switch (dataId)
+    {
+    case DID_DEV_INFO:
+    case DID_GPS1_VERSION:
+    case DID_GPS2_VERSION:
+    case DID_GPS1_TIMEPULSE:
+    case DID_SYS_SENSORS:
+    case DID_SENSORS_ADC:
+    case DID_SENSORS_ADC_SIGMA:
+    case DID_SENSORS_TC_BIAS:
+    case DID_SENSORS_UCAL:
+    case DID_SENSORS_TCAL:
+    case DID_SENSORS_MCAL:
+    case DID_SCOMP:
+    case DID_HDW_PARAMS:
+    case DID_SYS_PARAMS:
+    case DID_NVR_MANAGE_USERPAGE:
+    case DID_NVR_USERPAGE_SN:
+    case DID_NVR_USERPAGE_G0:
+    case DID_NVR_USERPAGE_G1:
+    case DID_FLASH_CONFIG:
+    case DID_CAL_SC_INFO:
+    case DID_CAL_SC:
+    case DID_CAL_TEMP_COMP:
+    case DID_CAL_MOTION:
+    case DID_RTOS_INFO:
+    case DID_SYS_CMD:
+    case DID_NMEA_BCAST_PERIOD:
+    case DID_RMC:
+    case DID_DEBUG_STRING:
+    case DID_DEBUG_ARRAY:
+    case DID_IO:
+    case DID_MAG_CAL:
+    case DID_COMMUNICATIONS_LOOPBACK:
+    case DID_BIT:
+    case DID_WHEEL_ENCODER:
+    case DID_SYS_FAULT:
+    case DID_SURVEY_IN:
+    case DID_PORT_MONITOR:
+    case DID_CAN_CONFIG:
+    case DID_INFIELD_CAL:
+    case DID_REFERENCE_IMU:
+    case DID_REFERENCE_PIMU:
+    case DID_REFERENCE_MAGNETOMETER:
+    case DID_RUNTIME_PROFILER:
+    case DID_INL2_COVARIANCE_LD:
+    case DID_INL2_STATUS:
+    case DID_INL2_MISC:
+    case DID_INL2_STATES:
+    case DID_ROS_COVARIANCE_POSE_TWIST:
+    case DID_INL2_MAG_OBS_INFO:
+    case DID_GPX_DEV_INFO:
+    case DID_GPX_FLASH_CFG:
+    case DID_GPX_RTOS_INFO:
+    case DID_GPX_STATUS:
+    case DID_GPX_DEBUG_ARRAY:
+    case DID_GPX_BIT:
+    case DID_GPX_RMC:
+    case DID_GPX_PORT_MONITOR:
+        return 100;     // (100ms, 10 Hz)
+
+    default:    // DIDs not listed above should be 1.  This includes DIDs that use RMC.
+        return 1;
+    }
 }
 
 

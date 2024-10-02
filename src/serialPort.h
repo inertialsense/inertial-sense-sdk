@@ -59,16 +59,13 @@ enum eSerialPortOptions
 	SERIAL_PORT_OPTIONS_MASK = OPT_PARITY_MASK,
 };
 
-typedef struct serial_port_s serial_port_t;
-#define SERIAL_PORT(n)  ((serial_port_t*)n)
-
 typedef int(*pfnSerialPortOpen)(port_handle_t port, const char* portName, int baudRate, int blocking);
 typedef int(*pfnSerialPortIsOpen)(port_handle_t port);
-typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, int len);
-typedef int(*pfnSerialPortReadTimeout)(port_handle_t port, unsigned char* buf, int len, int timeoutMs);
-typedef void(*pfnSerialPortAsyncReadCompletion)(port_handle_t port, unsigned char* buf, int len, int errorCode);
-typedef int(*pfnSerialPortAsyncRead)(port_handle_t port, unsigned char* buf, int len, pfnSerialPortAsyncReadCompletion completion);
-typedef int(*pfnSerialPortWrite)(port_handle_t port, const unsigned char* buf, int len);
+typedef int(*pfnSerialPortRead)(port_handle_t port, unsigned char* buf, unsigned int len);
+typedef int(*pfnSerialPortReadTimeout)(port_handle_t port, unsigned char* buf, unsigned int len, int timeoutMs);
+typedef void(*pfnSerialPortAsyncReadCompletion)(port_handle_t port, unsigned char* buf, unsigned int len, int errorCode);
+typedef int(*pfnSerialPortAsyncRead)(port_handle_t port, unsigned char* buf, unsigned int len, pfnSerialPortAsyncReadCompletion completion);
+typedef int(*pfnSerialPortWrite)(port_handle_t port, const unsigned char* buf, unsigned int len);
 typedef int(*pfnSerialPortClose)(port_handle_t port);
 typedef int(*pfnSerialPortFlush)(port_handle_t port);
 typedef int(*pfnSerialPortGetByteCountAvailableToRead)(port_handle_t port);
@@ -104,6 +101,12 @@ struct serial_port_s
     // length of error
     int errorLength;
 
+	// Number of bytes sent
+	int txBytes;
+
+	// Number of bytes received
+	int rxBytes;
+
     // Options for encoding like parity, stop bits, etc. (see eSerialPortOptions)
     uint32_t options;
 
@@ -128,8 +131,11 @@ struct serial_port_s
     // close the serial port
     pfnSerialPortClose pfnClose;
 
-    // remove all data from all buffers
+	// discard all data from all buffers
     pfnSerialPortFlush pfnFlush;
+
+    // block until all queued TX data has been sent
+    pfnSerialPortFlush pfnDrain;
 
     // get number of bytes in the receive buffer that can be read
     pfnSerialPortGetByteCountAvailableToRead pfnGetByteCountAvailableToRead;
@@ -142,6 +148,10 @@ struct serial_port_s
 
     pfnSerialPortOnErrorCB pfnError;
 };
+
+typedef struct serial_port_s serial_port_t;
+#define SERIAL_PORT(n)  ((serial_port_t*)n)
+
 
 void serialPortInit(port_handle_t, int id, int type);
 
@@ -157,7 +167,7 @@ const char *serialPortName(port_handle_t port);
 
 /**
  * open a serial port
- * port is null terminated, i.e. COM1\0, COM2\0, etc.
+ * portName is null terminated, i.e. COM1\0, COM2\0, etc.
  * use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
  * uses such as a boot loader where a write would then require n bytes to be read in a single operation.
  * blocking simply determines the default timeout value of the serialPortRead function
@@ -172,7 +182,7 @@ int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int b
 
 /**
  * open a serial port with retry
- * port is null terminated, i.e. COM1\0, COM2\0, etc.
+ * portName is null terminated, i.e. COM1\0, COM2\0, etc.
  * use blocking = 0 when data is being streamed from the serial port rapidly and blocking = 1 for
  * uses such as a boot loader where a write would then require n bytes to be read in a single operation.
  * blocking simply determines the default timeout value of the serialPortRead function
@@ -204,6 +214,13 @@ int serialPortClose(port_handle_t port);
  * @return 1 if success, 0 if failure
  */
 int serialPortFlush(port_handle_t port);
+
+/**
+ * blocks until all pending TX writes have completed, and the TX buffer is empty.
+ * @param port
+ * @return 1 if success, 0 if failure
+ */
+int serialPortDrain(port_handle_t port);
 
 /**
  * read up to readCount bytes into buffer

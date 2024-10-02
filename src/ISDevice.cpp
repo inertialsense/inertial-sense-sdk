@@ -13,10 +13,43 @@
 
 ISDevice ISDevice::invalidRef;
 
+is_operation_result ISDevice::updateFirmware(
+        fwUpdate::target_t targetDevice,
+        std::vector<std::string> cmds,
+        ISBootloader::pfnBootloadProgress uploadProgress,
+        ISBootloader::pfnBootloadProgress verifyProgress,
+        ISBootloader::pfnBootloadStatus infoProgress,
+        void (*waitAction)()
+)
+{
+    fwUpdater = new ISFirmwareUpdater(*this);
+    fwUpdater->setTarget(targetDevice);
+
+    // TODO: Implement maybe
+    fwUpdater->setUploadProgressCb(uploadProgress);
+    fwUpdater->setVerifyProgressCb(verifyProgress);
+    fwUpdater->setInfoProgressCb(infoProgress);
+
+    fwUpdater->setCommands(cmds);
+
+    return IS_OP_OK;
+}
+
+/**
+ * @return true if this device is in the process of being updated, otherwise returns false.
+ * False is returned regardless of whether the update was successful or not.
+ */
 bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
 
-void ISDevice::fwUpdate() {
+/**
+ * Instructs the device to continue performing its actions.  This should be called regularly to ensure that the update process
+ * does not stall.
+ * @return true if the update is still in progress (calls inProgress()), or false if the update is finished and no further updates are needed.
+ */
+bool ISDevice::fwUpdate() {
     if (fwUpdater) {
+        fwUpdater->fwUpdate_step();
+
         if (fwUpdater->getActiveCommand() == "upload") {
             if (fwUpdater->fwUpdate_getSessionTarget() != fwLastTarget) {
                 fwHasError = false;
@@ -36,7 +69,7 @@ void ISDevice::fwUpdate() {
                 fwLastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
 
                 // check for error
-                if (!fwHasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
+                if (!fwHasError && fwUpdater && ((fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors())) {
                     fwHasError = true;
                 }
             }
@@ -56,22 +89,33 @@ void ISDevice::fwUpdate() {
         }
 
         if (!fwUpdater->hasPendingCommands()) {
-            if (!fwHasError) {
-                fwLastMessage = "Completed successfully.";
-            } else {
+            if (fwUpdater->hasErrors()) {
+                fwHasError = fwUpdater->hasErrors();
+                fwLastMessage = "Error: ";
+                fwLastMessage += "One or more step errors occurred.";
+            } else if (!fwHasError) {
                 fwLastMessage = "Error: ";
                 fwLastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
+            } else {
+                fwLastMessage = "Completed successfully.";
             }
         }
 
         // cleanup if we're done.
-        if (fwUpdater->fwUpdate_isDone()) {
+        bool is_done = fwUpdater->fwUpdate_isDone();
+        if (is_done) {
+            // collect errors before we close out the updater
+            fwErrors = fwUpdater->getStepErrors();
+            fwHasError |= !fwErrors.empty();
+
             delete fwUpdater;
             fwUpdater = nullptr;
         }
     } else {
         fwPercent = 0.0;
     }
+
+    return fwUpdateInProgress();
 }
 
 bool ISDevice::handshakeISbl() {
@@ -155,15 +199,19 @@ bool ISDevice::queryDeviceInfoISbl() {
  * @param dev
  * @return
  */
-std::string ISDevice::getId() {
+std::string ISDevice::getIdAsString(const dev_info_t& devInfo) {
     const char *typeName = "\?\?\?";
-    switch (DECODE_HDW_TYPE(hdwId)) {
+    switch (devInfo.hardwareType) {
         case IS_HARDWARE_TYPE_UINS: typeName = "uINS"; break;
         case IS_HARDWARE_TYPE_IMX: typeName = "IMX"; break;
         case IS_HARDWARE_TYPE_GPX: typeName = "GPX"; break;
         default: typeName = "\?\?\?"; break;
     }
-    return utils::string_format("%s-%d.%d::SN%ld", typeName, DECODE_HDW_MAJOR(hdwId), DECODE_HDW_MINOR(hdwId), devInfo.serialNumber);
+    return utils::string_format("%s-%d.%d::SN%ld", typeName, devInfo.hardwareVer[0], devInfo.hardwareVer[1], devInfo.serialNumber);
+}
+
+std::string ISDevice::getIdAsString() {
+    return getIdAsString(devInfo);
 }
 
 std::string ISDevice::getName(const dev_info_t &devInfo) {
@@ -254,4 +302,3 @@ std::string ISDevice::getFirmwareInfo(int detail) {
 std::string ISDevice::getDescription() {
     return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), portName(port));
 }
-

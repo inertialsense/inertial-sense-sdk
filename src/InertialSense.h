@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 
 #include "ISConstants.h"
@@ -39,12 +40,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
 
-#define DEBUG_LOGGING
-// #define debug_message(...)
-#ifndef debug_message
-    #define debug_message printf
+// #define DEBUG_LOGGING
+#ifndef DEBUG_LOGGING
+    #define debug_message(...)
+#else
+    #ifndef debug_message
+        #define debug_message printf
+    #endif
 #endif
-
 
 extern "C"
 {
@@ -73,7 +76,7 @@ public:
     struct com_manager_cpp_state_t
     {
         // per device vars
-        std::vector<ISDevice> devices;
+        std::list<ISDevice> devices;
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
@@ -137,7 +140,13 @@ public:
     /**
     * Get all open serial port names
     */
-    std::vector<std::string> GetPorts();
+    std::vector<std::string> GetPortNames();
+
+    /**
+     * @return a vector of available ports
+     * NOTE that this may return ports which do not have a corresponding ISDevice
+     */
+    std::vector<port_handle_t> getPorts();
 
     /**
     * Get the number of open devices
@@ -149,14 +158,14 @@ public:
      * Returns a vector of available, connected devices
      * @return
      */
-    std::vector<ISDevice>& getDevices();
+    std::list<ISDevice>& getDevices();
 
 
     /**
      * Returns a reference to an is_device_t struct that contains information about the specified device
      * @return
      */
-    ISDevice* getDevice(uint32_t index);
+    // ISDevice* getDevice(uint32_t index);
     ISDevice* getDevice(port_handle_t port);
 
     /**
@@ -186,7 +195,7 @@ public:
             bool enable,
             const std::string& path = cISLogger::g_emptyString,
             cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
-            uint64_t rmcPreset = RMC_PRESET_PPD_BITS,
+            uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
             uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
             float maxDiskSpacePercent = 0.5f,
             uint32_t maxFileSize = 1024 * 1024 * 5,
@@ -215,14 +224,14 @@ public:
 	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
-	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
+	* Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
 	bool OpenConnectionToServer(const std::string& connectionString);
 
     /**
-    * Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
+    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
     * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
     * @return true if success, false if error
     */
@@ -264,7 +273,7 @@ public:
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
 
     /**
-    * Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+    * Send data to the IMX - this is usually only used for advanced or special cases, normally you won't use this method
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -273,7 +282,7 @@ public:
     void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
     /**
-    * Send raw data to the uINS - (byte swapping disabled)
+    * Send raw data to the IMX - (byte swapping disabled)
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -325,9 +334,20 @@ public:
      * the serial number.
      * @param devInfo
      * @param filterFlags
-     * @return a vector of ISDevice which match the filter criteria
+     * @return a vector of ISDevice* which match the filter criteria (devInfo/filterFlags)
      */
     std::vector<ISDevice*> selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags);
+
+    /**
+     * Returns a subset of connected devices filtered by the passed hardware id.
+     * Note that any HdwId component (TYPE, MAJOR, MINOR) which bit mask is all ones, will
+     * be ignored in the filter criteria.  Ie, to filter on ALL IMX devices, regardless of
+     * version, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 0xFF, 0xFF), or to filter on any
+     * IMX-5.x devices, pass hdwId = ENCODE_HDW_ID(HDW_TYPE__IMX, 5, 0xFF)
+     * @param hdwId
+     * @return a vector of ISDevice* which match the filter criteria (hdwId)
+     */
+    std::vector<ISDevice*> selectByHdwId(const uint16_t hdwId = 0xFFFF);
 
     /**
     * Get the device info
@@ -359,10 +379,10 @@ public:
      *       port: Send in target COM port.
      *                If arg is < 0 default port will be used 
     */
-    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, uint8_t priorityLevel, port_handle_t port = 0);
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, port_handle_t port = 0);
 
     /**
-    * Get the flash config, returns the latest flash config read from the uINS flash memory
+    * Get the flash config, returns the latest flash config read from the IMX flash memory
     * @param flashCfg the flash config value
     * @param port the port to get flash config for
     * @return bool whether the flash config is valid, currently synchronized
@@ -378,7 +398,7 @@ public:
     {
         ISDevice* device = NULL;
         if (!port) {
-            device = &m_comManagerState.devices[0];
+            device = &m_comManagerState.devices.front();
         } else {
             device = DeviceByPort(port);
         }
@@ -400,7 +420,7 @@ public:
     {
         ISDevice* device = NULL;
         if (!port) {
-            device = &m_comManagerState.devices[0];
+            device = &m_comManagerState.devices.front();
         } else {
             device = DeviceByPort(port);
         }
@@ -412,7 +432,7 @@ public:
     }
 
     /**
-    * Set the flash config and update flash config on the uINS flash memory
+    * Set the flash config and update flash config on the IMX flash memory
     * @param flashCfg the flash config
     * @param port the port to set flash config for
     * @return true if success
@@ -449,10 +469,10 @@ public:
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
 
     /**
-    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
+    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
     * @param rmcPreset realtimeMessageController preset
     */
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
 
     /**
     * Get the number of bytes read or written to/from client or server connections
@@ -512,7 +532,7 @@ public:
         }
         // if no argument are passed, return the first device's port...
         if (!m_comManagerState.devices.empty())
-            return (serial_port_t*)(m_comManagerState.devices[0].port);
+            return (serial_port_t*)(m_comManagerState.devices.front().port);
 
         // or nullptr if there are no devices
         return nullptr;
@@ -607,11 +627,6 @@ public:
      */
     int getFirmwareUpdatePercent();
 
-    /**
-    * Gets current update status for selected device index
-    * @param deviceIndex
-    */
-    fwUpdate::update_status_e getUpdateStatus(uint32_t deviceIndex);
 
     /**
     * Gets device index from COM port
@@ -693,12 +708,13 @@ private:
     mul_msg_stats_t m_serverMessageStats = {};
     unsigned int m_syncCheckTimeMs = 0;
 
+    // these are used for RTCM3 corrections for RTK/NTRIP streams.
     is_comm_instance_t m_gpComm;
     uint8_t m_gpCommBuffer[PKT_BUF_SIZE];
 
-    std::vector<serial_port_t> m_serialPorts;   //! actual initialized serial ports
-    std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
     port_handle_t allocateSerialPort(int ptype);
+    std::unordered_set<port_handle_t> m_serialPorts;   //! actual initialized serial ports
+    std::vector<std::string> m_ignoredPorts;    //! port names which should be ignored (known bad, etc).
 
     std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> m_cmBufBcastMsg = {}; // [MAX_NUM_BCAST_MSGS];
 
@@ -714,7 +730,7 @@ private:
     void RemoveDevice(size_t index);
     void RemoveDevice(ISDevice* device);
     bool OpenSerialPorts(const char* port, int baudRate);
-    void CloseSerialPorts();
+    void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, port_handle_t port);
     static void BootloadStatusUpdate(void* obj, const char* str);

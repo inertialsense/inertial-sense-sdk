@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "DeviceLog.h"
+#include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
 
 extern "C"
@@ -36,6 +37,7 @@ public:
     };
 
     static ISDevice invalidRef;
+    static std::string getIdAsString(const dev_info_t& devInfo);
     static std::string getName(const dev_info_t& devInfo);
     static std::string getFirmwareInfo(const dev_info_t& devInfo, int detail = 1, eHdwRunStates hdwRunState = eHdwRunStates::HDW_STATE_APP);
 
@@ -48,7 +50,7 @@ public:
         port = _port;
     }
 
-    ISDevice(const ISDevice& src) {
+    ISDevice(const ISDevice& src) : devLogger(src.devLogger) {
         port = src.port;
         hdwId = src.hdwId;
         hdwRunState = src.hdwRunState;
@@ -58,7 +60,7 @@ public:
         flashCfgUploadChecksum = src.flashCfgUploadChecksum;
         evbFlashCfg = src.evbFlashCfg;
         sysCmd = src.sysCmd;
-        devLogger = src.devLogger;
+        // devLogger = src.devLogger.get();
         closeStatus = src.closeStatus;
     }
 
@@ -70,10 +72,17 @@ public:
         hdwRunState = HDW_STATE_UNKNOWN;
     }
 
-    std::string getId();
+    std::string getIdAsString();
     std::string getName();
     std::string getFirmwareInfo(int detail = 1);
     std::string getDescription();
+
+    /**
+    * Gets current update status for selected device index
+    * @param deviceIndex
+    */
+    fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
+
 
     port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
@@ -89,7 +98,7 @@ public:
     evb_flash_cfg_t evbFlashCfg = { };
     system_command_t sysCmd = { };
 
-    std::shared_ptr<cDeviceLog> devLogger;
+    std::shared_ptr<cDeviceLog> devLogger = { };
     fwUpdate::update_status_e closeStatus = { };
 
 
@@ -97,6 +106,7 @@ public:
     ISFirmwareUpdater* fwUpdater = NULLPTR;
     float fwPercent = 0;
     bool fwHasError = false;
+    std::vector<std::tuple<std::string, std::string, std::string>> fwErrors;
     uint16_t fwLastSlot = 0;
     fwUpdate::target_t fwLastTarget = fwUpdate::TARGET_UNKNOWN;
     fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;
@@ -105,11 +115,14 @@ public:
     std::vector<std::string> target_idents;
     std::vector<std::string> target_messages;
 
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
+            ISBootloader::pfnBootloadProgress uploadProgress, ISBootloader::pfnBootloadProgress verifyProgress, ISBootloader::pfnBootloadStatus infoProgress, void (*waitAction)()
+    );
+
     bool fwUpdateInProgress();
-    void fwUpdate();
+    bool fwUpdate();
 
     bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
-
 
     bool handshakeISbl();
     bool queryDeviceInfoISbl();

@@ -33,7 +33,8 @@ cDeviceLogSerial::cDeviceLogSerial() : cDeviceLog() {
 
 cDeviceLogSerial::cDeviceLogSerial(const ISDevice *dev) : cDeviceLog(dev) {
     m_chunk.Clear();
-    m_chunk.m_hdr.devSerialNum = SerialNumber();
+    m_chunk.SetDevInfo(dev->devInfo);
+    m_chunk.m_hdr.devSerialNum = SerialNumber();    // set this seperately, in case the devInfo above doesn't contain it
     if (device) {
         m_chunk.m_hdr.portId = portId(device->port);
         m_chunk.m_hdr.portType = portType(device->port);
@@ -131,7 +132,9 @@ bool cDeviceLogSerial::SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, p
             CloseAllFiles();
         }
     }
+
     // Add data header and data buffer to chunk
+    m_logSize += dataHdr->size;
     if (!m_chunk.PushBack((unsigned char *) dataHdr, sizeof(p_data_hdr_t), (unsigned char *) dataBuf, dataHdr->size)) {
         return false;
     }
@@ -164,7 +167,6 @@ bool cDeviceLogSerial::WriteChunkToFile() {
 
     // File byte size
     m_fileSize += fileBytes;
-    m_logSize += fileBytes;
 
     return true;
 }

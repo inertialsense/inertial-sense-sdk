@@ -148,7 +148,7 @@ string base64Decode(const string& encoded_string)
 	return ret;
 }
 
-size_t splitString(const string& str, const char delimiter, vector<string>& result)
+size_t splitString(const string str, const char delimiter, vector<string>& result)
 {
 	result.clear();
 	istringstream f(str);

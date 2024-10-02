@@ -32,8 +32,8 @@
 
 typedef void* port_handle_t;
 
-typedef int(*pfnPortRead)(port_handle_t port, uint8_t* buf, int len);
-typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, int len);
+typedef int(*pfnPortRead)(port_handle_t port, uint8_t* buf, unsigned int len);
+typedef int(*pfnPortWrite)(port_handle_t port, const uint8_t* buf, unsigned int len);
 typedef int(*pfnPortFree)(port_handle_t port);
 typedef int(*pfnPortAvailable)(port_handle_t port);
 typedef const char*(*pfnPortName)(port_handle_t port);
@@ -58,12 +58,12 @@ static inline uint16_t portType(port_handle_t port) {
     return (port) ? ((base_port_t*)port)->ptype : 0xFFFF;
 }
 
-static inline int portRead(port_handle_t port, uint8_t* buf, int len) {
+static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     if (port && ((base_port_t*)port)->portLogger) portRead(((base_port_t*)port)->portLogger, buf, len);
     return (port && ((base_port_t*)port)->portRead) ? ((base_port_t*)port)->portRead(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
 }
 
-static inline int portWrite(port_handle_t port, const uint8_t* buf, int len) {
+static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     if (port && ((base_port_t*)port)->portLogger) portWrite(((base_port_t*)port)->portLogger, buf, len);
     return (port && ((base_port_t*)port)->portWrite) ? ((base_port_t*)port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;
 }

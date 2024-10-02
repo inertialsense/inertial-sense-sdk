@@ -574,7 +574,7 @@ typedef protocol_type_t (*pFnProcessPkt)(void*);
 typedef int(*pfnIsCommHandler)(protocol_type_t ptype, packet_t *pkt, port_handle_t port);
 
 // InertialSense binary (ISB) data message handler function
-typedef void(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
+typedef int(*pfnIsCommIsbDataHandler)(p_data_t* data, port_handle_t port);
 
 // broadcast message handler
 // typedef int(*pfnIsCommAsapMsg)(p_data_get_t* req, port_handle_t port);
@@ -648,8 +648,8 @@ typedef struct {
     port_monitor_set_t* stats;          //! stats associated with this port
     is_comm_instance_t comm;            //! Comm instance
 #if defined(GPX_1)
-    #define COM_BUFFER_SIZE 2800
-    uint8_t buffer[COM_BUFFER_SIZE];       //! Comm instance data buffer
+    #define GPX_COM_BUFFER_SIZE 2800
+    uint8_t buffer[GPX_COM_BUFFER_SIZE];       //! Comm instance data buffer
 #else
     uint8_t buffer[PKT_BUF_SIZE];       //! Comm instance data buffer
 #endif
@@ -686,6 +686,13 @@ void is_comm_register_port_callbacks(port_handle_t port, is_comm_callbacks_t *ca
 // void is_comm_read_parse(pfnIsCommPortRead portRead, unsigned int port, is_comm_instance_t* comm);
 void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size, is_comm_instance_t* comm);
 void is_comm_port_parse_messages(port_handle_t port);
+
+/**
+* Check that simple communications interface is valid and if not re-initializes.
+* @param instance communications instance, please ensure that you have set the buffer and bufferSize
+* @return 0 if parameters match, -1 if there are mismatches and is_comm is not valid.
+*/
+int is_comm_check_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize, uint8_t forceInit);
 
 /**
 * Decode packet data - when data is available, return value will be the protocol type (see protocol_type_t) and the comm instance dataPtr will point to the start of the valid data.  For Inertial Sense binary protocol, comm instance dataHdr contains the data ID (DID), size, and offset.
@@ -969,6 +976,8 @@ char copyStructPToDataP(p_data_t *data, const void *sptr, const unsigned int max
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP(void *sptr, const p_data_t *data, const unsigned int maxsize);
 char copyDataBufPToStructP(void *sptr, const p_data_buf_t *data, const unsigned int maxsize);
+/** Copies from packet data to packet data.  Returns 0 on success, -1 on failure. */
+char copyDataPToDataP(p_data_t *dst, const p_data_t *src, const unsigned int maxsize);
 
 /** Copies packet data into a data structure.  Returns 0 on success, -1 on failure. */
 char copyDataPToStructP2(void *sptr, const p_data_hdr_t *dataHdr, const uint8_t *dataBuf, const unsigned int maxsize);

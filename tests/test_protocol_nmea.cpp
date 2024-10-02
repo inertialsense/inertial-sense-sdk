@@ -71,15 +71,15 @@ TEST(protocol_nmea, nmea_parse_asce)
     rmci_t &r = TEST0_PORT->rmci;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS1] = 2;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU] = 1;
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA] = 1;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGGA] = 1;
     r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2] = 10;
-    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGSV] = 7;
+    r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGSV] = 7;
     r.rmcNmea.nmeaBits = 
         NMEA_RMC_BITS_PINS1 |
         NMEA_RMC_BITS_PPIMU |
-        NMEA_RMC_BITS_GxGGA |
+        NMEA_RMC_BITS_GNGGA |
         NMEA_RMC_BITS_PINS2 |
-        NMEA_RMC_BITS_GxGSV;
+        NMEA_RMC_BITS_GNGSV;
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
     char a[ASCII_BUF_LEN] = {};
@@ -87,9 +87,9 @@ TEST(protocol_nmea, nmea_parse_asce)
 	nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", options);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",PINS1,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS1]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",PPIMU,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PPIMU]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",GxGGA,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGGA]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",GNGGA,%u", r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGGA]);
     nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_PINS2, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_PINS2]);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGSV, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GxGSV]);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSV, r.rmcNmea.nmeaPeriod[NMEA_MSG_ID_GNGSV]);
 	nmea_sprint_footer(a, ASCII_BUF_LEN, n);
     cout << a << endl;
 
@@ -143,10 +143,9 @@ TEST(protocol_nmea, INFO)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_dev_info(abuf, ASCII_BUF_LEN, info);
-    printf("%s\n", abuf);
     dev_info_t result = {};
     nmea_parse_info(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&info, &result, sizeof(result)), 0);
+    EXPECT_TRUE(memcmp(&info, &result, sizeof(result)) == 0) << "abuf: " << abuf;
 }
 
 TEST(protocol_nmea, PIMU)
@@ -161,10 +160,9 @@ TEST(protocol_nmea, PIMU)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_pimu(abuf, ASCII_BUF_LEN, imu, "$PIMU");
-    // printf("%s\n", abuf);
     imu_t result = {};
     nmea_parse_pimu(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&imu, &result, sizeof(result)), 0);
+    EXPECT_TRUE(memcmp(&imu, &result, sizeof(result)) == 0) << "abuf: " << abuf;
 }
 
 TEST(protocol_nmea, PRIMU)
@@ -182,7 +180,7 @@ TEST(protocol_nmea, PRIMU)
     // printf("%s\n", abuf);
     imu_t result = {};
     nmea_parse_pimu_to_rimu(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&imu, &result, sizeof(result)), 0);
+    EXPECT_TRUE(memcmp(&imu, &result, sizeof(result)) == 0) << "abuf: " << abuf;
 }
 
 TEST(protocol_nmea, PPIMU)
@@ -198,10 +196,9 @@ TEST(protocol_nmea, PPIMU)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_ppimu(abuf, ASCII_BUF_LEN, pimu);
-    // printf("%s\n", abuf);
     pimu_t result = {};
     nmea_parse_ppimu(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&pimu, &result, sizeof(result)), 0);
+    EXPECT_TRUE(memcmp(&pimu, &result, sizeof(result)) == 0) << "abuf: " << abuf;
 }
 
 TEST(protocol_nmea, PINS1)
@@ -223,10 +220,9 @@ TEST(protocol_nmea, PINS1)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_pins1(abuf, ASCII_BUF_LEN, ins);
-    // printf("%s\n", abuf);
     ins_1_t result = {};
     nmea_parse_pins1(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&ins, &result, sizeof(result)), 0);
+    EXPECT_TRUE(memcmp(&ins, &result, sizeof(result)) == 0) << "abuf: " << abuf;
 }
 
 TEST(protocol_nmea, PINS2)
@@ -250,10 +246,9 @@ TEST(protocol_nmea, PINS2)
 
     char abuf[ASCII_BUF_LEN] = { 0 };
     nmea_pins2(abuf, ASCII_BUF_LEN, ins);
-    // printf("%s\n", abuf);
     ins_2_t result = {};
     nmea_parse_pins2(result, abuf, ASCII_BUF_LEN);
-    ASSERT_EQ(memcmp(&ins, &result, sizeof(result)), 0);
+    EXPECT_TRUE(memcmp(&ins, &result, sizeof(result)) == 0) << "abuf: " << abuf;
 }
 
 TEST(protocol_nmea, PGPSP)
@@ -509,7 +504,7 @@ TEST(protocol_nmea, GGA3)
     int n = nmea_gga(abuf, ASCII_BUF_LEN, pos);
     //printf("%s\n", gga);
     //printf("%s\n", abuf);
-    EXPECT_EQ(memcmp(&gga, &abuf, n), 0) << "Expected: " << gga << "Actual:" << abuf;
+    EXPECT_TRUE(memcmp(&gga, &abuf, n) == 0) << "Expected: " << gga << "Actual:" << abuf;
 
     gps_pos_t result = {};
     result.week = pos.week;
@@ -791,11 +786,8 @@ TEST(protocol_nmea, GSV_binary_GSV)
     char abuf[ASCII_BUF2] = { 0 };
     int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
-    // cout << "Before (" << buf.size() << "):\n" << buf;
-    // cout << "After (" << abuf_n << "):\n" << abuf;
-
-    ASSERT_TRUE( abuf_n == buf.size() );
-    ASSERT_TRUE( memcmp(abuf, buf.c_str(), abuf_n) == 0 );
+    EXPECT_EQ( abuf_n,  buf.size() );
+    EXPECT_TRUE( memcmp(abuf, buf.c_str(), abuf_n) == 0 ) << "Before (" << buf.size() << "):\n" << buf << "After (" << abuf_n << "):\n" << abuf;
 }
 
 TEST(protocol_nmea_4p11, GSV_binary_GSV)
@@ -804,7 +796,7 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
 
     nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
 
-    string buf = "$ASCE,0,GxGSV,1*44\r\n";
+    string buf = "$ASCE,0,GXGSV,1*64\r\n";
 
     rmci_t rmci[NUM_COM_PORTS] = {};
     std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
@@ -843,14 +835,114 @@ TEST(protocol_nmea_4p11, GSV_binary_GSV)
     }
     int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
 
-    // cout << "Before (" << buf.size() << "):\n" << buf;
-    // cout << "After (" << abuf_n << "):\n" << abuf;
+    EXPECT_EQ( abuf_n,  buf.size() );
+    EXPECT_TRUE( memcmp(abuf, buf.c_str(), abuf_n) == 0 ) << "Before (" << buf.size() << "):\n" << buf << "After (" << abuf_n << "):\n" << abuf;
+}
 
-    ASSERT_TRUE( abuf_n == buf.size() );
-    ASSERT_TRUE( memcmp(abuf, buf.c_str(), abuf_n) == 0 );
+void compare_gps_sat_t(gps_sat_t& dstSat, gps_sat_t& srcSat) {
+    EXPECT_EQ(dstSat.numSats, srcSat.numSats) << "Skipping SAT[x] comparison.";
+    if (dstSat.numSats != srcSat.numSats)
+        return;
+
+    for (uint32_t i = 0; i < dstSat.numSats; i++) {
+        gps_sat_sv_t &src = srcSat.sat[i];
+        gps_sat_sv_t &dst = dstSat.sat[i];
+        // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n",
+        //     i,
+        //     src.gnssId, dst.gnssId,
+        //     src.svId, dst.svId,
+        //     src.cno, dst.cno,
+        //     src.elev, dst.elev,
+        //     src.azim, dst.azim);
+        EXPECT_EQ(dst.gnssId, src.gnssId);
+        EXPECT_EQ(dst.svId, src.svId);
+        EXPECT_EQ(dst.elev, src.elev);
+        EXPECT_EQ(dst.azim, src.azim);
+        EXPECT_EQ(dst.cno, src.cno);
+    }
+}
+
+void compare_gps_sig_t(gps_sig_t& dstSig, gps_sig_t& srcSig) {
+    EXPECT_EQ( dstSig.numSigs, srcSig.numSigs )  << "Skipping SIG[x] comparison.";
+    if (dstSig.numSigs != srcSig.numSigs)
+        return;
+
+    for (uint32_t i=0; i<dstSig.numSigs; i++)
+    {
+        gps_sig_sv_t &src = srcSig.sig[i];
+        gps_sig_sv_t &dst = dstSig.sig[i];
+        // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n",
+        //     i,
+        //     src.gnssId, dst.gnssId,
+        //     src.svId, dst.svId,
+        //     src.sigId, dst.sigId,
+        //     src.quality, dst.quality,
+        //     src.cno, dst.cno
+        // );
+        EXPECT_EQ( dst.gnssId, src.gnssId );
+        EXPECT_EQ( dst.svId, src.svId );
+        EXPECT_EQ( dst.sigId, src.sigId );
+        EXPECT_EQ( dst.quality, src.quality );
+        EXPECT_EQ( dst.cno, src.cno );
+    }
 }
 
 TEST(protocol_nmea, binary_GSV_binary)
+{
+    gps_sat_t gpsSat = {};
+    gps_sig_t gpsSig = {};
+
+    init_sat_and_sig(&gpsSat, &gpsSig);
+    clear_GSV_values();
+
+    string buf = "$ASCE,0,15,1*3D\r\n";
+
+    rmci_t rmci[NUM_COM_PORTS] = {};
+    std::vector<rmci_t *> outRmci = { &rmci[0], &rmci[1], &rmci[2], &rmci[3] };
+    nmea_parse_asce(TEST0_PORT, buf.c_str(), buf.size(), outRmci);
+
+    {   // Test NMEA protocol 2.3
+        nmea_set_protocol_version(NMEA_PROTOCOL_2P3);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        compare_gps_sat_t(outSat, gpsSat);
+        compare_gps_sig_t(outSig, gpsSig);
+    }
+
+    {   // Test NMEA protocol 4.10
+        nmea_set_protocol_version(NMEA_PROTOCOL_4P10);
+        char abuf[ASCII_BUF2] = { 0 };
+        int abuf_n = nmea_gsv(abuf, ASCII_BUF2, gpsSat, gpsSig);
+
+        gps_sat_t outSat = {};
+        gps_sig_t outSig = {};
+        uint32_t cnoSum = 0, cnoCount = 0;
+
+        for (char *ptr = abuf; ptr < (abuf + abuf_n); )
+        {
+            ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
+        }
+
+        // cout << "NMEA (" << abuf_n << "):\n" << abuf;
+
+        compare_gps_sat_t(outSat, gpsSat);
+        compare_gps_sig_t(outSig, gpsSig);
+    }
+}
+
+TEST(protocol_nmea, GNGSV)
 {
     gps_sat_t gpsSat = {};
     gps_sig_t gpsSig = {};
@@ -880,44 +972,8 @@ TEST(protocol_nmea, binary_GSV_binary)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
-        for (uint32_t i=0; i<outSat.numSats; i++)
-        {
-            gps_sat_sv_t &src = gpsSat.sat[i];
-            gps_sat_sv_t &dst = outSat.sat[i];
-            // printf("%d   gnss: %d %d,  svid: %d %d,  cno: %d %d,  ele: %d %d,  azm: %d %d\n", 
-            //     i,
-            //     src.gnssId, dst.gnssId, 
-            //     src.svId, dst.svId, 
-            //     src.cno, dst.cno, 
-            //     src.elev, dst.elev, 
-            //     src.azim, dst.azim);
-            ASSERT_TRUE( dst.gnssId == src.gnssId );
-            ASSERT_TRUE( dst.svId == src.svId );
-            ASSERT_TRUE( dst.elev == src.elev );
-            ASSERT_TRUE( dst.azim == src.azim );
-            ASSERT_TRUE( dst.cno == src.cno );
-        }
-
-        ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
-        for (uint32_t i=0; i<outSig.numSigs; i++)
-        {
-            gps_sig_sv_t &src = gpsSig.sig[i];
-            gps_sig_sv_t &dst = outSig.sig[i];
-            // printf("%d   gnss: %d %d,  svid: %d %d,  sigId: %d %d,  quality: %d %d,  cno: %d %d\n", 
-            //     i,
-            //     src.gnssId, dst.gnssId, 
-            //     src.svId, dst.svId, 
-            //     src.sigId, dst.sigId, 
-            //     src.quality, dst.quality,
-            //     src.cno, dst.cno
-            // );
-            ASSERT_TRUE( dst.gnssId == src.gnssId );
-            ASSERT_TRUE( dst.svId == src.svId );
-            ASSERT_TRUE( dst.sigId == src.sigId );
-            ASSERT_TRUE( dst.quality == src.quality );
-            ASSERT_TRUE( dst.cno == src.cno );
-        }
+        compare_gps_sat_t(outSat, gpsSat);
+        compare_gps_sig_t(outSig, gpsSig);
     }
 
     {   // Test NMEA protocol 4.10
@@ -936,29 +992,8 @@ TEST(protocol_nmea, binary_GSV_binary)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE( outSat.numSats == gpsSat.numSats );
-        for (uint32_t i=0; i<outSat.numSats; i++)
-        {
-            gps_sat_sv_t &src = gpsSat.sat[i];
-            gps_sat_sv_t &dst = outSat.sat[i];
-            ASSERT_TRUE( dst.gnssId == src.gnssId );
-            ASSERT_TRUE( dst.svId == src.svId );
-            ASSERT_TRUE( dst.elev == src.elev );
-            ASSERT_TRUE( dst.azim == src.azim );
-            ASSERT_TRUE( dst.cno == src.cno );
-        }
-
-        ASSERT_TRUE( outSig.numSigs == gpsSig.numSigs );
-        for (uint32_t i=0; i<outSig.numSigs; i++)
-        {
-            gps_sig_sv_t &src = gpsSig.sig[i];
-            gps_sig_sv_t &dst = outSig.sig[i];
-            ASSERT_TRUE( dst.gnssId == src.gnssId );
-            ASSERT_TRUE( dst.svId == src.svId );
-            ASSERT_TRUE( dst.sigId == src.sigId );
-            ASSERT_TRUE( dst.quality == src.quality );
-            ASSERT_TRUE( dst.cno == src.cno );
-        }
+        compare_gps_sat_t(outSat, gpsSat);
+        compare_gps_sig_t(outSig, gpsSig);
     }
 }
 
@@ -992,18 +1027,16 @@ TEST(protocol_nmea, GPGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats == 12);
-
+        EXPECT_TRUE(outSat.numSats == 12);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 19);
-
+        EXPECT_TRUE(outSig.numSigs == 19);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
     }
 
@@ -1021,18 +1054,16 @@ TEST(protocol_nmea, GPGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        ASSERT_TRUE(outSat.numSats == 12);
-
+        EXPECT_TRUE(outSat.numSats == 12);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 19);
-
+        EXPECT_TRUE(outSig.numSigs == 19);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GPS);
         }
     }
 }
@@ -1067,18 +1098,16 @@ TEST(protocol_nmea, GAGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats == 4);
-
+        EXPECT_TRUE(outSat.numSats == 4);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GAL);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 8);
-
+        EXPECT_TRUE(outSig.numSigs == 8);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GAL);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
     }
 
@@ -1096,18 +1125,16 @@ TEST(protocol_nmea, GAGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        ASSERT_TRUE(outSat.numSats == 4);
-
+        EXPECT_TRUE(outSat.numSats == 4);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GAL);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 8);
-
+        EXPECT_TRUE(outSig.numSigs == 8);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GAL);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GAL);
         }
     }
 }
@@ -1142,18 +1169,16 @@ TEST(protocol_nmea, GBGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats == 8);
-
+        EXPECT_TRUE(outSat.numSats == 8);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_BEI);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 10);
-
+        EXPECT_TRUE(outSig.numSigs == 10);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_BEI);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
     }
 
@@ -1171,18 +1196,16 @@ TEST(protocol_nmea, GBGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        ASSERT_TRUE(outSat.numSats == 8);
-
+        EXPECT_TRUE(outSat.numSats == 8);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_BEI);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 10);
-
+        EXPECT_TRUE(outSig.numSigs == 10);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_BEI);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_BEI);
         }
     }
 }
@@ -1217,18 +1240,16 @@ TEST(protocol_nmea, GLGSV)
 
         // cout << "NMEA (" << abuf_n << "):\n" << abuf;
 
-        ASSERT_TRUE(outSat.numSats == 6);
-
+        EXPECT_TRUE(outSat.numSats == 6);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GLO);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 6);
-
+        EXPECT_TRUE(outSig.numSigs == 6);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GLO);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
     }
 
@@ -1246,18 +1267,16 @@ TEST(protocol_nmea, GLGSV)
             ptr = nmea_parse_gsv(ptr, abuf_n, &outSat, &outSig, &cnoSum, &cnoCount);
         }
 
-        ASSERT_TRUE(outSat.numSats == 6);
-
+        EXPECT_TRUE(outSat.numSats == 6);
         for (uint32_t i = 0; i < outSat.numSats; i++)
         {
-            ASSERT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GLO);
+            EXPECT_TRUE(outSat.sat[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
 
-        ASSERT_TRUE(outSig.numSigs == 6);
-
+        EXPECT_TRUE(outSig.numSigs == 6);
         for (uint32_t i = 0; i < outSig.numSigs; i++)
         {
-            ASSERT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GLO);
+            EXPECT_TRUE(outSig.sig[i].gnssId == SAT_SV_GNSS_ID_GLO);
         }
     }
 }
@@ -1267,7 +1286,7 @@ TEST(protocol_nmea, generate_example_nmea_for_user_manual)
 {
     uint32_t options = RMC_OPTIONS_PRESERVE_CTRL | RMC_OPTIONS_PERSISTENT;
 
-    for (int id=0; id<=NMEA_MSG_ID_GxGSV; id++)
+    for (int id=0; id<=NMEA_MSG_ID_GNGSV; id++)
     {
         char a[ASCII_BUF_LEN] = {};
         int n=0;
@@ -1289,11 +1308,11 @@ TEST(protocol_nmea, generate_example_nmea_for_customer)
     char a[ASCII_BUF_LEN] = {};
     int n=0;
     nmea_sprint(a, ASCII_BUF_LEN, n, "$ASCE,%u", 0);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGGA, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGLL, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGSA, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxZDA, 1);
-    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GxGSV, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGGA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGLL, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNZDA, 1);
+    nmea_sprint(a, ASCII_BUF_LEN, n, ",%u,%u", NMEA_MSG_ID_GNGSV, 1);
     nmea_sprint_footer(a, ASCII_BUF_LEN, n);
     a[n] = 0;
     printf("%s", a);
@@ -1312,8 +1331,8 @@ void testChecksum(const char* str)
     nmea_sprint_footer(b, sizeof(b), n);
     DEBUG_PRINTF("%s", a);
     DEBUG_PRINTF("%s", b);
-    ASSERT_EQ(m, n);     // Check that 5 characters (*xx\r\n) were added
-    ASSERT_TRUE(memcmp(a, b, m) == 0);
+    EXPECT_EQ(m, n);     // Check that 5 characters (*xx\r\n) were added
+    EXPECT_TRUE(memcmp(a, b, m) == 0);
 }
 
 TEST(protocol_nmea, checksum)

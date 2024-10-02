@@ -33,8 +33,10 @@ typedef enum {
     IS_LOG_LEVEL_ERROR = 1,
     IS_LOG_LEVEL_WARN  = 2,
     IS_LOG_LEVEL_INFO  = 3,
-    IS_LOG_LEVEL_DEBUG = 4,
-    IS_LOG_LEVEL_SILLY = 5
+    IS_LOG_LEVEL_MORE_INFO = 4,
+    IS_LOG_LEVEL_DEBUG = 5,
+    IS_LOG_LEVEL_MORE_DEBUG = 6,
+    IS_LOG_LEVEL_SILLY = 7
 } eLogLevel;
 
 typedef enum {

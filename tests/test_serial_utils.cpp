@@ -151,12 +151,12 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 #endif  // PLATFORM_IS_EMBEDDED
 
 
-static int loopbackPortRead(port_handle_t port, unsigned char* buf, int len)
+static int loopbackPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
 {
     return ringBufRead(&((test_port_t*)port)->loopbackPortBuf, buf, len);
 }
 
-static int loopbackPortWrite(port_handle_t port, const unsigned char* buf, int len)
+static int loopbackPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
 {
     if (ringBufWrite(&((test_port_t*)port)->loopbackPortBuf, (unsigned char*)buf, len))
     {   
