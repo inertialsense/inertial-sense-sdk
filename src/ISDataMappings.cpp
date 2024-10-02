@@ -69,7 +69,7 @@ const unsigned char g_asciiToLowerMap[256] =
     224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
 };
 
-static void PopulateTimestampField(uint32_t id, const data_info_t** timestamps, map_name_to_info_t mappings[DID_COUNT])
+static void PopulateMapTimestampField(uint32_t id, const data_info_t** timestamps, map_name_to_info_t mappings[DID_COUNT])
 {
     static const string timestampFields[] = { "time", "timeOfWeek", "timeOfWeekMs", "seconds" };
     const map_name_to_info_t& offsetMap = mappings[id];
@@ -90,7 +90,7 @@ static void PopulateTimestampField(uint32_t id, const data_info_t** timestamps, 
     timestamps[id] = NULLPTR; // ensure value is not garbage
 }
 
-static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapDeviceInfo(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<dev_info_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("reserved", &dev_info_t::reserved, DATA_TYPE_UINT16);
@@ -114,7 +114,7 @@ static void PopulateDeviceInfoMappings(map_name_to_info_t mappings[DID_COUNT], u
     mapper.AddMember("addInfo", &dev_info_t::addInfo, DATA_TYPE_STRING, "", "Additional info", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateHdwParamsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapHdwParams(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
 #if 0
     DataMapper<hdw_params_t> mapper(mappings, lookupSize, indices, did);
@@ -144,7 +144,7 @@ static void PopulateHdwParamsMappings(map_name_to_info_t mappings[DID_COUNT], ui
 #endif
 }
 
-static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapManufacturingInfo(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<manufacturing_info_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("serialNumber", &manufacturing_info_t::serialNumber, DATA_TYPE_UINT32, "", "Serial number", DATA_FLAGS_READ_ONLY);
@@ -157,14 +157,14 @@ static void PopulateManufacturingInfoMappings(map_name_to_info_t mappings[DID_CO
     mapper.AddArray("uid", &manufacturing_info_t::uid, DATA_TYPE_UINT32, 4, "", "Unique microcontroller identifier", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateIOMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapIO(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<io_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &io_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("gpioStatus", &io_t::gpioStatus, DATA_TYPE_UINT32, "", "Use to read and control GPIO input and output.", DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapBit(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<bit_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("command", &bit_t::command, DATA_TYPE_UINT8, "", "[cmd: " TOSTRING(BIT_CMD_FULL_STATIONARY) "=start full, " TOSTRING(BIT_CMD_BASIC_MOVING) "=start basic, " TOSTRING(BIT_CMD_FULL_STATIONARY_HIGH_ACCURACY) "=start full HA, " TOSTRING(BIT_CMD_OFF) "=off]");
@@ -188,7 +188,7 @@ static void PopulateBitMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
     mapper.AddMember("detectedHardwareId", &bit_t::detectedHardwareId, DATA_TYPE_UINT16, "", "Hardware ID detected (see eIsHardwareType) used to validate correct firmware use.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateGpxBitMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpxBit(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_bit_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("results", &gpx_bit_t::results, DATA_TYPE_UINT32, "", "GPX BIT test status (see eGPXBit_results)", DATA_FLAGS_DISPLAY_HEX);
@@ -200,7 +200,7 @@ static void PopulateGpxBitMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     mapper.AddArray("reserved", &gpx_bit_t::reserved, DATA_TYPE_UINT8, 2);
 }
 
-static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSystemFault(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<system_fault_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_DISPLAY_HEX;
@@ -214,7 +214,7 @@ static void PopulateSysFaultMappings(map_name_to_info_t mappings[DID_COUNT], uin
     mapper.AddMember("psr", &system_fault_t::psr, DATA_TYPE_UINT32, "", "program status register at fault", flags);
 }
 
-void PopulatePortMonitorMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+void PopulateMapPortMonitor(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(port_monitor_t, did);
     ADD_MAP_7("activePorts", activePorts, DATA_TYPE_UINT8, uint8_t, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
@@ -288,7 +288,7 @@ void PopulatePortMonitorMappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     ASSERT_SIZE(totalSize);
 }
 
-void PopulateNmeaBCastPeriodMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+void PopulateMapNmeaMsgs(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(nmea_msgs_t, did);
 //    int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
@@ -300,7 +300,7 @@ void PopulateNmeaBCastPeriodMappings(map_name_to_info_t mappings[DID_COUNT], uin
     // }
 }
 
-static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
+static void PopulateMapImu(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
 {
     INIT_MAP(imu_t, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -314,7 +314,7 @@ static void PopulateIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
+static void PopulateMapImu3(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
 {
     INIT_MAP(imu3_t, did);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -340,7 +340,7 @@ static void PopulateIMU3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSysParams(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<sys_params_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &sys_params_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
@@ -359,7 +359,7 @@ static void PopulateSysParamsMappings(map_name_to_info_t mappings[DID_COUNT], ui
     mapper.AddMember("upTime", &sys_params_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
 }
 
-static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSysSensors(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<sys_sensors_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("time", &sys_sensors_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -377,14 +377,14 @@ static void PopulateSysSensorsMappings(map_name_to_info_t mappings[DID_COUNT], u
     mapper.AddMember("ana4", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 4 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
 }
 
-static void PopulateRmcMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapRmc(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<rmc_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("bits", &rmc_t::bits, DATA_TYPE_UINT64, "", "", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("options", &rmc_t::options, DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapIns1(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_1_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
@@ -398,7 +398,7 @@ static void PopulateINS1Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     mapper.AddArray("lla", &ins_1_t::lla, DATA_TYPE_F64, 3, SYM_DEG, "WGS84 coordinate - latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
 }
 
-static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapIns2(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_2_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
@@ -411,7 +411,7 @@ static void PopulateINS2Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     mapper.AddArray("lla", &ins_2_t::lla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
 }
 
-static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapIns3(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_3_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
@@ -425,7 +425,7 @@ static void PopulateINS3Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     mapper.AddMember("msl", &ins_3_t::msl, DATA_TYPE_F32, "m", "Height above mean sea level (MSL)", flags);
 }
 
-static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapIns4(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_4_t> mapper(mappings, lookupSize, indices, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
@@ -438,7 +438,7 @@ static void PopulateINS4Mappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     mapper.AddArray("ecef", &ins_4_t::ecef, DATA_TYPE_F64, 3, "m", "Position in ECEF (earth-centered earth-fixed) frame", flags);
 }
 
-static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsPos(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_pos_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("week", &gps_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
@@ -458,7 +458,7 @@ static void PopulateGpsPosMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     mapper.AddMember("reserved", &gps_pos_t::reserved, DATA_TYPE_UINT8, "", "", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsVel(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_vel_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &gps_vel_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -467,7 +467,7 @@ static void PopulateGpsVelMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     mapper.AddMember("status", &gps_vel_t::status, DATA_TYPE_UINT32, "", "GPS status: NMEA input if status flag GPS_STATUS_FLAGS_GPS_NMEA_DATA", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateGpsSatMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsSat(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(gps_sat_t, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
@@ -538,7 +538,7 @@ static void PopulateGpsSatMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsSig(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(gps_sig_t, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
@@ -609,7 +609,7 @@ static void PopulateGpsSigMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateGpsVersionMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsVersion(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(gps_version_t, did);
     ADD_MAP_6("swVersion", swVersion, DATA_TYPE_STRING, uint8_t[30], "", "Software version");
@@ -623,7 +623,7 @@ static void PopulateGpsVersionMappings(map_name_to_info_t mappings[DID_COUNT], u
 //    ASSERT_SIZE(totalSize);
 }
 
-static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsTimepulse(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_timepulse_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("towOffset", &gps_timepulse_t::towOffset, DATA_TYPE_F64, "s", "Week seconds offset from MCU to GPS time.", DATA_FLAGS_FIXED_DECIMAL_4);
@@ -639,14 +639,14 @@ static void PopulateGpsTimepulseMappings(map_name_to_info_t mappings[DID_COUNT],
     mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");			
 }
 
-static void PopulateMagnetometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapMagnetometer(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<magnetometer_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("time", &magnetometer_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("mag", &magnetometer_t::mag, DATA_TYPE_F32, 3, "", "Normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
-static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapBarometer(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<barometer_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("time", &barometer_t::time, DATA_TYPE_F64, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -656,7 +656,7 @@ static void PopulateBarometerMappings(map_name_to_info_t mappings[DID_COUNT], ui
     mapper.AddMember("humidity", &barometer_t::humidity, DATA_TYPE_F32, "%rH", "Relative humidity, 0%-100%", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
-static void PopulatePIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
+static void PopulateMapPimu(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did, string description)
 {
     DataMapper<pimu_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("time", &pimu_t::time, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -666,7 +666,7 @@ static void PopulatePIMUMappings(map_name_to_info_t mappings[DID_COUNT], uint32_
     mapper.AddArray("vel", &pimu_t::vel, DATA_TYPE_F32, 3, "m/s", "IMU delta velocity coning and sculling integrals in body/IMU frame.  " + description, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
 
-static void PopulatePimuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapPimuMag(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(pimu_mag_t, did);
     ADD_MAP_7("imutime", pimu.time, DATA_TYPE_F64, double, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -685,7 +685,7 @@ static void PopulatePimuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateImuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapImuMag(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(imu_mag_t, did);
     ADD_MAP_7("imutime", imu.time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -703,7 +703,7 @@ static void PopulateImuMagMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateMagCalMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapMagCal(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<mag_cal_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("state", &mag_cal_t::state, DATA_TYPE_UINT32, "", "Mag recalibration state.  COMMANDS: 1=multi-axis, 2=single-axis, 101=abort, STATUS: 200=running, 201=done (see eMagCalState)");
@@ -711,7 +711,7 @@ static void PopulateMagCalMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     mapper.AddMember("declination", &mag_cal_t::declination, DATA_TYPE_F32, SYM_DEG, "Magnetic declination estimate", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
 }
 
-static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapInfieldCal(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(infield_cal_t, did);
     ADD_MAP_6("state", state, DATA_TYPE_UINT32, uint32_t, "", "0=off, init[1=IMU, 2=gyro, 3=accel], init align INS[4, 5=+IMU, 6=+gyro, 7=+accel], 8=sample, 9=finish (see eInfieldCalState)");
@@ -802,7 +802,7 @@ static void PopulateInfieldCalMappings(map_name_to_info_t mappings[DID_COUNT], u
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapWheelEncoder(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<wheel_encoder_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeek", &wheel_encoder_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of measurement wrt current week", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -815,7 +815,7 @@ static void PopulateWheelEncoderMappings(map_name_to_info_t mappings[DID_COUNT],
     mapper.AddMember("wrap_count_r", &wheel_encoder_t::wrap_count_r, DATA_TYPE_UINT32, "", "");
 }
 
-static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGroundVehicle(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(ground_vehicle_t, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
@@ -839,14 +839,14 @@ static void PopulateGroundVehicleMappings(map_name_to_info_t mappings[DID_COUNT]
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSysCmdMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSystemCommand(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<system_command_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("command", &system_command_t::command, DATA_TYPE_UINT32, "", "99=software reset, 5=zero sensors");
     mapper.AddMember("invCommand", &system_command_t::invCommand, DATA_TYPE_UINT32, "", "Bitwise inverse of command (-command - 1) required to process command.");
 }
 
-static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapNvmFlashCfg(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(nvm_flash_cfg_t, did);
     string str;
@@ -945,7 +945,7 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT], 
 /**
  * Maps DID_EVENT for SDK
 */
-static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapISEvent(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<did_event_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("Time stamp of message (System Up seconds)", &did_event_t::time, DATA_TYPE_F64, "sec", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
@@ -958,7 +958,7 @@ static void PopulateISEventMappings(map_name_to_info_t mappings[DID_COUNT], uint
     mapper.AddMember("Reserved 8 bit", &did_event_t::res8, DATA_TYPE_UINT8, "", "");
 }
 
-static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpxFlashCfg(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_flash_cfg_t> mapper(mappings, lookupSize, indices, did);
     string str;
@@ -988,7 +988,7 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
     mapper.AddMember("key", &gpx_flash_cfg_t::key, DATA_TYPE_UINT32, "", "Flash key");
 }
 
-static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpxStatus(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(gpx_status_t, did);
     ADD_MAP_7("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, uint32_t, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
@@ -1027,7 +1027,7 @@ static void PopulateGpxStatusMappings(map_name_to_info_t mappings[DID_COUNT], ui
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSurveyInMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSurveyIn(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
 #if 0
     DataMapper<survey_in_t> mapper(mappings, lookupSize, indices, did);
@@ -1045,7 +1045,7 @@ static void PopulateSurveyInMappings(map_name_to_info_t mappings[DID_COUNT], uin
 #endif
 }
 
-static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbStatus(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_status_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("week", &evb_status_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
@@ -1059,7 +1059,7 @@ static void PopulateEvbStatusMappings(map_name_to_info_t mappings[DID_COUNT], ui
     mapper.AddMember("towOffset", &evb_status_t::towOffset, DATA_TYPE_F64, "sec", "Time sync offset from local clock", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
 
-static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbFlashCfg(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(evb_flash_cfg_t, did);
     ADD_MAP_6("cbPreset", cbPreset, DATA_TYPE_UINT8, uint8_t, "", 
@@ -1130,7 +1130,7 @@ static void PopulateEvbFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], 
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapDebugArray(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<debug_array_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddArray("i", &debug_array_t::i, DATA_TYPE_UINT32, DEBUG_I_ARRAY_SIZE);
@@ -1138,7 +1138,7 @@ static void PopulateDebugArrayMappings(map_name_to_info_t mappings[DID_COUNT], u
     mapper.AddArray("lf", &debug_array_t::lf, DATA_TYPE_F64, DEBUG_LF_ARRAY_SIZE);
 }
 
-static void PopulateDebugStringMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapDebugString(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<debug_string_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("s", &debug_string_t::s, DATA_TYPE_STRING, "", "");
@@ -1146,7 +1146,7 @@ static void PopulateDebugStringMappings(map_name_to_info_t mappings[DID_COUNT], 
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
 
-static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbLunaFlashCfg(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_flash_cfg_t> mapper(mappings, lookupSize, indices, did); 
     mapper.AddMember("bits", bits, DATA_TYPE_UINT32, "", "0x1 geof, 0x2 bump, 0x4 prox, 0x100 rkill, 0x200 rkclient, 0x400 rkclient2", DATA_FLAGS_DISPLAY_HEX);
@@ -1218,7 +1218,7 @@ static void PopulateEvbLunaFlashCfgMappings(map_name_to_info_t mappings[DID_COUN
     mapper.AddMember("key", key, DATA_TYPE_UINT32, "", "Flash key");
 }
 
-static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapCoyoteStatus(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_status_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "ms", "GPS time of week (since Sunday morning).");
@@ -1228,7 +1228,7 @@ static void PopulateCoyoteStatusMappings(map_name_to_info_t mappings[DID_COUNT],
     mapper.AddMember("supplyVoltage", supplyVoltage, DATA_TYPE_F32, "V", "", DATA_FLAGS_FIXED_DECIMAL_1);
 }
 
-static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbLunaSensors(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_sensors_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", timeOfWeekMs, DATA_TYPE_UINT32, "s", "GPS time of week (since Sunday morning).");
@@ -1244,7 +1244,7 @@ static void PopulateEvbLunaSensorsMappings(map_name_to_info_t mappings[DID_COUNT
     mapper.AddMember("bumpEvent", bumpEvent, DATA_TYPE_INT32, int32_t);
 }
 
-static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbLunaVelocityControl(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_velocity_control_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeMs", timeMs, DATA_TYPE_UINT32, "ms", "");
@@ -1285,7 +1285,7 @@ static void PopulateEvbLunaVelocityControlMappings(map_name_to_info_t mappings[D
     mapper.AddMember("potV_r", potV_r, DATA_TYPE_F32, "V", "Right potentiometer input", DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
-static void PopulateEvbLunaVelocityCommandMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbLunaVelocityCommand(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_velocity_command_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeMs", timeMs, DATA_TYPE_UINT32, "ms", "");
@@ -1294,7 +1294,7 @@ static void PopulateEvbLunaVelocityCommandMappings(map_name_to_info_t mappings[D
     mapper.AddMember("turn_rate", turn_rate, DATA_TYPE_F32, "rad/s", "", DATA_FLAGS_FIXED_DECIMAL_4);
 }
 
-static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapEvbLunaAuxCmd(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<evb_luna_aux_command_t> mapper(mappings, lookupSize, indices, did);
     
@@ -1304,7 +1304,7 @@ static void PopulateEvbLunaAuxCmdMappings(map_name_to_info_t mappings[DID_COUNT]
 
 #endif
 
-static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsRtkRel(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_rtk_rel_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &gps_rtk_rel_t::timeOfWeekMs, DATA_TYPE_UINT32,  "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1317,7 +1317,7 @@ static void PopulateGpsRtkRelMappings(map_name_to_info_t mappings[DID_COUNT], ui
     mapper.AddMember("status", &gps_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsRtkMisc(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<gps_rtk_misc_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &gps_rtk_misc_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1364,7 +1364,7 @@ static void PopulateGpsRtkMiscMappings(map_name_to_info_t mappings[DID_COUNT], u
     mapper.AddMember("timeToFirstFixMs", &gps_rtk_misc_t::timeToFirstFixMs, DATA_TYPE_UINT32, "ms", "Time to first RTK fix", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateGpsRawMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapGpsRaw(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(gps_raw_t, did);
     ADD_MAP_7("receiveIndex", receiverIndex, DATA_TYPE_UINT8, uint8_t, "", "Receiver index (1=Rover, 2=Base). RTK positioning or RTK compassing must be enabled to stream raw GPS data.", DATA_FLAGS_READ_ONLY);
@@ -1375,7 +1375,7 @@ static void PopulateGpsRawMappings(map_name_to_info_t mappings[DID_COUNT], uint3
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateStrobeInTimeMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapStrobeInTime(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<strobe_in_time_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("week", &strobe_in_time_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
@@ -1384,7 +1384,7 @@ static void PopulateStrobeInTimeMappings(map_name_to_info_t mappings[DID_COUNT],
     mapper.AddMember("count", &strobe_in_time_t::count, DATA_TYPE_UINT16, "", "STROBE input serial index number", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapRtosInfo(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(rtos_info_t, did);
     ADD_MAP_7("freeHeapSize", freeHeapSize, DATA_TYPE_UINT32, uint32_t, "", "Heap unused bytes (high-water mark)", DATA_FLAGS_READ_ONLY);
@@ -1488,7 +1488,7 @@ static void PopulateRtosInfoMappings(map_name_to_info_t mappings[DID_COUNT], uin
     ADD_MAP_4("T5_handle", task[5].handle, DATA_TYPE_UINT32, uint32_t);
     ASSERT_SIZE(totalSize);
 }
-static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapCanConfig(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<can_config_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddArray("can_period_mult", &can_config_t::can_period_mult, DATA_TYPE_UINT16, NUM_CIDS, " ", "Broadcast Period Multiple for CID_INS_TIME Messages");
@@ -1498,7 +1498,7 @@ static void PopulateCanConfigMappings(map_name_to_info_t mappings[DID_COUNT], ui
     mapper.AddMember("can_receive_address", &can_config_t::can_receive_address, DATA_TYPE_UINT32, "", "CAN Receive Address", DATA_FLAGS_DISPLAY_HEX);
 }
 
-static void PopulateDiagMsgMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapDiagMsg(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<diag_msg_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &diag_msg_t::timeOfWeekMs, DATA_TYPE_UINT32);
@@ -1506,7 +1506,7 @@ static void PopulateDiagMsgMappings(map_name_to_info_t mappings[DID_COUNT], uint
     mapper.AddMember("message", &diag_msg_t::message, DATA_TYPE_STRING);
 }
 
-static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSensorsADC(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(sys_sensors_adc_t, DID_SENSORS_ADC);
     ADD_MAP_7("time", time, DATA_TYPE_F64, double, "s", "Time since boot up", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -1547,7 +1547,7 @@ static void PopulateSensorsADCMappings(map_name_to_info_t mappings[DID_COUNT], u
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSensorsWTemp(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(sensors_w_temp_t, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2;
@@ -1583,7 +1583,7 @@ static void PopulateSensorsISMappings(map_name_to_info_t mappings[DID_COUNT], ui
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSensorsTCMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSensors(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(sensors_t, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
@@ -1618,7 +1618,7 @@ static void PopulateSensorsTCMappings(map_name_to_info_t mappings[DID_COUNT], ui
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapSensorCompensation(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     INIT_MAP(sensor_compensation_t, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4;
@@ -1764,7 +1764,7 @@ static void PopulateSensorsCompMappings(map_name_to_info_t mappings[DID_COUNT], 
     ASSERT_SIZE(totalSize);
 }
 
-static void PopulateInl2MagObsInfo(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapInl2MagObsInfo(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<inl2_mag_obs_info_t> mapper(mappings, lookupSize, indices, did);
     mapper.AddMember("timeOfWeekMs", &inl2_mag_obs_info_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -1785,7 +1785,7 @@ static void PopulateInl2MagObsInfo(map_name_to_info_t mappings[DID_COUNT], uint3
     mapper.AddArray("bias_cal", &inl2_mag_obs_info_t::bias_cal, DATA_TYPE_F32, 3, "", "", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5);
 }
 
-static void PopulateInl2StatesMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapInl2States(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<inl2_states_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_FIXED_DECIMAL_4;
@@ -1800,7 +1800,7 @@ static void PopulateInl2StatesMappings(map_name_to_info_t mappings[DID_COUNT], u
     mapper.AddMember("magInc", &inl2_states_t::magInc, DATA_TYPE_F32, SYM_DEG, "Magnetic inclination", flags, C_RAD2DEG);
 }
 
-static void PopulateInl2NedSigmaMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapInl2NedSigma(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
     DataMapper<inl2_ned_sigma_t> mapper(mappings, lookupSize, indices, did);
     int flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_5;
@@ -1814,7 +1814,7 @@ static void PopulateInl2NedSigmaMappings(map_name_to_info_t mappings[DID_COUNT],
     mapper.AddMember("StdMagDeclination", &inl2_ned_sigma_t::StdMagDeclination, DATA_TYPE_F32, SYM_DEG, "Mag declination error standard deviation", flags, C_RAD2DEG);
 }
 
-static void PopulateRosCovariancePoseTwistMappings(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
+static void PopulateMapRosCovariancePoseTwist(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t did)
 {
 #define COV_POSE_UNITS      "rad², m²"
 #define COV_TWIST_UNITS     "(m/s)², (rad/s)²"
@@ -1969,92 +1969,92 @@ cISDataMappings::cISDataMappings()
     memset(m_lookupSize, 0, sizeof(uint32_t) * DID_COUNT);
 
     // CONFIG
-    PopulateFlashConfigMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_FLASH_CONFIG);
-    PopulateGpxFlashCfgMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_FLASH_CFG);
+    PopulateMapNvmFlashCfg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_FLASH_CONFIG);
+    PopulateMapGpxFlashCfg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_FLASH_CFG);
 
     // DEBUG
-    PopulateDebugStringMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_STRING);
-    PopulateDebugArrayMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_ARRAY);
-    PopulateDebugArrayMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEBUG_ARRAY);
+    PopulateMapDebugString(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_STRING);
+    PopulateMapDebugArray(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEBUG_ARRAY);
+    PopulateMapDebugArray(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEBUG_ARRAY);
 #ifdef USE_IS_INTERNAL
-    PopulateRtkDebugMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
-    PopulateRtkDebugMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
-    // PopulateRtkDebug2Mappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG_2);
-    PopulateRuntimeProfileMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RUNTIME_PROFILER);
+    PopulateMapRtkDebug(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
+    PopulateMapRtkDebug(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG);
+    // PopulateMapRtkDebug2(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_DEBUG_2);
+    PopulateMapRuntimeProfile( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RUNTIME_PROFILER);
 #endif
-    // PopulateDiagMsgMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DIAGNOSTIC_MESSAGE);
+    // PopulateMapDiagMsg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_DIAGNOSTIC_MESSAGE);
 
 #if defined(INCLUDE_LUNA_DATA_SETS)
     // LUNA
-    PopulateEvbLunaFlashCfgMappings(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_FLASH_CFG);
-    PopulateCoyoteStatusMappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_STATUS);
-    PopulateEvbLunaSensorsMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_SENSORS);
-    PopulateEvbLunaVelocityControlMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_VELOCITY_CONTROL);
-    PopulateEvbLunaVelocityCommandMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_VELOCITY_COMMAND);
-    PopulateEvbLunaAuxCmdMappings(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_AUX_COMMAND);
+    PopulateMapEvbLunaFlashCfg(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_FLASH_CFG);
+    PopulateMapCoyoteStatus(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_STATUS);
+    PopulateMapEvbLunaSensors(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_SENSORS);
+    PopulateMapEvbLunaVelocityControl( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_VELOCITY_CONTROL);
+    PopulateMapEvbLunaVelocityCommand( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_VELOCITY_COMMAND);
+    PopulateMapEvbLunaAuxCmd(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_LUNA_AUX_COMMAND);
 #endif
 
     // SOLUTION
-    PopulateINS1Mappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_1);
-    PopulateINS2Mappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_2);
-    PopulateINS3Mappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_3);
-    PopulateINS4Mappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_4);
-    PopulateSysParamsMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_PARAMS);
+    PopulateMapIns1(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_1);
+    PopulateMapIns2(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_2);
+    PopulateMapIns3(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_3);
+    PopulateMapIns4(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_INS_4);
+    PopulateMapSysParams(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_PARAMS);
 
     // EKF
-    PopulateInl2StatesMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATES);
+    PopulateMapInl2States(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATES);
 #ifdef USE_IS_INTERNAL
-    PopulateInl2StatusMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATUS);
-    PopulateInl2MiscMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
+    PopulateMapInl2Status(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_STATUS);
+    PopulateMapInl2Misc(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
 #endif
-    PopulateInl2NedSigmaMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_NED_SIGMA);
-    PopulateInl2MagObsInfo(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MAG_OBS_INFO);
-    PopulateRosCovariancePoseTwistMappings(m_lookupInfo, m_lookupSize, m_indexInfo, DID_ROS_COVARIANCE_POSE_TWIST);
+    PopulateMapInl2NedSigma(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_NED_SIGMA);
+    PopulateMapInl2MagObsInfo(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MAG_OBS_INFO);
+    PopulateMapRosCovariancePoseTwist(m_lookupInfo, m_lookupSize, m_indexInfo, DID_ROS_COVARIANCE_POSE_TWIST);
 #ifdef USE_IS_INTERNAL
-    PopulateInl2MiscMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
+    PopulateMapInl2Misc(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_INL2_MISC);
 #endif
     
     // SENSORS
-    PopulatePIMUMappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU, "Preintegrated IMU.");
-    PopulateIMUMappings(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
-    PopulateIMUMappings(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
-    PopulateIMU3Mappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
-    PopulateIMU3Mappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
+    PopulateMapPimu(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU, "Preintegrated IMU.");
+    PopulateMapImu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
+    PopulateMapImu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
+    PopulateMapImu3(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
+    PopulateMapImu3(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
 
-    PopulateIMUMappings(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_IMU, "Reference IMU.");
-    PopulatePIMUMappings(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_PIMU, "Reference PIMU.");
-    PopulateMagnetometerMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_MAGNETOMETER);
+    PopulateMapImu(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_IMU, "Reference IMU.");
+    PopulateMapPimu(           m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_PIMU, "Reference PIMU.");
+    PopulateMapMagnetometer(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_REFERENCE_MAGNETOMETER);
 
-    PopulateMagnetometerMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAGNETOMETER);
-    PopulateBarometerMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_BAROMETER);
-    PopulateWheelEncoderMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_WHEEL_ENCODER);
+    PopulateMapMagnetometer(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAGNETOMETER);
+    PopulateMapBarometer(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_BAROMETER);
+    PopulateMapWheelEncoder(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_WHEEL_ENCODER);
 
-    PopulateGpsPosMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS);
-    PopulateGpsRtkRelMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_REL);
-    PopulateGpsRtkMiscMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_MISC);
-    PopulateGpsRtkRelMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_REL);
-    PopulateGpsRtkMiscMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_MISC);
+    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS);
+    PopulateMapGpsRtkRel(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_REL);
+    PopulateMapGpsRtkMisc(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RTK_POS_MISC);
+    PopulateMapGpsRtkRel(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_REL);
+    PopulateMapGpsRtkMisc(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RTK_CMP_MISC);
 
-    PopulateGpsPosMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_POS);
-    PopulateGpsPosMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_POS);
-    PopulateGpsVelMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VEL);
-    PopulateGpsVelMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VEL);
-    PopulateGpsPosMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RCVR_POS);
+    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_POS);
+    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_POS);
+    PopulateMapGpsVel(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VEL);
+    PopulateMapGpsVel(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VEL);
+    PopulateMapGpsPos(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RCVR_POS);
 
 #if 0	// Too much data, we don't want to log this. WHJ
-    PopulateGpsSatMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SAT, DID_GPS1_SAT);
-    PopulateGpsSatMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SAT, DID_GPS2_SAT);
-    PopulateGpsSigMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SIG, DID_GPS1_SIG);
-    PopulateGpsSigMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SIG, DID_GPS2_SIG);
+    PopulateMapGpsSat(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SAT, DID_GPS1_SAT);
+    PopulateMapGpsSat(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SAT, DID_GPS2_SAT);
+    PopulateMapGpsSig(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_SIG, DID_GPS1_SIG);
+    PopulateMapGpsSig(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_SIG, DID_GPS2_SIG);
 #endif
 
-    PopulateGpsVersionMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VERSION);
-    PopulateGpsVersionMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VERSION);
-    PopulateGpsTimepulseMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_TIMEPULSE);
+    PopulateMapGpsVersion(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_VERSION);
+    PopulateMapGpsVersion(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_VERSION);
+    PopulateMapGpsTimepulse(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_TIMEPULSE);
 
-    PopulateGpsRawMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RAW);
-    PopulateGpsRawMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RAW);
-    PopulateGpsRawMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS_BASE_RAW);
+    PopulateMapGpsRaw(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS1_RAW);
+    PopulateMapGpsRaw(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS2_RAW);
+    PopulateMapGpsRaw(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPS_BASE_RAW);
 
 #ifdef USE_IS_INTERNAL
 //     m_lookupSize[DID_RTK_STATE] = sizeof(rtk_state_t);
@@ -2062,79 +2062,79 @@ cISDataMappings::cISDataMappings()
     m_lookupSize[DID_RTK_PHASE_RESIDUAL] = sizeof(rtk_residual_t);
 #endif
 
-    PopulateStrobeInTimeMappings(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_STROBE_IN_TIME);
-    PopulateSysSensorsMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_SENSORS);
-    PopulateSensorsADCMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC);
-    PopulateSensorsADCMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC_SIGMA);
+    PopulateMapStrobeInTime(   m_lookupInfo, m_lookupSize, m_indexInfo, DID_STROBE_IN_TIME);
+    PopulateMapSysSensors(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_SENSORS);
+    PopulateMapSensorsADC(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC);
+    PopulateMapSensorsADC(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_ADC_SIGMA);
 
-    PopulatePimuMagMappings(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU_MAG);
-    PopulateImuMagMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_MAG);
+    PopulateMapPimuMag(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_PIMU_MAG);
+    PopulateMapImuMag(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_IMU_MAG);
 
     // CALIBRATION
-    PopulateMagCalMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAG_CAL);
-    PopulateInfieldCalMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INFIELD_CAL);
-    PopulateGroundVehicleMappings(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_GROUND_VEHICLE);
+    PopulateMapMagCal(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_MAG_CAL);
+    PopulateMapInfieldCal(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_INFIELD_CAL);
+    PopulateMapGroundVehicle(  m_lookupInfo, m_lookupSize, m_indexInfo, DID_GROUND_VEHICLE);
     
     // SYSTEM
-    PopulateDeviceInfoMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEV_INFO);
-    PopulateDeviceInfoMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEV_INFO);
+    PopulateMapDeviceInfo(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_DEV_INFO);
+    PopulateMapDeviceInfo(          m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_DEV_INFO);
 
-    PopulateSysCmdMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_CMD);
-    PopulateBitMappings(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_BIT);
-    PopulateGpxBitMappings(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_BIT);
-    PopulateGpxStatusMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_STATUS);
-    PopulateSurveyInMappings(m_lookupInfo, m_lookupSize, m_indexInfo, DID_SURVEY_IN);
-    PopulateRtosInfoMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTOS_INFO);
+    PopulateMapSystemCommand(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_CMD);
+    PopulateMapBit(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_BIT);
+    PopulateMapGpxBit(         m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_BIT);
+    PopulateMapGpxStatus(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_STATUS);
+    PopulateMapSurveyIn(m_lookupInfo, m_lookupSize, m_indexInfo, DID_SURVEY_IN);
+    PopulateMapRtosInfo(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTOS_INFO);
     // m_lookupSize[DID_GPX_RTOS_INFO] = sizeof(gpx_rtos_info_t);
-    PopulateSysFaultMappings(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_FAULT);
+    PopulateMapSystemFault(       m_lookupInfo, m_lookupSize, m_indexInfo, DID_SYS_FAULT);
 
 #ifdef USE_IS_INTERNAL
-    PopulateUserPage0Mappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G0);
-    PopulateUserPage1Mappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G1);
+    PopulateMapUserPage0(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G0);
+    PopulateMapUserPage1(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_NVR_USERPAGE_G1);
 #endif
 
     // COMMUNICATIONS
-    PopulatePortMonitorMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_PORT_MONITOR);
-    PopulatePortMonitorMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_PORT_MONITOR);
-    PopulateNmeaBCastPeriodMappings(m_lookupInfo, m_lookupSize, m_indexInfo, DID_NMEA_BCAST_PERIOD);
-    PopulateCanConfigMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAN_CONFIG);
-    PopulateRmcMappings(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_RMC);
-    PopulateRmcMappings(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_RMC);
-    PopulateIOMappings(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_IO);
-    PopulateISEventMappings(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVENT);
+    PopulateMapPortMonitor(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_PORT_MONITOR);
+    PopulateMapPortMonitor(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_PORT_MONITOR);
+    PopulateMapNmeaMsgs(m_lookupInfo, m_lookupSize, m_indexInfo, DID_NMEA_BCAST_PERIOD);
+    PopulateMapCanConfig(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAN_CONFIG);
+    PopulateMapRmc(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_RMC);
+    PopulateMapRmc(            m_lookupInfo, m_lookupSize, m_indexInfo, DID_GPX_RMC);
+    PopulateMapIO(             m_lookupInfo, m_lookupSize, m_indexInfo, DID_IO);
+    PopulateMapISEvent(        m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVENT);
 
     // EVB
-    PopulateEvbStatusMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_STATUS);
-    PopulateEvbFlashCfgMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_FLASH_CFG);
-    PopulateDebugArrayMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEBUG_ARRAY);
-    // PopulateEvbRtosInfoMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_RTOS_INFO);
-    PopulateDeviceInfoMappings(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEV_INFO);
+    PopulateMapEvbStatus(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_STATUS);
+    PopulateMapEvbFlashCfg(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_FLASH_CFG);
+    PopulateMapDebugArray(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEBUG_ARRAY);
+    // PopulateMapEvbRtosInfo( m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_RTOS_INFO);
+    PopulateMapDeviceInfo(     m_lookupInfo, m_lookupSize, m_indexInfo, DID_EVB_DEV_INFO);
 
     // MANUFACTURING
-    PopulateHdwParamsMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_HDW_PARAMS);
-    PopulateManufacturingInfoMappings(m_lookupInfo, m_lookupSize, m_indexInfo, DID_MANUFACTURING_INFO);
-    PopulateSensorsISMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_UCAL);
-    PopulateSensorsISMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TCAL);
-    PopulateSensorsISMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_MCAL);
-    PopulateSensorsTCMappings(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TC_BIAS);
-    PopulateSensorsCompMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_SCOMP);
+    PopulateMapHdwParams(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_HDW_PARAMS);
+    PopulateMapManufacturingInfo(m_lookupInfo, m_lookupSize, m_indexInfo, DID_MANUFACTURING_INFO);
+    PopulateMapSensorsWTemp(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_UCAL);
+    PopulateMapSensorsWTemp(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TCAL);
+    PopulateMapSensorsWTemp(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_MCAL);
+    PopulateMapSensors(      m_lookupInfo, m_lookupSize, m_indexInfo, DID_SENSORS_TC_BIAS);
+    PopulateMapSensorCompensation(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_SCOMP);
 #ifdef USE_IS_INTERNAL
     // DID_CAL_SC_INFO
-    PopulateSensorTCalGroupMappings(m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_TEMP_COMP);
-    PopulateSensorMCalGroupMappings(m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_MOTION);
+    PopulateMapSensorTCalGroup(m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_TEMP_COMP);
+    PopulateMapSensorMCalGroup(m_lookupInfo, m_lookupSize, m_indexInfo, DID_CAL_MOTION);
 #endif
 
 
 #ifdef USE_IS_INTERNAL
-//     PopulateRtkStateMappings(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_STATE);
-//     PopulateRtkResidualMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_CODE_RESIDUAL);
-//     PopulateRtkResidualMappings( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_PHASE_RESIDUAL);
+//     PopulateMapRtkState(    m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_STATE);
+//     PopulateMapRtkResidual( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_CODE_RESIDUAL);
+//     PopulateMapRtkResidual( m_lookupInfo, m_lookupSize, m_indexInfo, DID_RTK_PHASE_RESIDUAL);
 #endif
 
     // This must come last
     for (uint32_t id = 0; id < DID_COUNT; id++)
     {
-        PopulateTimestampField(id, m_timestampFields, m_lookupInfo);
+        PopulateMapTimestampField(id, m_timestampFields, m_lookupInfo);
     }
 }
 
