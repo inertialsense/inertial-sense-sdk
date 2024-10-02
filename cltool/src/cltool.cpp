@@ -81,7 +81,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
             name = s.substr(0, pos);
         }
 
-        did = cISDataMappings::GetDataSetId(name);
+        did = cISDataMappings::GetId(name);
     }
 
     if (did > DID_NULL && did < DID_COUNT)
@@ -125,7 +125,7 @@ void print_dids()
     for (eDataIDs id = 0; id < DID_COUNT; id++)
 #endif
     {
-        printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+        printf("(%d) %s\n", id, cISDataMappings::GetName(id));
     }
     cltool_outputHelp();
 }
@@ -896,7 +896,7 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;

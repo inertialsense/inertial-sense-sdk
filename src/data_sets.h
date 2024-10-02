@@ -1550,10 +1550,10 @@ typedef struct nmeaBroadcastMsgPair
 typedef struct PACKED
 {
     /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistent] (see RMC_OPTIONS_...) */
-    uint32_t				options;
+    uint32_t                options;
 
     /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaMsgId) */
-    nmeaBroadcastMsgPair_t	nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
+    nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
      *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGpsDtMs = 200 (5Hz) 
@@ -1565,30 +1565,30 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** (rad/s) Gyros.  Units only apply for calibrated data. */
-    f_t						pqr[3];
+    float                   pqr[3];
 
     /** (m/s^2) Accelerometers.  Units only apply for calibrated data. */
-    f_t						acc[3];
+    float                   acc[3];
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    f_t						temp;
+    float                   temp;
 } sensors_imu_w_temp_t;
 
 typedef struct PACKED
 {                                       // Units only apply for calibrated data
-    f_t						mag[3];         // (uT)		Magnetometers
+    float                   mag[3];         // (uT)		Magnetometers
 } sensors_mag_t;
 
 typedef struct PACKED
 {
     /** (rad/s) Gyros.  Units only apply for calibrated data. */
-    f_t						pqr[3];
+    float                   pqr[3];
 
     /** (m/s^2) Accelerometers.  Units only apply for calibrated data. */
-    f_t						acc[3];
+    float                   acc[3];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
-    f_t						mag[3];
+    float                   mag[3];
 } sensors_mpu_t;
 
 // (DID_SENSORS_TC_BIAS)
@@ -1597,12 +1597,12 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;                                       // Units only apply for calibrated data
 
-    sensors_mpu_t			mpu[NUM_IMU_DEVICES];
+    sensors_mpu_t           mpu[NUM_IMU_DEVICES];
 } sensors_t;
 
 typedef struct PACKED
 {
-    f_t						xyz[3];
+    float                   xyz[3];
 } mag_xyz_t;
 
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
@@ -1611,7 +1611,7 @@ typedef struct PACKED
     imu3_t					imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    f_t						temp[NUM_IMU_DEVICES];
+    float						temp[NUM_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
     mag_xyz_t				mag[NUM_MAG_DEVICES];
@@ -1619,41 +1619,41 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    f_t						lpfLsb[3];      // Low-pass filtered of g_sensors.lsb
-    f_t						lpfTemp;		// (°C) Low-pass filtered sensor temperature
-    f_t						k[3];			// Slope (moved from flash to here)
-    f_t						temp;			// (°C)	Temperature of sensor
-    f_t                     tempRampRate;   // (°C/s) Temperature ramp rate
-    uint32_t                tci;            // Index of current temperature compensation point
-    uint32_t                numTcPts;       // Total number of tc points
-    f_t                     dtTemp;			// (°C) Temperature from last calibration point
+    float                   lpfLsb[3];              // Low-pass filtered of g_sensors.lsb
+    float                   lpfTemp;                // (°C) Low-pass filtered sensor temperature
+    float                   k[3];                   // Slope (moved from flash to here)
+    float                   temp;                   // (°C)	Temperature of sensor
+    float                   tempRampRate;           // (°C/s) Temperature ramp rate
+    uint32_t                tci;                    // Index of current temperature compensation point
+    uint32_t                numTcPts;               // Total number of tc points
+    float                   dtTemp;                 // (°C) Temperature from last calibration point
 } sensor_comp_unit_t;
 
 /** (DID_SCOMP) INTERNAL USE ONLY */
 typedef struct PACKED
-{                                       // Sensor temperature compensation
-    uint32_t                timeMs;         // (ms) Time since boot up.
-    sensor_comp_unit_t		pqr[NUM_IMU_DEVICES];
-    sensor_comp_unit_t		acc[NUM_IMU_DEVICES];
-    sensor_comp_unit_t		mag[NUM_MAG_DEVICES];
-    imus_t 					referenceImu;	// External reference IMU
-    float                   referenceMag[3];// External reference magnetometer (heading reference)
-    uint32_t                sampleCount;    // Number of samples collected
-    uint32_t                calState;       // state machine (see eScompCalState)
-    uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
-    f_t						alignAccel[3];  // Alignment acceleration
+{                                                   // Sensor temperature compensation
+    uint32_t                timeMs;                 // (ms) Time since boot up.
+    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES];
+    sensor_comp_unit_t      acc[NUM_IMU_DEVICES];
+    sensor_comp_unit_t      mag[NUM_MAG_DEVICES];
+    imus_t                  referenceImu;	        // External reference IMU
+    float                   referenceMag[3];        // External reference magnetometer (heading reference)
+    uint32_t                sampleCount;            // Number of samples collected
+    uint32_t                calState;               // state machine (see eScompCalState)
+    uint32_t                status;                 // Status used to control LED and indicate valid sensor samples (see eScompStatus)
+    float                   alignAccel[3];          // Alignment acceleration
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4
 typedef struct PACKED
-{                                       // LSB units for all except temperature, which is Celsius.
-    double					time;
-    sensors_imu_w_temp_t	imu[NUM_IMU_DEVICES];
-    sensors_mag_t			mag[NUM_MAG_DEVICES];   // Magnetometers
-    f_t						bar;            		// Barometric pressure
-    f_t						barTemp;				// Temperature of barometric pressure sensor
-    f_t                     humidity;				// Relative humidity as a percent (%rH).  Range is 0% - 100%
-    f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
+{                                                   // LSB units for all except temperature, which is Celsius.
+    double                  time;
+    sensors_imu_w_temp_t    imu[NUM_IMU_DEVICES];
+    sensors_mag_t           mag[NUM_MAG_DEVICES];   // Magnetometers
+    float                   bar;                    // Barometric pressure
+    float                   barTemp;                // Temperature of barometric pressure sensor
+    float                   humidity;               // Relative humidity as a percent (%rH).  Range is 0% - 100%
+    float                   ana[NUM_ANA_CHANNELS];  // ADC analog input
 } sys_sensors_adc_t;
 
 #if defined(IMX_5)
@@ -3368,7 +3368,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
     int32_t					i[DEBUG_I_ARRAY_SIZE];
-    f_t						f[DEBUG_F_ARRAY_SIZE];
+    float					f[DEBUG_F_ARRAY_SIZE];
     double                  lf[DEBUG_LF_ARRAY_SIZE];
 } debug_array_t;
 
@@ -4046,11 +4046,13 @@ typedef struct PACKED
     float					vDop;
 
     /** Base Position - latitude, longitude, height (degrees, meters) */
-     double					baseLla[3];
+    double					baseLla[3];
 
     /** Cycle slip counter */
     uint32_t                cycleSlipCount;
     
+
+
     /** Rover gps observation element counter */
     uint32_t				roverGpsObservationCount;
 
@@ -4062,6 +4064,7 @@ typedef struct PACKED
 
     /** Base station glonass observation element counter */
     uint32_t				baseGlonassObservationCount;
+
 
     /** Rover galileo observation element counter */
     uint32_t				roverGalileoObservationCount;
@@ -4075,6 +4078,7 @@ typedef struct PACKED
     /** Base station beidou observation element counter */
     uint32_t				baseBeidouObservationCount;
 
+
     /** Rover qzs observation element counter */
     uint32_t				roverQzsObservationCount;
 
@@ -4086,6 +4090,7 @@ typedef struct PACKED
 
     /** Base station gps ephemeris element counter */
     uint32_t				baseGpsEphemerisCount;
+
 
     /** Rover glonass ephemeris element counter */
     uint32_t				roverGlonassEphemerisCount;
@@ -4099,6 +4104,7 @@ typedef struct PACKED
     /** Base station galileo ephemeris element counter */
     uint32_t				baseGalileoEphemerisCount;
 
+
     /** Rover beidou ephemeris element counter */
     uint32_t				roverBeidouEphemerisCount;
 
@@ -4111,6 +4117,7 @@ typedef struct PACKED
     /** Base station qzs ephemeris element counter */
     uint32_t				baseQzsEphemerisCount;
 
+
     /** Rover sbas element counter */
     uint32_t				roverSbasCount;
 
@@ -4122,6 +4129,7 @@ typedef struct PACKED
 
     /** Ionosphere model, utc and almanac count */
     uint32_t				ionUtcAlmCount;
+    
     
     /** Number of checksum failures from received corrections */
     uint32_t				correctionChecksumFailures;
@@ -4485,7 +4493,7 @@ typedef struct
 {
     uint8_t reserved;
     uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
-    uint8_t initState;          /** GNSS status (see InitSteps) **/
+    uint8_t initState;          /** GNSS init status (see InitSteps) **/
     uint8_t runState;           /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
@@ -4526,7 +4534,7 @@ typedef struct
     /** RTK Mode bits (see eRTKConfigBits) **/
     uint32_t                rtkMode;
 
-    gpx_gnss_status_t       gnsssStatus[GNSS_RECEIVER_COUNT];
+    gpx_gnss_status_t       gnssStatus[GNSS_RECEIVER_COUNT];
 
     /** port */
     uint8_t                 gpxSourcePort;

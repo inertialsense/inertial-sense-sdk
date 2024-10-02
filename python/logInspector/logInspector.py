@@ -43,12 +43,9 @@ def openFolderWithFileBrowser(path):
 
 def cleanFolder(path, toplevel=True):
     containsDAT = False
-    containsSDAT = False
     for fname in os.listdir(path):
         if fname.endswith('.dat'):
             containsDAT = True
-        if fname.endswith('.sdat'):
-            containsSDAT = True
 
     for fname in os.listdir(path):
         fpath = os.path.join(path, fname)
@@ -58,14 +55,9 @@ def cleanFolder(path, toplevel=True):
             else:
                 cleanFolder(fpath, False)
         else:
-            # Remove .csv if .dat or .sdat exist
-            if containsDAT or containsSDAT:
-                if fname.endswith('.csv'):
-                    print('Deleting: ' + fpath)
-                    os.remove(fpath)
-            # Remove .sdat if .dat exist
+            # Remove .csv if .dat exist
             if containsDAT:
-                if fname.endswith('.sdat'):
+                if fname.endswith('.csv'):
                     print('Deleting: ' + fpath)
                     os.remove(fpath)
     if toplevel:
@@ -667,9 +659,8 @@ class LogInspectorWindow(QMainWindow):
 
         for fname in os.listdir(self.config['directory']):
             fname = fname.lower()
-            if fname.endswith('.dat') or \
-               fname.endswith('.raw') or \
-               fname.endswith('.sdat'):
+            if fname.endswith('.raw') or \
+               fname.endswith('.dat'):
                 try:
                     self.load(self.config['directory'])
                 except Exception as e:

@@ -384,7 +384,6 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     default:
     case cISLogger::LOGTYPE_DAT: fileExtensionRegex = "\\.dat$"; break;
     case cISLogger::LOGTYPE_RAW: fileExtensionRegex = "\\.raw$"; break;
-    case cISLogger::LOGTYPE_SDAT: fileExtensionRegex = "\\.sdat$"; break;
     case cISLogger::LOGTYPE_CSV: fileExtensionRegex = "\\.csv$"; break;
     case cISLogger::LOGTYPE_JSON: fileExtensionRegex = "\\.json$"; break;
     case cISLogger::LOGTYPE_KML: return false; // fileExtensionRegex = "\\.kml$"; break; // kml read not supported

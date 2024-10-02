@@ -47,7 +47,7 @@ class SuperNPP():
     def findLogFiles(self, directory):
         # print("findLogFiles: ", directory)
         for file in os.listdir(directory):
-            if ".sdat" in file or ".dat" in file or ".raw" in file:
+            if ".dat" in file or ".raw" in file:
                 self.subdirs.append(directory)
                 break
         # Recursively search for data in sub directories
@@ -100,10 +100,8 @@ class SuperNPP():
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if ".sdat" in file or ".dat" in file or ".raw" in file:
-                    if ".sdat" in file:
-                        logType = "SDAT"
-                    elif ".dat" in file:
+                if ".dat" in file or ".raw" in file:
+                    if ".dat" in file:
                         logType = "DAT"
                     elif ".raw" in file:
                         logType = "RAW"

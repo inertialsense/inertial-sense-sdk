@@ -17,7 +17,6 @@ modules = [Extension("pose", ["pose.pyx"]),
            Extension("filterTools", ["filterTools.pyx"]),
            Extension("plotTools", ["plotTools.pyx"]),
            Extension("ISToolsData", ["ISToolsData.pyx"]),
-           Extension("ISToolsDataSorted", ["ISToolsDataSorted.pyx"]),
 #           Extension("ISDataAnalytics", ["ISDataAnalytics.pyx"]),
 #           Extension("ISToolsPlot", ["ISToolsPlot.pyx"]),
            ]

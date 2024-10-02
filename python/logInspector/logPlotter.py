@@ -36,7 +36,6 @@ sys.path.append(os.path.normpath(file_path + '/..'))
 sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from logReader import Log
-from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
 from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
