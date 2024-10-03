@@ -2320,6 +2320,11 @@ enum eGPXBit_resultsPos{
     GPXBit_resultsPos_UART,
     GPXBit_resultsPos_IO,
     GPXBit_resultsPos_GPS,
+    GPXBit_resultsPos_LOW_CNO_GNSS1,
+    GPXBit_resultsPos_LOW_CNO_GNSS2,
+    GPXBit_resultsPos_CNO_IR_GNSS1,  
+    GPXBit_resultsPos_CNO_IR_GNSS2,
+
     GPXBit_resultsPos_FINISHED,
 
     GPXBit_resultsPos_CANCELED,
@@ -2332,10 +2337,16 @@ enum eGPXBit_results{
     GPXBit_resultsBit_UART                  = (0x01 << GPXBit_resultsPos_UART),
     GPXBit_resultsBit_IO                    = (0x01 << GPXBit_resultsPos_IO),
     GPXBit_resultsBit_GPS                   = (0x01 << GPXBit_resultsPos_GPS),
+    GPXBit_resultsBit_LOW_CNO_GNSS1         = (0x01 << GPXBit_resultsPos_LOW_CNO_GNSS1),
+    GPXBit_resultsBit_LOW_CNO_GNSS2         = (0x01 << GPXBit_resultsPos_LOW_CNO_GNSS2),
+    GPXBit_resultsBit_IR_CNO_GNSS1          = (0x01 << GPXBit_resultsPos_CNO_IR_GNSS1),  
+    GPXBit_resultsBit_IR_CNO_GNSS2          = (0x01 << GPXBit_resultsPos_CNO_IR_GNSS2),
     GPXBit_resultsBit_FINISHED              = (0x01 << GPXBit_resultsPos_FINISHED),
     GPXBit_resultsBit_CANCELED              = (0x01 << GPXBit_resultsPos_CANCELED),
     GPXBit_resultsBit_ERROR                 = (0x01 << GPXBit_resultsPos_ERROR),
 };
+
+#define GPXBit_RESULT_GPS_QT_PASS_Mask      GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_LOW_CNO_GNSS1 | GPXBit_resultsBit_LOW_CNO_GNSS2 | GPXBit_resultsBit_IR_CNO_GNSS1 | GPXBit_resultsBit_IR_CNO_GNSS2 
 
 enum eGPXBit_CMD{
     GPXBit_CMD_NONE                                     = 0,
@@ -4434,10 +4445,25 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
     /** Communications Rx buffer overrun */
     GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,
-    /** GPS PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GPS_PPS                       = (int)0x00040000,
-    /** Time synchronized by GPS PPS */
-    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x00080000,
+
+    
+    /** GPS1 PPS timepulse signal has not been received or is in error */
+    GPX_HDW_STATUS_ERR_NO_GPS1_PPS                      = (int)0x00040000,
+    /** GPS2 PPS timepulse signal has not been received or is in error */
+    GPX_HDW_STATUS_ERR_NO_GPS2_PPS                      = (int)0x00080000,
+    /** GPS PPS error mask */
+    GPX_HDW_STATUS_ERR_PPS_MASK                         = (int)0x000C0000,
+
+    /** GPS1 signal strength low (<20)*/
+    GPX_HDW_STATUS_ERR_LOW_CNO_GPS1                     = (int)0x00100000,
+    /** GPS2 signal strength low (<20)*/
+    GPX_HDW_STATUS_ERR_LOW_CNO_GPS2                     = (int)0x00200000,
+    /** GPS1 signal irregular*/
+    GPX_HDW_STATUS_ERR_CNO_GPS1_IR                      = (int)0x00400000,
+    /** GPS2 signal irregular*/
+    GPX_HDW_STATUS_ERR_CNO_GPS2_IR                      = (int)0x00800000,
+    /** GPS signal error mask*/
+    GPX_HDW_STATUS_ERR_CNO_MASK                         = (int)0x00F00000,
 
     /** (BIT) Built-in self-test running */
     GPX_HDW_STATUS_BIT_RUNNING                          = (int)0x01000000,
@@ -4450,6 +4476,9 @@ enum eGPXHdwStatusFlags
 
     /** Temperature outside spec'd operating range */
     GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
+
+    /** Time synchronized by GPS PPS */
+    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x08000000,
 
     /** Fault reset cause */
     GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
