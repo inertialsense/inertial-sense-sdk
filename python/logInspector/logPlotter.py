@@ -436,6 +436,7 @@ class logPlot:
             if len(gpsVelEcef) > 0:
                 qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
                 gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
+                # gpsVelNed = np.copy(gpsVelEcef)   # Override to ECEF
         return [gpsTime, gpsVelNed]
 
     def gpsVelNED(self, fig=None):
@@ -540,6 +541,8 @@ class logPlot:
             qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
             if len(velEcef) > 0:
                 velNed = quatConjRot(qe2n, velEcef)
+            # velNed = np.copy(velEcef)     # Override to ECEF velocity
+
             #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
             #velNed = R.dot(velEcef.T).T
         return velNed
@@ -998,10 +1001,10 @@ class logPlot:
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Att Coarse')
+                if r: ax.text(p1, -cnt * 1.5, 'Hdg Coarse')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Att Fine')
+                if r: ax.text(p1, -cnt * 1.5, 'Hdg Fine')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000002) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Vel Coarse')
