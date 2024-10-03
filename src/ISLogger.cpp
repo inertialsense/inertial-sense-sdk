@@ -51,8 +51,37 @@ using namespace std;
 const string cISLogger::g_emptyString;
 
 #if !PLATFORM_IS_EMBEDDED
-static std::mutex g_devices_mutex;
+class SimpleMutex {
+private:
+    std::atomic_flag flag = ATOMIC_FLAG_INIT; // Atomic flag for lock status
+
+public:
+    void lock() {
+        // Spin-wait loop until the lock is acquired
+        while (flag.test_and_set(std::memory_order_acquire)) {
+            // Busy-wait until the lock is acquired
+            SLEEP_MS(1);
+        }
+    }
+
+    void unlock() {
+        // Release the lock
+        flag.clear(std::memory_order_release);
+    }
+};
+
+SimpleMutex myMutex;
+
+#define LOCK_MUTEX()        myMutex.lock()
+#define UNLOCK_MUTEX()      myMutex.unlock()
+
+#else
+
+#define LOCK_MUTEX()        
+#define UNLOCK_MUTEX()      
+
 #endif
+
 
 bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
 {
@@ -91,11 +120,10 @@ cISLogger::~cISLogger()
 
 void cISLogger::Cleanup()
 {
-#if !PLATFORM_IS_EMBEDDED
-    const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+    LOCK_MUTEX();
     m_devices.clear();
     m_logStats.Clear();
+    UNLOCK_MUTEX();
 }
 
 
@@ -270,13 +298,12 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 
     // Add new devices
     {
-#if !PLATFORM_IS_EMBEDDED
-        const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+        LOCK_MUTEX();
         // for (int i = 0; i < numDevices; i++)
         for (auto& d : devices) {
             registerDevice(d);
         }
+        UNLOCK_MUTEX();
     }
 
     //m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
@@ -408,9 +435,7 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
 
                     // Add devices
                     {
-#if !PLATFORM_IS_EMBEDDED
-                        const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+                        LOCK_MUTEX();
                         std::shared_ptr<cDeviceLog> deviceLog;
                         switch (logType)
                         {
@@ -425,6 +450,7 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
                         }
                         deviceLog->SetupReadInfo(directory, serialNumber, m_timeStamp);
                         m_devices[serialNum] = deviceLog;
+                        UNLOCK_MUTEX();
                     }
 
 #if (LOG_DEBUG_GEN == 2)
