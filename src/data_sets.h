@@ -4511,7 +4511,7 @@ typedef struct
     /** RTK Mode bits (see eRTKConfigBits) **/
     uint32_t                rtkMode;
 
-    gpx_gnss_status_t       gnsssStatus[GNSS_RECEIVER_COUNT];
+    gpx_gnss_status_t       gnssStatus[GNSS_RECEIVER_COUNT];
 
     /** port */
     uint8_t                 gpxSourcePort;
