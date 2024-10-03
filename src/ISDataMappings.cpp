@@ -981,8 +981,6 @@ static void PopulateMapGpxFlashCfg(map_name_to_info_t mappings[DID_COUNT], uint3
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
     mapper.AddMember("RTKCfgBits", &gpx_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("haltReason", &gpx_flash_cfg_t::haltReason, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("reserved", &gpx_flash_cfg_t::reserved, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
 
     // Keep at end
     mapper.AddMember("size", &gpx_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
