@@ -558,6 +558,13 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.setValue(self.downsample)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
+        self.downSampleToOne = QPushButton()
+        self.downSampleToOne.setMinimumWidth(1)
+        self.downSampleToOne.setMaximumWidth(20)
+        self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.downSampleToOne.setText("1")
+        self.toolLayout.addWidget(self.downSampleToOne)
+        self.downSampleToOne.clicked.connect(self.setDownSampleToOne)
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
     def changeResidualCheckbox(self, state):
@@ -585,7 +592,11 @@ class LogInspectorWindow(QMainWindow):
     def changeDownSample(self, val):
         self.downsample = max(val, 1)
         self.plotter.setDownSample(self.downsample)
-        self.updatePlot()
+        if self.log != None:
+            self.updatePlot()
+
+    def setDownSampleToOne(self):
+        self.downSampleInput.setValue(1)
 
     def copyPlotToClipboard(self):
         # pixmap = QPixmap.grabWidget(self.canvas)

@@ -194,7 +194,7 @@ typedef uint32_t eDataIDs;
 /** INS status flags */
 enum eInsStatusFlags
 {
-    /** Attitude estimate is usable but outside spec (COARSE) */
+    /** Heading estimate is usable but outside spec (COARSE) */
     INS_STATUS_HDG_ALIGN_COARSE                 = (int)0x00000001,
     /** Velocity estimate is usable but outside spec (COARSE) */
     INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
@@ -206,7 +206,7 @@ enum eInsStatusFlags
     /** Velocity aided by wheel sensor */
     INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
-    /** Attitude estimate is within spec (FINE) */
+    /** Heading estimate is within spec (FINE).  `INS_STATUS_HDG_ALIGN_COARSE` and `INS_STATUS_HDG_ALIGN_FINE` flags indicate whether INS heading is aided by any heading sensor (including GPS or magnetometer).  More accurate heading sensors (i.e. GPS) are prioritized over less accurate sensors (i.e. magnetometers) and will fall back to the less accurate sensors when the more accurate sensors are not available.  A momentary blip in these alignment flags may occur during heading transition from higher to lower accuracy aiding sensors (i.e. GPS to magnetometer).  `INS_STATUS_HDG_ALIGN_FINE` and `INS_STATUS_HDG_ALIGN_COARSE` flags will not be set when no heading aiding is available.  */
     INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
@@ -343,7 +343,7 @@ enum eHdwStatusFlags
     /** Sensor saturation offset */
     HDW_STATUS_SATURATION_OFFSET                = 8,
 
-    /** System Reset is Required for proper function */
+    /** System Reset is required for proper function */
     HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
     /** GPS PPS timepulse signal has noise and occurred too frequently */
     HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,
@@ -4347,12 +4347,6 @@ typedef struct
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
 
-    /** (Internal use only) Reason for system halt (see k_fatal_error_reason and k_fatal_error_reason_arch). Cleared on startup. */
-    uint32_t                haltReason;
-    
-    /** (Internal use only) reserved */
-    uint32_t                reserved;           
-
 } gpx_flash_cfg_t;
 
 /** GPX status flags */
@@ -4384,7 +4378,7 @@ enum eGpxStatus
     GPX_STATUS_FATAL_DIV_ZERO                           = (int)13,
     GPX_STATUS_FATAL_SER0_REINIT                        = (int)14,
 
-    GPX_STATUS_FATAL_UNKNOWN                            = (int)0xff,
+    GPX_STATUS_FATAL_UNKNOWN                            = (int)0x1F,    // TODO: Temporarily set to (5 bits). Reset to 0xFF when gpx_flash_cfg.debug is no longer used with fault reporting. (WHJ) 
 };
 
 /** Hardware status flags */
@@ -4903,13 +4897,13 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
 
-    EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_REG  = 22,
+    EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST = 22,
     EVENT_MSG_TYPE_ID_IMX_SER0_REG      = 23,
     EVENT_MSG_TYPE_ID_IMX_SER0_CFG      = 24,
     EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN = 25,
     EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG = 26,
 
-    EVENT_MSG_TYPE_ID_DMA_RX_0_REG      = 27,
+    EVENT_MSG_TYPE_ID_DMA_RX_0_INST     = 27,
     EVENT_MSG_TYPE_ID_SER0_REG          = 28,
     EVENT_MSG_TYPE_ID_SER0_CFG          = 29,
     EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN     = 30,
@@ -4920,6 +4914,36 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER  = (uint16_t)-2,
     EVENT_MSG_TYPE_ID_ENA_FILTER        = (uint16_t)-1,
 };
+
+typedef struct{
+    uint32_t                inst_CCR;         /*!< DMA channel x configuration register        */
+    uint32_t                inst_CNDTR;       /*!< DMA channel x number of data register       */
+    uint32_t                inst_CPAR;        /*!< DMA channel x peripheral address register   */
+    uint32_t                inst_CMAR;        /*!< DMA channel x memory address register       */
+
+	uint8_t 		        *ptr_start;
+	uint8_t 		        *ptr_end;
+	uint16_t 		        active_tx_len;
+	uint8_t 			    done;							// Currently only used in TX
+
+	uint8_t					cfg_dir;						// DMA_RX or DMA_TX
+	uint8_t					cfg_circular;					// DMA_CIRC_ON or DMA_CIRC_OFF
+	uint8_t 				cfg_priority;					// DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
+	uint8_t				    cfg_interrupt;
+	uint8_t 				cfg_interrupt_priority;			// 0 to 15, 15 is low
+	uint8_t 				cfg_dma_channel_select;			// 0 to 7. See RM0394 11.6.7
+	uint8_t 				cfg_parent_type;				// DMA_PARENT_USART, ...
+	void 					*cfg_parent;					// Pointer to parent init base
+	uint32_t				*cfg_periph_reg;				// Pointer to peripheral register
+	uint8_t					*cfg_buf;
+	uint16_t				cfg_buf_len;					// This doesn't correspond to the length register, it is just however big the buffer is
+	uint8_t 				cfg_linear_buf;			 		// If true, the buffer is user-specified and we treat it like a non-circular buffer.
+	void                    *cfg_tcie_handler;	            // If n
+	
+    int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+	uint8_t					overflow;						// Buffer overflow
+
+} eventImxDmaTxInst_t;
 
 enum eEventPriority
 {
