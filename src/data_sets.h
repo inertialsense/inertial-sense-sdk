@@ -2324,6 +2324,8 @@ enum eGPXBit_resultsPos{
     GPXBit_resultsPos_LOW_CNO_GNSS2,
     GPXBit_resultsPos_CNO_IR_GNSS1,  
     GPXBit_resultsPos_CNO_IR_GNSS2,
+    GPXBit_resultsPos_NO_PPS1,
+    GPXBit_resultsPos_NO_PPS2,
 
     GPXBit_resultsPos_FINISHED,
 
@@ -2332,21 +2334,23 @@ enum eGPXBit_resultsPos{
 };
 
 enum eGPXBit_results{
-    GPXBit_resultsBit_PPS1                  = (0x01 << GPXBit_resultsPos_PPS1),
-    GPXBit_resultsBit_PPS2                  = (0x01 << GPXBit_resultsPos_PPS2),
-    GPXBit_resultsBit_UART                  = (0x01 << GPXBit_resultsPos_UART),
-    GPXBit_resultsBit_IO                    = (0x01 << GPXBit_resultsPos_IO),
-    GPXBit_resultsBit_GPS                   = (0x01 << GPXBit_resultsPos_GPS),
-    GPXBit_resultsBit_LOW_CNO_GNSS1         = (0x01 << GPXBit_resultsPos_LOW_CNO_GNSS1),
-    GPXBit_resultsBit_LOW_CNO_GNSS2         = (0x01 << GPXBit_resultsPos_LOW_CNO_GNSS2),
-    GPXBit_resultsBit_IR_CNO_GNSS1          = (0x01 << GPXBit_resultsPos_CNO_IR_GNSS1),  
-    GPXBit_resultsBit_IR_CNO_GNSS2          = (0x01 << GPXBit_resultsPos_CNO_IR_GNSS2),
-    GPXBit_resultsBit_FINISHED              = (0x01 << GPXBit_resultsPos_FINISHED),
-    GPXBit_resultsBit_CANCELED              = (0x01 << GPXBit_resultsPos_CANCELED),
-    GPXBit_resultsBit_ERROR                 = (0x01 << GPXBit_resultsPos_ERROR),
+    GPXBit_resultsBit_PPS1              = (0x01 << GPXBit_resultsPos_PPS1),
+    GPXBit_resultsBit_PPS2              = (0x01 << GPXBit_resultsPos_PPS2),
+    GPXBit_resultsBit_UART              = (0x01 << GPXBit_resultsPos_UART),
+    GPXBit_resultsBit_IO                = (0x01 << GPXBit_resultsPos_IO),
+    GPXBit_resultsBit_GPS               = (0x01 << GPXBit_resultsPos_GPS),
+    GPXBit_resultsBit_LOW_CNO_GNSS1     = (0x01 << GPXBit_resultsPos_LOW_CNO_GNSS1),
+    GPXBit_resultsBit_LOW_CNO_GNSS2     = (0x01 << GPXBit_resultsPos_LOW_CNO_GNSS2),
+    GPXBit_resultsBit_IR_CNO_GNSS1      = (0x01 << GPXBit_resultsPos_CNO_IR_GNSS1),
+    GPXBit_resultsBit_IR_CNO_GNSS2      = (0x01 << GPXBit_resultsPos_CNO_IR_GNSS2),
+    GPXBit_resultsBit_NO_PPS1           = (0x01 << GPXBit_resultsPos_NO_PPS1),    
+    GPXBit_resultsBit_NO_PPS2           = (0x01 << GPXBit_resultsPos_NO_PPS2),
+    GPXBit_resultsBit_FINISHED          = (0x01 << GPXBit_resultsPos_FINISHED),
+    GPXBit_resultsBit_CANCELED          = (0x01 << GPXBit_resultsPos_CANCELED),
+    GPXBit_resultsBit_ERROR             = (0x01 << GPXBit_resultsPos_ERROR),
 };
 
-#define GPXBit_RESULT_GPS_QT_PASS_Mask      GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_LOW_CNO_GNSS1 | GPXBit_resultsBit_LOW_CNO_GNSS2 | GPXBit_resultsBit_IR_CNO_GNSS1 | GPXBit_resultsBit_IR_CNO_GNSS2 
+#define GPXBit_RESULT_GPS_QT_PASS_Mask      GPXBit_resultsBit_NO_PPS1 | GPXBit_resultsBit_NO_PPS2 | GPXBit_resultsBit_LOW_CNO_GNSS1 | GPXBit_resultsBit_LOW_CNO_GNSS2 | GPXBit_resultsBit_IR_CNO_GNSS1 | GPXBit_resultsBit_IR_CNO_GNSS2 
 
 enum eGPXBit_CMD{
     GPXBit_CMD_NONE                                     = 0,
