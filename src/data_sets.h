@@ -2350,7 +2350,7 @@ enum eGPXBit_results{
     GPXBit_resultsBit_ERROR             = (0x01 << GPXBit_resultsPos_ERROR),
 };
 
-#define GPXBit_RESULT_GPS_QT_PASS_Mask      GPXBit_resultsBit_NO_PPS1 | GPXBit_resultsBit_NO_PPS2 | GPXBit_resultsBit_LOW_CNO_GNSS1 | GPXBit_resultsBit_LOW_CNO_GNSS2 | GPXBit_resultsBit_IR_CNO_GNSS1 | GPXBit_resultsBit_IR_CNO_GNSS2 
+#define GPXBit_RESULT_GPS_QT_EXIT_Mask      GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2
 
 enum eGPXBit_CMD{
     GPXBit_CMD_NONE                                     = 0,
