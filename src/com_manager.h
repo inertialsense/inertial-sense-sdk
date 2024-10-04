@@ -193,6 +193,8 @@ void comManagerStepTimeout(uint32_t timeMs);
 
 void comManagerStep();
 
+void comManagerStep(port_handle_t port);
+
 void stepSendMessages(void);
 
 /**
@@ -402,7 +404,8 @@ class ISComManager {
 public:
     void step();
     void stepTx();
-    void stepRx(uint32_t timeMs);
+    void stepRx(port_handle_t port);
+    void stepRx();
 
     /**
     * Initializes the default global com manager. This is generally only called once on program start.

@@ -14,6 +14,7 @@
 #include "DeviceLog.h"
 #include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
+#include "protocol_nmea.h"
 
 extern "C"
 {
@@ -77,6 +78,62 @@ public:
     std::string getFirmwareInfo(int detail = 1);
     std::string getDescription();
 
+
+    // Convenience Functions
+    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { comManagerGetData(port, dataId, length, offset, period); }
+    void QueryDeviceInfo() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
+    void SavePersistent() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
+    void SoftwareReset() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+    void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset) { comManagerSendData(port, data, dataId, length, offset); }
+    void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset) { comManagerSendRawData(port, data, dataId, length, offset); }
+    void SendRaw(uint8_t* data, uint32_t length) { comManagerSendRaw(port, data, length); }
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
+    void SetSysCmd(const uint32_t command);
+    void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
+
+
+    // OH, ALL THE FLASHY-SYNCY STUFF
+    bool FlashConfig(nvm_flash_cfg_t& flashCfg_);
+    bool SetFlashConfig(nvm_flash_cfg_t& flashCfg_);
+
+    /**
+     * A fancy function that attempts to synchronize flashcfg between host and device - Honestly, I'm not sure its use case
+     * @param timeMs
+     */
+    void SyncFlashConfig(unsigned int timeMs);
+
+    /**
+    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
+    * @param port the port to get flash config for
+    * @return true if the flash config is valid, currently synchronized, otherwise false.
+    */
+    bool FlashConfigSynced() { return  (flashCfg.checksum == sysParams.flashCfgChecksum) && (flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(); }
+
+    /**
+     * Another fancy function that blocks until a flash sync has actually occurred, returning true if successful or false if it couldn't (timeout?  validation?  bad connection?  -- who knows?)
+     * @return
+     */
+    bool WaitForFlashSynced();
+
+    bool waitForFlashWrite();
+
+    /**
+     * A kind-of-redundant function?? I'm not sure how this is exactly different (or better?) than WaitForFlashSynced()?
+     * @return
+     */
+    bool verifyFlashConfigUpload();
+
+    /**
+     * Failed to upload flash configuration for any reason.
+     * @param port the port to get flash config for
+     * @return true Flash config upload was either not received or rejected.
+     */
+    bool FlashConfigUploadFailure() { return flashCfgUploadChecksum && (flashCfgUploadChecksum != sysParams.flashCfgChecksum); }
+
+    void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
+
     /**
     * Gets current update status for selected device index
     * @param deviceIndex
@@ -93,7 +150,9 @@ public:
     dev_info_t devInfo = { };
     sys_params_t sysParams = { };
     nvm_flash_cfg_t flashCfg = { };
-    unsigned int flashCfgUploadTimeMs = 0;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    nvm_flash_cfg_t flashCfgUpload = { };       // This is the flashConfig that was most recently sent to the device
+    unsigned int flashCfgUploadTimeMs = 0;      // (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    unsigned int flashSyncCheckTimeMs = 0;
     uint32_t flashCfgUploadChecksum = 0;
     evb_flash_cfg_t evbFlashCfg = { };
     system_command_t sysCmd = { };
@@ -126,6 +185,9 @@ public:
 
     bool handshakeISbl();
     bool queryDeviceInfoISbl();
+
+    static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
+    static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 };
 
 
