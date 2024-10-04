@@ -48,8 +48,6 @@ ext_modules = [
          '../../src/ihex.c',
          '../../src/ISComm.c',
          '../../src/ISDataMappings.cpp',
-         '../../src/ISDevice.cpp',
-         '../../src/ISDisplay.cpp',
          '../../src/ISEarth.c',
          '../../src/ISFileManager.cpp',
          '../../src/ISFirmwareUpdater.cpp',
@@ -80,6 +78,9 @@ ext_modules = [
             '../src',
             '../../src',
             '../../src/libusb/libusb',
+            '../../src/yaml-cpp',
+            '../../src/yaml-cpp/node',
+            '../../src/yaml-cpp/contrib',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],

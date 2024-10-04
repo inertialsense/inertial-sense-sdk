@@ -131,7 +131,6 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     return s_cm.registerPort(port, cbs);
 }
 
-
 std::unordered_set<port_handle_t>& ISComManager::getPorts() {
     return *ports;
 }
@@ -139,7 +138,6 @@ std::unordered_set<port_handle_t>& ISComManager::getPorts() {
 std::unordered_set<port_handle_t>& comManagerGetPorts() {
     return s_cm.getPorts();
 }
-
 
 bool ISComManager::removePort(port_handle_t port) {
     auto found = std::find(ports->begin(), ports->end(), port);
