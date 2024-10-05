@@ -314,7 +314,7 @@ public:
     /**
      * @return a list of discovered ports which are not currently associated with a open device
      */
-    std::vector<std::string> checkForNewPorts();
+    std::vector<std::string> checkForNewPorts(std::vector<std::string>& oldPorts);
 
     /**
      * Compared two dev_info_t structs, and returns an bitmap indicating which fields match

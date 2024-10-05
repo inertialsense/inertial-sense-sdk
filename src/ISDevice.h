@@ -73,6 +73,8 @@ public:
         hdwRunState = HDW_STATE_UNKNOWN;
     }
 
+    bool step();
+
     std::string getIdAsString();
     std::string getName();
     std::string getFirmwareInfo(int detail = 1);
@@ -93,6 +95,7 @@ public:
     void SetSysCmd(const uint32_t command);
     void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
+    bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
 
     // OH, ALL THE FLASHY-SYNCY STUFF
     bool FlashConfig(nvm_flash_cfg_t& flashCfg_);

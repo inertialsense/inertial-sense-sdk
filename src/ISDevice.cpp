@@ -14,6 +14,19 @@
 
 ISDevice ISDevice::invalidRef;
 
+/**
+ * Steps the communications for this device, sending any scheduled requests and parsing any received data on the device's associated port (if connected).
+ * @return
+ */
+bool ISDevice::step() {
+    if (!port) return false;
+
+    comManagerStep(port);
+    if (fwUpdater)
+        fwUpdate();
+    return true;
+}
+
 is_operation_result ISDevice::updateFirmware(
         fwUpdate::target_t targetDevice,
         std::vector<std::string> cmds,

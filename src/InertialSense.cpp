@@ -2009,7 +2009,7 @@ ISDevice* InertialSense::DeviceByPortName(const std::string& port_name) {
 /**
  * @return a list of discovered ports which are not currently associated with a open device
  */
-std::vector<std::string> InertialSense::checkForNewPorts() {
+std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string>& oldPorts) {
     std::vector<std::string> new_ports, all_ports;
     cISSerialPort::GetComPorts(all_ports);
 
@@ -2017,6 +2017,10 @@ std::vector<std::string> InertialSense::checkForNewPorts() {
     for (auto& portName : all_ports) {
         bool ignored = false;
         for (auto& ignoredPort : m_ignoredPorts) {
+            if (ignoredPort == portName)
+                ignored = true;
+        }
+        for (auto& ignoredPort : oldPorts) {
             if (ignoredPort == portName)
                 ignored = true;
         }
