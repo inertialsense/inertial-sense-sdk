@@ -24,7 +24,7 @@ public:
         ISBootloader::pfnBootloadProgress upload_cb,
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
-        serial_port_t* port
+        port_handle_t port
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;

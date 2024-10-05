@@ -30,6 +30,8 @@ public:
 
     cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo);
 
+    cDeviceLogSerial(port_handle_t port);
+
     void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 
     bool CloseAllFiles() OVERRIDE;

@@ -22,7 +22,7 @@ This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/t
 	uint8_t buffer[2048];
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer));
+	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Consider using callbacks
 ```
 
 ### Step 3: Initialize and open serial port
@@ -74,7 +74,7 @@ This [ISNtripRoverExample](https://github.com/inertialsense/inertial-sense-sdk/t
 To use NTRIP, we must enable the DID_GPS1_POS message which will be rebroadcast as NMEA GGA every 5 seconds to the RTK NTRIP base station.  
 
 ```C++
-int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(port_handle_t port, is_comm_instance_t *comm)
 {
 	int n = is_comm_get_data_to_buf(buffer, bufferSize, comm, DID_GPS1_POS, 0, 0, 1);
 	if (n != serialPortWrite(serialPort, comm->buf.start, n))

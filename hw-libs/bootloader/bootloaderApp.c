@@ -125,7 +125,7 @@ void write_bootloader_signature_stay_in_bootloader_mode(void)
 #endif
 }
 
-void enable_bootloader(int pHandle)
+void enable_bootloader(port_handle_t port)
 {	
     write_bootloader_signature_stay_in_bootloader_mode();
 
@@ -135,13 +135,13 @@ void enable_bootloader(int pHandle)
 	GPBR->SYS_GPBR[4] = PORT_SEL_KEY_SYS_GPBR_4;
 	GPBR->SYS_GPBR[5] = PORT_SEL_KEY_SYS_GPBR_5;
 	GPBR->SYS_GPBR[6] = PORT_SEL_KEY_SYS_GPBR_6;
-	GPBR->SYS_GPBR[7] = pHandle;
+	GPBR->SYS_GPBR[7] = portId(port);
 #else
     RTC->BKP3R = PORT_SEL_KEY_SYS_GPBR_3;
     RTC->BKP4R = PORT_SEL_KEY_SYS_GPBR_4;
     RTC->BKP5R = PORT_SEL_KEY_SYS_GPBR_5;
     RTC->BKP6R = PORT_SEL_KEY_SYS_GPBR_6;
-    RTC->BKP7R = pHandle;
+    RTC->BKP7R = portId(port);
 #endif
 
     // reset processor

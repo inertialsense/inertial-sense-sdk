@@ -56,7 +56,7 @@ void setup()
     Serial.println("initializing");
 
     // Initialize comm interface - call this before doing any comm functions
-    is_comm_init(&comm, s_buffer, sizeof(s_buffer));
+    is_comm_init(&comm, s_buffer, sizeof(s_buffer), NULL); // TODO: Use callbacks
 
     // Stop all the broadcasts on the device
     int messageSize = is_comm_stop_broadcasts_all_ports(&comm);

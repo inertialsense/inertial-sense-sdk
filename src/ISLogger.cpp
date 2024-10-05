@@ -384,7 +384,6 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     default:
     case cISLogger::LOGTYPE_DAT: fileExtensionRegex = "\\.dat$"; break;
     case cISLogger::LOGTYPE_RAW: fileExtensionRegex = "\\.raw$"; break;
-    case cISLogger::LOGTYPE_SDAT: fileExtensionRegex = "\\.sdat$"; break;
     case cISLogger::LOGTYPE_CSV: fileExtensionRegex = "\\.csv$"; break;
     case cISLogger::LOGTYPE_JSON: fileExtensionRegex = "\\.json$"; break;
     case cISLogger::LOGTYPE_KML: return false; // fileExtensionRegex = "\\.kml$"; break; // kml read not supported
@@ -523,8 +522,12 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, const uint8_t *dataBuf)
 {
     // This method is ONLY for LOGTYPE_RAW
-    if (!m_enabled || (deviceLog == nullptr) || (m_logType != LOGTYPE_RAW)) {
+    if (!m_enabled || (m_logType != LOGTYPE_RAW)) {
         return false;
+    }
+
+    if ((deviceLog == NULL) && !m_devices.empty()) {
+        deviceLog = m_devices.begin()->second;
     }
 
     if (deviceLog == NULL || dataSize <= 0 || dataBuf == NULL)
@@ -734,7 +737,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 
     is_comm_instance_t comm;
     uint8_t commBuf[PKT_BUF_SIZE];
-    is_comm_init(&comm, commBuf, sizeof(commBuf));
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     EnableLogging(true);
     p_data_buf_t *data = NULL;

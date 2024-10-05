@@ -18,44 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <regex>
 
 #include "com_manager.h"
-
-#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
-
-typedef enum
-{
-	DataTypeInt8,
-	DataTypeUInt8,
-	DataTypeInt16,
-	DataTypeUInt16,
-	DataTypeInt32,
-	DataTypeUInt32,
-	DataTypeInt64,
-	DataTypeUInt64,
-	DataTypeFloat,
-	DataTypeDouble,
-	DataTypeString,
-	DataTypeBinary,
-
-	DataTypeCount
-} eDataType;
-
-typedef enum
-{
-	DataFlagsNull			= 0x0000,
-	DataFlagsDisplayHex		= 0x0100
-} eDataFlags;
-
-/*
-* Metadata about a specific field
-*/
-typedef struct
-{
-	uint32_t dataOffset;
-	uint32_t dataSize;
-	eDataType dataType;
-	eDataFlags dataFlags;
-	std::string name;
-} data_info_t;
+#include "ISDataMappings.h"
 
 class cDataCSV
 {

@@ -31,7 +31,7 @@
 
 #include "ParamHelper.h"
 
-#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetDataSetName(DID)); }
+#define STREAMING_CHECK(streaming, DID)      if(!streaming){ streaming = true; ROS_DEBUG("InertialSenseROS: %s response received", cISDataMappings::GetName(DID)); }
 
 /**
  * Assigns an identity to the passed ROS:nav_msgs::Odometry pose/twist covariance matrix
@@ -352,7 +352,7 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 
 #define CONFIG_STREAM(stream, did, type, cb_fun) \
     if((stream.enabled) && !(stream.streaming)){ \
-        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did), did); \
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetName(did), did); \
         SET_CALLBACK(did, type, cb_fun, stream.period); \
         if (!firstrun) \
             return; \
@@ -360,13 +360,13 @@ void InertialSenseROS::configure_data_streams(const ros::TimerEvent& event)
 
 #define CONFIG_STREAM_GPS(stream, did_pos, cb_fun_pos, did_vel, cb_fun_vel) \
     if((stream.enabled) && !(stream.streaming_pos)){ \
-        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did_pos), did_pos); \
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetName(did_pos), did_pos); \
         SET_CALLBACK(did_pos, gps_pos_t, cb_fun_pos, stream.period); \
         if (!firstrun) \
             return; \
     } \
     if((stream.enabled) && !(stream.streaming_vel)){ \
-        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetDataSetName(did_vel), did_vel); \
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s (%d) data stream", cISDataMappings::GetName(did_vel), did_vel); \
         SET_CALLBACK(did_vel, gps_vel_t, cb_fun_vel, stream.period); \
         if (!firstrun) \
             return; \
@@ -423,7 +423,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
     if (covariance_enabled_ && !insCovarianceStreaming_)
     {
-        ROS_DEBUG("InertialSenseROS: Attempting to enable %s data stream", cISDataMappings::GetDataSetName(DID_ROS_COVARIANCE_POSE_TWIST));
+        ROS_DEBUG("InertialSenseROS: Attempting to enable %s data stream", cISDataMappings::GetName(DID_ROS_COVARIANCE_POSE_TWIST));
         SET_CALLBACK(DID_ROS_COVARIANCE_POSE_TWIST, ros_covariance_pose_twist_t, INS_covariance_callback, 200);
     }
 
@@ -2268,12 +2268,12 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
+    port_handle_t port = IS_.SerialPort();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
     {
         // Search comm buffer for valid packets
         if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
@@ -2299,8 +2299,8 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
+    port_handle_t port = IS_.SerialPort();
     uint8_t inByte;
     int n;
 
