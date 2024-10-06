@@ -26,31 +26,32 @@ get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BAS
 message(ABSOLUTE_SCRIPT_PATH="${ABSOLUTE_SCRIPT_PATH}")
 
 add_custom_target(
-	Build_InertialSenseSDK
-	COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
+    Build_InertialSenseSDK
+    COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
+    BYPRODUCTS ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a
     COMMENT "Running custom shell script..."
     VERBATIM
-	)
+)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-        "msg/GTime.msg"
-        "msg/SatInfo.msg"
-        "msg/GPS.msg"
-        "msg/GPSInfo.msg"
-        "msg/PIMU.msg"
-        "msg/RTKInfo.msg"
-        "msg/RTKRel.msg"
-        "msg/GlonassEphemeris.msg"
-        "msg/GNSSEphemeris.msg"
-        "msg/GNSSObservation.msg"
-        "msg/GNSSObsVec.msg"
-        "msg/INL2States.msg"
-        "msg/DIDINS2.msg"
-        "msg/DIDINS1.msg"
-        "msg/DIDINS4.msg"
-        "srv/FirmwareUpdate.srv"
-        "srv/RefLLAUpdate.srv"
-        DEPENDENCIES std_msgs geometry_msgs diagnostic_msgs builtin_interfaces
+    "msg/GTime.msg"
+    "msg/SatInfo.msg"
+    "msg/GPS.msg"
+    "msg/GPSInfo.msg"
+    "msg/PIMU.msg"
+    "msg/RTKInfo.msg"
+    "msg/RTKRel.msg"
+    "msg/GlonassEphemeris.msg"
+    "msg/GNSSEphemeris.msg"
+    "msg/GNSSObservation.msg"
+    "msg/GNSSObsVec.msg"
+    "msg/INL2States.msg"
+    "msg/DIDINS2.msg"
+    "msg/DIDINS1.msg"
+    "msg/DIDINS4.msg"
+    "srv/FirmwareUpdate.srv"
+    "srv/RefLLAUpdate.srv"
+    DEPENDENCIES std_msgs geometry_msgs diagnostic_msgs builtin_interfaces
 )
 ament_export_include_directories(shared/include)
 ament_export_libraries(inertial_sense_ros2)
@@ -60,16 +61,16 @@ ament_export_dependencies(rclcpp sensor_msgs geometry_msgs std_msgs diagnostic_m
 set(IGNORE_EXAMPLE_PROJECTS 1)
 
 include_directories(
-  shared/include
-  ${XMLRPC_INCLUDE_DIRS}
-  ${YAML_CPP_INCLUDE_DIR}
-  ../../src #This line of CMakeList.txt stays in .external file to reference submodule
-  ../../src/libusb/libusb
-  ../../src/libusb/linux
-  ../../src/yaml-cpp
-  ../ros2/build/inertial_sense_ros2/rosidl_generator_cpp/
-  /opt/ros/jazzy/include
-  /opt/ros/jazzy/include/sensor_msgs
+    shared/include
+    ${XMLRPC_INCLUDE_DIRS}
+    ${YAML_CPP_INCLUDE_DIR}
+    ../../src #This line of CMakeList.txt stays in .external file to reference submodule
+    ../../src/libusb/libusb
+    ../../src/libusb/linux
+    ../../src/yaml-cpp
+    ../ros2/build/inertial_sense_ros2/rosidl_generator_cpp/
+    /opt/ros/jazzy/include
+    /opt/ros/jazzy/include/sensor_msgs
 )
 
 # Build using C11 and CXX20
@@ -80,11 +81,11 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFOR
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fms-extensions -Wl,--no-as-needed -DPLATFORM_IS_LINUX")
 
 add_executable(${PROJECT_NAME}_node
-        src/inertial_sense_ros2.cpp
-        shared/src/inertial_sense_node.cpp
-        shared/src/ParamHelper.cpp
-        shared/src/RtkRover.cpp
-        shared/src/RtkBase.cpp
+    src/inertial_sense_ros2.cpp
+    shared/src/inertial_sense_node.cpp
+    shared/src/ParamHelper.cpp
+    shared/src/RtkRover.cpp
+    shared/src/RtkBase.cpp
 )
 
 add_dependencies(${PROJECT_NAME} Build_InertialSenseSDK)
@@ -96,16 +97,16 @@ target_link_libraries(${PROJECT_NAME}_node ${RESOLVED_ROS_DIR}/../../libInertial
 
 
 ament_add_gtest(test_${PROJECT_NAME}
-		src/inertial_sense_ros2.cpp
-		shared/src/ParamHelper.cpp
-		shared/src/RtkRover.cpp
-		shared/src/RtkBase.cpp
-		test/test_basic_unit_tests.cpp
-		test/test_client_reconnect.cpp
-		test/test_communications.cpp
-		#test/test_main.cpp
-		#test/test_main.h
-		test/gtest_helpers.h
+    src/inertial_sense_ros2.cpp
+    shared/src/ParamHelper.cpp
+    shared/src/RtkRover.cpp
+    shared/src/RtkBase.cpp
+    test/test_basic_unit_tests.cpp
+    test/test_client_reconnect.cpp
+    test/test_communications.cpp
+    #test/test_main.cpp
+    #test/test_main.h
+    test/gtest_helpers.h
 )
 
 rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
@@ -114,7 +115,7 @@ ament_target_dependencies(test_${PROJECT_NAME} rclcpp std_msgs geometry_msgs nav
 target_link_libraries(test_${PROJECT_NAME} ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
 
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
-install(TARGETS ${PROJECT_NAME} test_${PROJECT_NAME}
+install(TARGETS test_${PROJECT_NAME}
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
