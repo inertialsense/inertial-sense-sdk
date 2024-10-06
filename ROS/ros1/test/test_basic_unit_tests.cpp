@@ -10,7 +10,7 @@
 
 #include "../include/inertial_sense_ros.h"
 
-#define PARAM_YAML_FILE "../../../src/inertial-sense-sdk/ROS/ros1/launch/test_config.yaml"
+#define PARAM_YAML_FILE "./src/inertial-sense-sdk/ROS/ros1/launch/test_config.yaml"
 
 char cwd_buff[64];
 
