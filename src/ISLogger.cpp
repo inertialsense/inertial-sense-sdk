@@ -724,7 +724,6 @@ int g_copyReadDid;
  * @param enableCsvIns2ToIns1Conversion
  * @return
  */
-// __attribute__((optimize("O0")))
 bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
