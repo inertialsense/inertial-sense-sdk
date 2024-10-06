@@ -21,12 +21,16 @@
 using namespace rclcpp;
 #endif
 #ifdef ROS1
-using namespace ros
+using namespace ros;
 #endif
 int main(int argc, char**argv)
 {
     InertialSenseROS* thing;
-    init(argc, argv);
+    init(argc, argv
+#ifdef ROS1
+                   , "inertial_sense_node"
+#endif
+                   );
     //auto nh_ = std::make_shared<rclcpp::Node>("nh_");
     if (argc > 1)
     {
