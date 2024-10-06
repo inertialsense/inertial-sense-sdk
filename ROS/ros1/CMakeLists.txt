@@ -59,13 +59,14 @@ include_directories(
   shared/include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR}
-  ../src #This line of CMakeList.txt stays in .external file to reference submodule
-  ../src/libusb/libusb
-  ../src/libusb/linux
-  ../src/yaml-cpp
+  ../../src #This line of CMakeList.txt stays in .external file to reference submodule
+  ../../src/libusb/libusb
+  ../../src/libusb/linux
+  ../../src/yaml-cpp
 )
 
-add_subdirectory(../devel)
+# I have no clue what this was originally tring to do, but it doesn't appear needed
+#add_subdirectory(../devel)
 
 add_library(inertial_sense_ros
     shared/src/ParamHelper.cpp

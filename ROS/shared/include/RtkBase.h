@@ -19,13 +19,7 @@
 #ifndef INERTIAL_SENSE_IMX_RTKBASE_H
 #define INERTIAL_SENSE_IMX_RTKBASE_H
 
-#ifdef ROS2
-#include "rclcpp/rclcpp/rclcpp.hpp"
-#endif
-#ifdef ROS1
-#include "ros/ros.h"
-#endif
-
+#include "ros_compat.h"
 #include "ParamHelper.h"
 
 class RtkBaseCorrectionProvider {
@@ -52,12 +46,7 @@ public:
     virtual void configure(YAML::Node& node);
 
     void validate_credentials() {
-#ifdef ROS1
         ROS_WARN("NOT IMPLEMENTED");
-#endif
-#ifdef ROS2
-        RCLCPP_WARN(rclcpp::get_logger("Inertial_Sense_ROS"),"NOT IMPLEMENTED");
-#endif
     }
 
     std::string get_connection_string();
@@ -136,7 +125,7 @@ public:
             else if (type == "evb") return new RtkBaseCorrectionProvider_EVB(node);
         } else {
 #ifdef ROS1
-            ROS_ERROR("Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined")
+            ROS_ERROR("Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined");
 #endif
 #ifdef ROS2
             RCLCPP_ERROR(rclcpp::get_logger("Inertial_Sense_ROS"),"Unable to configure RosBaseCorrectionProvider. The YAML node was null or undefined");

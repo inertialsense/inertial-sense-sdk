@@ -18,27 +18,15 @@
 
 #ifndef INERTIAL_SENSE_IMX_RTKROVER_H
 #define INERTIAL_SENSE_IMX_RTKROVER_H
-#ifdef ROS2
-#include "rclcpp/rclcpp/rclcpp.hpp"
-#endif
 
-#ifdef ROS1
-#include "ros/ros.h"
-#endif
-
-#include "ParamHelper.h"
 #include "RtkBase.h"
+#include "ParamHelper.h"
 
 class RtkRoverCorrectionProvider {
 protected:
     ParamHelper ph_;
     InertialSense* is_;
-#ifdef ROS1
-    ros::NodeHandle* nh_;
-#endif
-#ifdef ROS2
-    rclcpp::Node::SharedPtr nh_;
-#endif
+    ROS_NODE_HANDLE nh_;
 
 public:
     std::string type_;
@@ -67,19 +55,14 @@ public:
     int data_transmission_interruption_limit_ = 5;
     bool connectivity_watchdog_enabled_ = true;
     float connectivity_watchdog_timer_frequency_ = 1;
-#ifdef ROS2
-    rclcpp::TimerBase::SharedPtr connectivity_watchdog_timer_;
-#endif
-#ifdef ROS1
-    ros::Timer connectivity_watchdog_timer_;
-#endif
+    ROS_TIMER connectivity_watchdog_timer_;
+    void connectivity_watchdog_timer_callback( ROS1_TIMEREVENT_ARG ); 
     RtkRoverCorrectionProvider_Ntrip(YAML::Node& node) : RtkRoverCorrectionProvider(node, "ntrip") { configure(node); }
     void configure(YAML::Node& node);
     std::string get_connection_string();
     void connect_rtk_client();
     void start_connectivity_watchdog_timer();
     void stop_connectivity_watchdog_timer();
-    void connectivity_watchdog_timer_callback(/*const ros::TimerEvent &timer_event*/);
 
 };
 

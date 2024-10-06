@@ -16,16 +16,9 @@
  *
  ***************************************************************************************/
 
+#include "../include/RtkBase.h"
 #include "../include/RtkRover.h"
 
-#ifdef ROS2
-#define ROS_ERROR(msg) RCLCPP_ERROR(rclcpp::get_logger("Inertial_Sense_ROS"), msg)
-#define ROS_ERROR_STREAM(msg) RCLCPP_ERROR_STREAM(rclcpp::get_logger("Inertial_Sense_ROS"), msg)
-#define ROS_FATAL(msg) RCLCPP_FATAL(rclcpp::get_logger("Inertial_Sense_ROS"), msg)
-#define ROS_WARN(msg) RCLCPP_WARN(rclcpp::get_logger("Inertial_Sense_ROS"), msg)
-#define ROS_WARN_STREAM(msg) RCLCPP_WARN_STREAM(rclcpp::get_logger("Inertial_Sense_ROS"), msg)
-#define ROS_INFO_STREAM(msg) RCLCPP_INFO_STREAM(rclcpp::get_logger("Inertial_Sense_ROS"), msg)
-#endif
 void RtkRoverProvider::configure(YAML::Node& node) {
     if (node.IsDefined() && !node.IsNull()) {
         ph_.setCurrentNode(node);
@@ -99,7 +92,7 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
 {
     if (is_ == nullptr) {
         ROS_FATAL("RTK Client connection requested, but configureIS() hasn't been called in the provider.");
-        rclcpp::shutdown();
+        ros_common::shutdown();
         connecting_ = false;
         return;
     }
@@ -133,7 +126,8 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
                 int sleep_duration = RTK_connection_attempt_count * connection_attempt_backoff_;
                 ROS_WARN_STREAM("Retrying connection in " << sleep_duration << " seconds");
                 //rclcpp::Duration(sleep_duration).sleep();
-                rclcpp::Rate r(sleep_duration); r.sleep();
+                ros_common::Rate r(sleep_duration);
+                r.sleep();
             }
         }
     }
@@ -141,7 +135,11 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
     connecting_ = false;
 }
 
-void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback()
+void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback(
+#ifdef ROS1
+		const ros::TimerEvent &timer_event
+#endif
+		)
 {
     if (connecting_ && (is_ != nullptr))
         return;
@@ -169,21 +167,27 @@ void RtkRoverCorrectionProvider_Ntrip::start_connectivity_watchdog_timer()
     if (!connectivity_watchdog_enabled_) {
         return;
     }
-
+#ifdef ROS1
+    if (!connectivity_watchdog_timer_.isValid()) {
+        connectivity_watchdog_timer_ = nh_->createTimer(ros::Duration(connectivity_watchdog_timer_frequency_), &RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback, this);
+    }
+    connectivity_watchdog_timer_.start();
+#else
     if (connectivity_watchdog_timer_->is_canceled()) {
         connectivity_watchdog_timer_ = nh_->create_wall_timer(std::chrono::duration<float>(connectivity_watchdog_timer_frequency_), std::bind(&RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback, this));
     }
-
-    //connectivity_watchdog_timer_.();
+#endif
 }
-
 void RtkRoverCorrectionProvider_Ntrip::stop_connectivity_watchdog_timer()
 {
+#ifdef ROS1
+    connectivity_watchdog_timer_.stop();
+#else
     connectivity_watchdog_timer_->cancel();
+#endif
     traffic_total_byte_count_ = 0;
     data_transmission_interruption_count_ = 0;
 }
-
 
 
 
