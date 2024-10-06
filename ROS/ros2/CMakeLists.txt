@@ -25,13 +25,17 @@ set(RELATIVE_SCRIPT_PATH "${CMAKE_CURRENT_LIST_DIR}/../inertial-sense-sdk/script
 get_filename_component(ABSOLUTE_SCRIPT_PATH ${RELATIVE_SCRIPT_PATH} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
 message(ABSOLUTE_SCRIPT_PATH="${ABSOLUTE_SCRIPT_PATH}")
 
-add_custom_target(
-    Build_InertialSenseSDK
+add_custom_command(OUTPUT ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a
     COMMAND ${CMAKE_COMMAND} -E env bash ${ABSOLUTE_SCRIPT_PATH}
-    BYPRODUCTS ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a
     COMMENT "Running custom shell script..."
     VERBATIM
 )
+
+add_custom_target(build_InertialSenseSDK DEPENDS ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a)
+
+add_library(InertialSenseSDK STATIC IMPORTED GLOBAL)
+add_dependencies(InertialSenseSDK build_InertialSenseSDK)
+set_target_properties(InertialSenseSDK PROPERTIES IMPORTED_LOCATION ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/GTime.msg"
@@ -88,12 +92,10 @@ add_executable(${PROJECT_NAME}_node
     shared/src/RtkBase.cpp
 )
 
-add_dependencies(${PROJECT_NAME} Build_InertialSenseSDK)
-
 rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
 target_link_libraries(${PROJECT_NAME}_node "${cpp_typesupport_target}")
 ament_target_dependencies(${PROJECT_NAME}_node rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
-target_link_libraries(${PROJECT_NAME}_node ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(${PROJECT_NAME}_node InertialSenseSDK ${YAML_CPP_LIBRARIES} pthread)
 
 
 ament_add_gtest(test_${PROJECT_NAME}
@@ -112,7 +114,7 @@ ament_add_gtest(test_${PROJECT_NAME}
 rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
 target_link_libraries(test_${PROJECT_NAME} "${cpp_typesupport_target}")
 ament_target_dependencies(test_${PROJECT_NAME} rclcpp std_msgs geometry_msgs nav_msgs diagnostic_msgs sensor_msgs std_srvs)
-target_link_libraries(test_${PROJECT_NAME} ${RESOLVED_ROS_DIR}/../../libInertialSenseSDK.a ${YAML_CPP_LIBRARIES} pthread)
+target_link_libraries(test_${PROJECT_NAME} InertialSenseSDK ${YAML_CPP_LIBRARIES} pthread)
 
 #link_directories(/home/s/Inertial_Sense/imx/ros2_ws/src/inertial-sense-sdk)
 install(TARGETS test_${PROJECT_NAME}
