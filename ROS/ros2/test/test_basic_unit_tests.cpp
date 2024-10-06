@@ -12,13 +12,13 @@
 
 #define PARAM_YAML_FILE "./src/ros2/launch/test_config.yaml"
 
-char cwd_buff[64];
+char cwd_buff[256];
 
 TEST(BasicTestSuite, test_config_params)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff));
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff)) << ", errno=" << errno;
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
@@ -41,7 +41,7 @@ TEST(BasicTestSuite, test_rtk_rover)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff));
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff)) << ", errno=" << errno;
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
@@ -198,8 +198,7 @@ TEST(BasicTestSuite, test_rtk_base)
 {
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
-    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff));
-    ;
+    ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff)) << ", errno=" << errno;
 
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
