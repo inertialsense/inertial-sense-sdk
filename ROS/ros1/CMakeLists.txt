@@ -65,8 +65,7 @@ include_directories(
   ../../src/yaml-cpp
 )
 
-# I have no clue what this was originally tring to do, but it doesn't appear needed
-#add_subdirectory(../devel)
+add_subdirectory(../.. devel)
 
 add_library(inertial_sense_ros
     shared/src/ParamHelper.cpp
