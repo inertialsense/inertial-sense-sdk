@@ -1695,9 +1695,9 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, ",  status 0x%08x,  hdwStatus 0x%08x\n", gpxStatus.status, gpxStatus.hdwStatus);
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n", 
-		gpxStatus.gnsssStatus[0].runState, 		gpxStatus.gnsssStatus[1].runState, 
-		gpxStatus.gnsssStatus[0].fwUpdateState, gpxStatus.gnsssStatus[1].fwUpdateState, 
-		gpxStatus.gnsssStatus[0].initState,		gpxStatus.gnsssStatus[1].initState);
+		gpxStatus.gnssStatus[0].runState, 		gpxStatus.gnssStatus[1].runState, 
+		gpxStatus.gnssStatus[0].fwUpdateState, gpxStatus.gnssStatus[1].fwUpdateState, 
+		gpxStatus.gnssStatus[0].initState,		gpxStatus.gnssStatus[1].initState);
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
 
     return buf;
