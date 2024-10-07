@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 2)
 	{
-		printf("Provide the port and optionally log type (dat,raw,sdat,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
+		printf("Provide the port and optionally log type (raw,dat	,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
 		return -1;
 	}
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	inertialSense.StopBroadcasts();
 
 	// broadcast the standard set of post processing messages (ins, imu, etc.)
-	inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS_BITS);
+	inertialSense.BroadcastBinaryDataRmcPreset(RMC_PRESET_INS);
 
 	// instead of the rmc preset (real-time message controller) you can request individual messages...
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.

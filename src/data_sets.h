@@ -197,7 +197,7 @@ typedef uint32_t eDataIDs;
 /** INS status flags */
 enum eInsStatusFlags
 {
-    /** Attitude estimate is usable but outside spec (COARSE) */
+    /** Heading estimate is usable but outside spec (COARSE) */
     INS_STATUS_HDG_ALIGN_COARSE                 = (int)0x00000001,
     /** Velocity estimate is usable but outside spec (COARSE) */
     INS_STATUS_VEL_ALIGN_COARSE                 = (int)0x00000002,
@@ -209,7 +209,7 @@ enum eInsStatusFlags
     /** Velocity aided by wheel sensor */
     INS_STATUS_WHEEL_AIDING_VEL                 = (int)0x00000008,
 
-    /** Attitude estimate is within spec (FINE) */
+    /** Heading estimate is within spec (FINE).  `INS_STATUS_HDG_ALIGN_COARSE` and `INS_STATUS_HDG_ALIGN_FINE` flags indicate whether INS heading is aided by any heading sensor (including GPS or magnetometer).  More accurate heading sensors (i.e. GPS) are prioritized over less accurate sensors (i.e. magnetometers) and will fall back to the less accurate sensors when the more accurate sensors are not available.  A momentary blip in these alignment flags may occur during heading transition from higher to lower accuracy aiding sensors (i.e. GPS to magnetometer).  `INS_STATUS_HDG_ALIGN_FINE` and `INS_STATUS_HDG_ALIGN_COARSE` flags will not be set when no heading aiding is available.  */
     INS_STATUS_HDG_ALIGN_FINE                   = (int)0x00000010,
     /** Velocity estimate is within spec (FINE) */
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
@@ -323,7 +323,7 @@ enum eHdwStatusFlags
     /** Motion mask */
     HDW_STATUS_MOTION_MASK                      = (int)0x0000000F,
 
-    /** GPS satellite signals are being received (antenna and cable are good) */
+    /** GPS satellite signals are being received (antenna and cable are good). Unset indicates weak signal or no output from GPS receiver. */
     HDW_STATUS_GPS_SATELLITE_RX                 = (int)0x00000010,
     /** Event occurred on strobe input pin */
     HDW_STATUS_STROBE_IN_EVENT                  = (int)0x00000020,
@@ -346,7 +346,7 @@ enum eHdwStatusFlags
     /** Sensor saturation offset */
     HDW_STATUS_SATURATION_OFFSET                = 8,
 
-    /** System Reset is Required for proper function */
+    /** System Reset is required for proper function */
     HDW_STATUS_SYSTEM_RESET_REQUIRED            = (int)0x00001000,
     /** GPS PPS timepulse signal has noise and occurred too frequently */
     HDW_STATUS_ERR_GPS_PPS_NOISE                = (int)0x00002000,
@@ -1006,7 +1006,7 @@ enum eSatSvGnssId
     SAT_SV_GNSS_ID_GLO          = 6,	// GLONASS (Russia)	
     SAT_SV_GNSS_ID_IRN          = 7,	// IRNSS / NavIC (India)	
     SAT_SV_GNSS_ID_IME          = 8,	// IMES (Japan's Indoor Messaging System)
-    SAT_SV_GNSS_ID_COUNT        = 9,	// Number of constilation
+    SAT_SV_GNSS_ID_COUNT        = 9,	// Number of constellations
 };
 
 /** GPS Sat Status */
@@ -1157,7 +1157,6 @@ typedef struct PACKED
     /** Satellite signal list */
 	gps_sig_sv_t			sig[MAX_NUM_SAT_SIGNALS];	
 } gps_sig_t;
-
 
 typedef uint8_t         gps_extension_ver_t[30];
 #define GPS_VER_NUM_EXTENSIONS	6
@@ -1495,7 +1494,9 @@ enum eSystemCommand
 
     SYS_CMD_TEST_GPIO                                   = 64,           // (uint32 inv: 4294967231)
     SYS_CMD_TEST_CHECK_INIT_SER0                        = 65,           // (uint32 inv: 4294967230)
-    SYS_CMD_TEST_FORCE_INIT_SER0                        = 66,           // (uint32 inv: 4294967230)
+    SYS_CMD_TEST_FORCE_INIT_SER0                        = 66,           // (uint32 inv: 4294967229)
+    SYS_CMD_TEST_BIT_BANG_SER0_STPB                     = 67,           // (uint32 inv: 4294967228)
+    SYS_CMD_TEST_BIT_BANG_SER0_SRST                     = 68,           // (uint32 inv: 4294967227)
 
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
@@ -1551,10 +1552,10 @@ typedef struct nmeaBroadcastMsgPair
 typedef struct PACKED
 {
     /** Options: Port selection[0x0=current, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB, 0x100=preserve, 0x200=Persistent] (see RMC_OPTIONS_...) */
-    uint32_t				options;
+    uint32_t                options;
 
     /** NMEA message to be set.  Up to 20 message ID/period pairs.  Message ID of zero indicates the remaining pairs are not used. (see eNmeaMsgId) */
-    nmeaBroadcastMsgPair_t	nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
+    nmeaBroadcastMsgPair_t  nmeaBroadcastMsgs[MAX_nmeaBroadcastMsgPairs];   
 
     /*  Example usage:
      *  If you are setting message GGA (6) at 1Hz and GGL (7) at 5Hz with the default DID_FLASH_CONFIG.startupGpsDtMs = 200 (5Hz) 
@@ -1566,30 +1567,30 @@ typedef struct PACKED
 typedef struct PACKED
 {
     /** (rad/s) Gyros.  Units only apply for calibrated data. */
-    f_t						pqr[3];
+    float                   pqr[3];
 
     /** (m/s^2) Accelerometers.  Units only apply for calibrated data. */
-    f_t						acc[3];
+    float                   acc[3];
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    f_t						temp;
+    float                   temp;
 } sensors_imu_w_temp_t;
 
 typedef struct PACKED
 {                                       // Units only apply for calibrated data
-    f_t						mag[3];         // (uT)		Magnetometers
+    float                   mag[3];         // (uT)		Magnetometers
 } sensors_mag_t;
 
 typedef struct PACKED
 {
     /** (rad/s) Gyros.  Units only apply for calibrated data. */
-    f_t						pqr[3];
+    float                   pqr[3];
 
     /** (m/s^2) Accelerometers.  Units only apply for calibrated data. */
-    f_t						acc[3];
+    float                   acc[3];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
-    f_t						mag[3];
+    float                   mag[3];
 } sensors_mpu_t;
 
 // (DID_SENSORS_TC_BIAS)
@@ -1598,12 +1599,12 @@ typedef struct PACKED
     /** Time since boot up in seconds.  Convert to GPS time of week by adding gps.towOffset */
     double                  time;                                       // Units only apply for calibrated data
 
-    sensors_mpu_t			mpu[NUM_IMU_DEVICES];
+    sensors_mpu_t           mpu[NUM_IMU_DEVICES];
 } sensors_t;
 
 typedef struct PACKED
 {
-    f_t						xyz[3];
+    float                   xyz[3];
 } mag_xyz_t;
 
 // (DID_SENSORS_UCAL, DID_SENSORS_TCAL, DID_SENSORS_MCAL)
@@ -1612,7 +1613,7 @@ typedef struct PACKED
     imu3_t					imu3;
 
     /** (°C) Temperature of IMU.  Units only apply for calibrated data. */
-    f_t						temp[NUM_IMU_DEVICES];
+    float						temp[NUM_IMU_DEVICES];
 
     /** (uT) Magnetometers.  Units only apply for calibrated data. */
     mag_xyz_t				mag[NUM_MAG_DEVICES];
@@ -1620,41 +1621,41 @@ typedef struct PACKED
 
 typedef struct PACKED
 {
-    f_t						lpfLsb[3];      // Low-pass filtered of g_sensors.lsb
-    f_t						lpfTemp;		// (°C) Low-pass filtered sensor temperature
-    f_t						k[3];			// Slope (moved from flash to here)
-    f_t						temp;			// (°C)	Temperature of sensor
-    f_t                     tempRampRate;   // (°C/s) Temperature ramp rate
-    uint32_t                tci;            // Index of current temperature compensation point
-    uint32_t                numTcPts;       // Total number of tc points
-    f_t                     dtTemp;			// (°C) Temperature from last calibration point
+    float                   lpfLsb[3];              // Low-pass filtered of g_sensors.lsb
+    float                   lpfTemp;                // (°C) Low-pass filtered sensor temperature
+    float                   k[3];                   // Slope (moved from flash to here)
+    float                   temp;                   // (°C)	Temperature of sensor
+    float                   tempRampRate;           // (°C/s) Temperature ramp rate
+    uint32_t                tci;                    // Index of current temperature compensation point
+    uint32_t                numTcPts;               // Total number of tc points
+    float                   dtTemp;                 // (°C) Temperature from last calibration point
 } sensor_comp_unit_t;
 
 /** (DID_SCOMP) INTERNAL USE ONLY */
 typedef struct PACKED
-{                                       // Sensor temperature compensation
-    uint32_t                timeMs;         // (ms) Time since boot up.
-    sensor_comp_unit_t		pqr[NUM_IMU_DEVICES];
-    sensor_comp_unit_t		acc[NUM_IMU_DEVICES];
-    sensor_comp_unit_t		mag[NUM_MAG_DEVICES];
-    imus_t 					referenceImu;	// External reference IMU
-    float                   referenceMag[3];// External reference magnetometer (heading reference)
-    uint32_t                sampleCount;    // Number of samples collected
-    uint32_t                calState;       // state machine (see eScompCalState)
-    uint32_t				status;         // Status used to control LED and indicate valid sensor samples (see eScompStatus)
-    f_t						alignAccel[3];  // Alignment acceleration
+{                                                   // Sensor temperature compensation
+    uint32_t                timeMs;                 // (ms) Time since boot up.
+    sensor_comp_unit_t      pqr[NUM_IMU_DEVICES];
+    sensor_comp_unit_t      acc[NUM_IMU_DEVICES];
+    sensor_comp_unit_t      mag[NUM_MAG_DEVICES];
+    imus_t                  referenceImu;	        // External reference IMU
+    float                   referenceMag[3];        // External reference magnetometer (heading reference)
+    uint32_t                sampleCount;            // Number of samples collected
+    uint32_t                calState;               // state machine (see eScompCalState)
+    uint32_t                status;                 // Status used to control LED and indicate valid sensor samples (see eScompStatus)
+    float                   alignAccel[3];          // Alignment acceleration
 } sensor_compensation_t;
 
 #define NUM_ANA_CHANNELS	4
 typedef struct PACKED
-{                                       // LSB units for all except temperature, which is Celsius.
-    double					time;
-    sensors_imu_w_temp_t	imu[NUM_IMU_DEVICES];
-    sensors_mag_t			mag[NUM_MAG_DEVICES];   // Magnetometers
-    f_t						bar;            		// Barometric pressure
-    f_t						barTemp;				// Temperature of barometric pressure sensor
-    f_t                     humidity;				// Relative humidity as a percent (%rH).  Range is 0% - 100%
-    f_t						ana[NUM_ANA_CHANNELS]; // ADC analog input
+{                                                   // LSB units for all except temperature, which is Celsius.
+    double                  time;
+    sensors_imu_w_temp_t    imu[NUM_IMU_DEVICES];
+    sensors_mag_t           mag[NUM_MAG_DEVICES];   // Magnetometers
+    float                   bar;                    // Barometric pressure
+    float                   barTemp;                // Temperature of barometric pressure sensor
+    float                   humidity;               // Relative humidity as a percent (%rH).  Range is 0% - 100%
+    float                   ana[NUM_ANA_CHANNELS];  // ADC analog input
 } sys_sensors_adc_t;
 
 #if defined(IMX_5)
@@ -1747,42 +1748,55 @@ typedef struct PACKED
 #define RMC_PRESET_PPD_NAV_PERIOD_MULT_MS	100
 
 // Preset: Post Processing Data
-#define RMC_PRESET_PPD_BITS_NO_IMU		(RMC_BITS_PRESET \
-                                        | RMC_BITS_INS2 \
-                                        | RMC_BITS_BAROMETER \
-                                        | RMC_BITS_MAGNETOMETER \
-                                        | RMC_BITS_GPS1_POS \
-                                        | RMC_BITS_GPS2_POS \
-                                        | RMC_BITS_GPS1_VEL \
-                                        | RMC_BITS_GPS2_VEL \
-                                        | RMC_BITS_GPS1_RAW \
-                                        | RMC_BITS_GPS2_RAW \
-                                        | RMC_BITS_GPS_BASE_RAW \
-                                        | RMC_BITS_GPS1_RTK_POS_REL \
-                                        | RMC_BITS_GPS1_RTK_HDG_REL \
-                                        | RMC_BITS_INTERNAL_PPD \
-                                        | RMC_BITS_DIAGNOSTIC_MESSAGE)
-#define RMC_PRESET_PPD_BITS				(RMC_PRESET_PPD_BITS_NO_IMU \
-                                        | RMC_BITS_PIMU \
-                                        | RMC_BITS_REFERENCE_PIMU)
-#define RMC_PRESET_INS_BITS				(RMC_BITS_INS2 \
-                                        | RMC_BITS_GPS1_POS \
-                                        | RMC_BITS_PRESET)
-#define RMC_PRESET_PPD_BITS_IMU3		(RMC_PRESET_PPD_BITS_NO_IMU \
-                                        | RMC_BITS_IMU3_UNCAL)
-#define RMC_PRESET_PPD_BITS_RTK_DBG		(RMC_PRESET_PPD_BITS \
-                                        | RMC_BITS_RTK_STATE \
-                                        | RMC_BITS_RTK_CODE_RESIDUAL \
-                                        | RMC_BITS_RTK_PHASE_RESIDUAL \
-                                        | RMC_BITS_GPX_DEBUG \
-                                        | RMC_BITS_GPS1_SAT \
-                                        | RMC_BITS_GPS2_SAT \
-                                        | RMC_BITS_EVENT)
-#define RMC_PRESET_PPD_GROUND_VEHICLE	(RMC_PRESET_PPD_BITS \
-                                        | RMC_BITS_WHEEL_ENCODER \
-                                        | RMC_BITS_GROUND_VEHICLE)
-#define RMC_PRESET_ALLAN_VARIANCE		(RMC_BITS_PRESET \
-                                        | RMC_BITS_IMU)
+#define RMC_PRESET_IMX_PPD_NO_IMU           (RMC_BITS_PRESET \
+                                            | RMC_BITS_INS2 \
+                                            | RMC_BITS_BAROMETER \
+                                            | RMC_BITS_MAGNETOMETER \
+                                            | RMC_BITS_GPS1_POS \
+                                            | RMC_BITS_GPS2_POS \
+                                            | RMC_BITS_GPS1_VEL \
+                                            | RMC_BITS_GPS2_VEL \
+                                            | RMC_BITS_GPS1_RAW \
+                                            | RMC_BITS_GPS2_RAW \
+                                            | RMC_BITS_GPS_BASE_RAW \
+                                            | RMC_BITS_GPS1_RTK_POS_REL \
+                                            | RMC_BITS_GPS1_RTK_HDG_REL \
+                                            | RMC_BITS_INTERNAL_PPD \
+                                            | RMC_BITS_DIAGNOSTIC_MESSAGE)
+#define RMC_PRESET_IMX_PPD                  (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_PIMU \
+                                            | RMC_BITS_REFERENCE_PIMU)
+#define RMC_PRESET_INS                      (RMC_BITS_INS2 \
+                                            | RMC_BITS_GPS1_POS \
+                                            | RMC_BITS_PRESET)
+#define RMC_PRESET_IMX_PPD_IMU3             (RMC_PRESET_IMX_PPD_NO_IMU \
+                                            | RMC_BITS_IMU3_UNCAL)
+#define RMC_PRESET_IMX_PPD_RTK_DBG          (RMC_PRESET_IMX_PPD \
+                                            | RMC_BITS_RTK_STATE \
+                                            | RMC_BITS_RTK_CODE_RESIDUAL \
+                                            | RMC_BITS_RTK_PHASE_RESIDUAL \
+                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPS1_SAT \
+                                            | RMC_BITS_GPS2_SAT \
+                                            | RMC_BITS_EVENT)
+#define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
+                                            | RMC_BITS_WHEEL_ENCODER \
+                                            | RMC_BITS_GROUND_VEHICLE)
+#define RMC_PRESET_ALLAN_VARIANCE           (RMC_BITS_PRESET \
+                                            | RMC_BITS_IMU)
+#define RMC_PRESET_GPX_PPD                  (RMC_BITS_PRESET \
+                                            | RMC_BITS_GPS1_POS \
+                                            | RMC_BITS_GPS2_POS \
+                                            | RMC_BITS_GPS1_VEL \
+                                            | RMC_BITS_GPS2_VEL \
+                                            | RMC_BITS_GPS1_RAW \
+                                            | RMC_BITS_GPS2_RAW \
+                                            | RMC_BITS_GPS_BASE_RAW \
+                                            | RMC_BITS_GPS1_RTK_POS_REL \
+                                            | RMC_BITS_GPS1_RTK_HDG_REL \
+                                            | RMC_BITS_GPX_DEBUG \
+                                            | RMC_BITS_GPX_PORT_MON \
+                                            | RMC_BITS_EVENT)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -1919,6 +1933,10 @@ enum eNmeaMsgId
     NMEA_MSG_ID_GNGSV_END       = NMEA_MSG_ID_GLGSV,                                    // (3951) Used for reference only
 };
 
+typedef struct {
+    uint8_t constMask[SAT_SV_GNSS_ID_COUNT]; /* Constellation mask (see eGnGSVIndex)*/
+} gsvMask_t;
+
 #define NMEA_RMC_BITS_PIMU          (1<<NMEA_MSG_ID_PIMU)
 #define NMEA_RMC_BITS_PPIMU         (1<<NMEA_MSG_ID_PPIMU)
 #define NMEA_RMC_BITS_PRIMU         (1<<NMEA_MSG_ID_PRIMU)
@@ -1991,13 +2009,13 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_GPS2_RAW =             15,
     GRMC_BIT_POS_GPS2_VERSION =         16,
     GRMC_BIT_POS_GPS1_RTK_POS =         17,
-    GMRC_BIT_POS_GPS1_RTK_POS_MISC =    18,
-    GMRC_BIT_POS_GPS1_RTK_POS_REL =     19,
-    GMRC_BIT_POS_GPS2_RTK_CMP_MISC =    20,
-    GMRC_BIT_POS_GPS2_RTK_CMP_REL =     21,
-    GMRC_BIT_POS_DID_RTK_DEBUG =        22,
-    GMRC_BIT_POS_DID_PORT_MON =         23,
-    GMRC_BIT_POS_DID_GPX_PORT_MON =     24,
+    GRMC_BIT_POS_GPS1_RTK_POS_MISC =    18,
+    GRMC_BIT_POS_GPS1_RTK_POS_REL =     19,
+    GRMC_BIT_POS_GPS2_RTK_CMP_MISC =    20,
+    GRMC_BIT_POS_GPS2_RTK_CMP_REL =     21,
+    GRMC_BIT_POS_DID_RTK_DEBUG =        22,
+    GRMC_BIT_POS_DID_PORT_MON =         23,
+    GRMC_BIT_POS_DID_GPX_PORT_MON =     24,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2019,13 +2037,13 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_GPS2_RAW              (0x0000000000000001 << GRMC_BIT_POS_GPS2_RAW)
 #define GRMC_BITS_GPS2_VERSION          (0x0000000000000001 << GRMC_BIT_POS_GPS2_VERSION)
 #define GRMC_BITS_GPS1_RTK_POS          (0x0000000000000001 << GRMC_BIT_POS_GPS1_RTK_POS)
-#define GMRC_BITS_GPS1_RTK_POS_MISC     (0x0000000000000001 << GMRC_BIT_POS_GPS1_RTK_POS_MISC)
-#define GMRC_BITS_GPS1_RTK_POS_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS1_RTK_POS_REL)
-#define GMRC_BITS_GPS2_RTK_CMP_MISC     (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_MISC)
-#define GMRC_BITS_GPS2_RTK_CMP_REL      (0x0000000000000001 << GMRC_BIT_POS_GPS2_RTK_CMP_REL)
-#define GMRC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GMRC_BIT_POS_DID_RTK_DEBUG)
-#define GMRC_BITS_PORT_MON              (0x0000000000000001 << GMRC_BIT_POS_DID_PORT_MON)
-#define GMRC_BITS_GPX_PORT_MON          (0x0000000000000001 << GMRC_BIT_POS_DID_GPX_PORT_MON)
+#define GRMC_BITS_GPS1_RTK_POS_MISC     (0x0000000000000001 << GRMC_BIT_POS_GPS1_RTK_POS_MISC)
+#define GRMC_BITS_GPS1_RTK_POS_REL      (0x0000000000000001 << GRMC_BIT_POS_GPS1_RTK_POS_REL)
+#define GRMC_BITS_GPS2_RTK_CMP_MISC     (0x0000000000000001 << GRMC_BIT_POS_GPS2_RTK_CMP_MISC)
+#define GRMC_BITS_GPS2_RTK_CMP_REL      (0x0000000000000001 << GRMC_BIT_POS_GPS2_RTK_CMP_REL)
+#define GRMC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GRMC_BIT_POS_DID_RTK_DEBUG)
+#define GRMC_BITS_PORT_MON              (0x0000000000000001 << GRMC_BIT_POS_DID_PORT_MON)
+#define GRMC_BITS_GPX_PORT_MON          (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_PORT_MON)
 #define GRMC_BITS_PRESET                (0x8000000000000000)	// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2052,12 +2070,12 @@ enum GRMC_BIT_POS{
                                         | GRMC_BITS_GPS1_VERSION \
                                         | GRMC_BITS_GPS2_VERSION \
                                         /*| GRMC_BITS_GPS1_RTK_POS*/ \
-                                        | GMRC_BITS_GPS2_RTK_CMP_REL \
-                                        | GMRC_BITS_GPS2_RTK_CMP_MISC \
+                                        | GRMC_BITS_GPS2_RTK_CMP_REL \
+                                        | GRMC_BITS_GPS2_RTK_CMP_MISC \
                                         | GRMC_BITS_GPS1_RAW \
                                         | GRMC_BITS_GPS2_RAW )
 
-#define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GMRC_BITS_DID_RTK_DEBUG)
+#define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GRMC_BITS_DID_RTK_DEBUG)
 
 
 typedef struct PACKED 
@@ -2343,8 +2361,8 @@ enum eGPXBit_CMD{
     GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,     // Send duplicate message
     GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,     // Cause Tx buffer overflow on current serial port by sending too much data.
     GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCH_DOG_COMM_TASK      = 11,     // Cause watch dog reset by stalling COMM task
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCH_DOG_RTK_TASK       = 12,     // Cause watch dog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,     // Cause watchdog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,     // Cause watchdog reset by stalling RTK task
     GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,     // Cause hard fault
     GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,     // Cause malloc failure
 };
@@ -2358,8 +2376,8 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
     GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
     GPXBit_test_mode_SERIAL_DRIVER_RX_OVERFLOW          = (int)103,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_test_mode_SYS_FAULT_WATCH_DOG_COMM_TASK      = (int)104,     // Cause watch dog reset by stalling COMM task
-    GPXBit_test_mode_SYS_FAULT_WATCH_DOG_RTK_TASK       = (int)105,     // Cause watch dog reset by stalling RTK task
+    GPXBit_test_mode_SYS_FAULT_WATCHDOG_COMM_TASK       = (int)104,     // Cause watchdog reset by stalling COMM task
+    GPXBit_test_mode_SYS_FAULT_WATCHDOG_RTK_TASK        = (int)105,     // Cause watchdog reset by stalling RTK task
 };
 
 #define GPXBit_resultMasks_PASSED  (GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2 | GPXBit_resultsBit_UART | GPXBit_resultsBit_IO | GPXBit_resultsBit_GPS | GPXBit_resultsBit_FINISHED)
@@ -3352,7 +3370,7 @@ typedef struct PACKED
 typedef struct PACKED
 {
     int32_t					i[DEBUG_I_ARRAY_SIZE];
-    f_t						f[DEBUG_F_ARRAY_SIZE];
+    float					f[DEBUG_F_ARRAY_SIZE];
     double                  lf[DEBUG_LF_ARRAY_SIZE];
 } debug_array_t;
 
@@ -4030,11 +4048,13 @@ typedef struct PACKED
     float					vDop;
 
     /** Base Position - latitude, longitude, height (degrees, meters) */
-     double					baseLla[3];
+    double					baseLla[3];
 
     /** Cycle slip counter */
     uint32_t                cycleSlipCount;
     
+
+
     /** Rover gps observation element counter */
     uint32_t				roverGpsObservationCount;
 
@@ -4046,6 +4066,7 @@ typedef struct PACKED
 
     /** Base station glonass observation element counter */
     uint32_t				baseGlonassObservationCount;
+
 
     /** Rover galileo observation element counter */
     uint32_t				roverGalileoObservationCount;
@@ -4059,6 +4080,7 @@ typedef struct PACKED
     /** Base station beidou observation element counter */
     uint32_t				baseBeidouObservationCount;
 
+
     /** Rover qzs observation element counter */
     uint32_t				roverQzsObservationCount;
 
@@ -4070,6 +4092,7 @@ typedef struct PACKED
 
     /** Base station gps ephemeris element counter */
     uint32_t				baseGpsEphemerisCount;
+
 
     /** Rover glonass ephemeris element counter */
     uint32_t				roverGlonassEphemerisCount;
@@ -4083,6 +4106,7 @@ typedef struct PACKED
     /** Base station galileo ephemeris element counter */
     uint32_t				baseGalileoEphemerisCount;
 
+
     /** Rover beidou ephemeris element counter */
     uint32_t				roverBeidouEphemerisCount;
 
@@ -4095,6 +4119,7 @@ typedef struct PACKED
     /** Base station qzs ephemeris element counter */
     uint32_t				baseQzsEphemerisCount;
 
+
     /** Rover sbas element counter */
     uint32_t				roverSbasCount;
 
@@ -4106,6 +4131,7 @@ typedef struct PACKED
 
     /** Ionosphere model, utc and almanac count */
     uint32_t				ionUtcAlmCount;
+    
     
     /** Number of checksum failures from received corrections */
     uint32_t				correctionChecksumFailures;
@@ -4356,16 +4382,22 @@ enum eGpxStatus
     /** Fatal event */
     GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
     GPX_STATUS_FATAL_OFFSET                             = 24,
-    GPX_STATUS_FATAL_RESET_WATCHDOG                     = (int)1,   /** Reset from Watchdog */
-    GPX_STATUS_FATAL_RESET_BROWN                        = (int)2,   /** Reset from brown out */
-    GPX_STATUS_FATAL_LOW_POW                            = (int)3,   /** Reset from low power */
+    GPX_STATUS_FATAL_RESET_LOW_POW                      = (int)1,   // reset from low power
+    GPX_STATUS_FATAL_RESET_BROWN                        = (int)2,   // reset from brown out
+    GPX_STATUS_FATAL_RESET_WATCHDOG                     = (int)3,   // reset from watchdog
     GPX_STATUS_FATAL_CPU_EXCEPTION                      = (int)4,                     
     GPX_STATUS_FATAL_UNHANDLED_INTERRUPT                = (int)5,
     GPX_STATUS_FATAL_STACK_OVERFLOW                     = (int)6,
     GPX_STATUS_FATAL_KERNEL_OOPS                        = (int)7,
     GPX_STATUS_FATAL_KERNEL_PANIC                       = (int)8,
+    GPX_STATUS_FATAL_UNALIGNED_ACCESS                   = (int)9,
+    GPX_STATUS_FATAL_MEMORY_ERROR                       = (int)10,
+    GPX_STATUS_FATAL_BUS_ERROR                          = (int)11,  // bad pointer or malloc
+    GPX_STATUS_FATAL_USAGE_ERROR                        = (int)12,
+    GPX_STATUS_FATAL_DIV_ZERO                           = (int)13,
+    GPX_STATUS_FATAL_SER0_REINIT                        = (int)14,
 
-    GPX_STATUS_FATAL_UNKNOWN                            = (int)0xff,
+    GPX_STATUS_FATAL_UNKNOWN                            = (int)0x1F,    // TODO: Temporarily set to (5 bits). Reset to 0xFF when gpx_flash_cfg.debug is no longer used with fault reporting. (WHJ) 
 };
 
 /** Hardware status flags */
@@ -4457,8 +4489,8 @@ typedef struct
 {
     uint8_t reserved;
     uint8_t fwUpdateState;      /** GNSS FW update status (see FirmwareUpdateState) **/
-    uint8_t initState;          /** GNSS status (see InitSteps) **/
-    uint8_t runState;           /** GNSS run status (see RunState) **/
+    uint8_t initState;          /** GNSS init status (see InitSteps) **/
+    uint8_t runState;           /** GNSS run status (see eGPXGnssRunState) **/
 } gpx_gnss_status_t;
 
 /**
@@ -4498,7 +4530,7 @@ typedef struct
     /** RTK Mode bits (see eRTKConfigBits) **/
     uint32_t                rtkMode;
 
-    gpx_gnss_status_t       gnsssStatus[GNSS_RECEIVER_COUNT];
+    gpx_gnss_status_t       gnssStatus[GNSS_RECEIVER_COUNT];
 
     /** port */
     uint8_t                 gpxSourcePort;
@@ -4884,11 +4916,53 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
 
+    EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST = 22,
+    EVENT_MSG_TYPE_ID_IMX_SER0_REG      = 23,
+    EVENT_MSG_TYPE_ID_IMX_SER0_CFG      = 24,
+    EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_CHAN = 25,
+    EVENT_MSG_TYPE_ID_IMX_GPIO_TX_0_REG = 26,
+
+    EVENT_MSG_TYPE_ID_DMA_RX_0_INST     = 27,
+    EVENT_MSG_TYPE_ID_SER0_REG          = 28,
+    EVENT_MSG_TYPE_ID_SER0_CFG          = 29,
+    EVENT_MSG_TYPE_ID_DMA_RX_0_CHAN     = 30,
+    EVENT_MSG_TYPE_ID_GPIO_RX_0_REG     = 31,
+
     EVENT_MSG_TYPE_ID_FILTER_RESPONSE   = (uint16_t)-4,
     EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER  = (uint16_t)-3,
     EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER  = (uint16_t)-2,
     EVENT_MSG_TYPE_ID_ENA_FILTER        = (uint16_t)-1,
 };
+
+typedef struct{
+    uint32_t                inst_CCR;         /*!< DMA channel x configuration register        */
+    uint32_t                inst_CNDTR;       /*!< DMA channel x number of data register       */
+    uint32_t                inst_CPAR;        /*!< DMA channel x peripheral address register   */
+    uint32_t                inst_CMAR;        /*!< DMA channel x memory address register       */
+
+	uint8_t 		        *ptr_start;
+	uint8_t 		        *ptr_end;
+	uint16_t 		        active_tx_len;
+	uint8_t 			    done;							// Currently only used in TX
+
+	uint8_t					cfg_dir;						// DMA_RX or DMA_TX
+	uint8_t					cfg_circular;					// DMA_CIRC_ON or DMA_CIRC_OFF
+	uint8_t 				cfg_priority;					// DMA_PRIO_LOW, DMA_PRIO_MEDIUM, DMA_PRIO_HIGH, DMA_PRIO_VERY_HIGH
+	uint8_t				    cfg_interrupt;
+	uint8_t 				cfg_interrupt_priority;			// 0 to 15, 15 is low
+	uint8_t 				cfg_dma_channel_select;			// 0 to 7. See RM0394 11.6.7
+	uint8_t 				cfg_parent_type;				// DMA_PARENT_USART, ...
+	void 					*cfg_parent;					// Pointer to parent init base
+	uint32_t				*cfg_periph_reg;				// Pointer to peripheral register
+	uint8_t					*cfg_buf;
+	uint16_t				cfg_buf_len;					// This doesn't correspond to the length register, it is just however big the buffer is
+	uint8_t 				cfg_linear_buf;			 		// If true, the buffer is user-specified and we treat it like a non-circular buffer.
+	void                    *cfg_tcie_handler;	            // If n
+	
+    int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+	uint8_t					overflow;						// Buffer overflow
+
+} eventImxDmaTxInst_t;
 
 enum eEventPriority
 {

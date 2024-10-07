@@ -36,7 +36,6 @@ sys.path.append(os.path.normpath(file_path + '/..'))
 sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from logReader import Log
-from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
 from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
 import datetime
@@ -437,6 +436,7 @@ class logPlot:
             if len(gpsVelEcef) > 0:
                 qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
                 gpsVelNed = quatConjRot(qe2n, gpsVelEcef)
+                # gpsVelNed = np.copy(gpsVelEcef)   # Override to ECEF
         return [gpsTime, gpsVelNed]
 
     def gpsVelNED(self, fig=None):
@@ -541,6 +541,8 @@ class logPlot:
             qe2n = quat_ecef2ned(refLla[0:2]*np.pi/180.0)
             if len(velEcef) > 0:
                 velNed = quatConjRot(qe2n, velEcef)
+            # velNed = np.copy(velEcef)     # Override to ECEF velocity
+
             #R = rotmat_ecef2ned(self.getData(d, DID_GPS1_POS, 'lla')[0,0:2]*np.pi/180.0)
             #velNed = R.dot(velEcef.T).T
         return velNed
@@ -999,10 +1001,10 @@ class logPlot:
 
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000001) != 0))
                 p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Att Coarse')
+                if r: ax.text(p1, -cnt * 1.5, 'Hdg Coarse')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000010) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Att Fine')
+                if r: ax.text(p1, -cnt * 1.5, 'Hdg Fine')
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000002) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Vel Coarse')
@@ -2550,6 +2552,21 @@ class logPlot:
             for i in range(9):
                 ax[i%5, i//5].set_ylabel('f[' + str(i) +']')
                 ax[i%5, i//5].plot(debug_f[:,i], label=self.log.serials[d])
+        self.legends_add(ax[0,0].legend(ncol=2))
+        for b in ax:
+            for a in b:
+                a.grid(True)
+
+    def gpxDebugiArray(self, fig=None):
+        if fig is None:
+            fig = plt.figure()
+        ax = fig.subplots(5,2, sharex=True)
+        fig.suptitle('GPX Debug int array - ' + os.path.basename(os.path.normpath(self.log.directory)))
+        for d in self.active_devs:
+            debug_i = self.getData(d, DID_GPX_DEBUG_ARRAY, 'i')
+            for i in range(9):
+                ax[i%5, i//5].set_ylabel('i[' + str(i) +']')
+                ax[i%5, i//5].plot(debug_i[:,i], label=self.log.serials[d])
         self.legends_add(ax[0,0].legend(ncol=2))
         for b in ax:
             for a in b:

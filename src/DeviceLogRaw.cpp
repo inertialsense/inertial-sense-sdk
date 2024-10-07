@@ -185,7 +185,9 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             CloseAllFiles();
         }
     }
+
     // Add data header and data buffer to chunk
+    m_logSize += dataSize;
     if (!m_chunk.PushBack((unsigned char*)dataBuf, dataSize))
     {
         return false;
@@ -224,7 +226,6 @@ bool cDeviceLogRaw::WriteChunkToFile()
 
     // File byte size
     m_fileSize += fileBytes;
-    m_logSize += fileBytes;
 
     return true;
 }

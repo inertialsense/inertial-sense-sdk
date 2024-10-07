@@ -204,7 +204,7 @@ public:
             bool enable,
             const std::string& path = cISLogger::g_emptyString,
             cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
-            uint64_t rmcPreset = RMC_PRESET_PPD_BITS,
+            uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
             uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
             float maxDiskSpacePercent = 0.5f,
             uint32_t maxFileSize = 1024 * 1024 * 5,
@@ -323,7 +323,7 @@ public:
     /**
      * @return a list of discovered ports which are not currently associated with a open device
      */
-    std::vector<std::string> checkForNewPorts();
+    std::vector<std::string> checkForNewPorts(std::vector<std::string>& oldPorts);
 
     /**
      * Compared two dev_info_t structs, and returns an bitmap indicating which fields match
@@ -480,10 +480,10 @@ public:
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
 
     /**
-    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
+    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
     * @param rmcPreset realtimeMessageController preset
     */
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
 
     /**
     * Get the number of bytes read or written to/from client or server connections

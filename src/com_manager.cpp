@@ -131,7 +131,6 @@ bool comManagerRegisterPort(port_handle_t port, is_comm_callbacks_t* cbs) {
     return s_cm.registerPort(port, cbs);
 }
 
-
 std::unordered_set<port_handle_t>& ISComManager::getPorts() {
     return *ports;
 }
@@ -139,7 +138,6 @@ std::unordered_set<port_handle_t>& ISComManager::getPorts() {
 std::unordered_set<port_handle_t>& comManagerGetPorts() {
     return s_cm.getPorts();
 }
-
 
 bool ISComManager::removePort(port_handle_t port) {
     auto found = std::find(ports->begin(), ports->end(), port);
@@ -203,29 +201,35 @@ void ISComManager::registerDid(uint16_t did, pfnComManagerPreSend txFnc, pfnComM
 
 
 void comManagerStepTimeout(uint32_t timeMs) {
-    s_cm.stepRx(timeMs);
+    s_cm.stepRx();
     s_cm.stepTx();
 }
 
 void ISComManager::stepTimeout(uint32_t timeMs)
 {
-    stepRx(timeMs);
+    stepRx();
     stepTx();
 }
 
 void comManagerStep()
 {
-    s_cm.stepRx(0);
+    s_cm.stepRx();
     s_cm.stepTx();
 }
 
 void ISComManager::step()
 {
-    stepRx(0);
+    stepRx();
     stepTx();
 }
 
-void ISComManager::stepRx(uint32_t timeMs)
+void comManagerStep(port_handle_t port)
+{
+    s_cm.stepRx(port);
+    s_cm.stepTx();
+}
+
+void ISComManager::stepRx()
 {
     if (!ports) return;  // nothing to do...
 
@@ -234,6 +238,13 @@ void ISComManager::stepRx(uint32_t timeMs)
         // Read data directly into comm buffer and call callback functions
         is_comm_port_parse_messages(port);
     }
+}
+
+void ISComManager::stepRx(port_handle_t port)
+{
+    if (!port) return;  // nothing to do...
+    // Read data directly into comm buffer and call callback functions
+    is_comm_port_parse_messages(port);
 }
 
 void ISComManager::stepTx()

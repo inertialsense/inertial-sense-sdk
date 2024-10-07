@@ -39,15 +39,15 @@ static int staticReadData(port_handle_t port, uint8_t* buf, int len)
 
 	if (s_is) {	// Save raw data to ISlogger
 		s_is->LogRawData(s_is->DeviceByPort(port), bytesRead, buf);
-	}
+    }
     return bytesRead;
 }
 
-static void staticProcessRxData(p_data_t* data, port_handle_t port)
+static int staticProcessRxData(p_data_t* data, port_handle_t port)
 {
     if ((port == NULLPTR) || (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData))))
     {
-        return;
+        return -1;
     }
 
     pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
@@ -83,6 +83,7 @@ static void staticProcessRxData(p_data_t* data, port_handle_t port)
             }
             break;
     }
+    return 0;
 }
 
 static int staticProcessRxNmea(const unsigned char* msg, int msgSize, port_handle_t port)
@@ -110,7 +111,8 @@ InertialSense::InertialSense(
     m_clientStream = NULLPTR;
     m_clientBufferBytesToSend = 0;
     m_clientServerByteCount = 0;
-    m_disableBroadcastsOnClose = false;
+    m_disableBroadcastsOnClose = false;  // For Intellian
+
     for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
     {
         m_comManagerState.binaryCallback[i] = {};
@@ -474,18 +476,14 @@ bool InertialSense::Update()
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
             for (auto& device : m_comManagerState.devices) {
                 if (serialPortIsOpen(device.port) && device.fwUpdater != nullptr) {
-                    device.fwUpdater->fwUpdate_step();
-
-                    if (!device.fwUpdateInProgress()) {
-                        fwUpdate::update_status_e status = device.fwLastStatus;
-                        if (status < fwUpdate::NOT_STARTED) {
+                    if (!device.fwUpdater->fwUpdate_step()) { // device.fwUpdate.update();
+                        if (device.fwLastStatus < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
 
-
 #ifdef DEBUG_CONSOLELOGGING
-                        } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
+                    } else if ((fwUpdater->getNextChunkID() != lastChunk) || (status != lastStatus)) {
                         int serialNo = m_comManagerState.devices[devIdx].devInfo.serialNumber;
                         float pcnt = fwUpdater->getTotalChunks() == 0 ? 0.f : ((float)fwUpdater->getNextChunkID() / (float)fwUpdater->getTotalChunks() * 100.f);
                         float errRt = fwUpdater->getResendRate() * 100.f;
@@ -1283,8 +1281,15 @@ bool InertialSense::isFirmwareUpdateFinished() {
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : m_comManagerState.devices) {
         ISFirmwareUpdater *fwUpdater = device.fwUpdater;
-        if (fwUpdater != nullptr && !fwUpdater->fwUpdate_isDone() && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) 
-            return false;
+        if (device.fwUpdater->hasErrors() ||
+            (   (fwUpdater != nullptr) &&
+                fwUpdater->fwUpdate_isDone() &&
+                (
+                        (fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) ||
+                        fwUpdater->hasErrors()
+                )
+            ))
+        return false;
     }
     return true;
 }
@@ -2000,7 +2005,7 @@ ISDevice* InertialSense::DeviceByPortName(const std::string& port_name) {
 /**
  * @return a list of discovered ports which are not currently associated with a open device
  */
-std::vector<std::string> InertialSense::checkForNewPorts() {
+std::vector<std::string> InertialSense::checkForNewPorts(std::vector<std::string>& oldPorts) {
     std::vector<std::string> new_ports, all_ports;
     cISSerialPort::GetComPorts(all_ports);
 
@@ -2008,6 +2013,10 @@ std::vector<std::string> InertialSense::checkForNewPorts() {
     for (auto& portName : all_ports) {
         bool ignored = false;
         for (auto& ignoredPort : m_ignoredPorts) {
+            if (ignoredPort == portName)
+                ignored = true;
+        }
+        for (auto& ignoredPort : oldPorts) {
             if (ignoredPort == portName)
                 ignored = true;
         }

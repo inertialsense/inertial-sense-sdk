@@ -43,12 +43,9 @@ def openFolderWithFileBrowser(path):
 
 def cleanFolder(path, toplevel=True):
     containsDAT = False
-    containsSDAT = False
     for fname in os.listdir(path):
         if fname.endswith('.dat'):
             containsDAT = True
-        if fname.endswith('.sdat'):
-            containsSDAT = True
 
     for fname in os.listdir(path):
         fpath = os.path.join(path, fname)
@@ -58,14 +55,9 @@ def cleanFolder(path, toplevel=True):
             else:
                 cleanFolder(fpath, False)
         else:
-            # Remove .csv if .dat or .sdat exist
-            if containsDAT or containsSDAT:
-                if fname.endswith('.csv'):
-                    print('Deleting: ' + fpath)
-                    os.remove(fpath)
-            # Remove .sdat if .dat exist
+            # Remove .csv if .dat exist
             if containsDAT:
-                if fname.endswith('.sdat'):
+                if fname.endswith('.csv'):
                     print('Deleting: ' + fpath)
                     os.remove(fpath)
     if toplevel:
@@ -558,6 +550,13 @@ class LogInspectorWindow(QMainWindow):
         self.downSampleInput.setValue(self.downsample)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
+        self.downSampleToOne = QPushButton()
+        self.downSampleToOne.setMinimumWidth(1)
+        self.downSampleToOne.setMaximumWidth(20)
+        self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.downSampleToOne.setText("1")
+        self.toolLayout.addWidget(self.downSampleToOne)
+        self.downSampleToOne.clicked.connect(self.setDownSampleToOne)
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
     def changeResidualCheckbox(self, state):
@@ -585,7 +584,11 @@ class LogInspectorWindow(QMainWindow):
     def changeDownSample(self, val):
         self.downsample = max(val, 1)
         self.plotter.setDownSample(self.downsample)
-        self.updatePlot()
+        if self.log != None:
+            self.updatePlot()
+
+    def setDownSampleToOne(self):
+        self.downSampleInput.setValue(1)
 
     def copyPlotToClipboard(self):
         # pixmap = QPixmap.grabWidget(self.canvas)
@@ -667,9 +670,8 @@ class LogInspectorWindow(QMainWindow):
 
         for fname in os.listdir(self.config['directory']):
             fname = fname.lower()
-            if fname.endswith('.dat') or \
-               fname.endswith('.raw') or \
-               fname.endswith('.sdat'):
+            if fname.endswith('.raw') or \
+               fname.endswith('.dat'):
                 try:
                     self.load(self.config['directory'])
                 except Exception as e:

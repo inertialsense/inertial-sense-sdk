@@ -10,8 +10,22 @@
 #include "ISBootloaderBase.h"
 #include "ISFirmwareUpdater.h"
 #include "util/util.h"
+#include "imx_defaults.h"
 
 ISDevice ISDevice::invalidRef;
+
+/**
+ * Steps the communications for this device, sending any scheduled requests and parsing any received data on the device's associated port (if connected).
+ * @return
+ */
+bool ISDevice::step() {
+    if (!port) return false;
+
+    comManagerStep(port);
+    if (fwUpdater)
+        fwUpdate();
+    return true;
+}
 
 is_operation_result ISDevice::updateFirmware(
         fwUpdate::target_t targetDevice,
@@ -35,10 +49,21 @@ is_operation_result ISDevice::updateFirmware(
     return IS_OP_OK;
 }
 
+/**
+ * @return true if this device is in the process of being updated, otherwise returns false.
+ * False is returned regardless of whether the update was successful or not.
+ */
 bool ISDevice::fwUpdateInProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
 
-void ISDevice::fwUpdate() {
+/**
+ * Instructs the device to continue performing its actions.  This should be called regularly to ensure that the update process
+ * does not stall.
+ * @return true if the update is still in progress (calls inProgress()), or false if the update is finished and no further updates are needed.
+ */
+bool ISDevice::fwUpdate() {
     if (fwUpdater) {
+        fwUpdater->fwUpdate_step();
+
         if (fwUpdater->getActiveCommand() == "upload") {
             if (fwUpdater->fwUpdate_getSessionTarget() != fwLastTarget) {
                 fwHasError = false;
@@ -58,7 +83,7 @@ void ISDevice::fwUpdate() {
                 fwLastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
 
                 // check for error
-                if (!fwHasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
+                if (!fwHasError && fwUpdater && ((fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) || fwUpdater->hasErrors())) {
                     fwHasError = true;
                 }
             }
@@ -78,22 +103,33 @@ void ISDevice::fwUpdate() {
         }
 
         if (!fwUpdater->hasPendingCommands()) {
-            if (!fwHasError) {
-                fwLastMessage = "Completed successfully.";
-            } else {
+            if (fwUpdater->hasErrors()) {
+                fwHasError = fwUpdater->hasErrors();
+                fwLastMessage = "Error: ";
+                fwLastMessage += "One or more step errors occurred.";
+            } else if (!fwHasError) {
                 fwLastMessage = "Error: ";
                 fwLastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(fwLastStatus);
+            } else {
+                fwLastMessage = "Completed successfully.";
             }
         }
 
         // cleanup if we're done.
-        if (fwUpdater->fwUpdate_isDone()) {
+        bool is_done = fwUpdater->fwUpdate_isDone();
+        if (is_done) {
+            // collect errors before we close out the updater
+            fwErrors = fwUpdater->getStepErrors();
+            fwHasError |= !fwErrors.empty();
+
             delete fwUpdater;
             fwUpdater = nullptr;
         }
     } else {
         fwPercent = 0.0;
     }
+
+    return fwUpdateInProgress();
 }
 
 bool ISDevice::handshakeISbl() {
@@ -279,4 +315,266 @@ std::string ISDevice::getFirmwareInfo(int detail) {
 
 std::string ISDevice::getDescription() {
     return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), portName(port));
+}
+
+bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
+{
+    if (!port)
+        return false;
+
+    if (devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0)
+        return false;   // TODO: Not sure if we really need this here.  We should be doing a broader level check for protocol compatibility either at a higher level, preventing us from getting here in the first place
+                        //   Or at a lower-level, like in the comMangerGetData() call that does this check for everything.
+
+    if (periodMultiple < 0) {
+        comManagerDisableData(port, dataId);
+    } else {
+        comManagerGetData(port, dataId, 0, 0, periodMultiple);
+    }
+    return true;
+}
+
+[[deprecated]]
+bool ISDevice::verifyFlashConfigUpload() {
+    bool success = false;
+    unsigned int startTimeMs = current_timeMs();
+
+    StopBroadcasts(false);  // only stop broadcasts to this port... FIXME: Do we REALLY want to do this??  This will stop legitimately configured broadcasts
+    do {
+        // Setup communications
+        BroadcastBinaryData(DID_FLASH_CONFIG, 0);
+        BroadcastBinaryData(DID_SYS_PARAMS, 0);
+        SLEEP_MS(200);
+        printf(".");
+        fflush(stdout);
+
+        comManagerStep(port);
+        success = (memcmp(&(flashCfg), &(flashCfgUpload), sizeof(nvm_flash_cfg_t)) == 0); // Flash config matches
+    } while (!success && ((current_timeMs() - startTimeMs) < 5000));
+    return success;
+}
+
+void ISDevice::SetSysCmd(const uint32_t command) {
+    sysCmd.command = command;
+    sysCmd.invCommand = ~command;
+    // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
+    comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
+}
+
+/**
+ * Sends message to device to set devices Event Filter
+ * param Target: 0 = device,
+ *               1 = forward to device GNSS 1 port (ie GPX),
+ *               2 = forward to device GNSS 2 port (ie GPX),
+ *               else will return
+ *       port: Send in target COM port.
+ *                If arg is < 0 default port will be used
+*/
+void ISDevice::SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel)
+{
+    #define EVENT_MAX_SIZE (1024 + DID_EVENT_HEADER_SIZE)
+    uint8_t data[EVENT_MAX_SIZE] = {0};
+
+    did_event_t event = {
+            .time = 123,
+            .senderSN = 0,
+            .senderHdwId = 0,
+            .length = sizeof(did_event_filter_t),
+    };
+
+    did_event_filter_t filter = {
+            .portMask = portMask,
+    };
+
+    filter.eventMask.priorityLevel = priorityLevel;
+    filter.eventMask.msgTypeIdMask = msgTypeIdMask;
+
+    if(target == 0)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_FILTER;
+    else if(target == 1)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS1_FILTER;
+    else if(target == 2)
+        event.msgTypeID = EVENT_MSG_TYPE_ID_ENA_GNSS2_FILTER;
+    else
+        return;
+
+    memcpy(data, &event, DID_EVENT_HEADER_SIZE);
+    memcpy((void*)(data+DID_EVENT_HEADER_SIZE), &filter, _MIN(sizeof(did_event_filter_t), EVENT_MAX_SIZE-DID_EVENT_HEADER_SIZE));
+
+    SendData(DID_EVENT, data, DID_EVENT_HEADER_SIZE + event.length, 0);
+}
+
+// This method uses DID_SYS_PARAMS.flashCfgChecksum to determine if the local flash config is synchronized.
+void ISDevice::SyncFlashConfig(unsigned int timeMs) {
+
+    if (timeMs - flashSyncCheckTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS) {
+        return;
+    }
+    flashSyncCheckTimeMs = timeMs;
+
+    if (flashCfgUploadTimeMs) {
+        // Upload in progress
+        if (timeMs - flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS) {
+            // Wait for upload to process.  Pause sync.
+            sysParams.flashCfgChecksum = 0;
+        }
+    }
+
+    // Require valid sysParams checksum
+    if (sysParams.flashCfgChecksum) {
+        if (sysParams.flashCfgChecksum == flashCfg.checksum) {
+            if (flashCfgUploadTimeMs) {
+                // Upload complete.  Allow sync.
+                flashCfgUploadTimeMs = 0;
+
+                if (flashCfgUploadChecksum == sysParams.flashCfgChecksum) {
+                    printf("DID_FLASH_CONFIG upload complete.\n");
+                } else {
+                    printf("DID_FLASH_CONFIG upload rejected.\n");
+                }
+            }
+        } else {
+            // Out of sync.  Request flash config.
+            printf("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
+            comManagerGetData(port, DID_FLASH_CONFIG, 0, 0, 0);
+        }
+    }
+}
+
+void ISDevice::UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg_)
+{
+    bool platformCfgUpdateIoConfig = flashCfg_.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    // Exclude from the checksum update the following which does not get saved in the flash config
+    flashCfg_.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    if (platformCfgUpdateIoConfig)
+    {   // Update ioConfig
+        imxPlatformConfigToFlashCfgIoConfig(&flashCfg_.ioConfig, flashCfg_.platformConfig);
+    }
+
+    // Update checksum
+    flashCfg_.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+}
+
+/**
+ * Populates the passed reference to a nvm_flash_cfg_t struct with the contents of this device's last known flash config
+ * @param flashCfg
+ * @return true if flashCfg was populated, and the flash checksum matches the remote device's checksum (they are synchronized).
+ *    False indicates that the resulting flash config cannot be trusted due to an inability to confirm synchronization
+ */
+bool ISDevice::FlashConfig(nvm_flash_cfg_t& flashCfg_)
+{
+    // Copy flash config
+    flashCfg_ = ISDevice::flashCfg;
+
+    // Indicate whether the port connection is valid, open, and the flash config is synchronized; otherwise false
+    return (port && serialPortIsOpen(port) && (sysParams.flashCfgChecksum == flashCfg.checksum));
+}
+
+bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
+    static_assert(sizeof(nvm_flash_cfg_t) % 4 == 0, "Size of nvm_flash_cfg_t must be a 4 bytes in size!!!");
+    uint32_t *newCfg = (uint32_t*)&flashCfg_;
+    uint32_t *curCfg = (uint32_t*)&(flashCfg);
+    int iSize = sizeof(nvm_flash_cfg_t) / 4;
+    bool failure = false;
+
+    bool platformCfgUpdateIoConfig = flashCfg.platformConfig & PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    // Exclude updateIoConfig bit from flash config and keep track of it separately so it does not affect whether the platform config gets uploaded
+    flashCfg.platformConfig &= ~PLATFORM_CFG_UPDATE_IO_CONFIG;
+
+    flashCfg.checksum = flashChecksum32(&flashCfg, sizeof(nvm_flash_cfg_t));
+
+    // Iterate over and upload flash config in 4 byte segments.  Upload only contiguous segments of mismatched data starting at `key` (i = 2).  Don't upload size or checksum.
+    for (int i = 2; i < iSize; i++) {
+        // Start with index 2 to exclude size and checksum
+        if (newCfg[i] != curCfg[i]) {
+            // Found start
+            uint8_t *head = (uint8_t*)&(newCfg[i]);
+
+            // Search for end
+            for (; i < iSize && newCfg[i] != curCfg[i]; i++);
+
+            // Found end
+            uint8_t *tail = (uint8_t*)&(newCfg[i]);
+            int size = tail-head;
+            int offset = head-((uint8_t*)newCfg);
+
+            if (platformCfgUpdateIoConfig &&
+                (head <= (uint8_t*)&(flashCfg_.platformConfig)) &&
+                (tail >  (uint8_t*)&(flashCfg_.platformConfig))) {
+                // Re-apply updateIoConfig bit prior to upload
+                flashCfg_.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
+            }
+
+            printf("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
+            failure = failure || fail;
+            flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress
+        }
+    }
+
+    flashCfgUpload = flashCfg_;
+    if (flashCfgUploadTimeMs != 0) {
+        // Update checksum
+        UpdateFlashConfigChecksum(flashCfg_);
+
+        // Save checksum to ensure upload happened correctly
+        if (flashCfgUploadTimeMs) {
+            flashCfgUploadChecksum = flashCfg_.checksum;
+        }
+    } else {
+        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+    }
+
+    // Update local copy of flash config
+    flashCfg = flashCfg_;
+
+    // Success
+    return !failure;
+}
+
+bool ISDevice::WaitForFlashSynced()
+{
+    if (!port)
+        return false;   // No device, no flash-sync
+
+    unsigned int startMs = current_timeMs();
+    while(!FlashConfigSynced())
+    {   // Request and wait for flash config
+        comManagerStep(port);
+
+        if ((current_timeMs() - startMs) > SYNC_FLASH_CFG_TIMEOUT_MS)
+        {   // Timeout waiting for flash config
+            printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
+
+            #if PRINT_DEBUG
+            ISDevice& device = m_comManagerState.devices[pHandle];
+            printf("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
+            printf("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum);
+            printf("device.flashCfgUploadTimeMs:       %u\n", device.flashCfgUploadTimeMs);
+            printf("device.flashCfgUploadChecksum:     %u\n", device.flashCfgUploadChecksum);
+            #endif
+            return false;
+        }
+        else
+        {   // Query DID_SYS_PARAMS
+            GetData(DID_SYS_PARAMS);
+            printf("Waiting for flash sync...\n");
+        }
+        SLEEP_MS(20);  // give some time for the device to respond.
+    }
+
+    return FlashConfigSynced();
+}
+
+/**
+ * @return true if there are "PENDING FLASH WRITES" waiting to clear, or no response from device.
+ */
+bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
+    if (!port || !serialPortIsOpen(port))
+        return false;
+
+    return ((sysParams.hdwStatus & HDW_STATUS_FLASH_WRITE_PENDING) || (sysParams.hdwStatus == 0));
 }
