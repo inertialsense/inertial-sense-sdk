@@ -1040,7 +1040,7 @@ string cInertialSenseDisplay::DataToStringIMU(const imu_t &imu, bool full)
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			imu.I.pqr[0] * C_RAD2DEG_F,		// P angular rate
 			imu.I.pqr[1] * C_RAD2DEG_F,		// Q angular rate
-			imu.I.pqr[2] * C_RAD2DEG_F);		// R angular rate
+			imu.I.pqr[2] * C_RAD2DEG_F);	// R angular rate
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, "\tAcc\t");
 		ptr += SNPRINTF(ptr, ptrEnd - ptr, PRINTV3_P1 "\n",
 			imu.I.acc[0],					// X acceleration
@@ -1726,23 +1726,19 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n index");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
     for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "          %d", i);
-    }
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   i[]");
-    for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10d", debug.i[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
     }
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   f[]");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
     for (int i = 0; i < 9; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10.4f", debug.f[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
     }
 
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n  lf[]");
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
     for (int i = 0; i < 3; i++) {
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, " %10.4lf", debug.lf[i]);
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
     }
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
 
@@ -1938,21 +1934,48 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%d) %s:      ", data->hdr.id, cISDataMappings::GetName(data->hdr.id));
-
-	if (m_editData.mapInfo->empty())
-	{
-		DISPLAY_SNPRINTF("(output not defined)\n");    // Data to string not defined in either ISDataMappings.cpp or ISDisplay.cpp
-	}
-	else
-	{
-		DISPLAY_SNPRINTF("W up, S down\n");
+	DISPLAY_SNPRINTF("(%d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::GetName(data->hdr.id));
 
 		data_mapping_string_t tmp;
 		for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
 		{
 			if (it == m_editData.mapInfoEnd)
 				break;
+
+		const data_info_t& info = it->second;
+
+		if (info.elementCount)
+		{	// Array
+			for (uint32_t i=0; i < info.elementCount; i++)
+			{
+				// Print value
+				if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
+				{	// Show keyboard value
+					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+				}
+				else
+				{	// Show received value
+					cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp, i, info.elementSize);
+					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+				}
+
+				// Print selection marker
+				if ((it == m_editData.mapInfoSelection) && (i == m_editData.selectionArrayIdx))
+				{
+					if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+					else                        { DISPLAY_SNPRINTF("*"); }
+				}
+				else
+				{
+					DISPLAY_SNPRINTF(" ");
+				}
+
+				// Print value name
+				DISPLAY_SNPRINTF(" %s[%d]\n", it->first.c_str(), i);
+			}
+		}
+		else
+		{	// Single element
 
 			// Print value
 			if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
@@ -1961,7 +1984,7 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 			}
 			else
 			{	// Show received value
-				cISDataMappings::DataToString(it->second, &(data->hdr), (uint8_t*)&d, tmp);
+				cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp);
 				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
 			}
 
@@ -2005,7 +2028,8 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	// printf("Keyboard input: '%c' %d\n", c, c);    // print key value for debug.  Comment out cltool_dataCallback() for this to print correctly.
 	// return;
 
-	if (!m_editData.readOnlyMode && ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || c == '.' || c == '-' ))
+	if ((c >= '0' && c <= '9') || 
+		(c >= 'a' && c <= 'f') || c == '.' || c == '-' )
 	{	// Number
 		m_editData.field += (char)c;
 		m_editData.editEnabled = true;
