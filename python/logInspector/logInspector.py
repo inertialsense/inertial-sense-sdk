@@ -399,6 +399,8 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS LLA', 'gpsLLA')
         self.addListItem('GPS 1 Stats', 'gpsStats')
         self.addListItem('GPS 2 Stats', 'gps2Stats')
+        self.addListItem('GPX Status', 'gpxStatus')
+        self.addListItem('GPX HDW Status', 'gpxHdwStatus')
         self.addListItem('RTK Pos Stats', 'rtkPosStats')
         self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')

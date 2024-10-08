@@ -4433,7 +4433,8 @@ enum eGPXHdwStatusFlags
 
     /** GNSS is faulting firmware update REQUIRED */
     GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
-
+    /**  */
+    GPX_HDW_STATUS_UNUSED                               = (int)0x00002000,
     /** System Reset is Required for proper function */
     GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
@@ -4442,9 +4443,7 @@ enum eGPXHdwStatusFlags
     /** Communications Tx buffer limited */
     GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
     /** Communications Rx buffer overrun */
-    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,
-
-    
+    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,    
     /** GPS1 PPS timepulse signal has not been received or is in error */
     GPX_HDW_STATUS_ERR_NO_GPS1_PPS                      = (int)0x00040000,
     /** GPS2 PPS timepulse signal has not been received or is in error */
@@ -4471,10 +4470,9 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_BIT_FAULT                            = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
     GPX_HDW_STATUS_BIT_MASK                             = (int)0x03000000,
-
+    GPX_HDW_STATUS_BIT_OFFSET                           = 24,
     /** Temperature outside spec'd operating range */
     GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
-
     /** Time synchronized by GPS PPS */
     GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x08000000,
 
@@ -4486,7 +4484,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x20000000,
     /** Reset from Hardware (NRST pin low) */
     GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
-
+    
     /** Critical System Fault - CPU error */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
