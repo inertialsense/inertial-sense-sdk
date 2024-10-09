@@ -3320,6 +3320,9 @@ typedef struct PACKED
     /** Reserved */
     uint8_t                 reserved[3];
 
+    /** Reserved */
+    uint32_t                reserved2[2];
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
@@ -4360,6 +4363,9 @@ typedef struct
 
     /** Reserved */
     uint8_t                 reserved[3];
+
+    /** Reserved */
+    uint32_t                reserved2[2];
 
 } gpx_flash_cfg_t;
 
