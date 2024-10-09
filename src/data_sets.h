@@ -1769,7 +1769,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_DEBUG \
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
-                                            | RMC_BITS_EVENT)
+                                            | RMC_BITS_EVENT \
+                                            | RMC_BITS_GPX_STATUS)
 #define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_WHEEL_ENCODER \
                                             | RMC_BITS_GROUND_VEHICLE)
@@ -1787,7 +1788,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
                                             | RMC_BITS_GPX_DEBUG \
                                             | RMC_BITS_GPX_PORT_MON \
-                                            | RMC_BITS_EVENT)
+                                            | RMC_BITS_EVENT \
+                                            | RMC_BITS_GPX_STATUS)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
