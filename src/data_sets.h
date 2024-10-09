@@ -4453,9 +4453,9 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_ERR_LOW_CNO_GPS1                     = (int)0x00100000,
     /** GPS2 signal strength low (<20)*/
     GPX_HDW_STATUS_ERR_LOW_CNO_GPS2                     = (int)0x00200000,
-    /** GPS1 signal irregular. High Cno standard deviation detected */
+    /** GPS1 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
     GPX_HDW_STATUS_ERR_CNO_GPS1_IR                      = (int)0x00400000,
-    /** GPS2 signal irregular. High Cno standard deviation detected */
+    /** GPS2 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
     GPX_HDW_STATUS_ERR_CNO_GPS2_IR                      = (int)0x00800000,
     /** GPS signal error mask*/
     GPX_HDW_STATUS_ERR_CNO_MASK                         = (int)0x00F00000,
