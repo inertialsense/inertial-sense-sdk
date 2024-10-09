@@ -43,6 +43,7 @@ public:
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
+		uint32_t		selectionArrayIdx;
 
 		bool            readOnlyMode;
 		bool            editEnabled;
