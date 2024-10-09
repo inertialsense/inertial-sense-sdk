@@ -2373,10 +2373,6 @@ enum eGPXBit_CMD{
     GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,       // Cause watchdog reset by stalling RTK task
     GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,       // Cause hard fault
     GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,       // Cause malloc failure
-
-    GPXBit_CMD_START_GPS_QUICK_TEST                     = 15,       // Starts GPS quick test. Checks to see if 
-
-
 };
 
 enum eGPXBit_test_mode{
@@ -2384,8 +2380,6 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_FAILURE                            = (int)8,
     GPXBit_test_mode_DONE                               = (int)9,
     GPXBit_test_mode_MANUFACTURING                      = (int)10,      // Standard manufacturing
-    GPXBit_test_mode_GPS_QT                             = (int)11,      // Quick GPS function test
-
 
     GPXBit_test_mode_SIM_GPS_NOISE                      = (int)100,     // Simulate CNO noise
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
@@ -4459,9 +4453,9 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_ERR_LOW_CNO_GPS1                     = (int)0x00100000,
     /** GPS2 signal strength low (<20)*/
     GPX_HDW_STATUS_ERR_LOW_CNO_GPS2                     = (int)0x00200000,
-    /** GPS1 signal irregular*/
+    /** GPS1 signal irregular. High Cno standard deviation detected */
     GPX_HDW_STATUS_ERR_CNO_GPS1_IR                      = (int)0x00400000,
-    /** GPS2 signal irregular*/
+    /** GPS2 signal irregular. High Cno standard deviation detected */
     GPX_HDW_STATUS_ERR_CNO_GPS2_IR                      = (int)0x00800000,
     /** GPS signal error mask*/
     GPX_HDW_STATUS_ERR_CNO_MASK                         = (int)0x00F00000,
