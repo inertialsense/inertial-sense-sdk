@@ -1169,6 +1169,8 @@ static void PopulateFlashConfigMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeUInt8, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeUInt8, uint32_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
@@ -1225,6 +1227,8 @@ static void PopulateGpxFlashCfgMappings(map_name_to_info_t mappings[DID_COUNT])
     ADD_MAP(m, totalSize, "reserved[0]", reserved[0], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved[1]", reserved[1], 0, DataTypeUInt8, uint8_t&, 0);
     ADD_MAP(m, totalSize, "reserved[2]", reserved[2], 0, DataTypeUInt8, uint8_t&, 0);
+    ADD_MAP(m, totalSize, "reserved2[0]", reserved2[0], 0, DataTypeUInt8, uint32_t&, 0);
+    ADD_MAP(m, totalSize, "reserved2[1]", reserved2[1], 0, DataTypeUInt8, uint32_t&, 0);
 
     ASSERT_SIZE(totalSize);
 }
