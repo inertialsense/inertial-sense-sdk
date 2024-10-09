@@ -112,11 +112,11 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 
 #define INIT_MAP(dtype, id) \
     typedef dtype MAP_TYPE; \
-    map_name_to_info_t& map = mappings[(id)]; \
-    map_index_to_info_t& idx = indices[(id)]; \
+    map_name_to_info_t& map = data_set[(id)].nameInfo; \
+    map_index_to_info_t& idx = data_set[(id)].indexInfo; \
     uint32_t totalSize = 0; \
     uint32_t fieldCount = 0; \
-	lookupSize[(id)] = sizeof(dtype);
+	data_set[(id)].size = sizeof(dtype);
 
 #if CPP11_IS_ENABLED
 
@@ -176,7 +176,6 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 #endif
 
 
-
 #if !PLATFOM_IS_EMBEDDED
 
 extern const unsigned char g_asciiToLowerMap[256];
@@ -195,22 +194,6 @@ struct sCaseInsensitiveCompare
 			return g_asciiToLowerMap[c1] < g_asciiToLowerMap[c2];
 		}
 	};
-
-	/*
-	size_t operator()(const std::string s) const
-	{
-		size_t hashCode = 5381;
-		char c;
-		const char* ptr = s.c_str();
-		const char* ptrEnd = ptr + s.size();
-		for (; ptr < ptrEnd; ptr++)
-		{
-			c = g_asciiToLowerMap[*ptr];
-			hashCode = ((hashCode << 5) + hashCode) + c;
-		}
-		return hashCode;
-	}
-	*/
 
 	// less than, not equal
 	bool operator() (const std::string& s1, const std::string& s2) const
@@ -250,7 +233,14 @@ typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_
 typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
-
+typedef struct
+{
+	uint32_t size;
+	uint32_t totalElementCount;
+	map_name_to_info_t nameInfo;
+	map_index_to_info_t indexInfo;
+	const data_info_t* timestampFields;
+} data_set_t;
 
 template <typename Dtype>
 class DataMapper
@@ -258,14 +248,14 @@ class DataMapper
 public:
     typedef Dtype MAP_TYPE;
 
-    DataMapper(map_name_to_info_t mappings[DID_COUNT], uint32_t lookupSize[DID_COUNT], map_index_to_info_t indices[DID_COUNT], uint32_t id) : map(mappings[id]), idx(indices[id]), mappedSize(0), fieldCount(0)
+    DataMapper(data_set_t data_set[DID_COUNT], uint32_t did) : dataSet(&data_set[did]), map(data_set[did].nameInfo), idx(data_set[did].indexInfo), totalSize(0), memberCount(0)
     {
-        lookupSize[id] = structSize = sizeof(MAP_TYPE);
+        data_set[did].size = structSize = sizeof(MAP_TYPE);
     }
 
     ~DataMapper()
 	{
-        assert((mappedSize == structSize) && "Size of mapped fields does not match struct size");
+        assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
 	}
 
     template <typename MemberType>
@@ -299,8 +289,9 @@ public:
 
         // Add the entry to the index
 		data_info_t &dinfo = map[name];
-        idx[fieldCount++] = &dinfo;
-        mappedSize += dataSize;
+        idx[memberCount++] = &dinfo;
+        totalSize += dataSize;
+		dataSet->totalElementCount++;
 
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
@@ -342,8 +333,9 @@ public:
         };
 
         // Add the entry to the index
-        idx[fieldCount++] = &(map[name]);
-        mappedSize += dataSize;
+        idx[memberCount++] = &(map[name]);
+        totalSize += dataSize;
+		dataSet->totalElementCount += elementCount;
 
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
@@ -353,47 +345,13 @@ public:
     }
 
 private:
-	uint32_t did;
-    map_name_to_info_t& map;  		// Reference to the specific mapping for this instance
-    map_index_to_info_t& idx; 		// Reference to the specific index for this instance
-    uint32_t structSize;    		// Size of the data set struct
-    uint32_t mappedSize;    		// Size of all mapped fields
-    uint32_t fieldCount;   			// Tracks the count of fields
+	data_set_t *dataSet = NULL;
+    map_name_to_info_t& map;        // Reference to the specific mapping for this instance
+    map_index_to_info_t& idx;       // Reference to the specific index for this instance
+    uint32_t structSize;            // Size of the data set struct. Used to compare against totalSize to ensure all members were included.
+    uint32_t totalSize;            // Size of all mapped fields
+    uint32_t memberCount;           // Number of members in struct
 };
-
-
-
-/*
-template <>
-struct equal_to<std::string> : public unary_function<std::string, bool>
-{
-	bool operator()(const std::string& s1, const std::string& s2) const
-	{
-		// we don't need unicode or fancy language handling here, and we do not want branching
-		// so we have hand-coded a highly performant NMEA case insensitive compare here.
-		// this custom code is 3x speed of lexicographical_compare
-		if (s1.size() != s2.size())
-		{
-			return false;
-		}
-
-		char c1, c2;
-		const char* ptr1 = s1.c_str();
-		const char* ptr2 = s2.c_str();
-
-		for (size_t i = 0; i < s1.size(); i++)
-		{
-			c1 = g_asciiToLowerMap[ptr1[i]];
-			c2 = g_asciiToLowerMap[ptr2[i]];
-			if (c1 != c2)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-};
-*/
 
 
 class cISDataMappings
@@ -442,6 +400,13 @@ public:
 	* @return the data id size or 0 if not found or unknown
 	*/
 	static uint32_t GetSize(uint32_t dataId);
+
+	/**
+	* Get the size of a given data id
+	* @param dataId the data id
+	* @return the data id size or 0 if not found or unknown
+	*/
+	static uint32_t TotalElementCount(uint32_t dataId);
 
 	/**
 	* Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  
@@ -528,10 +493,7 @@ private:
 
 	static const char* const m_dataIdNames[];
 
-	uint32_t m_lookupSize[DID_COUNT];
-	const data_info_t* m_timestampFields[DID_COUNT];
-	map_name_to_info_t m_lookupInfo[DID_COUNT];
-	map_index_to_info_t m_indexInfo[DID_COUNT];
+	data_set_t m_data_set[DID_COUNT];
 
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
@@ -553,7 +515,6 @@ private:
         return *(T*)in;
     #endif
     }
-
 
 #if PLATFORM_IS_EMBEDDED
 
