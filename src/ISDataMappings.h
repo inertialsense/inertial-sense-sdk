@@ -81,18 +81,17 @@ typedef enum
 */
 typedef struct
 {
-	uint32_t    dataOffset;
-	uint32_t    dataSize;
-	eDataType   dataType;
+	uint32_t    offset;
+	uint32_t    size;
+	eDataType   type;
 	uint32_t    elementCount;
 	uint32_t    elementSize;
-	eDataFlags  dataFlags;
+	eDataFlags  flags;
 	std::string name;
 	std::string units;			// Units (after conversion)
 	std::string description;
 	double conversion;			// Unit conversion when converting to string
 } data_info_t;
-
 
 CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 {
@@ -112,8 +111,12 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 
 #define INIT_MAP(dtype, id) \
     typedef dtype MAP_TYPE; \
-    map_name_to_info_t& map = data_set[(id)].nameInfo; \
-    map_index_to_info_t& idx = data_set[(id)].indexInfo; \
+    map_name_to_info_t&             map = data_set[(id)].nameInfo; \
+    map_index_to_info_t&            idx = data_set[(id)].indexInfo; \
+    map_element_to_info_t&          ele = data_set[(id)].elementInfo; \
+    map_element_to_info_index_t&    ide = data_set[(id)].elementInfoIndex; \
+	(void)ele; \
+	(void)ide; \
     uint32_t totalSize = 0; \
     uint32_t fieldCount = 0; \
 	data_set[(id)].size = sizeof(dtype);
@@ -227,19 +230,21 @@ struct sCaseInsensitiveCompare
 	}
 };
 
-
-// map of field name to data info
-typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
-typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;
+typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;     // map of field name to data info
+typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;                               // map of field index to data info pointer
+typedef std::map<uint32_t, data_info_t*> map_element_to_info_t;                             // map of total element index to data info pointer
+typedef std::map<uint32_t, uint32_t>     map_element_to_info_index_t;                       // map of total element index to data info element index
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 typedef struct
 {
-	uint32_t size;
-	uint32_t totalElementCount;
-	map_name_to_info_t nameInfo;
-	map_index_to_info_t indexInfo;
-	const data_info_t* timestampFields;
+	uint32_t                    size;
+	uint32_t                    totalElementCount;
+	map_name_to_info_t          nameInfo;
+	map_index_to_info_t         indexInfo;
+	map_element_to_info_t	    elementInfo;
+	map_element_to_info_index_t elementInfoIndex;
+	const data_info_t*          timestampFields;
 } data_set_t;
 
 template <typename Dtype>
@@ -248,7 +253,7 @@ class DataMapper
 public:
     typedef Dtype MAP_TYPE;
 
-    DataMapper(data_set_t data_set[DID_COUNT], uint32_t did) : dataSet(&data_set[did]), map(data_set[did].nameInfo), idx(data_set[did].indexInfo), totalSize(0), memberCount(0)
+    DataMapper(data_set_t data_set[DID_COUNT], uint32_t did) : ds(data_set[did]), totalSize(0), memberCount(0)
     {
         data_set[did].size = structSize = sizeof(MAP_TYPE);
     }
@@ -261,26 +266,26 @@ public:
     template <typename MemberType>
 	void AddMember(const std::string& name, 
 		MemberType member,
-		eDataType dataType,
+		eDataType type,
 		const std::string& units = "", 
 		const std::string& description = "",
-		int dataFlags = 0, 
+		int flags = 0, 
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
-		uint32_t dataSize = (uint32_t)sizeof(FieldType);
+		uint32_t size = (uint32_t)sizeof(FieldType);
 		uint32_t elementCount = 0; 	// Zero for single element 
-		uint32_t elementSize = dataSize;
+		uint32_t elementSize = size;
 
         // Populate the map with the new entry
-        map[name] = { 
+        ds.nameInfo[name] = { 
             offset,
-            dataSize,
-            dataType,
+            size,
+            type,
 			elementCount,
             elementSize,
-            eDataFlags(dataFlags), 
+            eDataFlags(flags), 
             name, 
             units, 
             description, 
@@ -288,44 +293,48 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t &dinfo = map[name];
-        idx[memberCount++] = &dinfo;
-        totalSize += dataSize;
-		dataSet->totalElementCount++;
-
+		data_info_t &dinfo = ds.nameInfo[name];
+        ds.indexInfo[memberCount++] = &dinfo;
+        totalSize += size;
+		{
+			ds.elementInfo[ds.totalElementCount] = &dinfo;
+			ds.elementInfoIndex[ds.totalElementCount] = elementCount;
+			ds.totalElementCount++;
+		}
+		
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
-		if (dataType != DATA_TYPE_STRING)
+		if (type != DATA_TYPE_STRING)
 		{
-			assert((s_eDataTypeSizes[dataType] != 0) && "Data type size invalid");
-			assert((s_eDataTypeSizes[dataType] == dinfo.dataSize) && "Data type size mismatch");
+			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSizes[type] == dinfo.size) && "Data type size mismatch");
 		}
     }
 
     template <typename MemberType>
 	void AddArray(const std::string& name, 
 		MemberType member,
-		eDataType dataType,
+		eDataType type,
 		uint32_t elementCount,
 		const std::string& units = "", 
 		const std::string& description = "",
-		int dataFlags = 0, 
+		int flags = 0, 
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
-		uint32_t dataSize = (uint32_t)sizeof(FieldType);
-		uint32_t elementSize = dataSize/elementCount;
+		uint32_t size = (uint32_t)sizeof(FieldType);
+		uint32_t elementSize = size/elementCount;
 
         // Populate the map with the new entry
-        map[name] = { 
+        ds.nameInfo[name] = { 
             offset,
-            dataSize, 
-            dataType,
+            size, 
+            type,
 			elementCount,
 			elementSize,
-            eDataFlags(dataFlags), 
+            eDataFlags(flags), 
             name, 
             units, 
             description, 
@@ -333,24 +342,28 @@ public:
         };
 
         // Add the entry to the index
-        idx[memberCount++] = &(map[name]);
-        totalSize += dataSize;
-		dataSet->totalElementCount += elementCount;
+		data_info_t &dinfo = ds.nameInfo[name];
+        ds.indexInfo[memberCount++] = &dinfo;
+        totalSize += size;
+		for (uint32_t i=0; i<elementCount; i++)
+		{
+			ds.elementInfo[ds.totalElementCount] = &dinfo;
+			ds.elementInfoIndex[ds.totalElementCount] = i;
+			ds.totalElementCount++;
+		}
 
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
-        assert(((s_eDataTypeSizes[dataType]) != 0) && "Data type size invalid");
-        assert(((s_eDataTypeSizes[dataType]*elementCount) == dataSize) && "Data type size mismatch");
+        assert(((s_eDataTypeSizes[type]) != 0) && "Data type size invalid");
+        assert(((s_eDataTypeSizes[type]*elementCount) == size) && "Data type size mismatch");
     }
 
 private:
-	data_set_t *dataSet = NULL;
-    map_name_to_info_t& map;        // Reference to the specific mapping for this instance
-    map_index_to_info_t& idx;       // Reference to the specific index for this instance
-    uint32_t structSize;            // Size of the data set struct. Used to compare against totalSize to ensure all members were included.
-    uint32_t totalSize;            // Size of all mapped fields
-    uint32_t memberCount;           // Number of members in struct
+	data_set_t& ds;
+    uint32_t structSize;                // Size of data set struct. Used to compare against totalSize to ensure all members were included.
+    uint32_t totalSize;                 // Size of mapped fields
+    uint32_t memberCount;               // Number of members in struct
 };
 
 
@@ -389,10 +402,10 @@ public:
 	static const map_index_to_info_t* GetIndexMapInfo(uint32_t dataId);
 
 	/**
-	* Get data info pointer based on data id and field index number
-	* @return the data info for data id field, or NULL if none found
+	* Get map pointer for a data id
+	* @return map pointer for the data id (or NULL if none found) and field index
 	*/
-	// static const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t dataId, uint32_t field);
+	static const data_info_t* GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &fieldIndex);
 
 	/**
 	* Get the size of a given data id

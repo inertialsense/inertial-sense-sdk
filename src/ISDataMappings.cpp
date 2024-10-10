@@ -2186,11 +2186,8 @@ const map_name_to_info_t* cISDataMappings::GetMapInfo(uint32_t did)
     }
 
     return &s_map->m_data_set[did].nameInfo;
-
 #else
-
     return &s_map.m_data_set[did].nameInfo;
-
 #endif
 }
 
@@ -2209,12 +2206,32 @@ const map_index_to_info_t* cISDataMappings::GetIndexMapInfo(uint32_t did)
     }
 
     return &s_map->m_data_set[did].indexInfo;
-
 #else
-
     return &s_map.m_data_set[did].indexInfo;
-
 #endif
+}
+
+const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &fieldIndex)
+{
+    if (did >= DID_COUNT)
+    {
+        return NULLPTR;
+    }
+
+#if PLATFORM_IS_EMBEDDED
+
+    if (s_map == NULLPTR)
+    {
+        s_map = new cISDataMappings();
+    }
+
+    data_set_t& data = s_map->m_data_set[did];
+#else
+    data_set_t& data = s_map.m_data_set[did];
+#endif
+
+    fieldIndex = data.elementInfoIndex[element];
+    return data.elementInfo[element];
 }
 
 // const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t did, uint32_t field)
@@ -2355,7 +2372,7 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
         return false;
     }
 
-    return StringToVariable(stringBuffer, stringLength, ptr, info.dataType, info.dataSize, elementIndex, elementSize, radix, json);
+    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, elementIndex, elementSize, radix, json);
 }
 
 bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex, int elementSize, int radix, bool json)
@@ -2466,13 +2483,13 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
     if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
     {
         // pick a default string
-        if (info.dataType == DATA_TYPE_STRING)
+        if (info.type == DATA_TYPE_STRING)
         {
             stringBuffer[0] = '"';
             stringBuffer[1] = '"';
             stringBuffer[2] = '\0';
         }
-        else if (info.dataType == DATA_TYPE_BINARY)
+        else if (info.type == DATA_TYPE_BINARY)
         {
             if (json)
             {
@@ -2493,7 +2510,7 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.dataType, info.dataFlags, ptr, datasetBuffer, info.dataSize, stringBuffer, elementIndex, elementSize, json);
+    return VariableToString(info.type, info.flags, ptr, datasetBuffer, info.size, stringBuffer, elementIndex, elementSize, json);
 }
 
 
@@ -2651,12 +2668,12 @@ double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf
         const uint8_t* ptr;
         if (CanGetFieldData(*timeStampField, hdr, (uint8_t*)buf, ptr))
         {
-            if (timeStampField->dataType == DATA_TYPE_F64)
+            if (timeStampField->type == DATA_TYPE_F64)
             {
                 // field is seconds, use as is
                 return protectUnalignedAssign<double>((void *)ptr);
             }
-            else if (timeStampField->dataType == DATA_TYPE_UINT32)
+            else if (timeStampField->type == DATA_TYPE_UINT32)
             {
                 // field is milliseconds, convert to seconds
                 return 0.001 * (*(uint32_t*)ptr);
@@ -2675,13 +2692,13 @@ bool cISDataMappings::CanGetFieldData(const data_info_t& info, const p_data_hdr_
     else if (hdr == NULL)
     {
         // assume buf is large enough for the full data structure
-        ptr = buf + info.dataOffset;
+        ptr = buf + info.offset;
         return true;
     }
     int32_t fullSize = (hdr->size == 0 ? GetSize(hdr->id) : hdr->size);
-    int32_t offset = (int32_t)info.dataOffset - (int32_t)hdr->offset;
+    int32_t offset = (int32_t)info.offset - (int32_t)hdr->offset;
     if (offset >= 0 && 
-        offset <= (fullSize - (int32_t)info.dataSize))
+        offset <= (fullSize - (int32_t)info.size))
     {
         ptr = buf + offset;
         return true;

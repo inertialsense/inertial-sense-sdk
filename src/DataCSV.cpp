@@ -171,7 +171,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
 			columnData = string(start + foundQuotes, i - foundQuotes);
 			start = i + 1;
 			const data_info_t& data = columnHeaders[index++];
-            if (data.dataOffset < MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, data))
+            if (data.offset < MAX_DATASET_SIZE && !cISDataMappings::StringToData(columnData.c_str(), (int)columnData.length(), &hdr, buf, data))
 			{
 				return false;
 			}
