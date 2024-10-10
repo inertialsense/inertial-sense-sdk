@@ -1193,7 +1193,7 @@ class logPlot:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(5, 1, sharex=True, gridspec_kw={'height_ratios': [1, 2, 2, 2, 1]})
+        ax = fig.subplots(6, 1, sharex=True, gridspec_kw={'height_ratios': [1, 2, 2, 2, 1, 1]})
         did_gps_vel = did_gps_pos+(DID_GPS1_VEL-DID_GPS1_POS)
         if did_gps_pos==DID_GPS1_POS:
             gps_num = 1
@@ -1205,6 +1205,7 @@ class logPlot:
         self.configureSubplot(ax[2], 'Position Accuracy (m)', 'm')
         self.configureSubplot(ax[3], 'Speed Accuracy: sAcc (m/s)', 'm/s')
         self.configureSubplot(ax[4], 'Status', '')
+        self.configureSubplot(ax[5], 'Mean CN0 Sigma', '')
 
         plot_legend = 1
         for d in self.active_devs:
@@ -1241,6 +1242,8 @@ class logPlot:
             ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x00004000) != 0))
             if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline UNSET')
             cnt += 1
+
+            ax[5].plot(time, self.getData(d, did_gps_pos, 'cnoMeanSigma'), label=self.log.serials[d])
 
         self.setPlotYSpanMin(ax[1], 5)
 
