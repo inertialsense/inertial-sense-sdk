@@ -108,6 +108,7 @@ struct DeviceLog
     std::vector<rtk_debug_t> rtkDebug;
     // std::vector<rtk_debug_2_t> rtkDebug2;
 //    std::vector<port_monitor_t> portMonitor;
+    std::vector<gpx_status_t> gpxStatus;
     std::vector<debug_array_t> gpxDebugArray;
 };
 

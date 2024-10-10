@@ -232,6 +232,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
         HANDLE_MSG( DID_RTK_DEBUG, dev_log_->rtkDebug);
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
+        HANDLE_MSG( DID_GPX_STATUS, dev_log_->gpxStatus );
         HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
 
         default:
@@ -325,6 +326,7 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
     forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
     // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
+    forward_message( DID_GPX_STATUS, dev_log_->gpxStatus, device_id );
     forward_message( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id );
 }
 
