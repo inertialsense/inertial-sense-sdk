@@ -1389,7 +1389,7 @@ class logPlot:
             if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline UNSET')
             cnt += 1
 
-            ax[5].plot(time, self.getData(d, did_gps_pos, 'cnoMeanSigma'), label="Test")
+            ax[5].plot(time, self.getData(d, did_gps_pos, 'cnoMeanSigma'), label=self.log.serials[d])
 
         self.setPlotYSpanMin(ax[1], 5)
 
