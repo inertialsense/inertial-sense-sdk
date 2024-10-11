@@ -27,8 +27,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
-// #define USE_IS_INTERNAL
-
 #ifdef USE_IS_INTERNAL
 #include "../../cpp/libs/families/imx/IS_internal.h"
 #include "../../cpp/libs/families/imx/ISDataMappingsInternal.h"
@@ -2561,8 +2559,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
 
     case DATA_TYPE_STRING:
     {
-        stringBuffer[0] = '"';
-        int tempIndex = 1;
+        int n = 0;
         char* bufPtr2 = (char*)(ptr);
         char* bufPtrEnd = bufPtr2 + _MIN(IS_DATA_MAPPING_MAX_STRING_LENGTH, dataSize) - 3;
         for (; bufPtr2 < bufPtrEnd && *bufPtr2 != '\0'; bufPtr2++)
@@ -2573,7 +2570,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
                 {
                     if (bufPtr2 < bufPtrEnd - 1)
                     {
-                        stringBuffer[tempIndex++] = '\\';
+                        stringBuffer[n++] = '\\';
                     }
                     else
                     {
@@ -2581,10 +2578,9 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
                     }
                 }
             }
-            stringBuffer[tempIndex++] = *bufPtr2;
+            stringBuffer[n++] = *bufPtr2;
         }
-        stringBuffer[tempIndex++] = '"';
-        stringBuffer[tempIndex] = '\0';
+        stringBuffer[n++] = '\0';
     } break;
 
     case DATA_TYPE_BINARY:
