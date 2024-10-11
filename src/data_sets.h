@@ -3512,6 +3512,7 @@ typedef struct
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
+    int32_t snrrange; // snr range from the highest snr satellite to consider (overrides snrmin if non-zero)
 
     /** AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
     int32_t modear;
