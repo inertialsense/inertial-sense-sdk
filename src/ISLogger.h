@@ -42,8 +42,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 // default logging path if none specified
-#define DEFAULT_LOGS_DIRECTORY "IS_logs"
-
+#define DEFAULT_LOGS_DIRECTORY          "IS_logs"
+#define DEFAULT_LOGS_MAX_FILE_SIZE      (1024 * 1024 * 5)	// 5 MB
 
 class cISLogger
 {
@@ -113,8 +113,8 @@ public:
 		const std::string& timestamp = g_emptyString,
 		const std::string& outputDir = g_emptyString,
 		eLogType logType = LOGTYPE_DAT,
+		uint32_t maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE,
 		float maxDiskSpacePercent = 0.5f,
-		uint32_t maxFileSize = 1024 * 1024 * 5,
 		bool useSubFolderTimestamp = true,
 		bool enableCsvIns2ToIns1Conversion = true);
 	const cLogStats& GetStats() { return m_logStats; }
