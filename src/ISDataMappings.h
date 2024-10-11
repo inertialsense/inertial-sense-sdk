@@ -111,20 +111,24 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
 
 #define INIT_MAP(dtype, id) \
     typedef dtype MAP_TYPE; \
-    map_name_to_info_t&             map = data_set[(id)].nameInfo; \
-    map_index_to_info_t&            idx = data_set[(id)].indexInfo; \
-    map_element_to_info_t&          ele = data_set[(id)].elementInfo; \
-    map_element_to_info_index_t&    ide = data_set[(id)].elementInfoIndex; \
-	(void)ele; \
-	(void)ide; \
+	data_set_t& ds = data_set[(id)]; \
     uint32_t totalSize = 0; \
-    uint32_t fieldCount = 0; \
-	data_set[(id)].size = sizeof(dtype);
+	uint32_t memberCount = 0; \
+	ds.size = sizeof(dtype);
 
 #if CPP11_IS_ENABLED
 
 // dataSize can be 0 for default size, must be set for string type
-#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion)  map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; idx[fieldCount++] = &(map[std::string(name)]); totalSize += sizeof(fieldType);
+#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion) \
+	ds.nameInfo[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; \
+	{ \
+		data_info_t *dinfo = &ds.nameInfo[name]; \
+		ds.indexInfo[memberCount++] = dinfo; \
+		ds.elementInfo[ds.totalElementCount] = dinfo; \
+		ds.elementInfoIndex[ds.totalElementCount] = 0; \
+		ds.totalElementCount++; \
+	} \
+	totalSize += sizeof(fieldType);
 
 #if 1
 // note when passing member type for arrays, it must be a reference, i.e. float&
@@ -239,11 +243,11 @@ typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 typedef struct
 {
 	uint32_t                    size;
-	uint32_t                    totalElementCount;
 	map_name_to_info_t          nameInfo;
 	map_index_to_info_t         indexInfo;
 	map_element_to_info_t	    elementInfo;
 	map_element_to_info_index_t elementInfoIndex;
+	uint32_t                    totalElementCount;
 	const data_info_t*          timestampFields;
 } data_set_t;
 
@@ -293,11 +297,11 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t &dinfo = ds.nameInfo[name];
-        ds.indexInfo[memberCount++] = &dinfo;
+		data_info_t *dinfo = &ds.nameInfo[name];
+        ds.indexInfo[memberCount++] = dinfo;
         totalSize += size;
 		{
-			ds.elementInfo[ds.totalElementCount] = &dinfo;
+			ds.elementInfo[ds.totalElementCount] = dinfo;
 			ds.elementInfoIndex[ds.totalElementCount] = elementCount;
 			ds.totalElementCount++;
 		}
@@ -308,7 +312,7 @@ public:
 		if (type != DATA_TYPE_STRING)
 		{
 			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
-			assert((s_eDataTypeSizes[type] == dinfo.size) && "Data type size mismatch");
+			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
 		}
     }
 
@@ -319,7 +323,7 @@ public:
 		uint32_t elementCount,
 		const std::string& units = "", 
 		const std::string& description = "",
-		int flags = 0, 
+        int flags = 0,
 		double conversion = 1.0) 	
     {
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
@@ -334,7 +338,7 @@ public:
             type,
 			elementCount,
 			elementSize,
-            eDataFlags(flags), 
+            eDataFlags(flags),
             name, 
             units, 
             description, 
@@ -342,12 +346,12 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t &dinfo = ds.nameInfo[name];
-        ds.indexInfo[memberCount++] = &dinfo;
+		data_info_t *dinfo = &ds.nameInfo[name];
+        ds.indexInfo[memberCount++] = dinfo;
         totalSize += size;
 		for (uint32_t i=0; i<elementCount; i++)
 		{
-			ds.elementInfo[ds.totalElementCount] = &dinfo;
+			ds.elementInfo[ds.totalElementCount] = dinfo;
 			ds.elementInfoIndex[ds.totalElementCount] = i;
 			ds.totalElementCount++;
 		}
@@ -360,10 +364,10 @@ public:
     }
 
 private:
-	data_set_t& ds;
-    uint32_t structSize;                // Size of data set struct. Used to compare against totalSize to ensure all members were included.
-    uint32_t totalSize;                 // Size of mapped fields
-    uint32_t memberCount;               // Number of members in struct
+	data_set_t& ds;						// data set reference
+    uint32_t structSize;                // size of data set struct. Used to compare against totalSize to ensure all members were included.
+    uint32_t totalSize;                 // size of mapped fields
+    uint32_t memberCount;               // number of members in struct
 };
 
 
