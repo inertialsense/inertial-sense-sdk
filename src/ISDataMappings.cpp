@@ -2179,7 +2179,6 @@ const map_name_to_info_t* cISDataMappings::GetMapInfo(uint32_t did)
     }
 
 #if PLATFORM_IS_EMBEDDED
-
     if (s_map == NULLPTR)
     {
         s_map = new cISDataMappings();
@@ -2199,7 +2198,6 @@ const map_index_to_info_t* cISDataMappings::GetIndexMapInfo(uint32_t did)
     }
 
 #if PLATFORM_IS_EMBEDDED
-
     if (s_map == NULLPTR)
     {
         s_map = new cISDataMappings();
@@ -2211,7 +2209,7 @@ const map_index_to_info_t* cISDataMappings::GetIndexMapInfo(uint32_t did)
 #endif
 }
 
-const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &fieldIndex)
+const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex)
 {
     if (did >= DID_COUNT)
     {
@@ -2219,7 +2217,6 @@ const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t ele
     }
 
 #if PLATFORM_IS_EMBEDDED
-
     if (s_map == NULLPTR)
     {
         s_map = new cISDataMappings();
@@ -2230,32 +2227,14 @@ const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t ele
     data_set_t& data = s_map.m_data_set[did];
 #endif
 
-    fieldIndex = data.elementInfoIndex[element];
+	if (data.elementInfo.find(element) == data.elementInfo.end())
+    {
+        return NULLPTR;
+    }
+
+    elementIndex = data.elementInfoIndex[element];
     return data.elementInfo[element];
 }
-
-// const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t did, uint32_t field)
-// {
-//     if (did >= DID_COUNT)
-//     {
-//         return NULLPTR;
-//     }
-
-// #if PLATFORM_IS_EMBEDDED
-
-//     if (s_map == NULLPTR)
-//     {
-//         s_map = new cISDataMappings();
-//     }
-
-//     return s_map->indexInfo[did][field];
-
-// #else
-
-//     return s_map.indexInfo[did][field];
-
-// #endif
-// }
 
 uint32_t cISDataMappings::GetSize(uint32_t did)
 {
@@ -2477,7 +2456,7 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex, int elementSize, bool json)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex, bool json)
 {
     const uint8_t* ptr;
     if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
@@ -2510,7 +2489,7 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.type, info.flags, ptr, datasetBuffer, info.size, stringBuffer, elementIndex, elementSize, json);
+    return VariableToString(info.type, info.flags, ptr, datasetBuffer, info.size, stringBuffer, elementIndex, info.elementSize, json);
 }
 
 

@@ -84,8 +84,8 @@ typedef struct
 	uint32_t    offset;
 	uint32_t    size;
 	eDataType   type;
-	uint32_t    elementCount;
-	uint32_t    elementSize;
+	uint32_t    elementCount;	// Number of elements in array.  Zero for single elements, not an array.
+	uint32_t    elementSize;	// Element size in bytes
 	eDataFlags  flags;
 	std::string name;
 	std::string units;			// Units (after conversion)
@@ -464,11 +464,10 @@ public:
 	* @param datasetBuffer packet buffer
 	* @param stringBuffer the buffer to hold the converted string
 	* @param elementIndex index into array
-	* @param elementSize size of elements in array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex = 0, int elementSize = 0, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex = 0, bool json = false);
 
 	/**
 	* Convert a variable to a string
