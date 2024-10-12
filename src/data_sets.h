@@ -1769,7 +1769,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPX_DEBUG \
                                             | RMC_BITS_GPS1_SAT \
                                             | RMC_BITS_GPS2_SAT \
-                                            | RMC_BITS_EVENT)
+                                            | RMC_BITS_EVENT \
+                                            | RMC_BITS_GPX_STATUS)
 #define RMC_PRESET_IMX_PPD_GROUND_VEHICLE   (RMC_PRESET_IMX_PPD \
                                             | RMC_BITS_WHEEL_ENCODER \
                                             | RMC_BITS_GROUND_VEHICLE)
@@ -1787,7 +1788,8 @@ typedef struct PACKED
                                             | RMC_BITS_GPS1_RTK_HDG_REL \
                                             | RMC_BITS_GPX_DEBUG \
                                             | RMC_BITS_GPX_PORT_MON \
-                                            | RMC_BITS_EVENT)
+                                            | RMC_BITS_EVENT \
+                                            | RMC_BITS_GPX_STATUS)
 
 /** (DID_RMC) Realtime message controller (RMC). */
 typedef struct PACKED
@@ -2322,6 +2324,7 @@ enum eGPXBit_resultsPos{
     GPXBit_resultsPos_UART,
     GPXBit_resultsPos_IO,
     GPXBit_resultsPos_GPS,
+
     GPXBit_resultsPos_FINISHED,
 
     GPXBit_resultsPos_CANCELED,
@@ -2329,15 +2332,17 @@ enum eGPXBit_resultsPos{
 };
 
 enum eGPXBit_results{
-    GPXBit_resultsBit_PPS1                  = (0x01 << GPXBit_resultsPos_PPS1),
-    GPXBit_resultsBit_PPS2                  = (0x01 << GPXBit_resultsPos_PPS2),
-    GPXBit_resultsBit_UART                  = (0x01 << GPXBit_resultsPos_UART),
-    GPXBit_resultsBit_IO                    = (0x01 << GPXBit_resultsPos_IO),
-    GPXBit_resultsBit_GPS                   = (0x01 << GPXBit_resultsPos_GPS),
-    GPXBit_resultsBit_FINISHED              = (0x01 << GPXBit_resultsPos_FINISHED),
-    GPXBit_resultsBit_CANCELED              = (0x01 << GPXBit_resultsPos_CANCELED),
-    GPXBit_resultsBit_ERROR                 = (0x01 << GPXBit_resultsPos_ERROR),
+    GPXBit_resultsBit_PPS1              = (0x01 << GPXBit_resultsPos_PPS1),
+    GPXBit_resultsBit_PPS2              = (0x01 << GPXBit_resultsPos_PPS2),
+    GPXBit_resultsBit_UART              = (0x01 << GPXBit_resultsPos_UART),
+    GPXBit_resultsBit_IO                = (0x01 << GPXBit_resultsPos_IO),
+    GPXBit_resultsBit_GPS               = (0x01 << GPXBit_resultsPos_GPS),
+    GPXBit_resultsBit_FINISHED          = (0x01 << GPXBit_resultsPos_FINISHED),
+    GPXBit_resultsBit_CANCELED          = (0x01 << GPXBit_resultsPos_CANCELED),
+    GPXBit_resultsBit_ERROR             = (0x01 << GPXBit_resultsPos_ERROR),
 };
+
+#define GPXBit_RESULT_GPS_QT_EXIT_Mask      GPXBit_resultsBit_PPS1 | GPXBit_resultsBit_PPS2
 
 enum eGPXBit_CMD{
     GPXBit_CMD_NONE                                     = 0,
@@ -2349,13 +2354,13 @@ enum eGPXBit_CMD{
     GPXBit_CMD_STOP                                     = 6,
 
     GPXBit_CMD_START_SIM_GPS_NOISE                      = 7,
-    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,     // Send duplicate message
-    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,     // Cause Tx buffer overflow on current serial port by sending too much data.
-    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,     // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,     // Cause watchdog reset by stalling COMM task
-    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,     // Cause watchdog reset by stalling RTK task
-    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,     // Cause hard fault
-    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,     // Cause malloc failure
+    GPXBit_CMD_START_COMMUNICATIONS_REPEAT              = 8,        // Send duplicate message
+    GPXBit_CMD_START_SERIAL_DRIVER_TX_OVERFLOW          = 9,        // Cause Tx buffer overflow on current serial port by sending too much data.
+    GPXBit_CMD_START_SERIAL_DRIVER_RX_OVERFLOW          = 10,       // Cause Rx buffer overflow on current serial port by blocking date read until the overflow occurs.
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_COMM_TASK       = 11,       // Cause watchdog reset by stalling COMM task
+    GPXBit_CMD_FORCE_SYS_FAULT_WATCHDOG_RTK_TASK        = 12,       // Cause watchdog reset by stalling RTK task
+    GPXBit_CMD_FORCE_SYS_FAULT_HARD_FAULT               = 13,       // Cause hard fault
+    GPXBit_CMD_FORCE_SYS_FAULT_MALLOC                   = 14,       // Cause malloc failure
 };
 
 enum eGPXBit_test_mode{
@@ -2363,6 +2368,7 @@ enum eGPXBit_test_mode{
     GPXBit_test_mode_FAILURE                            = (int)8,
     GPXBit_test_mode_DONE                               = (int)9,
     GPXBit_test_mode_MANUFACTURING                      = (int)10,      // Standard manufacturing
+
     GPXBit_test_mode_SIM_GPS_NOISE                      = (int)100,     // Simulate CNO noise
     GPXBit_test_mode_COMMUNICATIONS_REPEAT              = (int)101,     // Send duplicate message
     GPXBit_test_mode_SERIAL_DRIVER_TX_OVERFLOW          = (int)102,     // Cause Tx buffer overflow on current serial port by sending too much data.
@@ -4413,7 +4419,8 @@ enum eGPXHdwStatusFlags
 
     /** GNSS is faulting firmware update REQUIRED */
     GPX_HDW_STATUS_GNSS_FW_UPDATE_REQUIRED              = (int)0x00001000,
-
+    /**  */
+    GPX_HDW_STATUS_UNUSED                               = (int)0x00002000,
     /** System Reset is Required for proper function */
     GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED                = (int)0x00004000,
     /** System flash write staging or occuring now.  Processor will pause and not respond during a flash write, typically 150-250 ms. */
@@ -4422,11 +4429,24 @@ enum eGPXHdwStatusFlags
     /** Communications Tx buffer limited */
     GPX_HDW_STATUS_ERR_COM_TX_LIMITED                   = (int)0x00010000,
     /** Communications Rx buffer overrun */
-    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,
-    /** GPS PPS timepulse signal has not been received or is in error */
-    GPX_HDW_STATUS_ERR_NO_GPS_PPS                       = (int)0x00040000,
-    /** Time synchronized by GPS PPS */
-    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x00080000,
+    GPX_HDW_STATUS_ERR_COM_RX_OVERRUN                   = (int)0x00020000,    
+    /** GPS1 PPS timepulse signal has not been received or is in error */
+    GPX_HDW_STATUS_ERR_NO_GPS1_PPS                      = (int)0x00040000,
+    /** GPS2 PPS timepulse signal has not been received or is in error */
+    GPX_HDW_STATUS_ERR_NO_GPS2_PPS                      = (int)0x00080000,
+    /** GPS PPS error mask */
+    GPX_HDW_STATUS_ERR_PPS_MASK                         = (int)0x000C0000,
+
+    /** GPS1 signal strength low (<20)*/
+    GPX_HDW_STATUS_ERR_LOW_CNO_GPS1                     = (int)0x00100000,
+    /** GPS2 signal strength low (<20)*/
+    GPX_HDW_STATUS_ERR_LOW_CNO_GPS2                     = (int)0x00200000,
+    /** GPS1 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
+    GPX_HDW_STATUS_ERR_CNO_GPS1_IR                      = (int)0x00400000,
+    /** GPS2 signal irregular. High Cno standard deviation over 5 second period detected. 10x CNO mean sigma (i.e. >1.0 dBHz) */
+    GPX_HDW_STATUS_ERR_CNO_GPS2_IR                      = (int)0x00800000,
+    /** GPS signal error mask*/
+    GPX_HDW_STATUS_ERR_CNO_MASK                         = (int)0x00F00000,
 
     /** (BIT) Built-in self-test running */
     GPX_HDW_STATUS_BIT_RUNNING                          = (int)0x01000000,
@@ -4436,9 +4456,11 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_BIT_FAULT                            = (int)0x03000000,
     /** (BIT) Built-in self-test mask */
     GPX_HDW_STATUS_BIT_MASK                             = (int)0x03000000,
-
+    GPX_HDW_STATUS_BIT_OFFSET                           = 24,
     /** Temperature outside spec'd operating range */
     GPX_HDW_STATUS_ERR_TEMPERATURE                      = (int)0x04000000,
+    /** Time synchronized by GPS PPS */
+    GPX_HDW_STATUS_GPS_PPS_TIMESYNC                     = (int)0x08000000,
 
     /** Fault reset cause */
     GPX_HDW_STATUS_FAULT_RESET_MASK                     = (int)0x70000000,    
@@ -4448,7 +4470,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_FAULT_RESET_SOFT                     = (int)0x20000000,
     /** Reset from Hardware (NRST pin low) */
     GPX_HDW_STATUS_FAULT_RESET_HDW                      = (int)0x40000000,
-
+    
     /** Critical System Fault - CPU error */
     GPX_HDW_STATUS_FAULT_SYS_CRITICAL                   = (int)0x80000000,
 };
