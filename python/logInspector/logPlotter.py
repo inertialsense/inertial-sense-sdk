@@ -1192,6 +1192,152 @@ class logPlot:
         except:
             print(RED + "problem plotting hdwStatus: " + sys.exc_info()[0] + RESET)
 
+    def gpxStatus(self, fig=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('GPX Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+                time = getTimeFromTowMs(self.getData(d, DID_GPX_STATUS, 'timeOfWeekMs'))
+                status = self.getData(d, DID_GPX_STATUS, 'status')
+
+                ax.plot(time, -cnt * 1.5 + ((status & 0x0000000F) >> 0))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'Com parse err count')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((status & 0xFF000000) >> 24))
+                if r: ax.text(p1, -cnt * 1.5, 'Fatal event')
+                cnt += 1
+                cnt += 1
+                
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            self.saveFig(fig, 'GPX Status')
+        except:
+            print(RED + "problem plotting GPX status: " + sys.exc_info()[0] + RESET)
+
+    def gpxHdwStatus(self, fig=None):
+        try:
+            if fig is None:
+                fig = plt.figure()
+            ax = fig.subplots(1, 1, sharex=True)
+            fig.suptitle('GPX Hardware Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
+
+            for d in self.active_devs:
+                r = d == self.active_devs[0]    # plot text w/ first device
+                cnt = 0
+                time = getTimeFromTowMs(self.getData(d, DID_GPX_STATUS, 'timeOfWeekMs'))
+                hStatus = self.getData(d, DID_GPX_STATUS, 'hdwStatus')
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
+                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Sat RX')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Sat RX')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 TOW Valid')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000005) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 TOW Valid')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 4))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Reset Count')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 8))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Reset Count')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Fault')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Fault')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00001000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'FW Update Required')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00004000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Sys Reset Required')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00008000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Flash Write Pending')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 PPS')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 PPS')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00100000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 low CN0')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00200000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 low CN0')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00400000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 CN0 IR')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00800000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 CN0 IR')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x0300000) >> 24))
+                if r: ax.text(p1, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x04000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Err Temperature')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x08000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'GPS PPS Timesync')
+                cnt += 1
+                cnt += 1
+
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
+                cnt += 1
+                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
+                if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
+                cnt += 1
+                cnt += 1
+                
+            ax.grid(True)
+
+            self.setup_and_wire_legend()
+            self.saveFig(fig, 'GPX Hardware Status')
+        except:
+            print(RED + "problem plotting GPX hdwStatus: " + sys.exc_info()[0] + RESET)
+
+
     def gpsStats(self, fig=None, did_gps_pos=DID_GPS1_POS):
         # try:
         if fig is None:
@@ -1209,7 +1355,7 @@ class logPlot:
         self.configureSubplot(ax[2], 'Position Accuracy (m)', 'm')
         self.configureSubplot(ax[3], 'Speed Accuracy: sAcc (m/s)', 'm/s')
         self.configureSubplot(ax[4], 'Status', '')
-        self.configureSubplot(ax[5], 'Mean CN0 Sigma', '')
+        self.configureSubplot(ax[5], 'CNO Sigma', '')
 
         plot_legend = 1
         for d in self.active_devs:

@@ -9,7 +9,7 @@ DID_SYS_FAULT                   = 2
 DID_PIMU                        = 3
 DID_INS_1                       = 4
 DID_INS_2                       = 5
-DID_GPS1_RCVR_POS                = 6
+DID_GPS1_RCVR_POS               = 6
 DID_CONFIG                      = 7
 DID_NMEA_BCAST_PERIOD           = 8
 DID_RMC                         = 9
@@ -107,7 +107,9 @@ DID_GPX_FLASH_CFG               = 121
 DID_GPX_RTOS_INFO               = 122
 DID_GPX_STATUS                  = 123
 DID_GPX_DEBUG_ARRAY             = 124
-
+DID_GPX_BIT                     = 125
+DID_GPX_RMC                     = 126
+DID_GPX_PORT_MONITOR            = 127
 
 NUM_DIDS                        = 132
 
@@ -204,7 +206,14 @@ did_name_lookup = {
  DID_REFERENCE_PIMU : "referencePImu",
  DID_REFERENCE_MAGNETOMETER : "referenceMagnetometer",
  DID_EVB_LUNA_VELOCITY_CONTROL : "evbVelocityControl",
- DID_GPX_DEBUG_ARRAY : "debugArray",
+ DID_GPX_DEV_INFO : "gpxDevInfo",
+ DID_GPX_FLASH_CFG : "gpxFlashCfg",
+ DID_GPX_RTOS_INFO : "gpxRtosInfo",
+ DID_GPX_STATUS : "gpxStatus",
+ DID_GPX_DEBUG_ARRAY : "gpxDebugArray",
+ DID_GPX_BIT : "gpxBit",
+ DID_GPX_RMC : "gpxRmc",
+ DID_GPX_PORT_MONITOR : "gpxPortMonitor",
 }
 
 class eGpsNavFixStatus(Enum):
