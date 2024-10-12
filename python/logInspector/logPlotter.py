@@ -49,6 +49,7 @@ class logPlot:
         self.d = 1
         self.residual = False
         self.timestamp = False
+        self.xAxisSample = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
             self.legends = InteractiveLegend()
@@ -80,6 +81,9 @@ class logPlot:
 
     def enableTimestamp(self, enable):
         self.timestamp = enable
+
+    def enableXAxisSample(self, enable):
+        self.xAxisSample = enable
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -2747,13 +2751,13 @@ class logPlot:
         N = 4
         if refImuPresent:
             N = N + 2
-        ax = fig.subplots(N, 1, sharex=True)
+        ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
 
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS dt', 's')
         self.configureSubplot(ax[2], 'IMU Integration Period', 's')
-        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's')
+        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week' )
 
         for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
@@ -2794,11 +2798,20 @@ class logPlot:
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromTow(timeImu3[1:] + towOffset)
 
-            ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
-            ax[1].plot(timeGps, dtGps)
+            if self.xAxisSample:
+                xIns = np.arange(0, np.shape(dtIns)[0])
+                xGps = np.arange(0, np.shape(dtGps)[0])
+                xImu = np.arange(0, np.shape(deltaTimestamp)[0])
+            else:
+                xIns = timeIns
+                xGps = timeGps
+                xImu = timeImu
+
+            ax[0].plot(xIns, dtIns, label=self.log.serials[d])
+            ax[1].plot(xGps, dtGps)
             if integrationPeriod.size:
-                ax[2].plot(timeImu, integrationPeriod)
-            ax[3].plot(timeImu, deltaTimestamp)
+                ax[2].plot(xImu, integrationPeriod)
+            ax[3].plot(xImu, deltaTimestamp)
 
         self.setPlotYSpanMin(ax[0], 0.005)
         self.setPlotYSpanMin(ax[1], 0.005)
