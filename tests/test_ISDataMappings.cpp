@@ -20,7 +20,7 @@ TEST(ISDataMappings, StringToDataToString)
 		str1 = to_string(baudrate);
 
 		// Integer - string to data
-		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, radix);
+		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 0, radix);
 
 		EXPECT_EQ(d.flashCfg.ser0BaudRate, baudrate);
 
@@ -33,18 +33,18 @@ TEST(ISDataMappings, StringToDataToString)
 	}
 
 	{	// Floating Point Test
-		const data_info_t& info = flashMap.at("gps1AntOffset[1]");
+		const data_info_t& info = flashMap.at("gps1AntOffset");
 		float gps1AntOffset1 = 1.234f;
 		str1 = to_string(gps1AntOffset1);
 
 		// float - string to data
-		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, radix);
+		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 1, radix);
 
 		EXPECT_EQ(d.flashCfg.gps1AntOffset[1], gps1AntOffset1);
 
 		// float - data to string
 		data_mapping_string_t stringBuffer;
-		cISDataMappings::DataToString(info, NULL, (uint8_t*)&d, stringBuffer);
+		cISDataMappings::DataToString(info, NULL, (uint8_t*)&d, stringBuffer, 1);
 
 		str2 = string(stringBuffer);
 		float f1 = std::stof(str1);

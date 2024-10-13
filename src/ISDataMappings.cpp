@@ -1793,7 +1793,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int elementIndex, int elementSize, int radix, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int elementIndex, int radix, bool json)
 {
     const uint8_t* ptr;
     if (!CanGetFieldData(info, hdr, datasetBuffer, ptr))
@@ -1801,7 +1801,7 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
         return false;
     }
 
-    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, elementIndex, elementSize, radix, json);
+    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, elementIndex, info.elementSize, radix, json);
 }
 
 bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex, int elementSize, int radix, bool json)
