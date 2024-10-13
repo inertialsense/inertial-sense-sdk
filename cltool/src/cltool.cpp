@@ -991,7 +991,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                     int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
                     int substrIndex = 2 * (radix == 16); // skip 0x for hex
                     const string& str = keyAndValue[1].substr(substrIndex);
-                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, radix);
+                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, 0, radix);
                     cout << "Setting DID_FLASH_CONFIG." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
                     modified = true;
                 }
