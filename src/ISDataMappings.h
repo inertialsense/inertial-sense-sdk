@@ -431,7 +431,7 @@ public:
 	* Get map pointer for a data id
 	* @return map pointer for the data id (or NULL if none found) and field index
 	*/
-	static const data_info_t* GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &fieldIndex);
+	static const data_info_t* GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex);
 
 	/**
 	* Get the size of a given data id
