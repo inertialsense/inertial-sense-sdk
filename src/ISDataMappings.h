@@ -109,84 +109,8 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
     (uint32_t)0  // binary, must be set to actual size by caller
 };
 
-#define INIT_MAP(dtype, id) \
-    typedef dtype MAP_TYPE; \
-	data_set_t& ds = data_set[(id)]; \
-    uint32_t totalSize = 0; \
-	uint32_t memberCount = 0; \
-	ds.size = sizeof(dtype);
-
-#if CPP11_IS_ENABLED
-
-// dataSize can be 0 for default size, must be set for string type
-#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, flags, conversion) \
-	ds.nameInfo[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), (dataType), 0, 0, (eDataFlags)(flags), (name), (units), (description), (conversion) }; \
-	{ \
-		data_info_t *dinfo = &ds.nameInfo[name]; \
-		ds.indexInfo[memberCount++] = dinfo; \
-		ds.elementInfo[ds.totalElementCount] = dinfo; \
-		ds.elementInfoIndex[ds.totalElementCount] = 0; \
-		ds.totalElementCount++; \
-	} \
-	totalSize += sizeof(fieldType);
-
-#if 1
-// note when passing member type for arrays, it must be a reference, i.e. float&
-#define ADD_MAP_4(name, member, dataType, fieldType) \
-    ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, "", "", 0, 1.0); \
-    static_assert(std::is_same<decltype(MAP_TYPE::member), fieldType>::value, "Field type is an unexpected type"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(fieldType), "Field type is an unexpected size, sizeof(fieldType)"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(MAP_TYPE::member), "Field type is an unexpected size, sizeof(MAP_TYPE::member)"); \
-    static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)sizeof(fieldType) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
-#define ADD_MAP_5(name, member, dataType, fieldType, dataFlags) \
-    ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, "", "", dataFlags, 1.0); \
-    static_assert(std::is_same<decltype(MAP_TYPE::member), fieldType>::value, "Field type is an unexpected type"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(fieldType), "Field type is an unexpected size, sizeof(fieldType)"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(MAP_TYPE::member), "Field type is an unexpected size, sizeof(MAP_TYPE::member)"); \
-    static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)sizeof(fieldType) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
-#define ADD_MAP_6(name, member, dataType, fieldType, units, description) \
-    ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, 0, 1.0); \
-    static_assert(std::is_same<decltype(MAP_TYPE::member), fieldType>::value, "Field type is an unexpected type"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(fieldType), "Field type is an unexpected size, sizeof(fieldType)"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(MAP_TYPE::member), "Field type is an unexpected size, sizeof(MAP_TYPE::member)"); \
-    static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)sizeof(fieldType) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
-#define ADD_MAP_7(name, member, dataType, fieldType, units, description, dataFlags) \
-    ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, dataFlags, 1.0); \
-    static_assert(std::is_same<decltype(MAP_TYPE::member), fieldType>::value, "Field type is an unexpected type"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(fieldType), "Field type is an unexpected size, sizeof(fieldType)"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(MAP_TYPE::member), "Field type is an unexpected size, sizeof(MAP_TYPE::member)"); \
-    static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)sizeof(fieldType) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
-#define ADD_MAP_8(name, member, dataType, fieldType, units, description, dataFlags, conversion) \
-    ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, units, description, dataFlags, conversion); \
-    static_assert(std::is_same<decltype(MAP_TYPE::member), fieldType>::value, "Field type is an unexpected type"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(fieldType), "Field type is an unexpected size, sizeof(fieldType)"); \
-    static_assert((uint32_t)sizeof(fieldType) == sizeof(MAP_TYPE::member), "Field type is an unexpected size, sizeof(MAP_TYPE::member)"); \
-    static_assert(s_eDataTypeSizes[dataType] == 0 || (uint32_t)sizeof(fieldType) == s_eDataTypeSizes[dataType], "Data type size does not match member size");
-#define ASSERT_SIZE(s) assert(s == sizeof(MAP_TYPE))
-#else
-#define ADD_MAP_4(name, member, dataType, fieldType) 
-#define ADD_MAP_5(name, member, dataType, fieldType, units) 
-#define ADD_MAP_6(name, member, dataType, fieldType, units, description) 
-#define ADD_MAP_7(name, member, dataType, fieldType, units, description, dataFlags) 
-#define ADD_MAP_8(name, member, dataType, fieldType, units, description, dataFlags, conversion) 
-#define ASSERT_SIZE(s) 
-
-#endif
-
-
-#else
-
-#define ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, dataFlags) map[std::string(name)] = { (uint32_t)offsetof(MAP_TYPE, member), (uint32_t)sizeof(fieldType), dataType, (eDataFlags)dataFlags, name }; totalSize += sizeof(fieldType);
-#define ADD_MAP_4(name, member, dataType, fieldType, dataFlags) ADD_MAP_NO_VALIDATION(name, member, dataType, fieldType, dataFlags)
-#define ASSERT_SIZE(s) // not supported on VS < 2015
-
-#endif
-
-
 #if !PLATFOM_IS_EMBEDDED
-
 extern const unsigned char g_asciiToLowerMap[256];
-
 #endif
 
 /**
@@ -263,7 +187,7 @@ public:
     }
 
     ~DataMapper()
-	{
+    {
         assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
 	}
 
@@ -309,7 +233,7 @@ public:
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
-		if (type != DATA_TYPE_STRING)
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
 		{
 			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
 			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
@@ -359,8 +283,106 @@ public:
         // Static assertions for type and size validation
         static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
-        assert(((s_eDataTypeSizes[type]) != 0) && "Data type size invalid");
-        assert(((s_eDataTypeSizes[type]*elementCount) == size) && "Data type size mismatch");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+        {
+            assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
+            assert((s_eDataTypeSizes[type]*elementCount == size) && "Data type size mismatch");
+        }
+    }
+
+	void AddMember2(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "", 
+		const std::string& description = "",
+		int flags = 0, 
+		double conversion = 1.0,
+		uint32_t typeSize = 0)
+    {
+		uint32_t size = (typeSize ? typeSize : s_eDataTypeSizes[type]);
+		uint32_t elementCount = 0; 	// Zero for single element 
+		uint32_t elementSize = size;
+
+        // Populate the map with the new entry
+        ds.nameInfo[name] = { 
+            offset,
+            size,
+            type,
+			elementCount,
+            elementSize,
+            eDataFlags(flags), 
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t *dinfo = &ds.nameInfo[name];
+        ds.indexInfo[memberCount++] = dinfo;
+        totalSize += size;
+		{
+			ds.elementInfo[ds.totalElementCount] = dinfo;
+			ds.elementInfoIndex[ds.totalElementCount] = elementCount;
+			ds.totalElementCount++;
+		}
+		
+        // Static assertions for type and size validation
+        // static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        // static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+		{
+			assert((s_eDataTypeSizes[type] != 0 || (type == DATA_TYPE_STRING)) && "Data type size invalid");
+			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
+		}
+    }
+
+	void AddArray2(const std::string& name,
+		uint32_t offset,
+		eDataType type,
+		uint32_t elementCount,
+		const std::string& units = "", 
+		const std::string& description = "",
+        int flags = 0,
+		double conversion = 1.0,
+		uint32_t typeSize = 0)
+    {
+		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSizes[type]);
+		uint32_t size = elementSize * elementCount;
+
+        // Populate the map with the new entry
+        ds.nameInfo[name] = { 
+            offset,
+            size, 
+            type,
+			elementCount,
+			elementSize,
+            eDataFlags(flags),
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t *dinfo = &ds.nameInfo[name];
+        ds.indexInfo[memberCount++] = dinfo;
+        totalSize += size;
+		for (uint32_t i=0; i<elementCount; i++)
+		{
+			ds.elementInfo[ds.totalElementCount] = dinfo;
+			ds.elementInfoIndex[ds.totalElementCount] = i;
+			ds.totalElementCount++;
+		}
+
+        // Static assertions for type and size validation
+        // static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        // static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+		{
+			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSizes[type]*elementCount == size) && "Data type size mismatch");
+		}
     }
 
 private:
@@ -533,14 +555,10 @@ private:
     }
 
 #if PLATFORM_IS_EMBEDDED
-
 	// on embedded we cannot new up C++ runtime until after free rtos has started
 	static cISDataMappings* s_map;
-
 #else
-
 	static cISDataMappings s_map;
-
 #endif
 
 };
