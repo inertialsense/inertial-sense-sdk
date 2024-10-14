@@ -399,6 +399,8 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS LLA', 'gpsLLA')
         self.addListItem('GPS 1 Stats', 'gpsStats')
         self.addListItem('GPS 2 Stats', 'gps2Stats')
+        self.addListItem('GPX Status', 'gpxStatus')
+        self.addListItem('GPX HDW Status', 'gpxHdwStatus')
         self.addListItem('RTK Pos Stats', 'rtkPosStats')
         self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')
@@ -458,9 +460,12 @@ class LogInspectorWindow(QMainWindow):
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
         self.checkboxTime = QCheckBox("Timestamp", self)
         self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
+        self.xAxisSample = QCheckBox("XAxis Msg Index", self)
+        self.xAxisSample.stateChanged.connect(self.changeXAxisSampleCheckbox)
         self.LayoutOptions = QVBoxLayout()
         self.LayoutOptions.addWidget(self.checkboxResidual)
         self.LayoutOptions.addWidget(self.checkboxTime)
+        self.LayoutOptions.addWidget(self.xAxisSample)
         self.LayoutOptions.setSpacing(0)
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.LayoutOptions)
@@ -575,6 +580,11 @@ class LogInspectorWindow(QMainWindow):
     def changeTimeCheckbox(self, state):
         if self.plotter:
             self.plotter.enableTimestamp(state)
+            self.updatePlot()
+
+    def changeXAxisSampleCheckbox(self, state):
+        if self.plotter:
+            self.plotter.enableXAxisSample(state)
             self.updatePlot()
 
     def saveAllPlotsToFile(self):

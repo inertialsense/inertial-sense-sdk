@@ -12,7 +12,7 @@
 
 using namespace std;
 
-static const int s_maxFileSize = 5242880;
+static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
 static const float s_maxDiskSpacePercent = 0.5f;
 static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
@@ -51,7 +51,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger2;
 	EXPECT_TRUE(logger1.LoadFromDirectory(inputPath, inputLogType));
 	logger1.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxFileSize, s_maxDiskSpacePercent, s_useTimestampSubFolder, false));
 	logger1.CloseAllFiles();
 	logger2.CloseAllFiles();
 
@@ -60,7 +60,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger4;
 	EXPECT_TRUE(logger3.LoadFromDirectory(outputPath1, convertLogType));
 	logger3.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxFileSize, s_maxDiskSpacePercent, s_useTimestampSubFolder, false));
 	logger3.CloseAllFiles();
 	logger4.CloseAllFiles();
 

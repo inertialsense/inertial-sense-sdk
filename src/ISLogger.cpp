@@ -724,7 +724,7 @@ int g_copyReadDid;
  * @param enableCsvIns2ToIns1Conversion
  * @return
  */
-bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
+bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float maxLogSpacePercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
     if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
@@ -768,7 +768,12 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
             // CSV special cases 
             if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
             {
-                if (data->hdr.id == DID_INS_2)
+                static bool hasIns1 = false;
+                if (data->hdr.id == DID_INS_1)
+                {   // Indicate log contains DID_INS_1 so we don't need to convert from DID_INS_2
+                    hasIns1 = true;
+                }
+                if (data->hdr.id == DID_INS_2 && !hasIns1)
                 {	// Convert INS2 to INS1 when creating .csv logs
                     ins_1_t ins1;
                     ins_2_t ins2;
