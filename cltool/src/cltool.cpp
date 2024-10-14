@@ -1056,8 +1056,8 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                 else
                 {
                     const data_info_t& info = flashMap.at(keyAndValue[0]);
-                    if (arrayIndex >= info.elementCount)
-                    {   // Index out of bound
+                    if (info.elementCount && arrayIndex >= info.elementCount)
+                    {   // Array index out of bound
                         cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
                         return false;
                     }
