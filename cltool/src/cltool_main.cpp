@@ -827,7 +827,7 @@ static int cltool_dataStreaming()
                 if (g_inertialSenseDisplay.UploadNeeded())
                 {
                     cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
-                    inertialSenseInterface.SendData(edata->did, edata->data, edata->info.size, edata->info.offset);
+                    inertialSenseInterface.SendData(edata->did, edata->data, edata->info.elementSize, edata->info.offset + edata->selectionArrayIdx*edata->info.elementSize);
                 }
 
                 // If updating firmware, and all devices have finished, Exit

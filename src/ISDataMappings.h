@@ -467,7 +467,7 @@ public:
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int elementIndex = 0, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int elementIndex = 0, int radix = 10, bool json = false);
 
 	/**
 	* Convert a string to a variable.
@@ -475,13 +475,11 @@ public:
 	* @param stringLength the number of chars in stringBuffer
 	* @param dataBuffer data buffer pointer
 	* @param dataType data type
-	* @param elementIndex index into array
-	* @param elementSize size of elements in array
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex = 0, int elementSize = 0, int radix = 10, bool json = false);
+	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, bool json = false);
 
 	/**
 	* Convert dataset field to a string
@@ -493,7 +491,7 @@ public:
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, int elementIndex = 0, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int elementIndex = 0, bool json = false);
 
 	/**
 	* Convert a variable to a string
@@ -501,12 +499,10 @@ public:
 	* @param dataFlags data flags 
 	* @param dataBuffer data buffer pointer
 	* @param stringBuffer the buffer to hold the converted string
-	* @param elementIndex index into array
-	* @param elementSize size of elements in array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, int elementIndex = 0, int elementSize = 0, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
 
 	/**
 	* Get a timestamp from data if available
@@ -521,10 +517,9 @@ public:
 	* @param info metadata for the field to get
 	* @param hdr packet header
 	* @param buf packet buffer
-	* @param ptr receives the offset to get data at if the return value is true
-	* @return true if the data can be retrieved, false otherwise
+	* @return pointer to get data if valid or NULL if not valid.
 	*/
-	static bool CanGetFieldData(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* buf, const uint8_t*& ptr);
+	static const uint8_t* GetFieldData(const data_info_t& info, uint32_t elementIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
 private:
 	cISDataMappings();

@@ -2031,8 +2031,11 @@ void cInertialSenseDisplay::GetKeyboardInput()
 	if ((c >= '0' && c <= '9') || 
 		(c >= 'a' && c <= 'f') || c == '.' || c == '-' )
 	{	// Number
-		m_editData.field += (char)c;
-		m_editData.editEnabled = true;
+		if (!m_editData.readOnlyMode)
+		{
+			m_editData.field += (char)c;
+			m_editData.editEnabled = true;
+		}
 	}
 	else switch (c)
 	{
@@ -2048,14 +2051,14 @@ void cInertialSenseDisplay::GetKeyboardInput()
 			// val = std::stof(m_editData.field);
 			m_editData.info = m_editData.mapInfoSelection->second;
 			int radix = (m_editData.info.flags == DATA_FLAGS_DISPLAY_HEX ? 16 : 10);
-			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.type, m_editData.info.size, m_editData.selectionArrayIdx, m_editData.info.elementSize, radix);
+			cISDataMappings::StringToVariable(m_editData.field.c_str(), (int)m_editData.field.length(), m_editData.data, m_editData.info.type, m_editData.info.size, radix);
 			m_editData.uploadNeeded = true;
 
 			// Copy data into local Rx buffer
 			if (m_editData.pData.hdr.id == m_editData.did &&
 				m_editData.pData.hdr.size+ m_editData.pData.hdr.offset >= m_editData.info.size+m_editData.info.offset)
 			{
-				memcpy(m_editData.pData.ptr + m_editData.info.offset, m_editData.data, m_editData.info.elementSize);
+				memcpy(m_editData.pData.ptr + m_editData.info.offset + m_editData.selectionArrayIdx*m_editData.info.elementSize, m_editData.data, m_editData.info.elementSize);
 			}
 		}
 		StopEditing();
