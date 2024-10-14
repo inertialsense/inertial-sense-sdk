@@ -2,6 +2,7 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
+import glob
 
 __version__ = '0.0.1'
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
@@ -28,63 +29,86 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+# static_libraries = ['yaml']
+# static_lib_dir = '/system/lib'
+# libraries = []
+# library_dirs = ['/system/lib', '/system/lib64']
+#
+# if sys.platform == 'win32':
+#     libraries.extend(static_libraries)
+#     library_dirs.append(static_lib_dir)
+#     extra_objects = []
+# else: # POSIX
+#     extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
+
+source_files = ['src/log_reader.cpp',
+                '../../src/convert_ins.cpp',
+                '../../src/com_manager.cpp',
+                '../../src/data_sets.c',
+                '../../src/DataChunk.cpp',
+                '../../src/DataCSV.cpp',
+                '../../src/DataJSON.cpp',
+                '../../src/DataKML.cpp',
+                '../../src/DeviceLog.cpp',
+                '../../src/DeviceLogCSV.cpp',
+                '../../src/DeviceLogJSON.cpp',
+                '../../src/DeviceLogKML.cpp',
+                '../../src/DeviceLogRaw.cpp',
+                '../../src/DeviceLogSerial.cpp',
+                '../../src/ihex.c',
+                '../../src/ISComm.c',
+                '../../src/ISDataMappings.cpp',
+                '../../src/ISEarth.c',
+                '../../src/ISFileManager.cpp',
+                '../../src/ISFirmwareUpdater.cpp',
+                '../../src/ISLogFile.cpp',
+                '../../src/ISLogger.cpp',
+                '../../src/ISLogStats.cpp',
+                '../../src/ISMatrix.c',
+                '../../src/ISPose.c',
+                '../../src/ISSerialPort.cpp',
+                '../../src/ISStream.cpp',
+                '../../src/ISUtilities.cpp',
+                '../../src/linked_list.c',
+                '../../src/miniz.c',
+                '../../src/message_stats.cpp',
+                '../../src/protocol_nmea.cpp',
+                '../../src/serialPort.c',
+                '../../src/serialPortPlatform.c',
+                '../../src/time_conversion.cpp',
+                '../../src/tinystr.cpp',
+                '../../src/tinyxml.cpp',
+                '../../src/tinyxmlerror.cpp',
+                '../../src/tinyxmlparser.cpp',
+                '../../src/util/md5.cpp' ]
+
+# "../../src/yaml-cpp/*.cpp",
+# "../../src/yaml-cpp/*.h",
+# "../../src/yaml-cpp/contrib/*.cpp",
+# "../../src/yaml-cpp/contrib/*.h",
+# "../../src/yaml-cpp/node/*.cpp",
+# "../../src/yaml-cpp/node/*.h",
+source_files += glob.glob("../../src/yaml-cpp/*.cpp")
+source_files += glob.glob("../../src/yaml-cpp/**/*.cpp")
 
 ext_modules = [
     Extension('log_reader',
-        ['src/log_reader.cpp',
-         '../../src/convert_ins.cpp',
-         '../../src/com_manager.cpp',
-         '../../src/data_sets.c',
-         '../../src/DataChunk.cpp',
-         '../../src/DataCSV.cpp',
-         '../../src/DataJSON.cpp',
-         '../../src/DataKML.cpp',
-         '../../src/DeviceLog.cpp',
-         '../../src/DeviceLogCSV.cpp',
-         '../../src/DeviceLogJSON.cpp',
-         '../../src/DeviceLogKML.cpp',
-         '../../src/DeviceLogRaw.cpp',
-         '../../src/DeviceLogSerial.cpp',
-         '../../src/ihex.c',
-         '../../src/ISComm.c',
-         '../../src/ISDataMappings.cpp',
-         '../../src/ISEarth.c',
-         '../../src/ISFileManager.cpp',
-         '../../src/ISFirmwareUpdater.cpp',
-         '../../src/ISLogFile.cpp',
-         '../../src/ISLogger.cpp',
-         '../../src/ISLogStats.cpp',
-         '../../src/ISMatrix.c',
-         '../../src/ISPose.c',
-         '../../src/ISSerialPort.cpp',
-         '../../src/ISStream.cpp',
-         '../../src/ISUtilities.cpp',
-         '../../src/linked_list.c',
-         '../../src/message_stats.cpp',
-         '../../src/protocol_nmea.cpp',
-         '../../src/serialPort.c',
-         '../../src/serialPortPlatform.c',
-         '../../src/time_conversion.cpp',
-         '../../src/tinystr.cpp',
-         '../../src/tinyxml.cpp',
-         '../../src/tinyxmlerror.cpp',
-         '../../src/tinyxmlparser.cpp',
-         '../../src/util/md5.cpp',
-         '../../src/yaml-cpp/exceptions.cpp'
-         ],
+        sources = source_files,
         include_dirs = [
             # Path to pybind11 headers
             'include',
             '../src',
             '../../src',
             '../../src/libusb/libusb',
-            '../../src/yaml-cpp',
-            '../../src/yaml-cpp/node',
-            '../../src/yaml-cpp/contrib',
+            # '../../src/yaml-cpp',
+            # '../../src/yaml-cpp/contrib',
+            # '../../src/yaml-cpp/node',
+            # '../../src/yaml-cpp/node/detail',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],
         language='c++',
+        # extra_objects=extra_objects
     ),
 ]
 
@@ -166,8 +190,8 @@ setup(
         'pybind11>=2.2', 
         'pyqt5', 
         'pyserial', 
-        'pyyaml', 
-        'scipy', 
+        # 'pyyaml',
+        'scipy',
         'simplekml',
         'tqdm'],
     setup_requires=['pybind11>=2.2'],

@@ -112,7 +112,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		double timestamp2 = cISDataMappings::GetTimestamp(&(data2->hdr), data2->buf);
 		if (timestamp1 != timestamp2)
 		{
-			EXPECT_EQ(timestamp1, timestamp2) << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;
+			EXPECT_DOUBLE_EQ(timestamp1, timestamp2) << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;
 			// break;
 		}
 

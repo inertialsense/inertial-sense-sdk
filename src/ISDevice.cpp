@@ -508,7 +508,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
                 flashCfg_.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
             }
 
-            printf("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            printf("%s :: Sending DID_FLASH_CONFIG: size %d, offset %d\n", getIdAsString().c_str(), size, offset);
             int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
             flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress

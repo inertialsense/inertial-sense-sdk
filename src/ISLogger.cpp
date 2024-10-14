@@ -10,6 +10,9 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
 #include <ctime>
 #include <sstream>
 #include <sys/types.h>
@@ -17,9 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <functional>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -46,7 +47,6 @@ using namespace std;
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ		0
-
 
 const string cISLogger::g_emptyString;
 
@@ -266,6 +266,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
     }
     device.devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
     m_devices[device.devInfo.serialNumber] = device.devLogger;
+    setPortLogger(device.port, logPortData, (void*)this);
 
     return device.devLogger;
 }
@@ -548,7 +549,6 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     }
     return true;
 }
-
 
 p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
 {
@@ -875,3 +875,12 @@ std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {
     }
     return out;
 }
+
+std::shared_ptr<cDeviceLog> cISLogger::getDeviceLogByPort(port_handle_t port) {
+    for (auto& [serialNo, devLog] : m_devices) {
+        if (devLog->getDevice() && devLog->getDevice()->port == port)
+            return devLog;
+    }
+    return nullptr;
+}
+

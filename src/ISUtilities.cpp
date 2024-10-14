@@ -252,6 +252,17 @@ uint64_t current_timeUs() {
 #endif
 }
 
+/**
+ * Returns the number of milliseconds since the host processor was started (most commonly).
+ * This is uses the monotonic clock, which is guaranteed NOT to go back in time (such as if setting the system clock after startup)
+ * @return number of milliseconds
+ */
+uint32_t current_uptimeMs() {
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    return (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+}
+
 uint64_t timerUsStart() {
 #if PLATFORM_IS_WINDOWS
 	LARGE_INTEGER StartingTime;

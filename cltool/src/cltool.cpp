@@ -326,7 +326,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 printf("EVO Enabled!\n");
             }
             else if ((i + 1) < argc)
-                printf("EVO destination file: MISSING! See usage!\n"); 
+                printf("EVO destination file: MISSING! See usage!\n");
             else if ((i + 2) < argc)
                 printf("EVO SRC file type: MISSING! See usage!\n");
             else
@@ -463,6 +463,20 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-presetINS"))
         {
             g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-preset="))
+        {
+            if (startsWith(a, "-preset=INS"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            else if (startsWith(a, "-preset=PPD"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD;
+            else if (startsWith(a, "-preset=PPD_GROUND_VEHICLE"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            else if (startsWith(a, "-preset=PPD_RTK"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_RTK_DBG;
+            else if (startsWith(a, "-preset=PPD_GPX"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))

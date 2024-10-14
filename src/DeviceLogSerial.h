@@ -32,7 +32,7 @@ public:
 
     cDeviceLogSerial(port_handle_t port);
 
-    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
+    void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 
     bool CloseAllFiles() OVERRIDE;
 

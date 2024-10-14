@@ -95,6 +95,10 @@ public:
     void SetSysCmd(const uint32_t command);
     void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
+    bool isResetRequired() { return ((devInfo.hardwareType == IS_HARDWARE_TYPE_IMX) && (sysParams.hdwStatus & HDW_STATUS_SYSTEM_RESET_REQUIRED)) ||
+                             ((devInfo.hardwareType == IS_HARDWARE_TYPE_GPX) && (gpxStatus.hdwStatus & GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED)); }
+    bool reset() { SetSysCmd(SYS_CMD_SOFTWARE_RESET); return true; }
+
     bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
 
     // OH, ALL THE FLASHY-SYNCY STUFF
@@ -152,6 +156,7 @@ public:
 
     dev_info_t devInfo = { };
     sys_params_t sysParams = { };
+    gpx_status_t gpxStatus = { };
     nvm_flash_cfg_t flashCfg = { };
     nvm_flash_cfg_t flashCfgUpload = { };       // This is the flashConfig that was most recently sent to the device
     unsigned int flashCfgUploadTimeMs = 0;      // (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten

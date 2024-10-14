@@ -13,6 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <cstdio>
 #include <cstddef>
+#include <functional>
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
@@ -38,7 +39,7 @@ cDeviceLogRaw::cDeviceLogRaw(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdw
 };
 
 
-void cDeviceLogRaw::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLogRaw::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 //     m_chunk.Init(chunkSize);
     m_chunk.Clear();
@@ -82,6 +83,8 @@ bool cDeviceLogRaw::FlushToFile()
 
 bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
+    cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);    // call into the super, in case it needs to do something special
+
     // Parse messages for statistics and DID_DEV_INFO
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
     {
@@ -101,11 +104,11 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
-			case _PTYPE_UBLOX:
-				m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
-				globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-				cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-				break;
+            case _PTYPE_UBLOX:
+                m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr + 2);
+                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
+                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+                break;
 
             case _PTYPE_NMEA:
                 m_comm.rxPkt.dataHdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
@@ -113,15 +116,13 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
-			case _PTYPE_PARSE_ERROR:
-				if (m_showParseErrors)
-				{ 
-					if (m_comm.rxErrorCount>1) 
-					{ 
-						printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
-					}
-				}
-				break;
+            case _PTYPE_PARSE_ERROR:
+                if (m_showParseErrors) {
+                    if (m_comm.rxErrorCount > 1) {
+                        printf("SN%d SaveData() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount);
+                    }
+                }
+                break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
@@ -134,7 +135,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                     timestamp = cISDataMappings::GetTimestamp(&m_comm.rxPkt.dataHdr, dataPtr);
                     globalLogStats.LogDataAndTimestamp(m_comm.rxPkt.dataHdr.id, timestamp);
 
-                    cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                    // cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO) {
                         // if we have a device struct, let's use it, otherwise we'll just copy into our local copy
@@ -226,6 +227,8 @@ bool cDeviceLogRaw::WriteChunkToFile()
 
     // File byte size
     m_fileSize += fileBytes;
+
+    writeIndexChunk();
 
     return true;
 }
@@ -334,5 +337,3 @@ void cDeviceLogRaw::Flush()
         m_pFile->flush();
     }
 }
-
-
