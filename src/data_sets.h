@@ -2789,6 +2789,11 @@ enum eRTKConfigBits
     RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),	
 };
 
+#define DEFAULT_DYNAMIC_MODEL                   DYNAMIC_MODEL_AIRBORNE_4G
+#define DEFAULT_GNSS_MINIMUM_ELEVATION          (10.0f * C_DEG2RAD_F)  // (rad)
+#define DEFAULT_GNSS_RTK_CN0_MINIMUM            25  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     10  // (dBHz)
+
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
@@ -3320,11 +3325,14 @@ typedef struct PACKED
 	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
 	float                   magCalibrationQualityThreshold;
 
-    /** Sets the GNSS minimum CN0 (dBHz) for satellite observations used in the GPX RTK solution. If SYS_CFG_BIT is cleared (default behavior), this parameter is subtracted from the highest measured CN0 across all satellites to set the CN0 threshold.  If the SYS_CFG_BIT is set, this parameter is minimum CN0 threshold.  */
-    uint8_t                 gnssCn0Min;
+    /** (dBHz) GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution. */
+    uint8_t                 gnssCn0Minimum;
+
+    /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
+    uint8_t                 gnssCn0DynMinOffset;
 
     /** Reserved */
-    uint8_t                 reserved[3];
+    uint8_t                 reserved1[2];
 
     /** Reserved */
     uint32_t                reserved2[2];
@@ -4365,11 +4373,14 @@ typedef struct
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
 
-    /** Sets the GNSS minimum CN0 (dBHz) for satellite observations used in the GPX RTK solution. If SYS_CFG_BIT is cleared (default behavior), this parameter is subtracted from the highest measured CN0 across all satellites to set the CN0 threshold.  If the SYS_CFG_BIT is set, this parameter is minimum CN0 threshold.  */
-    uint8_t                 gnssCn0Min;
+    /** (dBHz) GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution. */
+    uint8_t                 gnssCn0Minimum;
+
+    /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
+    uint8_t                 gnssCn0DynMinOffset;
 
     /** Reserved */
-    uint8_t                 reserved[3];
+    uint8_t                 reserved1[2];
 
     /** Reserved */
     uint32_t                reserved2[2];
