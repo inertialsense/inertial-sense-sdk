@@ -17,15 +17,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 cmd_options_t g_commandLineOptions = {};
-serial_port_t g_serialPort;
+port_handle_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
 
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend)
 {
     (void)cmHandle;
-    (void)pHandle;
-    return serialPortWrite(&g_serialPort, bufferToSend->buf, bufferToSend->size);
+    (void)port;
+    return serialPortWrite(g_serialPort, bufferToSend->buf, bufferToSend->size);
 }
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
@@ -896,7 +896,7 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;

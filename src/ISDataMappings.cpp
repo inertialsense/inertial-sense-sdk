@@ -27,6 +27,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
+// #define USE_IS_INTERNAL
+
 #ifdef USE_IS_INTERNAL
 #include "../../cpp/libs/families/imx/IS_internal.h"
 #include "../../cpp/libs/families/imx/ISDataMappingsInternal.h"
@@ -1800,8 +1802,13 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, json);
 }
 
-bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
+bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex, int elementSize, int radix, bool json)
 {
+    if (elementIndex)
+    {   // Offset pointer into array
+        dataBuffer += elementSize * elementIndex;
+    }
+
     switch (dataType)
     {
     case DATA_TYPE_INT8:
@@ -1934,7 +1941,7 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 }
 
 
-bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, int elementIndex, int elementSize, bool json)
 {
     int precision;
     switch (dataType)

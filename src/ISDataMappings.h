@@ -441,6 +441,18 @@ public:
 	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex);
 
 	/**
+	* Get map pointer for a data id
+	* @return map pointer for the data id, or NULL if none found
+	*/
+	static const map_index_to_info_t* GetIndexMapInfo(uint32_t dataId);
+
+	/**
+	* Get data info pointer based on data id and field index number
+	* @return the data info for data id field, or NULL if none found
+	*/
+	// static const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t dataId, uint32_t field);
+
+	/**
 	* Get the size of a given data id
 	* @param did the data id
 	* @return the data id size or 0 if not found or unknown
@@ -475,11 +487,13 @@ public:
 	* @param stringLength the number of chars in stringBuffer
 	* @param dataBuffer data buffer pointer
 	* @param dataType data type
+	* @param elementIndex index into array
+	* @param elementSize size of elements in array
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, bool json = false);
+	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex = 0, int elementSize = 0, int radix = 10, bool json = false);
 
 	/**
 	* Convert dataset field to a string
@@ -499,10 +513,12 @@ public:
 	* @param dataFlags data flags 
 	* @param dataBuffer data buffer pointer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param elementIndex index into array
+	* @param elementSize size of elements in array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, int elementIndex = 0, int elementSize = 0, bool json = false);
 
 	/**
 	* Get a timestamp from data if available

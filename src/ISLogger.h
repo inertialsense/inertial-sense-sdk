@@ -52,7 +52,6 @@ public:
 	{
 		LOGTYPE_DAT = 0,	// serial
 		LOGTYPE_RAW,		// packetized serial
-		LOGTYPE_SDAT,		// sorted -- unsupported/deprecated, DO NOT USE!
 		LOGTYPE_CSV,
 		LOGTYPE_KML,
 		LOGTYPE_JSON
@@ -169,10 +168,6 @@ public:
 		else if (logTypeString == "kml")
 		{
 			return cISLogger::eLogType::LOGTYPE_KML;
-		}
-		else if (logTypeString == "sdat")
-		{
-			return cISLogger::eLogType::LOGTYPE_SDAT;
 		}
 		else if (logTypeString == "json")
 		{

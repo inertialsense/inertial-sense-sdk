@@ -1,41 +1,41 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(InertialSenseSDK)
 
 file(GLOB SOURCES_SDK
-        "src/*.c"
-        "src/*.cpp"
-        "src/*.h"
-        "src/protocol/*.cpp"
-        "src/protocol/*.h"
-        "src/util/*.cpp"
-        "src/util/*.h"
-        "hw-libs/bootloader/bootloaderShared.c"
-        "tests/runtime/*.cpp"
-        "tests/runtime/*.h"
-        "src/yaml-cpp/*.cpp"
-        "src/yaml-cpp/*.h"
-        "src/yaml-cpp/contrib/*.cpp"
-        "src/yaml-cpp/contrib/*.h"
-        "src/yaml-cpp/node/*.cpp"
-        "src/yaml-cpp/node/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.c"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/protocol/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/protocol/*.h"
+    "${CMAKE_CURRENT_LIST_DIR}/src/util/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/util/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/hw-libs/bootloader/bootloaderShared.c"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/runtime/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/contrib/*.h"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.cpp"
+	"${CMAKE_CURRENT_LIST_DIR}/src/yaml-cpp/node/*.h"
 )
 
 # Compile libusb from source
-if (WIN32)
-    file(GLOB SOURCES_LIB_USB
-            "src/libusb/libusb/*.h"
-            "src/libusb/libusb/*.c"
-            "src/libusb/libusb/os/*windows*"
-    )
-else ()
-    file(GLOB SOURCES_LIB_USB
-            "src/libusb/libusb/*.h"
-            "src/libusb/libusb/*.c"
-            "src/libusb/libusb/os/*linux*"
-            "src/libusb/libusb/os/*posix*"
-    )
-endif ()
+if(WIN32)
+	file(GLOB SOURCES_LIB_USB
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*windows*"
+	)
+else()
+	file(GLOB SOURCES_LIB_USB
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.h"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/*.c"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*linux*"
+		"${CMAKE_CURRENT_LIST_DIR}/src/libusb/libusb/os/*posix*"
+	)
+endif()
 
 # Ignore bootloader files
 # list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloader.*")
@@ -62,7 +62,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # Build using C11 and CXX20
-set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
