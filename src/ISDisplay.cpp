@@ -1958,25 +1958,54 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 			if (it == m_editData.mapInfoEnd)
 				break;
 
-		const data_info_t& info = it->second;
+			const data_info_t& info = it->second;
 
-		if (info.elementCount)
-		{	// Array
-			for (uint32_t i=0; i < info.elementCount; i++)
-			{
+			if (info.elementCount)
+			{	// Array
+				for (uint32_t i=0; i < info.elementCount; i++)
+				{
+					// Print value
+					if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
+					{	// Show keyboard value
+						DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+					}
+					else
+					{	// Show received value
+						cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp, i, info.elementSize);
+						DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+					}
+
+					// Print selection marker
+					if ((it == m_editData.mapInfoSelection) && (i == m_editData.selectionArrayIdx))
+					{
+						if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+						else                        { DISPLAY_SNPRINTF("*"); }
+					}
+					else
+					{
+						DISPLAY_SNPRINTF(" ");
+					}
+
+					// Print value name
+					DISPLAY_SNPRINTF(" %s[%d]\n", it->first.c_str(), i);
+				}
+			}
+			else
+			{	// Single element
+
 				// Print value
-				if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
+				if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
 				{	// Show keyboard value
 					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
 				}
 				else
 				{	// Show received value
-					cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp, i, info.elementSize);
+					cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp);
 					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
 				}
 
 				// Print selection marker
-				if ((it == m_editData.mapInfoSelection) && (i == m_editData.selectionArrayIdx))
+				if (it == m_editData.mapInfoSelection)
 				{
 					if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
 					else                        { DISPLAY_SNPRINTF("*"); }
@@ -1987,36 +2016,8 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 				}
 
 				// Print value name
-				DISPLAY_SNPRINTF(" %s[%d]\n", it->first.c_str(), i);
+				DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
 			}
-		}
-		else
-		{	// Single element
-
-			// Print value
-			if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
-			{	// Show keyboard value
-				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
-			}
-			else
-			{	// Show received value
-				cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp);
-				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
-			}
-
-			// Print selection marker
-			if (it == m_editData.mapInfoSelection)
-			{
-				if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
-				else                        { DISPLAY_SNPRINTF("*"); }
-			}
-			else
-			{
-				DISPLAY_SNPRINTF(" ");
-			}
-
-			// Print value name
-			DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
 		}
 	}
 
