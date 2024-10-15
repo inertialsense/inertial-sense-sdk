@@ -83,7 +83,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		dataIndex++;
 
 		if (data1 != NULL && 
-			cISDataMappings::GetSize(data1->hdr.id) == 0 &&
+			cISDataMappings::DataSize(data1->hdr.id) == 0 &&
 			convertLogType == cISLogger::eLogType::LOGTYPE_CSV)
 		{	// CSV logs don't save DIDs not defined in ISDataMapping.  Skip this one.
 			continue;
@@ -108,8 +108,8 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		}
 
 		// Compare Timestamps
-		double timestamp1 = cISDataMappings::GetTimestamp(&(data1->hdr), data1->buf);
-		double timestamp2 = cISDataMappings::GetTimestamp(&(data2->hdr), data2->buf);
+		double timestamp1 = cISDataMappings::Timestamp(&(data1->hdr), data1->buf);
+		double timestamp2 = cISDataMappings::Timestamp(&(data2->hdr), data2->buf);
 		if (timestamp1 != timestamp2)
 		{
 			EXPECT_DOUBLE_EQ(timestamp1, timestamp2) << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;

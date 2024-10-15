@@ -57,13 +57,13 @@ int cComDataBuffer::PushData(int pHandle, const p_data_t* data)
     cMutexLocker lock(&m_mutex);
 
     EnsureBuffers(pHandle);
-    float timestamp = (float)cISDataMappings::GetTimestamp(&data->hdr, data->ptr);
+    float timestamp = (float)cISDataMappings::Timestamp(&data->hdr, data->ptr);
     if (timestamp != 0.0f)
     {
         m_lastTimestamp = timestamp;
     }
 
-    uint32_t structSize = cISDataMappings::GetSize(data->hdr.id);
+    uint32_t structSize = cISDataMappings::DataSize(data->hdr.id);
     vector<uint8_t> dataBuffer;
     dataBuffer.reserve(structSize);
 

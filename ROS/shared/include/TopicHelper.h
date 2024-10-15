@@ -64,10 +64,10 @@ public:
 #ifdef ROS2
             rclcpp::Logger logger_stream_check = rclcpp::get_logger("stream_check");
             logger_stream_check.set_level(rclcpp::Logger::Level::Debug);
-            RCLCPP_DEBUG(logger_stream_check,"%s response received", cISDataMappings::GetDataSetName(did)); //???
+            RCLCPP_DEBUG(logger_stream_check,"%s response received", cISDataMappings::DataName(did)); //???
 #endif
 #ifdef ROS1
-            ROS_DEBUG("%s response received", cISDataMappings::GetDataSetName(did));
+            ROS_DEBUG("%s response received", cISDataMappings::DataName(did));
 #endif
         }
     }
