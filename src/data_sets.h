@@ -3320,6 +3320,15 @@ typedef struct PACKED
 	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
 	float                   magCalibrationQualityThreshold;
 
+    /** Minimum SNR (4x CN0) used in GPS RTK solution */
+    uint8_t                 gpsMinSnr;
+
+    /** Reserved */
+    uint8_t                 reserved[3];
+
+    /** Reserved */
+    uint32_t                reserved2[2];
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
@@ -4355,6 +4364,15 @@ typedef struct
 
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
+
+    /** Minimum SNR (4x CN0) used in GPS RTK solution */
+    uint8_t                 gpsMinSnr;
+
+    /** Reserved */
+    uint8_t                 reserved[3];
+
+    /** Reserved */
+    uint32_t                reserved2[2];
 
 } gpx_flash_cfg_t;
 
