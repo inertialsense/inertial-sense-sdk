@@ -109,7 +109,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
 {
     if (dataHdr != NULL)
     {
-        double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::GetTimestamp(dataHdr, dataBuf) : 0.0);
+		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::Timestamp(dataHdr, dataBuf) : 0.0);
         m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp, ptype);
 
         addIndexRecord();
@@ -282,7 +282,7 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
 {
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
         m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
 }
