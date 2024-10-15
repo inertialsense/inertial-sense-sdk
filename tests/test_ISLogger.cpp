@@ -83,7 +83,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		dataIndex++;
 
 		if (data1 != NULL && 
-			cISDataMappings::Size(data1->hdr.id) == 0 &&
+			cISDataMappings::DataSize(data1->hdr.id) == 0 &&
 			convertLogType == cISLogger::eLogType::LOGTYPE_CSV)
 		{	// CSV logs don't save DIDs not defined in ISDataMapping.  Skip this one.
 			continue;

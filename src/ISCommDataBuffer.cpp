@@ -63,7 +63,7 @@ int cComDataBuffer::PushData(int pHandle, const p_data_t* data)
         m_lastTimestamp = timestamp;
     }
 
-    uint32_t structSize = cISDataMappings::Size(data->hdr.id);
+    uint32_t structSize = cISDataMappings::DataSize(data->hdr.id);
     vector<uint8_t> dataBuffer;
     dataBuffer.reserve(structSize);
 

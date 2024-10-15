@@ -1590,11 +1590,7 @@ cISDataMappings::cISDataMappings()
     }
 }
 
-cISDataMappings::~cISDataMappings()
-{
-}
-
-const char* cISDataMappings::Name(uint32_t did)
+const char* cISDataMappings::DataName(uint32_t did)
 {
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
 
@@ -1606,7 +1602,7 @@ const char* cISDataMappings::Name(uint32_t did)
     return m_dataIdNames[did];
 }
 
-uint32_t cISDataMappings::Id(string name)
+uint32_t cISDataMappings::DataId(string name)
 {
 //     transform(name.begin(), name.end(), name.begin(), ::toupper);
 
@@ -1619,6 +1615,25 @@ uint32_t cISDataMappings::Id(string name)
     }
 
     return 0;
+}
+
+uint32_t cISDataMappings::DataSize(uint32_t did)
+{
+    if (did >= DID_COUNT)
+    {
+        return 0;
+    }
+
+#if PLATFORM_IS_EMBEDDED
+    if (s_map == NULLPTR)
+    {
+        s_map = new cISDataMappings();
+    }
+
+    return s_map->m_data_set[did].size;
+#else
+    return s_map.m_data_set[did].size;
+#endif
 }
 
 const map_name_to_info_t* cISDataMappings::MapInfo(uint32_t did)
@@ -1684,25 +1699,6 @@ const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t elemen
 
     elementIndex = data.elementInfoIndex[element];
     return data.elementInfo[element];
-}
-
-uint32_t cISDataMappings::Size(uint32_t did)
-{
-    if (did >= DID_COUNT)
-    {
-        return 0;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return s_map->m_data_set[did].size;
-#else
-    return s_map.m_data_set[did].size;
-#endif
 }
 
 uint32_t cISDataMappings::TotalElementCount(uint32_t did)
@@ -2131,7 +2127,7 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elem
         return buf + info.offset + elementIndex*info.elementSize;
     }
 
-    int32_t fullSize = (hdr->size == 0 ? Size(hdr->id) : hdr->size);
+    int32_t fullSize = (hdr->size == 0 ? DataSize(hdr->id) : hdr->size);
     int32_t offset = (int32_t)info.offset + elementIndex*info.elementSize - (int32_t)hdr->offset;
     if (offset >= 0 && 
         offset <= (fullSize - (int32_t)info.size))

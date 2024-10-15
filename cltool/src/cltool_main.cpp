@@ -192,7 +192,7 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[PREAMB] " RED "%02x %02x ", ((rxPkt->preamble >> 8) & 0xFF), (rxPkt->preamble & 0xFF));
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Flags: " YELLOW "%u" BLUE "] " RED "%02x ", rxPkt->flags, rxPkt->flags);
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " RED "%02x ", cISDataMappings::Name(rxPkt->dataHdr.id), rxPkt->dataHdr.id);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " RED "%02x ", cISDataMappings::DataName(rxPkt->dataHdr.id), rxPkt->dataHdr.id);
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Size: " YELLOW "%u" BLUE "] " RED "%02x %02x ", rxPkt->dataHdr.size, ((rxPkt->dataHdr.size >> 8) & 0xFF), (rxPkt->dataHdr.size & 0xFF));
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Offset: " YELLOW "%u" BLUE "] " RED "%02x %02x", rxPkt->dataHdr.offset, ((rxPkt->dataHdr.offset >> 8) & 0xFF), (rxPkt->dataHdr.offset & 0xFF));
 

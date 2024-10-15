@@ -123,7 +123,7 @@ int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t&
 	{
 		return 0;
 	}
-	if (cISDataMappings::Size(dataHdr.id) == 0)
+	if (cISDataMappings::DataSize(dataHdr.id) == 0)
 	{
 		return 0;
 	}
@@ -159,7 +159,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
 	string::const_iterator start = s.begin();
 	uint32_t index = 0;
 	hdr.offset = 0;
-	hdr.size = cISDataMappings::Size(hdr.id);
+	hdr.size = cISDataMappings::DataSize(hdr.id);
 	bool inQuotes = false;
 	uint32_t foundQuotes = 0;
 	memset(buf, 0, hdr.size);
@@ -199,7 +199,7 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 	const uint8_t* bufPtr = buf;
 	uint8_t tmpBuffer[MAX_DATASET_SIZE];
-	uint32_t size = cISDataMappings::Size(hdr.id);
+	uint32_t size = cISDataMappings::DataSize(hdr.id);
 	if (size > hdr.size)
 	{
 		// copy into temp buffer, zeroing out bytes that are not part of this packet

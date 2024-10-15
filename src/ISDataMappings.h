@@ -399,21 +399,28 @@ public:
 	/**
 	* Destructor
 	*/
-	virtual ~cISDataMappings();
+	virtual ~cISDataMappings() {}
 
 	/**
 	* Get a data set name from an id
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static const char* Name(uint32_t dataId);
+	static const char* DataName(uint32_t dataId);
 
 	/**
 	* Get a data set id from name
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t Id(std::string name);
+	static uint32_t DataId(std::string name);
+
+	/**
+	* Get the size of a given data id
+	* @param dataId the data id
+	* @return the data id size or 0 if not found or unknown
+	*/
+	static uint32_t DataSize(uint32_t dataId);
 
 	/**
 	* Get the info for a data id
@@ -432,13 +439,6 @@ public:
 	* @return map pointer for the data id (or NULL if none found) and field index
 	*/
 	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex);
-
-	/**
-	* Get the size of a given data id
-	* @param dataId the data id
-	* @return the data id size or 0 if not found or unknown
-	*/
-	static uint32_t Size(uint32_t dataId);
 
 	/**
 	* Get the size of a given data id
