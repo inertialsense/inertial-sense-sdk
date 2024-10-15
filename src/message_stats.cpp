@@ -116,7 +116,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 	case _PTYPE_INERTIAL_SENSE_DATA:
 		if (msgStats.isb.find(id) == msgStats.isb.end())
 		{	// Create new 
-			msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::GetDataSetName(id));
+			msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::DataName(id));
 		}
 
 		{	// Update count and timestamps

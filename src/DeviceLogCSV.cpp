@@ -48,7 +48,7 @@ void cDeviceLogCSV::InitDeviceForReading()
 	m_logs.clear();
 	for (uint32_t id = DID_NULL + 1; id < DID_COUNT; id++)
 	{
-		const char* dataSet = cISDataMappings::GetDataSetName(id);
+		const char* dataSet = cISDataMappings::DataName(id);
 		if (dataSet != NULL)
 		{
 			string dataSetRegex = string(dataSet) + "\\.csv$";
@@ -63,7 +63,7 @@ void cDeviceLogCSV::InitDeviceForReading()
 			{
 				cCsvLog log;
 				log.dataId = id;
-				log.dataSize = cISDataMappings::GetSize(log.dataId);
+				log.dataSize = cISDataMappings::DataSize(log.dataId);
 				for (size_t i = 0; i < infos.size(); i++)
 				{
 					files.push_back(infos[i].name);
@@ -101,7 +101,7 @@ bool cDeviceLogCSV::CloseAllFiles()
 
 bool cDeviceLogCSV::OpenNewFile(cCsvLog& log, bool readonly)
 {
-	const char* dataSetName = cISDataMappings::GetDataSetName(log.dataId);
+	const char* dataSetName = cISDataMappings::DataName(log.dataId);
 	if (dataSetName == NULL)
 	{
 		return false;

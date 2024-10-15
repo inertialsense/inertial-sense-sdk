@@ -174,7 +174,7 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
         {
         case _PTYPE_INERTIAL_SENSE_CMD:
         case _PTYPE_INERTIAL_SENSE_DATA:
-            statsFile->lprintf("%s - ID: %d (%s)\r\n", msgName, id, cISDataMappings::GetDataSetName(id));
+            statsFile->lprintf("%s - ID: %d (%s)\r\n", msgName, id, cISDataMappings::DataName(id));
             break;
 
         case _PTYPE_NMEA: 
