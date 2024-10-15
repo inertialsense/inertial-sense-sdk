@@ -37,7 +37,7 @@ public:
         if (!stream)
         {
             stream = true;
-            ROS_DEBUG("%s response received", cISDataMappings::GetName(did));
+            ROS_DEBUG("%s response received", cISDataMappings::DataName(did));
         }
     }
 

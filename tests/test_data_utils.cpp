@@ -33,7 +33,7 @@
 
 using namespace std;
 
-static const int s_maxFileSize = 5242880;
+static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
 static const float s_maxDiskSpacePercent = 0.5f;
 static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;

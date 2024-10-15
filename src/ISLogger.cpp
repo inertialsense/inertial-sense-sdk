@@ -493,7 +493,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+        double timestamp = cISDataMappings::Timestamp(dataHdr, dataBuf);
         m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
@@ -565,7 +565,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
         m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
     return data;
@@ -727,7 +727,7 @@ int g_copyReadDid;
  * @param enableCsvIns2ToIns1Conversion
  * @return
  */
-bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
+bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float maxLogSpacePercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
     if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
@@ -759,7 +759,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         {
 
 #if LOG_DEBUG_PRINT_READ
-            double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+            double timestamp = cISDataMappings::Timestamp(&(data->hdr), data->buf);
             printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
             g_copyReadDid = data->hdr.id;
 #endif
@@ -771,7 +771,12 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
             // CSV special cases 
             if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
             {
-                if (data->hdr.id == DID_INS_2)
+                static bool hasIns1 = false;
+                if (data->hdr.id == DID_INS_1)
+                {   // Indicate log contains DID_INS_1 so we don't need to convert from DID_INS_2
+                    hasIns1 = true;
+                }
+                if (data->hdr.id == DID_INS_2 && !hasIns1)
                 {	// Convert INS2 to INS1 when creating .csv logs
                     ins_1_t ins1;
                     ins_2_t ins2;
