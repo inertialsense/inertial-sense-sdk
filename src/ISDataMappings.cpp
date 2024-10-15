@@ -1594,7 +1594,7 @@ cISDataMappings::~cISDataMappings()
 {
 }
 
-const char* cISDataMappings::GetName(uint32_t did)
+const char* cISDataMappings::Name(uint32_t did)
 {
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
 
@@ -1606,22 +1606,22 @@ const char* cISDataMappings::GetName(uint32_t did)
     return m_dataIdNames[did];
 }
 
-uint32_t cISDataMappings::GetId(string name)
+uint32_t cISDataMappings::Id(string name)
 {
 //     transform(name.begin(), name.end(), name.begin(), ::toupper);
 
-    for (eDataIDs id = 0; id < DID_COUNT; id++)
+    for (eDataIDs did = 0; did < DID_COUNT; did++)
     {
-        if (strcmp(name.c_str(), m_dataIdNames[id]) == 0)
+        if (strcmp(name.c_str(), m_dataIdNames[did]) == 0)
         {    // Found match
-            return id;
+            return did;
         }
     }
 
     return 0;
 }
 
-const map_name_to_info_t* cISDataMappings::GetMapInfo(uint32_t did)
+const map_name_to_info_t* cISDataMappings::MapInfo(uint32_t did)
 {
     if (did >= DID_COUNT)
     {
@@ -1640,7 +1640,7 @@ const map_name_to_info_t* cISDataMappings::GetMapInfo(uint32_t did)
 #endif
 }
 
-const map_index_to_info_t* cISDataMappings::GetIndexMapInfo(uint32_t did)
+const map_index_to_info_t* cISDataMappings::IndexMapInfo(uint32_t did)
 {
     if (did >= DID_COUNT)
     {
@@ -1659,7 +1659,7 @@ const map_index_to_info_t* cISDataMappings::GetIndexMapInfo(uint32_t did)
 #endif
 }
 
-const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex)
+const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex)
 {
     if (did >= DID_COUNT)
     {
@@ -1686,7 +1686,7 @@ const data_info_t* cISDataMappings::GetElementMapInfo(uint32_t did, uint32_t ele
     return data.elementInfo[element];
 }
 
-uint32_t cISDataMappings::GetSize(uint32_t did)
+uint32_t cISDataMappings::Size(uint32_t did)
 {
     if (did >= DID_COUNT)
     {
@@ -2053,7 +2053,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
     return true;
 }
 
-double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
+double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 {
     if (hdr == NULL || buf == NULL || hdr->id == 0 || hdr->id >= DID_COUNT || hdr->size == 0)
     {
@@ -2113,7 +2113,7 @@ double cISDataMappings::GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf
     return 0.0;
 }
 
-const uint8_t* cISDataMappings::GetFieldData(const data_info_t& info, uint32_t elementIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
+const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elementIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
 {
     if (elementIndex && elementIndex >= info.elementCount)
     {

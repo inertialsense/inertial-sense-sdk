@@ -81,7 +81,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
             name = s.substr(0, pos);
         }
 
-        did = cISDataMappings::GetId(name);
+        did = cISDataMappings::Id(name);
     }
 
     if (did > DID_NULL && did < DID_COUNT)
@@ -125,7 +125,7 @@ void print_dids()
     for (eDataIDs id = 0; id < DID_COUNT; id++)
 #endif
     {
-        printf("(%d) %s\n", id, cISDataMappings::GetName(id));
+        printf("(%d) %s\n", id, cISDataMappings::Name(id));
     }
     cltool_outputHelp();
 }
@@ -962,7 +962,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 
     nvm_flash_cfg_t flashCfg;
     inertialSenseInterface.FlashConfig(flashCfg);
-    const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
+    const map_name_to_info_t& flashMap = *cISDataMappings::MapInfo(DID_FLASH_CONFIG);
 
     if (flashCfgString.length() < 2)
     {   // Display entire flash config

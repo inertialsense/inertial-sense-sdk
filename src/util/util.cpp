@@ -53,7 +53,7 @@ namespace utils {
         char* ptrEnd = buf + 2048;
         char* ptr = buf;
 
-        ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s (RAW):", hdr.id, cISDataMappings::GetName(hdr.id));
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "(%d) %s (RAW):", hdr.id, cISDataMappings::Name(hdr.id));
 
 #if DISPLAY_DELTA_TIME==1
         static double lastTime[2] = { 0 };
