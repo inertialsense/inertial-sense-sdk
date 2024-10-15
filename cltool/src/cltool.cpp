@@ -81,7 +81,7 @@ bool read_did_argument(stream_did_t *dataset, string s)
             name = s.substr(0, pos);
         }
 
-        did = cISDataMappings::Didme);
+        did = cISDataMappings::Did();
     }
 
     if (did > DID_NULL && did < DID_COUNT)
