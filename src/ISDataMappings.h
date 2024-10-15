@@ -413,7 +413,7 @@ public:
 	* @param dataId the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t Did(std::string name);
+	static uint32_t Id(std::string name);
 
 	/**
 	* Get the info for a data id
@@ -510,7 +510,7 @@ public:
 	* @param buf data buffer
 	* @return timestamp, or 0.0 if no timestamp available
 	*/
-    static double GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
+    static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
 	/**
 	* Check whether field data can be retrieved given a data packet

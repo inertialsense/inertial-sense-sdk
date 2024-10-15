@@ -1795,7 +1795,7 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
 
 bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int elementIndex, int radix, bool json)
 {
-    const uint8_t* ptr = GetFieldData(info, elementIndex, hdr, datasetBuffer);
+    const uint8_t* ptr = FieldData(info, elementIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         return false;
@@ -1903,7 +1903,7 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 
 bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int elementIndex, bool json)
 {
-    const uint8_t* ptr = GetFieldData(info, elementIndex, hdr, datasetBuffer);
+    const uint8_t* ptr = FieldData(info, elementIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         // pick a default string
@@ -2095,7 +2095,7 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 
     if (timeStampField != NULLPTR)
     {
-        const uint8_t* ptr = GetFieldData(*timeStampField, 0, hdr, (uint8_t*)buf);
+        const uint8_t* ptr = FieldData(*timeStampField, 0, hdr, (uint8_t*)buf);
         if (ptr)
         {
             if (timeStampField->type == DATA_TYPE_F64)
@@ -2131,7 +2131,7 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elem
         return buf + info.offset + elementIndex*info.elementSize;
     }
 
-    int32_t fullSize = (hdr->size == 0 ? GetSize(hdr->id) : hdr->size);
+    int32_t fullSize = (hdr->size == 0 ? Size(hdr->id) : hdr->size);
     int32_t offset = (int32_t)info.offset + elementIndex*info.elementSize - (int32_t)hdr->offset;
     if (offset >= 0 && 
         offset <= (fullSize - (int32_t)info.size))
