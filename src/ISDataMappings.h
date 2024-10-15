@@ -413,7 +413,7 @@ public:
 	* @param did the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t DId(std::string name);
+	static uint32_t Did(std::string name);
 
 	/**
 	* Get the size of a given data id
