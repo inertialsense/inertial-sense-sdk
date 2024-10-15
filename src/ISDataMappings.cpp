@@ -27,8 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
-#ifdef USE_IS_INTERNAL
-#include "../../cpp/libs/families/imx/IS_internal.h"
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
 #include "../../cpp/libs/families/imx/ISDataMappingsInternal.h"
 #endif
 
@@ -1428,7 +1427,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapDebugString(         m_data_set, DID_DEBUG_STRING);
     PopulateMapDebugArray(          m_data_set, DID_DEBUG_ARRAY);
     PopulateMapDebugArray(          m_data_set, DID_GPX_DEBUG_ARRAY);
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
     PopulateMapRtkDebug(            m_data_set, DID_RTK_DEBUG);
     PopulateMapRtkDebug(            m_data_set, DID_RTK_DEBUG);
     // PopulateMapRtkDebug2(        m_data_set, DID_RTK_DEBUG_2);
@@ -1455,14 +1454,14 @@ cISDataMappings::cISDataMappings()
 
     // EKF
     PopulateMapInl2States(          m_data_set, DID_INL2_STATES);
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
     PopulateMapInl2Status(          m_data_set, DID_INL2_STATUS);
     PopulateMapInl2Misc(            m_data_set, DID_INL2_MISC);
 #endif
     PopulateMapInl2NedSigma(        m_data_set, DID_INL2_NED_SIGMA);
     PopulateMapInl2MagObsInfo(      m_data_set, DID_INL2_MAG_OBS_INFO);
     PopulateMapRosCovariancePoseTwist(m_data_set, DID_ROS_COVARIANCE_POSE_TWIST);
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
     PopulateMapInl2Misc(        m_data_set, DID_INL2_MISC);
 #endif
     
@@ -1508,7 +1507,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsRaw(              m_data_set, DID_GPS2_RAW);
     PopulateMapGpsRaw(              m_data_set, DID_GPS_BASE_RAW);
 
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
 //  m_data_set[DID_RTK_STATE].size = sizeof(rtk_state_t);
     m_data_set[DID_RTK_CODE_RESIDUAL].size = sizeof(rtk_residual_t);
     m_data_set[DID_RTK_PHASE_RESIDUAL].size = sizeof(rtk_residual_t);
@@ -1540,7 +1539,7 @@ cISDataMappings::cISDataMappings()
     // m_data_set[DID_GPX_RTOS_INFO].size = sizeof(gpx_rtos_info_t);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
 
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
     PopulateMapUserPage0(           m_data_set, DID_NVR_USERPAGE_G0);
     PopulateMapUserPage1(           m_data_set, DID_NVR_USERPAGE_G1);
 #endif
@@ -1570,14 +1569,14 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
     PopulateMapSensorCompensation(  m_data_set, DID_SCOMP);
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
     // DID_CAL_SC_INFO
     // PopulateMapSensorTCalGroup(     m_data_set, DID_CAL_TEMP_COMP);
     PopulateMapSensorTCalSubsetGroup(m_data_set, DID_CAL_TEMP_COMP);
     PopulateMapSensorMCalGroup(     m_data_set, DID_CAL_MOTION);
 #endif
 
-#ifdef USE_IS_INTERNAL
+#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
 //     PopulateMapRtkState(            m_data_set, DID_RTK_STATE);
 //     PopulateMapRtkResidual(         m_data_set, DID_RTK_CODE_RESIDUAL);
 //     PopulateMapRtkResidual(         m_data_set, DID_RTK_PHASE_RESIDUAL);
