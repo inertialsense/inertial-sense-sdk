@@ -632,7 +632,10 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("wheelConfig.track_width", offsetof(nvm_flash_cfg_t, wheelConfig.track_width), DATA_TYPE_F32, "m", "Distance between the left and right wheels");
     mapper.AddMember2("wheelConfig.radius", offsetof(nvm_flash_cfg_t, wheelConfig.radius), DATA_TYPE_F32, "m", "Wheel radius");
     mapper.AddMember("debug", &nvm_flash_cfg_t::debug, DATA_TYPE_UINT8);
-
+    mapper.AddMember("gnssCn0Min", &nvm_flash_cfg_t::gnssCn0Min, DATA_TYPE_UINT8, "dBHZ", "Sets the GNSS minimum CN0 (dBHz) for satellite observations used in the GPX RTK solution. If SYS_CFG_BIT is cleared (default behavior), this parameter is subtracted from the highest measured CN0 across all satellites to set the CN0 threshold.  If the SYS_CFG_BIT is set, this parameter is minimum CN0 threshold.");
+    mapper.AddArray("reserved", &nvm_flash_cfg_t::reserved, DATA_TYPE_UINT8, 3);
+    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
+ 
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
     mapper.AddMember("checksum", &nvm_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");
@@ -678,6 +681,9 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
     mapper.AddMember("RTKCfgBits", &gpx_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("gnssCn0Min", &nvm_flash_cfg_t::gnssCn0Min, DATA_TYPE_UINT8, "dBHZ", "Sets the GNSS minimum CN0 (dBHz) for satellite observations used in the GPX RTK solution. If SYS_CFG_BIT is cleared (default behavior), this parameter is subtracted from the highest measured CN0 across all satellites to set the CN0 threshold.  If the SYS_CFG_BIT is set, this parameter is minimum CN0 threshold.");
+    mapper.AddArray("reserved", &nvm_flash_cfg_t::reserved, DATA_TYPE_UINT8, 3);
+    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
 
     // Keep at end
     mapper.AddMember("size", &gpx_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");

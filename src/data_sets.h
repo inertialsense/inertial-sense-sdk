@@ -3320,8 +3320,8 @@ typedef struct PACKED
 	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
 	float                   magCalibrationQualityThreshold;
 
-    /** Minimum SNR (4x CN0) used in GPS RTK solution */
-    uint8_t                 gpsMinSnr;
+    /** Sets the GNSS minimum CN0 (dBHz) for satellite observations used in the GPX RTK solution. If SYS_CFG_BIT is cleared (default behavior), this parameter is subtracted from the highest measured CN0 across all satellites to set the CN0 threshold.  If the SYS_CFG_BIT is set, this parameter is minimum CN0 threshold.  */
+    uint8_t                 gnssCn0Min;
 
     /** Reserved */
     uint8_t                 reserved[3];
@@ -4365,8 +4365,8 @@ typedef struct
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
 
-    /** Minimum SNR (4x CN0) used in GPS RTK solution */
-    uint8_t                 gpsMinSnr;
+    /** Sets the GNSS minimum CN0 (dBHz) for satellite observations used in the GPX RTK solution. If SYS_CFG_BIT is cleared (default behavior), this parameter is subtracted from the highest measured CN0 across all satellites to set the CN0 threshold.  If the SYS_CFG_BIT is set, this parameter is minimum CN0 threshold.  */
+    uint8_t                 gnssCn0Min;
 
     /** Reserved */
     uint8_t                 reserved[3];
