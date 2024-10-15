@@ -1602,7 +1602,7 @@ const char* cISDataMappings::DataName(uint32_t did)
     return m_dataIdNames[did];
 }
 
-uint32_t cISDataMappings::DataId(string name)
+uint32_t cISDataMappings::Did(string name)
 {
 //     transform(name.begin(), name.end(), name.begin(), ::toupper);
 
@@ -1720,9 +1720,9 @@ uint32_t cISDataMappings::TotalElementCount(uint32_t did)
 #endif
 }
 
-uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t dataId)
+uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
 {
-    switch (dataId)
+    switch (did)
     {
     case DID_DEV_INFO:
     case DID_GPS1_VERSION:

@@ -403,36 +403,36 @@ public:
 
 	/**
 	* Get a data set name from an id
-	* @param dataId the data id to get a data set name from
+	* @param did the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static const char* DataName(uint32_t dataId);
+	static const char* DataName(uint32_t did);
 
 	/**
 	* Get a data set id from name
-	* @param dataId the data id to get a data set name from
+	* @param did the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t DataId(std::string name);
+	static uint32_t DId(std::string name);
 
 	/**
 	* Get the size of a given data id
-	* @param dataId the data id
+	* @param did the data id
 	* @return the data id size or 0 if not found or unknown
 	*/
-	static uint32_t DataSize(uint32_t dataId);
+	static uint32_t DataSize(uint32_t did);
 
 	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* MapInfo(uint32_t dataId);
+	static const map_name_to_info_t* MapInfo(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id, or NULL if none found
 	*/
-	static const map_index_to_info_t* IndexMapInfo(uint32_t dataId);
+	static const map_index_to_info_t* IndexMapInfo(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
@@ -442,17 +442,17 @@ public:
 
 	/**
 	* Get the size of a given data id
-	* @param dataId the data id
+	* @param did the data id
 	* @return the data id size or 0 if not found or unknown
 	*/
-	static uint32_t TotalElementCount(uint32_t dataId);
+	static uint32_t TotalElementCount(uint32_t did);
 
 	/**
 	* Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  
-	* @param dataId the data id
+	* @param did the data id
 	* @return the default period multiple
 	*/
-	static uint32_t DefaultPeriodMultiple(uint32_t dataId);
+	static uint32_t DefaultPeriodMultiple(uint32_t did);
 
 	/**
 	* Convert a string to a data field inside a data set.
