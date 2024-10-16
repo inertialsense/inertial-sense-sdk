@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-
-from logInspector import LogInspectorWindow
-
 import sys, os, signal, ctypes
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QCheckBox
 from PyQt5.QtWidgets import QApplication
 
+from logInspector import LogInspectorWindow
+# import logInspector as logInspector
 
 class ChooseDevsDialog(QDialog):
     def __init__(self, plotter, parent=None):
@@ -161,7 +161,8 @@ def kill_handler(*args):
     instance = QApplication.instance()
     instance.quit()
 
-if __name__ == '__main__':
+
+def main():
     if sys.version[0] != '3':
         raise Exception("You must use Python 3. The current version is " + sys.version)
 
@@ -190,3 +191,6 @@ if __name__ == '__main__':
         main.load(directory)
 
     app.exec()
+
+if __name__ == '__main__':
+    main()

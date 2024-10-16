@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
-import sys, os, signal, ctypes, shutil, json, io, traceback, yaml, subprocess, re
+import sys, os, signal, ctypes
+
+import shutil, json, io, traceback, yaml, subprocess, re
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QTreeView, QFileSystemModel,\
     QHBoxLayout, QMainWindow, QSizePolicy, QSpacerItem, QFileDialog, QMessageBox, QLabel, QAbstractItemView, QMenu,\
@@ -16,16 +18,13 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import matplotlib.pyplot as plt
 import numpy as np
 
-from logReader import Log
-from logPlotter import logPlot
-
 file_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.normpath(file_path + '/..'))
-sys.path.append(os.path.normpath(file_path + '/../ci_hdw'))
-sys.path.append(os.path.normpath(file_path + '/../math/src'))
-sys.path.append(os.path.normpath(file_path + '/../supernpp'))
+sys.path.insert(0, os.path.normpath(file_path + '/..'))
+sys.path.insert(0, os.path.normpath(file_path + '/../..'))
 
-from pylib.data_sets import *
+from inertialsense.logInspector.logPlotter import logPlot
+from inertialsense.logs.logReader import Log
+from inertialsense.tools.data_sets import *
 
 START_MODE_HOT = 0
 START_MODE_COLD = 1
@@ -43,12 +42,9 @@ def openFolderWithFileBrowser(path):
 
 def cleanFolder(path, toplevel=True):
     containsDAT = False
-    containsSDAT = False
     for fname in os.listdir(path):
         if fname.endswith('.dat'):
             containsDAT = True
-        if fname.endswith('.sdat'):
-            containsSDAT = True
 
     for fname in os.listdir(path):
         fpath = os.path.join(path, fname)
@@ -58,14 +54,9 @@ def cleanFolder(path, toplevel=True):
             else:
                 cleanFolder(fpath, False)
         else:
-            # Remove .csv if .dat or .sdat exist
-            if containsDAT or containsSDAT:
-                if fname.endswith('.csv'):
-                    print('Deleting: ' + fpath)
-                    os.remove(fpath)
-            # Remove .sdat if .dat exist
+            # Remove .csv if .dat exist
             if containsDAT:
-                if fname.endswith('.sdat'):
+                if fname.endswith('.csv'):
                     print('Deleting: ' + fpath)
                     os.remove(fpath)
     if toplevel:
@@ -399,8 +390,6 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS LLA', 'gpsLLA')
         self.addListItem('GPS 1 Stats', 'gpsStats')
         self.addListItem('GPS 2 Stats', 'gps2Stats')
-        self.addListItem('GPX Status', 'gpxStatus')
-        self.addListItem('GPX HDW Status', 'gpxHdwStatus')
         self.addListItem('RTK Pos Stats', 'rtkPosStats')
         self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')
@@ -460,12 +449,9 @@ class LogInspectorWindow(QMainWindow):
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
         self.checkboxTime = QCheckBox("Timestamp", self)
         self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
-        self.xAxisSample = QCheckBox("XAxis Msg Index", self)
-        self.xAxisSample.stateChanged.connect(self.changeXAxisSampleCheckbox)
         self.LayoutOptions = QVBoxLayout()
         self.LayoutOptions.addWidget(self.checkboxResidual)
         self.LayoutOptions.addWidget(self.checkboxTime)
-        self.LayoutOptions.addWidget(self.xAxisSample)
         self.LayoutOptions.setSpacing(0)
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.LayoutOptions)
@@ -582,11 +568,6 @@ class LogInspectorWindow(QMainWindow):
             self.plotter.enableTimestamp(state)
             self.updatePlot()
 
-    def changeXAxisSampleCheckbox(self, state):
-        if self.plotter:
-            self.plotter.enableXAxisSample(state)
-            self.updatePlot()
-
     def saveAllPlotsToFile(self):
         if self.log == None:
             print("Log not opened.  Please select a log directory.")
@@ -688,9 +669,8 @@ class LogInspectorWindow(QMainWindow):
 
         for fname in os.listdir(self.config['directory']):
             fname = fname.lower()
-            if fname.endswith('.dat') or \
-               fname.endswith('.raw') or \
-               fname.endswith('.sdat'):
+            if fname.endswith('.raw') or \
+               fname.endswith('.dat'):
                 try:
                     self.load(self.config['directory'])
                 except Exception as e:
@@ -705,7 +685,7 @@ class LogInspectorWindow(QMainWindow):
     def runNpp(self, directory, startMode):
         cleanFolder(directory)
         setDataInformationDirectory(directory, startMode=startMode)
-        sys.path.insert(1, '../../../../python/src')
+        sys.path.insert(1, '../../../../../python/src')
         from supernpp.supernpp import SuperNPP
         spp = SuperNPP(directory, self.config['serials'], startMode=startMode)
         self.setStatus(("NPP %s running..." % (startModes[startMode])))
@@ -807,7 +787,8 @@ def kill_handler(*args):
     instance = QApplication.instance()
     instance.quit()
 
-if __name__ == '__main__':
+
+def main():
     if sys.version[0] != '3':
         raise Exception("You must use Python 3. The current version is " + sys.version)
 
@@ -817,7 +798,7 @@ if __name__ == '__main__':
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     app = QApplication(sys.argv)
-    
+
     configFilePath = os.path.join(os.path.expanduser("~"), "Documents", "Inertial_Sense", "log_inspector.yaml")
 
     main = LogInspectorWindow(configFilePath)
@@ -836,3 +817,7 @@ if __name__ == '__main__':
         main.load(directory)
 
     app.exec()
+
+
+if __name__ == '__main__':
+    main()

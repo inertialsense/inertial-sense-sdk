@@ -12,7 +12,7 @@ import threading
 
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
-sys.path.insert(1, '..')
+sys.path.insert(1, '../..')
 
 from logReader import Log
 
@@ -47,7 +47,7 @@ class SuperNPP():
     def findLogFiles(self, directory):
         # print("findLogFiles: ", directory)
         for file in os.listdir(directory):
-            if ".sdat" in file or ".dat" in file or ".raw" in file:
+            if ".dat" in file or ".raw" in file:
                 self.subdirs.append(directory)
                 break
         # Recursively search for data in sub directories
@@ -95,28 +95,27 @@ class SuperNPP():
         # subdir = os.path.basename(os.path.normpath(folder))
         (folder, subdir) = os.path.split(folder)
 
+        # Find serial numbers, and determine the log type
+        logType = "DAT"
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if ".sdat" in file or ".dat" in file or ".raw" in file:
-                    ser = int(re.sub('[^0-9]','', file.split("_")[1]))
-                    if ser not in serials:
-                        serials.append(ser)
+                if ".dat" in file or ".raw" in file:
+                    if ".dat" in file:
+                        logType = "DAT"
+                    elif ".raw" in file:
+                        logType = "RAW"
+
+                    serNum = re.sub('[^0-9]','', file.split("_")[1]);
+                    if serNum:
+                        ser = int(serNum)
+                        if ser not in serials:
+                            serials.append(ser)
         else:
             serials = config_serials
 
         print("serial numbers")
         print(serials)
-
-        # Determine the log type
-        logType = "DAT"
-        for file in os.listdir(os.path.join(folder,subdir)):
-            if ".sdat" in file:
-                logType = "SDAT"
-            elif ".dat" in file:
-                logType = "DAT"
-            elif ".raw" in file:
-                logType = "RAW"
 
         if os.name == 'posix':
             cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
@@ -207,7 +206,7 @@ if __name__ == "__main__":
         directory = sys.argv[1]
 
     # Debug
-    # directory = '/home/walt/src/IS-src/scripts/../../goldenlogs/AHRS'
+    # directory = '/home/walt/inertialsense/IS-inertialsense/scripts/../../goldenlogs/AHRS'
     # directory = os.path.join('C:/','_IS','goldenlogs','AHRS')
     # directory = os.path.join('C:/','_IS','goldenlogs')
     # directory = 'C:/_IS/goldenlogs'

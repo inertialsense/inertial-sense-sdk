@@ -1,10 +1,21 @@
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
+import os.path
 import sys
-import setuptools
+import glob
 
-__version__ = '0.0.1'
+import setuptools
+from setuptools import setup, Extension, find_packages
+from setuptools.command.build_ext import build_ext
+
+import pybind11
+from pybind11.setup_helpers import Pybind11Extension
+
+import distutils.command.build
+
+__version__ = '2.1.10'
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
+
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
@@ -27,58 +38,43 @@ class get_pybind_include(object):
         return pybind11.get_include(self.user)
 
 
+
+static_libraries = ['InertialSenseSDK']
+static_lib_dir = '..'
+libraries = []
+library_dirs = []
+
+if sys.platform == 'win32':
+    libraries.extend(static_libraries)
+    library_dirs.append(static_lib_dir)
+    extra_objects = []
+else: # POSIX
+    extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
+
+sdk_path = os.path.abspath(os.path.curdir + '/..')
+
+source_files = ['inertialsense/logs/src/*.cpp' ]
+include_dirs = [
+    # Path to pybind11 headers
+    'inertialsense/logs/include',
+    sdk_path + '/src',
+    sdk_path + '/src/libusb/libusb',
+    # get_pybind_include(),
+    # get_pybind_include(user=True)
+]
+
 ext_modules = [
-    Extension('log_reader',
-        ['src/log_reader.cpp',
-         '../../src/convert_ins.cpp',
-         '../../src/com_manager.c',
-         '../../src/data_sets.c',
-         '../../src/DataChunk.cpp',
-         '../../src/DataCSV.cpp',
-         '../../src/DataJSON.cpp',
-         '../../src/DataKML.cpp',
-         '../../src/DeviceLog.cpp',
-         '../../src/DeviceLogCSV.cpp',
-         '../../src/DeviceLogJSON.cpp',
-         '../../src/DeviceLogKML.cpp',
-         '../../src/DeviceLogRaw.cpp',
-         '../../src/DeviceLogSerial.cpp',
-         '../../src/ihex.c',
-         '../../src/ISComm.c',
-         '../../src/ISDataMappings.cpp',
-         '../../src/ISDisplay.cpp',
-         '../../src/ISEarth.c',
-         '../../src/ISFileManager.cpp',
-         '../../src/ISLogFile.cpp',
-         '../../src/ISLogger.cpp',
-         '../../src/ISLogStats.cpp',
-         '../../src/ISMatrix.c',
-         '../../src/ISPose.c',
-         '../../src/ISSerialPort.cpp',
-         '../../src/ISStream.cpp',
-         '../../src/ISUtilities.cpp',
-         '../../src/linked_list.c',
-         '../../src/message_stats.cpp',
-         '../../src/protocol_nmea.cpp',
-         '../../src/serialPort.c',
-         '../../src/serialPortPlatform.c',
-         '../../src/time_conversion.cpp',
-         '../../src/tinystr.cpp',
-         '../../src/tinyxml.cpp',
-         '../../src/tinyxmlerror.cpp',
-         '../../src/tinyxmlparser.cpp',
-         '../../src/util/md5.cpp',
-         ],
-        include_dirs = [
-            # Path to pybind11 headers
-            'include',
-            '../src',
-            '../../src',
-            '../../src/libusb/libusb',
-            get_pybind_include(),
-            get_pybind_include(user=True)
-        ],
-        language='c++',
+    # Extension('logs',
+    #     language='c++',
+    #     sources = source_files,
+    #     include_dirs = include_dirs,
+    #     extra_objects=extra_objects
+    # ),
+    Pybind11Extension(
+        "inertialsense.logs.log_reader",
+        sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
+        include_dirs = include_dirs,
+        extra_objects=extra_objects
     ),
 ]
 
@@ -113,6 +109,13 @@ def cpp_flag(compiler):
                            'is needed!')
 
 
+# Override build command
+class BuildCommand(distutils.command.build.build):
+    def initialize_options(self):
+        distutils.command.build.build.initialize_options(self)
+        self.build_base = '/tmp/log_inspector-build'
+
+
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
     c_opts = {
@@ -138,26 +141,42 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 setup(
-    name='log_reader',
+    name='inertialsense',
     version=__version__,
-    author='Walt Johnson',
-    author_email='walt@inertialsense.com',
-    description='pybind interface to reading InertialSense Log files',
-    long_description='',
-    ext_modules=ext_modules,
+    description='Python interface to doing Inertial Sense things, like reading logs and doing mathy things.',
+    url='https://github.com/InertialSense/inertial-sense-sdk',
+    python_requires='>=3.6',
+
+    author='Inertial Sense Development Team',
+    author_email='devteam@inertialsense.com',
+    license='MIT',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    classifiers=[],
+    package_dir={'': '.'},
+    packages=find_packages(where='../inertialsense'),
+
     install_requires=[
         'allantools<=2019.9',
         'matplotlib', 
         'numpy', 
         'pandas',
-        'pybind11>=2.2', 
-        'pyqt5', 
+        'pybind11>=2.12',
+        'pyqt5',
         'pyserial', 
-        'pyyaml', 
-        'scipy', 
+        'scipy',
         'simplekml',
-        'tqdm'],
-    setup_requires=['pybind11>=2.2'],
+        'tqdm',
+        'pyyaml'],
+
+    ext_modules=ext_modules,
+    extras_require={
+        "dev": [ "pytest>=7.0", "twine>=4.0.2"],
+    },
+
+    # setup_requires=['pybind11>=2.12', 'setuptools', 'wheel'],
+
+    # cmdclass={'build': BuildCommand, 'build_ext': BuildExt},
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )

@@ -8,13 +8,13 @@ import os
 import sys
 # import ctypes as ct
 import math
-import pylib.ISToolsDataSorted as itd
+import inertialsense.tools.ISToolsDataSorted as itd
 import subprocess as subprocess
 import pdb
 
 from pylab import plt
 from scipy.interpolate import interp1d
-from inertialsense_math.pose import norm, qlog, qexp, lla2ned, quat2eulerArray, meanOfQuatArray, qboxminus, qboxplus, qmult, qinv
+from inertialsense.math.pose import norm, qlog, qexp, lla2ned, quat2eulerArray, meanOfQuatArray, qboxminus, qboxplus, qmult, qinv
 import yaml
 
 RAD2DEG = 180 / np.pi

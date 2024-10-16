@@ -5,10 +5,10 @@ import time as systime
 from pylab import plt
 from sys import platform
 
-import pylib.ISToolsDataSorted as itd
-import pylib.ISToolsPlot as itp
-import pylib.ISDataAnalytics as ida
-import pylib.newISDataAnalytics as newida
+import inertialsense.tools.ISToolsDataSorted as itd
+import inertialsense.tools.ISToolsPlot as itp
+import inertialsense.tools.ISDataAnalytics as ida
+import inertialsense.tools.newISDataAnalytics as newida
 
 class cObj:
     def __init__(self):
