@@ -84,7 +84,7 @@ typedef struct
 	uint32_t    offset;
 	uint32_t    size;
 	eDataType   type;
-	uint32_t    elementCount;	// Number of elements in array.  Zero for single elements, not an array.
+	uint32_t    arraySize;		// Number of elements in array.  Zero for single/non-array elements.
 	uint32_t    elementSize;	// Element size in bytes
 	eDataFlags  flags;
 	std::string name;
@@ -436,9 +436,9 @@ public:
 
 	/**
 	* Get map pointer for a data id
-	* @return map pointer for the data id (or NULL if none found) and field index
+	* @return map pointer for the data id (or NULL if none found) and array index
 	*/
-	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex);
+	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
 
 	/**
 	* Get the size of a given data id
@@ -461,13 +461,13 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param datasetBuffer packet buffer
 	* @param info metadata about the field to convert
-	* @param elementIndex index into array
+	* @param arrayIndex index into array
 	* @param elementSize size of elements in array
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int elementIndex = 0, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, int radix = 10, bool json = false);
 
 	/**
 	* Convert a string to a variable.
@@ -487,11 +487,11 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param datasetBuffer packet buffer
 	* @param stringBuffer the buffer to hold the converted string
-	* @param elementIndex index into array
+	* @param arrayIndex index into array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int elementIndex = 0, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false);
 
 	/**
 	* Convert a variable to a string
@@ -515,11 +515,12 @@ public:
 	/**
 	* Check whether field data can be retrieved given a data packet
 	* @param info metadata for the field to get
+	* @param arrayIndex index into array
 	* @param hdr packet header
 	* @param buf packet buffer
 	* @return pointer to get data if valid or NULL if not valid.
 	*/
-	static const uint8_t* FieldData(const data_info_t& info, uint32_t elementIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
+	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
 private:
 	cISDataMappings();

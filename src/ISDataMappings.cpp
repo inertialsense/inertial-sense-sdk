@@ -1681,7 +1681,7 @@ const map_index_to_info_t* cISDataMappings::IndexMapInfo(uint32_t did)
 #endif
 }
 
-const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex)
+const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex)
 {
     if (did >= DID_COUNT)
     {
@@ -1704,7 +1704,7 @@ const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t elemen
         return NULLPTR;
     }
 
-    elementIndex = data.elementInfoIndex[element];
+    arrayIndex = data.elementInfoIndex[element];
     return data.elementInfo[element];
 }
 
@@ -1796,9 +1796,9 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int elementIndex, int radix, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex, int radix, bool json)
 {
-    const uint8_t* ptr = FieldData(info, elementIndex, hdr, datasetBuffer);
+    const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         return false;
@@ -1904,9 +1904,9 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int elementIndex, bool json)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex, bool json)
 {
-    const uint8_t* ptr = FieldData(info, elementIndex, hdr, datasetBuffer);
+    const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         // pick a default string
@@ -2102,13 +2102,11 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
         if (ptr)
         {
             if (timeStampField->type == DATA_TYPE_F64)
-            {
-                // field is seconds, use as is
+            {   // field is seconds, use as is
                 return protectUnalignedAssign<double>((void *)ptr);
             }
             else if (timeStampField->type == DATA_TYPE_UINT32)
-            {
-                // field is milliseconds, convert to seconds
+            {   // field is milliseconds, convert to seconds
                 return 0.001 * (*(uint32_t*)ptr);
             }
         }
@@ -2116,9 +2114,9 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
     return 0.0;
 }
 
-const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elementIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
+const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
 {
-    if (elementIndex && elementIndex >= info.elementCount)
+    if (arrayIndex && arrayIndex >= info.arraySize)
     {
         return NULL;
     }
@@ -2129,13 +2127,12 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elem
     }
 
     if (hdr == NULL)
-    {
-        // Assume buf is large enough for the full data structure
-        return buf + info.offset + elementIndex*info.elementSize;
+    {   // Assume buf is large enough for the full data structure
+        return buf + info.offset + arrayIndex*info.elementSize;
     }
 
     int32_t fullSize = (hdr->size == 0 ? DataSize(hdr->id) : hdr->size);
-    int32_t offset = (int32_t)info.offset + elementIndex*info.elementSize - (int32_t)hdr->offset;
+    int32_t offset = (int32_t)info.offset + arrayIndex*info.elementSize - (int32_t)hdr->offset;
     if (offset >= 0 && 
         offset <= (fullSize - (int32_t)info.size))
     {
