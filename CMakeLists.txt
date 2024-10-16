@@ -3,37 +3,37 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 project(InertialSenseSDK)
 
 file(GLOB SOURCES_SDK
-        "src/*.c"
-        "src/*.cpp"
-        "src/*.h"
-        "src/protocol/*.cpp"
-        "src/protocol/*.h"
-        "src/util/*.cpp"
-        "src/util/*.h"
-        "hw-libs/bootloader/bootloaderShared.c"
-        "tests/runtime/*.cpp"
-        "tests/runtime/*.h"
-        "src/yaml-cpp/*.cpp"
-        "src/yaml-cpp/*.h"
-        "src/yaml-cpp/contrib/*.cpp"
-        "src/yaml-cpp/contrib/*.h"
-        "src/yaml-cpp/node/*.cpp"
-        "src/yaml-cpp/node/*.h"
+    "src/*.c"
+    "src/*.cpp"
+    "src/*.h"
+    "src/protocol/*.cpp"
+    "src/protocol/*.h"
+    "src/util/*.cpp"
+    "src/util/*.h"
+    "hw-libs/bootloader/bootloaderShared.c"
+    "tests/runtime/*.cpp"
+    "tests/runtime/*.h"
+    "src/yaml-cpp/*.cpp"
+    "src/yaml-cpp/*.h"
+    "src/yaml-cpp/contrib/*.cpp"
+    "src/yaml-cpp/contrib/*.h"
+    "src/yaml-cpp/node/*.cpp"
+    "src/yaml-cpp/node/*.h"
 )
 
 # Compile libusb from source
 if (WIN32)
     file(GLOB SOURCES_LIB_USB
-            "src/libusb/libusb/*.h"
-            "src/libusb/libusb/*.c"
-            "src/libusb/libusb/os/*windows*"
+        "src/libusb/libusb/*.h"
+        "src/libusb/libusb/*.c"
+        "src/libusb/libusb/os/*windows*"
     )
 else ()
     file(GLOB SOURCES_LIB_USB
-            "src/libusb/libusb/*.h"
-            "src/libusb/libusb/*.c"
-            "src/libusb/libusb/os/*linux*"
-            "src/libusb/libusb/os/*posix*"
+        "src/libusb/libusb/*.h"
+        "src/libusb/libusb/*.c"
+        "src/libusb/libusb/os/*linux*"
+        "src/libusb/libusb/os/*posix*"
     )
 endif ()
 
@@ -51,14 +51,14 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES_SDK})
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PUBLIC
-        src
-        src/util
-        src/protocol
-        src/libusb
-        src/libusb/libusb
-        src/yaml-cpp
-        tests/runtime
-        external
+    src
+    src/util
+    src/protocol
+    src/libusb
+    src/libusb/libusb
+    src/yaml-cpp
+    tests/runtime
+    external
 )
 
 # Build using C11 and CXX20
@@ -73,7 +73,7 @@ if (WIN32)
 
     # Windows specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-            ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
     )
 
     # We need to ensure windows static libs are found
@@ -81,7 +81,7 @@ if (WIN32)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-            ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
     )
 
     # Linux compiler flags
