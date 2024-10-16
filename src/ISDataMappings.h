@@ -69,6 +69,7 @@ typedef enum
 	DATA_FLAGS_FIXED_DECIMAL_14          = 0x0000000E,
 	DATA_FLAGS_FIXED_DECIMAL_15          = 0x0000000F,
 	DATA_FLAGS_READ_ONLY                 = 0x00000010,
+	DATA_FLAGS_HIDDEN                    = 0x00000020,	// Do not print to screen
 	DATA_FLAGS_DISPLAY_HEX               = 0x00000100,
 	DATA_FLAGS_ANGLE                     = 0x00000200,  // Supports unwrapping angle
     DATA_FLAGS_DECOR_ROLL_MASK           = 0x000F0000,  // Decoration roll
