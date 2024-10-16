@@ -44,12 +44,12 @@ pushd "../python" > /dev/null
         rm -f *.so
         rm -f *.pyc
     else
+        python3 setup.py bdist_wheel sdist build_ext --inplace
         echo -e "\n\n=== Running make... (${BUILD_TYPE}) ==="
         cd ..
         echo "$PIP_INSTALL_COMMAND"
         $PIP_INSTALL_COMMAND
         cd python
-        python3 setup.py bdist_wheel sdist build_ext --inplace
     fi
 popd > /dev/null
 
@@ -61,7 +61,7 @@ version="$(git describe --tags)"
 # Because of `set -o errexit`, we will only get to this point if the build was successful.
 # Print build information
 echo -e  "${RESET}"
-echo -e  "${BOLD}Log Inspector ${GREEN}Build completed on ${timestamp}${RESET}"
+echo -e  "${BOLD}InertialSense Python ${GREEN}Build completed on ${timestamp}${RESET}"
 
 echo -ne "${BOLD}${CYAN}Build options: ${RESET}"
 if [ "${DEBUG}" == "GDB" ]; then

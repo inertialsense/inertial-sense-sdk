@@ -15,7 +15,7 @@ build_header "logInspector"
 ./build_log_inspector.sh
 build_footer $?
 
-pushd ../python/logInspector
+pushd ../python/inertialsense/logInspector
 python3 logInspectorInternal.py
 popd
 

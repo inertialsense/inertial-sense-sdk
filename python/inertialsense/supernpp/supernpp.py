@@ -1,20 +1,15 @@
 #!/usr/bin/python3
 
-import os
-import re
+import os, sys, re, time, threading
 from subprocess import Popen
-from os.path import normpath, basename
 from threading import Thread
-import time
 from pathlib import Path
-import sys
-import threading
 
-sys.path.insert(1, '../../SDK/python/logInspector')
-sys.path.insert(1, '../logInspector')
-sys.path.insert(1, '../..')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.normpath(file_path + '/..'))
+sys.path.insert(0, os.path.normpath(file_path + '/../..'))
 
-from logReader import Log
+from inertialsense.logs.logReader import Log
 
 class SuperNPP():
     def __init__(self, directory, config_serials, startMode=0, computeRMS=0):		# start mode 0=hot, 1=cold, 2=factory
@@ -189,8 +184,7 @@ def nppPrint(str):
     print(str)	# Comment out to disable output
     pass
 
-if __name__ == "__main__":
-
+def main():
     print("Running SuperNPP")
     npp_build_folder = "../../../cpp/NavPostProcess/build"
     # buildNPP(npp_build_folder)
@@ -268,3 +262,5 @@ if __name__ == "__main__":
 
     snpp.exitHack()
 
+if __name__ == "__main__":
+    main()

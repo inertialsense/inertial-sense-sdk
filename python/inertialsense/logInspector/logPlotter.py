@@ -4,14 +4,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
-from inertialsense.math.pose import *
 from datetime import date, datetime
 import pandas as pd
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
 
+from inertialsense.math.pose import *
 from inertialsense.logInspector.ui import InteractiveLegend
+
+from inertialsense.logs.logReader import Log
+from inertialsense.tools.ISToolsData import *
+from inertialsense.tools.ISToolsDataSorted import *
+from inertialsense.tools.data_sets import *
+from inertialsense.math.pose import quat2euler, lla2ned, quatRot, quatConjRot, quat_ecef2ned
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -31,13 +37,6 @@ RTHR2RTS = 60 # sqrt(hr) to sqrt(sec)
 SHOW_GPS2 = 0
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
-
-from inertialsense.logs.logReader import Log
-from inertialsense.tools.ISToolsData import *
-from inertialsense.tools.ISToolsDataSorted import *
-from inertialsense.tools.data_sets import *
-from inertialsense.math.pose import quat2euler, lla2ned, quatRot, quatConjRot, quat_ecef2ned
-import datetime
 
 class logPlot:
     def __init__(self, show, save, format, log):
