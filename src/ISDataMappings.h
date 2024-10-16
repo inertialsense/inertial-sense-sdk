@@ -397,9 +397,8 @@ private:
 class cISDataMappings
 {
 public:
-	/**
-	* Destructor
-	*/
+	cISDataMappings();
+
 	virtual ~cISDataMappings() {}
 
 	/**
@@ -523,8 +522,8 @@ public:
 	*/
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
-private:
-	cISDataMappings();
+protected:
+	static data_set_t* DataSet(uint32_t did);
 
 	static const char* const m_dataIdNames[];
 

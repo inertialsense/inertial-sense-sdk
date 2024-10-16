@@ -44,13 +44,6 @@ list(FILTER SOURCES_SDK EXCLUDE REGEX "ISBootloaderSTM32.*")
 
 list(APPEND SOURCES_SDK ${SOURCES_LIB_USB})
 
-# Include internal IS data mappings
-set(data_mapping_internal_cpp "${CMAKE_CURRENT_SOURCE_DIR}/../cpp/libs/families/imx/ISDataMappingsInternal.cpp")
-if(EXISTS "${data_mapping_internal_cpp}")
-    list(APPEND SOURCES_SDK ${data_mapping_internal_cpp})
-    add_definitions(-DUSE_IS_DATA_MAPPINGS_INTERNAL)
-endif()
-
 # find_package(udev)
 find_library(UDEV_LIB udev)
 

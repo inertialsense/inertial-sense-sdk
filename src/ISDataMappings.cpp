@@ -27,10 +27,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-#include "../../cpp/libs/families/imx/ISDataMappingsInternal.h"
-#endif
-
 using namespace std;
 
 #define SYM_DEG             "°"
@@ -48,12 +44,6 @@ const char s_imuStatusDescription[] = "IMU Status flags [Sensor saturation]";
 // Stringify the macro value
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
-
-#if PLATFORM_IS_EMBEDDED
-cISDataMappings* cISDataMappings::s_map;
-#else
-cISDataMappings cISDataMappings::s_map;
-#endif
 
 const unsigned char g_asciiToLowerMap[256] =
 {
@@ -1279,6 +1269,11 @@ static void PopulateMapRosCovariancePoseTwist(data_set_t data_set[DID_COUNT], ui
     mapper.AddArray("covTwistLD", &ros_covariance_pose_twist_t::covTwistLD, DATA_TYPE_F32, 21, COV_TWIST_UNITS, "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
 }
 
+#if PLATFORM_IS_EMBEDDED
+cISDataMappings* cISDataMappings::s_map;
+#else
+cISDataMappings cISDataMappings::s_map;
+#endif
 
 const char* const cISDataMappings::m_dataIdNames[] =
 {    // Matches data identifier list (eDataIDs) in data_sets.h
@@ -1432,23 +1427,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapDebugString(         m_data_set, DID_DEBUG_STRING);
     PopulateMapDebugArray(          m_data_set, DID_DEBUG_ARRAY);
     PopulateMapDebugArray(          m_data_set, DID_GPX_DEBUG_ARRAY);
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-    PopulateMapRtkDebug(            m_data_set, DID_RTK_DEBUG);
-    PopulateMapRtkDebug(            m_data_set, DID_RTK_DEBUG);
-    // PopulateMapRtkDebug2(        m_data_set, DID_RTK_DEBUG_2);
-    PopulateMapRuntimeProfile(      m_data_set, DID_RUNTIME_PROFILER);
-#endif
     // PopulateMapDiagMsg(          m_data_set, DID_DIAGNOSTIC_MESSAGE);
-
-#if defined(INCLUDE_LUNA_DATA_SETS)
-    // LUNA
-    PopulateMapEvbLunaFlashCfg(        m_data_set, DID_EVB_LUNA_FLASH_CFG);
-    PopulateMapCoyoteStatus(           m_data_set, DID_EVB_LUNA_STATUS);
-    PopulateMapEvbLunaSensors(         m_data_set, DID_EVB_LUNA_SENSORS);
-    PopulateMapEvbLunaVelocityControl( m_data_set, DID_EVB_LUNA_VELOCITY_CONTROL);
-    PopulateMapEvbLunaVelocityCommand( m_data_set, DID_EVB_LUNA_VELOCITY_COMMAND);
-    PopulateMapEvbLunaAuxCmd(          m_data_set, DID_EVB_LUNA_AUX_COMMAND);
-#endif
 
     // SOLUTION
     PopulateMapIns1(                m_data_set, DID_INS_1);
@@ -1459,16 +1438,9 @@ cISDataMappings::cISDataMappings()
 
     // EKF
     PopulateMapInl2States(          m_data_set, DID_INL2_STATES);
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-    PopulateMapInl2Status(          m_data_set, DID_INL2_STATUS);
-    PopulateMapInl2Misc(            m_data_set, DID_INL2_MISC);
-#endif
     PopulateMapInl2NedSigma(        m_data_set, DID_INL2_NED_SIGMA);
     PopulateMapInl2MagObsInfo(      m_data_set, DID_INL2_MAG_OBS_INFO);
     PopulateMapRosCovariancePoseTwist(m_data_set, DID_ROS_COVARIANCE_POSE_TWIST);
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-    PopulateMapInl2Misc(        m_data_set, DID_INL2_MISC);
-#endif
     
     // SENSORS
     PopulateMapPimu(                m_data_set, DID_PIMU, "Preintegrated IMU.");
@@ -1512,12 +1484,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsRaw(              m_data_set, DID_GPS2_RAW);
     PopulateMapGpsRaw(              m_data_set, DID_GPS_BASE_RAW);
 
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-//  m_data_set[DID_RTK_STATE].size = sizeof(rtk_state_t);
-    m_data_set[DID_RTK_CODE_RESIDUAL].size = sizeof(rtk_residual_t);
-    m_data_set[DID_RTK_PHASE_RESIDUAL].size = sizeof(rtk_residual_t);
-#endif
-
     PopulateMapStrobeInTime(        m_data_set, DID_STROBE_IN_TIME);
     PopulateMapSysSensors(          m_data_set, DID_SYS_SENSORS);
     PopulateMapSensorsADC(          m_data_set, DID_SENSORS_ADC);
@@ -1544,11 +1510,6 @@ cISDataMappings::cISDataMappings()
     // m_data_set[DID_GPX_RTOS_INFO].size = sizeof(gpx_rtos_info_t);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
 
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-    PopulateMapUserPage0(           m_data_set, DID_NVR_USERPAGE_G0);
-    PopulateMapUserPage1(           m_data_set, DID_NVR_USERPAGE_G1);
-#endif
-
     // COMMUNICATIONS
     PopulateMapPortMonitor(         m_data_set, DID_PORT_MONITOR);
     PopulateMapPortMonitor(         m_data_set, DID_GPX_PORT_MONITOR);
@@ -1574,18 +1535,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
     PopulateMapSensorCompensation(  m_data_set, DID_SCOMP);
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-    // DID_CAL_SC_INFO
-    // PopulateMapSensorTCalGroup(     m_data_set, DID_CAL_TEMP_COMP);
-    PopulateMapSensorTCalSubsetGroup(m_data_set, DID_CAL_TEMP_COMP);
-    PopulateMapSensorMCalGroup(     m_data_set, DID_CAL_MOTION);
-#endif
-
-#ifdef USE_IS_DATA_MAPPINGS_INTERNAL
-//     PopulateMapRtkState(            m_data_set, DID_RTK_STATE);
-//     PopulateMapRtkResidual(         m_data_set, DID_RTK_CODE_RESIDUAL);
-//     PopulateMapRtkResidual(         m_data_set, DID_RTK_PHASE_RESIDUAL);
-#endif
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)
@@ -1594,10 +1543,28 @@ cISDataMappings::cISDataMappings()
     }
 }
 
+data_set_t* cISDataMappings::DataSet(uint32_t did)
+{
+    if (did >= DID_COUNT)
+    {
+        return NULL;
+    }
+
+#if PLATFORM_IS_EMBEDDED
+    if (s_map == NULLPTR)
+    {
+        s_map = new cISDataMappings();
+    }
+
+    return &(s_map->m_data_set[did]);
+#else
+    return &(s_map.m_data_set[did]);
+#endif
+}
+
 const char* cISDataMappings::DataName(uint32_t did)
 {
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
-
     if (did >= DID_COUNT)
     {
         return "unknown";
@@ -1608,8 +1575,6 @@ const char* cISDataMappings::DataName(uint32_t did)
 
 uint32_t cISDataMappings::Did(string name)
 {
-//     transform(name.begin(), name.end(), name.begin(), ::toupper);
-
     for (eDataIDs did = 0; did < DID_COUNT; did++)
     {
         if (strcmp(name.c_str(), m_dataIdNames[did]) == 0)
@@ -1623,105 +1588,39 @@ uint32_t cISDataMappings::Did(string name)
 
 uint32_t cISDataMappings::DataSize(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return 0;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return s_map->m_data_set[did].size;
-#else
-    return s_map.m_data_set[did].size;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return 0; }
+    return ds->size;
 }
 
 const map_name_to_info_t* cISDataMappings::MapInfo(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return NULLPTR;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return &s_map->m_data_set[did].nameInfo;
-#else
-    return &s_map.m_data_set[did].nameInfo;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return NULLPTR; }
+    return &(ds->nameInfo);
 }
 
 const map_index_to_info_t* cISDataMappings::IndexMapInfo(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return NULLPTR;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return &s_map->m_data_set[did].indexInfo;
-#else
-    return &s_map.m_data_set[did].indexInfo;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return NULLPTR; }
+    return &(ds->indexInfo);
 }
 
 const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex)
 {
-    if (did >= DID_COUNT)
-    {
-        return NULLPTR;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    data_set_t& data = s_map->m_data_set[did];
-#else
-    data_set_t& data = s_map.m_data_set[did];
-#endif
-
-	if (data.elementInfo.find(element) == data.elementInfo.end())
-    {
-        return NULLPTR;
-    }
-
-    arrayIndex = data.elementInfoIndex[element];
-    return data.elementInfo[element];
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return NULLPTR; }
+	if (ds->elementInfo.find(element) == ds->elementInfo.end()) { return NULLPTR; }
+    arrayIndex = ds->elementInfoIndex[element];
+    return ds->elementInfo[element];
 }
 
 uint32_t cISDataMappings::TotalElementCount(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return 0;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return s_map->m_data_set[did].totalElementCount;
-#else
-    return s_map.m_data_set[did].totalElementCount;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return 0; }
+    return ds->totalElementCount;
 }
 
 uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
@@ -2072,37 +1971,18 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
         return 0.0;
     }
 
-#if PLATFORM_IS_EMBEDDED
-
-    if (s_map == NULLPTR)
+    data_set_t* ds = DataSet(hdr->id);
+    if (!ds) { return 0; }
+    if (ds->timestampFields != NULLPTR)
     {
-        s_map = new cISDataMappings();
-    }
-
-#endif
-
-    const data_info_t* timeStampField =
-    
-#if PLATFORM_IS_EMBEDDED
-
-        s_map->m_data_set[hdr->id].timestampFields;
-
-#else
-
-        s_map.m_data_set[hdr->id].timestampFields;
-
-#endif
-
-    if (timeStampField != NULLPTR)
-    {
-        const uint8_t* ptr = FieldData(*timeStampField, 0, hdr, (uint8_t*)buf);
+        const uint8_t* ptr = FieldData(*ds->timestampFields, 0, hdr, (uint8_t*)buf);
         if (ptr)
         {
-            if (timeStampField->type == DATA_TYPE_F64)
+            if (ds->timestampFields->type == DATA_TYPE_F64)
             {   // field is seconds, use as is
                 return protectUnalignedAssign<double>((void *)ptr);
             }
-            else if (timeStampField->type == DATA_TYPE_UINT32)
+            else if (ds->timestampFields->type == DATA_TYPE_UINT32)
             {   // field is milliseconds, convert to seconds
                 return 0.001 * (*(uint32_t*)ptr);
             }
