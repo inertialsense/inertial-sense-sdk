@@ -59,7 +59,7 @@ const unsigned char g_asciiToLowerMap[256] =
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     static const string timestampFields[] = { "time", "timeOfWeek", "timeOfWeekMs", "seconds" };
-    const map_name_to_info_t& offsetMap = data_set[did].nameInfo;
+    const map_name_to_info_t& offsetMap = data_set[did].nameToInfo;
 
     if (offsetMap.size() != 0)
     {
@@ -1597,30 +1597,30 @@ const map_name_to_info_t* cISDataMappings::MapInfo(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
-    return &(ds->nameInfo);
+    return &(ds->nameToInfo);
 }
 
 const map_index_to_info_t* cISDataMappings::IndexMapInfo(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
-    return &(ds->indexInfo);
+    return &(ds->indexToInfo);
 }
 
 const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
-	if (ds->elementInfo.find(element) == ds->elementInfo.end()) { return NULLPTR; }
-    arrayIndex = ds->elementInfoIndex[element];
-    return ds->elementInfo[element];
+	if (ds->elementToInfo.find(element) == ds->elementToInfo.end()) { return NULLPTR; }
+    arrayIndex = ds->elementToArraySize[element];
+    return ds->elementToInfo[element];
 }
 
-uint32_t cISDataMappings::TotalElementCount(uint32_t did)
+uint32_t cISDataMappings::ElementCount(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return 0; }
-    return ds->totalElementCount;
+    return ds->elementCount;
 }
 
 uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)

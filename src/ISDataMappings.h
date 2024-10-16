@@ -159,20 +159,20 @@ struct sCaseInsensitiveCompare
 	}
 };
 
-typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;     // map of field name to data info
-typedef std::map<uint32_t, data_info_t*> map_index_to_info_t;                               // map of field index to data info pointer
-typedef std::map<uint32_t, data_info_t*> map_element_to_info_t;                             // map of total element index to data info pointer
-typedef std::map<uint32_t, uint32_t>     map_element_to_info_index_t;                       // map of total element index to data info element index
+typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare>     map_name_to_info_t;             // map of field name to data info
+typedef std::map<uint32_t, data_info_t*>                                map_index_to_info_t;            // map of field index to data info pointer
+typedef std::map<uint32_t, data_info_t*>                                map_element_to_info_t;          // map of element index to data info pointer
+typedef std::map<uint32_t, uint32_t>                                    map_element_to_array_size_t;    // map of element index to array size
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 
 typedef struct
 {
 	uint32_t                    size;
-	map_name_to_info_t          nameInfo;
-	map_index_to_info_t         indexInfo;
-	map_element_to_info_t	    elementInfo;
-	map_element_to_info_index_t elementInfoIndex;
-	uint32_t                    totalElementCount;
+	map_name_to_info_t          nameToInfo;
+	map_index_to_info_t         indexToInfo;
+	map_element_to_info_t	    elementToInfo;
+	map_element_to_array_size_t elementToArraySize;
+	uint32_t                    elementCount;
 	const data_info_t*          timestampFields;
 } data_set_t;
 
@@ -204,15 +204,15 @@ public:
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
 		uint32_t size = (uint32_t)sizeof(FieldType);
-		uint32_t elementCount = 0; 	// Zero for single element 
+		uint32_t arraySize = 0; 	// Zero for single element 
 		uint32_t elementSize = size;
 
         // Populate the map with the new entry
-        ds.nameInfo[name] = { 
+        ds.nameToInfo[name] = { 
             offset,
             size,
             type,
-			elementCount,
+			arraySize,
             elementSize,
             eDataFlags(flags), 
             name, 
@@ -222,13 +222,13 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t *dinfo = &ds.nameInfo[name];
-        ds.indexInfo[memberCount++] = dinfo;
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
         totalSize += size;
 		{
-			ds.elementInfo[ds.totalElementCount] = dinfo;
-			ds.elementInfoIndex[ds.totalElementCount] = elementCount;
-			ds.totalElementCount++;
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = arraySize;
+			ds.elementCount++;
 		}
 		
         // Static assertions for type and size validation
@@ -245,7 +245,7 @@ public:
 	void AddArray(const std::string& name, 
 		MemberType member,
 		eDataType type,
-		uint32_t elementCount,
+		uint32_t arraySize,
 		const std::string& units = "", 
 		const std::string& description = "",
         int flags = 0,
@@ -254,14 +254,14 @@ public:
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
 		uint32_t size = (uint32_t)sizeof(FieldType);
-		uint32_t elementSize = size/elementCount;
+		uint32_t elementSize = size/arraySize;
 
         // Populate the map with the new entry
-        ds.nameInfo[name] = { 
+        ds.nameToInfo[name] = { 
             offset,
             size, 
             type,
-			elementCount,
+			arraySize,
 			elementSize,
             eDataFlags(flags),
             name, 
@@ -271,14 +271,14 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t *dinfo = &ds.nameInfo[name];
-        ds.indexInfo[memberCount++] = dinfo;
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
         totalSize += size;
-		for (uint32_t i=0; i<elementCount; i++)
+		for (uint32_t i=0; i<arraySize; i++)
 		{
-			ds.elementInfo[ds.totalElementCount] = dinfo;
-			ds.elementInfoIndex[ds.totalElementCount] = i;
-			ds.totalElementCount++;
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = i;
+			ds.elementCount++;
 		}
 
         // Static assertions for type and size validation
@@ -287,7 +287,7 @@ public:
 		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
         {
             assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
-            assert((s_eDataTypeSizes[type]*elementCount == size) && "Data type size mismatch");
+            assert((s_eDataTypeSizes[type]*arraySize == size) && "Data type size mismatch");
         }
     }
 
@@ -301,15 +301,15 @@ public:
 		uint32_t typeSize = 0)
     {
 		uint32_t size = (typeSize ? typeSize : s_eDataTypeSizes[type]);
-		uint32_t elementCount = 0; 	// Zero for single element 
+		uint32_t arraySize = 0; 	// Zero for single element 
 		uint32_t elementSize = size;
 
         // Populate the map with the new entry
-        ds.nameInfo[name] = { 
+        ds.nameToInfo[name] = { 
             offset,
             size,
             type,
-			elementCount,
+			arraySize,
             elementSize,
             eDataFlags(flags), 
             name, 
@@ -319,13 +319,13 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t *dinfo = &ds.nameInfo[name];
-        ds.indexInfo[memberCount++] = dinfo;
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
         totalSize += size;
 		{
-			ds.elementInfo[ds.totalElementCount] = dinfo;
-			ds.elementInfoIndex[ds.totalElementCount] = elementCount;
-			ds.totalElementCount++;
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = arraySize;
+			ds.elementCount++;
 		}
 		
         // Static assertions for type and size validation
@@ -341,7 +341,7 @@ public:
 	void AddArray2(const std::string& name,
 		uint32_t offset,
 		eDataType type,
-		uint32_t elementCount,
+		uint32_t arraySize,
 		const std::string& units = "", 
 		const std::string& description = "",
         int flags = 0,
@@ -349,14 +349,14 @@ public:
 		uint32_t typeSize = 0)
     {
 		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSizes[type]);
-		uint32_t size = elementSize * elementCount;
+		uint32_t size = elementSize * arraySize;
 
         // Populate the map with the new entry
-        ds.nameInfo[name] = { 
+        ds.nameToInfo[name] = { 
             offset,
             size, 
             type,
-			elementCount,
+			arraySize,
 			elementSize,
             eDataFlags(flags),
             name, 
@@ -366,14 +366,14 @@ public:
         };
 
         // Add the entry to the index
-		data_info_t *dinfo = &ds.nameInfo[name];
-        ds.indexInfo[memberCount++] = dinfo;
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
         totalSize += size;
-		for (uint32_t i=0; i<elementCount; i++)
+		for (uint32_t i=0; i<arraySize; i++)
 		{
-			ds.elementInfo[ds.totalElementCount] = dinfo;
-			ds.elementInfoIndex[ds.totalElementCount] = i;
-			ds.totalElementCount++;
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = i;
+			ds.elementCount++;
 		}
 
         // Static assertions for type and size validation
@@ -382,7 +382,7 @@ public:
 		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
 		{
 			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
-			assert((s_eDataTypeSizes[type]*elementCount == size) && "Data type size mismatch");
+			assert((s_eDataTypeSizes[type]*arraySize == size) && "Data type size mismatch");
 		}
     }
 
@@ -441,11 +441,11 @@ public:
 	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
 
 	/**
-	* Get the size of a given data id
+	* Get number of elements of a given data id.  Arrays get counted as multiple elements.
 	* @param did the data id
-	* @return the data id size or 0 if not found or unknown
+	* @return number of elements or 0 if not found or unknown
 	*/
-	static uint32_t TotalElementCount(uint32_t did);
+	static uint32_t ElementCount(uint32_t did);
 
 	/**
 	* Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  
