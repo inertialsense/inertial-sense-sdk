@@ -1944,9 +1944,9 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 
 		const data_info_t& info = it->second;
 
-		if (info.elementCount)
+		if (info.arraySize)
 		{	// Array
-			for (uint32_t i=0; i < info.elementCount; i++)
+			for (uint32_t i=0; i < info.arraySize; i++)
 			{
 				// Print value
 				if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
@@ -2125,9 +2125,9 @@ void cInertialSenseDisplay::VarSelectIncrement()
 	}
 
 	const data_info_t& info = m_editData.mapInfoSelection->second;
-	if (info.elementCount)
+	if (info.arraySize)
 	{	// Array
-		if (m_editData.selectionArrayIdx < (info.elementCount-1))
+		if (m_editData.selectionArrayIdx < (info.arraySize-1))
 		{
 			m_editData.selectionArrayIdx++;
 			return;
@@ -2161,7 +2161,7 @@ void cInertialSenseDisplay::VarSelectDecrement()
 	}
 
 	const data_info_t& info = m_editData.mapInfoSelection->second;
-	if (info.elementCount)
+	if (info.arraySize)
 	{	// Array
 		if (m_editData.selectionArrayIdx > 0)
 		{
@@ -2173,14 +2173,14 @@ void cInertialSenseDisplay::VarSelectDecrement()
 	if (m_editData.mapInfoSelection != m_editData.mapInfoBegin)
 	{
 		m_editData.mapInfoSelection--;
-		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.elementCount-1);
+		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.arraySize-1);
 	}
 	else if (m_editData.mapInfoBegin != m_editData.mapInfo->begin())
 	{
 		m_editData.mapInfoBegin--;
 		m_editData.mapInfoEnd--;
 		m_editData.mapInfoSelection--;
-		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.elementCount-1);
+		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.arraySize-1);
 		Clear();
 	}
 	

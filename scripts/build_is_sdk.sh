@@ -9,7 +9,6 @@ pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 BUILD_TYPE=Release
 CLEAN="false"
-CMAKE_CXX_FLAGS=""
 
 for arg in "$@"; do
     case $arg in
@@ -18,9 +17,6 @@ for arg in "$@"; do
             ;;
         -d|--debug)
             BUILD_TYPE=Debug
-            ;;
-        -i|--internal)
-            CMAKE_CXX_FLAGS+="-DUSE_IS_INTERNAL=1"
             ;;
     esac
 done
@@ -33,8 +29,8 @@ if [ "${CLEAN}" == "true" ]; then
     rm -rf build
     build_result=$?
 else
-    echo -e "\n\n=== Running make... (${BUILD_TYPE} ${CMAKE_CXX_FLAGS}) ==="
-    cmake . -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} && make -j`nproc` -l`nproc`
+    echo -e "\n\n=== Running make... (${BUILD_TYPE} ==="
+    cmake . -DCMAKE_BUILD_TYPE=${BUILD_TYPE} && make -j`nproc` -l`nproc`
     build_result=$?
 fi
 
