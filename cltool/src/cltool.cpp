@@ -1061,8 +1061,11 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                         cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
                         return false;
                     }
-                    int substrIndex = 2 * (radix == 16); // skip 0x for hex
-                    const string& str = keyAndValue[1].substr(substrIndex);
+                    string str = keyAndValue[1];
+                    if (str.compare(0, 2, "0x") == 0)
+                    {   // Remove "0x" from hexidecimal
+                        str = str.substr(2);
+                    }
                     // Address how elem 
                     cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, _MAX(0, arrayIndex));
                     cout << "Setting DID_FLASH_CONFIG." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
