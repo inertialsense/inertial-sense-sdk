@@ -118,7 +118,7 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 			{
 				offset = offsetMap->find(fieldName);
                 string json = s.substr(fieldStart, i - fieldStart);
-                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, 10, true))
+                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, true))
 				{
 					return false;
 				}

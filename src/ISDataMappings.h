@@ -463,11 +463,10 @@ public:
 	* @param info metadata about the field to convert
 	* @param arrayIndex index into array
 	* @param elementSize size of elements in array
-	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false);
 
 	/**
 	* Convert a string to a variable.
@@ -475,7 +474,7 @@ public:
 	* @param stringLength the number of chars in stringBuffer
 	* @param dataBuffer data buffer pointer
 	* @param dataType data type
-	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
+	* @param radix (10 = base 10 for decimal, 16 = base 16 for hexidecimal) if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
@@ -497,12 +496,13 @@ public:
 	* Convert a variable to a string
 	* @param dataType data type
 	* @param dataFlags data flags 
-	* @param dataBuffer data buffer pointer
+	* @param dataBuffer data pointer
+	* @param dataSize size of data at data pointer
 	* @param stringBuffer the buffer to hold the converted string
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
 
 	/**
 	* Get a timestamp from data if available
