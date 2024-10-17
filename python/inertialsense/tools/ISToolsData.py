@@ -10,8 +10,8 @@ import glob
 import sys
 import simplekml
 import ctypes as ct
-import inertialsense_math.pose as pose
-import pylib.filterTools as ft
+import inertialsense.math.pose as pose
+import inertialsense.tools.filterTools as ft
 
 # Profiling code 
 import time as systime
@@ -57,7 +57,7 @@ class sChuckHdr(ct.Structure):
                 ('invDataSize',     ct.c_uint32),
                 ('grpNum',          ct.c_uint32),
                 ('serialNum',       ct.c_uint32),
-                ('pHandle',         ct.c_uint32),
+                ('port',         ct.c_uint32),
                 ('reserved',        ct.c_uint32)]
 
 class sDataHdr(ct.Structure):
@@ -394,17 +394,17 @@ class cDevice:
 #         self.units = []
 
         if refIns!=None:
-            print "#%2d Opening: Ref INS %s" % (index,directory)
+            print("#%2d Opening: Ref INS %s" % (index,directory))
     
             fileMask = "LOG_REF_INS*.dat"
             # Use first file in directory if not defined
         else:
-            print "#%2d Opening: %s %s" %(index,serialNumber,directory)
+            print("#%2d Opening: %s %s" %(index,serialNumber,directory))
             
             fileMask = "LOG_"+serialNumber+"*.dat"
 
         if not os.path.isdir(directory):
-            print "Directory doesn't exist!"
+            print("Directory doesn't exist!")
             sys.exit()
         os.chdir(directory)
         self.fileNames = glob.glob(fileMask)
@@ -417,7 +417,7 @@ class cDevice:
 
         # Profiling
         self.loadTime = systime.time() - timeStart
-        print "Load time: %.2fs" % (self.loadTime)
+        print("Load time: %.2fs" % (self.loadTime))
     
     
     def parse(self):
@@ -518,14 +518,14 @@ class cDevice:
                     if sType == None:
                         if sType not in self.unknownId.keys():
                             self.unknownId[sType] = 1
-                            print "Unknown data id: ", dHdr.id, " size: ", dHdr.size
+                            print("Unknown data id: ", dHdr.id, " size: ", dHdr.size)
                         (ct.c_ubyte*dHdr.size).from_buffer(cDat,n)
                         n += dHdr.size
                         continue
 
                     # Error check data size
                     if ct.sizeof(sType) != dHdr.size:
-                        print "Size mismatch, data id: ", dHdr.id, " size: ", dHdr.size
+                        print("Size mismatch, data id: ", dHdr.id, " size: ", dHdr.size)
                         (ct.c_ubyte*dHdr.size).from_buffer(cDat,n)
                         n += dHdr.size
                         continue
@@ -641,7 +641,7 @@ class cDevices:
         
         # Validate serial numbers
         if count <= 0:
-            print "No files found..."
+            print("No files found...")
             return
            
         # Find size and last index 
@@ -658,7 +658,7 @@ class cDevices:
             
         # Profiling
         self.loadTime = systime.time() - timeLoadStart
-        print "Total load time: %.2fs" % (self.loadTime)
+        print("Total load time: %.2fs" % (self.loadTime))
 
 
 def gpsTimeToUTC(gpsWeek, gpsSOW, leapSecs = 14):

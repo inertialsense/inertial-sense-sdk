@@ -8,7 +8,7 @@ import os
 import sys
 # import ctypes as ct
 import math
-import pylib.ISToolsDataSorted as itd
+import inertialsense.tools.ISToolsDataSorted as itd
 import subprocess as subprocess
 import pdb
 

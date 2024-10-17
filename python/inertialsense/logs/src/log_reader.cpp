@@ -93,7 +93,7 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     for (int i = 0; i < (int)stl_serials.size(); i++)
         cout << stl_serials[i] << "\n";
 
-    // first try DAT files, if that doesn't work, then try SDAT files
+    // first try DAT files, if that doesn't work, then try RAW files
     if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_DAT, stl_serials))
     {
         cout << "Found *.dat log with ";
@@ -101,10 +101,6 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_RAW, stl_serials))
     {
         cout << "Found *.raw log with ";
-    }
-    else if (logger_.LoadFromDirectory(log_directory, cISLogger::LOGTYPE_SDAT, stl_serials))
-    {
-        cout << "Found *.sdat log with ";
     }
     else
     {
@@ -232,7 +228,6 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
         HANDLE_MSG( DID_RTK_DEBUG, dev_log_->rtkDebug);
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
-        HANDLE_MSG( DID_GPX_STATUS, dev_log_->gpxStatus );
         HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
 
         default:
@@ -326,7 +321,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
     forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
     // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
-    forward_message( DID_GPX_STATUS, dev_log_->gpxStatus, device_id );
     forward_message( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id );
 }
 
