@@ -494,7 +494,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+        double timestamp = cISDataMappings::Timestamp(dataHdr, dataBuf);
         m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
@@ -562,7 +562,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
         m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
     return data;
@@ -756,7 +756,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         {
 
 #if LOG_DEBUG_PRINT_READ
-            double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+            double timestamp = cISDataMappings::Timestamp(&(data->hdr), data->buf);
             printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
             g_copyReadDid = data->hdr.id;
 #endif
