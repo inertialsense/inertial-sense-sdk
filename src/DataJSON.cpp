@@ -72,7 +72,7 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
     }
     uint32_t id = strtoul(s.c_str() + pos + 5, NULLPTR, 10);
     hdr.id = id;
-	const map_name_to_info_t* offsetMap = cISDataMappings::MapInfo(hdr.id);
+	const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfo(hdr.id);
     if (offsetMap == NULLPTR)
 	{
 		return false;
@@ -118,7 +118,7 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 			{
 				offset = offsetMap->find(fieldName);
                 string json = s.substr(fieldStart, i - fieldStart);
-                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, 10, true))
+                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, true))
 				{
 					return false;
 				}
@@ -137,7 +137,7 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, string& json)
 {
     json.clear();
-	const map_name_to_info_t* offsetMap = cISDataMappings::MapInfo(hdr.id);
+	const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfo(hdr.id);
 	if (offsetMap == NULLPTR)
 	{
 		return false;

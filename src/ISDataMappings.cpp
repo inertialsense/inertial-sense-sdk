@@ -101,36 +101,6 @@ static void PopulateMapDeviceInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("addInfo", &dev_info_t::addInfo, DATA_TYPE_STRING, "", "Additional info", DATA_FLAGS_READ_ONLY);
 }
 
-static void PopulateMapHdwParams(data_set_t data_set[DID_COUNT], uint32_t did)
-{
-#if 0
-    DataMapper<hdw_params_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &hdw_params_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("I.pqrDot", &hdw_params_t::I.pqrDot, DATA_TYPE_F32, SYM_DEG_PER_S + "/s", "IMU1 PQR derivative", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-    mapper.AddMember("I.accDot", &hdw_params_t::I.accDot, DATA_TYPE_F32, SYM_M_PER_S_2 + "/s", "IMU1 accel derivative", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("I.pqrSigma", &hdw_params_t::I.pqrSigma, DATA_TYPE_F32, SYM_DEG_PER_S, "Max standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, C_RAD2DEG);
-    mapper.AddMember("I.accSigma", &hdw_params_t::I.accSigma, DATA_TYPE_F32, SYM_M_PER_S_2, "Max standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("I.pqrMean", &hdw_params_t::I.mean.pqr, DATA_TYPE_F32, SYM_DEG_PER_S, "IMU1 angular rate average", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG, ERROR_THRESH_PQR);
-    mapper.AddMember("I.accMean", &hdw_params_t::I.mean.acc, DATA_TYPE_F32, SYM_M_PER_S_2, "IMU1 linear acceleration average", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1, ERROR_THRESH_ACC, DECOR_QCOLOR_YELLOW);
-
-    mapper.AddMember("I.pqrDRef[0]", &hdw_params_t::I.dref.pqr[0], DATA_TYPE_F32, SYM_DEG_PER_S, "IMU1 angular rate delta reference IMU", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG, ERROR_THRESH_PQR);
-    mapper.AddMember("I.pqrDRef[1]", &hdw_params_t::I.dref.pqr[1], DATA_TYPE_F32, SYM_DEG_PER_S, "IMU1 angular rate delta reference IMU", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG, ERROR_THRESH_PQR);
-    mapper.AddMember("I.pqrDRef[2]", &hdw_params_t::I.dref.pqr[2], DATA_TYPE_F32, SYM_DEG_PER_S, "IMU1 angular rate delta reference IMU", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG, ERROR_THRESH_PQR);
-    storage->setMeanErrMode(3, Parcel::MEAN_ERR_MODE_ABS, 0.3f * C_DEG2RAD_F);      // rad/s
-    mapper.AddMember("I.accDRef[0]", &hdw_params_t::I.dref.acc[0], DATA_TYPE_F32, SYM_M_PER_S_2, "IMU1 linear acceleration delta reference IMU", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1, ERROR_THRESH_ACC);
-    mapper.AddMember("I.accDRef[1]", &hdw_params_t::I.dref.acc[1], DATA_TYPE_F32, SYM_M_PER_S_2, "IMU1 linear acceleration delta reference IMU", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1, ERROR_THRESH_ACC);
-    mapper.AddMember("I.accDRef[2]", &hdw_params_t::I.dref.acc[2], DATA_TYPE_F32, SYM_M_PER_S_2, "IMU1 linear acceleration delta reference IMU", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1, ERROR_THRESH_ACC);
-    storage->setMeanErrMode(3, Parcel::MEAN_ERR_MODE_ABS, 0.02f);                   // m/s^2
-
-    mapper.AddMember("gpsCnoSigma", &hdw_params_t:gpsCnoSigma, DATA_TYPE_F32, "dBHz", "GPS CNO max standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("gpsCnoMean", &hdw_params_t:gpsCnoMean, DATA_TYPE_F32, "dBHz", "GPS CNO average", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("barMslDot", &hdw_params_t:barMslDot, DATA_TYPE_F32, "m/s", "Barometer derivative", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("barMslSigma", &hdw_params_t:barMslSigma, DATA_TYPE_F32, "m", "Barometer standard deviation", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("barMslMean", &hdw_params_t:barMslMean, DATA_TYPE_F32, "m", "Barometer CNO average", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1, ERROR_THRESH_BAR);
-    mapper.AddArray("mag", &hdw_params_t::mag, DATA_TYPE_F32, 3, "", "Magnetometer", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2, 1, ERROR_THRESH_MAG);
-#endif
-}
-
 static void PopulateMapManufacturingInfo(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<manufacturing_info_t> mapper(data_set, did);
@@ -356,7 +326,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     DataMapper<gps_pos_t> mapper(data_set, did);
     mapper.AddMember("week", &gps_pos_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("timeOfWeekMs", &gps_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
     mapper.AddArray("ecef", &gps_pos_t::ecef, DATA_TYPE_F64, 3, "m", "Position in ECEF {x,y,z}", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddArray("lla", &gps_pos_t::lla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "Latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_7);
     mapper.AddMember("hMSL", &gps_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
@@ -978,7 +948,7 @@ static void PopulateMapGpsRtkRel(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("baseToRoverDistance", &gps_rtk_rel_t::baseToRoverDistance, DATA_TYPE_F32, "", "baseToRoverDistance (m)", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("baseToRoverHeading", &gps_rtk_rel_t::baseToRoverHeading, DATA_TYPE_F32, SYM_DEG, "Angle from north to baseToRoverVector in local tangent plane.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddMember("baseToRoverHeadingAcc", &gps_rtk_rel_t::baseToRoverHeadingAcc, DATA_TYPE_F32, SYM_DEG, "Accuracy of baseToRoverHeading.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_ANGLE | DATA_FLAGS_FIXED_DECIMAL_6, C_RAD2DEG);
-    mapper.AddMember("status", &gps_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status", &gps_rtk_rel_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
 }
 
 static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1528,7 +1498,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapDeviceInfo(          m_data_set, DID_EVB_DEV_INFO);
 
     // MANUFACTURING
-    PopulateMapHdwParams(           m_data_set, DID_HDW_PARAMS);
     PopulateMapManufacturingInfo(   m_data_set, DID_MANUFACTURING_INFO);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_UCAL);
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
@@ -1593,21 +1562,21 @@ uint32_t cISDataMappings::DataSize(uint32_t did)
     return ds->size;
 }
 
-const map_name_to_info_t* cISDataMappings::MapInfo(uint32_t did)
+const map_name_to_info_t* cISDataMappings::NameToInfo(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
     return &(ds->nameToInfo);
 }
 
-const map_index_to_info_t* cISDataMappings::IndexMapInfo(uint32_t did)
+const map_index_to_info_t* cISDataMappings::IndexToInfo(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
     return &(ds->indexToInfo);
 }
 
-const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex)
+const data_info_t* cISDataMappings::ElementToInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
@@ -1692,13 +1661,19 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex, int radix, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex, bool json)
 {
     const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         return false;
     }
+
+#if 1   // Use display type
+    int radix = (info.flags&DATA_FLAGS_DISPLAY_HEX ? 16 : 10);
+#else   // Hex if first two characters are 0x
+    int radix = ((stringBuffer[0] == '0' && stringBuffer[1] == 'x') == 0 ? 16 : 10);
+#endif
 
     return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, json);
 }
@@ -1833,75 +1808,75 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.type, info.flags, ptr, datasetBuffer, info.size, stringBuffer, json);
+    return VariableToString(info.type, info.flags, ptr, info.size, stringBuffer, json);
 }
 
 
-bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
 {
     int precision;
     switch (dataType)
     {
     case DATA_TYPE_INT8:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(int8_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(int8_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int8_t*)dataBuffer);
         break;
     case DATA_TYPE_UINT8:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(uint8_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint8_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%02X", *(uint8_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint8_t*)dataBuffer);
         break;
     case DATA_TYPE_INT16:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(int16_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int16_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(int16_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int16_t*)dataBuffer);
         break;
     case DATA_TYPE_UINT16:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(uint16_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint16_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%04X", *(uint16_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint16_t*)dataBuffer);
         break;
     case DATA_TYPE_INT32:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(int32_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int32_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(int32_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%d", (int)*(int32_t*)dataBuffer);
         break;
     case DATA_TYPE_UINT32:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(uint32_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint32_t*)ptr);        
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%08X", *(uint32_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%u", (unsigned int)*(uint32_t*)dataBuffer);        
         break;
     case DATA_TYPE_INT64:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (long long)*(uint64_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (long long)*(uint64_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%lld", (long long)*(int64_t*)dataBuffer);
         break;
     case DATA_TYPE_UINT64:
-        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (unsigned long long)*(uint64_t*)ptr);
-        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)ptr);
+        if (dataFlags & DATA_FLAGS_DISPLAY_HEX) SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "0x%016llX", (unsigned long long)*(uint64_t*)dataBuffer);
+        else                                    SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%llu", (unsigned long long)*(uint64_t*)dataBuffer);
         break;
     case DATA_TYPE_F32:
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
         if (precision)
         {
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(float*)ptr);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(float*)dataBuffer);
         }
         else
         {
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(float*)ptr);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(float*)dataBuffer);
         }
         break;
     case DATA_TYPE_F64:                             
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
         if (precision)
         {   // Fixed precision
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(double*)ptr);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(double*)dataBuffer);
         }
         else
         {   // Variable precision
             // SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(double*)ptr);
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", *(double*)ptr);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", *(double*)dataBuffer);
         }
         break;
 
     case DATA_TYPE_STRING:
     {
         int n = 0;
-        char* bufPtr2 = (char*)(ptr);
+        char* bufPtr2 = (char*)(dataBuffer);
         char* bufPtrEnd = bufPtr2 + _MIN(IS_DATA_MAPPING_MAX_STRING_LENGTH, dataSize) - 1;
         for (; bufPtr2 < bufPtrEnd && *bufPtr2 != '\0'; bufPtr2++)
         {

@@ -1896,7 +1896,7 @@ string cInertialSenseDisplay::DataToStringPacket(const char *raw_data, const p_d
 
 string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 {
-	const map_name_to_info_t *mapInfo = cISDataMappings::MapInfo(data->hdr.id);
+	const map_name_to_info_t *mapInfo = cISDataMappings::NameToInfo(data->hdr.id);
 
 	uDatasets d = {};
 	copyDataPToStructP(&d, data, sizeof(d));
@@ -2082,7 +2082,7 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 {
 	m_editData.readOnlyMode = readOnlyMode;
 	m_editData.did = did;
-	m_editData.mapInfo = cISDataMappings::MapInfo(did);
+	m_editData.mapInfo = cISDataMappings::NameToInfo(did);
 	m_editData.mapInfoBegin = m_editData.mapInfo->begin();
     m_editData.mapInfoEnd = m_editData.mapInfo->end();
 	m_editData.mapInfoSelection = m_editData.mapInfo->begin();
