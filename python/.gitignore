@@ -1,2 +1,4 @@
-.idea
-log_reader.egg-info
+*.egg-info
+build
+*.so
+

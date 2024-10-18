@@ -10,8 +10,8 @@ import glob
 import sys
 import simplekml
 import ctypes as ct
-import inertialsense_math.pose as pose
-import pylib.filterTools as ft
+import inertialsense.math.pose as pose
+import inertialsense.tools.filterTools as ft
 
 # Profiling code
 import time as systime
@@ -262,7 +262,7 @@ class cDevice:
             ('invDataSize', u32),
             ('grpNum', u32),
             ('devSerialNum', u32),
-            ('pHandle', u32),
+            ('port', u32),
             ('reserved', u32),
         ])
 
