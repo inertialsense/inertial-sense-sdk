@@ -27,11 +27,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
-#ifdef USE_IS_INTERNAL
-#include "../../cpp/libs/families/imx/IS_internal.h"
-#include "../../cpp/libs/families/imx/ISDataMappingsInternal.h"
-#endif
-
 using namespace std;
 
 #define SYM_DEG             "°"
@@ -50,12 +45,6 @@ const char s_imuStatusDescription[] = "IMU Status flags [Sensor saturation]";
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-#if PLATFORM_IS_EMBEDDED
-cISDataMappings* cISDataMappings::s_map;
-#else
-cISDataMappings cISDataMappings::s_map;
-#endif
-
 const unsigned char g_asciiToLowerMap[256] =
 {
     0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
@@ -70,7 +59,7 @@ const unsigned char g_asciiToLowerMap[256] =
 static void PopulateMapTimestampField(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     static const string timestampFields[] = { "time", "timeOfWeek", "timeOfWeekMs", "seconds" };
-    const map_name_to_info_t& offsetMap = data_set[did].nameInfo;
+    const map_name_to_info_t& offsetMap = data_set[did].nameToInfo;
 
     if (offsetMap.size() != 0)
     {
@@ -632,7 +621,11 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember2("wheelConfig.track_width", offsetof(nvm_flash_cfg_t, wheelConfig.track_width), DATA_TYPE_F32, "m", "Distance between the left and right wheels");
     mapper.AddMember2("wheelConfig.radius", offsetof(nvm_flash_cfg_t, wheelConfig.radius), DATA_TYPE_F32, "m", "Wheel radius");
     mapper.AddMember("debug", &nvm_flash_cfg_t::debug, DATA_TYPE_UINT8);
-
+    mapper.AddMember("gnssCn0Minimum", &nvm_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
+    mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
+    mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
+    mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
+ 
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
     mapper.AddMember("checksum", &nvm_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");
@@ -678,6 +671,10 @@ static void PopulateMapGpxFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "BaseOutG2 [0x100=UbxS0, 0x200=UbxS1, 0x400=RtcmS0, 0x800=RtcmS1], ";
     str += "0x1000=MovingBasePos, 0x4000=SameHdwRvrBase";
     mapper.AddMember("RTKCfgBits", &gpx_flash_cfg_t::RTKCfgBits, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("gnssCn0Minimum", &gpx_flash_cfg_t::gnssCn0Minimum, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution.");
+    mapper.AddMember("gnssCn0DynMinOffset", &gpx_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
+    mapper.AddArray("reserved1", &gpx_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
+    mapper.AddArray("reserved2", &gpx_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
 
     // Keep at end
     mapper.AddMember("size", &gpx_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
@@ -1057,24 +1054,21 @@ static void PopulateMapRtosInfo(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("mallocSize", &rtos_info_t::mallocSize, DATA_TYPE_UINT32, "", "Total memory allocated using malloc()", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("freeSize", &rtos_info_t::freeSize, DATA_TYPE_UINT32, "", "Total memory freed using free()", DATA_FLAGS_READ_ONLY);
 
-    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++)
-    {
-        mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN);
-        mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-        mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)");
-        mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority");
-        mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY);
-        mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time");
-        mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_2);
-        mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time");
-        mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", "");
-        mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long");
-        mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long twice in a row");
-        mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8);
-        mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_info_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32);
-    }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".name",                 i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].name), DATA_TYPE_STRING, "", "Task name", 0, 1.0, MAX_TASK_NAME_LEN); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".cpuUsage",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].cpuUsage), DATA_TYPE_F32, "%", "CPU usage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".stackUnused",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].stackUnused), DATA_TYPE_UINT32, "", "Task stack unused bytes (high-water mark)"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".priority",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].priority), DATA_TYPE_UINT32, "", "Task priority"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".periodMs",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].periodMs), DATA_TYPE_UINT32, "ms", "Task period", DATA_FLAGS_READ_ONLY); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".runtimeUs",            i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].runtimeUs), DATA_TYPE_UINT32, "us", "Task execution time"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].avgRuntimeUs), DATA_TYPE_F32, "us", "Average runtime", DATA_FLAGS_FIXED_DECIMAL_2); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgLowerRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].lowerRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes less than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_2); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".avgUpperRuntimeUs",    i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].upperRuntimeUs), DATA_TYPE_F32, "us", "Average of runtimes greater than avgRuntimeUs", DATA_FLAGS_FIXED_DECIMAL_2); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".maxRuntimeUs",         i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].maxRuntimeUs), DATA_TYPE_UINT32, "us", "Task max execution time"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".startTimeUs",          i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].startTimeUs), DATA_TYPE_UINT32, "us", ""); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".gapCount",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].gapCount), DATA_TYPE_UINT16, "", "Number of times task took too long"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".doubleGapCount",       i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].doubleGapCount), DATA_TYPE_UINT8, "", "Number of times task took too long twice in a row"); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".reserved",             i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].reserved), DATA_TYPE_UINT8, "", "", DATA_FLAGS_HIDDEN); }
+    for (int i=0; i<IMX_RTOS_NUM_TASKS; i++) { mapper.AddMember2("T" + to_string(i) + ".handle",               i*sizeof(rtos_task_t) + offsetof(rtos_info_t, task[0].handle), DATA_TYPE_UINT32); }
 }
 
 static void PopulateMapCanConfig(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1275,6 +1269,11 @@ static void PopulateMapRosCovariancePoseTwist(data_set_t data_set[DID_COUNT], ui
     mapper.AddArray("covTwistLD", &ros_covariance_pose_twist_t::covTwistLD, DATA_TYPE_F32, 21, COV_TWIST_UNITS, "EKF velocity and angular rate error covariance matrix lower diagonal in ECEF (velocity) and body (attitude) frames", flags);
 }
 
+#if PLATFORM_IS_EMBEDDED
+cISDataMappings* cISDataMappings::s_map;
+#else
+cISDataMappings cISDataMappings::s_map;
+#endif
 
 const char* const cISDataMappings::m_dataIdNames[] =
 {    // Matches data identifier list (eDataIDs) in data_sets.h
@@ -1428,23 +1427,7 @@ cISDataMappings::cISDataMappings()
     PopulateMapDebugString(         m_data_set, DID_DEBUG_STRING);
     PopulateMapDebugArray(          m_data_set, DID_DEBUG_ARRAY);
     PopulateMapDebugArray(          m_data_set, DID_GPX_DEBUG_ARRAY);
-#ifdef USE_IS_INTERNAL
-    PopulateMapRtkDebug(            m_data_set, DID_RTK_DEBUG);
-    PopulateMapRtkDebug(            m_data_set, DID_RTK_DEBUG);
-    // PopulateMapRtkDebug2(        m_data_set, DID_RTK_DEBUG_2);
-    PopulateMapRuntimeProfile(      m_data_set, DID_RUNTIME_PROFILER);
-#endif
     // PopulateMapDiagMsg(          m_data_set, DID_DIAGNOSTIC_MESSAGE);
-
-#if defined(INCLUDE_LUNA_DATA_SETS)
-    // LUNA
-    PopulateMapEvbLunaFlashCfg(        m_data_set, DID_EVB_LUNA_FLASH_CFG);
-    PopulateMapCoyoteStatus(           m_data_set, DID_EVB_LUNA_STATUS);
-    PopulateMapEvbLunaSensors(         m_data_set, DID_EVB_LUNA_SENSORS);
-    PopulateMapEvbLunaVelocityControl( m_data_set, DID_EVB_LUNA_VELOCITY_CONTROL);
-    PopulateMapEvbLunaVelocityCommand( m_data_set, DID_EVB_LUNA_VELOCITY_COMMAND);
-    PopulateMapEvbLunaAuxCmd(          m_data_set, DID_EVB_LUNA_AUX_COMMAND);
-#endif
 
     // SOLUTION
     PopulateMapIns1(                m_data_set, DID_INS_1);
@@ -1455,16 +1438,9 @@ cISDataMappings::cISDataMappings()
 
     // EKF
     PopulateMapInl2States(          m_data_set, DID_INL2_STATES);
-#ifdef USE_IS_INTERNAL
-    PopulateMapInl2Status(          m_data_set, DID_INL2_STATUS);
-    PopulateMapInl2Misc(            m_data_set, DID_INL2_MISC);
-#endif
     PopulateMapInl2NedSigma(        m_data_set, DID_INL2_NED_SIGMA);
     PopulateMapInl2MagObsInfo(      m_data_set, DID_INL2_MAG_OBS_INFO);
     PopulateMapRosCovariancePoseTwist(m_data_set, DID_ROS_COVARIANCE_POSE_TWIST);
-#ifdef USE_IS_INTERNAL
-    PopulateMapInl2Misc(        m_data_set, DID_INL2_MISC);
-#endif
     
     // SENSORS
     PopulateMapPimu(                m_data_set, DID_PIMU, "Preintegrated IMU.");
@@ -1508,12 +1484,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapGpsRaw(              m_data_set, DID_GPS2_RAW);
     PopulateMapGpsRaw(              m_data_set, DID_GPS_BASE_RAW);
 
-#ifdef USE_IS_INTERNAL
-//  m_data_set[DID_RTK_STATE].size = sizeof(rtk_state_t);
-    m_data_set[DID_RTK_CODE_RESIDUAL].size = sizeof(rtk_residual_t);
-    m_data_set[DID_RTK_PHASE_RESIDUAL].size = sizeof(rtk_residual_t);
-#endif
-
     PopulateMapStrobeInTime(        m_data_set, DID_STROBE_IN_TIME);
     PopulateMapSysSensors(          m_data_set, DID_SYS_SENSORS);
     PopulateMapSensorsADC(          m_data_set, DID_SENSORS_ADC);
@@ -1540,11 +1510,6 @@ cISDataMappings::cISDataMappings()
     // m_data_set[DID_GPX_RTOS_INFO].size = sizeof(gpx_rtos_info_t);
     PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
 
-#ifdef USE_IS_INTERNAL
-    PopulateMapUserPage0(           m_data_set, DID_NVR_USERPAGE_G0);
-    PopulateMapUserPage1(           m_data_set, DID_NVR_USERPAGE_G1);
-#endif
-
     // COMMUNICATIONS
     PopulateMapPortMonitor(         m_data_set, DID_PORT_MONITOR);
     PopulateMapPortMonitor(         m_data_set, DID_GPX_PORT_MONITOR);
@@ -1570,18 +1535,6 @@ cISDataMappings::cISDataMappings()
     PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
     PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
     PopulateMapSensorCompensation(  m_data_set, DID_SCOMP);
-#ifdef USE_IS_INTERNAL
-    // DID_CAL_SC_INFO
-    // PopulateMapSensorTCalGroup(     m_data_set, DID_CAL_TEMP_COMP);
-    PopulateMapSensorTCalSubsetGroup(m_data_set, DID_CAL_TEMP_COMP);
-    PopulateMapSensorMCalGroup(     m_data_set, DID_CAL_MOTION);
-#endif
-
-#ifdef USE_IS_INTERNAL
-//     PopulateMapRtkState(            m_data_set, DID_RTK_STATE);
-//     PopulateMapRtkResidual(         m_data_set, DID_RTK_CODE_RESIDUAL);
-//     PopulateMapRtkResidual(         m_data_set, DID_RTK_PHASE_RESIDUAL);
-#endif
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)
@@ -1590,10 +1543,28 @@ cISDataMappings::cISDataMappings()
     }
 }
 
+data_set_t* cISDataMappings::DataSet(uint32_t did)
+{
+    if (did >= DID_COUNT)
+    {
+        return NULL;
+    }
+
+#if PLATFORM_IS_EMBEDDED
+    if (s_map == NULLPTR)
+    {
+        s_map = new cISDataMappings();
+    }
+
+    return &(s_map->m_data_set[did]);
+#else
+    return &(s_map.m_data_set[did]);
+#endif
+}
+
 const char* cISDataMappings::DataName(uint32_t did)
 {
     STATIC_ASSERT(_ARRAY_ELEMENT_COUNT(m_dataIdNames) == DID_COUNT);
-
     if (did >= DID_COUNT)
     {
         return "unknown";
@@ -1604,8 +1575,6 @@ const char* cISDataMappings::DataName(uint32_t did)
 
 uint32_t cISDataMappings::Did(string name)
 {
-//     transform(name.begin(), name.end(), name.begin(), ::toupper);
-
     for (eDataIDs did = 0; did < DID_COUNT; did++)
     {
         if (strcmp(name.c_str(), m_dataIdNames[did]) == 0)
@@ -1619,105 +1588,39 @@ uint32_t cISDataMappings::Did(string name)
 
 uint32_t cISDataMappings::DataSize(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return 0;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return s_map->m_data_set[did].size;
-#else
-    return s_map.m_data_set[did].size;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return 0; }
+    return ds->size;
 }
 
 const map_name_to_info_t* cISDataMappings::MapInfo(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return NULLPTR;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return &s_map->m_data_set[did].nameInfo;
-#else
-    return &s_map.m_data_set[did].nameInfo;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return NULLPTR; }
+    return &(ds->nameToInfo);
 }
 
 const map_index_to_info_t* cISDataMappings::IndexMapInfo(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return NULLPTR;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return &s_map->m_data_set[did].indexInfo;
-#else
-    return &s_map.m_data_set[did].indexInfo;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return NULLPTR; }
+    return &(ds->indexToInfo);
 }
 
-const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &elementIndex)
+const data_info_t* cISDataMappings::ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex)
 {
-    if (did >= DID_COUNT)
-    {
-        return NULLPTR;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    data_set_t& data = s_map->m_data_set[did];
-#else
-    data_set_t& data = s_map.m_data_set[did];
-#endif
-
-	if (data.elementInfo.find(element) == data.elementInfo.end())
-    {
-        return NULLPTR;
-    }
-
-    elementIndex = data.elementInfoIndex[element];
-    return data.elementInfo[element];
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return NULLPTR; }
+	if (ds->elementToInfo.find(element) == ds->elementToInfo.end()) { return NULLPTR; }
+    arrayIndex = ds->elementToArraySize[element];
+    return ds->elementToInfo[element];
 }
 
-uint32_t cISDataMappings::TotalElementCount(uint32_t did)
+uint32_t cISDataMappings::ElementCount(uint32_t did)
 {
-    if (did >= DID_COUNT)
-    {
-        return 0;
-    }
-
-#if PLATFORM_IS_EMBEDDED
-    if (s_map == NULLPTR)
-    {
-        s_map = new cISDataMappings();
-    }
-
-    return s_map->m_data_set[did].totalElementCount;
-#else
-    return s_map.m_data_set[did].totalElementCount;
-#endif
+    data_set_t* ds = DataSet(did);
+    if (!ds) { return 0; }
+    return ds->elementCount;
 }
 
 uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
@@ -1789,9 +1692,9 @@ uint32_t cISDataMappings::DefaultPeriodMultiple(uint32_t did)
 }
 
 
-bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int elementIndex, int radix, bool json)
+bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex, int radix, bool json)
 {
-    const uint8_t* ptr = FieldData(info, elementIndex, hdr, datasetBuffer);
+    const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         return false;
@@ -1897,9 +1800,9 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
 }
 
 
-bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int elementIndex, bool json)
+bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex, bool json)
 {
-    const uint8_t* ptr = FieldData(info, elementIndex, hdr, datasetBuffer);
+    const uint8_t* ptr = FieldData(info, arrayIndex, hdr, datasetBuffer);
     if (ptr == NULL)
     {
         // pick a default string
@@ -2068,40 +1971,19 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
         return 0.0;
     }
 
-#if PLATFORM_IS_EMBEDDED
-
-    if (s_map == NULLPTR)
+    data_set_t* ds = DataSet(hdr->id);
+    if (!ds) { return 0; }
+    if (ds->timestampFields != NULLPTR)
     {
-        s_map = new cISDataMappings();
-    }
-
-#endif
-
-    const data_info_t* timeStampField =
-    
-#if PLATFORM_IS_EMBEDDED
-
-        s_map->m_data_set[hdr->id].timestampFields;
-
-#else
-
-        s_map.m_data_set[hdr->id].timestampFields;
-
-#endif
-
-    if (timeStampField != NULLPTR)
-    {
-        const uint8_t* ptr = FieldData(*timeStampField, 0, hdr, (uint8_t*)buf);
+        const uint8_t* ptr = FieldData(*ds->timestampFields, 0, hdr, (uint8_t*)buf);
         if (ptr)
         {
-            if (timeStampField->type == DATA_TYPE_F64)
-            {
-                // field is seconds, use as is
+            if (ds->timestampFields->type == DATA_TYPE_F64)
+            {   // field is seconds, use as is
                 return protectUnalignedAssign<double>((void *)ptr);
             }
-            else if (timeStampField->type == DATA_TYPE_UINT32)
-            {
-                // field is milliseconds, convert to seconds
+            else if (ds->timestampFields->type == DATA_TYPE_UINT32)
+            {   // field is milliseconds, convert to seconds
                 return 0.001 * (*(uint32_t*)ptr);
             }
         }
@@ -2109,9 +1991,9 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
     return 0.0;
 }
 
-const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elementIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
+const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
 {
-    if (elementIndex && elementIndex >= info.elementCount)
+    if (arrayIndex && arrayIndex >= info.arraySize)
     {
         return NULL;
     }
@@ -2122,13 +2004,12 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t elem
     }
 
     if (hdr == NULL)
-    {
-        // Assume buf is large enough for the full data structure
-        return buf + info.offset + elementIndex*info.elementSize;
+    {   // Assume buf is large enough for the full data structure
+        return buf + info.offset + arrayIndex*info.elementSize;
     }
 
     int32_t fullSize = (hdr->size == 0 ? DataSize(hdr->id) : hdr->size);
-    int32_t offset = (int32_t)info.offset + elementIndex*info.elementSize - (int32_t)hdr->offset;
+    int32_t offset = (int32_t)info.offset + arrayIndex*info.elementSize - (int32_t)hdr->offset;
     if (offset >= 0 && 
         offset <= (fullSize - (int32_t)info.size))
     {

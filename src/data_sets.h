@@ -2789,6 +2789,11 @@ enum eRTKConfigBits
     RTK_CFG_BITS_ALL_MODES_MASK = (RTK_CFG_BITS_ROVER_MODE_MASK | RTK_CFG_BITS_BASE_MODE),	
 };
 
+#define DEFAULT_DYNAMIC_MODEL                   DYNAMIC_MODEL_AIRBORNE_4G
+#define DEFAULT_GNSS_MIN_ELEVATION_ANGLE        (10.0f * C_DEG2RAD_F)  // (rad)
+#define DEFAULT_GNSS_RTK_CN0_MINIMUM            25  // (dBHz)
+#define DEFAULT_GNSS_RTK_CN0_DYN_MIN_OFFSET     10  // (dBHz)
+
 /** Sensor Configuration (used with nvm_flash_cfg_t.sensorConfig) */
 enum eSensorConfig
 {
@@ -2886,7 +2891,7 @@ enum eIoConfig
     IO_CONFIG_G1G2_COM2                         = (int)0x00000006,
     /** G1,G2 - I2C */
     IO_CONFIG_G1G2_I2C							= (int)0x00000008,
-    /** G1,G2 - MASK.  Note: This G1,G2 setting is overriden when GPS1 or GPS2 is configured to use Ser2. */
+    /** G1,G2 - MASK.  Note: This G1,G2 setting is overridden when GPS1 or GPS2 is configured to use Ser2. */
     IO_CONFIG_G1G2_MASK                         = (int)0x0000000E,
     /** G1,G2 - Default */
     IO_CONFIG_G1G2_DEFAULT                      = IO_CONFIG_G1G2_COM2,
@@ -3320,6 +3325,18 @@ typedef struct PACKED
 	/** Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good. */
 	float                   magCalibrationQualityThreshold;
 
+    /** (dBHz) GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution. */
+    uint8_t                 gnssCn0Minimum;
+
+    /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
+    uint8_t                 gnssCn0DynMinOffset;
+
+    /** Reserved */
+    uint8_t                 reserved1[2];
+
+    /** Reserved */
+    uint32_t                reserved2[2];
+
 } nvm_flash_cfg_t;
 
 /** (DID_INL2_NED_SIGMA) Standard deviation of INL2 EKF estimates in the NED frame. */
@@ -3518,6 +3535,7 @@ typedef struct
 
     /** Min snr to consider satellite for rtk */
     int32_t snrmin;
+    int32_t snrrange; // snr range from the highest snr satellite to consider (overrides snrmin if non-zero)
 
     /** AR mode (0:off,1:continuous,2:instantaneous,3:fix and hold,4:ppp-ar) */
     int32_t modear;
@@ -4354,6 +4372,18 @@ typedef struct
 
     /** RTK configuration bits (see eRTKConfigBits). */
     uint32_t                RTKCfgBits;
+
+    /** (dBHz) GNSS CN0 absolute minimum threshold for signals.  Used to filter signals in RTK solution. */
+    uint8_t                 gnssCn0Minimum;
+
+    /** (dBHz) GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum. */
+    uint8_t                 gnssCn0DynMinOffset;
+
+    /** Reserved */
+    uint8_t                 reserved1[2];
+
+    /** Reserved */
+    uint32_t                reserved2[2];
 
 } gpx_flash_cfg_t;
 
