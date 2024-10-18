@@ -423,22 +423,28 @@ public:
 	static uint32_t DataSize(uint32_t did);
 
 	/**
+	* Get the data set for a data id
+	* @return the data set for the data id, or NULL if none found
+	*/
+	static data_set_t* DataSet(uint32_t did);
+
+	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* MapInfo(uint32_t did);
+	static const map_name_to_info_t* NameToInfo(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id, or NULL if none found
 	*/
-	static const map_index_to_info_t* IndexMapInfo(uint32_t did);
+	static const map_index_to_info_t* IndexToInfo(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id (or NULL if none found) and array index
 	*/
-	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
+	static const data_info_t* ElementToInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
 
 	/**
 	* Get number of elements of a given data id.  Arrays get counted as multiple elements.
@@ -523,8 +529,6 @@ public:
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
 protected:
-	static data_set_t* DataSet(uint32_t did);
-
 	static const char* const m_dataIdNames[];
 
 	data_set_t m_data_set[DID_COUNT];

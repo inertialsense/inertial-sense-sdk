@@ -962,7 +962,7 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
 
     nvm_flash_cfg_t flashCfg;
     inertialSenseInterface.FlashConfig(flashCfg);
-    const map_name_to_info_t& flashMap = *cISDataMappings::MapInfo(DID_FLASH_CONFIG);
+    const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfo(DID_FLASH_CONFIG);
 
     if (flashCfgString.length() < 2)
     {   // Display entire flash config
