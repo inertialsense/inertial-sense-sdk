@@ -165,24 +165,24 @@ bool cDeviceLog::OpenNewSaveFile()
 	// create directory
 	_MKDIR(m_directory.c_str());
 
-#if !PLATFORM_IS_EMBEDDED
+// #if !PLATFORM_IS_EMBEDDED
 
-	// clear out space if we need to
-	if (m_maxDiskSpace != 0)
-	{
-		vector<ISFileManager::file_info_t> files;
-		uint64_t spaceUsed = ISFileManager::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
-		unsigned int index = 0;
+// 	// clear out space if we need to
+// 	if (m_maxDiskSpace != 0)
+// 	{
+// 		vector<ISFileManager::file_info_t> files;
+// 		uint64_t spaceUsed = ISFileManager::GetDirectorySpaceUsed(m_directory.c_str(), files, true, false);
+// 		unsigned int index = 0;
 
-		// clear out old files until we have space
-		while (spaceUsed > m_maxDiskSpace && index < files.size())
-		{
-			spaceUsed -= files[index].size;
-			ISFileManager::DeleteFile(files[index++].name);
-		}
-	}
+// 		// clear out old files until we have space
+// 		while (spaceUsed > m_maxDiskSpace && index < files.size())
+// 		{
+// 			spaceUsed -= files[index].size;
+// 			ISFileManager::DeleteFile(files[index++].name);
+// 		}
+// 	}
 	
-#endif
+// #endif
 
 	// Open new file
 	m_fileCount++;

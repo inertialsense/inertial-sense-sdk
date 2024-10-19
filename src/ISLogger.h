@@ -93,12 +93,15 @@ public:
 	void ShowParseErrors(bool show);
 	std::string TimeStamp() { return m_timeStamp; }
 	std::string LogDirectory() { return m_directory; }
+	std::string RootDirectory() { return m_rootDirectory; }
 	uint64_t LogSizeAll();
 	uint64_t LogSize(uint32_t devSerialNo);
 	float LogSizeAllMB();
 	float LogSizeMB(uint32_t devSerialNo);
 	float FileSizeMB(uint32_t devSerialNo);
 	uint32_t FileCount(uint32_t devSerialNo);
+	float MaxDiskSpaceMB() { return ((float)m_maxDiskSpace) / (1024*1024); }
+	float UsedDiskSpaceMB() { return ((float)m_usedDiskSpace) / (1024*1024); }
 	std::string GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char* suffix);
     std::vector<std::shared_ptr<cDeviceLog>> DeviceLogs();
 	uint32_t DeviceCount() { return (uint32_t)m_devices.size(); }
@@ -211,11 +214,13 @@ private:
 	eLogType				m_logType = LOGTYPE_DAT;
 	bool					m_useChunkHeader = true;
 	bool					m_enabled = false;
+	std::string				m_rootDirectory;
 	std::string				m_directory;
 	std::string				m_timeStamp;
 	std::map<uint32_t, std::shared_ptr<cDeviceLog>> m_devices = { };
 
-	uint64_t				m_maxDiskSpace = 0;
+	uint64_t				m_maxDiskSpace = 0;		// Limit for logging
+	uint64_t				m_usedDiskSpace = 0;	// Size of all logs
 	uint32_t				m_maxFileSize = 0;
 	cLogStats				m_logStats;
 #if PLATFORM_IS_EVB_2
@@ -232,6 +237,8 @@ private:
 	double					m_iconUpdatePeriodSec = false;
 	time_t					m_lastCommTime = 0;
 	time_t					m_timeoutFlushSeconds = 0;
+	time_t					m_timeoutFileCullingSeconds = 5;
+	time_t					m_lastFileCullingTime = 0;
 	int						m_progress = 0;
 	bool					m_showParseErrors = true;
 };

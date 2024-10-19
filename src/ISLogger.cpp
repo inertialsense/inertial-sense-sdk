@@ -129,18 +129,36 @@ void cISLogger::Cleanup()
 
 void cISLogger::Update()
 {
-    // if we have a timeout param and the time has elapsed, shutdown
+    time_t timeSec = GetTime();
+
     if (m_lastCommTime == 0)
     {
-        m_lastCommTime = GetTime();
+        m_lastCommTime = timeSec;
     }
-    else if (m_timeoutFlushSeconds > 0 && GetTime() - m_lastCommTime >= m_timeoutFlushSeconds)
+    else if (m_timeoutFlushSeconds > 0 && timeSec - m_lastCommTime >= m_timeoutFlushSeconds)
     {
         for (auto it : m_devices)
         {
             it.second->Flush();
         }
     }
+
+    if (m_enabled && 
+        m_timeoutFileCullingSeconds > 0 && 
+        timeSec - m_lastFileCullingTime >= m_timeoutFileCullingSeconds)
+    {   // File culling
+        m_lastFileCullingTime = timeSec;
+
+        // Update amount of drive space for parent log directory
+        m_usedDiskSpace = ISFileManager::GetDirectorySpaceUsed(m_rootDirectory);
+
+        if (m_usedDiskSpace > m_maxDiskSpace)
+        {   // Need to remove files
+           ISFileManager::RemoveOldestFiles(m_rootDirectory, m_maxDiskSpace);
+           ISFileManager::RemoveEmptyDirectories(m_rootDirectory);
+        }
+    }
+
     ISFileManager::TouchFile(m_directory + "/stats.txt");
 }
 
@@ -154,10 +172,19 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     CloseAllFiles();
 
     m_logType = logType;
-    m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
+    m_rootDirectory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
     maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.01f, 0.99f);
-    uint64_t availableSpace = ISFileManager::GetDirectorySpaceAvailable(m_directory);
-    m_maxDiskSpace = (maxDiskSpacePercent <= 0.0f ? availableSpace : (uint64_t)(availableSpace * maxDiskSpacePercent));
+    uint64_t totalDiskSize = ISFileManager::GetDirectoryDriveTotalSize(m_rootDirectory);
+    m_maxDiskSpace = (uint64_t)(totalDiskSize * maxDiskSpacePercent);
+
+    // Limit to available size
+    uint64_t availableSpace = ISFileManager::GetDirectorySpaceAvailable(m_rootDirectory);
+    m_maxDiskSpace = _MIN(m_maxDiskSpace, availableSpace); 
+
+    m_maxDiskSpace = 1200 * 1024*1024;
+
+    // Amount of drive space for parent log directory
+    m_usedDiskSpace = ISFileManager::GetDirectorySpaceUsed(m_rootDirectory);
 
     // ensure there are between min and max file count
     if (maxFileSize > m_maxDiskSpace / minFileCount)
@@ -176,12 +203,12 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     m_maxFileSize = _MIN(m_maxFileSize, maxFileSize);
 
     // create root dir
-    _MKDIR(m_directory.c_str());
+    _MKDIR(m_rootDirectory.c_str());
 
     if (useSubFolderTimestamp)
     {
         // create time stamp dir
-        m_directory = directory + "/" + m_timeStamp;
+        m_directory = m_rootDirectory + "/" + m_timeStamp;
         _MKDIR(m_directory.c_str());
 
         if (!subDirectory.empty())
