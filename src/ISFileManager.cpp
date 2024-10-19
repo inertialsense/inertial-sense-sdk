@@ -23,16 +23,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <time.h>
 #endif
 
-#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
-#include <sys/statvfs.h>
-#include <sys/stat.h>
+#include <cstdio>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <cstring>
+#include <ctime>
+
+#if PLATFORM_IS_WINDOWS
+    #include <windows.h>
+#endif
+
+#if PLATFORM_IS_LINUX || PLATFORM_IS_APPLE
+#include <sys/statvfs.h>
 #include <dirent.h>
 #include <unistd.h>
-#include <cstring>
+#endif
+
+#if 1
+    #define DEBUG_PRINT(x) std::cout << x ;
+#else
+    #define DEBUG_PRINT(x)  // Do nothing if DEBUG is not defined
 #endif
 
 namespace ISFileManager {
@@ -620,134 +632,203 @@ namespace ISFileManager {
     #endif
     }
 
-#if 1
-    #define DEBUG_PRINT(x) std::cout << x ;
-#else
-    #define DEBUG_PRINT(x)  // Do nothing if DEBUG is not defined
-#endif
-
     // Struct to hold file information
-    struct FileInfo 
-    {
+    struct FileInfo {
         std::string path;
         std::uintmax_t size;
         std::time_t last_modified;
 
-        // Comparator for sorting by last modified time (oldest first)
         bool operator<(const FileInfo& other) const {
             return last_modified < other.last_modified;
         }
     };
 
-    // Function to get the size and last modified time of a file
-    bool get_file_info(const std::string& file_path, FileInfo& file_info) 
-    {
-        struct stat file_stat;
-        if (stat(file_path.c_str(), &file_stat) == 0) 
-        {
-            file_info.path = file_path;
-            file_info.size = file_stat.st_size;
-            file_info.last_modified = file_stat.st_mtime;
+    // Function to get the size and modification time of a file
+    bool get_file_info(const std::string& path, FileInfo& file_info) {
+    #if PLATFORM_IS_WINDOWS
+        WIN32_FILE_ATTRIBUTE_DATA file_data;
+        if (GetFileAttributesEx(path.c_str(), GetFileExInfoStandard, &file_data)) {
+            ULARGE_INTEGER file_size;
+            file_size.LowPart = file_data.nFileSizeLow;
+            file_size.HighPart = file_data.nFileSizeHigh;
+
+            file_info.path = path;
+            file_info.size = file_size.QuadPart;
+
+            // Convert FILETIME to Unix epoch time
+            FILETIME ft = file_data.ftLastWriteTime;
+            ULARGE_INTEGER ull;
+            ull.LowPart = ft.dwLowDateTime;
+            ull.HighPart = ft.dwHighDateTime;
+            file_info.last_modified = ull.QuadPart / 10000000ULL - 11644473600ULL;
+
             return true;
         }
         return false;
+    #else
+        struct stat file_stat;
+        if (stat(path.c_str(), &file_stat) == 0) {
+            if (S_ISREG(file_stat.st_mode)) {
+                file_info.path = path;
+                file_info.size = file_stat.st_size;
+                file_info.last_modified = file_stat.st_mtime;
+                return true;
+            }
+        }
+        return false;
+    #endif
     }
 
-    // Function to recursively get all files in a directory and subdirectories
-    void get_all_files(const std::string& directory, std::vector<FileInfo>& files) 
-    {
+    // Function to recursively gather files and their information
+    void get_all_files(const std::string& directory, std::vector<FileInfo>& files) {
+    #if PLATFORM_IS_WINDOWS
+        WIN32_FIND_DATA find_file_data;
+        HANDLE hFind = FindFirstFile((directory + "\\*").c_str(), &find_file_data);
+
+        if (hFind == INVALID_HANDLE_VALUE) {
+            std::cerr << "Error: Could not open directory " << directory << std::endl;
+            return;
+        }
+
+        do {
+            const std::string file_name = find_file_data.cFileName;
+            if (file_name == "." || file_name == "..") continue;
+
+            const std::string full_path = directory + "\\" + file_name;
+
+            if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                // Recurse into subdirectories
+                get_all_files(full_path, files);
+            } else {
+                // Regular file
+                FileInfo info;
+                if (get_file_info(full_path, info)) {
+                    files.push_back(info);
+                }
+            }
+        } while (FindNextFile(hFind, &find_file_data) != 0);
+
+        FindClose(hFind);
+    #else
         DIR* dir = opendir(directory.c_str());
-        if (!dir) 
-        {
-            std::cerr << "Error opening directory: " << directory << std::endl;
+        if (!dir) {
+            std::cerr << "Error: Could not open directory " << directory << std::endl;
             return;
         }
 
         struct dirent* entry;
-        while ((entry = readdir(dir)) != nullptr) 
-        {
-            std::string file_name = entry->d_name;
+        while ((entry = readdir(dir)) != nullptr) {
+            std::string name = entry->d_name;
 
-            // Skip current and parent directory symbols
-            if (file_name == "." || file_name == "..") 
-            {
+            // Skip "." and ".."
+            if (name == "." || name == "..")
                 continue;
-            }
 
-            std::string full_path = directory + "/" + file_name;
-
-            // Check if it's a directory
-            struct stat entry_stat;
-            if (stat(full_path.c_str(), &entry_stat) == 0 && S_ISDIR(entry_stat.st_mode)) 
-            {   // Recursively process subdirectories
-                get_all_files(full_path, files);
-            } else if (S_ISREG(entry_stat.st_mode)) 
-            {
-                // If it's a regular file, get its information
-                FileInfo file_info;
-                if (get_file_info(full_path, file_info)) 
-                {
-                    files.push_back(file_info);
+            std::string path = directory + "/" + name;
+            
+            if (entry->d_type == DT_DIR) {
+                // Recurse into subdirectories
+                get_all_files(path, files);
+            } else if (entry->d_type == DT_REG) {
+                // Regular file
+                FileInfo info;
+                if (get_file_info(path, info)) {
+                    files.push_back(info);
                 }
             }
         }
 
         closedir(dir);
+    #endif
     }
 
-    // Function to remove files until total size is under the target limit
-    void RemoveOldestFiles(const std::string& directory, std::uintmax_t target_size) 
-    {
-        // Get all files in the directory and subdirectories
+    // Function to remove files until total size is under the limit
+    void RemoveOldestFiles(const std::string& directory, std::uintmax_t target_size) {
         std::vector<FileInfo> files;
+
+        // Get all files in the directory and subdirectories
         get_all_files(directory, files);
 
-        // Calculate the total size of all files
+        // Calculate total size
         std::uintmax_t total_size = 0;
-        for (const auto& file : files) 
-        {
+        for (const auto& file : files) {
             total_size += file.size;
         }
 
         DEBUG_PRINT("Initial total size: " << total_size << " bytes\n");
 
-        // If the total size is already under the target size, no files need to be removed
-        if (total_size <= target_size) 
-        {
+        // If total size is already under the target size, no files need to be removed
+        if (total_size <= target_size) {
             DEBUG_PRINT("Total size is already under the target size.\n");
             return;
         }
 
-        // Sort files by last modified time (oldest first)
+        // Sort files by their last modified time (oldest first)
         std::sort(files.begin(), files.end());
 
-        // Remove the oldest files until the total size is within the target limit
-        for (const auto& file : files) 
-        {
-            if (total_size <= target_size) 
-            {
-                break;
+        // Remove the oldest files until the total size is under the target size
+        for (const auto& file : files) {
+            if (total_size <= target_size) {
+                break;  // Stop when the total size is within the target limit
             }
 
             DEBUG_PRINT("Removing: " << file.path << " (" << file.size << " bytes)\n");
-
-            // Remove the file
-            if (remove(file.path.c_str()) == 0) 
-            {
+    #if PLATFORM_IS_WINDOWS
+            if (DeleteFile(file.path.c_str())) {
+    #else
+            if (remove(file.path.c_str()) == 0) {
+    #endif
                 total_size -= file.size;
-            } 
-            else 
-            {
-                std::cerr << "Failed to remove file: " << file.path << std::endl;
+            } else {
+                std::cerr << "Error removing file: " << file.path << std::endl;
             }
         }
 
         DEBUG_PRINT("Final total size: " << total_size << " bytes\n");
     }
 
-    // Function to recursively remove empty directories
-    bool RemoveEmptyDirectories(const std::string& directory) 
-    {
+    // Function to remove empty directories
+    bool RemoveEmptyDirectories(const std::string& directory) {
+    #if PLATFORM_IS_WINDOWS
+        WIN32_FIND_DATA find_file_data;
+        HANDLE hFind = FindFirstFile((directory + "\\*").c_str(), &find_file_data);
+
+        if (hFind == INVALID_HANDLE_VALUE) {
+            return false;  // Couldn't open directory
+        }
+
+        bool is_empty = true;
+
+        do {
+            const std::string file_name = find_file_data.cFileName;
+            if (file_name == "." || file_name == "..") continue;
+
+            const std::string full_path = directory + "\\" + file_name;
+
+            if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                // Recursively check if the subdirectory is empty
+                if (!RemoveEmptyDirectories(full_path)) {
+                    is_empty = false;
+                }
+            } else {
+                // Found a file, directory is not empty
+                is_empty = false;
+            }
+        } while (FindNextFile(hFind, &find_file_data) != 0);
+
+        FindClose(hFind);
+
+        // If the directory is empty, remove it
+        if (is_empty) {
+            if (RemoveDirectory(directory.c_str())) {
+                DEBUG_PRINT("Removed empty directory: " << directory << std::endl);
+            } else {
+                std::cerr << "Error removing directory: " << directory << std::endl;
+            }
+        }
+
+        return is_empty;
+    #else
         DIR* dir = opendir(directory.c_str());
         if (!dir) {
             return false;  // Couldn't open directory
@@ -771,7 +852,7 @@ namespace ISFileManager {
                     is_empty = false;
                 }
             } else {
-                // If we find a file, the directory is not empty
+                // Found a file, directory is not empty
                 is_empty = false;
             }
         }
@@ -788,6 +869,7 @@ namespace ISFileManager {
         }
 
         return is_empty;
+    #endif
     }
 
 } // namespace ISFileManager
