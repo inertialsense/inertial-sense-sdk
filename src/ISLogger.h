@@ -252,7 +252,7 @@ private:
 	double					m_iconUpdatePeriodSec = false;
 	time_t					m_lastCommTime = 0;
 	time_t					m_timeoutFlushSeconds = 0;
-	time_t					m_timeoutFileCullingSeconds = 5;
+	time_t					m_timeoutFileCullingSeconds = 10;
 	time_t					m_lastFileCullingTime = 0;
 	int						m_progress = 0;
 	bool					m_showParseErrors = true;
