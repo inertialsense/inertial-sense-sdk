@@ -73,7 +73,7 @@ if (WIN32)
 
     # Windows specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-            ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
     )
 
     # We need to ensure windows static libs are found
@@ -81,7 +81,7 @@ if (WIN32)
 else ()
     # Linux specific include dir
     target_include_directories(${PROJECT_NAME} PUBLIC
-            ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
+        ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
     )
 
     # Linux compiler flags
