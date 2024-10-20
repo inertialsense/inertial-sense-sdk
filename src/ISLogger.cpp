@@ -172,7 +172,7 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     CloseAllFiles();
 
     m_logType = logType;
-    m_rootDirectory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
+    m_rootDirectory = m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
 
     // Drive usage limit
     m_maxDiskSpace = 0;                 // disable log file culling
