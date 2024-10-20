@@ -147,7 +147,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
         printf("%s disk usage/limit: %.0f/%.0f MB (%.0f%%)\n", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB(), logger.MaxDiskSpaceMB(), percentUsed);
     }
     else
-    {   // Limit diabled
+    {   // Limit disabled
         printf("%s disk usage: %.0f MB\n", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB());
     }
 #endif
