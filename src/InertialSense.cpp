@@ -164,10 +164,10 @@ InertialSense::~InertialSense()
 	DisableLogging();
 }
 
-bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const string& subFolder)
+bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, const string& subFolder)
 {
     cMutexLocker logMutexLocker(&m_logMutex);
-    if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, logType, maxDiskSpacePercent, maxFileSize, subFolder.length() != 0))
+    if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, logType, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, subFolder.length() != 0))
     {
         return false;
     }
@@ -315,7 +315,8 @@ bool InertialSense::SetLoggerEnabled(
         cISLogger::eLogType logType,
         uint64_t rmcPreset,
         uint32_t rmcOptions,
-        float maxDiskSpacePercent,
+        float driveUsageLimitPercent,
+        float driveUsageLimitMb,
         uint32_t maxFileSize,
         const string& subFolder)
 {
@@ -331,7 +332,7 @@ bool InertialSense::SetLoggerEnabled(
         {
             BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions);
         }
-        return EnableLogging(path, logType, maxDiskSpacePercent, maxFileSize, subFolder);
+        return EnableLogging(path, logType, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, subFolder);
     }
 
     // !enable, shutdown logger gracefully

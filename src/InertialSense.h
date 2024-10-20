@@ -167,7 +167,8 @@ public:
     * @param path the path to write the log files to
     * @param logType the type of log to write
     * @param logSolution true to log solution stream, false otherwise
-    * @param maxDiskSpacePercent the max disk space to use in percent of free space (0.0 to 1.0)
+    * @param driveUsageLimitPercent the maximum usable disk space in percent of total drive size (0.0 to 1.0). Oldest files are deleted to maintain this limit. Zero to disable this limit.
+    * @param driveUsageLimitMb the maximum usable disk space in MB. Oldest files are deleted to maintain this limit. Zero to disable this limit.
     * @param maxFileSize the max file size for each log file in bytes
     * @param chunkSize the max data to keep in RAM before flushing to disk in bytes
     * @param subFolder timestamp sub folder or empty for none
@@ -179,7 +180,8 @@ public:
             cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
             uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
             uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
-            float maxDiskSpacePercent = 0.5f,
+            float driveUsageLimitPercent = 0.5f,
+            float driveUsageLimitMb = 0.0f,
             uint32_t maxFileSize = 1024 * 1024 * 5,
             const std::string& subFolder = cISLogger::g_emptyString);
 
@@ -631,7 +633,7 @@ private:
     // returns false if logger failed to open
     bool UpdateServer();
     bool UpdateClient();
-    bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
+    bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, const std::string& subFolder);
     void DisableLogging();
     bool HasReceivedDeviceInfo(size_t index);
     bool HasReceivedDeviceInfoFromAllDevices();
