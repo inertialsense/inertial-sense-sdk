@@ -143,7 +143,7 @@ void cISLogger::Update()
         }
     }
 
-    if (m_enabled && 
+    if (m_enabled && m_maxDiskSpace!=0 && 
         m_timeoutFileCullingSeconds > 0 && 
         timeSec - m_lastFileCullingTime >= m_timeoutFileCullingSeconds)
     {   // File culling
@@ -163,7 +163,7 @@ void cISLogger::Update()
 }
 
 
-bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const string &subDirectory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const string &subDirectory, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     static const int minFileCount = 50;
     static const int maxFileCount = 10000;
@@ -173,27 +173,35 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
 
     m_logType = logType;
     m_rootDirectory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
-    maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.01f, 0.99f);
-    uint64_t totalDiskSize = ISFileManager::GetDirectoryDriveTotalSize(m_rootDirectory);
-    m_maxDiskSpace = (uint64_t)(totalDiskSize * maxDiskSpacePercent);
+
+    // Drive usage limit
+    m_maxDiskSpace = 0;                 // disable log file culling
+    if (driveUsageLimitPercent > 0.0f)
+    {   // Percent limit enabled
+        driveUsageLimitPercent = _CLAMP(driveUsageLimitPercent, 0.01f, 0.99f);
+        uint64_t totalDiskSize = ISFileManager::GetDirectoryDriveTotalSize(m_rootDirectory);
+        m_maxDiskSpace = (uint64_t)(totalDiskSize * driveUsageLimitPercent);
+    }
+    if (driveUsageLimitMb > 0.0f)
+    {   // Size limit enabled
+        m_maxDiskSpace = _MIN(m_maxDiskSpace, (uint64_t)(driveUsageLimitMb*1024*1024));
+    }
 
     // Limit to available size
     uint64_t availableSpace = ISFileManager::GetDirectorySpaceAvailable(m_rootDirectory);
     m_maxDiskSpace = _MIN(m_maxDiskSpace, availableSpace); 
 
-    m_maxDiskSpace = 1200 * 1024*1024;
-
-    // Amount of drive space for parent log directory
+    // Amount of drive space used by parent log directory (i.e. "IS_log")
     m_usedDiskSpace = ISFileManager::GetDirectorySpaceUsed(m_rootDirectory);
 
     // ensure there are between min and max file count
-    if (maxFileSize > m_maxDiskSpace / minFileCount)
+    if (maxFileSize > availableSpace / minFileCount)
     {
-        m_maxFileSize = (uint32_t)(m_maxDiskSpace / minFileCount);
+        m_maxFileSize = (uint32_t)(availableSpace / minFileCount);
     }
-    else if (maxFileSize < m_maxDiskSpace / maxFileCount)
+    else if (maxFileSize < availableSpace / maxFileCount)
     {
-        m_maxFileSize = (uint32_t)(m_maxDiskSpace / maxFileCount);
+        m_maxFileSize = (uint32_t)(availableSpace / maxFileCount);
     }
     else
     {
@@ -256,14 +264,14 @@ string cISLogger::CreateCurrentTimestamp()
 }
 
 
-bool cISLogger::InitSave(eLogType logType, const string &directory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSave(eLogType logType, const string &directory, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     m_timeStamp = CreateCurrentTimestamp();
-    return InitSaveCommon(logType, directory, g_emptyString, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
+    return InitSaveCommon(logType, directory, g_emptyString, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, useSubFolderTimestamp);
 }
 
 
-bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     if (timeStamp.length() == 0)
     {
@@ -276,7 +284,7 @@ bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directo
         m_timeStamp = timeStamp;
     }
 
-    return InitSaveCommon(logType, directory, subDirectory, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
+    return InitSaveCommon(logType, directory, subDirectory, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, useSubFolderTimestamp);
 }
 
 std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
@@ -739,22 +747,10 @@ const dev_info_t *cISLogger::DeviceInfo(unsigned int device)
 int g_copyReadCount;
 int g_copyReadDid;
 
-/**
- * FIXME:  Not sure what to do here... this seems to be making a copy of a cISLogger instance, but I'm not sure why...
- * @param log
- * @param timestamp
- * @param outputDir
- * @param logType
- * @param maxLogSpacePercent
- * @param maxFileSize
- * @param useSubFolderTimestamp
- * @param enableCsvIns2ToIns1Conversion
- * @return
- */
-bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float maxLogSpacePercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
+bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float driveUsageLimitPercent, float driveUsageLimitMb, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
-    if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
+    if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, useSubFolderTimestamp))
     {
         return false;
     }

@@ -67,8 +67,8 @@ public:
 	bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_DAT, std::vector<std::string> serials = {});
 
 	// Setup logger for writing to file.
-	bool InitSave(eLogType logType = LOGTYPE_DAT, const std::string& directory = g_emptyString, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
-	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSave(eLogType logType = LOGTYPE_DAT, const std::string& directory = g_emptyString, float driveUsageLimitPercent = 0.5f, float driveUsageLimitMb = 0.0f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
+	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float driveUsageLimitPercent = 0.5f, float driveUsageLimitMb = 0.0f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
     std::shared_ptr<cDeviceLog> registerDevice(ISDevice& device);
@@ -111,13 +111,28 @@ public:
 	// bool SetDeviceInfo(const dev_info_t *info, unsigned int device = 0);
 	// const dev_info_t* DeviceInfo(unsigned int device = 0);
 
+	/**
+	 * @brief Copy (convert) one log to another log type.
+	 * 
+	 * @param log Input log
+	 * @param timestamp Time to use on the output log
+	 * @param outputDir Directory to write output log
+	 * @param logType Type of the output log
+	 * @param maxFileSize Max size of the individual output files
+	 * @param driveUsageLimitPercent Drive usage limit in percent of total drive space
+	 * @param driveUsageLimitMb Drive usage limit in MB
+	 * @param useSubFolderTimestamp Output logs should be written into a timestamped subdirectory 
+	 * @param enableCsvIns2ToIns1Conversion  Convert Ins2 to Ins1 within the log 
+	 * @return true if log copy (conversion) output was successful, false if not.
+	 */
 	bool CopyLog(
 		cISLogger& log,
 		const std::string& timestamp = g_emptyString,
 		const std::string& outputDir = g_emptyString,
 		eLogType logType = LOGTYPE_DAT,
 		uint32_t maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE,
-		float maxDiskSpacePercent = 0.5f,
+		float driveUsageLimitPercent = 0.5f, 
+		float driveUsageLimitMb = 0.0f,
 		bool useSubFolderTimestamp = true,
 		bool enableCsvIns2ToIns1Conversion = true);
 	const cLogStats& GetStats() { return m_logStats; }
@@ -197,7 +212,7 @@ private:
 	cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
+	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp);
 	bool InitDevicesForWriting(std::vector<ISDevice>& devices);
 	void Cleanup();
 	void PrintProgress();
@@ -219,7 +234,7 @@ private:
 	std::string				m_timeStamp;
 	std::map<uint32_t, std::shared_ptr<cDeviceLog>> m_devices = { };
 
-	uint64_t				m_maxDiskSpace = 0;		// Limit for logging
+	uint64_t				m_maxDiskSpace = 0;		// Limit for logging.  Zero to disable file culling drive management.
 	uint64_t				m_usedDiskSpace = 0;	// Size of all logs
 	uint32_t				m_maxFileSize = 0;
 	cLogStats				m_logStats;
