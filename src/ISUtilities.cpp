@@ -269,9 +269,30 @@ uint32_t current_uptimeMs() {
     gettimeofday(&tv, NULL);
     upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
 #else
-    struct timespec tv;
-    clock_gettime(CLOCK_MONOTONIC, &tv);
-    upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+    #ifdef PLATFORM_IS_WINDOWS
+        long tv_sec; long tv_nsec;
+        static LARGE_INTEGER ticksPerSec;
+        LARGE_INTEGER ticks;
+
+        if (!ticksPerSec.QuadPart) {
+            QueryPerformanceFrequency(&ticksPerSec);
+            if (!ticksPerSec.QuadPart) {
+                errno = ENOTSUP;
+                return -1;
+            }
+        }
+
+        QueryPerformanceCounter(&ticks);
+
+        tv_sec = (long)(ticks.QuadPart / ticksPerSec.QuadPart);
+        tv_nsec = (long)(((ticks.QuadPart % ticksPerSec.QuadPart) * NS_PER_SEC) / ticksPerSec.QuadPart);
+
+        upTimeMs = (uint32_t)(tv_nsec / 1000000 + 1000 * tv_sec);
+    #else
+        struct timespec tv;
+        clock_gettime(CLOCK_MONOTONIC, &tv);
+        upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+    #endif
 #endif
     return upTimeMs;
 }
