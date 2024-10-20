@@ -645,7 +645,7 @@ namespace ISFileManager {
 
     // Function to get the size and modification time of a file
     bool get_file_info(const std::string& path, FileInfo& file_info) {
-    #if PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
         WIN32_FILE_ATTRIBUTE_DATA file_data;
         if (GetFileAttributesEx(path.c_str(), GetFileExInfoStandard, &file_data)) {
             ULARGE_INTEGER file_size;
@@ -665,7 +665,7 @@ namespace ISFileManager {
             return true;
         }
         return false;
-    #else
+#else
         struct stat file_stat;
         if (stat(path.c_str(), &file_stat) == 0) {
             if (S_ISREG(file_stat.st_mode)) {
@@ -676,12 +676,12 @@ namespace ISFileManager {
             }
         }
         return false;
-    #endif
+#endif
     }
 
     // Function to recursively gather files and their information
     void get_all_files(const std::string& directory, std::vector<FileInfo>& files) {
-    #if PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
         WIN32_FIND_DATA find_file_data;
         HANDLE hFind = FindFirstFile((directory + "\\*").c_str(), &find_file_data);
 
@@ -709,7 +709,7 @@ namespace ISFileManager {
         } while (FindNextFile(hFind, &find_file_data) != 0);
 
         FindClose(hFind);
-    #else
+#else
         DIR* dir = opendir(directory.c_str());
         if (!dir) {
             std::cerr << "Error: Could not open directory " << directory << std::endl;
@@ -739,7 +739,7 @@ namespace ISFileManager {
         }
 
         closedir(dir);
-    #endif
+#endif
     }
 
     // Function to remove files until total size is under the limit
@@ -773,11 +773,11 @@ namespace ISFileManager {
             }
 
             DEBUG_PRINT("Removing: " << file.path << " (" << file.size << " bytes)\n");
-    #if PLATFORM_IS_WINDOWS
+#if PLATFORM_IS_WINDOWS
             if (DeleteFile(file.path.c_str())) {
-    #else
+#else
             if (remove(file.path.c_str()) == 0) {
-    #endif
+#endif
                 total_size -= file.size;
             } else {
                 std::cerr << "Error removing file: " << file.path << std::endl;
@@ -828,7 +828,7 @@ namespace ISFileManager {
         }
 
         return is_empty;
-    #else
+#else
         DIR* dir = opendir(directory.c_str());
         if (!dir) {
             return false;  // Couldn't open directory
@@ -869,7 +869,7 @@ namespace ISFileManager {
         }
 
         return is_empty;
-    #endif
+#endif
     }
 
 } // namespace ISFileManager
