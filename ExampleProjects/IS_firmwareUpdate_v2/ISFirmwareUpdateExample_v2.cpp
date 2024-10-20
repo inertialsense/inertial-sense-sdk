@@ -297,8 +297,8 @@ int main(int argc, char* argv[])
                 commands.push_back("upload=" + fileName); // upload image to device
                 commands.push_back("reset"); // reset device
 
-                for (auto& device : inertialSenseInterface.getDevices()) {
-                    if (device.updateFirmware(
+                for (auto device : inertialSenseInterface.getDevices()) {
+                    if (device->updateFirmware(
                             fwUpdate::TARGET_DFU_GPX1, // Target GPX (using DFU)
                             commands, // vector of strings, commands to run when performing the update
                             uploadProgress,
@@ -322,7 +322,7 @@ int main(int argc, char* argv[])
                             break;
                         }
 
-                        status = device.getUpdateStatus();
+                        status = device->getUpdateStatus();
 
                     } while (status >= fwUpdate::NOT_STARTED && status < fwUpdate::FINISHED);
 

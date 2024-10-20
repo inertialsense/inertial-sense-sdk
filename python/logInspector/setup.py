@@ -41,7 +41,7 @@ if sys.platform == 'win32':
 else: # POSIX
     extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
-source_files = ['inertialsense/log_reader.cpp' ]
+source_files = ['src/log_reader.cpp' ]
 
 ext_modules = [
     Extension('log_reader',
@@ -49,9 +49,8 @@ ext_modules = [
         include_dirs = [
             # Path to pybind11 headers
             'include',
-            '../inertialsense',
-            '../../inertialsense',
-            '../../inertialsense/libusb/libusb',
+            '../../src',
+            '../../src/libusb/libusb',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],

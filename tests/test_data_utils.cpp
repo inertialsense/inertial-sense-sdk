@@ -509,7 +509,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
         devices[d].devInfo.hardwareVer[0] = 5;
         devices[d].devInfo.hardwareVer[1] = 0;
         devices[d].devInfo.serialNumber = rand() % 999999;
-        logger.registerDevice(devices[d]);
+        devices[d].registerWithLogger(&logger);
     }
     logger.EnableLogging(true);
     logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
