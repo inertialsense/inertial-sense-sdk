@@ -2,9 +2,12 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
+import glob
 
 __version__ = '0.0.1'
 # os.environ["CC"] = "g++-4.7" os.environ["CXX"] = "g++-4.7"
+
+import distutils.command.build
 
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
@@ -26,59 +29,33 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+static_libraries = ['InertialSenseSDK']
+static_lib_dir = '../..'
+libraries = []
+library_dirs = []
+
+if sys.platform == 'win32':
+    libraries.extend(static_libraries)
+    library_dirs.append(static_lib_dir)
+    extra_objects = []
+else: # POSIX
+    extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
+
+source_files = ['src/log_reader.cpp' ]
 
 ext_modules = [
     Extension('log_reader',
-        ['src/log_reader.cpp',
-         '../../src/convert_ins.cpp',
-         '../../src/com_manager.c',
-         '../../src/data_sets.c',
-         '../../src/DataChunk.cpp',
-         '../../src/DataCSV.cpp',
-         '../../src/DataJSON.cpp',
-         '../../src/DataKML.cpp',
-         '../../src/DeviceLog.cpp',
-         '../../src/DeviceLogCSV.cpp',
-         '../../src/DeviceLogJSON.cpp',
-         '../../src/DeviceLogKML.cpp',
-         '../../src/DeviceLogRaw.cpp',
-         '../../src/DeviceLogSerial.cpp',
-         '../../src/ihex.c',
-         '../../src/ISComm.c',
-         '../../src/ISDataMappings.cpp',
-         '../../src/ISDisplay.cpp',
-         '../../src/ISEarth.c',
-         '../../src/ISFileManager.cpp',
-         '../../src/ISLogFile.cpp',
-         '../../src/ISLogger.cpp',
-         '../../src/ISLogStats.cpp',
-         '../../src/ISMatrix.c',
-         '../../src/ISPose.c',
-         '../../src/ISSerialPort.cpp',
-         '../../src/ISStream.cpp',
-         '../../src/ISUtilities.cpp',
-         '../../src/linked_list.c',
-         '../../src/message_stats.cpp',
-         '../../src/protocol_nmea.cpp',
-         '../../src/serialPort.c',
-         '../../src/serialPortPlatform.c',
-         '../../src/time_conversion.cpp',
-         '../../src/tinystr.cpp',
-         '../../src/tinyxml.cpp',
-         '../../src/tinyxmlerror.cpp',
-         '../../src/tinyxmlparser.cpp',
-         '../../src/util/md5.cpp',
-         ],
+        sources = source_files,
         include_dirs = [
             # Path to pybind11 headers
             'include',
-            '../src',
             '../../src',
             '../../src/libusb/libusb',
             get_pybind_include(),
             get_pybind_include(user=True)
         ],
         language='c++',
+        extra_objects=extra_objects
     ),
 ]
 
@@ -111,6 +88,13 @@ def cpp_flag(compiler):
     else:
         raise RuntimeError('Unsupported compiler -- at least C++11 support '
                            'is needed!')
+
+
+# Override build command
+class BuildCommand(distutils.command.build.build):
+    def initialize_options(self):
+        distutils.command.build.build.initialize_options(self)
+        self.build_base = '/tmp/log_inspector-build'
 
 
 class BuildExt(build_ext):
@@ -154,10 +138,11 @@ setup(
         'pyqt5', 
         'pyserial', 
         'pyyaml', 
-        'scipy', 
+        'scipy',
         'simplekml',
         'tqdm'],
     setup_requires=['pybind11>=2.2'],
+    # cmdclass={'build': BuildCommand, 'build_ext': BuildExt},
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )

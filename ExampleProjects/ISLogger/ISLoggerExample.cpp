@@ -16,17 +16,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Change these include paths to the correct paths for your project
 #include "../../src/InertialSense.h"
 
-static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
+static int msgHandlerIsb(InertialSense* i, p_data_t* data, port_handle_t port)
 {
 	static uint64_t dataCount;
 	printf("Data count: %" PRIu64 "          \r", ++dataCount);
+    return 0;
 }
 
 int main(int argc, char* argv[])
 {
 	if (argc < 2)
 	{
-		printf("Provide the port and optionally log type (dat,raw,sdat,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
+		printf("Provide the port and optionally log type (raw,dat	,csv,kml) as arguments: $ ./ISLoggerExample /dev/ttyACM0 raw\n");
 		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
 		return -1;
 	}

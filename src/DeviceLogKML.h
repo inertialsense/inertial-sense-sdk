@@ -45,7 +45,7 @@ public:
     cDeviceLogKML(const ISDevice* dev) : cDeviceLog(dev) {};
     cDeviceLogKML(uint16_t hdwId, uint32_t serialNo) : cDeviceLog(hdwId, serialNo) {};
 
-    void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
+    void InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool CloseWriteFile(int kid, sKmlLog& log);
 	bool OpenWithSystemApp(void) OVERRIDE;

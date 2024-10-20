@@ -509,14 +509,14 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
         devices[d].devInfo.hardwareVer[0] = 5;
         devices[d].devInfo.hardwareVer[1] = 0;
         devices[d].devInfo.serialNumber = rand() % 999999;
-        logger.registerDevice(devices[d]);
+        devices[d].registerWithLogger(&logger);
     }
     logger.EnableLogging(true);
     logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
 
     test_message_t msg = {};
     uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks??
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
@@ -575,7 +575,7 @@ int GenerateDataStream(uint8_t *buffer, int bufferSize, eTestGenDataOptions opti
 {
     test_message_t msg = {};
     uint8_t comBuf[PKT_BUF_SIZE];
-    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE);
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks?
     int streamSize = 0;
     static int pktCount = 0;
 

@@ -27,6 +27,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include "data_sets.h"
 
+// #define USE_IS_INTERNAL
+
+#ifdef USE_IS_INTERNAL
+#include "../../cpp/libs/families/imx/IS_internal.h"
+#include "../../cpp/libs/families/imx/ISDataMappingsInternal.h"
+#endif
+
 using namespace std;
 
 #define SYM_DEG             "°"
@@ -625,7 +632,7 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gnssCn0DynMinOffset", &nvm_flash_cfg_t::gnssCn0DynMinOffset, DATA_TYPE_UINT8, "dBHZ", "GNSS CN0 dynamic minimum threshold offset below max CN0 across all satellites. Used to filter signals used in RTK solution. To disable, set gnssCn0DynMinOffset to zero and increase gnssCn0Minimum.");
     mapper.AddArray("reserved1", &nvm_flash_cfg_t::reserved1, DATA_TYPE_UINT8, 2);
     mapper.AddArray("reserved2", &nvm_flash_cfg_t::reserved2, DATA_TYPE_UINT32, 2);
- 
+
     // Keep at end
     mapper.AddMember("size", &nvm_flash_cfg_t::size, DATA_TYPE_UINT32, "", "Flash group size. Set to 1 to reset this flash group.");
     mapper.AddMember("checksum", &nvm_flash_cfg_t::checksum, DATA_TYPE_UINT32, "", "Flash checksum");
@@ -1703,8 +1710,13 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, json);
 }
 
-bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
+bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int elementIndex, int elementSize, int radix, bool json)
 {
+    if (elementIndex)
+    {   // Offset pointer into array
+        dataBuffer += elementSize * elementIndex;
+    }
+
     switch (dataType)
     {
     case DATA_TYPE_INT8:
@@ -1837,7 +1849,7 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
 }
 
 
-bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, int elementIndex, int elementSize, bool json)
 {
     int precision;
     switch (dataType)

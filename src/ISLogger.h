@@ -52,7 +52,6 @@ public:
 	{
 		LOGTYPE_DAT = 0,	// serial
 		LOGTYPE_RAW,		// packetized serial
-		LOGTYPE_SDAT,		// sorted -- unsupported/deprecated, DO NOT USE!
 		LOGTYPE_CSV,
 		LOGTYPE_KML,
 		LOGTYPE_JSON
@@ -71,7 +70,7 @@ public:
 	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
-    std::shared_ptr<cDeviceLog> registerDevice(ISDevice& device);
+    std::shared_ptr<cDeviceLog> registerDevice(ISDevice* device);
     std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
     std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
 
@@ -170,10 +169,6 @@ public:
 		{
 			return cISLogger::eLogType::LOGTYPE_KML;
 		}
-		else if (logTypeString == "sdat")
-		{
-			return cISLogger::eLogType::LOGTYPE_SDAT;
-		}
 		else if (logTypeString == "json")
 		{
 			return cISLogger::eLogType::LOGTYPE_JSON;
@@ -187,6 +182,32 @@ public:
 
 	static bool ParseFilename(std::string filename, int &serialNum, std::string &date, std::string &time, int &index);
 
+    /**
+     * These are static functions which need to use the port_handle_t to identify which cDeviceLog instance they belong to
+     * and then call into that logger as needed...
+     */
+    std::shared_ptr<cDeviceLog> getDeviceLogByPort(port_handle_t port);
+
+    static int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
+        // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
+
+        if (!userData)
+            return -1;
+
+        cISLogger* logInstance = (cISLogger*)userData;
+        auto devLog = logInstance->getDeviceLogByPort(port);
+        if (devLog) {
+            cLogStats stats;
+                return logInstance->LogData(devLog, len, buf) ? 1 : -1;
+        }
+        return -1;
+    }
+
+    static int logPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
+        // FIXME: We currently aren't interested in logging data that we have SENT (portWrite) to the device, only the response back from the device
+        return -1;
+    }
+
 private:
 #if CPP11_IS_ENABLED
     cISLogger(const cISLogger& copy) = delete;
@@ -195,7 +216,7 @@ private:
 #endif
 
 	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
-	bool InitDevicesForWriting(std::vector<ISDevice>& devices);
+	bool InitDevicesForWriting(std::vector<ISDevice*>& devices);
 	void Cleanup();
 	void PrintProgress();
 
@@ -235,6 +256,5 @@ private:
 	int						m_progress = 0;
 	bool					m_showParseErrors = true;
 };
-
 
 #endif // IS_LOGGER_H
