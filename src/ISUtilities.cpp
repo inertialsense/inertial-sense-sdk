@@ -268,31 +268,39 @@ uint32_t current_uptimeMs() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
-#else
-    #ifdef PLATFORM_IS_WINDOWS
-        long tv_sec; long tv_nsec;
-        static LARGE_INTEGER ticksPerSec;
-        LARGE_INTEGER ticks;
+#elif defined(PLATFORM_IS_WINDOWS)
+    #define MS_PER_SEC      1000ULL     // MS = milliseconds
+    #define US_PER_MS       1000ULL     // US = microseconds
+    #define HNS_PER_US      10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
+    #define NS_PER_US       1000ULL
 
+    #define HNS_PER_SEC     (MS_PER_SEC * US_PER_MS * HNS_PER_US)
+    #define NS_PER_HNS      (100ULL)    // NS = nanoseconds
+    #define NS_PER_SEC      (MS_PER_SEC * US_PER_MS * NS_PER_US)
+
+    long tv_sec; long tv_nsec;
+    static LARGE_INTEGER ticksPerSec;
+    LARGE_INTEGER ticks;
+
+    if (!ticksPerSec.QuadPart) {
+        QueryPerformanceFrequency(&ticksPerSec);
         if (!ticksPerSec.QuadPart) {
-            QueryPerformanceFrequency(&ticksPerSec);
-            if (!ticksPerSec.QuadPart) {
-                errno = ENOTSUP;
-                return -1;
-            }
+            errno = ENOTSUP;
+            return -1;
         }
+    }
 
-        QueryPerformanceCounter(&ticks);
+    QueryPerformanceCounter(&ticks);
 
-        tv_sec = (long)(ticks.QuadPart / ticksPerSec.QuadPart);
-        tv_nsec = (long)(((ticks.QuadPart % ticksPerSec.QuadPart) * NS_PER_SEC) / ticksPerSec.QuadPart);
+    tv_sec = (long)(ticks.QuadPart / ticksPerSec.QuadPart);
+    tv_nsec = (long)(((ticks.QuadPart % ticksPerSec.QuadPart) * NS_PER_SEC) / ticksPerSec.QuadPart);
 
-        upTimeMs = (uint32_t)(tv_nsec / 1000000 + 1000 * tv_sec);
-    #else
-        struct timespec tv;
-        clock_gettime(CLOCK_MONOTONIC, &tv);
-        upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
-    #endif
+    upTimeMs = (uint32_t)(tv_nsec / 1000000 + 1000 * tv_sec);
+#else
+    // Posix systems?
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
 #endif
     return upTimeMs;
 }
