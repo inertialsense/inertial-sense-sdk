@@ -10,11 +10,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <stdio.h>
+#include <cstdio>
 #include <sstream>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <string>
+#include <ctime>
 
 #include "ISUtilities.h"
 #include "ISPose.h"
@@ -258,9 +259,21 @@ uint64_t current_timeUs() {
  * @return number of milliseconds
  */
 uint32_t current_uptimeMs() {
+    uint32_t upTimeMs = UINT32_MAX;
+#if defined(IMX_5)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+#elif defined(GPX_1)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+#else
     struct timespec tv;
     clock_gettime(CLOCK_MONOTONIC, &tv);
-    return (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+    upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+#endif
+    return upTimeMs;
 }
 
 uint64_t timerUsStart() {

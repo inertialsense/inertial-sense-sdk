@@ -276,7 +276,7 @@ int comManagerDisableData(port_handle_t port, uint16_t did);
 * comManagerSend(port, PKT_TYPE_GET_DATA, 0, &data)
 * @endcode
 */
-int comManagerSend(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSend(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
 * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
@@ -293,7 +293,7 @@ int comManagerSend(port_handle_t port, uint8_t pFlags, void *data, uint16_t did,
 * comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 * @endcode
 */
-int comManagerSendData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
 
 // INTERNAL FUNCTIONS...
 /**
@@ -307,7 +307,7 @@ int comManagerSendData(port_handle_t port, void* data, uint16_t did, uint16_t si
 * @param pFlags Additional packet flags if needed.
 * @return 0 if success, anything else if failure
 */
-int comManagerSendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
 * Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
@@ -325,7 +325,7 @@ int comManagerSendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16
 * comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 * @endcode
 */
-int comManagerSendRawData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSendRawData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
 
 /**
 * Write bare data directly to the serial port.
@@ -340,7 +340,7 @@ int comManagerSendRawData(port_handle_t port, void* data, uint16_t did, uint16_t
 * comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
 * @endcode
 */
-int comManagerSendRaw(port_handle_t port, void* dataPtr, int dataSize);
+int comManagerSendRaw(port_handle_t port, const void* dataPtr, int dataSize);
 
 
 /**
@@ -573,7 +573,7 @@ public:
     * comManagerSend(port, PKT_TYPE_GET_DATA, 0, &data)
     * @endcode
     */
-    int send(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset);
+    int send(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset);
 
     /**
     * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
@@ -590,7 +590,7 @@ public:
     * comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
     * @endcode
     */
-    int sendData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
+    int sendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
 
     // INTERNAL FUNCTIONS...
     /**
@@ -604,7 +604,7 @@ public:
     * @param pFlags Additional packet flags if needed.
     * @return 0 if success, anything else if failure
     */
-    int sendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset);
+    int sendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset);
 
     /**
     * Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
@@ -622,7 +622,7 @@ public:
     * comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
     * @endcode
     */
-    int sendRawData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset);
+    int sendRawData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
 
     /**
     * Write bare data directly to the serial port.
@@ -637,7 +637,7 @@ public:
     * comManagerSendRaw(0, &g_devInfo, sizeof(dev_info_t));
     * @endcode
     */
-    int sendRaw(port_handle_t port, void* dataPtr, int dataSize);
+    int sendRaw(port_handle_t port, const void* dataPtr, int dataSize);
 
 
     /**

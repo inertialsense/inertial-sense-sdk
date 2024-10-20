@@ -1158,7 +1158,7 @@ int is_comm_get_data(port_handle_t port, uint32_t did, uint32_t size, uint32_t o
     return is_comm_write(port, PKT_TYPE_GET_DATA, 0, sizeof(p_data_get_t), 0, &get);
 }
 
-void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     // Header
     pkt->hdr.preamble = PSC_ISB_PREAMBLE;
@@ -1173,7 +1173,7 @@ void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t dat
         pkt->hdr.flags |= ISB_FLAGS_PAYLOAD_W_OFFSET;
         pkt->hdr.payloadSize += 2;
     }
-    pkt->data.ptr = data;
+    pkt->data.ptr = (uint8_t *)data; // discard 'const'
     pkt->data.size = data_size;
     pkt->size = pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2;	// Pkt header + payload + checksum
 
@@ -1253,7 +1253,7 @@ int is_comm_write_isb_precomp_to_port(port_handle_t port, packet_t *pkt)
     return (n == pkt->size) ? n : -1;
 }
 
-int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     packet_t txPkt;
 
@@ -1264,7 +1264,7 @@ int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* co
     return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
 }
 
-int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     packet_t txPkt;
 
@@ -1272,7 +1272,7 @@ int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data
     return is_comm_write_pkt(port, &txPkt, flags, did, data_size, offset, data);
 }
 
-int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data)
+int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data)
 {
     if ((port == NULL) || !(portType(port) & PORT_TYPE__COMM))
     {

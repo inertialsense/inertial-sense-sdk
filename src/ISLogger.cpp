@@ -252,23 +252,37 @@ bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directo
     return InitSaveCommon(logType, directory, subDirectory, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
 }
 
-std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
-    switch (m_logType)
-    {
-        default:
-        case LOGTYPE_DAT:   device.devLogger = make_shared<cDeviceLogSerial>(&device);  break;
-        case LOGTYPE_RAW:   device.devLogger = make_shared<cDeviceLogRaw>(&device);     break;
-#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_CSV:   device.devLogger = make_shared<cDeviceLogCSV>(&device);     break;
-        case LOGTYPE_JSON:  device.devLogger = make_shared<cDeviceLogJSON>(&device);    break;
-        case LOGTYPE_KML:   device.devLogger = make_shared<cDeviceLogKML>(&device);     break;
-#endif
-    }
-    device.devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
-    m_devices[device.devInfo.serialNumber] = device.devLogger;
-    setPortLogger(device.port, logPortData, (void*)this);
+std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
+    if (!device)
+        return nullptr;
 
-    return device.devLogger;
+    if (!device->devLogger) {
+        switch (m_logType) {
+            default:
+            case LOGTYPE_DAT:
+                device->devLogger = make_shared<cDeviceLogSerial>(device);
+                break;
+            case LOGTYPE_RAW:
+                device->devLogger = make_shared<cDeviceLogRaw>(device);
+                break;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
+            case LOGTYPE_CSV:
+                device->devLogger = make_shared<cDeviceLogCSV>(device);
+                break;
+            case LOGTYPE_JSON:
+                device->devLogger = make_shared<cDeviceLogJSON>(device);
+                break;
+            case LOGTYPE_KML:
+                device->devLogger = make_shared<cDeviceLogKML>(device);
+                break;
+#endif
+        }
+    }
+    device->devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
+    m_devices[device->devInfo.serialNumber] = device->devLogger;
+    setPortLogger(device->port, logPortData, (void*)this);
+
+    return device->devLogger;
 }
 
 std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t serialNo) {
@@ -290,7 +304,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     return deviceLog;
 }
 
-bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
+bool cISLogger::InitDevicesForWriting(std::vector<ISDevice*>& devices)
 {
     // Remove all devices
     Cleanup();
@@ -299,7 +313,7 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
     {
         LOCK_MUTEX();
         // for (int i = 0; i < numDevices; i++)
-        for (auto& d : devices) {
+        for (auto d : devices) {
             registerDevice(d);
         }
         UNLOCK_MUTEX();
@@ -743,7 +757,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
     p_data_buf_t *data = NULL;
     for ( auto& srcDev : log.DeviceLogs() )
     {
-        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice(*(srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
+        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice((srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
 
 #if LOG_DEBUG_GEN == 2
         // Don't print status here

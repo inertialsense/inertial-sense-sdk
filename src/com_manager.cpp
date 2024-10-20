@@ -380,42 +380,42 @@ void ISComManager::getDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmc
     sendData(port, &rmc, DID_RMC, sizeof(rmc_t), 0);
 }
 
-int comManagerSendData(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset)
+int comManagerSendData(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {	
     return s_cm.sendData(port, data, did, size, offset);
 }
 
-int ISComManager::sendData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset)
+int ISComManager::sendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return send(port, PKT_TYPE_SET_DATA, data, did, size, offset);
 }
 
-int comManagerSendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset)
+int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return s_cm.sendDataNoAck(port, data, did, size, offset);
 }
 
-int ISComManager::sendDataNoAck(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset)
+int ISComManager::sendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return send(port, PKT_TYPE_DATA, data, did, size, offset);
 }
 
-int comManagerSendRawData(port_handle_t port, void *data, uint16_t did, uint16_t size, uint16_t offset)
+int comManagerSendRawData(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return s_cm.sendRawData(port, data, did, size, offset);
 }
 
-int ISComManager::sendRawData(port_handle_t port, void* data, uint16_t did, uint16_t size, uint16_t offset)
+int ISComManager::sendRawData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return send(port, PKT_TYPE_SET_DATA, data, did, size, offset);
 }
 
-int comManagerSendRaw(port_handle_t port, void *dataPtr, int dataSize)
+int comManagerSendRaw(port_handle_t port, const void *dataPtr, int dataSize)
 {
     return s_cm.sendRaw(port, dataPtr, dataSize);
 }
 
-int ISComManager::sendRaw(port_handle_t port, void* dataPtr, int dataSize)
+int ISComManager::sendRaw(port_handle_t port, const void* dataPtr, int dataSize)
 {
     // Return 0 on success, -1 on failure.
     return (portWrite(port, static_cast<const uint8_t *>(dataPtr), dataSize) ? 0 : -1);
@@ -431,12 +431,12 @@ int ISComManager::disableData(port_handle_t port, uint16_t did)
     return send(port, PKT_TYPE_STOP_DID_BROADCAST, NULL, did, 0, 0);
 }
 
-int comManagerSend(port_handle_t port, uint8_t pFlags, void* data, uint16_t did, uint16_t size, uint16_t offset)
+int comManagerSend(port_handle_t port, uint8_t pFlags, const void* data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return s_cm.send(port, pFlags, data, did, size, offset);
 }
 
-int ISComManager::send(port_handle_t port, uint8_t pFlags, void *data, uint16_t did, uint16_t size, uint16_t offset)
+int ISComManager::send(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     // Return 0 on success, -1 on failure
     return (is_comm_write(port, pFlags, did, size, offset, data) < 0 ? -1 : 0);

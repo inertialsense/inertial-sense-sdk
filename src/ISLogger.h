@@ -70,7 +70,7 @@ public:
 	bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float maxDiskSpacePercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
-    std::shared_ptr<cDeviceLog> registerDevice(ISDevice& device);
+    std::shared_ptr<cDeviceLog> registerDevice(ISDevice* device);
     std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
     std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
 
@@ -216,7 +216,7 @@ private:
 #endif
 
 	bool InitSaveCommon(eLogType logType, const std::string& directory, const std::string& subDirectory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp);
-	bool InitDevicesForWriting(std::vector<ISDevice>& devices);
+	bool InitDevicesForWriting(std::vector<ISDevice*>& devices);
 	void Cleanup();
 	void PrintProgress();
 
