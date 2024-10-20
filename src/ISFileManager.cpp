@@ -41,7 +41,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <unistd.h>
 #endif
 
-#if 1
+#if 0
     #define DEBUG_PRINT(x) std::cout << x ;
 #else
     #define DEBUG_PRINT(x)  // Do nothing if DEBUG is not defined

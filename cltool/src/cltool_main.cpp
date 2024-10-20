@@ -140,7 +140,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
     else
         printf("\nLogging %.2f MB to: %s\n", logSize * 1.0e-6f, logger.LogDirectory().c_str());
 
-#if 1   // Disk usage
+#if 0   // Disk usage.  DEBUG, comment out during normal use
     if (logger.MaxDiskSpaceMB() > 0.0f)
     {   // Limit enabled
         float percentUsed = 100.0f * logger.UsedDiskSpaceMB() / logger.MaxDiskSpaceMB();
