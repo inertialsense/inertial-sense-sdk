@@ -9,9 +9,11 @@ cd %SDK_DIR%\python\
 
 @REM python -m pip install logInspector/
 
-cd logInspector
-python setup.py build_ext --inplace
+pip3 install setuptools pybind11 wheel
+python setup.py bdist_wheel sdist build_ext --inplace
 
 :: Run Log Inspector
+
+cd inertialsense/logInspector
 python.exe logInspectorInternal.py
 
