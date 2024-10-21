@@ -61,7 +61,9 @@ jobs:
         run: ./build_cltool.sh
 
       - name: Build LogInspector
-        run: ./build_log_inspector.sh
+        run: |
+          ./install_log_inspector_dependencies.sh
+          ./build_log_inspector.sh
 
       - name: Build SDK Examples
         run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
