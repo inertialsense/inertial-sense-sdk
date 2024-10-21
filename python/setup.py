@@ -45,9 +45,10 @@ libraries = []
 library_dirs = []
 
 if sys.platform == 'win32':
-    libraries.extend(static_libraries)
-    library_dirs.append(static_lib_dir)
-    extra_objects = []
+    #libraries.extend(static_libraries)
+    #library_dirs.append(static_lib_dir)
+    #extra_objects = []
+    extra_objects = ['../build/Release/InertialSenseSDK.lib']
 else: # POSIX
     extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
 
