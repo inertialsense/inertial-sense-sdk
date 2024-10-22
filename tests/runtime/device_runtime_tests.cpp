@@ -72,7 +72,7 @@ void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
     switch (comm.rxBuf.head[0])
     {
     case PSC_ISB_PREAMBLE_BYTE1:    
-        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::GetDataSetName(comm.rxPkt.dataHdr.id));
+        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::DataName(comm.rxPkt.dataHdr.id));
         parser += ", size " + std::to_string(comm.rxPkt.dataHdr.size); 
         break;
     case PSC_NMEA_START_BYTE:       parser = std::string("NMEA ") + std::string((char*)comm.rxBuf.head, _MIN(size, MAX_MSG_LENGTH_NMEA));    break;

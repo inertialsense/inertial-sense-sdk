@@ -135,7 +135,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
 
                     uint8_t *dataPtr = m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset;
 
-                    timestamp = cISDataMappings::GetTimestamp(&m_comm.rxPkt.dataHdr, dataPtr);
+                    timestamp = cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, dataPtr);
                     globalLogStats.LogDataAndTimestamp(m_comm.rxPkt.dataHdr.id, timestamp);
 
                     cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);

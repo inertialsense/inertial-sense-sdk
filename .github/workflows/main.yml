@@ -113,11 +113,14 @@ jobs:
 
     container:
       image: ros:noetic
-      options: --privileged -v /dev:/dev
+      #options: --privileged -v /dev:/dev
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
 
     defaults:
       run:
-        working-directory: ../catkin_ws
+        working-directory: ../ROS/catkin_ws
         shell: bash
 
     steps:
@@ -154,7 +157,7 @@ jobs:
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          catkin_make
+          catkin_make -DCATKIN_BLACKLIST_PACKAGES="inertial_sense_ros2"
           catkin_make test_unit_tests
           catkin_make test_ros_bridge 
 
@@ -173,3 +176,45 @@ jobs:
           roscore &
           catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
           catkin_test_results
+
+  ros2-bridge-tests:
+    name: "ROS2 Bridge Tests"
+    runs-on: [self-hosted, Linux, X64, docker, focal]
+    # if: false  # disable this job
+
+    container:
+      image: osrf/ros:jazzy-desktop
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
+
+    defaults:
+      run:
+        working-directory: ../ROS/ros2_ws # This is outside the scope of git
+        shell: bash
+
+    steps:
+      - name: Install libboost
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
+          apt-get update && apt-get -y install libboost-all-dev
+          "
+
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build ROS2 bridge
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          colcon build
+          "
+
+      - name: Run Functional/Integration Tests (via hardware)
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "          
+          source install/setup.bash
+          ros2 run inertial_sense_ros2 test_inertial_sense_ros2
+          "

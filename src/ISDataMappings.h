@@ -17,7 +17,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <map>
 #include <inttypes.h>
 #include "com_manager.h"
-#include "DataCSV.h"
+
+#include <type_traits>
+#include <cstdint>
+#include <cstddef>
 
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
@@ -27,17 +30,88 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "luna_data_sets.h"
 #endif
 
-/**
-* Get the size of an eDataType
-* @param dataType the data type to get size for
-* @return the size of the data type, or 0 if unknown or variable length (i.e. DataTypeString)
+#define IS_DATA_MAPPING_MAX_STRING_LENGTH 2048
+
+typedef enum
+{
+	DATA_TYPE_INT8,		// 8-bit  signed 	integer
+	DATA_TYPE_UINT8,	// 8-bit  unsigned 	integer
+	DATA_TYPE_INT16,	// 16-bit signed 	integer
+	DATA_TYPE_UINT16,	// 16-bit unsigned 	integer
+	DATA_TYPE_INT32,	// 32-bit signed 	integer
+	DATA_TYPE_UINT32,	// 32-bit unsigned 	integer
+	DATA_TYPE_INT64,	// 64-bit signed 	integer
+	DATA_TYPE_UINT64,	// 64-bit unsigned 	integer
+	DATA_TYPE_F32,		// 32-bit float 
+	DATA_TYPE_F64,		// 64-bit float
+	DATA_TYPE_STRING,
+	DATA_TYPE_BINARY,
+
+	DATA_TYPE_COUNT
+} eDataType;
+
+typedef enum
+{
+    DATA_FLAGS_FIXED_DECIMAL_MASK        = 0x0000000F,
+    DATA_FLAGS_FIXED_DECIMAL_1           = 0x00000001,
+	DATA_FLAGS_FIXED_DECIMAL_2           = 0x00000002,
+	DATA_FLAGS_FIXED_DECIMAL_3           = 0x00000003,
+    DATA_FLAGS_FIXED_DECIMAL_4           = 0x00000004,
+	DATA_FLAGS_FIXED_DECIMAL_5           = 0x00000005,
+	DATA_FLAGS_FIXED_DECIMAL_6           = 0x00000006,
+	DATA_FLAGS_FIXED_DECIMAL_7           = 0x00000007,
+	DATA_FLAGS_FIXED_DECIMAL_8           = 0x00000008,
+	DATA_FLAGS_FIXED_DECIMAL_9           = 0x00000009,
+	DATA_FLAGS_FIXED_DECIMAL_10          = 0x0000000A,
+	DATA_FLAGS_FIXED_DECIMAL_11          = 0x0000000B,
+	DATA_FLAGS_FIXED_DECIMAL_12          = 0x0000000C,
+	DATA_FLAGS_FIXED_DECIMAL_13          = 0x0000000D,
+	DATA_FLAGS_FIXED_DECIMAL_14          = 0x0000000E,
+	DATA_FLAGS_FIXED_DECIMAL_15          = 0x0000000F,
+	DATA_FLAGS_READ_ONLY                 = 0x00000010,
+	DATA_FLAGS_HIDDEN                    = 0x00000020,	// Do not print to screen
+	DATA_FLAGS_DISPLAY_HEX               = 0x00000100,
+	DATA_FLAGS_ANGLE                     = 0x00000200,  // Supports unwrapping angle
+    DATA_FLAGS_DECOR_ROLL_MASK           = 0x000F0000,  // Decoration roll
+    DATA_FLAGS_INS_STATUS                = 0x00010000,  // "
+	DATA_FLAGS_GPS_STATUS                = 0x00020000, 	// "
+} eDataFlags;
+
+/*
+* Metadata about a specific field
 */
-uint32_t GetDataTypeSize(eDataType dataType);
+typedef struct
+{
+	uint32_t    offset;
+	uint32_t    size;
+	eDataType   type;
+	uint32_t    arraySize;		// Number of elements in array.  Zero for single/non-array elements.
+	uint32_t    elementSize;	// Element size in bytes
+	eDataFlags  flags;
+	std::string name;
+	std::string units;			// Units (after conversion)
+	std::string description;
+	double conversion;			// Unit conversion when converting to string
+} data_info_t;
+
+CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
+{
+    (uint32_t)sizeof(int8_t),
+    (uint32_t)sizeof(uint8_t),
+    (uint32_t)sizeof(int16_t),
+    (uint32_t)sizeof(uint16_t),
+    (uint32_t)sizeof(int32_t),
+    (uint32_t)sizeof(uint32_t),
+    (uint32_t)sizeof(int64_t),
+    (uint32_t)sizeof(uint64_t),
+    (uint32_t)sizeof(float),
+    (uint32_t)sizeof(double),
+    (uint32_t)0, // string, must be set to actual size by caller
+    (uint32_t)0  // binary, must be set to actual size by caller
+};
 
 #if !PLATFOM_IS_EMBEDDED
-
 extern const unsigned char g_asciiToLowerMap[256];
-
 #endif
 
 /**
@@ -52,22 +126,6 @@ struct sCaseInsensitiveCompare
 			return g_asciiToLowerMap[c1] < g_asciiToLowerMap[c2];
 		}
 	};
-
-	/*
-	size_t operator()(const std::string s) const
-	{
-		size_t hashCode = 5381;
-		char c;
-		const char* ptr = s.c_str();
-		const char* ptrEnd = ptr + s.size();
-		for (; ptr < ptrEnd; ptr++)
-		{
-			c = g_asciiToLowerMap[*ptr];
-			hashCode = ((hashCode << 5) + hashCode) + c;
-		}
-		return hashCode;
-	}
-	*/
 
 	// less than, not equal
 	bool operator() (const std::string& s1, const std::string& s2) const
@@ -101,83 +159,300 @@ struct sCaseInsensitiveCompare
 	}
 };
 
-/*
-template <>
-struct equal_to<std::string> : public unary_function<std::string, bool>
-{
-	bool operator()(const std::string& s1, const std::string& s2) const
-	{
-		// we don't need unicode or fancy language handling here, and we do not want branching
-		// so we have hand-coded a highly performant NMEA case insensitive compare here.
-		// this custom code is 3x speed of lexicographical_compare
-		if (s1.size() != s2.size())
-		{
-			return false;
-		}
-
-		char c1, c2;
-		const char* ptr1 = s1.c_str();
-		const char* ptr2 = s2.c_str();
-
-		for (size_t i = 0; i < s1.size(); i++)
-		{
-			c1 = g_asciiToLowerMap[ptr1[i]];
-			c2 = g_asciiToLowerMap[ptr2[i]];
-			if (c1 != c2)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-};
-*/
-
-// map of field name to data info
-typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare> map_name_to_info_t;
+typedef std::map<std::string, data_info_t, sCaseInsensitiveCompare>     map_name_to_info_t;             // map of field name to data info
+typedef std::map<uint32_t, data_info_t*>                                map_index_to_info_t;            // map of field index to data info pointer
+typedef std::map<uint32_t, data_info_t*>                                map_element_to_info_t;          // map of element index to data info pointer
+typedef std::map<uint32_t, uint32_t>                                    map_element_to_array_size_t;    // map of element index to array size
 typedef char data_mapping_string_t[IS_DATA_MAPPING_MAX_STRING_LENGTH];
+
+typedef struct
+{
+	uint32_t                    size;
+	map_name_to_info_t          nameToInfo;
+	map_index_to_info_t         indexToInfo;
+	map_element_to_info_t	    elementToInfo;
+	map_element_to_array_size_t elementToArraySize;
+	uint32_t                    elementCount;
+	const data_info_t*          timestampFields;
+} data_set_t;
+
+template <typename Dtype>
+class DataMapper
+{
+public:
+    typedef Dtype MAP_TYPE;
+
+    DataMapper(data_set_t data_set[DID_COUNT], uint32_t did) : ds(data_set[did]), totalSize(0), memberCount(0)
+    {
+        data_set[did].size = structSize = sizeof(MAP_TYPE);
+    }
+
+    ~DataMapper()
+    {
+        assert((totalSize == structSize) && "Size of mapped fields does not match struct size");
+	}
+
+    template <typename MemberType>
+	void AddMember(const std::string& name, 
+		MemberType member,
+		eDataType type,
+		const std::string& units = "", 
+		const std::string& description = "",
+		int flags = 0, 
+		double conversion = 1.0) 	
+    {
+        using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
+        uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
+		uint32_t size = (uint32_t)sizeof(FieldType);
+		uint32_t arraySize = 0; 	// Zero for single element 
+		uint32_t elementSize = size;
+
+        // Populate the map with the new entry
+        ds.nameToInfo[name] = { 
+            offset,
+            size,
+            type,
+			arraySize,
+            elementSize,
+            eDataFlags(flags), 
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
+        totalSize += size;
+		{
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = arraySize;
+			ds.elementCount++;
+		}
+		
+        // Static assertions for type and size validation
+        static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+		{
+			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
+		}
+    }
+
+    template <typename MemberType>
+	void AddArray(const std::string& name, 
+		MemberType member,
+		eDataType type,
+		uint32_t arraySize,
+		const std::string& units = "", 
+		const std::string& description = "",
+        int flags = 0,
+		double conversion = 1.0) 	
+    {
+        using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
+        uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
+		uint32_t size = (uint32_t)sizeof(FieldType);
+		uint32_t elementSize = size/arraySize;
+
+        // Populate the map with the new entry
+        ds.nameToInfo[name] = { 
+            offset,
+            size, 
+            type,
+			arraySize,
+			elementSize,
+            eDataFlags(flags),
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
+        totalSize += size;
+		for (uint32_t i=0; i<arraySize; i++)
+		{
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = i;
+			ds.elementCount++;
+		}
+
+        // Static assertions for type and size validation
+        static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+        {
+            assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
+            assert((s_eDataTypeSizes[type]*arraySize == size) && "Data type size mismatch");
+        }
+    }
+
+	void AddMember2(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "", 
+		const std::string& description = "",
+		int flags = 0, 
+		double conversion = 1.0,
+		uint32_t typeSize = 0)
+    {
+		uint32_t size = (typeSize ? typeSize : s_eDataTypeSizes[type]);
+		uint32_t arraySize = 0; 	// Zero for single element 
+		uint32_t elementSize = size;
+
+        // Populate the map with the new entry
+        ds.nameToInfo[name] = { 
+            offset,
+            size,
+            type,
+			arraySize,
+            elementSize,
+            eDataFlags(flags), 
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
+        totalSize += size;
+		{
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = arraySize;
+			ds.elementCount++;
+		}
+		
+        // Static assertions for type and size validation
+        // static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        // static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+		{
+			assert((s_eDataTypeSizes[type] != 0 || (type == DATA_TYPE_STRING)) && "Data type size invalid");
+			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
+		}
+    }
+
+	void AddArray2(const std::string& name,
+		uint32_t offset,
+		eDataType type,
+		uint32_t arraySize,
+		const std::string& units = "", 
+		const std::string& description = "",
+        int flags = 0,
+		double conversion = 1.0,
+		uint32_t typeSize = 0)
+    {
+		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSizes[type]);
+		uint32_t size = elementSize * arraySize;
+
+        // Populate the map with the new entry
+        ds.nameToInfo[name] = { 
+            offset,
+            size, 
+            type,
+			arraySize,
+			elementSize,
+            eDataFlags(flags),
+            name, 
+            units, 
+            description, 
+            conversion 
+        };
+
+        // Add the entry to the index
+		data_info_t *dinfo = &ds.nameToInfo[name];
+        ds.indexToInfo[memberCount++] = dinfo;
+        totalSize += size;
+		for (uint32_t i=0; i<arraySize; i++)
+		{
+			ds.elementToInfo[ds.elementCount] = dinfo;
+			ds.elementToArraySize[ds.elementCount] = i;
+			ds.elementCount++;
+		}
+
+        // Static assertions for type and size validation
+        // static_assert(std::is_same<MemberType, FieldType MAP_TYPE::*>::value, "MemberType is not a member pointer");
+        // static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
+		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
+		{
+			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSizes[type]*arraySize == size) && "Data type size mismatch");
+		}
+    }
+
+private:
+	data_set_t& ds;						// data set reference
+    uint32_t structSize;                // size of data set struct. Used to compare against totalSize to ensure all members were included.
+    uint32_t totalSize;                 // size of mapped fields
+    uint32_t memberCount;               // number of members in struct
+};
+
 
 class cISDataMappings
 {
 public:
-	/**
-	* Destructor
-	*/
-	virtual ~cISDataMappings();
+	cISDataMappings();
+
+	virtual ~cISDataMappings() {}
 
 	/**
 	* Get a data set name from an id
-	* @param dataId the data id to get a data set name from
+	* @param did the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static const char* GetDataSetName(uint32_t dataId);
+	static const char* DataName(uint32_t did);
 
 	/**
 	* Get a data set id from name
-	* @param dataId the data id to get a data set name from
+	* @param did the data id to get a data set name from
 	* @return data set name or NULL if not found
 	*/
-	static uint32_t GetDataSetId(std::string name);
+	static uint32_t Did(std::string name);
+
+	/**
+	* Get the size of a given data id
+	* @param did the data id
+	* @return the data id size or 0 if not found or unknown
+	*/
+	static uint32_t DataSize(uint32_t did);
 
 	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* GetMapInfo(uint32_t dataId);
+	static const map_name_to_info_t* MapInfo(uint32_t did);
 
 	/**
-	* Get the size of a given data id
-	* @param dataId the data id
-	* @return the data id size or 0 if not found or unknown
+	* Get map pointer for a data id
+	* @return map pointer for the data id, or NULL if none found
 	*/
-	static uint32_t GetSize(uint32_t dataId);
+	static const map_index_to_info_t* IndexMapInfo(uint32_t did);
+
+	/**
+	* Get map pointer for a data id
+	* @return map pointer for the data id (or NULL if none found) and array index
+	*/
+	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
+
+	/**
+	* Get number of elements of a given data id.  Arrays get counted as multiple elements.
+	* @param did the data id
+	* @return number of elements or 0 if not found or unknown
+	*/
+	static uint32_t ElementCount(uint32_t did);
 
 	/**
 	* Get the default period multiple for the specified data set.  This is used to prevent non-rmc messages from streaming at 1ms periods (too high).  
-	* @param dataId the data id
+	* @param did the data id
 	* @return the default period multiple
 	*/
-	static uint32_t DefaultPeriodMultiple(uint32_t dataId);
+	static uint32_t DefaultPeriodMultiple(uint32_t did);
 
 	/**
 	* Convert a string to a data field inside a data set.
@@ -186,11 +461,13 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param datasetBuffer packet buffer
 	* @param info metadata about the field to convert
+	* @param arrayIndex index into array
+	* @param elementSize size of elements in array
 	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, int radix = 10, bool json = false);
 
 	/**
 	* Convert a string to a variable.
@@ -210,10 +487,11 @@ public:
 	* @param hdr packet header, NULL means dataBuffer is the entire data structure
 	* @param datasetBuffer packet buffer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param arrayIndex index into array
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, bool json = false);
+	static bool DataToString(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* datasetBuffer, data_mapping_string_t stringBuffer, unsigned int arrayIndex = 0, bool json = false);
 
 	/**
 	* Convert a variable to a string
@@ -232,26 +510,24 @@ public:
 	* @param buf data buffer
 	* @return timestamp, or 0.0 if no timestamp available
 	*/
-    static double GetTimestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
+    static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
 	/**
 	* Check whether field data can be retrieved given a data packet
 	* @param info metadata for the field to get
+	* @param arrayIndex index into array
 	* @param hdr packet header
 	* @param buf packet buffer
-	* @param ptr receives the offset to get data at if the return value is true
-	* @return true if the data can be retrieved, false otherwise
+	* @return pointer to get data if valid or NULL if not valid.
 	*/
-	static bool CanGetFieldData(const data_info_t& info, const p_data_hdr_t* hdr, const uint8_t* buf, const uint8_t*& ptr);
+	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
-private:
-	cISDataMappings();
+protected:
+	static data_set_t* DataSet(uint32_t did);
 
 	static const char* const m_dataIdNames[];
 
-	uint32_t m_lookupSize[DID_COUNT];
-	const data_info_t* m_timestampFields[DID_COUNT];
-	map_name_to_info_t m_lookupInfo[DID_COUNT];
+	data_set_t m_data_set[DID_COUNT];
 
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
@@ -274,16 +550,11 @@ private:
     #endif
     }
 
-
 #if PLATFORM_IS_EMBEDDED
-
 	// on embedded we cannot new up C++ runtime until after free rtos has started
 	static cISDataMappings* s_map;
-
 #else
-
 	static cISDataMappings s_map;
-
 #endif
 
 };

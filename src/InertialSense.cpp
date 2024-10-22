@@ -48,19 +48,19 @@ static int staticReadData(unsigned int port, uint8_t* buf, int len)
     }
     int bytesRead = serialPortReadTimeout(&s_cm_state->devices[port].serialPort, buf, len, 1);
 
-	if (s_is)
-	{	// Save raw data to ISlogger
-		s_is->LogRawData(&s_cm_state->devices[port], bytesRead, buf);
-	}
+    if (s_is)
+    {   // Save raw data to ISlogger
+        s_is->LogRawData(&s_cm_state->devices[port], bytesRead, buf);
+    }
 
     return bytesRead;
 }
 
-static void staticProcessRxData(unsigned int port, p_data_t* data)
+static int staticProcessRxData(unsigned int port, p_data_t* data)
 {
     if (data->hdr.id >= (sizeof(s_cm_state->binaryCallback)/sizeof(pfnHandleBinaryData)))
     {
-        return;
+        return -1;
     }
 
     pfnHandleBinaryData handler = s_cm_state->binaryCallback[data->hdr.id];
@@ -68,7 +68,7 @@ static void staticProcessRxData(unsigned int port, p_data_t* data)
 
     if ((size_t)port > s_cm_state->devices.size())
     {
-        return;
+        return -1;
     }
 
     if (handler != NULLPTR)
@@ -101,6 +101,7 @@ static void staticProcessRxData(unsigned int port, p_data_t* data)
             }
             break;
     }
+    return 0;
 }
 
 static int staticProcessRxNmea(unsigned int port, const unsigned char* msg, int msgSize)
@@ -132,6 +133,7 @@ InertialSense::InertialSense(
     m_clientBufferBytesToSend = 0;
     m_clientServerByteCount = 0;
     m_disableBroadcastsOnClose = false;  // For Intellian
+
     for(int i=0; i<int(sizeof(m_comManagerState.binaryCallback)/sizeof(pfnHandleBinaryData)); i++)
     {
         m_comManagerState.binaryCallback[i] = {};
