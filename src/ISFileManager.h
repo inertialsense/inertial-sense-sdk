@@ -16,7 +16,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include <string>
 #include <vector>
-#include <ctime>
 #include <cstdint>
 
 namespace ISFileManager

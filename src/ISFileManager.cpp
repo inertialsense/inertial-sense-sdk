@@ -23,13 +23,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <time.h>
 #endif
 
-#include <cstdio>
 #include <iostream>
-#include <vector>
 #include <algorithm>
-#include <string>
 #include <cstring>
-#include <ctime>
 
 #if PLATFORM_IS_WINDOWS
     #include <windows.h>
