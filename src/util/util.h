@@ -30,6 +30,14 @@ namespace utils {
         std::snprintf( buf.get(), size, format.c_str(), args ... );
         return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
     }
+
+    std::string devInfoToString(const dev_info_t& devInfo);
+    bool devInfoFromString(const std::string& str, dev_info_t& devInfo);
+    int parseStringVersion(const std::string& vIn, uint8_t vOut[4]);
+    uint64_t intDateTimeFromDevInfo(const dev_info_t& a, bool useMillis = false);
+    bool fillDevInfoFromFirmwareImage(std::string imgFilename, dev_info_t& devInfo);
+    bool isDevInfoCompatible(const dev_info_t& a, const dev_info_t& b);
+    bool compareFirmwareVersions(const dev_info_t& a, const dev_info_t& b);
 };
 
 

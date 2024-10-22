@@ -436,7 +436,7 @@ size_t InertialSense::DeviceCount()
 std::vector<port_handle_t> InertialSense::getPorts() {
     std::vector<port_handle_t> ports;
     for (auto port : m_serialPorts) {
-        ports.push_back((port_handle_t)&port);
+        ports.push_back((port_handle_t)port);
     }
     return ports;
 }

@@ -544,7 +544,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
             flashCfgUploadChecksum = flashCfg_.checksum;
         }
     } else {
-        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+        // printf("DID_FLASH_CONFIG in sync.  No upload.\n");
     }
 
     // Update local copy of flash config
