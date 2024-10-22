@@ -10,9 +10,8 @@ TEST(ISDataMappings, StringToDataToString)
 	string str1;
 	string str2;
 	uDatasets d = {};
-	int radix = 10;	// 10 for decimal and 16 for hex.
 
-	const map_name_to_info_t& flashMap = *cISDataMappings::MapInfo(DID_FLASH_CONFIG);
+	const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfo(DID_FLASH_CONFIG);
 
 	{	// Integer Test
 		const data_info_t& info = flashMap.at("ser0BaudRate");
@@ -20,7 +19,7 @@ TEST(ISDataMappings, StringToDataToString)
 		str1 = to_string(baudrate);
 
 		// Integer - string to data
-		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 0, radix);
+		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 0);
 
 		EXPECT_EQ(d.flashCfg.ser0BaudRate, baudrate);
 
@@ -38,7 +37,7 @@ TEST(ISDataMappings, StringToDataToString)
 		str1 = to_string(gps1AntOffset1);
 
 		// float - string to data
-		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 1, radix);
+		cISDataMappings::StringToData(str1.c_str(), (int)str1.size(), NULL, (uint8_t*)&d, info, 1);
 
 		EXPECT_EQ(d.flashCfg.gps1AntOffset[1], gps1AntOffset1);
 
