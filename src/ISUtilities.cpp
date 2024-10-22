@@ -10,11 +10,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <stdio.h>
+#include <cstdio>
 #include <sstream>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <string>
+#include <ctime>
 
 #include "ISUtilities.h"
 #include "ISPose.h"
@@ -250,6 +251,58 @@ uint64_t current_timeUs() {
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec + 1000000 * tv.tv_sec;
 #endif
+}
+
+/**
+ * Returns the number of milliseconds since the host processor was started (most commonly).
+ * This is uses the monotonic clock, which is guaranteed NOT to go back in time (such as if setting the system clock after startup)
+ * @return number of milliseconds
+ */
+uint32_t current_uptimeMs() {
+    uint32_t upTimeMs = UINT32_MAX;
+#if defined(IMX_5)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+#elif defined(GPX_1)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    upTimeMs = tv.tv_usec / 1000 + 1000 * tv.tv_sec;
+#elif defined(PLATFORM_IS_WINDOWS)
+    #define MS_PER_SEC      1000ULL     // MS = milliseconds
+    #define US_PER_MS       1000ULL     // US = microseconds
+    #define HNS_PER_US      10ULL       // HNS = hundred-nanoseconds (e.g., 1 hns = 100 ns)
+    #define NS_PER_US       1000ULL
+
+    #define HNS_PER_SEC     (MS_PER_SEC * US_PER_MS * HNS_PER_US)
+    #define NS_PER_HNS      (100ULL)    // NS = nanoseconds
+    #define NS_PER_SEC      (MS_PER_SEC * US_PER_MS * NS_PER_US)
+
+    long tv_sec; long tv_nsec;
+    static LARGE_INTEGER ticksPerSec;
+    LARGE_INTEGER ticks;
+
+    if (!ticksPerSec.QuadPart) {
+        QueryPerformanceFrequency(&ticksPerSec);
+        if (!ticksPerSec.QuadPart) {
+            errno = ENOTSUP;
+            return -1;
+        }
+    }
+
+    QueryPerformanceCounter(&ticks);
+
+    tv_sec = (long)(ticks.QuadPart / ticksPerSec.QuadPart);
+    tv_nsec = (long)(((ticks.QuadPart % ticksPerSec.QuadPart) * NS_PER_SEC) / ticksPerSec.QuadPart);
+
+    upTimeMs = (uint32_t)(tv_nsec / 1000000 + 1000 * tv_sec);
+#else
+    // Posix systems?
+    struct timespec tv;
+    clock_gettime(CLOCK_MONOTONIC, &tv);
+    upTimeMs = (uint32_t)(tv.tv_nsec / 1000000 + 1000 * tv.tv_sec);
+#endif
+    return upTimeMs;
 }
 
 uint64_t timerUsStart() {

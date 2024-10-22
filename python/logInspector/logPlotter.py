@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
-from inertialsense_math.pose import *
 from datetime import date, datetime
 import pandas as pd
 
@@ -36,9 +35,9 @@ sys.path.append(os.path.normpath(file_path + '/..'))
 sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from logReader import Log
-from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
 from pylib.data_sets import *
-from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
+from pylib.ISToolsDataSorted import *
+from inertialsense_math.pose import *
 import datetime
 
 class logPlot:
@@ -120,7 +119,7 @@ class logPlot:
         try:
             data = self.log.data[dev, DID][field][::self.d]
             if removeLeadingZeros:
-                # Copy the first nonzero data entry to leading zeros 
+                # Copy the first nonzero data entry to leading zeros
                 # (e.g. first position initialized from GNSS to the initial default position in AHRS)
                 startIdx = np.nonzero(data)[0][0]
                 data[0:startIdx] = data[startIdx]
@@ -837,7 +836,12 @@ class logPlot:
         filepath = self.log.directory + "/enu.out"
         if ~os.path.isfile(filepath):
             return [], [], []
-        df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+
+        try:
+            df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+        except:
+            print(f"gpx1Heading:: Unable to open '{filepath}'")
+            return None
 
         df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
         df['datetime'] = pd.to_datetime(df['datetime'] , format = '%Y/%m/%d %H:%M:%S.%f')
@@ -858,7 +862,7 @@ class logPlot:
         baselineNED = baselineNED[n:,:]
 
         gpxHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
-        return gpxTime, baselineNED, gpxHeading, 
+        return [gpxTime, baselineNED, gpxHeading]
 
 
     def heading(self, fig=None):
@@ -1489,19 +1493,25 @@ class logPlot:
                 continue
             baseToRoverECEF = self.getData(d, relDid, 'baseToRoverVector')
 
-            qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
-            baselineNED = quatConjRot(qe2n, baseToRoverECEF)
-            # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+            if rtkRelTime.size:
+                qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
+                baselineNED = quatConjRot(qe2n, baseToRoverECEF)
+                # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
 
-            ax[0].plot(rtkRelTime, baselineNED[:,0])
-            ax[1].plot(rtkRelTime, baselineNED[:,1])
+                ax[0].plot(rtkRelTime, baselineNED[:,0])
+                ax[1].plot(rtkRelTime, baselineNED[:,1])
 
-            gpxTime, gpxBaselineNED, gpxHeading = self.gpx1Heading()
+            heading = self.gpx1Heading()
+            if heading is not None:
+                gpxTime = heading[0]
+                gpxBaselineNED = heading[1]
+                gpxHeading = heading[2]
+
             if len(gpxTime) == 0 or len(gpxBaselineNED) == 0:
                 continue
 
-            ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
-            ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
+                ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
+                ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
 
             self.legends_add(ax[0].legend(ncol=2))
 
@@ -1722,7 +1732,7 @@ class logPlot:
             gps2_data = np.delete(gps2_data, del_ind)
             t2 = np.delete(t2, del_ind)
             N2 = len(gps2_data)
-            if (N1 != N2): 
+            if (N1 != N2):
                 continue
 
             Nsat = len(sat)
@@ -2241,7 +2251,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
 
         for i in range(pqrCount):
             for d in range(3):
@@ -2321,7 +2331,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
 
         for i in range(accCount):
             for d in range(3):
@@ -3390,7 +3400,7 @@ class logPlot:
             eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
             vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
-            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point
             actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
             eff_l -= actuatorTrim_l
             eff_r -= actuatorTrim_r

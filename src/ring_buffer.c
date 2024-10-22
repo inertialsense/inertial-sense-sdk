@@ -42,9 +42,7 @@ void ringBufInit(ring_buf_t *rbuf, unsigned char* buf, int bufSize, int wordByte
  */
 int ringBufUsed(const ring_buf_t *rbuf)
 {
-	int bytesUsed;
-
-	bytesUsed = (int)(rbuf->wrPtr - rbuf->rdPtr);
+	int bytesUsed = (int)(rbuf->wrPtr - rbuf->rdPtr);
 
 	// Handle wrapping
 	if (bytesUsed < 0)
