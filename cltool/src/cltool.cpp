@@ -29,18 +29,19 @@ int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bu
 }
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
-{
-    // Enable logging in continuous background mode
-    return inertialSenseInterface.SetLoggerEnabled (
-        g_commandLineOptions.enableLogging, // enable logger
-        g_commandLineOptions.logPath, // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
-        cISLogger::ParseLogType(g_commandLineOptions.logType), // log type
-        g_commandLineOptions.rmcPreset, // Stream rmc preset
+{   // Enable logging in continuous background mode
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::ParseLogType(g_commandLineOptions.logType);
+    options.driveUsageLimitPercent = g_commandLineOptions.logDriveUsageLimitPercent;    // max drive limit in percentage, 0 to disable limit
+    options.driveUsageLimitMb = g_commandLineOptions.logDriveUsageLimitMb;              // max drive limit in MB, 0 to disable limit
+    options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
+    options.subDirectory = g_commandLineOptions.logSubFolder;                           // log sub folder name
+    return inertialSenseInterface.SetLoggerEnabled(
+        g_commandLineOptions.rmcPreset,
         RMC_OPTIONS_PRESERVE_CTRL,
-        g_commandLineOptions.maxLogSpacePercent, // max space in percentage of free space to use, 0 for unlimited
-        g_commandLineOptions.maxLogFileSize, // each log file will be no larger than this in bytes
-        g_commandLineOptions.logSubFolder // log sub folder name
-    );
+        g_commandLineOptions.enableLogging,
+        g_commandLineOptions.logPath,
+        options);
 }
 
 static bool startsWith(const char* str, const char* pre)
@@ -55,16 +56,17 @@ static bool matches(const char* str, const char* pre)
     return lenstr != lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
-#define CL_DEFAULT_BAUD_RATE                IS_BAUDRATE_DEFAULT
-#define CL_DEFAULT_DEVICE_PORT              "*"
-#define CL_DEFAULT_DISPLAY_MODE             cInertialSenseDisplay::DMODE_SCROLL
-#define CL_DEFAULT_LOG_TYPE                 "raw"
-#define CL_DEFAULT_LOGS_DIRECTORY           DEFAULT_LOGS_DIRECTORY
-#define CL_DEFAULT_ENABLE_LOGGING           false
-#define CL_DEFAULT_MAX_LOG_FILE_SIZE        1024 * 1024 * 5
-#define CL_DEFAULT_MAX_LOG_SPACE_PERCENT    0.5f
-#define CL_DEFAULT_REPLAY_SPEED             1.0
-#define CL_DEFAULT_BOOTLOAD_VERIFY          false
+#define CL_DEFAULT_BAUD_RATE                        IS_BAUDRATE_DEFAULT
+#define CL_DEFAULT_DEVICE_PORT                      "*"
+#define CL_DEFAULT_DISPLAY_MODE                     cInertialSenseDisplay::DMODE_SCROLL
+#define CL_DEFAULT_LOG_TYPE                         "raw"
+#define CL_DEFAULT_LOGS_DIRECTORY                   DEFAULT_LOGS_DIRECTORY
+#define CL_DEFAULT_ENABLE_LOGGING                   false
+#define CL_DEFAULT_MAX_LOG_FILE_SIZE                1024 * 1024 * 5
+#define CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT    0.5f
+#define CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB         0
+#define CL_DEFAULT_REPLAY_SPEED                     1.0
+#define CL_DEFAULT_BOOTLOAD_VERIFY                  false
 
 bool read_did_argument(stream_did_t *dataset, string s)
 {
@@ -147,7 +149,8 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.logPath = CL_DEFAULT_LOGS_DIRECTORY;
     g_commandLineOptions.logSubFolder = cISLogger::CreateCurrentTimestamp();
     g_commandLineOptions.maxLogFileSize = CL_DEFAULT_MAX_LOG_FILE_SIZE;
-    g_commandLineOptions.maxLogSpacePercent = CL_DEFAULT_MAX_LOG_SPACE_PERCENT;
+    g_commandLineOptions.logDriveUsageLimitPercent = CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT;
+    g_commandLineOptions.logDriveUsageLimitMb = CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB;
     g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
     g_commandLineOptions.bootloaderVerify = CL_DEFAULT_BOOTLOAD_VERIFY;
     g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
@@ -367,13 +370,23 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.list_devices = true;
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
-        else if (startsWith(a, "-lms="))
-        {
-            g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
-        }
         else if (startsWith(a, "-lmf="))
         {
             g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
+        }
+        else if (startsWith(a, "-lmb="))
+        {
+            g_commandLineOptions.logDriveUsageLimitMb = (float)atof(&a[5]);
+        }
+        else if (startsWith(a, "-lms="))
+        {
+            g_commandLineOptions.logDriveUsageLimitPercent = (float)atof(&a[5]);
+        }
+        else if (startsWith(a, "-lm"))
+        {
+            g_commandLineOptions.listenMode = true;
+            g_commandLineOptions.disableDeviceValidation = true;
+            enable_display_mode();
         }
         else if (startsWith(a, "-log-flush-timeout="))
         {
@@ -384,19 +397,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.enableLogging = true;
         }
-        else if (startsWith(a, "-lm"))
-        {
-            g_commandLineOptions.listenMode = true;
-            g_commandLineOptions.disableDeviceValidation = true;
-            enable_display_mode();
-        }
         else if (startsWith(a, "-lp") && (i + 1) < argc)
         {
             g_commandLineOptions.logPath = argv[++i];    // use next argument;
-        }
-        else if (startsWith(a, "-lt="))
-        {
-            g_commandLineOptions.logType = &a[4];
         }
         else if (startsWith(a, "-lts="))
         {
@@ -413,6 +416,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             {
                 g_commandLineOptions.logSubFolder = subFolder;
             }
+        }
+        else if (startsWith(a, "-lt="))
+        {
+            g_commandLineOptions.logType = &a[4];
         }
         else if (startsWith(a, "-magRecal"))
         {
@@ -898,7 +905,8 @@ void cltool_outputUsage()
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
 	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
-	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
+	cout << "    -lmb=" << boldOff << "MB         File culling: Log drive usage limit in MB. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB << "). `-lmb=0 -lms=0` disables file culling." << endlbOn;
+	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
 	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;

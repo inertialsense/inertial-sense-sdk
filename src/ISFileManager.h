@@ -16,7 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISConstants.h"
 #include <string>
 #include <vector>
-#include <ctime>
+#include <cstdint>
 
 namespace ISFileManager
 {
@@ -50,6 +50,9 @@ namespace ISFileManager
 
     // get free space for the disk that the specified directory exists on
     uint64_t GetDirectorySpaceAvailable(const std::string& directory);
+
+    // get drive total size that the specified directory exists on
+    uint64_t GetDirectoryDriveTotalSize(const std::string& directory);
 
     // get just the file name from a path
     std::string GetFileName(const std::string& path);
@@ -96,6 +99,22 @@ namespace ISFileManager
      * @return true on success 
      */
     bool CreateDirectory(const std::string& path);
+
+    /**
+     * @brief Remove oldest files in the specified directory including all subdirectories until the target size in bytes is met.
+     * 
+     * @param directory path to search to file oldest files to be removed.
+     * @param target_size in bytes that the specified directory must achieve by removing oldest files.
+     */
+    void RemoveOldestFiles(const std::string& directory, std::uintmax_t target_size);
+
+    /**
+     * @brief Function to recursively remove empty directories.
+     * 
+     * @param directory path to search where files should be removed.
+     */
+    bool RemoveEmptyDirectories(const std::string& directory);
+
 }
 
 #endif //IS_SDK_IS_FILE_MANAGER_H_

@@ -2468,7 +2468,7 @@ class logPlot:
             timeGps = getTimeFromTowMs(self.getData(d, DID_GPS1_POS, 'timeOfWeekMs'))
             llaGps = self.getData(d, DID_GPS1_POS, 'lla')
             if len(llaGps) > 0:
-                altGps = lla[:, 2]
+                altGps = llaGps[:, 2]
             else:
                 altGps = []
             timeIns = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
