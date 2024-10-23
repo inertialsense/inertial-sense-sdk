@@ -136,21 +136,25 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 
     float logSize = logger.LogSizeAll();
     if (logSize < 0.5e6f)
-        printf("\nLogging %.1f KB to: %s\n", logSize * 1.0e-3f, logger.LogDirectory().c_str());
+        printf("\nLogging %.1f KB to: %s", logSize * 1.0e-3f, logger.LogDirectory().c_str());
     else
-        printf("\nLogging %.2f MB to: %s\n", logSize * 1.0e-6f, logger.LogDirectory().c_str());
+        printf("\nLogging %.2f MB to: %s", logSize * 1.0e-6f, logger.LogDirectory().c_str());
 
-#if 0   // Disk usage.  DEBUG, comment out during normal use
+    // Disk usage
     if (logger.MaxDiskSpaceMB() > 0.0f)
     {   // Limit enabled
         float percentUsed = 100.0f * logger.UsedDiskSpaceMB() / logger.MaxDiskSpaceMB();
-        printf("%s disk usage/limit: %.0f/%.0f MB (%.0f%%)\n", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB(), logger.MaxDiskSpaceMB(), percentUsed);
+        printf(",    %s disk usage/limit: %.0f/%.0f MB (%.0f%%)", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB(), logger.MaxDiskSpaceMB(), percentUsed);
+        if (percentUsed > 98)
+        {
+            printf(" ...deleting old logs");
+        }
     }
     else
     {   // Limit disabled
-        printf("%s disk usage: %.0f MB\n", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB());
+        printf(",    %s disk usage: %.0f MB", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB());
     }
-#endif
+    printf("\n");
 }
 
 static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)

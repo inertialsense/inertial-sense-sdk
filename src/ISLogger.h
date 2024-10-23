@@ -94,7 +94,7 @@ public:
 
     // Setup logger for writing to file
     bool InitSave(const std::string& directory = g_emptyString, const sSaveOptions& options = cISLogger::sSaveOptions());
-    // (DEPRECATED) The following two fuctions are not recommended for future development.  Use InitSave() above instead.
+    [[DEPRECATED("The following two fuctions are not recommended for future development.  Use InitSave() with sSaveOptions above instead.")]]
     bool InitSave(eLogType logType = LOGTYPE_RAW, const std::string& directory = g_emptyString, float driveUsageLimitPercent = 0.5f, uint32_t maxFileSize = 5 * 1024 * 1024, bool useSubFolderTimestamp = true);
     bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float driveUsageLimitPercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 

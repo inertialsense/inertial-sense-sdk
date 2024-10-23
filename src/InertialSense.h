@@ -190,6 +190,7 @@ public:
     * @param subFolder timestamp sub folder or empty for none
     * @return true if success, false if failure
     */
+    [[DEPRECATED("Not recommended for future development. Use SetLoggerEnabled() with sSaveOptions above instead.")]]
     bool SetLoggerEnabled(
         bool logEnable,
         const std::string& logPath = cISLogger::g_emptyString,

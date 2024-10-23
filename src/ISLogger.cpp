@@ -234,7 +234,7 @@ bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
     return ISFileManager::PathIsDir(m_directory);
 }
 
-// (DEPRECATED)
+[[DEPRECATED("Not recommended for future development.")]]
 bool cISLogger::InitSave(eLogType logType, const string &directory, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     sSaveOptions options;
@@ -245,7 +245,7 @@ bool cISLogger::InitSave(eLogType logType, const string &directory, float driveU
     return InitSave(directory, options); 
 }
 
-// (DEPRECATED)
+[[DEPRECATED("Not recommended for future development.")]]
 bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     sSaveOptions options;
