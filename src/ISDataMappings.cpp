@@ -275,10 +275,10 @@ void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeek", &ins_1_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_1_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_1_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("theta", &ins_1_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "Euler angle - roll",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
+    mapper.AddArray("theta", &ins_1_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "Euler angle: roll, pitch, yaw",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
     mapper.AddArray("uvw", &ins_1_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
     mapper.AddArray("ned", &ins_1_t::ned, DATA_TYPE_F32, 3, "m", "North offset from reference LLA", flags);
-    mapper.AddArray("lla", &ins_1_t::lla, DATA_TYPE_F64, 3, SYM_DEG, "WGS84 coordinate - latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddArray("lla", &ins_1_t::lla, DATA_TYPE_F64, 3, SYM_DEG, "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
 }
 
 static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -1808,13 +1808,15 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.type, info.flags, ptr, info.size, stringBuffer, json);
+    return VariableToString(info.type, info.flags, ptr, info.size, stringBuffer, info.conversion, json);
 }
 
 
-bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion, bool json)
 {
     int precision;
+    float valuef32;
+    double valuef64;
     switch (dataType)
     {
     case DATA_TYPE_INT8:
@@ -1851,25 +1853,26 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         break;
     case DATA_TYPE_F32:
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
+        valuef32 = (*(float*)dataBuffer) * conversion;
         if (precision)
         {
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(float*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef32);
         }
         else
         {
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(float*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", valuef32);
         }
         break;
     case DATA_TYPE_F64:                             
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
+        valuef64 = (*(double*)dataBuffer) * conversion;
         if (precision)
         {   // Fixed precision
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(double*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef64);
         }
         else
         {   // Variable precision
-            // SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(double*)ptr);
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", *(double*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", valuef64);
         }
         break;
 
