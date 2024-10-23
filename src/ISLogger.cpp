@@ -110,13 +110,11 @@ cISLogger::cISLogger()
     m_logStats.Clear();
 }
 
-
 cISLogger::~cISLogger()
 {
     Cleanup();
     m_errorFile.close();
 }
-
 
 void cISLogger::Cleanup()
 {
@@ -125,7 +123,6 @@ void cISLogger::Cleanup()
     m_logStats.Clear();
     UNLOCK_MUTEX();
 }
-
 
 void cISLogger::Update()
 {
@@ -162,8 +159,7 @@ void cISLogger::Update()
     ISFileManager::TouchFile(m_directory + "/stats.txt");
 }
 
-
-bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const string &subDirectory, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSave(const string &directory, const sSaveOptions &options) 
 {
     static const int minFileCount = 50;
     static const int maxFileCount = 10000;
@@ -171,20 +167,21 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     // Close any open files
     CloseAllFiles();
 
-    m_logType = logType;
+    m_logType = options.logType;
+    m_timeStamp = (options.timeStamp.empty() ? CreateCurrentTimestamp() : options.timeStamp);
     m_rootDirectory = m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
 
     // Drive usage limit
     m_maxDiskSpace = 0;                 // disable log file culling
-    if (driveUsageLimitPercent > 0.0f)
+    if (options.driveUsageLimitPercent > 0.0f)
     {   // Percent limit enabled
-        driveUsageLimitPercent = _CLAMP(driveUsageLimitPercent, 0.01f, 0.99f);
+        // options.driveUsageLimitPercent = _CLAMP(options.driveUsageLimitPercent, 0.01f, 0.99f);
         uint64_t totalDiskSize = ISFileManager::GetDirectoryDriveTotalSize(m_rootDirectory);
-        m_maxDiskSpace = (uint64_t)(totalDiskSize * driveUsageLimitPercent);
+        m_maxDiskSpace = (uint64_t)(totalDiskSize * options.driveUsageLimitPercent);
     }
-    if (driveUsageLimitMb > 0.0f)
+    if (options.driveUsageLimitMb > 0.0f)
     {   // Size limit enabled
-        m_maxDiskSpace = _MIN(m_maxDiskSpace, (uint64_t)(driveUsageLimitMb*1024*1024));
+        m_maxDiskSpace = _MIN(m_maxDiskSpace, (uint64_t)(options.driveUsageLimitMb*1024*1024));
     }
 
     // Limit to available size
@@ -195,40 +192,40 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     m_usedDiskSpace = ISFileManager::GetDirectorySpaceUsed(m_rootDirectory);
 
     // ensure there are between min and max file count
-    if (maxFileSize > availableSpace / minFileCount)
+    if (options.maxFileSize > availableSpace / minFileCount)
     {
         m_maxFileSize = (uint32_t)(availableSpace / minFileCount);
     }
-    else if (maxFileSize < availableSpace / maxFileCount)
+    else if (options.maxFileSize < availableSpace / maxFileCount)
     {
         m_maxFileSize = (uint32_t)(availableSpace / maxFileCount);
     }
     else
     {
-        m_maxFileSize = maxFileSize;
+        m_maxFileSize = options.maxFileSize;
     }
 
-    m_maxFileSize = _MIN(m_maxFileSize, maxFileSize);
+    m_maxFileSize = _MIN(m_maxFileSize, options.maxFileSize);
 
     // create root dir
     _MKDIR(m_rootDirectory.c_str());
 
-    if (useSubFolderTimestamp)
+    if (options.useSubFolderTimestamp || options.subDirectory.size()>0)
     {
         // create time stamp dir
         m_directory = m_rootDirectory + "/" + m_timeStamp;
         _MKDIR(m_directory.c_str());
 
-        if (!subDirectory.empty())
+        if (!options.subDirectory.empty())
         {
             // create sub dir
-            m_directory += "/" + subDirectory;
+            m_directory += "/" + options.subDirectory;
             _MKDIR(m_directory.c_str());
         }
     }
 
     // create empty stats file to track timestamps
-    string str = m_directory + (subDirectory.empty() ? "" : "/" + subDirectory) + "/stats.txt";
+    string str = m_directory + (options.subDirectory.empty() ? "" : "/" + options.subDirectory) + "/stats.txt";
     cISLogFileBase *statsFile = CreateISLogFile(str, "w");
     CloseISLogFile(statsFile);
 
@@ -237,6 +234,29 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     return ISFileManager::PathIsDir(m_directory);
 }
 
+// (DEPRECATED)
+bool cISLogger::InitSave(eLogType logType, const string &directory, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+{
+    sSaveOptions options;
+    options.logType                 = logType;
+    options.driveUsageLimitPercent  = driveUsageLimitPercent;
+    options.maxFileSize             = maxFileSize;
+    options.useSubFolderTimestamp   = useSubFolderTimestamp;
+    return InitSave(directory, options); 
+}
+
+// (DEPRECATED)
+bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+{
+    sSaveOptions options;
+    options.logType                 = logType;
+    options.driveUsageLimitPercent  = driveUsageLimitPercent;
+    options.maxFileSize             = maxFileSize;
+    options.useSubFolderTimestamp   = useSubFolderTimestamp;
+    options.timeStamp               = timeStamp;
+    options.subDirectory            = subDirectory;
+    return InitSave(directory, options); 
+}
 
 string cISLogger::CreateCurrentTimestamp()
 {
@@ -261,30 +281,6 @@ string cISLogger::CreateCurrentTimestamp()
 #endif
 
     return string(buf);
-}
-
-
-bool cISLogger::InitSave(eLogType logType, const string &directory, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp)
-{
-    m_timeStamp = CreateCurrentTimestamp();
-    return InitSaveCommon(logType, directory, g_emptyString, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, useSubFolderTimestamp);
-}
-
-
-bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, bool useSubFolderTimestamp)
-{
-    if (timeStamp.length() == 0)
-    {
-        m_timeStamp = CreateCurrentTimestamp();
-    }
-    else
-    {
-        // Only use first 15 characters for the timestamp
-        // m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
-        m_timeStamp = timeStamp;
-    }
-
-    return InitSaveCommon(logType, directory, subDirectory, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, useSubFolderTimestamp);
 }
 
 std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
@@ -344,7 +340,6 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 
     return ISFileManager::PathIsDir(m_directory);
 }
-
 
 bool nextStreamDigit(stringstream &ss, string &str)
 {
@@ -501,7 +496,6 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     return (m_devices.size() != 0);
 }
 
-
 bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
 {
     // This method is NOT for LOGTYPE_RAW (but all others)
@@ -581,7 +575,6 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     return true;
 }
 
-
 p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
 {
     if (deviceLog == nullptr) {
@@ -609,7 +602,6 @@ p_data_buf_t *cISLogger::ReadData(size_t devIndex) {
 
     return ReadData(m_devices[devIndex]);
 }
-
 
 p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 {
@@ -747,10 +739,10 @@ const dev_info_t *cISLogger::DeviceInfo(unsigned int device)
 int g_copyReadCount;
 int g_copyReadDid;
 
-bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float driveUsageLimitPercent, float driveUsageLimitMb, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
+bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float driveUsageLimitPercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
-    if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, useSubFolderTimestamp))
+    if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, driveUsageLimitPercent, maxFileSize, useSubFolderTimestamp))
     {
         return false;
     }
@@ -891,7 +883,6 @@ void cISLogger::PrintProgress()
 #endif
 #endif
 }
-
 
 std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {
     std::vector<std::shared_ptr<cDeviceLog>> out;

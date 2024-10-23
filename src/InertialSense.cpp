@@ -164,10 +164,11 @@ InertialSense::~InertialSense()
 	DisableLogging();
 }
 
-bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logType, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, const string& subFolder)
+bool InertialSense::EnableLogging(const string& path, const cISLogger::sSaveOptions& options)
 {
     cMutexLocker logMutexLocker(&m_logMutex);
-    if (!m_logger.InitSaveTimestamp(subFolder, path, cISLogger::g_emptyString, logType, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, subFolder.length() != 0))
+
+    if (!m_logger.InitSave(path, options))
     {
         return false;
     }
@@ -310,17 +311,13 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHand
 }
 
 bool InertialSense::SetLoggerEnabled(
-        bool enable,
-        const string& path,
-        cISLogger::eLogType logType,
-        uint64_t rmcPreset,
-        uint32_t rmcOptions,
-        float driveUsageLimitPercent,
-        float driveUsageLimitMb,
-        uint32_t maxFileSize,
-        const string& subFolder)
+    uint64_t rmcPreset,
+    uint32_t rmcOptions,
+    bool logEnable,
+    const string& logPath,
+    const cISLogger::sSaveOptions &logOptions)
 {
-    if (enable)
+    if (logEnable)
     {
         if (m_logThread != NULLPTR)
         {
@@ -332,12 +329,29 @@ bool InertialSense::SetLoggerEnabled(
         {
             BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions);
         }
-        return EnableLogging(path, logType, driveUsageLimitPercent, driveUsageLimitMb, maxFileSize, subFolder);
+        return EnableLogging(logPath, logOptions);
     }
 
     // !enable, shutdown logger gracefully
     DisableLogging();
     return true;
+}
+
+bool InertialSense::SetLoggerEnabled(
+    bool logEnable,
+    const string& logPath,
+    cISLogger::eLogType logType,
+    uint64_t rmcPreset,
+    uint32_t rmcOptions,
+    float driveUsageLimitPercent,
+    uint32_t maxFileSize,
+    const string& subFolder)
+{
+    cISLogger::sSaveOptions logOptions;
+    logOptions.driveUsageLimitPercent = driveUsageLimitPercent;
+    logOptions.maxFileSize = maxFileSize;
+    logOptions.subDirectory = subFolder;
+    return SetLoggerEnabled(rmcPreset, rmcOptions, logEnable, logPath, logOptions);
 }
 
 // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]

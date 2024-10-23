@@ -639,7 +639,13 @@ namespace ISFileManager {
         }
     };
 
-    // Function to get the size and modification time of a file
+    /**
+     * @brief Function to get the size and modification time of a file
+     * 
+     * @param path File path
+     * @param file_info output for file info
+     * @return true if file info could be populated, false if not.
+     */
     bool get_file_info(const std::string& path, FileInfo& file_info) {
 #if PLATFORM_IS_WINDOWS
         WIN32_FILE_ATTRIBUTE_DATA file_data;
@@ -675,7 +681,12 @@ namespace ISFileManager {
 #endif
     }
 
-    // Function to recursively gather files and their information
+    /**
+     * @brief Function to recursively gather files and their information into the files 
+     * 
+     * @param directory Directory where files are to be searched. 
+     * @param files Output list of all files found.
+     */
     void get_all_files(const std::string& directory, std::vector<FileInfo>& files) {
 #if PLATFORM_IS_WINDOWS
         WIN32_FIND_DATA find_file_data;

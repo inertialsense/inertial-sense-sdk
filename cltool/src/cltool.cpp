@@ -31,17 +31,18 @@ int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bu
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
 {
     // Enable logging in continuous background mode
-    return inertialSenseInterface.SetLoggerEnabled (
-        g_commandLineOptions.enableLogging,                     // enable logger
-        g_commandLineOptions.logPath,                           // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
-        cISLogger::ParseLogType(g_commandLineOptions.logType),  // log type
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::ParseLogType(g_commandLineOptions.logType);
+    options.driveUsageLimitPercent = g_commandLineOptions.logDriveUsageLimitPercent;    // max drive limit in percentage, 0 to disable limit
+    options.driveUsageLimitMb = g_commandLineOptions.logDriveUsageLimitMb;              // max drive limit in MB, 0 to disable limit
+    options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
+    options.subDirectory = g_commandLineOptions.logSubFolder;                           // log sub folder name
+    return inertialSenseInterface.SetLoggerEnabled(
         g_commandLineOptions.rmcPreset,                         // Stream rmc preset
         RMC_OPTIONS_PRESERVE_CTRL,
-        g_commandLineOptions.logDriveUsageLimitPercent,     // max drive limit in percentage, 0 to disable limit
-        g_commandLineOptions.logDriveUsageLimitMb,          // max drive limit in MB, 0 to disable limit
-        g_commandLineOptions.maxLogFileSize,                // each log file will be no larger than this in bytes
-        g_commandLineOptions.logSubFolder                   // log sub folder name
-    );
+        g_commandLineOptions.enableLogging,                     // enable logger
+        g_commandLineOptions.logPath,                           // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
+        options);
 }
 
 static bool startsWith(const char* str, const char* pre)

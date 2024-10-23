@@ -163,27 +163,42 @@ public:
 
     /**
     * Enable or disable logging - logging is disabled by default
-    * @param enable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
-    * @param path the path to write the log files to
+    * @param rmcPreset RMC preset for data streaming
+    * @param rmcOptions RMC options for data streaming
+    * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
+    * @param logPath the path to write the log files to
     * @param logType the type of log to write
-    * @param logSolution true to log solution stream, false otherwise
+    * @return true if success, false if failure
+    */
+    bool SetLoggerEnabled(
+        uint64_t rmcPreset,
+        uint32_t rmcOptions,
+        bool logEnable,
+        const std::string& logPath,
+        const cISLogger::sSaveOptions &logOptions);
+
+    /**
+    * (DEPRECATED) Not recommended for future development.
+    * Enable or disable logging - logging is disabled by default
+    * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
+    * @param logPath the path to write the log files to
+    * @param logType the type of log to write
+    * @param rmcPreset RMC preset for data streaming
+    * @param rmcOptions RMC options for data streaming
     * @param driveUsageLimitPercent the maximum usable disk space in percent of total drive size (0.0 to 1.0). Oldest files are deleted to maintain this limit. Zero to disable this limit.
-    * @param driveUsageLimitMb the maximum usable disk space in MB. Oldest files are deleted to maintain this limit. Zero to disable this limit.
     * @param maxFileSize the max file size for each log file in bytes
-    * @param chunkSize the max data to keep in RAM before flushing to disk in bytes
     * @param subFolder timestamp sub folder or empty for none
     * @return true if success, false if failure
     */
     bool SetLoggerEnabled(
-            bool enable,
-            const std::string& path = cISLogger::g_emptyString,
-            cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
-            uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
-            uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
-            float driveUsageLimitPercent = 0.5f,
-            float driveUsageLimitMb = 0.0f,
-            uint32_t maxFileSize = 1024 * 1024 * 5,
-            const std::string& subFolder = cISLogger::g_emptyString);
+        bool logEnable,
+        const std::string& logPath = cISLogger::g_emptyString,
+        cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
+        uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
+        uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
+        float driveUsageLimitPercent = 0.5f,
+        uint32_t maxFileSize = 1024 * 1024 * 5,
+        const std::string& subFolder = cISLogger::g_emptyString);
 
     /**
     * Gets whether logging is enabled
@@ -633,7 +648,7 @@ private:
     // returns false if logger failed to open
     bool UpdateServer();
     bool UpdateClient();
-    bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float driveUsageLimitPercent, float driveUsageLimitMb, uint32_t maxFileSize, const std::string& subFolder);
+    bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfo(size_t index);
     bool HasReceivedDeviceInfoFromAllDevices();
