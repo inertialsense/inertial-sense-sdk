@@ -29,8 +29,7 @@ int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bu
 }
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
-{
-    // Enable logging in continuous background mode
+{   // Enable logging in continuous background mode
     cISLogger::sSaveOptions options;
     options.logType = cISLogger::ParseLogType(g_commandLineOptions.logType);
     options.driveUsageLimitPercent = g_commandLineOptions.logDriveUsageLimitPercent;    // max drive limit in percentage, 0 to disable limit
@@ -38,10 +37,10 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
     options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
     options.subDirectory = g_commandLineOptions.logSubFolder;                           // log sub folder name
     return inertialSenseInterface.SetLoggerEnabled(
-        g_commandLineOptions.rmcPreset,                         // Stream rmc preset
+        g_commandLineOptions.rmcPreset,
         RMC_OPTIONS_PRESERVE_CTRL,
-        g_commandLineOptions.enableLogging,                     // enable logger
-        g_commandLineOptions.logPath,                           // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
+        g_commandLineOptions.enableLogging,
+        g_commandLineOptions.logPath,
         options);
 }
 

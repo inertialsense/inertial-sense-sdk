@@ -36,7 +36,6 @@ using namespace std;
 static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
 static const float s_logDiskUsageLimitPercent = 0.5f;
-static const float s_logDiskUsageLimitMb = 0.0f;
 static const bool s_useTimestampSubFolder = false;
 static uint32_t s_timeMs = 0;
 static uint32_t s_gpsTowOffsetMs = 0;
@@ -500,7 +499,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
 	ISFileManager::DeleteDirectory(directory);
 
     cISLogger logger;
-    logger.InitSave(logType, directory, s_logDiskUsageLimitPercent, s_logDiskUsageLimitMb, s_maxFileSize, s_useTimestampSubFolder);
+    logger.InitSave(logType, directory, s_logDiskUsageLimitPercent, s_maxFileSize, s_useTimestampSubFolder);
 
     auto devices = new ISDevice[numDevices]();
     for (int d=0; d<numDevices; d++)
