@@ -1032,7 +1032,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
             protocol_type_t ptype = c->processPkt(c);
             if (ptype != _PTYPE_NONE)
             {	// Packet found or packet error
-                buf->scan++; 
+                buf->scan++;
                 return ptype;
             }
         }
