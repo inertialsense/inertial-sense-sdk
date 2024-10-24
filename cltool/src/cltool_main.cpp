@@ -144,15 +144,15 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
     if (logger.MaxDiskSpaceMB() > 0.0f)
     {   // Limit enabled
         float percentUsed = 100.0f * logger.UsedDiskSpaceMB() / logger.MaxDiskSpaceMB();
-        printf(",    %s disk usage/limit: %.0f/%.0f MB (%.0f%%)", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB(), logger.MaxDiskSpaceMB(), percentUsed);
+        printf("      %s disk usage/limit: %.0f/%.0f MB (%.0f%%) ", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB(), logger.MaxDiskSpaceMB(), percentUsed);
         if (percentUsed > 98)
         {
-            printf(" ...deleting old logs");
+            printf("...deleting old logs ");
         }
     }
     else
     {   // Limit disabled
-        printf(",    %s disk usage: %.0f MB", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB());
+        printf(",    %s disk usage: %.0f MB ", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB());
     }
     printf("\n");
 }

@@ -35,7 +35,8 @@ bool cltool_setupLogger(InertialSense& inertialSenseInterface)
     options.driveUsageLimitPercent = g_commandLineOptions.logDriveUsageLimitPercent;    // max drive limit in percentage, 0 to disable limit
     options.driveUsageLimitMb = g_commandLineOptions.logDriveUsageLimitMb;              // max drive limit in MB, 0 to disable limit
     options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
-    options.subDirectory = g_commandLineOptions.logSubFolder;                           // log sub folder name
+    options.useSubFolderTimestamp = g_commandLineOptions.logSubFolder != cISLogger::g_emptyString;
+    options.timeStamp = g_commandLineOptions.logSubFolder;                              // log sub folder name
     return inertialSenseInterface.EnableLogger(
         g_commandLineOptions.enableLogging,
         g_commandLineOptions.logPath,
