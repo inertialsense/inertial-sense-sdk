@@ -386,6 +386,16 @@ public:
 		}
     }
 
+	void AddLlaDegM(const std::string& name, 
+		uint32_t offset,
+		const std::string& description = "",
+		int flags = 0)
+    {
+		AddMember2(name + "[0]", offset + 0*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[1]", offset + 1*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[2]", offset + 2*sizeof(double), DATA_TYPE_F64, "m", description, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+	}
+
 private:
 	data_set_t& ds;						// data set reference
     uint32_t structSize;                // size of data set struct. Used to compare against totalSize to ensure all members were included.

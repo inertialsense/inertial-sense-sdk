@@ -278,9 +278,7 @@ void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("theta", &ins_1_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "Euler angle: roll, pitch, yaw",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
     mapper.AddArray("uvw", &ins_1_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
     mapper.AddArray("ned", &ins_1_t::ned, DATA_TYPE_F32, 3, "m", "North offset from reference LLA", flags);
-    mapper.AddMember2("lla[0]", offsetof(ins_1_t, lla[0]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
-    mapper.AddMember2("lla[1]", offsetof(ins_1_t, lla[1]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
-    mapper.AddMember2("lla[2]", offsetof(ins_1_t, lla[2]), DATA_TYPE_F64, "m", "WGS84 coordinate: altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddLlaDegM("lla", offsetof(ins_1_t, lla), "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -293,9 +291,7 @@ static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("hdwStatus", &ins_2_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("qn2b", &ins_2_t::qn2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("uvw", &ins_2_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddMember2("lla[0]", offsetof(ins_2_t, lla[0]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
-    mapper.AddMember2("lla[1]", offsetof(ins_2_t, lla[1]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
-    mapper.AddMember2("lla[2]", offsetof(ins_2_t, lla[2]), DATA_TYPE_F64, "m", "WGS84 coordinate: altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddLlaDegM("lla", offsetof(ins_2_t, lla), "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -308,9 +304,7 @@ static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("hdwStatus", &ins_3_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("qn2b", &ins_3_t::qn2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("uvw", &ins_3_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddMember2("lla[0]", offsetof(ins_3_t, lla[0]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
-    mapper.AddMember2("lla[1]", offsetof(ins_3_t, lla[1]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
-    mapper.AddMember2("lla[2]", offsetof(ins_3_t, lla[2]), DATA_TYPE_F64, "m", "WGS84 coordinate: altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddLlaDegM("lla", offsetof(ins_3_t, lla), "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("msl", &ins_3_t::msl, DATA_TYPE_F32, "m", "Height above mean sea level (MSL)", flags);
 }
 
@@ -577,8 +571,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "Acc DLPF (Hz) 0xF000:[0=218, 1=218, 2=99, 3=45, 4=21, 5=10, 6=5], ";
     mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
 
-    mapper.AddArray("refLla", &nvm_flash_cfg_t::refLla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "Reference latitude, longitude, ellipsoid altitude for north east down (NED) calculations", DATA_FLAGS_FIXED_DECIMAL_9);
-    mapper.AddArray("lastLla", &nvm_flash_cfg_t::lastLla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "Last latitude, longitude, ellipsoid altitude. (Aids GPS startup)", DATA_FLAGS_FIXED_DECIMAL_9);
+    mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference latitude, longitude, ellipsoid altitude for north east down (NED) calculations", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last lattitude, latitude, ellipsoid altitude. (Aids GPS startup)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("lastLlaTimeOfWeekMs", &nvm_flash_cfg_t::lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, "ms", "Last LLA update time since Sunday morning");
     mapper.AddMember("lastLlaWeek", &nvm_flash_cfg_t::lastLlaWeek, DATA_TYPE_UINT32, "week", "Last LLA update Weeks since Jan 6, 1980");
     mapper.AddMember("lastLlaUpdateDistance", &nvm_flash_cfg_t::lastLlaUpdateDistance, DATA_TYPE_F32, "m", "Distance between current and last LLA that triggers an update of lastLLA)");
@@ -705,7 +699,7 @@ static void PopulateMapSurveyIn(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("minAccuracy", &survey_in_t::minAccuracy, DATA_TYPE_F32, "m", "Required horizontal accuracy for survey to complete before maxDuration.", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("elapsedTimeSec", &survey_in_t::elapsedTimeSec, DATA_TYPE_UINT32, "s", "Elapsed time of the survey.");
     mapper.AddMember("currentAccuracy", &survey_in_t::hAccuracy, DATA_TYPE_F32, "m", "Approximate horizontal accuracy of the survey.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("lla", &survey_in_t::lla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "Surveyed latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_9);
+    mapper.AddLlaDegM("lla", offsetof(survey_in_t, lla), "Surveyed latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapEvbStatus(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -967,7 +961,7 @@ static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gDop", &gps_rtk_misc_t::gDop, DATA_TYPE_F32, "m", "Geomatic dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("hDop", &gps_rtk_misc_t::hDop, DATA_TYPE_F32, "m", "Horizontal dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("vDop", &gps_rtk_misc_t::vDop, DATA_TYPE_F32, "m", "Vertical dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("baseLla", &gps_rtk_misc_t::baseLla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "Base position in latitude, longitude, altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_7);
+    mapper.AddLlaDegM("baseLla", offsetof(gps_rtk_misc_t, baseLla), "Base position in latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cycleSlipCount", &gps_rtk_misc_t::cycleSlipCount, DATA_TYPE_UINT32, "int", "Cycle slip counter", DATA_FLAGS_READ_ONLY);
 
     mapper.AddMember("roverGpsObservationCount", &gps_rtk_misc_t::roverGpsObservationCount, DATA_TYPE_UINT32, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
@@ -1882,7 +1876,7 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         }
         else
         {   // Variable precision
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", valuef64);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", valuef64);
         }
         break;
 
