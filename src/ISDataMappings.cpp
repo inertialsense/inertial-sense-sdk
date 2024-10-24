@@ -1675,10 +1675,10 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     int radix = ((stringBuffer[0] == '0' && stringBuffer[1] == 'x') == 0 ? 16 : 10);
 #endif
 
-    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, json);
+    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, info.conversion, json);
 }
 
-bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
+bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, double conversion, bool json)
 {
     switch (dataType)
     {

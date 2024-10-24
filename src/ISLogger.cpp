@@ -234,7 +234,7 @@ bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
     return ISFileManager::PathIsDir(m_directory);
 }
 
-[[DEPRECATED("Not recommended for future development.")]]
+[[deprecated("Not recommended for future development.")]]
 bool cISLogger::InitSave(eLogType logType, const string &directory, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     sSaveOptions options;
@@ -245,7 +245,7 @@ bool cISLogger::InitSave(eLogType logType, const string &directory, float driveU
     return InitSave(directory, options); 
 }
 
-[[DEPRECATED("Not recommended for future development.")]]
+[[deprecated("Not recommended for future development.")]]
 bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
 {
     sSaveOptions options;
@@ -742,7 +742,14 @@ int g_copyReadDid;
 bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float driveUsageLimitPercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
-    if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, driveUsageLimitPercent, maxFileSize, useSubFolderTimestamp))
+
+    sSaveOptions options;
+    options.logType                 = logType;
+    options.driveUsageLimitPercent  = driveUsageLimitPercent;
+    options.maxFileSize             = maxFileSize;
+    options.useSubFolderTimestamp   = useSubFolderTimestamp;
+    options.timeStamp               = timestamp;
+    if (!InitSave(outputDir, options))
     {
         return false;
     }
@@ -779,7 +786,6 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 #if LOG_DEBUG_GEN == 2
             PrintProgress();
 #endif
-
             // CSV special cases 
             if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
             {
