@@ -1735,17 +1735,17 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 #else
 #endif
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < DEBUG_I_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < DEBUG_F_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < DEBUG_LF_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
     }
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");

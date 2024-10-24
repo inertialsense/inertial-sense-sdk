@@ -37,20 +37,23 @@ public:
 	bool FlushToFile() OVERRIDE;
 	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
 	p_data_buf_t* ReadData() OVERRIDE;
-	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
+    packet_t* ReadPacket(protocol_type_t& ptype) OVERRIDE;
+
+    void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
     std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }
 	void Flush() OVERRIDE;
 
 	cDataChunk m_chunk;
 
 private:
-	p_data_buf_t* ReadDataFromChunk();
+    packet_t* ReadPacketFromChunk(protocol_type_t& ptype);
 	bool ReadChunkFromFile();
 	bool WriteChunkToFile();
 
 	uint8_t m_commBuf[PKT_BUF_SIZE];
 	p_data_buf_t m_pData;
 	is_comm_instance_t m_comm;
+    protocol_type_t m_protocolType;
 };
 
 #endif // DEVICE_LOG_RAW_H

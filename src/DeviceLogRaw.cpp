@@ -233,13 +233,11 @@ bool cDeviceLogRaw::WriteChunkToFile()
     return true;
 }
 
-
-p_data_buf_t* cDeviceLogRaw::ReadData()
-{
-    p_data_buf_t* data = NULL;
+packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype) {
+    packet_t* pkt = NULL;
 
     // Read data from chunk
-    while (!(data = ReadDataFromChunk()))
+    while (!(pkt = ReadPacketFromChunk(ptype)))
     {
         // Read next chunk from file
         if (!ReadChunkFromFile())
@@ -248,13 +246,53 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
         }
     }
 
-    // Read is good
-    cDeviceLog::OnReadData(data);
-    return data;
+    // Read is good, and pkt is guaranteed !NULL
+    cDeviceLog::OnReadPacket(pkt, ptype);
+    return pkt;
 }
 
+p_data_buf_t* cDeviceLogRaw::ReadData()
+{
+    packet_t* pkt = NULL;
 
-p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
+    // Read data from chunk
+    while (!(pkt = ReadPacketFromChunk(m_protocolType)))
+    {
+        // Read next chunk from file
+        if (!ReadChunkFromFile())
+        {
+            return NULL;
+        }
+    }
+
+    // Read is good, and pkt is guaranteed !NULL
+    cDeviceLog::OnReadPacket(pkt, m_protocolType);
+
+    switch (m_protocolType)
+    {
+        case _PTYPE_INERTIAL_SENSE_DATA:
+        case _PTYPE_INERTIAL_SENSE_CMD:
+            m_pData.hdr = m_comm.rxPkt.dataHdr;
+            memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
+            return &m_pData;
+
+        case _PTYPE_PARSE_ERROR:
+            if (m_showParseErrors)
+            {
+                if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
+            }
+            break;
+        default:
+            // case _PTYPE_RTCM3:
+            // case _PTYPE_UBLOX:
+            // case _PTYPE_NMEA:
+            break;
+    }
+
+    return NULL;
+}
+
+packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 {
     int chunkSize = m_chunk.GetDataSize();
 
@@ -277,31 +315,11 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
         uint8_t data = *dataPtr;
         m_chunk.PopFront(1);
 
-        protocol_type_t ptype;
         if ((ptype = is_comm_parse_byte(&m_comm, data)) != _PTYPE_NONE)
         {
-            switch (ptype)
-            {
-            default:
-            // case _PTYPE_RTCM3:
-            // case _PTYPE_UBLOX:
-            // case _PTYPE_NMEA:
-                // Do nothing
-                break;
-
-            case _PTYPE_PARSE_ERROR:
-                if (m_showParseErrors)
-                {
-                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
-                }
-                break;
-
-            case _PTYPE_INERTIAL_SENSE_DATA:
-            case _PTYPE_INERTIAL_SENSE_CMD:
-                m_pData.hdr = m_comm.rxPkt.dataHdr;
-                memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
-                return &m_pData;
-            }
+            if (ptype == _PTYPE_NMEA)
+                m_comm.rxPkt.hdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.data.size);
+            return &m_comm.rxPkt;
         }
     }
 

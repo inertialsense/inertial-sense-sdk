@@ -60,6 +60,8 @@ public:
 
     virtual p_data_buf_t *ReadData() = 0;
 
+    virtual packet_t* ReadPacket(protocol_type_t& ptype) { return NULL; };
+
     virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 
     const ISDevice* getDevice() { return device; }
@@ -107,6 +109,7 @@ protected:
 
     bool OpenNextReadFile();
 
+    void OnReadPacket(packet_t* pkt, protocol_type_t ptype);
     void OnReadData(p_data_buf_t *data);
 
     const ISDevice *device = nullptr;               //! ISDevice reference to source of data

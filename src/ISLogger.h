@@ -84,6 +84,9 @@ public:
 	p_data_buf_t* ReadData(std::shared_ptr<cDeviceLog> devLogger = nullptr);
     p_data_buf_t* ReadData(size_t devIndex);
 	p_data_buf_t* ReadNextData(size_t& devIndex);
+    packet_t* ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceLog> devLogger = nullptr);
+    packet_t* ReadPacket(protocol_type_t& ptype, size_t devIndex);
+    packet_t* ReadNextPacket(protocol_type_t& ptype, size_t& devIndex);
 	void EnableLogging(bool enabled) { m_enabled = enabled; }
 	bool Enabled() { return m_enabled; }
 	void CloseAllFiles();

@@ -589,9 +589,8 @@ p_data_buf_t *cISLogger::ReadData(size_t devIndex) {
     if (devIndex >= m_devices.size())
         return nullptr;
 
-    return ReadData(m_devices[devIndex]);
+    return ReadData(DeviceLogs()[devIndex]);
 }
-
 
 p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 {
@@ -601,6 +600,10 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
         if (data == NULL)
         {
             ++devIndex;
+            if (devIndex >= m_devices.size()) {
+                devIndex = 0;
+                return NULL;
+            }
         }
         else
         {
@@ -609,6 +612,53 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
     }
     return NULL;
 }
+
+packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceLog> deviceLog)
+{
+    if (deviceLog == nullptr) {
+        return NULL;
+    }
+
+    packet_t *pkt = deviceLog->ReadPacket(ptype);
+    if (ptype == _PTYPE_PARSE_ERROR)
+    {
+        m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)pkt->dataHdr.id, (unsigned long)pkt->dataHdr.offset, (unsigned long)pkt->dataHdr.size);
+        m_logStats.LogError(&pkt->dataHdr);
+    }
+    if (pkt != NULL)
+    {
+        double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
+        m_logStats.LogDataAndTimestamp(pkt->dataHdr.id, timestamp);
+    }
+    return pkt;
+}
+
+packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, size_t devIndex) {
+    if (devIndex >= m_devices.size())
+        return nullptr;
+
+    return ReadPacket(ptype, DeviceLogs()[devIndex]);
+}
+
+packet_t* cISLogger::ReadNextPacket(protocol_type_t& ptype, size_t& devIndex)
+{
+    while (devIndex < m_devices.size())
+    {
+        packet_t *pkt = ReadPacket(ptype, devIndex);
+        if (pkt == NULL)
+        {
+            ++devIndex;
+            if (devIndex >= m_devices.size())
+                devIndex = 0;
+        }
+        else
+        {
+            return pkt;
+        }
+    }
+    return NULL;
+}
+
 
 void cISLogger::CloseAllFiles()
 {
@@ -889,8 +939,8 @@ void cISLogger::PrintProgress()
 
 std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {
     std::vector<std::shared_ptr<cDeviceLog>> out;
-    for (auto it : m_devices) {
-        out.push_back(it.second);
+    for (auto& [serialNo, devLog] : m_devices) {
+        out.push_back(devLog);
     }
     return out;
 }
