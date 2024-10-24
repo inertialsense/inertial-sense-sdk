@@ -499,7 +499,12 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
 	ISFileManager::DeleteDirectory(directory);
 
     cISLogger logger;
-    logger.InitSave(logType, directory, s_logDiskUsageLimitPercent, s_maxFileSize, s_useTimestampSubFolder);
+    cISLogger::sSaveOptions logOptions;
+    logOptions.logType                 = logType;
+    logOptions.driveUsageLimitPercent  = s_logDiskUsageLimitPercent;
+    logOptions.maxFileSize             = s_maxFileSize;
+    logOptions.useSubFolderTimestamp   = s_useTimestampSubFolder;
+    logger.InitSave(directory, logOptions); 
 
     auto devices = new ISDevice[numDevices]();
     for (int d=0; d<numDevices; d++)

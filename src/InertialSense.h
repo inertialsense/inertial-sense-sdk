@@ -170,7 +170,7 @@ public:
     * @param rmcOptions RMC options for data streaming
     * @return true if success, false if failure
     */
-    bool SetLoggerEnabled(
+    bool EnableLogger(
         bool logEnable = true,
         const std::string& logPath = cISLogger::g_emptyString,
         const cISLogger::sSaveOptions &logOptions = cISLogger::sSaveOptions(),
@@ -190,10 +190,10 @@ public:
     * @param subFolder timestamp sub folder or empty for none
     * @return true if success, false if failure
     */
-    [[deprecated("Not recommended for future development. Use SetLoggerEnabled() with sSaveOptions above instead.")]]
+    [[deprecated("Not recommended for future development. Use EnableLogger() instead.")]]
     bool SetLoggerEnabled(
         bool logEnable,
-        const std::string& logPath,
+        const std::string& logPath = cISLogger::g_emptyString,
         cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
         uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
         uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
