@@ -273,7 +273,7 @@ int main(int argc, char* argv[])
         options.logType = cISLogger::LOGTYPE_RAW;
         options.driveUsageLimitPercent = MAX_FILE_SIZE_DISK_PERCENT_50;
         options.maxFileSize = MAX_FILE_SIZE_100k;
-        if (!inertialSenseInterface.SetLoggerEnabled( 0, 0, true, "", options))
+        if (!inertialSenseInterface.EnableLogger(true, "", options, 0, 0))
         {
             cout << "Failed to setup logger!" << endl;
             inertialSenseInterface.Close();

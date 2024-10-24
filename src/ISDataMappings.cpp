@@ -226,20 +226,20 @@ static void PopulateMapImu3(data_set_t data_set[DID_COUNT], uint32_t did, string
 static void PopulateMapSysParams(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<sys_params_t> mapper(data_set, did);
-    mapper.AddMember("timeOfWeekMs", &sys_params_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("insStatus", &sys_params_t::insStatus, DATA_TYPE_UINT32, "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
-    mapper.AddMember("hdwStatus", &sys_params_t::hdwStatus, DATA_TYPE_UINT32, "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("imuTemp", &sys_params_t::imuTemp, DATA_TYPE_F32, "", "Sys status flags", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("baroTemp", &sys_params_t::baroTemp, DATA_TYPE_F32,  SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("mcuTemp", &sys_params_t::mcuTemp, DATA_TYPE_F32,  SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("sysStatus", &sys_params_t::sysStatus, DATA_TYPE_UINT32,  SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
-    mapper.AddMember("imuSamplePeriodMs", &sys_params_t::imuSamplePeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample period. Zero disables sensor sampling.");
-    mapper.AddMember("navOutputPeriodMs", &sys_params_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Nav/AHRS filter ouput period.");
-    mapper.AddMember("sensorTruePeriod", &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "ms", "Nav/AHRS filter update period.", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("flashCfgChecksum", &sys_params_t::flashCfgChecksum, DATA_TYPE_UINT32, "us", "Actual sample period relative to GPS PPS.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3, 1.0e6);
-    mapper.AddMember("navUpdatePeriodMs", &sys_params_t::navUpdatePeriodMs, DATA_TYPE_UINT32,  "", "Flash config checksum used for synchronization", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("genFaultCode", &sys_params_t::genFaultCode, DATA_TYPE_UINT32, "", "General fault code descriptor", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("upTime", &sys_params_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("timeOfWeekMs",        &sys_params_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("insStatus",           &sys_params_t::insStatus, DATA_TYPE_UINT32, "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
+    mapper.AddMember("hdwStatus",           &sys_params_t::hdwStatus, DATA_TYPE_UINT32, "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("imuTemp",             &sys_params_t::imuTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("baroTemp",            &sys_params_t::baroTemp, DATA_TYPE_F32, SYM_DEG_C, "IMU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("mcuTemp",             &sys_params_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("sysStatus",           &sys_params_t::sysStatus, DATA_TYPE_UINT32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
+    mapper.AddMember("imuSamplePeriodMs",   &sys_params_t::imuSamplePeriodMs, DATA_TYPE_UINT32, "ms", "IMU sample period. Zero disables sensor sampling");
+    mapper.AddMember("navOutputPeriodMs",   &sys_params_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter ouput period");
+    mapper.AddMember("navUpdatePeriodMs",   &sys_params_t::navUpdatePeriodMs, DATA_TYPE_UINT32, "ms", "Navigation/AHRS filter update period", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("sensorTruePeriod",    &sys_params_t::sensorTruePeriod, DATA_TYPE_F64, "us", "Actual sample period relative to GPS PPS", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, 1.0e6);
+    mapper.AddMember("flashCfgChecksum",    &sys_params_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config checksum used with host SDK synchronization", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("genFaultCode",        &sys_params_t::genFaultCode, DATA_TYPE_UINT32, "", "General fault code descriptor", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("upTime",              &sys_params_t::upTime, DATA_TYPE_F64, "s", "Local time since startup", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
 }
 
 static void PopulateMapSysSensors(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -275,10 +275,12 @@ void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeek", &ins_1_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_1_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_1_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("theta", &ins_1_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "Euler angle - roll",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
+    mapper.AddArray("theta", &ins_1_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "Euler angle: roll, pitch, yaw",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
     mapper.AddArray("uvw", &ins_1_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
     mapper.AddArray("ned", &ins_1_t::ned, DATA_TYPE_F32, 3, "m", "North offset from reference LLA", flags);
-    mapper.AddArray("lla", &ins_1_t::lla, DATA_TYPE_F64, 3, SYM_DEG, "WGS84 coordinate - latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[0]", offsetof(ins_1_t, lla[0]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[1]", offsetof(ins_1_t, lla[1]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[2]", offsetof(ins_1_t, lla[2]), DATA_TYPE_F64, "m", "WGS84 coordinate: altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -291,7 +293,9 @@ static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("hdwStatus", &ins_2_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("qn2b", &ins_2_t::qn2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("uvw", &ins_2_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddArray("lla", &ins_2_t::lla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[0]", offsetof(ins_2_t, lla[0]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[1]", offsetof(ins_2_t, lla[1]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[2]", offsetof(ins_2_t, lla[2]), DATA_TYPE_F64, "m", "WGS84 coordinate: altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -304,7 +308,9 @@ static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("hdwStatus", &ins_3_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray("qn2b", &ins_3_t::qn2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("uvw", &ins_3_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddArray("lla", &ins_3_t::lla, DATA_TYPE_F64, 3, SYM_DEG_DEG_M, "WGS84 latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[0]", offsetof(ins_3_t, lla[0]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: latitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[1]", offsetof(ins_3_t, lla[1]), DATA_TYPE_F64, SYM_DEG, "WGS84 coordinate: longitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_8);
+    mapper.AddMember2("lla[2]", offsetof(ins_3_t, lla[2]), DATA_TYPE_F64, "m", "WGS84 coordinate: altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("msl", &ins_3_t::msl, DATA_TYPE_F32, "m", "Height above mean sea level (MSL)", flags);
 }
 
@@ -656,7 +662,8 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<gpx_status_t> mapper(data_set, did);
     mapper.AddMember("timeOfWeekMs", &gpx_status_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY);
-    mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "(see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("status",       &gpx_status_t::status,       DATA_TYPE_UINT32, "", "General status flags (see eGpxStatus)", DATA_FLAGS_DISPLAY_HEX);
+    mapper.AddMember("hdwStatus",    &gpx_status_t::hdwStatus,    DATA_TYPE_UINT32, "", "Hardware status flags (see eGPXHdwStatusFlags)", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer0", &gpx_status_t::grmcBitsSer0, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 0", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer1", &gpx_status_t::grmcBitsSer1, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 1", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcBitsSer2", &gpx_status_t::grmcBitsSer2, DATA_TYPE_UINT64, "", "GPX RMC bit Serial 2", DATA_FLAGS_DISPLAY_HEX);
@@ -667,8 +674,7 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("grmcNMEABitsSer2", &gpx_status_t::grmcNMEABitsSer2, DATA_TYPE_UINT64, "", "GPX RMC NMEA bit Serial 2", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
     mapper.AddMember("grmcNMEABitsUSB",  &gpx_status_t::grmcNMEABitsUSB,  DATA_TYPE_UINT64, "", "GPX RMC NMEA bit USB.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
  
-    mapper.AddMember("hdwStatus", &gpx_status_t::hdwStatus, DATA_TYPE_UINT32, "", "Hardware status eHdwStatusFlags", DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddMember("mcuTemp", &gpx_status_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_FIXED_DECIMAL_3 | DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("mcuTemp", &gpx_status_t::mcuTemp, DATA_TYPE_F32, SYM_DEG_C, "MCU temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
     mapper.AddMember("navOutputPeriodMs", &gpx_status_t::navOutputPeriodMs, DATA_TYPE_UINT32, "ms", "Nav output period (ms)", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("flashCfgChecksum", &gpx_status_t::flashCfgChecksum, DATA_TYPE_UINT32, "", "Flash config validation", DATA_FLAGS_READ_ONLY);
  
@@ -684,7 +690,7 @@ static void PopulateMapGpxStatus(data_set_t data_set[DID_COUNT], uint32_t did)
         mapper.AddMember2("gnssStatus" + std::to_string(i) + ".initState",     i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].initState),     DATA_TYPE_UINT8, "", "GNSS init status (see InitSteps)");
         mapper.AddMember2("gnssStatus" + std::to_string(i) + ".runState",      i*sizeof(gpx_gnss_status_t) + offsetof(gpx_status_t, gnssStatus[0].runState),      DATA_TYPE_UINT8, "", "GNSS run status (see eGPXGnssRunState)");
     }
-    mapper.AddMember("SourcePort", &gpx_status_t::gpxSourcePort, DATA_TYPE_UINT8, "", "Port", DATA_FLAGS_READ_ONLY);
+    mapper.AddMember("gpxSourcePort", &gpx_status_t::gpxSourcePort, DATA_TYPE_UINT8, "", "Port", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("upTime", &gpx_status_t::upTime, DATA_TYPE_F64, "s", "Local time since startup.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_1);
 }
 
@@ -1675,11 +1681,13 @@ bool cISDataMappings::StringToData(const char* stringBuffer, int stringLength, c
     int radix = ((stringBuffer[0] == '0' && stringBuffer[1] == 'x') == 0 ? 16 : 10);
 #endif
 
-    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, json);
+    return StringToVariable(stringBuffer, stringLength, ptr, info.type, info.size, radix, info.conversion, json);
 }
 
-bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, bool json)
+bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix, double conversion, bool json)
 {
+    float valuef32;
+    double valuef64;
     switch (dataType)
     {
     case DATA_TYPE_INT8:
@@ -1715,11 +1723,13 @@ bool cISDataMappings::StringToVariable(const char* stringBuffer, int stringLengt
         break;
 
     case DATA_TYPE_F32:
-        protectUnalignedAssign<float>((void*)dataBuffer, (float)strtod(stringBuffer, NULL));
+        protectUnalignedAssign<float>(&valuef32, (float)strtod(stringBuffer, NULL));
+        (*(float*)dataBuffer) = valuef32 / conversion;
         break;
 
     case DATA_TYPE_F64:
-        protectUnalignedAssign<double>((void*)dataBuffer, (double)strtod(stringBuffer, NULL));
+        protectUnalignedAssign<double>(&valuef64, (double)strtod(stringBuffer, NULL));
+        (*(double*)dataBuffer) = valuef64 / conversion;
         break;
 
     case DATA_TYPE_STRING:
@@ -1808,13 +1818,15 @@ bool cISDataMappings::DataToString(const data_info_t& info, const p_data_hdr_t* 
         return false;
     }
 
-    return VariableToString(info.type, info.flags, ptr, info.size, stringBuffer, json);
+    return VariableToString(info.type, info.flags, ptr, info.size, stringBuffer, info.conversion, json);
 }
 
 
-bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json)
+bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion, bool json)
 {
     int precision;
+    float valuef32;
+    double valuef64;
     switch (dataType)
     {
     case DATA_TYPE_INT8:
@@ -1851,25 +1863,26 @@ bool cISDataMappings::VariableToString(eDataType dataType, eDataFlags dataFlags,
         break;
     case DATA_TYPE_F32:
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
+        valuef32 = (*(float*)dataBuffer) * conversion;
         if (precision)
         {
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(float*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef32);
         }
         else
         {
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(float*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", valuef32);
         }
         break;
     case DATA_TYPE_F64:                             
         precision = (dataFlags&DATA_FLAGS_FIXED_DECIMAL_MASK);
+        valuef64 = (*(double*)dataBuffer) * conversion;
         if (precision)
         {   // Fixed precision
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, *(double*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.*f", precision, valuef64);
         }
         else
         {   // Variable precision
-            // SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.8g", *(double*)ptr);
-            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", *(double*)dataBuffer);
+            SNPRINTF(stringBuffer, IS_DATA_MAPPING_MAX_STRING_LENGTH, "%.17g", valuef64);
         }
         break;
 

@@ -58,7 +58,10 @@ int main(int argc, char* argv[])
     // Setup and enable logger.  Select the LOGTYPE (i.e. dat, raw, csv)
     cISLogger logger;
     auto devLog = logger.registerDevice(IS_HARDWARE_TYPE_IMX, 12345);   // if you know this information, you can pass it, but it's not important that it match your actual hardware.
-    logger.InitSave(cISLogger::eLogType::LOGTYPE_RAW, logPath);
+
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::LOGTYPE_RAW;
+    logger.InitSave(logPath, options);
     logger.EnableLogging(true);
 
     // Open serial port

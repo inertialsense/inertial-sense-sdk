@@ -163,22 +163,22 @@ public:
 
     /**
     * Enable or disable logging - logging is disabled by default
-    * @param rmcPreset RMC preset for data streaming
-    * @param rmcOptions RMC options for data streaming
     * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
     * @param logPath the path to write the log files to
     * @param logType the type of log to write
+    * @param rmcPreset RMC preset for data streaming
+    * @param rmcOptions RMC options for data streaming
     * @return true if success, false if failure
     */
-    bool SetLoggerEnabled(
-        uint64_t rmcPreset,
-        uint32_t rmcOptions,
-        bool logEnable,
-        const std::string& logPath,
-        const cISLogger::sSaveOptions &logOptions);
+    bool EnableLogger(
+        bool logEnable = true,
+        const std::string& logPath = cISLogger::g_emptyString,
+        const cISLogger::sSaveOptions &logOptions = cISLogger::sSaveOptions(),
+        uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
+        uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL);
 
     /**
-    * (DEPRECATED) Not recommended for future development.
+    * (deprecated) Not recommended for future development.
     * Enable or disable logging - logging is disabled by default
     * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
     * @param logPath the path to write the log files to
@@ -190,6 +190,7 @@ public:
     * @param subFolder timestamp sub folder or empty for none
     * @return true if success, false if failure
     */
+    [[deprecated("Not recommended for future development. Use EnableLogger() instead.")]]
     bool SetLoggerEnabled(
         bool logEnable,
         const std::string& logPath = cISLogger::g_emptyString,

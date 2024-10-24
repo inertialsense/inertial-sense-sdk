@@ -481,10 +481,11 @@ public:
 	* @param dataBuffer data buffer pointer
 	* @param dataType data type
 	* @param radix (10 = base 10 for decimal, 16 = base 16 for hexidecimal) if the field is a number field, ignored otherwise
+	* @param conversion conversion of value (i.e. rad2deg)
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, bool json = false);
+	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, double conversion = 1.0, bool json = false);
 
 	/**
 	* Convert dataset field to a string
@@ -505,10 +506,11 @@ public:
 	* @param dataBuffer data pointer
 	* @param dataSize size of data at data pointer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param conversion conversion of value (i.e. rad2deg)
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
 	/**
 	* Get a timestamp from data if available

@@ -310,12 +310,12 @@ void InertialSense::StepLogger(InertialSense* i, const p_data_t* data, int pHand
     }
 }
 
-bool InertialSense::SetLoggerEnabled(
-    uint64_t rmcPreset,
-    uint32_t rmcOptions,
+bool InertialSense::EnableLogger(
     bool logEnable,
     const string& logPath,
-    const cISLogger::sSaveOptions &logOptions)
+    const cISLogger::sSaveOptions &logOptions,
+    uint64_t rmcPreset,
+    uint32_t rmcOptions)
 {
     if (logEnable)
     {
@@ -337,6 +337,7 @@ bool InertialSense::SetLoggerEnabled(
     return true;
 }
 
+[[deprecated("Not recommended for future development. Use EnableLogger() instead.")]]
 bool InertialSense::SetLoggerEnabled(
     bool logEnable,
     const string& logPath,
@@ -351,7 +352,7 @@ bool InertialSense::SetLoggerEnabled(
     logOptions.driveUsageLimitPercent = driveUsageLimitPercent;
     logOptions.maxFileSize = maxFileSize;
     logOptions.subDirectory = subFolder;
-    return SetLoggerEnabled(rmcPreset, rmcOptions, logEnable, logPath, logOptions);
+    return EnableLogger(logEnable, logPath, logOptions, rmcPreset, rmcOptions);
 }
 
 // [type]:[protocol]:[ip/url]:[port]:[mountpoint]:[username]:[password]
@@ -678,7 +679,7 @@ bool InertialSense::IsOpen()
 
 void InertialSense::Close()
 {
-    SetLoggerEnabled(false);
+    EnableLogger(false);
     if (m_disableBroadcastsOnClose)
     {
         StopBroadcasts();
