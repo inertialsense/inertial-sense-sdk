@@ -208,7 +208,10 @@ TEST(ISLogger, logReader_raw)
     ISFileManager::DeleteDirectory(logPath);
 
     cISLogger logger;
-    logger.InitSave(cISLogger::eLogType::LOGTYPE_RAW, logPath, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder);
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::LOGTYPE_RAW;
+    options.useSubFolderTimestamp = false;
+    logger.InitSave(logPath, options);
     auto devLogger = logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), rand() % 999999);
     logger.EnableLogging(true);
     // logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);

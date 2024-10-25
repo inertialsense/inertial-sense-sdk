@@ -283,7 +283,7 @@ string cISLogger::CreateCurrentTimestamp()
     return string(buf);
 }
 
-std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
+std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
     if (!device)
         return nullptr;
 

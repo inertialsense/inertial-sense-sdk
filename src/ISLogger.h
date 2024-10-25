@@ -264,7 +264,7 @@ private:
     cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-    bool InitDevicesForWriting(std::vector<ISDevice>& devices);
+    bool InitDevicesForWriting(std::vector<ISDevice*>& devices);
     void Cleanup();
     void PrintProgress();
 
