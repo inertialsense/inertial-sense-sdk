@@ -1975,7 +1975,7 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 
 const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
 {
-    if (arrayIndex && arrayIndex >= info.arraySize)
+    if (info.arraySize && arrayIndex >= info.arraySize)
     {
         return NULL;
     }
@@ -1992,8 +1992,7 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arra
 
     int32_t fullSize = (hdr->size == 0 ? DataSize(hdr->id) : hdr->size);
     int32_t offset = (int32_t)info.offset + arrayIndex*info.elementSize - (int32_t)hdr->offset;
-    if (offset >= 0 && 
-        offset <= (fullSize - (int32_t)info.size))
+    if ((offset >= 0) && (offset < fullSize))
     {
         return buf + offset;
     }
