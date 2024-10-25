@@ -14,8 +14,7 @@ using namespace std;
 
 static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
-static const float s_maxDiskSpacePercent = 0.5f;
-static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
+static const float s_logDiskUsageLimitPercent = 0.5f;
 static const bool s_useTimestampSubFolder = false;
 
 
@@ -51,7 +50,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger2;
 	EXPECT_TRUE(logger1.LoadFromDirectory(inputPath, inputLogType));
 	logger1.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxFileSize, s_maxDiskSpacePercent, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxFileSize, s_logDiskUsageLimitPercent, s_useTimestampSubFolder, false));
 	logger1.CloseAllFiles();
 	logger2.CloseAllFiles();
 
@@ -60,7 +59,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger4;
 	EXPECT_TRUE(logger3.LoadFromDirectory(outputPath1, convertLogType));
 	logger3.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxFileSize, s_maxDiskSpacePercent, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxFileSize, s_logDiskUsageLimitPercent, s_useTimestampSubFolder, false));
 	logger3.CloseAllFiles();
 	logger4.CloseAllFiles();
 
@@ -321,7 +320,7 @@ TEST(ISLogger, dat_conversion)
 {
 	string logPath = "test_log";
 	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
+	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_RAW);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
 	DELETE_DIRECTORY(logPath);
 }
@@ -342,12 +341,6 @@ TEST(ISLogger, raw_conversion_with_garbage)
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT, false);
 	DELETE_DIRECTORY(logPath);
 }
-
-// TEST(ISLogger, dat_conversion_with_multiple_files_issue_Aug_2017)
-// {
-// 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
-// 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
-// }
 
 #else	// Disabled
 

@@ -269,15 +269,11 @@ int main(int argc, char* argv[])
     if (setupCommunicationsDIDs(inertialSenseInterface))
     {
         // [LOGGER INSTRUCTION] Setup and start data logger
-        if (!inertialSenseInterface.SetLoggerEnabled(
-                true,
-                "",
-                cISLogger::LOGTYPE_CSV,
-                0,
-                0,
-                MAX_FILE_SIZE_DISK_PERCENT_50,
-                MAX_FILE_SIZE_100k,
-                ""))
+        cISLogger::sSaveOptions options;
+        options.logType = cISLogger::LOGTYPE_RAW;
+        options.driveUsageLimitPercent = MAX_FILE_SIZE_DISK_PERCENT_50;
+        options.maxFileSize = MAX_FILE_SIZE_100k;
+        if (!inertialSenseInterface.EnableLogger(true, "", options, 0, 0))
         {
             cout << "Failed to setup logger!" << endl;
             inertialSenseInterface.Close();
