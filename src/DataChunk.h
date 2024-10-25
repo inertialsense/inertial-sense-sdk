@@ -39,22 +39,19 @@ struct sChunkHeader
 {
     union {
         struct {
-            uint32_t marker = DATA_CHUNK_MARKER;         //!< Chunk marker (0xFC05EA32)
-            uint8_t version = 2;                         //!< Chunk Version
-            uint8_t dataOffset = 34;                     //!< offset from this position until the start of the chunk data (34 = sum of all hdr bytes following this byte, upto the chnk data, or sizeof(sChunkHeader) - 6).
-            char protocolVersion[2] = {                  //!< major/minor version of the underlying line/protocol
-                    PROTOCOL_VERSION_CHAR0,
-                    PROTOCOL_VERSION_CHAR1
-            };
+            uint32_t marker;                             //!< Chunk marker (0xFC05EA32)
+            uint8_t version;                             //!< Chunk Version
+            uint8_t dataOffset;                          //!< offset from this position until the start of the chunk data (34 = sum of all hdr bytes following this byte, upto the chnk data, or sizeof(sChunkHeader) - 6).
+            char protocolVersion[2];                     //!< major/minor version of the underlying line/protocol
             char name[4];                                //!< Chunk name
             char invName[4];                             //!< Bitwise inverse of chunk name
             uint32_t dataSize;                           //!< Chunk data length in bytes
             uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
-            uint32_t grpNum = 0;                         //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
-            uint32_t devSerialNum = 0;                   //!< Device serial number
-            uint16_t portId = 0xFFFF;                    //!< Device port id
-            uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
-            char fwVersion[4] = {};                      //!< Device firmware version
+            uint32_t grpNum;                             //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
+            uint32_t devSerialNum;                       //!< Device serial number
+            uint16_t portId;                             //!< Device port id
+            uint16_t portType;                           //!< Device port type
+            char fwVersion[4];                           //!< Device firmware version
         };
         struct {
             uint32_t marker;                             //!< Chunk marker (0xFC05EA32)
@@ -70,6 +67,23 @@ struct sChunkHeader
             uint32_t reserved;                           //!< Unused
         } v1;
     };
+    sChunkHeader() {
+        marker = DATA_CHUNK_MARKER;
+        version = 2;
+        dataOffset = 34;
+        protocolVersion[0] = PROTOCOL_VERSION_CHAR0;
+        protocolVersion[1] = PROTOCOL_VERSION_CHAR1;
+        dataSize = 0;
+        invDataSize = 0xFFFFFFFF;
+        grpNum = 0;
+        devSerialNum = 0;
+        portId = 0xFFFF;
+        portType = PORT_TYPE__UNKNOWN;
+        fwVersion[0] = 0;
+        fwVersion[1] = 0;
+        fwVersion[2] = 0;
+        fwVersion[3] = 0;
+    }
 #if LOG_CHUNK_STATS
     void print()
     {
