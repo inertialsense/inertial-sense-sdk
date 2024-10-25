@@ -76,6 +76,17 @@ if (WIN32)
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/msvc
     )
 
+	add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+			COMMAND cmd /c "scripts/lib/update_version_files.bat ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			DEPENDS scripts/lib/update_version_files.py
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+	add_custom_target(gen_files
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+	)
+	add_dependencies(${PROJECT_NAME} gen_files)
+
     # We need to ensure windows static libs are found
     target_link_libraries(${PROJECT_NAME} Ws2_32.lib)
 else ()
@@ -83,6 +94,17 @@ else ()
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src/libusb/linux
     )
+
+	add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+			COMMAND bash -c "scripts/lib/update_version_files.sh ${CMAKE_CURRENT_SOURCE_DIR}/src/version/"
+			DEPENDS scripts/lib/update_version_files.py
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+	add_custom_target(gen_files
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/version/repositoryInfo.h"
+	)
+	add_dependencies(${PROJECT_NAME} gen_files)
 
     # Linux compiler flags
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers")

@@ -199,7 +199,7 @@ bool utils::devInfoFromString(const std::string& str, dev_info_t& devInfo) {
  * @return returns the number of elements parsed.
  */
 int utils::parseStringVersion(const std::string& vIn, uint8_t vOut[4]) {
-    int start = 0, n = 0, end = 0;
+    long unsigned int start = 0, n = 0, end = 0;
     while ((n < 3) && ((end = vIn.find_first_of('.', start)) != std::string::npos)){
         vOut[n++] = stoi(vIn.substr(start, end - start));
         start = end+1;
@@ -223,7 +223,6 @@ bool utils::fillDevInfoFromFirmwareImage(std::string imgFilename, dev_info_t& de
     // -- Firmware Package:  IS-(\w+)_(r[\d.]+)_([\d-]+)_([\d]+).*(\.[\w]+)$
     std::regex fwPattern("IS_(\\w+)-([\\d\\.]+)_(\\w+_|)v([\\d.]+)_b([\\d.]+)([a-z]{0,1})_([\\d-]+)_([\\d]{6}).*(\\.[\\w]+)$");
     std::smatch match;
-    int fileType = -1;
 
     if (!std::regex_match(imgFilename, match, fwPattern))
         return false;
@@ -273,10 +272,13 @@ bool utils::fillDevInfoFromFirmwareImage(std::string imgFilename, dev_info_t& de
     devInfo.buildSecond = tm.tm_sec;
     devInfo.buildMillisecond = 0;
 
+/*
+    int fileType = -1;
     const std::string filenameExtStr = match[9];
-    if (filenameExtStr == ".hex") fileType == 0;
-    else if (filenameExtStr == ".bin") fileType == 1;
-    else if (filenameExtStr == ".fpk") fileType == 2;
+    if (filenameExtStr == ".hex") fileType = 0;
+    else if (filenameExtStr == ".bin") fileType = 1;
+    else if (filenameExtStr == ".fpk") fileType = 2;
+*/
 
     // second, parse the file, and see if we can find any additional details -- we do this second because A) its expensive, and B) is more reliable, so it will overwrite values parsed from the filename
     return true;
