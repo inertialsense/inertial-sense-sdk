@@ -14,6 +14,8 @@ The [Inertial Sense software development kit (SDK)](https://github.com/inertials
 
 **ROS** - The `inertial-sense-sdk/ros` directory contains the [ROS wrapper node implementation](ros) for the Inertial Sense IMX product line.
 
+**ROS 2** - The `inertial-sense-sdk/ros2` directory contains the [ROS 2 wrapper node implementation](ros2) for the Inertial Sense IMX product line.
+
 ### Documents
 
  * [User Manual, Datasheet, and Dimensions](http://docs.inertialsense.com/)

@@ -10,6 +10,9 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
 #include <ctime>
 #include <sstream>
 #include <sys/types.h>
@@ -17,9 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <functional>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -46,7 +47,6 @@ using namespace std;
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ		0
-
 
 const string cISLogger::g_emptyString;
 
@@ -252,22 +252,37 @@ bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directo
     return InitSaveCommon(logType, directory, subDirectory, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
 }
 
-std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
-    switch (m_logType)
-    {
-        default:
-        case LOGTYPE_DAT:   device.devLogger = make_shared<cDeviceLogSerial>(&device);  break;
-        case LOGTYPE_RAW:   device.devLogger = make_shared<cDeviceLogRaw>(&device);     break;
-#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_CSV:   device.devLogger = make_shared<cDeviceLogCSV>(&device);     break;
-        case LOGTYPE_JSON:  device.devLogger = make_shared<cDeviceLogJSON>(&device);    break;
-        case LOGTYPE_KML:   device.devLogger = make_shared<cDeviceLogKML>(&device);     break;
-#endif
-    }
-    device.devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
-    m_devices[device.devInfo.serialNumber] = device.devLogger;
+std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
+    if (!device)
+        return nullptr;
 
-    return device.devLogger;
+    if (!device->devLogger) {
+        switch (m_logType) {
+            default:
+            case LOGTYPE_DAT:
+                device->devLogger = make_shared<cDeviceLogSerial>(device);
+                break;
+            case LOGTYPE_RAW:
+                device->devLogger = make_shared<cDeviceLogRaw>(device);
+                break;
+#if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
+            case LOGTYPE_CSV:
+                device->devLogger = make_shared<cDeviceLogCSV>(device);
+                break;
+            case LOGTYPE_JSON:
+                device->devLogger = make_shared<cDeviceLogJSON>(device);
+                break;
+            case LOGTYPE_KML:
+                device->devLogger = make_shared<cDeviceLogKML>(device);
+                break;
+#endif
+        }
+    }
+    device->devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
+    m_devices[device->devInfo.serialNumber] = device->devLogger;
+    setPortLogger(device->port, logPortData, (void*)this);
+
+    return device->devLogger;
 }
 
 std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t serialNo) {
@@ -289,7 +304,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     return deviceLog;
 }
 
-bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
+bool cISLogger::InitDevicesForWriting(std::vector<ISDevice*>& devices)
 {
     // Remove all devices
     Cleanup();
@@ -298,7 +313,7 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
     {
         LOCK_MUTEX();
         // for (int i = 0; i < numDevices; i++)
-        for (auto& d : devices) {
+        for (auto d : devices) {
             registerDevice(d);
         }
         UNLOCK_MUTEX();
@@ -493,7 +508,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
+        double timestamp = cISDataMappings::Timestamp(dataHdr, dataBuf);
         m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
@@ -549,7 +564,6 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     return true;
 }
 
-
 p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
 {
     if (deviceLog == nullptr) {
@@ -565,7 +579,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
         m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
     return data;
@@ -575,9 +589,8 @@ p_data_buf_t *cISLogger::ReadData(size_t devIndex) {
     if (devIndex >= m_devices.size())
         return nullptr;
 
-    return ReadData(m_devices[devIndex]);
+    return ReadData(DeviceLogs()[devIndex]);
 }
-
 
 p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 {
@@ -587,6 +600,10 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
         if (data == NULL)
         {
             ++devIndex;
+            if (devIndex >= m_devices.size()) {
+                devIndex = 0;
+                return NULL;
+            }
         }
         else
         {
@@ -595,6 +612,53 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
     }
     return NULL;
 }
+
+packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceLog> deviceLog)
+{
+    if (deviceLog == nullptr) {
+        return NULL;
+    }
+
+    packet_t *pkt = deviceLog->ReadPacket(ptype);
+    if (ptype == _PTYPE_PARSE_ERROR)
+    {
+        m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)pkt->dataHdr.id, (unsigned long)pkt->dataHdr.offset, (unsigned long)pkt->dataHdr.size);
+        m_logStats.LogError(&pkt->dataHdr);
+    }
+    if (pkt != NULL)
+    {
+        double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
+        m_logStats.LogDataAndTimestamp(pkt->dataHdr.id, timestamp);
+    }
+    return pkt;
+}
+
+packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, size_t devIndex) {
+    if (devIndex >= m_devices.size())
+        return nullptr;
+
+    return ReadPacket(ptype, DeviceLogs()[devIndex]);
+}
+
+packet_t* cISLogger::ReadNextPacket(protocol_type_t& ptype, size_t& devIndex)
+{
+    while (devIndex < m_devices.size())
+    {
+        packet_t *pkt = ReadPacket(ptype, devIndex);
+        if (pkt == NULL)
+        {
+            ++devIndex;
+            if (devIndex >= m_devices.size())
+                devIndex = 0;
+        }
+        else
+        {
+            return pkt;
+        }
+    }
+    return NULL;
+}
+
 
 void cISLogger::CloseAllFiles()
 {
@@ -727,7 +791,7 @@ int g_copyReadDid;
  * @param enableCsvIns2ToIns1Conversion
  * @return
  */
-bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
+bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float maxLogSpacePercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
     if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
@@ -743,7 +807,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
     p_data_buf_t *data = NULL;
     for ( auto& srcDev : log.DeviceLogs() )
     {
-        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice(*(srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
+        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice((srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
 
 #if LOG_DEBUG_GEN == 2
         // Don't print status here
@@ -759,7 +823,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         {
 
 #if LOG_DEBUG_PRINT_READ
-            double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+            double timestamp = cISDataMappings::Timestamp(&(data->hdr), data->buf);
             printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
             g_copyReadDid = data->hdr.id;
 #endif
@@ -771,7 +835,12 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
             // CSV special cases 
             if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
             {
-                if (data->hdr.id == DID_INS_2)
+                static bool hasIns1 = false;
+                if (data->hdr.id == DID_INS_1)
+                {   // Indicate log contains DID_INS_1 so we don't need to convert from DID_INS_2
+                    hasIns1 = true;
+                }
+                if (data->hdr.id == DID_INS_2 && !hasIns1)
                 {	// Convert INS2 to INS1 when creating .csv logs
                     ins_1_t ins1;
                     ins_2_t ins2;
@@ -870,8 +939,17 @@ void cISLogger::PrintProgress()
 
 std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {
     std::vector<std::shared_ptr<cDeviceLog>> out;
-    for (auto it : m_devices) {
-        out.push_back(it.second);
+    for (auto& [serialNo, devLog] : m_devices) {
+        out.push_back(devLog);
     }
     return out;
 }
+
+std::shared_ptr<cDeviceLog> cISLogger::getDeviceLogByPort(port_handle_t port) {
+    for (auto& [serialNo, devLog] : m_devices) {
+        if (devLog->getDevice() && devLog->getDevice()->port == port)
+            return devLog;
+    }
+    return nullptr;
+}
+

@@ -193,7 +193,7 @@ static int cltool_errorCallback(port_handle_t port)
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[PREAMB] " RED "%02x %02x ", ((rxPkt->preamble >> 8) & 0xFF), (rxPkt->preamble & 0xFF));
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Flags: " YELLOW "%u" BLUE "] " RED "%02x ", rxPkt->flags, rxPkt->flags);
-    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " RED "%02x ", cISDataMappings::GetName(rxPkt->dataHdr.id), rxPkt->dataHdr.id);
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Id: " YELLOW "%s" BLUE "] " RED "%02x ", cISDataMappings::DataName(rxPkt->dataHdr.id), rxPkt->dataHdr.id);
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Size: " YELLOW "%u" BLUE "] " RED "%02x %02x ", rxPkt->dataHdr.size, ((rxPkt->dataHdr.size >> 8) & 0xFF), (rxPkt->dataHdr.size & 0xFF));
     ptr += SNPRINTF(ptr, ptrEnd - ptr, BLUE "[Offset: " YELLOW "%u" BLUE "] " RED "%02x %02x", rxPkt->dataHdr.offset, ((rxPkt->dataHdr.offset >> 8) & 0xFF), (rxPkt->dataHdr.offset & 0xFF));
 
@@ -312,26 +312,26 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
     if (inertialSenseInterface.DeviceCount() <= 0)
         return false;
 
-    for (auto& device : inertialSenseInterface.getDevices()) {
+    for (auto device : inertialSenseInterface.getDevices()) {
         // FIXME: don't assign a commInstance, but assign a device or port
-        g_inertialSenseDisplay.setDevice(&device);
+        g_inertialSenseDisplay.setDevice(device);
     }
 
     if (g_commandLineOptions.nmeaMessage.size() != 0)
     {
-        ISDevice &device = inertialSenseInterface.getDevices().front();
-        serialPortWriteAscii(device.port, g_commandLineOptions.nmeaMessage.c_str(), (int) g_commandLineOptions.nmeaMessage.size());
+        ISDevice* device = inertialSenseInterface.getDevices().front();
+        serialPortWriteAscii(device->port, g_commandLineOptions.nmeaMessage.c_str(), (int) g_commandLineOptions.nmeaMessage.size());
         return true;
     }
 
     if (!g_commandLineOptions.disableDeviceValidation)
     {   // check for any compatible (protocol version 2) devices
-        for (auto& device : inertialSenseInterface.getDevices()) {
-            if (device.devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (device->devInfo.protocolVer[0] != PROTOCOL_VERSION_CHAR0) {
                 printf("ERROR: One or more connected devices are using an incompatible protocol version (requires %d.x.x.x).\n", PROTOCOL_VERSION_CHAR0);
                 // let's print the dev info for all connected devices (so the user can identify the errant device)
-            for (auto& device : inertialSenseInterface.getDevices()) {
-                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(device.devInfo, true);
+            for (auto device : inertialSenseInterface.getDevices()) {
+                std::string devInfo = g_inertialSenseDisplay.DataToStringDevInfo(device-> devInfo, true);
                     printf("%s\n", devInfo.c_str());
                 }
                 return false;
@@ -739,12 +739,10 @@ static int cltool_dataStreaming()
             }
         };
         std::map<std::string, std::string, nat_cmp> portDevices;
-        int maxPortLen = 0;
-        for (auto& device : inertialSenseInterface.getDevices()) {
-            if (ENCODE_DEV_INFO_TO_HDW_ID(device.devInfo) != 0) {
-                std::string portName(((serial_port_t*)device.port)->portName);
-                portDevices[portName] = "" + device.getName() + " " + device.getFirmwareInfo(1);
-                maxPortLen = std::max<int>(maxPortLen, portName.length());
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo) != 0) {
+                std::string pName( portName(device->port) );
+                portDevices[pName] = "" + device->getName() + " " + device->getFirmwareInfo(1);
             }
         }
         for (auto i : portDevices) {
@@ -819,7 +817,7 @@ static int cltool_dataStreaming()
                 if (g_inertialSenseDisplay.UploadNeeded())
                 {
                     cInertialSenseDisplay::edit_data_t *edata = g_inertialSenseDisplay.EditData();
-                    inertialSenseInterface.SendData(edata->did, edata->data, edata->info.dataSize, edata->info.dataOffset);
+                    inertialSenseInterface.SendData(edata->did, edata->data, edata->info.elementSize, edata->info.offset + edata->selectionArrayIdx*edata->info.elementSize);
                 }
 
                 // If updating firmware, and all devices have finished, Exit
@@ -854,8 +852,8 @@ static int cltool_dataStreaming()
 
     //If Firmware Update is specified return an error code based on the Status of the Firmware Update
     if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && g_commandLineOptions.updateAppFirmwareFilename.empty()) {
-        for (auto& device : inertialSenseInterface.getDevices()) {
-            if (device.fwHasError) {
+        for (auto device : inertialSenseInterface.getDevices()) {
+            if (device->fwHasError) {
                 exitCode = -3;
                 break;
             }

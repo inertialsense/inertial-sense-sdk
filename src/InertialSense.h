@@ -72,8 +72,9 @@ extern "C"
 
 class InertialSense;
 
-typedef std::function<int(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
+typedef ISDevice*(*pfnOnNewDeviceHandler)(port_handle_t port);
 typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, port_handle_t port);
+typedef std::function<int(InertialSense* i, p_data_t* data, port_handle_t port)> pfnHandleBinaryData;
 
 /**
 * Inertial Sense C++ interface
@@ -85,7 +86,7 @@ public:
     struct com_manager_cpp_state_t
     {
         // per device vars
-        std::list<ISDevice> devices;
+        std::list<ISDevice*> devices;
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
@@ -120,7 +121,8 @@ public:
             pfnIsCommGenMsgHandler  callbackNmea = NULL,
             pfnIsCommGenMsgHandler  callbackUblox = NULL,
             pfnIsCommGenMsgHandler  callbackRtcm3 = NULL,
-            pfnIsCommGenMsgHandler  callbackSpartn = NULL );
+            pfnIsCommGenMsgHandler  callbackSpartn = NULL,
+            pfnOnNewDeviceHandler callbackNewDevice = NULL);
 
     /**
     * Destructor
@@ -167,7 +169,7 @@ public:
      * Returns a vector of available, connected devices
      * @return
      */
-    std::list<ISDevice>& getDevices();
+    std::list<ISDevice*>& getDevices();
 
 
     /**
@@ -407,7 +409,7 @@ public:
     {
         ISDevice* device = NULL;
         if (!port) {
-            device = &m_comManagerState.devices.front();
+            device = m_comManagerState.devices.front();
         } else {
             device = DeviceByPort(port);
         }
@@ -431,7 +433,7 @@ public:
     {
         ISDevice* device = NULL;
         if (!port) {
-            device = &m_comManagerState.devices.front();
+            device = m_comManagerState.devices.front();
         } else {
             device = DeviceByPort(port);
         }
@@ -521,11 +523,11 @@ public:
     void FlushRx()
     {
         uint8_t buf[10];
-        for (auto& device : m_comManagerState.devices)
+        for (auto device : m_comManagerState.devices)
         {
-            if (!serialPortIsOpen(device.port))
+            if (!serialPortIsOpen(device->port))
             {
-                while (serialPortReadTimeout(device.port, buf, sizeof(buf), 0));
+                while (serialPortReadTimeout(device->port, buf, sizeof(buf), 0));
             }
         }
     }
@@ -543,7 +545,7 @@ public:
         }
         // if no argument are passed, return the first device's port...
         if (!m_comManagerState.devices.empty())
-            return (serial_port_t*)(m_comManagerState.devices.front().port);
+            return (serial_port_t*)(m_comManagerState.devices.front()->port);
 
         // or nullptr if there are no devices
         return nullptr;
@@ -612,7 +614,7 @@ public:
     );
 
     is_operation_result updateFirmware(
-            ISDevice& device,
+            ISDevice* device,
             fwUpdate::target_t targetDevice,
             std::vector<std::string> cmds,
             ISBootloader::pfnBootloadProgress uploadProgress,
@@ -689,6 +691,7 @@ protected:
 private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
+    pfnOnNewDeviceHandler m_newDeviceHandler = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerNmea = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerUblox = NULLPTR;
     pfnIsCommGenMsgHandler  m_handlerRtcm3 = NULLPTR;
@@ -736,7 +739,7 @@ private:
     void DisableLogging();
     bool registerDevice(ISDevice* device);
     ISDevice* registerNewDevice(port_handle_t port, dev_info_t devInfo);
-    bool HasReceivedDeviceInfo(ISDevice& device);
+    bool HasReceivedDeviceInfo(ISDevice* device);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
     void RemoveDevice(ISDevice* device);

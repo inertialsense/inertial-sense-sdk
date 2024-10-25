@@ -12,7 +12,7 @@
 
 using namespace std;
 
-static const int s_maxFileSize = 5242880;
+static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
 static const float s_maxDiskSpacePercent = 0.5f;
 static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
@@ -51,7 +51,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger2;
 	EXPECT_TRUE(logger1.LoadFromDirectory(inputPath, inputLogType));
 	logger1.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxFileSize, s_maxDiskSpacePercent, s_useTimestampSubFolder, false));
 	logger1.CloseAllFiles();
 	logger2.CloseAllFiles();
 
@@ -60,7 +60,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger4;
 	EXPECT_TRUE(logger3.LoadFromDirectory(outputPath1, convertLogType));
 	logger3.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxFileSize, s_maxDiskSpacePercent, s_useTimestampSubFolder, false));
 	logger3.CloseAllFiles();
 	logger4.CloseAllFiles();
 
@@ -83,7 +83,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		dataIndex++;
 
 		if (data1 != NULL && 
-			cISDataMappings::GetSize(data1->hdr.id) == 0 &&
+			cISDataMappings::DataSize(data1->hdr.id) == 0 &&
 			convertLogType == cISLogger::eLogType::LOGTYPE_CSV)
 		{	// CSV logs don't save DIDs not defined in ISDataMapping.  Skip this one.
 			continue;
@@ -108,11 +108,11 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		}
 
 		// Compare Timestamps
-		double timestamp1 = cISDataMappings::GetTimestamp(&(data1->hdr), data1->buf);
-		double timestamp2 = cISDataMappings::GetTimestamp(&(data2->hdr), data2->buf);
+		double timestamp1 = cISDataMappings::Timestamp(&(data1->hdr), data1->buf);
+		double timestamp2 = cISDataMappings::Timestamp(&(data2->hdr), data2->buf);
 		if (timestamp1 != timestamp2)
 		{
-			EXPECT_EQ(timestamp1, timestamp2) << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;
+			EXPECT_DOUBLE_EQ(timestamp1, timestamp2) << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;
 			// break;
 		}
 
@@ -193,6 +193,128 @@ TEST(ISLogger, parse_filename)
 	TestParseFileName("00000001.RAW", 0, "", "", 1);
 	TestParseFileName("00000002.raw", 0, "", "", 2);
 	TestParseFileName("12345678.RAW", 0, "", "", 12345678);
+}
+
+/**
+ * This test validates that LogReader can read and parse the same data that was logged to the file.
+ * This is particularly important when we use the LogReader to parse old logs.
+ * We should probably consider specific tests to load/parse difference versions of logs as well.
+ */
+TEST(ISLogger, logReader_raw)
+{
+    std::list<std::vector<uint8_t>*> messages;
+    uint32_t size = GenerateRawLogData(messages, 20); // , GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
+
+    string logPath = "test_log";
+    ISFileManager::DeleteDirectory(logPath);
+
+    cISLogger logger;
+    logger.InitSave(cISLogger::eLogType::LOGTYPE_RAW, logPath, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder);
+    auto devLogger = logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), rand() % 999999);
+    logger.EnableLogging(true);
+    // logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
+    for (auto msg : messages) {
+        logger.LogData(devLogger, msg->size(), (const uint8_t*)msg->data());
+    }
+    cLogStats stats = logger.GetStats();
+    logger.CloseAllFiles();
+
+    EXPECT_EQ(stats.count, messages.size()) << "LogStats of messages written doesn't match messages written.";
+
+    vector<ISFileManager::file_info_t> originalFiles;
+    ISFileManager::GetAllFilesInDirectory(logPath, false, "\\.raw$", originalFiles);
+    uint32_t totalSizeOnDisk = 0;
+    for (auto file : originalFiles) {
+        totalSizeOnDisk += file.size;
+    }
+    EXPECT_EQ(totalSizeOnDisk, size) << "Log files written to disk doesn't match the total number of bytes that should be been logged.";
+
+
+    // Read back in the data, parse it, and confirm that we read what we wrote
+    cISLogger loggerReader;
+    EXPECT_TRUE(loggerReader.LoadFromDirectory(logPath, cISLogger::eLogType::LOGTYPE_RAW));
+    loggerReader.ShowParseErrors(true);              // Allow garbage data tests to hide parse errors
+    cDeviceLogRaw* rawLogReader = (cDeviceLogRaw*)(loggerReader.DeviceLogs()[0].get());
+
+    protocol_type_t origPType;
+    protocol_type_t readPType;
+
+    size_t deviceIndex = 0;
+    int msgIndex = -1;
+
+    uint8_t rxBuff[1024];
+    is_comm_instance_t isComm;
+
+    for (auto msg : messages)
+    {
+        msgIndex++;
+
+        // Read data into comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
+        is_comm_init(&isComm, rxBuff, sizeof(rxBuff), NULL);
+        int n = (int)_MIN((int)msg->size(), is_comm_free(&isComm));
+        memcpy(isComm.rxBuf.tail, (uint8_t*)msg->data(), n);
+        isComm.rxBuf.tail += n;
+
+        origPType = is_comm_parse(&isComm);
+        packet_t* origPkt = &isComm.rxPkt;
+        if (origPType == _PTYPE_NMEA) // FIXME: This really should be done inside of ISComm, so that any any parsed NMEA packet will determine the NmeaMsgId.
+            origPkt->hdr.id = getNmeaMsgId(origPkt->data.ptr, origPkt->data.size);
+
+        packet_t* readPkt = loggerReader.ReadNextPacket(readPType, deviceIndex);
+
+        if (origPType == _PTYPE_NONE || readPType == _PTYPE_NONE) {
+            // this is probably garbage data.
+            printf("Skipping %lu bytes of garbage data...\n", msg->size());
+            continue;
+        }
+
+        if (origPkt == NULL || readPkt == NULL)
+        {	// No more data.  Ensure both logs are empty.
+            EXPECT_EQ(origPkt, readPkt);
+            break;
+        }
+
+        // Compare DIDs
+        if (origPkt->hdr.id != readPkt->hdr.id)
+        {
+            EXPECT_EQ(origPkt->hdr.id, readPkt->hdr.id) << "MISMATCHED DID: " << (int)(origPkt->hdr.id) << "," << (int)(readPkt->hdr.id) << " size: " << origPkt->hdr.payloadSize << "," << readPkt->hdr.payloadSize << " offset:" << origPkt->offset << "," << readPkt->offset << " msgIndex: " << msgIndex << std::endl;
+            // break;
+        }
+
+        // Compare size
+        if (origPkt->size != readPkt->size)
+        {
+            EXPECT_EQ(origPkt->size, readPkt->size) << "MISMATCHED size: " << (int)origPkt->dataHdr.id << "," << (int)readPkt->dataHdr.id << " size: " << origPkt->size << "," << readPkt->size << " msgIndex: " << msgIndex << std::endl;
+            break;
+        }
+
+        // Compare byte-for-byte content
+        uint32_t i1 = 0;
+        uint32_t i2 = 0;
+        uint32_t end = _MIN(origPkt->data.size, readPkt->data.size);
+        for (; i1 < end; i1++, i2++)
+        {
+            uint8_t b1 = origPkt->data.ptr[i1];
+            uint8_t b2 = readPkt->data.ptr[i2];
+            if (b1 != b2)
+            {
+                EXPECT_EQ(b1, b2) << "MISMATCHED data (DID " << (int)origPkt->hdr.id << "," << (int)readPkt->hdr.id << ") byte index: " << i1 << ", value: " << "'" << (int)b1 << "' != '" << (int)b2 << "'" << std::endl;
+                break;
+            }
+        }
+    }
+
+    loggerReader.CloseAllFiles();
+
+    // Cleanup test files
+    DELETE_DIRECTORY(logPath);
+
+    // Print newline to print test results at start of line
+    printf("\n");
+
+
+    DELETE_DIRECTORY(logPath);
+
 }
 
 TEST(ISLogger, dat_conversion)

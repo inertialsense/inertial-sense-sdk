@@ -95,14 +95,14 @@ static int staticProcessRxNmea(const unsigned char* msg, int msgSize, port_handl
     return 0;
 }
 
-
 InertialSense::InertialSense(
         pfnHandleBinaryData     handlerIsb,
         pfnComManagerRmcHandler handlerRmc,
         pfnIsCommGenMsgHandler  handlerNmea,
         pfnIsCommGenMsgHandler  handlerUblox,
         pfnIsCommGenMsgHandler  handlerRtcm3,
-        pfnIsCommGenMsgHandler  handlerSpartn ) : m_tcpServer(this)
+        pfnIsCommGenMsgHandler  handlerSpartn,
+        pfnOnNewDeviceHandler handlerNewDevice) : m_tcpServer(this)
 {
     s_is = this;
     s_cm_state = &m_comManagerState;
@@ -129,6 +129,8 @@ InertialSense::InertialSense(
 
     is_comm_init(&m_gpComm, m_gpCommBuffer, sizeof(m_gpCommBuffer), NULL);
 
+    m_newDeviceHandler = handlerNewDevice;
+
     // Rx data callback functions
     m_handlerRmc    = handlerRmc;
     m_handlerNmea   = handlerNmea;
@@ -152,7 +154,7 @@ bool InertialSense::EnableLogging(const string& path, cISLogger::eLogType logTyp
         return false;
     }
     m_logger.EnableLogging(true);
-    for (auto& d : m_comManagerState.devices)
+    for (auto d : m_comManagerState.devices)
     {
         m_logger.registerDevice(d);
     }
@@ -189,14 +191,14 @@ bool InertialSense::registerDevice(ISDevice* device) {
         return NULL;
 
     // first, ensure there isn't a matching device already
-    for (auto& d : m_comManagerState.devices) {
-        if (&d == device)
+    for (auto d : m_comManagerState.devices) {
+        if (d == device)
             return true;
-        if ((d.hdwId == ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo)) && (d.devInfo.serialNumber == device->devInfo.serialNumber))
+        if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo)) && (d->devInfo.serialNumber == device->devInfo.serialNumber))
             return true;
     }
 
-    m_comManagerState.devices.push_back(*device);
+    m_comManagerState.devices.push_back(device);
     return true;
 }
 
@@ -205,33 +207,28 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
         return NULL;
 
     // first, ensure there isn't a matching device already
-    ISDevice* foundDevice = NULL;
-    for (auto& d : m_comManagerState.devices) {
-        if ((d.hdwId == ENCODE_DEV_INFO_TO_HDW_ID(devInfo)) && (d.devInfo.serialNumber == devInfo.serialNumber)) {
-            foundDevice = &d;
-            break;
+    for (auto d : m_comManagerState.devices) {
+        if ((d->hdwId == ENCODE_DEV_INFO_TO_HDW_ID(devInfo)) && (d->devInfo.serialNumber == devInfo.serialNumber)) {
+            d->port = port;
+            return d;
         }
     }
-    if (foundDevice == NULL) {
-        ISDevice newDevice;
-        newDevice.port = port;
-        newDevice.devInfo = devInfo;
-        newDevice.hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
-        newDevice.hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev good info
-        newDevice.flashCfgUploadChecksum = 0;
-        newDevice.sysParams.flashCfgChecksum = 0;
-        m_comManagerState.devices.push_back(newDevice);
-        foundDevice = m_comManagerState.devices.empty() ? NULL : (ISDevice*)&m_comManagerState.devices.back();
-    } else {
-        // if we found a matching device, but with a different (or unassigned port), should we update its port reference?
-        foundDevice->port = port;
-    }
-    return foundDevice;
+
+    // If we're here, we didn't find the device above
+    ISDevice* newDevice = m_newDeviceHandler(port);
+    newDevice->port = port;
+    newDevice->devInfo = devInfo;
+    newDevice->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);
+    newDevice->hdwRunState = ISDevice::HDW_STATE_APP; // this is probably a safe assumption, assuming we have dev good info
+    newDevice->flashCfgUploadChecksum = 0;
+    newDevice->sysParams.flashCfgChecksum = 0;
+    m_comManagerState.devices.push_back(newDevice);
+    return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
 
-bool InertialSense::HasReceivedDeviceInfo(ISDevice& device)
+bool InertialSense::HasReceivedDeviceInfo(ISDevice* device)
 {
-    return ((device.hdwId != 0) && (device.hdwRunState != ISDevice::HDW_STATE_UNKNOWN) && (device.devInfo.serialNumber != 0) && (device.devInfo.hardwareType != 0));
+    return (device && (device->hdwId != 0) && (device->hdwRunState != ISDevice::HDW_STATE_UNKNOWN) && (device->devInfo.serialNumber != 0) && (device->devInfo.hardwareType != 0));
 }
 
 bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
@@ -239,7 +236,7 @@ bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
     if (m_comManagerState.devices.empty())
         return false;
 
-    for (auto& device : m_comManagerState.devices)
+    for (auto device : m_comManagerState.devices)
     {
         if (!HasReceivedDeviceInfo(device))
         {
@@ -252,8 +249,8 @@ bool InertialSense::HasReceivedDeviceInfoFromAllDevices()
 
 void InertialSense::RemoveDevice(ISDevice* device)
 {
-    for (auto& cmsDevice : m_comManagerState.devices) {
-        if (&cmsDevice == device) {
+    for (auto cmsDevice : m_comManagerState.devices) {
+        if (cmsDevice == device) {
             // m_serialPorts.erase(m_serialPorts.begin() + i);
             if (device->port) {
                 serialPortClose(device->port);
@@ -263,8 +260,8 @@ void InertialSense::RemoveDevice(ISDevice* device)
             }
         }
     }
-    std::remove_if(m_comManagerState.devices.begin(), m_comManagerState.devices.end(), [&](const ISDevice& d){
-        return &d == device;
+    std::remove_if(m_comManagerState.devices.begin(), m_comManagerState.devices.end(), [&](const ISDevice* d){
+        return d == device;
     });
     // TODO: remove the device from m_comManagerState
     //   -- we don't really need to remove it, but we should
@@ -432,7 +429,7 @@ size_t InertialSense::DeviceCount()
 std::vector<port_handle_t> InertialSense::getPorts() {
     std::vector<port_handle_t> ports;
     for (auto port : m_serialPorts) {
-        ports.push_back((port_handle_t)&port);
+        ports.push_back((port_handle_t)port);
     }
     return ports;
 }
@@ -441,14 +438,14 @@ std::vector<port_handle_t> InertialSense::getPorts() {
  * Returns a vector of available, connected devices
  * @return
  */
-std::list<ISDevice>& InertialSense::getDevices() {
+std::list<ISDevice*>& InertialSense::getDevices() {
     return m_comManagerState.devices;
 }
 
 ISDevice* InertialSense::getDevice(port_handle_t port) {
-    for (ISDevice& device : m_comManagerState.devices)
-        if (device.port == port)
-            return &device;
+    for (auto device : m_comManagerState.devices)
+        if (device->port == port)
+            return device;
 
     return NULL;
 }
@@ -474,10 +471,10 @@ bool InertialSense::Update()
             SyncFlashConfig(m_timeMs);
 
             // check if we have an valid instance of the FirmareUpdate class, and if so, call it's Step() function
-            for (auto& device : m_comManagerState.devices) {
-                if (serialPortIsOpen(device.port) && device.fwUpdater != nullptr) {
-                    if (!device.fwUpdater->fwUpdate_step()) { // device.fwUpdate.update();
-                        if (device.fwLastStatus < fwUpdate::NOT_STARTED) {
+            for (auto device : m_comManagerState.devices) {
+                if (serialPortIsOpen(device->port) && device->fwUpdater != nullptr) {
+                    if (!device->fwUpdater->fwUpdate_step()) { // device.fwUpdate.update();
+                        if (device->fwLastStatus < fwUpdate::NOT_STARTED) {
                             // TODO: Report a REAL error
                             // printf("Error starting firmware update: %s\n", fwUpdater->getSessionStatusName());
                         }
@@ -498,12 +495,12 @@ bool InertialSense::Update()
 
     // if any serial ports have closed, shutdown
     bool anyOpen = false;
-    for (auto& device : m_comManagerState.devices)
+    for (auto device : m_comManagerState.devices)
     {
-        if (!serialPortIsOpen(device.port))
+        if (!serialPortIsOpen(device->port))
         {
             // Make sure its closed..
-            serialPortClose(device.port);
+            serialPortClose(device->port);
         } else
             anyOpen = true;
     }
@@ -514,7 +511,7 @@ bool InertialSense::Update()
 bool InertialSense::UpdateServer()
 {
     // as a tcp server, only the first serial port is read from
-    port_handle_t port = m_comManagerState.devices.front().port;
+    port_handle_t port = m_comManagerState.devices.front()->port;
     is_comm_instance_t *comm = &(COMM_PORT(port)->comm);
     protocol_type_t ptype = _PTYPE_NONE;
 
@@ -700,7 +697,7 @@ bool InertialSense::Open(const char* port, int baudRate, bool disableBroadcastsO
 
 bool InertialSense::IsOpen()
 {
-    return (m_comManagerState.devices.size() != 0 && serialPortIsOpen(m_comManagerState.devices.front().port));
+    return (m_comManagerState.devices.size() != 0 && serialPortIsOpen(m_comManagerState.devices.front()->port));
 }
 
 void InertialSense::Close()
@@ -723,99 +720,60 @@ void InertialSense::Close()
 vector<string> InertialSense::GetPortNames()
 {
     vector<string> ports;
-    for (auto& device : m_comManagerState.devices)
-    {
-        ports.push_back(((serial_port_t*)device.port)->portName);
-    }
+    for (auto device : m_comManagerState.devices) { ports.push_back(portName(device->port)); }
     return ports;
 }
 
 void InertialSense::QueryDeviceInfo()
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendRaw(device.port, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE);
-    }
+    for (auto device : m_comManagerState.devices) { device->QueryDeviceInfo(); }
 }
 
 void InertialSense::StopBroadcasts(bool allPorts)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendRaw(device.port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE);
-    }
+    for (auto device : m_comManagerState.devices) { device->StopBroadcasts(allPorts); }
 }
 
 void InertialSense::SavePersistent()
 {
-    // Save persistent messages to flash
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendRaw(device.port, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE);
-    }
+    for (auto device : m_comManagerState.devices) { device->SavePersistent(); }
 }
 
 void InertialSense::SoftwareReset()
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendRaw(device.port, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE);
-    }
+    for (auto device : m_comManagerState.devices) { device->SoftwareReset(); }
 }
 
 void InertialSense::GetData(eDataIDs dataId, uint16_t length, uint16_t offset, uint16_t period)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerGetData(device.port, dataId, length, offset, 0);
-    }
+    for (auto device : m_comManagerState.devices) { device->GetData(dataId, length, offset, period); }
 }
 
 void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendData(device.port, data, dataId, length, offset);
-    }
+    for (auto device : m_comManagerState.devices) { device->SendData(dataId, data, length, offset); }
 }
 
 void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendRawData(device.port, data, dataId, length, offset);
-    }
+    for (auto device : m_comManagerState.devices) { device->SendRawData(dataId, data, length, offset); }
 }
 
 void InertialSense::SendRaw(uint8_t* data, uint32_t length)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        comManagerSendRaw(device.port, data, length);
-    }
+    for (auto device : m_comManagerState.devices) { device->SendRaw(data, length); }
 }
 
 void InertialSense::SetSysCmd(const uint32_t command, port_handle_t port)
 {
     if (port == nullptr)
     {	// Send to all
-        for (auto& device : m_comManagerState.devices)
-        {
-            SetSysCmd(command, device.port);
-        }
+        for (auto device : m_comManagerState.devices) { device->SetSysCmd(command); }
     }
     else
     {	// Specific port
         ISDevice* device = DeviceByPort(port);
-        if (!device)
-        {
-            return;
-        }
-
-        device->sysCmd.command = command;
-        device->sysCmd.invCommand = ~command;
-        // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
-        comManagerSendData(port, &device->sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
+        if (device) device->SetSysCmd(command);
     }
 }
 
@@ -874,26 +832,26 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
     }
     m_syncCheckTimeMs = timeMs;
 
-    for (auto& device : m_comManagerState.devices)
+    for (auto device : m_comManagerState.devices)
     {
-        if (device.flashCfgUploadTimeMs)
+        if (device->flashCfgUploadTimeMs)
         {	// Upload in progress
-            if (timeMs - device.flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
+            if (timeMs - device->flashCfgUploadTimeMs < SYNC_FLASH_CFG_CHECK_PERIOD_MS)
             {	// Wait for upload to process.  Pause sync.
-                device.sysParams.flashCfgChecksum = 0;
+                device->sysParams.flashCfgChecksum = 0;
             }
         }
 
         // Require valid sysParams checksum
-        if (device.sysParams.flashCfgChecksum)  
+        if (device->sysParams.flashCfgChecksum)
         {   
-            if (device.sysParams.flashCfgChecksum == device.flashCfg.checksum)
+            if (device->sysParams.flashCfgChecksum == device->flashCfg.checksum)
             {
-                if (device.flashCfgUploadTimeMs)
+                if (device->flashCfgUploadTimeMs)
                 {   // Upload complete.  Allow sync.
-                    device.flashCfgUploadTimeMs = 0;
+                    device->flashCfgUploadTimeMs = 0;
 
-                    if (device.flashCfgUploadChecksum == device.sysParams.flashCfgChecksum)
+                    if (device->flashCfgUploadChecksum == device->sysParams.flashCfgChecksum)
                     {
                         printf("DID_FLASH_CONFIG upload complete.\n");
                     }
@@ -906,7 +864,7 @@ void InertialSense::SyncFlashConfig(unsigned int timeMs)
             else
             {	// Out of sync.  Request flash config.
                 DEBUG_PRINT("Out of sync.  Requesting DID_FLASH_CONFIG...\n");
-                comManagerGetData(device.port, DID_FLASH_CONFIG, 0, 0, 0);
+                comManagerGetData(device->port, DID_FLASH_CONFIG, 0, 0, 0);
             }
         } 
     }
@@ -932,7 +890,7 @@ bool InertialSense::FlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port)
 {
     ISDevice* device = NULL;
     if (!port) {
-        device = &m_comManagerState.devices.front();
+        device = m_comManagerState.devices.front();
     } else {
         device = DeviceByPort(port);
     }
@@ -951,7 +909,7 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
 {
     ISDevice* device = NULL;
     if (!port) {
-        device = &m_comManagerState.devices.front();
+        device = m_comManagerState.devices.front();
     } else {
         device = DeviceByPort(port);
     }
@@ -1024,7 +982,7 @@ bool InertialSense::WaitForFlashSynced(port_handle_t port)
 {
     ISDevice* device = NULL;
     if (!port) {
-        device = &m_comManagerState.devices.front();
+        device = m_comManagerState.devices.front();
     } else {
         device = DeviceByPort(port);
     }
@@ -1168,35 +1126,13 @@ bool InertialSense::BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfn
         m_comManagerState.binaryCallback[dataId] = callback;
     }
 
-    if (periodMultiple < 0)
-    {
-        for (auto& device : m_comManagerState.devices)
-        {
-            // [C COMM INSTRUCTION]  Stop broadcasting of one specific DID message from the IS device.
-            comManagerDisableData(device.port, dataId);
-        }
-    }
-    else
-    {
-        for (auto& device : m_comManagerState.devices)
-        {
-            // [C COMM INSTRUCTION]  3.) Request a specific data set from the IMX.  "periodMultiple" specifies the interval
-            // between broadcasts and "periodMultiple=0" will disable broadcasts and transmit one single message.
-            if ((device.devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) || !m_enableDeviceValidation) {
-                comManagerGetData(device.port, dataId, 0, 0, periodMultiple);
-            }
-        }
-    }
+    for (auto device : m_comManagerState.devices) { device->BroadcastBinaryData(dataId, periodMultiple); }
     return true;
 }
 
 void InertialSense::BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        // [C COMM INSTRUCTION]  Use a preset to enable a predefined set of messages.  R
-        comManagerGetDataRmc(device.port, rmcPreset, rmcOptions);
-    }
+    for (auto device : m_comManagerState.devices) { device->BroadcastBinaryDataRmcPreset(rmcPreset, rmcOptions); }
 }
 
 is_operation_result InertialSense::updateFirmware(
@@ -1212,16 +1148,16 @@ is_operation_result InertialSense::updateFirmware(
 {
     EnableDeviceValidation(true);
     if (OpenSerialPorts(comPort.c_str(), baudRate)) {
-        for (auto& device : m_comManagerState.devices) {
-            device.fwUpdater = new ISFirmwareUpdater(device.port, &device.devInfo);
-            device.fwUpdater->setTarget(targetDevice);
+        for (auto device : m_comManagerState.devices) {
+            device->fwUpdater = new ISFirmwareUpdater(device->port, &device->devInfo);
+            device->fwUpdater->setTarget(targetDevice);
 
             // TODO: Implement maybe
-            device.fwUpdater->setUploadProgressCb(uploadProgress);
-            device.fwUpdater->setVerifyProgressCb(verifyProgress);
-            device.fwUpdater->setInfoProgressCb(infoProgress);
+            device->fwUpdater->setUploadProgressCb(uploadProgress);
+            device->fwUpdater->setVerifyProgressCb(verifyProgress);
+            device->fwUpdater->setInfoProgressCb(infoProgress);
 
-            device.fwUpdater->setCommands(cmds);
+            device->fwUpdater->setCommands(cmds);
         }
     }
 
@@ -1235,7 +1171,7 @@ is_operation_result InertialSense::updateFirmware(
 }
 
 is_operation_result InertialSense::updateFirmware(
-        ISDevice& device,
+        ISDevice* device,
         fwUpdate::target_t targetDevice,
         std::vector<std::string> cmds,
         ISBootloader::pfnBootloadProgress uploadProgress,
@@ -1245,15 +1181,15 @@ is_operation_result InertialSense::updateFirmware(
 )
 {
     EnableDeviceValidation(true);
-    device.fwUpdater = new ISFirmwareUpdater(device);
-    device.fwUpdater->setTarget(targetDevice);
+    device->fwUpdater = new ISFirmwareUpdater(*device);
+    device->fwUpdater->setTarget(targetDevice);
 
     // TODO: Implement maybe
-    device.fwUpdater->setUploadProgressCb(uploadProgress);
-    device.fwUpdater->setVerifyProgressCb(verifyProgress);
-    device.fwUpdater->setInfoProgressCb(infoProgress);
+    device->fwUpdater->setUploadProgressCb(uploadProgress);
+    device->fwUpdater->setVerifyProgressCb(verifyProgress);
+    device->fwUpdater->setInfoProgressCb(infoProgress);
 
-    device.fwUpdater->setCommands(cmds);
+    device->fwUpdater->setCommands(cmds);
 
     printf("\n\r");
 
@@ -1268,8 +1204,8 @@ is_operation_result InertialSense::updateFirmware(
  * @return true if ALL connected devices have finished ALL firmware updates (V2) (no pending commands)
  */
 bool InertialSense::isFirmwareUpdateFinished() {
-    for (auto& device : m_comManagerState.devices) {
-        if (device.fwUpdateInProgress())
+    for (auto device : m_comManagerState.devices) {
+        if (device->fwUpdateInProgress())
             return false;
     }
     return true;
@@ -1280,8 +1216,8 @@ bool InertialSense::isFirmwareUpdateFinished() {
  */
 bool InertialSense::isFirmwareUpdateSuccessful() {
     for (auto device : m_comManagerState.devices) {
-        ISFirmwareUpdater *fwUpdater = device.fwUpdater;
-        if (device.fwUpdater->hasErrors() ||
+        ISFirmwareUpdater *fwUpdater = device->fwUpdater;
+        if (fwUpdater->hasErrors() ||
             (   (fwUpdater != nullptr) &&
                 fwUpdater->fwUpdate_isDone() &&
                 (
@@ -1300,8 +1236,8 @@ int InertialSense::getFirmwareUpdatePercent() {
     int total_devices = 0;
 
     for (auto device : m_comManagerState.devices) {
-        if (device.fwUpdateInProgress()) {
-            total_percent += device.fwPercent;
+        if (device->fwUpdateInProgress()) {
+            total_percent += device->fwPercent;
             total_devices++;
         }
     }
@@ -1319,11 +1255,11 @@ int InertialSense::getFirmwareUpdatePercent() {
 [[ deprecated ]]
 int InertialSense::getUpdateDeviceIndex(const char* com)
 {
-    for (auto& device : m_comManagerState.devices)
+    for (auto device : m_comManagerState.devices)
     {
-        if (!strcmp(((serial_port_t*)device.port)->portName, com))
-            if (device.port)
-                return portId(device.port);
+        if (!strcmp(((serial_port_t*)device->port)->portName, com))
+            if (device->port)
+                return portId(device->port);
     }
     return -1;
 }
@@ -1431,13 +1367,7 @@ is_operation_result InertialSense::BootloadFile(
 
 bool InertialSense::OnClientPacketReceived(const uint8_t* data, uint32_t dataLength)
 {
-    for (auto& device : m_comManagerState.devices)
-    {
-        // sleep in between to allow test bed to send the serial data
-        // TODO: This was 10ms, but that was to long for the CI test.
-        // SLEEP_MS(1);	// This is commented out because it causes problems when using testbad with cltool on single board computer.
-        serialPortWrite(device.port, data, dataLength);
-    }
+    for (auto device : m_comManagerState.devices) { device->SendRaw(data, dataLength); }
     return false; // do not parse, since we are just forwarding it on
 }
 
@@ -1649,11 +1579,11 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
         // remove each failed device where communications were not received
         std::vector<std::string> deadPorts;
         std::vector<ISDevice*> deadDevices;
-        for (auto& device : m_comManagerState.devices) {
+        for (auto device : m_comManagerState.devices) {
             if (!HasReceivedDeviceInfo(device)) {
-                debug_message("[DBG] Failed to receive response on serial port '%s'\n", portName(device.port));
-                deadPorts.push_back(((serial_port_t*)device.port)->portName);
-                deadDevices.push_back(&device);
+                debug_message("[DBG] Failed to receive response on serial port '%s'\n", portName(device->port));
+                deadPorts.push_back(portName(device->port));
+                deadDevices.push_back(device);
             }
         }
 
@@ -1677,12 +1607,13 @@ bool InertialSense::OpenSerialPorts(const char* portPattern, int baudRate)
     }
 
     // request extended device info for remaining connected devices...
-    for (auto& device : m_comManagerState.devices) {
+    for (auto device : m_comManagerState.devices) {
         // but only if they are of a compatible protocol version
-        if ((device.devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) && (device.hdwRunState == ISDevice::HDW_STATE_APP)) {
-            comManagerGetData(device.port, DID_SYS_CMD, 0, 0, 0);
-            comManagerGetData(device.port, DID_FLASH_CONFIG, 0, 0, 0);
-            comManagerGetData(device.port, DID_EVB_FLASH_CFG, 0, 0, 0);
+        if ((device->devInfo.protocolVer[0] == PROTOCOL_VERSION_CHAR0) && (device->hdwRunState == ISDevice::HDW_STATE_APP)) {
+            device->GetData(DID_SYS_CMD, 0, 0, 0);
+            device->GetData(DID_SYS_CMD, 0, 0, 0);
+            device->GetData(DID_FLASH_CONFIG, 0, 0, 0);
+            device->GetData(DID_EVB_FLASH_CFG, 0, 0, 0);
         }
     }
 
@@ -1971,32 +1902,32 @@ system_command_t InertialSense::GetSysCmd(port_handle_t port)
 }
 
 /**
- * Locates the device associated with the specified port
+ * Returns the device associated with the specified port
  * @param port
  * @return ISDevice* which is connected to port, otherwise NULL
  */
 ISDevice* InertialSense::DeviceByPort(port_handle_t port) {
     if (port == nullptr)
-        return (!m_comManagerState.devices.empty() ? &(m_comManagerState.devices.front()) : nullptr);
+        return (!m_comManagerState.devices.empty() ? m_comManagerState.devices.front() : nullptr);
 
-    for (auto& device: m_comManagerState.devices) {
-        if (device.port == port)
-            return &device;
+    for (auto device: m_comManagerState.devices) {
+        if (device->port == port)
+            return device;
     }
     return nullptr;
 }
 
 /**
- * Locates the device associated with the specified port name
+ * Resturns the device associated with the specified port name
  * @param port
  * @return ISDevice* which is connected to port, otherwise NULL
  */
 ISDevice* InertialSense::DeviceByPortName(const std::string& port_name) {
-    for (auto& device: m_comManagerState.devices) {
-        if (device.port) {
-            const char* devPortName = portName(device.port);
+    for (auto device : m_comManagerState.devices) {
+        if (device->port) {
+            const char* devPortName = portName(device->port);
             if (devPortName && (std::string(devPortName) == port_name))
-                return &device;
+                return device;
         }
     }
     return nullptr;
@@ -2098,10 +2029,10 @@ uint32_t InertialSense::compareDevInfo(const dev_info_t& info1, const dev_info_t
 std::vector<ISDevice*> InertialSense::selectByDevInfo(const dev_info_t& devInfo, uint32_t filterFlags) {
     std::vector<ISDevice*> selected;
 
-    for (auto& device: m_comManagerState.devices) {
-        uint32_t matchy = compareDevInfo(devInfo, device.devInfo) & filterFlags;
+    for (auto device : m_comManagerState.devices) {
+        uint32_t matchy = compareDevInfo(devInfo, device->devInfo) & filterFlags;
         if (matchy == filterFlags)
-            selected.push_back(&device);
+            selected.push_back(device);
     }
     return selected;
 }

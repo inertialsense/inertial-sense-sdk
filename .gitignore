@@ -1,5 +1,5 @@
-ExampleProjects/Arduino/ReadIS/src/
 cmake-build-*/
+.cmake/
 build/
 obj/
 x64
@@ -19,6 +19,7 @@ CMakeFiles/
 *.so
 *.o
 *.user
+*.ninja
 .vs
 .vscode
 .venv
@@ -31,5 +32,10 @@ libInertialSenseSDK.a
 scripts/.venv/
 python/venv/
 python/logInspector/.eggs/
+ros/install/
+ros/log/
+ros/ros2/install/
+ros/ros2/log/
 
+ExampleProjects/Arduino/ReadIS/src/
 ExampleProjects/LogReader_RegCmp/Log/

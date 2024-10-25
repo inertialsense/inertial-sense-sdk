@@ -35,39 +35,41 @@ void logStats(const char *format, ...);
 //!< Chunk Header
 PUSH_PACK_1
 
-struct sChunkHeader 
+struct sChunkHeader
 {
-#ifdef CHUNK_VER_1
-	uint32_t	marker;				//!< Chunk marker (0xFC05EA32)
-	uint16_t	version;			//!< Chunk Version
-	uint16_t	classification;		//!< Chunk classification
-    char name[4];                                //!< Chunk name
-    char invName[4];                             //!< Bitwise inverse of chunk name
-    uint32_t dataSize;                           //!< Chunk data length in bytes
-    uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
-	uint32_t	grpNum;				//!< Chunk Group Number: 0 = serial data, 1 = sorted data...
-	uint32_t	devSerialNum;		//!< Device serial number
-	uint32_t	pHandle;			//!< Device port handle
-	uint32_t	reserved;			//!< Unused
-#else
-    uint32_t marker = DATA_CHUNK_MARKER;         //!< Chunk marker (0xFC05EA32)
-    uint8_t version = 2;                         //!< Chunk Version
-    uint8_t dataOffset = 34;                     //!< offset from this position until the start of the chunk data (34 = sum of all hdr bytes following this byte, upto the chnk data, or sizeof(sChunkHeader) - 6).
-    char protocolVersion[2] = {                  //!< major/minor version of the underlying line/protocol
-            PROTOCOL_VERSION_CHAR0,
-            PROTOCOL_VERSION_CHAR1
+    union {
+        struct {
+            uint32_t marker = DATA_CHUNK_MARKER;         //!< Chunk marker (0xFC05EA32)
+            uint8_t version = 2;                         //!< Chunk Version
+            uint8_t dataOffset = 34;                     //!< offset from this position until the start of the chunk data (34 = sum of all hdr bytes following this byte, upto the chnk data, or sizeof(sChunkHeader) - 6).
+            char protocolVersion[2] = {                  //!< major/minor version of the underlying line/protocol
+                    PROTOCOL_VERSION_CHAR0,
+                    PROTOCOL_VERSION_CHAR1
+            };
+            char name[4];                                //!< Chunk name
+            char invName[4];                             //!< Bitwise inverse of chunk name
+            uint32_t dataSize;                           //!< Chunk data length in bytes
+            uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
+            uint32_t grpNum = 0;                         //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
+            uint32_t devSerialNum = 0;                   //!< Device serial number
+            uint16_t portId = 0xFFFF;                    //!< Device port id
+            uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
+            char fwVersion[4] = {};                      //!< Device firmware version
+        };
+        struct {
+            uint32_t marker;                             //!< Chunk marker (0xFC05EA32)
+            uint16_t version;                            //!< Chunk Version
+            uint16_t classification;                     //!< Chunk classification
+            char name[4];                                //!< Chunk name
+            char invName[4];                             //!< Bitwise inverse of chunk name
+            uint32_t dataSize;                           //!< Chunk data length in bytes
+            uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
+            uint32_t grpNum;                             //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
+            uint32_t devSerialNum;                       //!< Device serial number
+            uint32_t pHandle;                            //!< Device port handle
+            uint32_t reserved;                           //!< Unused
+        } v1;
     };
-    char name[4];                                //!< Chunk name
-    char invName[4];                             //!< Bitwise inverse of chunk name
-    uint32_t dataSize;                           //!< Chunk data length in bytes
-    uint32_t invDataSize;                        //!< Bitwise inverse of chunk data length
-    uint32_t grpNum = 0;                         //!< Chunk Group Number: 0 = serial data, 1 = sorted data...
-    uint32_t devSerialNum = 0;                   //!< Device serial number
-    uint16_t portId = 0xFFFF;                    //!< Device port id
-    uint16_t portType = PORT_TYPE__UNKNOWN;      //!< Device port type
-    char fwVersion[4] = {};                      //!< Device firmware version
-#endif
-
 #if LOG_CHUNK_STATS
     void print()
     {

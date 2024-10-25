@@ -11,6 +11,7 @@
 #include "ISFirmwareUpdater.h"
 #include "util/util.h"
 #include "imx_defaults.h"
+#include "ISLogger.h"
 
 ISDevice ISDevice::invalidRef;
 
@@ -317,6 +318,12 @@ std::string ISDevice::getDescription() {
     return utils::string_format("%-12s [ %s : %-14s ]", getName().c_str(), getFirmwareInfo(1).c_str(), portName(port));
 }
 
+void ISDevice::registerWithLogger(cISLogger *logger) {
+    if (logger) {
+        logger->registerDevice(this);
+    }
+}
+
 bool ISDevice::BroadcastBinaryData(uint32_t dataId, int periodMultiple)
 {
     if (!port)
@@ -360,6 +367,18 @@ void ISDevice::SetSysCmd(const uint32_t command) {
     // [C COMM INSTRUCTION]  Update the entire DID_SYS_CMD data set in the IMX.
     comManagerSendData(port, &sysCmd, DID_SYS_CMD, sizeof(system_command_t), 0);
 }
+
+void ISDevice::SendNmea(const std::string& nmeaMsg)
+{
+    uint8_t buf[1024] = {0};
+    int n = 0;
+    if (nmeaMsg[0] != '$') buf[n++] = '$'; // Append header if missing
+    memcpy(&buf[n], nmeaMsg.c_str(), nmeaMsg.size());
+    n += nmeaMsg.size();
+    nmea_sprint_footer((char*)buf, sizeof(buf), n);
+    SendRaw(buf, n);
+}
+
 
 /**
  * Sends message to device to set devices Event Filter
@@ -508,7 +527,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
                 flashCfg_.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
             }
 
-            printf("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            printf("%s :: Sending DID_FLASH_CONFIG: size %d, offset %d\n", getIdAsString().c_str(), size, offset);
             int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
             flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress
@@ -525,7 +544,7 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
             flashCfgUploadChecksum = flashCfg_.checksum;
         }
     } else {
-        printf("DID_FLASH_CONFIG in sync.  No upload.\n");
+        // printf("DID_FLASH_CONFIG in sync.  No upload.\n");
     }
 
     // Update local copy of flash config
@@ -547,9 +566,9 @@ bool ISDevice::WaitForFlashSynced()
 
         if ((current_timeMs() - startMs) > SYNC_FLASH_CFG_TIMEOUT_MS)
         {   // Timeout waiting for flash config
+            #if PRINT_DEBUG
             printf("Timeout waiting for DID_FLASH_CONFIG failure!\n");
 
-            #if PRINT_DEBUG
             ISDevice& device = m_comManagerState.devices[pHandle];
             printf("device.flashCfg.checksum:          %u\n", device.flashCfg.checksum);
             printf("device.sysParams.flashCfgChecksum: %u\n", device.sysParams.flashCfgChecksum);
@@ -561,7 +580,7 @@ bool ISDevice::WaitForFlashSynced()
         else
         {   // Query DID_SYS_PARAMS
             GetData(DID_SYS_PARAMS);
-            printf("Waiting for flash sync...\n");
+            // printf("Waiting for flash sync...\n");
         }
         SLEEP_MS(20);  // give some time for the device to respond.
     }
@@ -577,4 +596,13 @@ bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
         return false;
 
     return ((sysParams.hdwStatus & HDW_STATUS_FLASH_WRITE_PENDING) || (sysParams.hdwStatus == 0));
+}
+
+bool ISDevice::reset() {
+    if (current_timeMs() > nextResetTime) {
+        SetSysCmd(SYS_CMD_SOFTWARE_RESET);
+        nextResetTime = current_timeMs() + resetRequestThreshold;
+        return true;
+    }
+    return false;
 }

@@ -805,20 +805,20 @@ static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
  * @param data Pointer to payload data.
  * @return int Number of bytes written on success or -1 on failure
  */
-int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size, is_comm_instance_t* comm, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * @brief Same as is_comm_write_to_buf() except for writing packet to serial port.
  * @param portWrite Serial port callback function used send packet.
  * @param port Serial port number packet will be written to.
  */
-int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write(port_handle_t port, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * @brief Same as is_comm_write() except passing in pointer to Tx packet structure.  
  * @param txPkt Pointer to packet_t structure used to organize message sent.
  */
-int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+int is_comm_write_pkt(port_handle_t port, packet_t *txPkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * Removed old data and shift unparsed data to the the buffer start if running out of space at the buffer end.  Returns number of bytes available in the bufer.
@@ -953,7 +953,7 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
  * @param offset Offset of the payload data into the data set structure.
  * @param data Pointer to payload data.
  */
-void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, void* data);
+void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did, uint16_t data_size, uint16_t offset, const void* data);
 
 /**
  * @brief Updates the checksum for a precomputed InertialSense binary (ISB) packet and writes it to the specified serial port.

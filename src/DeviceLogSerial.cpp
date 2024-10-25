@@ -46,7 +46,7 @@ cDeviceLogSerial::cDeviceLogSerial(uint16_t hdwId, uint32_t serialNo) : cDeviceL
     m_chunk.m_hdr.devSerialNum = SerialNumber();
 }
 
-void cDeviceLogSerial::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize) {
+void cDeviceLogSerial::InitDeviceForWriting(const std::string& timestamp, const std::string& directory, uint64_t maxDiskSpace, uint32_t maxFileSize) {
     m_chunk.Clear();
     m_chunk.m_hdr.devSerialNum = SerialNumber();
     if (device) {

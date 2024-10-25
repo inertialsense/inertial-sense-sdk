@@ -9,6 +9,8 @@
 #include <chrono>
 #include <iostream>
 #include <random>
+#include <vector>
+#include <list>
 
 #include "ISFileManager.h"
 #include "protocol_nmea.h"
@@ -33,7 +35,7 @@
 
 using namespace std;
 
-static const int s_maxFileSize = 5242880;
+static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
 static const float s_maxDiskSpacePercent = 0.5f;
 static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
@@ -494,7 +496,7 @@ bool GenerateMessage(test_message_t &msg, protocol_type_t ptype)
     return false;
 }
 
-void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType logType, float logSizeMB, eTestGenDataOptions options)
+void GenerateDataLogFiles(int numDevices, const std::string& directory, cISLogger::eLogType logType, float logSizeMB, eTestGenDataOptions options)
 {
     // Remove old files
 	ISFileManager::DeleteDirectory(directory);
@@ -502,15 +504,11 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     cISLogger logger;
     logger.InitSave(logType, directory, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder);
 
-    auto devices = new ISDevice[numDevices]();
     for (int d=0; d<numDevices; d++)
-    {   // Assign serial number
-        devices[d].devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
-        devices[d].devInfo.hardwareVer[0] = 5;
-        devices[d].devInfo.hardwareVer[1] = 0;
-        devices[d].devInfo.serialNumber = rand() % 999999;
-        logger.registerDevice(devices[d]);
+    {
+        logger.registerDevice(ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0), rand() % 999999);
     }
+
     logger.EnableLogging(true);
     logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
 
@@ -522,7 +520,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
 
     for (s_timeMs=0; logger.LogSizeAllMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
-        for (auto& d : logger.DeviceLogs())
+        for (auto d : logger.DeviceLogs())
         {
             while(GenerateMessage(msg))
             {
@@ -556,8 +554,59 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     }
 
     logger.CloseAllFiles();
-    delete [] devices;
 }
+
+/**
+ * Generates simulated data, populating a list of msgs with the generated data, not exceeding ligSizeMB, and using the options specified.
+ * @param msgs
+ * @param logSizeMB
+ * @param options
+ * @return the number of size, in bytes, of the total generated stream
+ */
+uint32_t GenerateRawLogData(std::list<std::vector<uint8_t>*>& msgs, float logSizeMB, eTestGenDataOptions options)
+{
+    uint32_t runningSize = 0;
+    test_message_t msg = {};
+    uint8_t comBuf[PKT_BUF_SIZE];
+    is_comm_init(&msg.comm, comBuf, PKT_BUF_SIZE, NULL); // TODO: Use callbacks??
+
+    CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
+
+    for (s_timeMs=0; runningSize < (logSizeMB * 1024 * 1024); s_timeMs += s_timePeriodMs)
+    {
+        while(GenerateMessage(msg))
+        {
+            static int pktCount = 0;
+
+            // Write data to file
+            std::vector<uint8_t>* msgData = new std::vector<uint8_t>();// (msg.pktSize);
+            uint8_t* data = msg.comm.rxBuf.start;
+            msgData->insert(msgData->end(), reinterpret_cast<char*>(data), reinterpret_cast<char*>(data + msg.pktSize));
+            msgs.push_back(msgData);
+            runningSize += msg.pktSize;
+
+            // Insert garbage data
+            if (options == GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS && pktCount++ > 10)
+            {
+                pktCount = 0;
+                uint8_t garbage[100] = {};
+
+                for (int i=0; i<sizeof(garbage); i++)
+                {   // Generate garbage
+                    garbage[i] = rand();
+                }
+                int garbageSize = garbage[0]%100;
+
+                std::vector<uint8_t>* garbageData = new std::vector<uint8_t>();// (msg.pktSize);
+                garbageData->insert(garbageData->end(), reinterpret_cast<char*>(garbage), reinterpret_cast<char*>(garbage + garbageSize));
+                msgs.push_back(garbageData);
+                runningSize += garbageSize;
+            }
+        }
+    }
+    return runningSize;
+}
+
 
 bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *data, int dataSize)
 {
