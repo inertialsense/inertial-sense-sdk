@@ -237,7 +237,7 @@ public:
      */
     std::shared_ptr<cDeviceLog> getDeviceLogByPort(port_handle_t port);
 
-    static int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
+    static inline int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
         // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
 
         if (!userData)
@@ -245,11 +245,7 @@ public:
 
         cISLogger* logInstance = (cISLogger*)userData;
         auto devLog = logInstance->getDeviceLogByPort(port);
-        if (devLog) {
-            cLogStats stats;
-                return logInstance->LogData(devLog, len, buf) ? 1 : -1;
-        }
-        return -1;
+        return (devLog && logInstance->LogData(devLog, len, buf)) ? 1 : -1;
     }
 
     static int logPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {

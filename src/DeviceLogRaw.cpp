@@ -256,11 +256,13 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
     packet_t* pkt = NULL;
 
     // Read data from chunk
-    while (!(pkt = ReadPacketFromChunk(m_protocolType)))
+    m_protocolType = _PTYPE_NONE;
+    while (m_protocolType != _PTYPE_INERTIAL_SENSE_DATA)
     {
-        // Read next chunk from file
-        if (!ReadChunkFromFile())
+        pkt = ReadPacketFromChunk(m_protocolType);
+        if (!pkt && !ReadChunkFromFile())
         {
+            // Read next chunk from file
             return NULL;
         }
     }

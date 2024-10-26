@@ -222,7 +222,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_DIAGNOSTIC_MESSAGE, dev_log_->diagnosticMessage );
         HANDLE_MSG( DID_SURVEY_IN, dev_log_->surveyIn );
         // HANDLE_MSG( DID_EVB2, dev_log_->evb2 );
-        // HANDLE_MSG( DID_PORT_MONITOR, dev_log_->portMonitor );
+        HANDLE_MSG( DID_PORT_MONITOR, dev_log_->portMonitor );
         // HANDLE_MSG( DID_RTK_STATE, dev_log_->rtkState);
         HANDLE_MSG( DID_RTK_CODE_RESIDUAL, dev_log_->rtkCodeResidual);
         HANDLE_MSG( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
@@ -230,6 +230,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
         HANDLE_MSG( DID_GPX_STATUS, dev_log_->gpxStatus );
         HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
+        // HANDLE_MSG( DID_GPX_PORT_MONITOR, dev_log_->portMonitor );
 
         default:
             //            printf("Unhandled IS message DID: %d\n", message_type);
