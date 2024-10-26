@@ -465,13 +465,46 @@ std::list<ISDevice*>& InertialSense::getDevices() {
     return m_comManagerState.devices;
 }
 
+/**
+ * Returns a vector of available, connected devices
+ * @return
+ */
+std::vector<ISDevice*> InertialSense::getDevicesAsVector() {
+    std::vector<ISDevice*> vecOut;
+    for (auto device : m_comManagerState.devices) {
+        vecOut.push_back(device);
+    }
+    return vecOut;
+}
+
+/**
+ * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
+ * @param port
+ * @return
+ */
 ISDevice* InertialSense::getDevice(port_handle_t port) {
-    for (auto device : m_comManagerState.devices)
+    for (auto device : m_comManagerState.devices) {
         if (device->port == port)
             return device;
+    }
 
     return NULL;
 }
+
+/**
+ * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
+ * @param port
+ * @return
+ */
+ISDevice* InertialSense::getDevice(uint32_t serialNum, is_hardware_t hdwId) {
+    for (auto device : m_comManagerState.devices) {
+        if ((device->hdwId == hdwId) && (device->devInfo.serialNumber == serialNum))
+            return device;
+    }
+
+    return NULL;
+}
+
 
 bool InertialSense::Update()
 {

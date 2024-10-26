@@ -157,11 +157,16 @@ public:
     size_t DeviceCount();
 
     /**
-     * Returns a vector of available, connected devices
+     * Returns a reference to the backing list available, connected devices
      * @return
      */
     std::list<ISDevice*>& getDevices();
 
+    /**
+     * Returns a vector of available, connected devices
+     * @return
+     */
+    std::vector<ISDevice*> getDevicesAsVector();
 
     /**
      * Returns a reference to an is_device_t struct that contains information about the specified device
@@ -169,6 +174,13 @@ public:
      */
     // ISDevice* getDevice(uint32_t index);
     ISDevice* getDevice(port_handle_t port);
+
+    /**
+     * Returns the ISDevice instance associated with the specified port, or NULL if there is no associated device
+     * @param port
+     * @return
+     */
+    ISDevice* getDevice(uint32_t serialNum, is_hardware_t hdwId = IS_HARDWARE_ANY);
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.

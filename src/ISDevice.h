@@ -157,8 +157,8 @@ public:
     port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
-    uint16_t hdwId = IS_HARDWARE_TYPE_UNKNOWN;                       //! hardware type and version (ie, IMX-5.0)
-    eHdwRunStates hdwRunState = HDW_STATE_UNKNOWN;                   //! state of hardware (running, bootloader, etc).
+    is_hardware_t               hdwId = IS_HARDWARE_ANY;             //! hardware type and version (ie, IMX-5.0)
+    eHdwRunStates               hdwRunState = HDW_STATE_UNKNOWN;     //! state of hardware (running, bootloader, etc).
 
     dev_info_t                  devInfo = { };
     sys_params_t                sysParams = { };

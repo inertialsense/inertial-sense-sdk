@@ -520,7 +520,7 @@ typedef struct PACKED
 #define HDW_MINOR__SHIFT                       0
 #define DECODE_HDW_MINOR(x)                    (((x) & HDW_MINOR__MASK) >> HDW_MINOR__SHIFT)
 
-#define ENCODE_HDW_ID(type, major, minor)    ( (((type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
+#define ENCODE_HDW_ID(type, major, minor)    ( (((uint8_t)(type) << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | (((uint8_t)(major) << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | (((uint8_t)(minor) << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 #define ENCODE_DEV_INFO_TO_HDW_ID(devinfo)   ( ((devinfo.hardwareType << HDW_TYPE__SHIFT) & HDW_TYPE__MASK) | ((devinfo.hardwareVer[0] << HDW_MAJOR__SHIFT) & HDW_MAJOR__MASK) | ((devinfo.hardwareVer[1] << HDW_MINOR__SHIFT) & HDW_MINOR__MASK) )
 
 enum eIsHardwareType
@@ -533,6 +533,13 @@ enum eIsHardwareType
 	IS_HARDWARE_TYPE_GPX            = 4,
 	IS_HARDWARE_TYPE_COUNT          = 5     // Keep last
 };
+
+typedef uint16_t is_hardware_t;
+static const is_hardware_t IS_HARDWARE_ANY      = ENCODE_HDW_ID(IS_HARDWARE_TYPE_MIXED, -1, -1);
+static const is_hardware_t IS_HARDWARE_EVB_2_0 	= ENCODE_HDW_ID(IS_HARDWARE_TYPE_EVB, 2, 0);
+static const is_hardware_t IS_HARDWARE_UINS_3_2 = ENCODE_HDW_ID(IS_HARDWARE_TYPE_UINS, 3, 2);
+static const is_hardware_t IS_HARDWARE_IMX_5_0 	= ENCODE_HDW_ID(IS_HARDWARE_TYPE_IMX, 5, 0);
+static const is_hardware_t IS_HARDWARE_GPX_1_0 	= ENCODE_HDW_ID(IS_HARDWARE_TYPE_GPX, 1, 0);
 
 extern const char* g_isHardwareTypeNames[IS_HARDWARE_TYPE_COUNT];
 
