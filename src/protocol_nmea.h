@@ -2,6 +2,7 @@
 #define PROTOCOL_NMEA_H_
 
 #include <vector>
+#include <string>
 
 #include "data_sets.h"
 #include "time_conversion.h"
@@ -47,6 +48,7 @@ void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
 int getNmeaMsgId(const void* a, int aSize);
 int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
+std::string nmeaMsgIdToTalker(int msgId);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
