@@ -2017,7 +2017,7 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arra
 const data_info_t* cISDataMappings::FieldInfoByOffset(uint32_t did, uint16_t offset)
 {
     data_info_t* fieldInfo = NULL;
-    auto infoMap = IndexToInfo(did);
+    auto infoMap = IndexToInfoMap(did);
     for ( auto [index, info] : *infoMap ) {
         if ((offset >= info->offset) && (offset <= (info->offset + info->size - 1)))
             fieldInfo = info;
