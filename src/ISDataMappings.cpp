@@ -2013,3 +2013,21 @@ const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arra
 
     return NULL;
 }
+
+/**
+ * returns the data_info_t of a field into DataSets by its offset into the data buffer,
+ * @param did the Data ID the field belongs to
+ * @param offset the offset from the start of the struct where the field belongs
+ * @return a pointer to the nearest data_info_t which addresses this offset, without exceeding the offset,
+ *   or NULL if there is no field info to covers the specified offset
+ */
+const data_info_t* cISDataMappings::FieldInfoByOffset(uint32_t did, uint16_t offset)
+{
+    data_info_t* fieldInfo = NULL;
+    auto infoMap = IndexToInfo(did);
+    for ( auto [index, info] : *infoMap ) {
+        if ((offset >= info->offset) && (offset <= (info->offset + info->size - 1)))
+            fieldInfo = info;
+    }
+    return fieldInfo;
+}

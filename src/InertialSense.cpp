@@ -234,6 +234,24 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     return m_comManagerState.devices.empty() ? NULL : (ISDevice*)m_comManagerState.devices.back();
 }
 
+bool InertialSense::releaseDevice(ISDevice* device, bool closePort)
+{
+    auto deviceIter = std::find(m_comManagerState.devices.begin(), m_comManagerState.devices.end(), device);
+    if (deviceIter == m_comManagerState.devices.end())
+        return false;
+
+    if (closePort && device->port) {
+        serialPortClose(device->port);
+        freeSerialPort(device->port, false);
+    }
+
+    m_comManagerState.devices.erase(deviceIter); // erase only remove the ISDevice* from the list, but doesn't release/free the instance itself
+    device->port = NULL;
+    delete device;
+
+    return true;
+}
+
 bool InertialSense::HasReceivedDeviceInfo(ISDevice* device)
 {
     return (device && (device->hdwId != 0) && (device->hdwRunState != ISDevice::HDW_STATE_UNKNOWN) && (device->devInfo.serialNumber != 0) && (device->devInfo.hardwareType != 0));
@@ -1006,10 +1024,11 @@ bool InertialSense::SetFlashConfig(nvm_flash_cfg_t &flashCfg, port_handle_t port
                 flashCfg.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
             }
 
-            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d\n", size, offset);
+            const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
+            DEBUG_PRINT("Sending DID_FLASH_CONFIG: size %d, offset %d (%s)\n", size, offset, (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"));
             int fail = comManagerSendData(device->port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
-            device->flashCfgUploadTimeMs = current_timeMs();						// non-zero indicates upload in progress
+            device->flashCfgUploadTimeMs = current_timeMs();                // non-zero indicates upload in progress
         }
     }
 
@@ -1482,17 +1501,28 @@ port_handle_t InertialSense::allocateSerialPort(int ptype) {
     return port;
 }
 
-bool InertialSense::freeSerialPort(port_handle_t port) {
+bool InertialSense::freeSerialPort(port_handle_t port, bool releaseDevice) {
     if (!port)
         return false;
 
     // its annoying that its not "easy" to remove a vector element by value, especially when the value is complex
-    for (auto portIter = m_serialPorts.begin(); portIter != m_serialPorts.end(); portIter++) {
-        if (port == (port_handle_t*)&(*portIter)) {
-            serialPortClose(port);
-            comManagerRemovePort(port);
+    for (auto p : m_serialPorts) {
+        if (p == port) {
+            ISDevice* device = getDevice(port);
 
-            m_serialPorts.erase(portIter);
+            // TODO: there should be some kind of a callback/notify system where a port can directly notify listeners that its being closed/destroyed
+            serialPortClose(port);
+            comManagerRemovePort(port);     // remove port from ComManager so it won't try to read/write the port when stepping();
+
+            if (device) {
+                if (device && releaseDevice) {
+                    device->port = NULL;
+                    m_comManagerState.devices.remove(device);
+                }
+
+            }
+
+            m_serialPorts.erase(m_serialPorts.find(port));
             // TODO: Don't need this, if we stick with the vector/copy allocation/initialization
             // memset(port, 0, sizeof(serial_port_t));
             // delete (serial_port_t*)port;

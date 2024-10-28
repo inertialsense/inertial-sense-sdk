@@ -542,6 +542,15 @@ public:
 	*/
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
+    /**
+     * returns the data_info_t of a field into DataSets by its offset into the data buffer,
+     * @param did the Data ID the field belongs to
+     * @param offset the offset from the start of the struct where the field belongs
+     * @return a pointer to the nearest data_info_t which addresses this offset, without exceeding the offset,
+     *   or NULL if there is no field info to covers the specified offset
+     */
+    static const data_info_t* FieldInfoByOffset(uint32_t did, uint16_t offset);
+
 protected:
 	static const char* const m_dataIdNames[];
 

@@ -695,7 +695,8 @@ public:
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     // ISDevice* ComManagerDevice(port_handle_t port=0) { if (portId(port) >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[portId(port)]); }
 
-    bool freeSerialPort(port_handle_t port);
+    bool freeSerialPort(port_handle_t port, bool releaseDevice = false);
+    bool releaseDevice(ISDevice* device, bool closePort = true);
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);

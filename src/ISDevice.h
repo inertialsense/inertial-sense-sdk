@@ -74,6 +74,11 @@ public:
         hdwRunState = HDW_STATE_UNKNOWN;
     }
 
+    /**
+     * @return true is this ISDevice has a valid, and open port
+     */
+    bool isConnected() { return (port && serialPortIsOpen(port)); }
+
     bool step();
 
     std::string getIdAsString();
@@ -98,9 +103,22 @@ public:
     void SetSysCmd(const uint32_t command);
     void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
 
+    /**
+     * @returns true is the device is indicated that a reset is required; this state SHOULD be acted on by resetting the device to ensure that it is operating as expected
+     */
     bool isResetRequired() { return ((devInfo.hardwareType == IS_HARDWARE_TYPE_IMX) && (sysParams.hdwStatus & HDW_STATUS_SYSTEM_RESET_REQUIRED)) ||
                              ((devInfo.hardwareType == IS_HARDWARE_TYPE_GPX) && (gpxStatus.hdwStatus & GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED)); }
+
+    /**
+     * Immediately issues s SysCmd to instruct the device to reset immediately
+     * @return true if the request was successfully sent, false if the action was not able to be performed.
+     */
     bool reset();
+
+    /**
+     * @returns true if reset() was called recently, and we are waiting for the device to return.
+     */
+    bool isResetPending() { return current_timeMs() < nextResetTime; }
 
     bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
 
@@ -190,6 +208,7 @@ public:
     std::vector<std::string> target_idents;
     std::vector<std::string> target_messages;
 
+    uint32_t lastResetRequest = 0;              //! system time when the last reset requests was sent
     uint32_t resetRequestThreshold = 5000;      //! Don't allow to send reset requests more frequently than this...
     uint32_t nextResetTime = 0;                 //! used to throttle reset requests
 

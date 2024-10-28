@@ -527,7 +527,8 @@ bool ISDevice::SetFlashConfig(nvm_flash_cfg_t& flashCfg_) {
                 flashCfg_.platformConfig |= PLATFORM_CFG_UPDATE_IO_CONFIG;
             }
 
-            printf("%s :: Sending DID_FLASH_CONFIG: size %d, offset %d\n", getIdAsString().c_str(), size, offset);
+            const data_info_t* fieldInfo = cISDataMappings::FieldInfoByOffset(DID_FLASH_CONFIG, offset);
+            printf("%s :: Sending DID_FLASH_CONFIG.%s (offset %d, size %d)\n", getIdAsString().c_str(), (fieldInfo ? fieldInfo->name.c_str() : "<UNKNOWN>"), offset, size);
             int fail = comManagerSendData(port, head, DID_FLASH_CONFIG, size, offset);
             failure = failure || fail;
             flashCfgUploadTimeMs = current_timeMs();        // non-zero indicates upload in progress
@@ -600,7 +601,10 @@ bool ISDevice::hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite) {
 
 bool ISDevice::reset() {
     if (current_timeMs() > nextResetTime) {
-        SetSysCmd(SYS_CMD_SOFTWARE_RESET);
+        for (int i = 0; i < 3; i++) {
+            SetSysCmd(SYS_CMD_SOFTWARE_RESET);
+            SLEEP_MS(10);
+        }
         nextResetTime = current_timeMs() + resetRequestThreshold;
         return true;
     }
