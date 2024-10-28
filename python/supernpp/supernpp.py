@@ -19,7 +19,7 @@ from logReader import Log
 class SuperNPP():
     def __init__(self, directory, config_serials, startMode=0, computeRMS=0):		# start mode 0=hot, 1=cold, 2=factory
         self.config_serials = config_serials
-        self.directory = Path(directory)
+        self.directory = os.path.normpath(Path(directory))
         self.startMode = startMode
         self.computeRMS = computeRMS
         self.subdirs = []
@@ -77,7 +77,7 @@ class SuperNPP():
         ### Compute RMS ##################################################
         if self.computeRMS:
             for subdir in self.subdirs:
-                sdir = str(subdir) + "/post_processed"
+                sdir = os.path.normpath(str(subdir) + "/post_processed")
                 if self.log.load(sdir):
                     # Compute and output RMS Report
                     self.log.calculateRMS()
@@ -118,16 +118,14 @@ class SuperNPP():
             elif ".raw" in file:
                 logType = "RAW"
 
-        if os.name == 'posix':
-            cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
-            file_path = os.path.dirname(os.path.realpath(__file__))
-            npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
-        else:
-            # cmds = [r'.\NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir for s in serials]
-            # npp_build_folder = "../../../cpp/NavPostProcess/VS_project/Release"
-            cmds = [r'NavPostProcess.exe -d "' + folder + r'" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
-            file_path = os.path.dirname(os.path.realpath(__file__))
-            npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/VS_project/x64/Release')
+        file_path = os.path.dirname(os.path.realpath(__file__))
+        npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
+        if os.name == 'posix':  # Linux
+            exename = 'navpp'
+        else:                   # Windows
+            exename = 'navpp.exe'
+            npp_build_folder += '/Release'
+        cmds = [exename + ' -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
 
         if self.startMode == 1:
             for i in range(len(cmds)):

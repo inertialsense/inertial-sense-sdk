@@ -1562,14 +1562,14 @@ uint32_t cISDataMappings::DataSize(uint32_t did)
     return ds->size;
 }
 
-const map_name_to_info_t* cISDataMappings::NameToInfo(uint32_t did)
+const map_name_to_info_t* cISDataMappings::NameToInfoMap(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
     return &(ds->nameToInfo);
 }
 
-const map_index_to_info_t* cISDataMappings::IndexToInfo(uint32_t did)
+const map_index_to_info_t* cISDataMappings::IndexToInfoMap(uint32_t did)
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
