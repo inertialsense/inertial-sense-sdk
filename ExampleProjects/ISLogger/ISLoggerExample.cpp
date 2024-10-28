@@ -31,7 +31,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// STEP 2: Instantiate InertialSense class
 	// InertialSense class wraps communications and logging in a convenient, easy to use class
 	InertialSense inertialSense(msgHandlerIsb);
@@ -40,12 +39,11 @@ int main(int argc, char* argv[])
 		std::cout << "Failed to open com port at " << argv[1] << std::endl;
 	}
 
-
 	// STEP 3: Enable data logger
 	// get log type from command line
-	cISLogger::eLogType logType = (argc < 3 ? cISLogger::eLogType::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
-	inertialSense.SetLoggerEnabled(true, "", logType);
-
+	cISLogger::sSaveOptions options;
+	options.logType = (argc < 3 ? cISLogger::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
+	inertialSense.EnableLogger(true, "", options);
 
 	// STEP 4: Enable data broadcasting
 	// stop current data streaming
@@ -57,7 +55,6 @@ int main(int argc, char* argv[])
 	// instead of the rmc preset (real-time message controller) you can request individual messages...
 	// Ask for INS message w/ update 40ms period (4ms source period x 10).  Set data rate to zero to disable broadcast and pull a single packet.
 // 	inertialSense.BroadcastBinaryData(DID_IMU, 10);
-
 
 	// utility class for display and ctrl-c handling
 	cInertialSenseDisplay display;

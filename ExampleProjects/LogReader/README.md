@@ -37,8 +37,9 @@ This [ISLogReaderExample](https://github.com/inertialsense/inertial-sense-sdk/tr
 
 ```C++
 	// get log type from command line
-	cISLogger::eLogType logType = (argc < 3 ? cISLogger::eLogType::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
-	inertialSense.SetLoggerEnabled(true, "", logType);
+	cISLogger::sSaveOptions options;
+	options.logType = (argc < 3 ? cISLogger::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
+	inertialSense.EnableLogger(true, "", options);
 ```
 
 ### Step 4: Enable data broadcasting
