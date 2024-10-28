@@ -386,6 +386,16 @@ public:
 		}
     }
 
+	void AddLlaDegM(const std::string& name, 
+		uint32_t offset,
+		const std::string& description = "",
+		int flags = 0)
+    {
+		AddMember2(name + "[0]", offset + 0*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[1]", offset + 1*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[2]", offset + 2*sizeof(double), DATA_TYPE_F64, "m", description, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+	}
+
 private:
 	data_set_t& ds;						// data set reference
     uint32_t structSize;                // size of data set struct. Used to compare against totalSize to ensure all members were included.
@@ -432,13 +442,13 @@ public:
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* NameToInfo(uint32_t did);
+	static const map_name_to_info_t* NameToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id, or NULL if none found
 	*/
-	static const map_index_to_info_t* IndexToInfo(uint32_t did);
+	static const map_index_to_info_t* IndexToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
