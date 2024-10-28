@@ -117,20 +117,11 @@ class SuperNPP():
         print("serial numbers")
         print(serials)
 
-        # Determine the log type
-        logType = "DAT"
-        for file in os.listdir(os.path.join(folder,subdir)):
-            if ".sdat" in file:
-                logType = "SDAT"
-            elif ".dat" in file:
-                logType = "DAT"
-            elif ".raw" in file:
-                logType = "RAW"
-
         file_path = os.path.dirname(os.path.realpath(__file__))
         npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
+
         if os.name == 'posix':  # Linux
-            exename = 'navpp'
+            exename = './navpp'
         else:                   # Windows
             exename = 'navpp.exe'
             npp_build_folder += '/Release'
