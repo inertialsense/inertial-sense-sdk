@@ -442,13 +442,13 @@ public:
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* NameToInfo(uint32_t did);
+	static const map_name_to_info_t* NameToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id, or NULL if none found
 	*/
-	static const map_index_to_info_t* IndexToInfo(uint32_t did);
+	static const map_index_to_info_t* IndexToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
