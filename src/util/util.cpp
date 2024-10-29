@@ -62,6 +62,39 @@ std::string utils::getCurrentTimestamp() {
 }
 
 /**
+ * Formats the passed raw data as a "hexadecimal view". This can be used with any data.
+ * @param raw_data a pointer to the raw byte stream
+ * @param bytesLen the number of bytes following raw_data to output
+ * @param bytesPerLine the number of hexadecimal bytes to print per line.
+ * @return returns a fully formatted string
+ */
+
+std::string utils::raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine) {
+    char buf[2048];
+    char* ptrEnd = buf + 2048;
+    char* ptr = buf;
+
+#if DISPLAY_DELTA_TIME==1
+    static double lastTime[2] = { 0 };
+    double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+    lastTime[i] = wheel.timeOfWeek;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+#else
+#endif
+    int lines = bytesLen / bytesPerLine;
+    for (int j = 0; j < lines; j++) {
+        int linelen = (j == lines-1) ? bytesLen % bytesPerLine : bytesPerLine;
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "    ");
+        for (int i = 0; i < linelen; i++) {
+            ptr += SNPRINTF(ptr, ptrEnd - ptr, "%02x ", (uint8_t)raw_data[(j * bytesPerLine) + i]);
+        }
+        ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
+    }
+
+    return std::string(buf);
+}
+
+/**
  * Formats the specified DID's raw data as a "hexadecimal view". This can be used with any DID that is not
  * otherwise supported.
  * @param raw_data a pointer to the raw DID byte stream

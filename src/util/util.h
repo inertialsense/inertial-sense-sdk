@@ -17,6 +17,7 @@
 
 namespace utils {
     std::string getCurrentTimestamp();
+    std::string raw_hexdump(const char* raw_data, int bytesLen, int bytesPerLine);
     std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
     template<typename ... Args>
