@@ -401,7 +401,9 @@ enum eHdwStatusFlags
 enum eSysStatusFlags
 {
     /** Allow IMX to drive Testbed-3 status LEDs */
-    SYS_STATUS_TBED3_LEDS_ENABLED				= (int)0x00000001,
+    SYS_STATUS_TBED3_LEDS_ENABLED				    = (int)0x00000001,
+
+    SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
 };
 
 // Used to validate GPS position (and velocity)
@@ -4401,6 +4403,9 @@ enum eGpxStatus
 
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
+
+    /** DMA Fault detected **/
+    GPX_STATUS_DMA_FAULT                                = (int)0x00800000,
 
     /** Fatal event */
     GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
