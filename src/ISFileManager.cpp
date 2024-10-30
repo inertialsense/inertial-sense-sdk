@@ -642,9 +642,16 @@ namespace ISFileManager {
 #if PLATFORM_IS_WINDOWS
     std::string ConvertWCHARToString(const WCHAR* wideCharArray) {
         int bufferLength = WideCharToMultiByte(CP_UTF8, 0, wideCharArray, -1, NULL, 0, NULL, NULL);
-        std::string str(bufferLength, 0);
-        WideCharToMultiByte(CP_UTF8, 0, wideCharArray, -1, &str[0], bufferLength, NULL, NULL);
+        std::string str(bufferLength - 1, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wideCharArray, -1, &str[0], bufferLength - 1, NULL, NULL);
         return str;
+    }
+
+    std::wstring ConvertStringToWCHAR(const std::string& utf8String) {
+        int bufferLength = MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, NULL, 0);
+        std::wstring wideString(bufferLength, 0);
+        MultiByteToWideChar(CP_UTF8, 0, utf8String.c_str(), -1, &wideString[0], bufferLength);
+        return wideString;
     }
 #endif
 
@@ -658,7 +665,8 @@ namespace ISFileManager {
     bool get_file_info(const std::string& path, FileInfo& file_info) {
 #if PLATFORM_IS_WINDOWS
         WIN32_FILE_ATTRIBUTE_DATA file_data;
-        if (GetFileAttributesEx((LPCWSTR)path.c_str(), GetFileExInfoStandard, &file_data)) {
+        std::wstring wideString = ConvertStringToWCHAR(path);
+        if (GetFileAttributesEx(wideString.c_str(), GetFileExInfoStandard, &file_data)) {
             ULARGE_INTEGER file_size;
             file_size.LowPart = file_data.nFileSizeLow;
             file_size.HighPart = file_data.nFileSizeHigh;
@@ -699,7 +707,8 @@ namespace ISFileManager {
     void get_all_files(const std::string& directory, std::vector<FileInfo>& files) {
 #if PLATFORM_IS_WINDOWS
         WIN32_FIND_DATA find_file_data;
-        HANDLE hFind = FindFirstFile((LPCWSTR)(directory + "\\*").c_str(), &find_file_data);
+        std::wstring wideString = ConvertStringToWCHAR(directory + "\\*");
+        HANDLE hFind = FindFirstFile(wideString.c_str(), &find_file_data);
 
         if (hFind == INVALID_HANDLE_VALUE) {
             std::cerr << "Error: Could not open directory " << directory << std::endl;
@@ -807,7 +816,8 @@ namespace ISFileManager {
     bool RemoveEmptyDirectories(const std::string& directory) {
     #if PLATFORM_IS_WINDOWS
         WIN32_FIND_DATA find_file_data;
-        HANDLE hFind = FindFirstFile((LPCWSTR)(directory + "\\*").c_str(), &find_file_data);
+        std::wstring wideString = ConvertStringToWCHAR(directory + "\\*");
+        HANDLE hFind = FindFirstFile(wideString.c_str(), &find_file_data);
 
         if (hFind == INVALID_HANDLE_VALUE) {
             return false;  // Couldn't open directory
@@ -836,7 +846,8 @@ namespace ISFileManager {
 
         // If the directory is empty, remove it
         if (is_empty) {
-            if (RemoveDirectory((LPCWSTR)directory.c_str())) {
+            std::wstring wideString = ConvertStringToWCHAR(directory);
+            if (RemoveDirectory(wideString.c_str())) {
                 DEBUG_PRINT("Removed empty directory: " << directory << std::endl);
             } else {
                 std::cerr << "Error removing directory: " << directory << std::endl;
