@@ -264,8 +264,7 @@ void ISComManager::stepSendMessages()
         return;
 
     // Send data (if necessary)
-    broadcast_msg_array_t broadcastMsgArray = *(broadcastMessages);
-    for (auto& bc : broadcastMsgArray)
+    for (auto& bc : *(broadcastMessages))
     {
         // If send buffer does not have space, exit out
         if (txFree && (bc.pkt.size > (uint32_t)txFree(bc.port)))
