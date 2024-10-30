@@ -1495,6 +1495,10 @@ enum eSystemCommand
     SYS_CMD_TEST_BIT_BANG_SER0_STPB                     = 67,           // (uint32 inv: 4294967228)
     SYS_CMD_TEST_BIT_BANG_SER0_SRST                     = 68,           // (uint32 inv: 4294967227)
 
+    // TODO: DEBUG REMOVE ONCE INTEL TX->RX bug (TM)
+    SYS_CMD_TEST_SER0_TX_PIN_HIGH                       = 69,           // (uint32 inv: 4294967226)
+    SYS_CMD_TEST_SER0_TX_PIN_LOW                        = 70,           // (uint32 inv: 4294967225)
+
     SYS_CMD_SAVE_FLASH                                  = 97,           // (uint32 inv: 4294967198)
     SYS_CMD_SAVE_GPS_ASSIST_TO_FLASH_RESET              = 98,           // (uint32 inv: 4294967197)
     SYS_CMD_SOFTWARE_RESET                              = 99,           // (uint32 inv: 4294967196)
@@ -2009,6 +2013,7 @@ enum GRMC_BIT_POS{
     GRMC_BIT_POS_DID_RTK_DEBUG =        22,
     GRMC_BIT_POS_DID_PORT_MON =         23,
     GRMC_BIT_POS_DID_GPX_PORT_MON =     24,
+    GRMC_BIT_POS_DID_GPS_BASE_RAW =     25,
     GRMC_BIT_POS_COUNT,
 };
 
@@ -2037,6 +2042,7 @@ enum GRMC_BIT_POS{
 #define GRMC_BITS_DID_RTK_DEBUG         (0x0000000000000001 << GRMC_BIT_POS_DID_RTK_DEBUG)
 #define GRMC_BITS_PORT_MON              (0x0000000000000001 << GRMC_BIT_POS_DID_PORT_MON)
 #define GRMC_BITS_GPX_PORT_MON          (0x0000000000000001 << GRMC_BIT_POS_DID_GPX_PORT_MON)
+#define GRMC_BITS_GPS_BASE_RAW          (0x0000000000000001 << GRMC_BIT_POS_DID_GPS_BASE_RAW)
 #define GRMC_BITS_PRESET                (0x8000000000000000)	// Indicate BITS is a preset.  This sets the rmc period multiple and enables broadcasting.
 
 #define GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS     1000
@@ -2046,6 +2052,7 @@ enum GRMC_BIT_POS{
 #define GRMC_PRESET_GPX_DEBUG_ARRAY_PERIOD_MS   500
 #define GRMC_PRESET_GPX_GPS1_VERSION_PERIOD_MS  1000
 #define GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS  1000
+#define GRMC_PRESET_GPX_PORT_MON_PERIOD_MS      500
 
 #define GRMC_PRESET_GPX_IMX		        (   GRMC_BITS_PRESET \
                                         /*| GRMC_BITS_DEV_INFO*/ \
@@ -2062,11 +2069,14 @@ enum GRMC_BIT_POS{
                                         | GRMC_BITS_GPS2_SIG \
                                         | GRMC_BITS_GPS1_VERSION \
                                         | GRMC_BITS_GPS2_VERSION \
-                                        /*| GRMC_BITS_GPS1_RTK_POS*/ \
+                                        | GRMC_BITS_GPS1_RTK_POS \
+                                        | GRMC_BITS_GPS1_RTK_POS_REL\
+                                        | GRMC_BIT_POS_GPS1_RTK_POS_MISC \
                                         | GRMC_BITS_GPS2_RTK_CMP_REL \
                                         | GRMC_BITS_GPS2_RTK_CMP_MISC \
                                         | GRMC_BITS_GPS1_RAW \
-                                        | GRMC_BITS_GPS2_RAW )
+                                        | GRMC_BITS_GPS2_RAW \
+                                        | GRMC_BITS_GPS_BASE_RAW)
 
 #define GRMC_PRESET_GPX_IMX_RTK_DBG     (GRMC_PRESET_GPX_IMX | GRMC_BITS_DID_RTK_DEBUG)
 
@@ -4436,6 +4446,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET             = 4,
 #define GPX_HDW_STATUS_GNSS1_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS1_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS1_RESET_COUNT_OFFSET)
  
+    /** Failed to communicate or setup GNSS receiver 1 */
     GPX_HDW_STATUS_FAULT_GNSS1_INIT                     = (int)0x00000080,
     GPX_HDW_STATUS_GNSS1_FAULT_FLAG_OFFSET              = 7,
 
@@ -4444,6 +4455,7 @@ enum eGPXHdwStatusFlags
     GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET             = 8,
 #define GPX_HDW_STATUS_GNSS2_RESET_COUNT(hdwStatus)     ((hdwStatus&GPX_HDW_STATUS_GNSS2_RESET_COUNT_MASK)>>GPX_HDW_STATUS_GNSS2_RESET_COUNT_OFFSET)
 
+    /** Failed to communicate or setup GNSS receiver 2 */
     GPX_HDW_STATUS_FAULT_GNSS2_INIT                     = (int)0x00000800,
     GPX_HDW_STATUS_GNSS2_FAULT_FLAG_OFFSET              = 11,
 

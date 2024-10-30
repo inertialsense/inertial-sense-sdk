@@ -31,7 +31,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// STEP 2: Instantiate InertialSense class
 	// InertialSense class wraps communications and logging in a convenient, easy to use class
 	InertialSense inertialSense(msgHandlerIsb);
@@ -40,11 +39,11 @@ int main(int argc, char* argv[])
 		std::cout << "Failed to open com port at " << argv[1] << std::endl;
 	}
 
-
 	// STEP 3: Enable data logger
 	// get log type from command line
-	cISLogger::eLogType logType = (argc < 3 ? cISLogger::eLogType::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
-	inertialSense.SetLoggerEnabled(true, "", logType);
+	cISLogger::sSaveOptions options;
+	options.logType = (argc < 3 ? cISLogger::LOGTYPE_DAT : cISLogger::ParseLogType(argv[2]));
+	inertialSense.EnableLogger(true, "", options);
 
 	// utility class for display and ctrl-c handling
 	cInertialSenseDisplay display;

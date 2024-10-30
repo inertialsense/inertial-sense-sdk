@@ -97,7 +97,8 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 	bool enableLogging;
 	std::string logType; 					// -lt=dat
 	std::string logPath; 					// -lp path
-	float maxLogSpacePercent; 				// -lms=max_space_mb
+	float logDriveUsageLimitPercent; 		// -lms=max_drive_percent, 0 for disabled
+	float logDriveUsageLimitMb;				// -lmb=max_drive_limit_mb, 0 for disabled
 	uint32_t maxLogFileSize; 				// -lmf=max_file_size
 	std::string logSubFolder; 				// -lts=1
 	int baudRate; 							// -baud=3000000

@@ -386,6 +386,16 @@ public:
 		}
     }
 
+	void AddLlaDegM(const std::string& name, 
+		uint32_t offset,
+		const std::string& description = "",
+		int flags = 0)
+    {
+		AddMember2(name + "[0]", offset + 0*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[1]", offset + 1*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[2]", offset + 2*sizeof(double), DATA_TYPE_F64, "m", description, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+	}
+
 private:
 	data_set_t& ds;						// data set reference
     uint32_t structSize;                // size of data set struct. Used to compare against totalSize to ensure all members were included.
@@ -423,22 +433,28 @@ public:
 	static uint32_t DataSize(uint32_t did);
 
 	/**
+	* Get the data set for a data id
+	* @return the data set for the data id, or NULL if none found
+	*/
+	static data_set_t* DataSet(uint32_t did);
+
+	/**
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* MapInfo(uint32_t did);
+	static const map_name_to_info_t* NameToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id, or NULL if none found
 	*/
-	static const map_index_to_info_t* IndexMapInfo(uint32_t did);
+	static const map_index_to_info_t* IndexToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id (or NULL if none found) and array index
 	*/
-	static const data_info_t* ElementMapInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
+	static const data_info_t* ElementToInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
 
 	/**
 	* Get number of elements of a given data id.  Arrays get counted as multiple elements.
@@ -463,11 +479,10 @@ public:
 	* @param info metadata about the field to convert
 	* @param arrayIndex index into array
 	* @param elementSize size of elements in array
-	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, int radix = 10, bool json = false);
+	static bool StringToData(const char* stringBuffer, int stringLength, const p_data_hdr_t* hdr, uint8_t* datasetBuffer, const data_info_t& info, unsigned int arrayIndex = 0, bool json = false);
 
 	/**
 	* Convert a string to a variable.
@@ -475,11 +490,12 @@ public:
 	* @param stringLength the number of chars in stringBuffer
 	* @param dataBuffer data buffer pointer
 	* @param dataType data type
-	* @param radix (base 10, base 16, etc.) to use if the field is a number field, ignored otherwise
+	* @param radix (10 = base 10 for decimal, 16 = base 16 for hexidecimal) if the field is a number field, ignored otherwise
+	* @param conversion conversion of value (i.e. rad2deg)
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, bool json = false);
+	static bool StringToVariable(const char* stringBuffer, int stringLength, const uint8_t* dataBuffer, eDataType dataType, uint32_t dataSize, int radix = 10, double conversion = 1.0, bool json = false);
 
 	/**
 	* Convert dataset field to a string
@@ -497,12 +513,14 @@ public:
 	* Convert a variable to a string
 	* @param dataType data type
 	* @param dataFlags data flags 
-	* @param dataBuffer data buffer pointer
+	* @param dataBuffer data pointer
+	* @param dataSize size of data at data pointer
 	* @param stringBuffer the buffer to hold the converted string
+	* @param conversion conversion of value (i.e. rad2deg)
 	* @param json true if json, false if csv
 	* @return true if success, false if error
 	*/
-	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* ptr, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, bool json = false);
+	static bool VariableToString(eDataType dataType, eDataFlags dataFlags, const uint8_t* dataBuffer, uint32_t dataSize, data_mapping_string_t stringBuffer, double conversion = 1.0, bool json = false);
 
 	/**
 	* Get a timestamp from data if available
@@ -523,8 +541,6 @@ public:
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
 
 protected:
-	static data_set_t* DataSet(uint32_t did);
-
 	static const char* const m_dataIdNames[];
 
 	data_set_t m_data_set[DID_COUNT];
