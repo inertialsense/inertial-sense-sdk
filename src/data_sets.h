@@ -4550,12 +4550,12 @@ typedef struct
     /** Status (eGpxStatus) */
     uint32_t                status;
 
-    /** GRMC BITS **/
+    /** GRMC BITS (see GRMC_BITS_...) **/
     uint64_t                grmcBitsSer0;
     uint64_t                grmcBitsSer1;
     uint64_t                grmcBitsSer2;
     uint64_t                grmcBitsUSB;
-
+    /** (see NMEA_MSG_ID...) */
     uint64_t                grmcNMEABitsSer0;
     uint64_t                grmcNMEABitsSer1;
     uint64_t                grmcNMEABitsSer2;
