@@ -28,7 +28,7 @@ class get_pybind_include(object):
         return pybind11.get_include(self.user)
 
 if platform.system() == 'Windows':
-    macros = [("UNICODE", "1")]
+    macros = [("UNICODE", "1")]     # Necessary for ISFileManager.cpp
 else:
     macros = []
 
