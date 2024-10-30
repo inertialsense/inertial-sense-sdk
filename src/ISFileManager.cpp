@@ -665,8 +665,7 @@ namespace ISFileManager {
     bool get_file_info(const std::string& path, FileInfo& file_info) {
 #if PLATFORM_IS_WINDOWS
         WIN32_FILE_ATTRIBUTE_DATA file_data;
-        std::wstring wideString = ConvertStringToWCHAR(path);
-        if (GetFileAttributesEx(wideString.c_str(), GetFileExInfoStandard, &file_data)) {
+        if (GetFileAttributesEx(ConvertStringToWCHAR(path).c_str(), GetFileExInfoStandard, &file_data)) {
             ULARGE_INTEGER file_size;
             file_size.LowPart = file_data.nFileSizeLow;
             file_size.HighPart = file_data.nFileSizeHigh;
@@ -707,8 +706,7 @@ namespace ISFileManager {
     void get_all_files(const std::string& directory, std::vector<FileInfo>& files) {
 #if PLATFORM_IS_WINDOWS
         WIN32_FIND_DATA find_file_data;
-        std::wstring wideString = ConvertStringToWCHAR(directory + "\\*");
-        HANDLE hFind = FindFirstFile(wideString.c_str(), &find_file_data);
+        HANDLE hFind = FindFirstFile(ConvertStringToWCHAR(directory + "\\*").c_str(), &find_file_data);
 
         if (hFind == INVALID_HANDLE_VALUE) {
             std::cerr << "Error: Could not open directory " << directory << std::endl;
@@ -816,8 +814,7 @@ namespace ISFileManager {
     bool RemoveEmptyDirectories(const std::string& directory) {
     #if PLATFORM_IS_WINDOWS
         WIN32_FIND_DATA find_file_data;
-        std::wstring wideString = ConvertStringToWCHAR(directory + "\\*");
-        HANDLE hFind = FindFirstFile(wideString.c_str(), &find_file_data);
+        HANDLE hFind = FindFirstFile(ConvertStringToWCHAR(directory + "\\*").c_str(), &find_file_data);
 
         if (hFind == INVALID_HANDLE_VALUE) {
             return false;  // Couldn't open directory
@@ -846,8 +843,7 @@ namespace ISFileManager {
 
         // If the directory is empty, remove it
         if (is_empty) {
-            std::wstring wideString = ConvertStringToWCHAR(directory);
-            if (RemoveDirectory(wideString.c_str())) {
+            if (RemoveDirectory(ConvertStringToWCHAR(directory).c_str())) {
                 DEBUG_PRINT("Removed empty directory: " << directory << std::endl);
             } else {
                 std::cerr << "Error removing directory: " << directory << std::endl;
