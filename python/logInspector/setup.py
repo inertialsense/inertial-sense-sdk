@@ -69,6 +69,7 @@ ext_modules = [
          '../../src/tinyxmlparser.cpp',
          '../../src/util/md5.cpp',
          ],
+        define_macros=[("UNICODE", "1")],
         include_dirs = [
             # Path to pybind11 headers
             'include',
