@@ -108,10 +108,10 @@ class SuperNPP():
                 f.write("[      ] " + sdir + "\n")
             ### Compute RMS ##################################################
         f.close()
-        # print('-------------------------------------------------------------')
-        # print(os.path.basename(logListFilename))
-        # self.print_file_contents(logListFilename)
-        # print('-------------------------------------------------------------')
+        print('-------------------------------------------------------------')
+        print(os.path.basename(logListFilename))
+        self.print_file_contents(logListFilename)
+        print('-------------------------------------------------------------')
 
     def run_log_folder(self, folder, config_serials):
         # Find the serial numbers in the log
