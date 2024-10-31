@@ -401,7 +401,9 @@ enum eHdwStatusFlags
 enum eSysStatusFlags
 {
     /** Allow IMX to drive Testbed-3 status LEDs */
-    SYS_STATUS_TBED3_LEDS_ENABLED				= (int)0x00000001,
+    SYS_STATUS_TBED3_LEDS_ENABLED				    = (int)0x00000001,
+
+    SYS_STATUS_DMA_FAULT_DETECT                     = (int)0x00000002,
 };
 
 // Used to validate GPS position (and velocity)
@@ -4402,6 +4404,9 @@ enum eGpxStatus
     /** Reserved */
     GPX_STATUS_RESERVED_1                               = (int)0x00010000,
 
+    /** DMA Fault detected **/
+    GPX_STATUS_DMA_FAULT                                = (int)0x00800000,
+
     /** Fatal event */
     GPX_STATUS_FATAL_MASK                               = (int)0xFF000000,
     GPX_STATUS_FATAL_OFFSET                             = 24,
@@ -4545,12 +4550,12 @@ typedef struct
     /** Status (eGpxStatus) */
     uint32_t                status;
 
-    /** GRMC BITS **/
+    /** GRMC BITS (see GRMC_BITS_...) **/
     uint64_t                grmcBitsSer0;
     uint64_t                grmcBitsSer1;
     uint64_t                grmcBitsSer2;
     uint64_t                grmcBitsUSB;
-
+    /** (see NMEA_MSG_ID...) */
     uint64_t                grmcNMEABitsSer0;
     uint64_t                grmcNMEABitsSer1;
     uint64_t                grmcNMEABitsSer2;
@@ -4956,6 +4961,7 @@ enum eEventMsgTypeID
     EVENT_MSG_TYPE_ID_RTMC3_EXT         = 13,
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1    = 14,
     EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2    = 15,
+    EVENT_MSG_TYPE_ID_DBG_READ          = 16,
 
     EVENT_MSG_TYPE_ID_IMX_DMA_TX_0_INST = 22,
     EVENT_MSG_TYPE_ID_IMX_SER0_REG      = 23,

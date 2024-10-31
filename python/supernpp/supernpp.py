@@ -31,10 +31,9 @@ class SuperNPP():
         print("=====================  Init SuperNPP  =====================")
         print("  Directory: ", self.directory)
         print("  config_serials:", self.config_serials)
-        print("  startMode:", self.startMode)
+        print("  startMode: ", self.startMode)
         self.findLogFiles(self.directory)
-        print("  subdirs:", self.subdirs)
-
+            
     def getSerialNumbers(self):
         return self.log.getSerialNumbers()
 
@@ -59,10 +58,15 @@ class SuperNPP():
                 continue
             self.findLogFiles(subdir2)
 
+    def print_file_contents(self, file_path):
+        with open(file_path, 'r') as file:
+            for line in file:
+                print(line, end='')  # end='' prevents adding extra newlines
+
     def run(self):
-        print('\nDirectories to reprocess:')
-        print(self.subdirs)
-        print('\n' + str(len(self.subdirs)) + ' directories')
+        print('  log count: ' + str(len(self.subdirs)))
+        for subdir in self.subdirs:
+            print("   " + subdir)
         time.sleep(2)	# seconds
         self.rmsFailResults = []
         self.rmsPassResults = []
@@ -74,21 +78,40 @@ class SuperNPP():
         for thread in threads:
             thread.join()
 
-        ### Compute RMS ##################################################
-        if self.computeRMS:
-            for subdir in self.subdirs:
-                sdir = os.path.normpath(str(subdir) + "/post_processed")
+        # Record list of logs to be processed
+        logListFilename = directory+"/test_summary.txt"        
+        try:
+            os.remove(logListFilename)      # Remove old file
+        except OSError:
+            pass
+
+        f = open(logListFilename, "w")
+        for subdir in self.subdirs:
+            sdir = os.path.normpath(str(subdir) + "/post_processed")
+            nppPrint("   " + sdir)
+            ### Compute RMS ##################################################
+            if self.computeRMS:
+                passRMS = 0
                 if self.log.load(sdir):
                     # Compute and output RMS Report
                     self.log.calculateRMS()
                     passRMS = self.log.printRMSReport()
                     if passRMS == 1:
+                        f.write("[ pass ] " + sdir + "\n")
                         self.rmsPassResults.append(sdir)
-                        print("RMS Test PASSED: " + sdir)
                     else:
+                        f.write("[FAILED] " + sdir + "\n")
                         self.rmsFailResults.append(sdir)
-                        print("RMS Test FAILED: " + sdir)
-        ### Compute RMS ##################################################
+                else:
+                    f.write("[NODATA] " + sdir + "\n")
+            else:
+                f.write("[      ] " + sdir + "\n")
+            ### Compute RMS ##################################################
+        f.close()
+        # print('-------------------------------------------------------------')
+        # print(os.path.basename(logListFilename))
+        # self.print_file_contents(logListFilename)
+        # print('-------------------------------------------------------------')
 
     def run_log_folder(self, folder, config_serials):
         # Find the serial numbers in the log
@@ -98,7 +121,7 @@ class SuperNPP():
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if ".sdat" in file or ".dat" in file or ".raw" in file:
+                if (".sdat" in file or ".dat" in file or ".raw" in file) and not ("base_station.raw" in file) :
                     ser = int(re.sub('[^0-9]','', file.split("_")[1]))
                     if ser not in serials:
                         serials.append(ser)
@@ -121,7 +144,7 @@ class SuperNPP():
         file_path = os.path.dirname(os.path.realpath(__file__))
         npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
-            exename = 'navpp'
+            exename = './navpp'
         else:                   # Windows
             exename = 'navpp.exe'
             npp_build_folder += '/Release'
@@ -188,6 +211,25 @@ def nppPrint(str):
     print(str)	# Comment out to disable output
     pass
 
+def file_contains_string_count(file_path, search_string):
+    count = 0
+    with open(file_path, 'r') as file:
+        content = file.read()
+        count = content.count(search_string)
+    return count
+
+def print_lines_with_string(file_path, search_string):
+    with open(file_path, 'r') as file:
+        for line in file:
+            if search_string in line:
+                print(line, end='')  # end='' avoids adding extra newlines
+
+def print_case(filename, title_string, search_string):
+    count = file_contains_string_count(filename, search_string)
+    if count:
+        nppPrint(title_string + " " + str(count))
+        print_lines_with_string(filename, search_string)
+
 if __name__ == "__main__":
 
     print("Running SuperNPP")
@@ -234,35 +276,12 @@ if __name__ == "__main__":
     snpp = SuperNPP(directory, serials, computeRMS=computeRMS)
     snpp.run()
 
-    rmsPassFilename = directory+"/rms_pass.txt"
-    rmsFailFilename = directory+"/rms_fail.txt"
-
-    # Remove old files
-    try:
-        os.remove(rmsPassFilename)
-    except OSError:
-        pass
-    try:
-        os.remove(rmsFailFilename)
-    except OSError:
-        pass
-
+    testSummaryFilename = directory+"/test_summary.txt"
+    nppPrint("\n")
     nppPrint("====================  Super NPP Results  ====================")
-    if snpp.rmsPassResults != []:
-        nppPrint("  RMS Tests PASSED")
-        f = open(rmsPassFilename, "w")
-        for val in snpp.rmsPassResults:
-            nppPrint("   " + val)
-            f.write(val+"\n")
-        f.close()
-
-    if snpp.rmsFailResults != []:
-        nppPrint("  RMS Tests FAILED:")
-        f = open(rmsFailFilename, "w")
-        for val in snpp.rmsFailResults:
-            nppPrint("  " + val)
-            f.write(val+"\n")
-        f.close()
+    print_case(testSummaryFilename, "  RMS Test PASSED:", "[ pass ]")
+    print_case(testSummaryFilename, "  RMS Test FAILED:", "[FAILED]")
+    print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
     nppPrint("=============================================================")
 
     snpp.exitHack()

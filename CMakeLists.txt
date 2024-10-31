@@ -68,7 +68,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Other settings
 if (WIN32)
-    # yamlcpp needs to know it's a static lib
+    # yamlcpp needs to know it's a static lib.
     add_definitions(-DYAML_CPP_STATIC_DEFINE)
 
     # Windows specific include dir
