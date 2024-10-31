@@ -2081,6 +2081,7 @@ typedef struct PACKED
 {
     rmc_t rmc;
 
+    /** Period of the message to be sent in ms*/
     uint16_t periodMultiple[GRMC_BIT_POS_COUNT];
 
     /** NMEA data stream enable bits for the specified ports.  (see NMEA_RMC_BITS_...) */
