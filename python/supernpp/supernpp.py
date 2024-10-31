@@ -211,12 +211,12 @@ def nppPrint(str):
     print(str)	# Comment out to disable output
     pass
 
-def file_contains_string(file_path, search_string):
+def file_contains_string_count(file_path, search_string):
+    count = 0
     with open(file_path, 'r') as file:
-        for line in file:
-            if search_string in line:
-                return True
-    return False
+        content = file.read()
+        count = content.count(search_string)
+    return count
 
 def print_lines_with_string(file_path, search_string):
     with open(file_path, 'r') as file:
@@ -225,8 +225,9 @@ def print_lines_with_string(file_path, search_string):
                 print(line, end='')  # end='' avoids adding extra newlines
 
 def print_case(filename, title_string, search_string):
-    if file_contains_string(filename, search_string):
-        nppPrint(title_string)
+    count = file_contains_string_count(filename, search_string)
+    if count:
+        nppPrint(title_string + " " + str(count))
         print_lines_with_string(filename, search_string)
 
 if __name__ == "__main__":
