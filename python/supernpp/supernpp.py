@@ -121,7 +121,7 @@ class SuperNPP():
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if (".sdat" in file or ".dat" in file or ".raw" in file) and not ("base_station.raw" in file) :
+                if (".sdat" in file or ".dat" in file or ".raw" in file) and (not "base_station.raw" in file) :
                     ser = int(re.sub('[^0-9]','', file.split("_")[1]))
                     if ser not in serials:
                         serials.append(ser)
