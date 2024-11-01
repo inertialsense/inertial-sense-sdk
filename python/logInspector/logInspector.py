@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import QWidget, QDialog, QApplication, QPushButton, QVBoxLa
 from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import QItemSelectionModel
 
+import matplotlib
+matplotlib.use('Agg')
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
@@ -121,7 +124,7 @@ def dateTimeArrayToString(info):
     hour   = info['buildHour']
     minute = info['buildMinute']
     second = info['buildSecond']
-    return str(year+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
+    return str(int(year)+2000) + '-' + f'{month:02}' + '-' + f'{day:02}' + ' ' + f'{hour:02}' + ':' + f'{minute:02}' + ':' + f'{second:02}'
 
 class DeviceInfoDialog(QDialog):
 
@@ -396,6 +399,8 @@ class LogInspectorWindow(QMainWindow):
         self.addListItem('GPS LLA', 'gpsLLA')
         self.addListItem('GPS 1 Stats', 'gpsStats')
         self.addListItem('GPS 2 Stats', 'gps2Stats')
+        self.addListItem('GPX Status', 'gpxStatus')
+        self.addListItem('GPX HDW Status', 'gpxHdwStatus')
         self.addListItem('RTK Pos Stats', 'rtkPosStats')
         self.addListItem('RTK Cmp Stats', 'rtkCmpStats')
         self.addListItem('RTK Cmp BaseVector', 'rtkBaselineVector')
@@ -455,9 +460,12 @@ class LogInspectorWindow(QMainWindow):
         self.checkboxResidual.stateChanged.connect(self.changeResidualCheckbox)
         self.checkboxTime = QCheckBox("Timestamp", self)
         self.checkboxTime.stateChanged.connect(self.changeTimeCheckbox)
+        self.xAxisSample = QCheckBox("XAxis Msg Index", self)
+        self.xAxisSample.stateChanged.connect(self.changeXAxisSampleCheckbox)
         self.LayoutOptions = QVBoxLayout()
         self.LayoutOptions.addWidget(self.checkboxResidual)
         self.LayoutOptions.addWidget(self.checkboxTime)
+        self.LayoutOptions.addWidget(self.xAxisSample)
         self.LayoutOptions.setSpacing(0)
         self.LayoutBelowPlotSelection = QHBoxLayout()
         self.LayoutBelowPlotSelection.addLayout(self.LayoutOptions)
@@ -551,9 +559,17 @@ class LogInspectorWindow(QMainWindow):
         downsampleLabel = QLabel()
         downsampleLabel.setText("DS")
         self.downSampleInput = QSpinBox()
+        self.downSampleInput.setMinimum(1)
         self.downSampleInput.setValue(self.downsample)
         self.toolLayout.addWidget(downsampleLabel)
         self.toolLayout.addWidget(self.downSampleInput)
+        self.downSampleToOne = QPushButton()
+        self.downSampleToOne.setMinimumWidth(1)
+        self.downSampleToOne.setMaximumWidth(20)
+        self.downSampleToOne.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.downSampleToOne.setText("1")
+        self.toolLayout.addWidget(self.downSampleToOne)
+        self.downSampleToOne.clicked.connect(self.setDownSampleToOne)
         self.downSampleInput.valueChanged.connect(self.changeDownSample)
 
     def changeResidualCheckbox(self, state):
@@ -564,6 +580,11 @@ class LogInspectorWindow(QMainWindow):
     def changeTimeCheckbox(self, state):
         if self.plotter:
             self.plotter.enableTimestamp(state)
+            self.updatePlot()
+
+    def changeXAxisSampleCheckbox(self, state):
+        if self.plotter:
+            self.plotter.enableXAxisSample(state)
             self.updatePlot()
 
     def saveAllPlotsToFile(self):
@@ -579,9 +600,13 @@ class LogInspectorWindow(QMainWindow):
         self.plotter.save = False
 
     def changeDownSample(self, val):
-        self.downsample = val
+        self.downsample = max(val, 1)
         self.plotter.setDownSample(self.downsample)
-        self.updatePlot()
+        if self.log != None:
+            self.updatePlot()
+
+    def setDownSampleToOne(self):
+        self.downSampleInput.setValue(1)
 
     def copyPlotToClipboard(self):
         # pixmap = QPixmap.grabWidget(self.canvas)

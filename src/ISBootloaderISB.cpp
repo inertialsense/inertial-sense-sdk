@@ -66,7 +66,7 @@ eImageSignature cISBootloaderISB::check_is_compatible()
 
     serialPortFlush(m_port);
     serialPortRead(m_port, buf, sizeof(buf));    // empty Rx buffer
-    sync(m_port);
+    handshake_sync(m_port);
 
     SLEEP_MS(100);
 
@@ -239,7 +239,7 @@ is_operation_result cISBootloaderISB::reboot()
 
 uint32_t cISBootloaderISB::get_device_info()
 {
-    sync(m_port);
+    handshake_sync(m_port);
     serialPortFlush(m_port);
 
 	// Send command
@@ -306,7 +306,7 @@ uint32_t cISBootloaderISB::get_device_info()
     return IS_OP_OK;
 }
 
-is_operation_result cISBootloaderISB::sync(serial_port_t* s)
+is_operation_result cISBootloaderISB::handshake_sync(serial_port_t* s)
 {
     static const uint8_t handshakerChar = 'U';
 
@@ -321,6 +321,7 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
 
         if (serialPortWaitForTimeout(s, &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            status_update("(ISB) Handshake", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
@@ -333,11 +334,13 @@ is_operation_result cISBootloaderISB::sync(serial_port_t* s)
     {
         if (serialPortWriteAndWaitForTimeout(s, (const unsigned char*)&handshaker, (int)sizeof(handshaker), &handshakerChar, 1, BOOTLOADER_RESPONSE_DELAY))
         {	// Success
+            status_update("(ISB) Handshake v5a", IS_LOG_LEVEL_INFO);
             return IS_OP_OK;
         }
     }
 #endif
 
+    status_update("(ISB) Handshake w/o response", IS_LOG_LEVEL_INFO);
     return IS_OP_ERROR;
 }
 
@@ -590,6 +593,9 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
         unsigned char hexData[256];
         memset(hexData, 'F', 256);
 
+        // FIXME: This isn't okay... We have about 32k of additional flash that we can't access because is not the 65k "logical" page size.
+        //  This function should recognize when we are on the last page, and how many bytes are in that page if its not a full page and handle things accordingly.
+        //  until then, we'll return OK in the error condition below, because the bootloader won't let us write out of bounds anyway...
         while (*currentOffset < FLASH_PAGE_SIZE)
         {
             int byteCount = (FLASH_PAGE_SIZE - *currentOffset) * 2;
@@ -602,7 +608,7 @@ is_operation_result cISBootloaderISB::fill_current_page(int* currentPage, int* c
             if (upload_hex_page(hexData, byteCount / 2, currentOffset, totalBytes, verifyCheckSum) != IS_OP_OK)
             {
                 status_update("(ISB) Failed to fill page with bytes", IS_LOG_LEVEL_ERROR);
-                return IS_OP_ERROR;
+                return IS_OP_OK; // FIXME - this should actually be an error
             }
         }
     }

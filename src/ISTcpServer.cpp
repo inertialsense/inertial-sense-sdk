@@ -173,7 +173,7 @@ void cISTcpServer::Update()
 	}
 }
 
-int cISTcpServer::Write(const uint8_t* data, int dataLength)
+int cISTcpServer::Write(const void* data, int dataLength)
 {
 	for (size_t i = 0; i < m_clients.size(); i++)
 	{
@@ -181,7 +181,7 @@ int cISTcpServer::Write(const uint8_t* data, int dataLength)
 		int count;
 		while (written < dataLength)
 		{
-			count = ISSocketWrite(m_clients[i], data + written, dataLength - written);
+			count = ISSocketWrite(m_clients[i], ((uint8_t*)data) + written, dataLength - written);
 			if (count < 1)
 			{
 				// remove the client

@@ -46,7 +46,6 @@ struct DeviceLog
     std::vector<gps_version_t> gps1Version;
     std::vector<gps_version_t> gps2Version;
     std::vector<mag_cal_t> magCal;
-    std::vector<internal_diagnostic_t> internalDiagnostic;
     std::vector<gps_rtk_rel_t> gps1RtkPosRel;
     std::vector<gps_rtk_rel_t> gps1RtkCmpRel;
     std::vector<gps_rtk_misc_t> gps1RtkPosMisc;
@@ -109,6 +108,7 @@ struct DeviceLog
     std::vector<rtk_debug_t> rtkDebug;
     // std::vector<rtk_debug_2_t> rtkDebug2;
 //    std::vector<port_monitor_t> portMonitor;
+    std::vector<gpx_status_t> gpxStatus;
     std::vector<debug_array_t> gpxDebugArray;
 };
 
@@ -147,7 +147,7 @@ public:
     }
 
 private:
-    void organizeData(int device_id);
+    void organizeData(std::shared_ptr<cDeviceLog>);
     void forwardData(int device_id);
 
     cISLogger logger_;

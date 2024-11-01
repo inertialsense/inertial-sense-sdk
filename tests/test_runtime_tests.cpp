@@ -67,6 +67,7 @@ void run_realtime_test(DeviceRuntimeTests &RuntimeTest, uint8_t *stream, int str
 TEST(runtime_tests, data_with_no_errors)
 {
 	DeviceRuntimeTests RuntimeTest;
+	RuntimeTest.Enable();
 	uint8_t stream[BUFFER_SIZE] = {0};
 	int streamSize = GenerateDataStream(stream, sizeof(stream));
 	run_realtime_test(RuntimeTest, stream, streamSize);
@@ -76,6 +77,7 @@ TEST(runtime_tests, data_with_no_errors)
 TEST(runtime_tests, timestamp_duplicates)
 {
 	DeviceRuntimeTests RuntimeTest;
+	RuntimeTest.Enable();
 	uint8_t stream[BUFFER_SIZE] = {0};
 	int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_TIMESTAMP_DUPLICATE);
 	run_realtime_test(RuntimeTest, stream, streamSize);	
@@ -86,6 +88,7 @@ TEST(runtime_tests, timestamp_duplicates)
 TEST(runtime_tests, timestamp_reverse)
 {
 	DeviceRuntimeTests RuntimeTest;
+	RuntimeTest.Enable();
 	uint8_t stream[BUFFER_SIZE] = {0};
 	int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_TIMESTAMP_REVERSE);
 	run_realtime_test(RuntimeTest, stream, streamSize);	
@@ -96,10 +99,10 @@ TEST(runtime_tests, timestamp_reverse)
 TEST(runtime_tests, truncate_message_end)
 {
 	DeviceRuntimeTests RuntimeTest;
+	RuntimeTest.Enable();
 	uint8_t stream[BUFFER_SIZE] = {0};
 	int streamSize = GenerateDataStream(stream, sizeof(stream), GEN_LOG_OPTIONS_MISSING_MESSAGE_END);
 	run_realtime_test(RuntimeTest, stream, streamSize);
 	ASSERT_NE( RuntimeTest.ErrorCount(), 0 );
 	ASSERT_NE( RuntimeTest.m_errorCount.parse, 0 );
 }
-

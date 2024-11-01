@@ -284,7 +284,7 @@ uint16_t* getDoubleOffsets(eDataIDs dataId, uint16_t* offsetsLength)
 		0,                      // 17: DID_GPS1_VERSION
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
-		0,						// 20: DID_INTERNAL_DIAGNOSTIC
+		0,						// 20: DID_UNUSED_20
         0,                      // 21: DID_GPS1_RTK_POS_REL
         offsetsRtkNav,          // 22: DID_GPS1_RTK_POS_MISC
 		0,						// 23: DID_FEATURE_BITS
@@ -474,7 +474,7 @@ uint16_t* getStringOffsetsLengths(eDataIDs dataId, uint16_t* offsetsLength)
 		0,						// 17: DID_GPS1_VERSION
 		0,						// 18: DID_GPS2_VERSION
 		0,						// 19: DID_MAG_CAL
-		0,						// 20: DID_INTERNAL_DIAGNOSTIC
+		0,						// 20: DID_UNUSED_20
         0,                      // 21: DID_GPS1_RTK_POS_REL
         0,                      // 22: DID_GPS1_RTK_POS_MISC,
 		0,						// 23: DID_FEATURE_BITS
@@ -683,7 +683,8 @@ const uint64_t g_didToRmcBit[DID_COUNT] =
 	[DID_GPX_DEV_INFO]        = RMC_BITS_GPX_DEV_INFO,
 	[DID_GPX_FLASH_CFG]       = RMC_BITS_GPX_FLASH_CFG,
 	[DID_GPX_RMC]			  = RMC_BITS_GPX_RMC,
-	[DID_GPX_BIT]			  = RMC_BITS_GPX_BIT
+	[DID_GPX_BIT]			  = RMC_BITS_GPX_BIT,
+	[DID_GPX_PORT_MONITOR]	  = RMC_BITS_GPX_PORT_MON,
 };
 
 uint64_t didToRmcBit(uint32_t dataId, uint64_t defaultRmcBits, uint64_t devInfoRmcBits)
@@ -701,16 +702,16 @@ const uint64_t g_didToNmeaRmcBit[DID_COUNT] =
 	[DID_IMU_RAW]               = NMEA_RMC_BITS_PRIMU,
 	[DID_INS_1]                 = NMEA_RMC_BITS_PINS1,
 	[DID_INS_2]                 = NMEA_RMC_BITS_PINS2,
-	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GxGSV,
+	[DID_GPS1_SAT]              = NMEA_RMC_BITS_GNGSV,
 	[DID_GPS1_POS]				=
 		NMEA_RMC_BITS_INTEL  |
 		NMEA_RMC_BITS_PGPSP |
-		NMEA_RMC_BITS_GxGGA |
-		NMEA_RMC_BITS_GxGLL |
-		NMEA_RMC_BITS_GxGSA |
-		NMEA_RMC_BITS_GxRMC |
-		NMEA_RMC_BITS_GxZDA |
-		NMEA_RMC_BITS_GxVTG |
+		NMEA_RMC_BITS_GNGGA |
+		NMEA_RMC_BITS_GNGLL |
+		NMEA_RMC_BITS_GNGSA |
+		NMEA_RMC_BITS_GNRMC |
+		NMEA_RMC_BITS_GNZDA |
+		NMEA_RMC_BITS_GNVTG |
 		NMEA_RMC_BITS_PASHR,
 	[DID_DEV_INFO]              = NMEA_RMC_BITS_INFO,
 };
@@ -736,11 +737,13 @@ const uint64_t g_gpxDidToGrmcBit[DID_COUNT] =
     [DID_GPS2_RAW]               = GRMC_BITS_GPS2_RAW,
     [DID_GPS2_VERSION]           = GRMC_BITS_GPS2_VERSION,
     [DID_GPS1_RTK_POS]           = GRMC_BITS_GPS1_RTK_POS,
-    [DID_GPS1_RTK_POS_MISC]      = GMRC_BITS_GPS1_RTK_POS_MISC,
-    [DID_GPS1_RTK_POS_REL]       = GMRC_BITS_GPS1_RTK_POS_REL,
-    [DID_GPS2_RTK_CMP_MISC]      = GMRC_BITS_GPS2_RTK_CMP_MISC,
-    [DID_GPS2_RTK_CMP_REL]       = GMRC_BITS_GPS2_RTK_CMP_REL,
-    [DID_RTK_DEBUG]       		 = GMRC_BITS_DID_RTK_DEBUG,
+    [DID_GPS1_RTK_POS_MISC]      = GRMC_BITS_GPS1_RTK_POS_MISC,
+    [DID_GPS1_RTK_POS_REL]       = GRMC_BITS_GPS1_RTK_POS_REL,
+    [DID_GPS2_RTK_CMP_MISC]      = GRMC_BITS_GPS2_RTK_CMP_MISC,
+    [DID_GPS2_RTK_CMP_REL]       = GRMC_BITS_GPS2_RTK_CMP_REL,
+    [DID_RTK_DEBUG]	             = GRMC_BITS_DID_RTK_DEBUG,
+    [DID_PORT_MONITOR]           = GRMC_BITS_PORT_MON,
+    [DID_GPX_PORT_MONITOR]       = GRMC_BITS_GPX_PORT_MON,
 };
 
 const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
@@ -763,11 +766,11 @@ const uint16_t g_gpxGRMCPresetLookup[GRMC_BIT_POS_COUNT] =
     [GRMC_BIT_POS_GPS2_RAW]             = 1,
     [GRMC_BIT_POS_GPS2_VERSION]         = GRMC_PRESET_GPX_GPS2_VERSION_PERIOD_MS,
     [GRMC_BIT_POS_GPS1_RTK_POS]         = 1,
-    [GMRC_BIT_POS_GPS1_RTK_POS_MISC]    = 1,
-    [GMRC_BIT_POS_GPS1_RTK_POS_REL]     = 1,
-    [GMRC_BIT_POS_GPS2_RTK_CMP_MISC]    = 1,
-    [GMRC_BIT_POS_GPS2_RTK_CMP_REL]     = 1, 
-    [GMRC_BIT_POS_DID_RTK_DEBUG]     	= GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,    
+    [GRMC_BIT_POS_GPS1_RTK_POS_MISC]    = 1,
+    [GRMC_BIT_POS_GPS1_RTK_POS_REL]     = 1,
+    [GRMC_BIT_POS_GPS2_RTK_CMP_MISC]    = 1,
+    [GRMC_BIT_POS_GPS2_RTK_CMP_REL]     = 1, 
+    [GRMC_BIT_POS_DID_RTK_DEBUG]     	= GRMC_PRESET_DID_RTK_DEBUG_PERIOD_MS,    
 };
 
 #ifndef GPX_1

@@ -12,10 +12,9 @@
 
 using namespace std;
 
-static const int s_maxFileSize = 5242880;
+static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
-static const float s_maxDiskSpacePercent = 0.5f;
-static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
+static const float s_logDiskUsageLimitPercent = 0.5f;
 static const bool s_useTimestampSubFolder = false;
 
 
@@ -26,7 +25,7 @@ static dev_info_t CreateDeviceInfo(uint32_t serial)
 	return d;
 }
 
-static bool LogData(cISLogger& logger, uint32_t device, uint32_t id, uint32_t offset, uint32_t size, void* data)
+static bool LogData(cISLogger& logger, std::shared_ptr<cDeviceLog> device, uint32_t id, uint32_t offset, uint32_t size, void* data)
 {
 	p_data_hdr_t hdr;
 	hdr.id = id;
@@ -51,7 +50,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger2;
 	EXPECT_TRUE(logger1.LoadFromDirectory(inputPath, inputLogType));
 	logger1.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger2.CopyLog(logger1, cISLogger::g_emptyString, outputPath1, convertLogType, s_maxFileSize, s_logDiskUsageLimitPercent, s_useTimestampSubFolder, false));
 	logger1.CloseAllFiles();
 	logger2.CloseAllFiles();
 
@@ -60,7 +59,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	cISLogger logger4;
 	EXPECT_TRUE(logger3.LoadFromDirectory(outputPath1, convertLogType));
 	logger3.ShowParseErrors(showParseErrors);			// Allow garbage data tests to hide parse errors
-	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder, false));
+	EXPECT_TRUE(logger4.CopyLog(logger3, cISLogger::g_emptyString, outputPath2, inputLogType, s_maxFileSize, s_logDiskUsageLimitPercent, s_useTimestampSubFolder, false));
 	logger3.CloseAllFiles();
 	logger4.CloseAllFiles();
 
@@ -73,8 +72,8 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	finalLogger2.ShowParseErrors(showParseErrors);		// Allow garbage data tests to hide parse errors
 	p_data_buf_t* data1;
 	p_data_buf_t* data2;
-	unsigned int devIndex1 = 0;
-	unsigned int devIndex2 = 0;
+	size_t devIndex1 = 0;
+	size_t devIndex2 = 0;
 	int dataIndex = -1;
 
 	while (1)
@@ -83,7 +82,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		dataIndex++;
 
 		if (data1 != NULL && 
-			cISDataMappings::GetSize(data1->hdr.id) == 0 &&
+			cISDataMappings::DataSize(data1->hdr.id) == 0 &&
 			convertLogType == cISLogger::eLogType::LOGTYPE_CSV)
 		{	// CSV logs don't save DIDs not defined in ISDataMapping.  Skip this one.
 			continue;
@@ -96,26 +95,24 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 
 		if (data1 == NULL || data2 == NULL)
 		{	// No more data.  Ensure both logs are empty.
-			EXPECT_TRUE(data1 == data2);
+			EXPECT_EQ(data1, data2);
 			break;
 		}
 
 		// Compare DIDs
 		if (data1->hdr.id != data2->hdr.id)
 		{
-			EXPECT_TRUE(data1->hdr.id == data2->hdr.id);
-			std::cout << "MISMATCHED DID: " << data1->hdr.id << "," << data2->hdr.id << " size: " << data1->hdr.size << "," << data2->hdr.size << " offset:" << data1->hdr.offset << "," << data2->hdr.offset << " dataIndex: " << dataIndex << std::endl;
-			break;
+			EXPECT_EQ(data1->hdr.id, data2->hdr.id) << "MISMATCHED DID: " << (int)(data1->hdr.id) << "," << (int)(data2->hdr.id) << " size: " << data1->hdr.size << "," << data2->hdr.size << " offset:" << data1->hdr.offset << "," << data2->hdr.offset << " dataIndex: " << dataIndex << std::endl;
+			// break;
 		}
 
 		// Compare Timestamps
-		double timestamp1 = cISDataMappings::GetTimestamp(&(data1->hdr), data1->buf);
-		double timestamp2 = cISDataMappings::GetTimestamp(&(data2->hdr), data2->buf);
+		double timestamp1 = cISDataMappings::Timestamp(&(data1->hdr), data1->buf);
+		double timestamp2 = cISDataMappings::Timestamp(&(data2->hdr), data2->buf);
 		if (timestamp1 != timestamp2)
 		{
-			EXPECT_TRUE(timestamp1 == timestamp2);
-			std::cout << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;
-			break;
+			EXPECT_DOUBLE_EQ(timestamp1, timestamp2) << "MISMATCHED TIMESTAMPS: " << timestamp1 << " " << timestamp1 << " dataIndex: " << dataIndex << std::endl;
+			// break;
 		}
 
 		// Debug
@@ -134,9 +131,8 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 		if ((data1->hdr.size != data2->hdr.size) ||
 			(data1->hdr.offset != data2->hdr.offset))
 		{
-			EXPECT_TRUE(data1->hdr.offset == data2->hdr.offset);
-			EXPECT_TRUE(data1->hdr.size == data2->hdr.size);
-			std::cout << "MISMATCHED size/offset: " << data1->hdr.id << "," << data2->hdr.id << " size: " << data1->hdr.size << "," << data2->hdr.size << " offset:" << data1->hdr.offset << "," << data2->hdr.offset << " dataIndex: " << dataIndex << std::endl;
+			EXPECT_EQ(data1->hdr.offset, data2->hdr.offset) << "MISMATCHED offset: " << (int)data1->hdr.id << "," << (int)data2->hdr.id << " offset:" << data1->hdr.offset << "," << data2->hdr.offset << " dataIndex: " << dataIndex << std::endl;
+			EXPECT_EQ(data1->hdr.size, data2->hdr.size) << "MISMATCHED size: " << (int)data1->hdr.id << "," << (int)data2->hdr.id << " size: " << data1->hdr.size << "," << data2->hdr.size << " dataIndex: " << dataIndex << std::endl;
 			break;
 		}
 
@@ -148,8 +144,7 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 			uint8_t b2 = data2->buf[i2];
 			if (b1 != b2)
 			{
-				EXPECT_TRUE(b1 == b2);
-				std::cout << "MISMATCHED data (DID " << data1->hdr.id << "," << data2->hdr.id << ") byte index: " << i1 << ", value: " << "'" << (int)b1 << "' != '" << (int)b2 << "'" << std::endl;
+				EXPECT_EQ(b1, b2) << "MISMATCHED data (DID " << (int)data1->hdr.id << "," << (int)data2->hdr.id << ") byte index: " << i1 << ", value: " << "'" << (int)b1 << "' != '" << (int)b2 << "'" << std::endl;
 				break;
 			}
 		}
@@ -166,11 +161,12 @@ static void TestConvertLog(string inputPath, cISLogger::eLogType inputLogType, c
 	printf("\n");
 }
 
-void TestParseFileName(string filename, int rSerialNum, string rDate, string rTime, int rIndex)
+void TestParseFileName(string filename, int rSerialNum, string rDate, string rTime, int rIndex, bool rResults=true)
 {
 	int serialNum, index; 
 	string date, time;
-	cISLogger::ParseFilename(filename, serialNum, date, time, index);
+	bool results = cISLogger::ParseFilename(filename, serialNum, date, time, index);
+	EXPECT_EQ(results, rResults);
 	EXPECT_EQ(serialNum, rSerialNum);
 	EXPECT_EQ(date, rDate);
 	EXPECT_EQ(time, rTime);
@@ -182,15 +178,16 @@ void TestParseFileName(string filename, int rSerialNum, string rDate, string rTi
 
 TEST(ISLogger, parse_filename)
 {
+	TestParseFileName("base_station.raw", 0, "", "", -1, false);
 	TestParseFileName("LOG_SN60339_20240311_132545_0000.RAW", 60339, "20240311", "132545", 0);
 	TestParseFileName("LOG_SN60339_20240311_132545_0001.RAW", 60339, "20240311", "132545", 1);
 	TestParseFileName("LOG_SN60339_20240311_132545_0002.raw", 60339, "20240311", "132545", 2);
 	TestParseFileName("LOG_SN60339123_20240311_132545_0992.raw", 60339123, "20240311", "132545", 992);
-	TestParseFileName("LOG_SN60339_20240311_214365.raw", 60339, "20240311", "214365", -1);
-	TestParseFileName("LOG_SN60339_20240311_0007.raw", 60339, "20240311", "0007", -1);
-	TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1);
-	TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1);
-	TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1);
+	TestParseFileName("LOG_SN60339_20240311_214365.raw", 60339, "20240311", "214365", -1, false);
+	TestParseFileName("LOG_SN60339_20240311_0007.raw", 60339, "20240311", "0007", -1, false);
+	TestParseFileName("LOG_SN60339_20240311.raw", 60339, "20240311", "", -1, false);
+	TestParseFileName("LOG_SN60339_.raw", 60339, "", "", -1, false);
+	TestParseFileName("LOG_SN60339.raw", 60339, "", "", -1, false);
 	TestParseFileName("00000000.RAW", 0, "", "", 0);
 	TestParseFileName("00000001.RAW", 0, "", "", 1);
 	TestParseFileName("00000002.raw", 0, "", "", 2);
@@ -201,19 +198,8 @@ TEST(ISLogger, dat_conversion)
 {
 	string logPath = "test_log";
 	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
+	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_RAW);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
-	DELETE_DIRECTORY(logPath);
-}
-
-TEST(ISLogger, sdat_conversion)
-{
-	string logPath = "test_log";
-	GenerateDataLogFiles(1, logPath, cISLogger::eLogType::LOGTYPE_SDAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_SDAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_SDAT, cISLogger::eLogType::LOGTYPE_CSV);
 	DELETE_DIRECTORY(logPath);
 }
 
@@ -222,7 +208,6 @@ TEST(ISLogger, raw_conversion)
 	string logPath = "test_log";
 	GenerateDataLogFiles(3, logPath, cISLogger::eLogType::LOGTYPE_RAW);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT);
-	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_SDAT);
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_CSV);
 	DELETE_DIRECTORY(logPath);
 }
@@ -234,13 +219,6 @@ TEST(ISLogger, raw_conversion_with_garbage)
 	TestConvertLog(logPath, cISLogger::eLogType::LOGTYPE_RAW, cISLogger::eLogType::LOGTYPE_DAT, false);
 	DELETE_DIRECTORY(logPath);
 }
-
-// TEST(ISLogger, dat_conversion_with_multiple_files_issue_Aug_2017)
-// {
-// 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_DAT);
-// 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_SDAT);
-// 	TestConvertLog(DATA_DIR"logger_dat3", cISLogger::eLogType::LOGTYPE_DAT, cISLogger::eLogType::LOGTYPE_CSV);
-// }
 
 #else	// Disabled
 

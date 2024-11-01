@@ -13,10 +13,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef __INERTIALSENSE_H
 #define __INERTIALSENSE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
+#include <cstring>
 #include <string>
+#include <functional>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -31,11 +33,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISSerialPort.h"
 #include "ISDataMappings.h"
 #include "ISStream.h"
+#include "ISDevice.h"
 #include "ISClient.h"
 #include "message_stats.h"
 #include "ISBootloaderThread.h"
 #include "ISFirmwareUpdater.h"
-#include "string.h"
 
 extern "C"
 {
@@ -45,8 +47,6 @@ extern "C"
 
 #include "serialPortPlatform.h"
 }
-
-#include <functional>
 
 #define SYNC_FLASH_CFG_CHECK_PERIOD_MS      200
 
@@ -62,100 +62,10 @@ typedef void(*pfnStepLogFunction)(InertialSense* i, const p_data_t* data, int pH
 class InertialSense : public iISTcpServerDelegate
 {
 public:
-    typedef struct is_fwUpdate_info_s {
-        ISFirmwareUpdater* fwUpdater;
-        float percent;
-        bool hasError;
-        uint16_t lastSlot;
-        fwUpdate::target_t lastTarget;
-        fwUpdate::update_status_e lastStatus;
-        std::string lastMessage;
-
-        std::vector<std::string> target_idents;
-        std::vector<std::string> target_messages;
-
-        bool inProgress() { return (fwUpdater && !fwUpdater->fwUpdate_isDone()); }
-        void update() {
-            if (fwUpdater) {
-                if ("upload" == fwUpdater->getActiveCommand()) {
-                    if (fwUpdater->fwUpdate_getSessionTarget() != lastTarget) {
-                        hasError = false;
-                        lastStatus = fwUpdate::NOT_STARTED;
-                        lastMessage.clear();
-                        lastTarget = fwUpdater->fwUpdate_getSessionTarget();
-                    }
-                    lastSlot = fwUpdater->fwUpdate_getSessionImageSlot();
-
-                    if ((fwUpdater->fwUpdate_getSessionStatus() == fwUpdate::NOT_STARTED) && fwUpdater->isWaitingResponse()) {
-                        // We're just starting (no error yet, but no response either)
-                        lastStatus = fwUpdate::INITIALIZING;
-                        lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-                    } else if ((fwUpdater->fwUpdate_getSessionStatus() != fwUpdate::NOT_STARTED) && (lastStatus != fwUpdater->fwUpdate_getSessionStatus())) {
-                        // We're got a valid status update (error or otherwise)
-                        lastStatus = fwUpdater->fwUpdate_getSessionStatus();
-                        lastMessage = ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-
-                        // check for error
-                        if (!hasError && fwUpdater && fwUpdater->fwUpdate_getSessionStatus() < fwUpdate::NOT_STARTED) {
-                            hasError = true;
-                        }
-                    }
-
-                    // update our upload progress
-                    if ((lastStatus == fwUpdate::IN_PROGRESS)) {
-                        percent = ((float) fwUpdater->fwUpdate_getNextChunkID() / (float) fwUpdater->fwUpdate_getTotalChunks()) * 100.f;
-                    } else {
-                        percent = lastStatus <= fwUpdate::READY ? 0.f : 100.f;
-                    }
-                } else if ("waitfor" == fwUpdater->getActiveCommand()) {
-                        lastMessage = "Waiting for response from device.";
-                } else if ("reset" == fwUpdater->getActiveCommand()) {
-                    lastMessage = "Resetting device.";
-                } else if ("delay" == fwUpdater->getActiveCommand()) {
-                    lastMessage = "Waiting...";
-                }
-
-                if (!fwUpdater->hasPendingCommands()) {
-                    if (!hasError) {
-                        lastMessage = "Completed successfully.";
-                    } else {
-                        lastMessage = "Error: ";
-                        lastMessage += ISFirmwareUpdater::fwUpdate_getNiceStatusName(lastStatus);
-                    }
-                }
-
-                // cleanup if we're done.
-                if (fwUpdater->fwUpdate_isDone()) {
-                    delete fwUpdater;
-                    fwUpdater = nullptr;
-                }
-            } else {
-                percent = 0.0;
-            }
-        }
-    } is_fwUpdate_info_t;
-
-    typedef struct
-    {
-        serial_port_t serialPort;
-        dev_info_t devInfo;
-        dev_info_t gpxDevInfo;
-        system_command_t sysCmd;
-        nvm_flash_cfg_t imxFlashCfg;
-        gpx_flash_cfg_t gpxFlashCfg;
-        unsigned int imxFlashCfgUploadTimeMs;	// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-        unsigned int gpxFlashCfgUploadTimeMs;	// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-        uint32_t imxFlashCfgUploadChecksum;
-        uint32_t gpxFlashCfgUploadChecksum;
-        sys_params_t sysParams;
-        gpx_status_t gpxStatus;
-        is_fwUpdate_info_t fwUpdate;
-    } is_device_t;
-
     struct com_manager_cpp_state_t
     {
         // per device vars
-        std::vector<is_device_t> devices;
+        std::vector<ISDevice> devices;
 
         // common vars
         pfnHandleBinaryData binaryCallbackGlobal;
@@ -185,12 +95,12 @@ public:
     * @param callbackSpartn Spartn received data callback (optional).
     */
     InertialSense(
-            pfnHandleBinaryData        callbackIsb = NULL,
-            pfnComManagerAsapMsg       callbackRmc = NULL,
-            pfnComManagerGenMsgHandler callbackNmea = NULL,
-            pfnComManagerGenMsgHandler callbackUblox = NULL,
-            pfnComManagerGenMsgHandler callbackRtcm3 = NULL,
-            pfnComManagerGenMsgHandler callbackSpartn = NULL );
+            pfnHandleBinaryData    callbackIsb = NULL,
+            pfnIsCommAsapMsg       callbackRmc = NULL,
+            pfnIsCommGenMsgHandler callbackNmea = NULL,
+            pfnIsCommGenMsgHandler callbackUblox = NULL,
+            pfnIsCommGenMsgHandler callbackRtcm3 = NULL,
+            pfnIsCommGenMsgHandler callbackSpartn = NULL );
 
     /**
     * Destructor
@@ -231,14 +141,14 @@ public:
      * Returns a vector of available, connected devices
      * @return
      */
-    std::vector<is_device_t>& getDevices();
+    std::vector<ISDevice>& getDevices();
 
 
     /**
      * Returns a reference to an is_device_t struct that contains information about the specified device
      * @return
      */
-    is_device_t& getDevice(uint32_t index);
+    ISDevice& getDevice(uint32_t index);
 
     /**
     * Call in a loop to send and receive data.  Call at regular intervals as frequently as want to receive data.
@@ -247,26 +157,49 @@ public:
     bool Update();
 
     /**
+     * Register a callback handler for data stream errors.
+     */
+    void setErrorHandler(pfnIsCommParseErrorHandler errorHandler) { m_handlerError = errorHandler; }
+
+    /**
     * Enable or disable logging - logging is disabled by default
-    * @param enable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
-    * @param path the path to write the log files to
+    * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
+    * @param logPath the path to write the log files to
     * @param logType the type of log to write
-    * @param logSolution true to log solution stream, false otherwise
-    * @param maxDiskSpacePercent the max disk space to use in percent of free space (0.0 to 1.0)
+    * @param rmcPreset RMC preset for data streaming
+    * @param rmcOptions RMC options for data streaming
+    * @return true if success, false if failure
+    */
+    bool EnableLogger(
+        bool logEnable = true,
+        const std::string& logPath = cISLogger::g_emptyString,
+        const cISLogger::sSaveOptions &logOptions = cISLogger::sSaveOptions(),
+        uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
+        uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL);
+
+    /**
+    * (deprecated) Not recommended for future development.
+    * Enable or disable logging - logging is disabled by default
+    * @param logEnable enable or disable the logger - disabling the logger after enabling it will close it and flush all data to disk
+    * @param logPath the path to write the log files to
+    * @param logType the type of log to write
+    * @param rmcPreset RMC preset for data streaming
+    * @param rmcOptions RMC options for data streaming
+    * @param driveUsageLimitPercent the maximum usable disk space in percent of total drive size (0.0 to 1.0). Oldest files are deleted to maintain this limit. Zero to disable this limit.
     * @param maxFileSize the max file size for each log file in bytes
-    * @param chunkSize the max data to keep in RAM before flushing to disk in bytes
     * @param subFolder timestamp sub folder or empty for none
     * @return true if success, false if failure
     */
+    [[deprecated("Not recommended for future development. Use EnableLogger() instead.")]]
     bool SetLoggerEnabled(
-            bool enable,
-            const std::string& path = cISLogger::g_emptyString,
-            cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
-            uint64_t rmcPreset = RMC_PRESET_PPD_BITS,
-            uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
-            float maxDiskSpacePercent = 0.5f,
-            uint32_t maxFileSize = 1024 * 1024 * 5,
-            const std::string& subFolder = cISLogger::g_emptyString);
+        bool logEnable,
+        const std::string& logPath = cISLogger::g_emptyString,
+        cISLogger::eLogType logType = cISLogger::eLogType::LOGTYPE_DAT,
+        uint64_t rmcPreset = RMC_PRESET_IMX_PPD,
+        uint32_t rmcOptions = RMC_OPTIONS_PRESERVE_CTRL,
+        float driveUsageLimitPercent = 0.5f,
+        uint32_t maxFileSize = 1024 * 1024 * 5,
+        const std::string& subFolder = cISLogger::g_emptyString);
 
     /**
     * Gets whether logging is enabled
@@ -274,7 +207,7 @@ public:
     */
     bool LoggerEnabled() { return m_logger.Enabled(); }
 
-	/**
+    /**
 	 * @brief Get pointer to ISLogger
 	 * 
 	 * @return cISLogger* ISLogger pointer
@@ -288,17 +221,17 @@ public:
 	 * @param dataSize Number of bytes of raw data.
 	 * @param data Pointer to raw data.
 	 */
-	void LogRawData(int device, int dataSize, const uint8_t* data);
+	void LogRawData(ISDevice* device, int dataSize, const uint8_t* data);
 
 	/**
-	* Connect to a server and send the data from that server to the uINS. Open must be called first to connect to the uINS unit.
+	* Connect to a server and send the data from that server to the IMX. Open must be called first to connect to the IMX unit.
 	* @param connectionString the server to connect, this is the data type (RTCM3,IS,UBLOX) followed by a colon followed by connection info (ip:port or serial:baud). This can also be followed by an optional url, user and password, i.e. RTCM3:192.168.1.100:7777:RTCM3_Mount:user:password
 	* @return true if connection opened, false if failure
 	*/
 	bool OpenConnectionToServer(const std::string& connectionString);
 
     /**
-    * Create a server that will stream data from the uINS to connected clients. Open must be called first to connect to the uINS unit.
+    * Create a server that will stream data from the IMX to connected clients. Open must be called first to connect to the IMX unit.
     * @param connectionString ip address followed by colon followed by port. Ip address is optional and can be blank to auto-detect.
     * @return true if success, false if error
     */
@@ -340,7 +273,7 @@ public:
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
 
     /**
-    * Send data to the uINS - this is usually only used for advanced or special cases, normally you won't use this method
+    * Send data to the IMX - this is usually only used for advanced or special cases, normally you won't use this method
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -349,7 +282,7 @@ public:
     void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
 
     /**
-    * Send raw data to the uINS - (byte swapping disabled)
+    * Send raw data to the IMX - (byte swapping disabled)
     * @param dataId the data id of the data to send
     * @param data the data to send
     * @param length length of data to send
@@ -369,28 +302,14 @@ public:
     * @param pHandle the pHandle to get device info for
     * @return the device info
     */
-    const dev_info_t DeviceInfo(int pHandle = 0)
-    {
-        if ((size_t)pHandle >= m_comManagerState.devices.size())
-        {
-            pHandle = 0;
-        }
-        return m_comManagerState.devices[pHandle].devInfo;
-    }
+    const dev_info_t DeviceInfo(int pHandle = 0);
 
     /**
     * Get current device system command
     * @param pHandle the pHandle to get sysCmd for
     * @return current device system command
     */
-    system_command_t GetSysCmd(int pHandle = 0)
-    {
-        if ((size_t)pHandle >= m_comManagerState.devices.size())
-        {
-            pHandle = 0;
-        }
-        return m_comManagerState.devices[pHandle].sysCmd;
-    }
+    system_command_t GetSysCmd(int pHandle = 0);
 
     /**
     * Set device configuration
@@ -400,13 +319,24 @@ public:
     void SetSysCmd(const uint32_t command, int pHandle = -1);
 
     /**
-    * Get the flash config, returns the latest flash config read from the flash memory
+     * Sends message to device to set devices Event Filter
+     * param Target: 0 = device, 
+     *               1 = forward to device GNSS 1 port (ie GPX), 
+     *               2 = forward to device GNSS 2 port (ie GPX),
+     *               else will return
+     *       pHandle: Send in target COM port. 
+     *                If arg is < 0 default port will be used 
+    */
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel, int pHandle = -1);
+
+    /**
+    * Get the flash config, returns the latest flash config read from the IMX flash memory
     * @param flashCfg the flash config value
     * @param pHandle the port pHandle to get flash config
     * @return bool whether the flash config is valid and currently synchronized
     */
-    bool ImxFlashConfig(nvm_flash_cfg_t &imxFlashCfg, int pHandle = 0);
-    bool GpxFlashConfig(gpx_flash_cfg_t &gpxFlashCfg, int pHandle = 0);
+    bool ImxFlashConfig(nvm_flash_cfg_t &flashCfg, int pHandle = 0);
+    bool GpxFlashConfig(gpx_flash_cfg_t &flashCfg, int pHandle = 0);
 
     /**
     * Indicates whether the current flash config has been downloaded and available via ImxFlashConfig()
@@ -415,15 +345,14 @@ public:
     */
     bool ImxFlashConfigSynced(int pHandle = 0) 
     { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
+        if (m_comManagerState.devices.size() == 0)
+        {   // No devices
+            return false;
+        }
+
+        ISDevice& device = m_comManagerState.devices[pHandle];
         return  (device.imxFlashCfg.checksum == device.sysParams.flashCfgChecksum) && 
                 (device.imxFlashCfgUploadTimeMs==0) && !ImxFlashConfigUploadFailure(pHandle); 
-    }
-    bool GpxFlashConfigSynced(int pHandle = 0) 
-    { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
-        return  (device.gpxFlashCfg.checksum == device.gpxStatus.flashCfgChecksum) && 
-                (device.gpxFlashCfgUploadTimeMs==0) && !GpxFlashConfigUploadFailure(pHandle); 
     }
 
     /**
@@ -434,17 +363,17 @@ public:
      */
     bool ImxFlashConfigUploadFailure(int pHandle = 0)
     { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
-        return device.imxFlashCfgUploadChecksum && (device.imxFlashCfgUploadChecksum != device.sysParams.flashCfgChecksum); 
-    } 
-    bool GpxFlashConfigUploadFailure(int pHandle = 0)
-    { 
-        is_device_t &device = m_comManagerState.devices[pHandle]; 
-        return device.gpxFlashCfgUploadChecksum && (device.gpxFlashCfgUploadChecksum != device.gpxStatus.flashCfgChecksum); 
+        if (m_comManagerState.devices.size() == 0)
+        {   // No devices
+            return true;
+        }
+
+        ISDevice& device = m_comManagerState.devices[pHandle];
+        return device.imxFlashCfgUploadChecksum && (device.imxFlashCfgUploadChecksum != device.sysParams.flashCfgChecksum);
     } 
 
     /**
-    * Set the flash config and update flash config in the device flash memory
+    * Set the flash config and update flash config on the IMX flash memory
     * @param flashCfg the flash config
     * @param pHandle the pHandle to set flash config for
     * @return true if success
@@ -464,6 +393,15 @@ public:
     void ProcessRxNmea(int pHandle, const uint8_t* msg, int msgSize);
 
     /**
+     * Request a specific device broadcast binary data
+     * @param pHandle the device's pHandle to request data from
+     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
+     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
+     * @return true if success, false if error - if callback is NULL and no global callback was passed to the constructor, this will return false
+     */
+    bool BroadcastBinaryData(int pHandle, uint32_t dataId, int periodMultiple);
+
+    /**
     * Broadcast binary data
     * @param dataId the data id (DID_* - see data_sets.h) to broadcast
     * @param periodMultiple a scalar that the source period is multiplied by to give the output period in milliseconds, 0 for one time message, less than 0 to disable broadcast of the specified dataId
@@ -473,10 +411,10 @@ public:
     bool BroadcastBinaryData(uint32_t dataId, int periodMultiple, pfnHandleBinaryData callback = NULL);
 
     /**
-    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS_BITS, stream data necessary for post processing.
+    * Enable streaming of predefined set of messages.  The default preset, RMC_PRESET_INS, stream data necessary for post processing.
     * @param rmcPreset realtimeMessageController preset
     */
-    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS_BITS, uint32_t rmcOptions=0);
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset=RMC_PRESET_INS, uint32_t rmcOptions=0);
 
     /**
     * Get the number of bytes read or written to/from client or server connections
@@ -599,6 +537,16 @@ public:
             void (*waitAction)()
     );
 
+    is_operation_result updateFirmware(
+            ISDevice& device,
+            fwUpdate::target_t targetDevice,
+            std::vector<std::string> cmds,
+            ISBootloader::pfnBootloadProgress uploadProgress,
+            ISBootloader::pfnBootloadProgress verifyProgress,
+            ISBootloader::pfnBootloadStatus infoProgress,
+            void (*waitAction)()
+    );
+
     /**
      * @return true if all devices have finished all firmware update steps
      */
@@ -655,7 +603,7 @@ public:
 
     // Used for testing
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
-    InertialSense::is_device_t* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
+    ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
@@ -667,12 +615,12 @@ protected:
 private:
     uint32_t m_timeMs;
     InertialSense::com_manager_cpp_state_t m_comManagerState;
-    pfnComManagerAsapMsg       m_handlerRmc = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerNmea = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerUblox = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerRtcm3 = NULLPTR;
-    pfnComManagerGenMsgHandler m_handlerSpartn = NULLPTR;
-    pfnComManagerParseErrorHandler m_handlerError = NULLPTR;
+    pfnIsCommAsapMsg       m_handlerRmc = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerNmea = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerUblox = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerRtcm3 = NULLPTR;
+    pfnIsCommGenMsgHandler m_handlerSpartn = NULLPTR;
+    pfnIsCommParseErrorHandler m_handlerError = NULLPTR;
     cISLogger m_logger;
     void* m_logThread;
     cMutex m_logMutex;
@@ -703,19 +651,18 @@ private:
     // returns false if logger failed to open
     bool UpdateServer();
     bool UpdateClient();
-    bool EnableLogging(const std::string& path, cISLogger::eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, const std::string& subFolder);
+    bool EnableLogging(const std::string& path, const cISLogger::sSaveOptions& options = cISLogger::sSaveOptions());
     void DisableLogging();
     bool HasReceivedDeviceInfo(size_t index);
     bool HasReceivedDeviceInfoFromAllDevices();
     void RemoveDevice(size_t index);
     bool OpenSerialPorts(const char* port, int baudRate);
-    void CloseSerialPorts();
+    void CloseSerialPorts(bool drainBeforeClose = false);
     static void LoggerThread(void* info);
     static void StepLogger(InertialSense* i, const p_data_t* data, int pHandle);
     static void BootloadStatusUpdate(void* obj, const char* str);
     void SyncFlashConfig(unsigned int timeMs);
-    void EnableSyncFlashCfgChecksum(uint32_t &flashCfgChecksum);
-    void CheckRequestFlashConfig(unsigned int timeMs, unsigned int &uploadTimeMs, bool synced, int port, uint16_t did);
+    void UpdateFlashConfigChecksum(nvm_flash_cfg_t &flashCfg);
 };
 
 #endif

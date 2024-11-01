@@ -33,10 +33,9 @@
 
 using namespace std;
 
-static const int s_maxFileSize = 5242880;
+static const int s_maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE;
 //static const int s_maxFileSize = 100000;	// Make many small files
-static const float s_maxDiskSpacePercent = 0.5f;
-static const float s_maxDiskSpaceMBLarge = 1024.0f * 1024.0f * 10.0f;
+static const float s_logDiskUsageLimitPercent = 0.5f;
 static const bool s_useTimestampSubFolder = false;
 static uint32_t s_timeMs = 0;
 static uint32_t s_gpsTowOffsetMs = 0;
@@ -307,7 +306,7 @@ bool GenerateNMEA(test_message_t &msg, int i, float f)
     {   
         msg.pktSize = nmea_zda((char*)msg.comm.rxBuf.start, msg.comm.rxBuf.size, s_gpsPos);
         msg.ptype = _PTYPE_NMEA;
-        printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
+        // printf("NMEA: %.*s", msg.pktSize, msg.comm.rxBuf.start);
         return true;
     }
 
@@ -500,12 +499,21 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
 	ISFileManager::DeleteDirectory(directory);
 
     cISLogger logger;
-    logger.InitSave(logType, directory, numDevices, s_maxDiskSpacePercent, s_maxFileSize, s_useTimestampSubFolder);
+    cISLogger::sSaveOptions logOptions;
+    logOptions.logType                 = logType;
+    logOptions.driveUsageLimitPercent  = s_logDiskUsageLimitPercent;
+    logOptions.maxFileSize             = s_maxFileSize;
+    logOptions.useSubFolderTimestamp   = s_useTimestampSubFolder;
+    logger.InitSave(directory, logOptions); 
+
+    auto devices = new ISDevice[numDevices]();
     for (int d=0; d<numDevices; d++)
     {   // Assign serial number
-        dev_info_t info = {};
-        info.serialNumber = 100000 + d;
-        logger.SetDeviceInfo(&info, d);
+        devices[d].devInfo.hardwareType = IS_HARDWARE_TYPE_IMX;
+        devices[d].devInfo.hardwareVer[0] = 5;
+        devices[d].devInfo.hardwareVer[1] = 0;
+        devices[d].devInfo.serialNumber = rand() % 999999;
+        logger.registerDevice(devices[d]);
     }
     logger.EnableLogging(true);
     logger.ShowParseErrors(options != GEN_LOG_OPTIONS_INSERT_GARBAGE_BETWEEN_MSGS);
@@ -516,9 +524,9 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
 
     CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
 
-    for (s_timeMs=0; logger.LogSizeMB() < logSizeMB; s_timeMs += s_timePeriodMs)
+    for (s_timeMs=0; logger.LogSizeAllMB() < logSizeMB; s_timeMs += s_timePeriodMs)
     {
-        for (int d=0; d<numDevices; d++)
+        for (auto& d : logger.DeviceLogs())
         {
             while(GenerateMessage(msg))
             {
@@ -552,6 +560,7 @@ void GenerateDataLogFiles(int numDevices, string directory, cISLogger::eLogType 
     }
 
     logger.CloseAllFiles();
+    delete [] devices;
 }
 
 bool AddDataToStream(uint8_t *buffer, int bufferSize, int &streamSize, uint8_t *data, int dataSize)

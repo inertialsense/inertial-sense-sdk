@@ -93,7 +93,7 @@ uint64_t getJsonHexParam(JsonDocument& doc, const String& key, uint64_t def = 0)
  * if the SD card isn't available, the file doesn't exist, or doesn't contain those parameters.
  */
 void readConfig() {
-  config.rmc.bits = RMC_PRESET_PPD_BITS;
+  config.rmc.bits = RMC_PRESET_IMX_PPD;
   config.rmc.options = 0x0;
   config.max_file_size = 4096000;
   config.log_on_startup = false;

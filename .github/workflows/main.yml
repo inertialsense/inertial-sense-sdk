@@ -15,9 +15,10 @@ on:
     branches:
       - '**'
     pull_request:
-      - 'development'
-      - 'dev_v2'
-      - 'master'
+      - 'develop'
+      - 'main'
+    tags:
+      - '\d+.\d.+\d+*'
 
 concurrency:
   group: ${{ github.ref }}
@@ -69,7 +70,7 @@ jobs:
     name: "General Software Windows"
     runs-on: [self-hosted, windows, x64]
     # if: false  # disable this job
-    # if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/develop') || (github.ref == 'refs/heads/dev_v2')   # Only run job on these branches
+    # if: (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/develop')   # Only run job on these branches
 
     defaults:
       run:
@@ -100,9 +101,8 @@ jobs:
 
   ros-bridge-tests:
     name: "ROS Bridge Tests"
-    runs-on: [self-hosted, linux, x64, focal]
-    if: false  # disable this job
-    timeout-minutes: 5
+    runs-on: [self-hosted, Linux, X64, docker, focal]
+    # if: false  # disable this job
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
@@ -110,14 +110,19 @@ jobs:
 
     container:
       image: ros:noetic
-      options: --privileged -v /dev:/dev
+      #options: --privileged -v /dev:/dev
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
 
     defaults:
       run:
+        working-directory: ../ROS/catkin_ws
         shell: bash
 
     steps:
       - name: Update Git version to make actions/checkout happy
+        working-directory: .
         run: |
           echo "::group::Install software-properties-common and dependencies."
           apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev
@@ -134,9 +139,9 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
+        working-directory: scripts
         run: |
-          cd ${GITHUB_WORKSPACE}/scripts
-          ../SDK/scripts/install_sdk_dependencies.sh
+          ./install_sdk_dependencies.sh
           ./install_gtest.sh
   
       - name: Setup ROS environment
@@ -149,18 +154,64 @@ jobs:
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          cd ${GITHUB_WORKSPACE}/catkin_ws && catkin_make && catkin_make test_unit_tests && catkin_make test_ros_bridge 
+          catkin_make -DCATKIN_BLACKLIST_PACKAGES="inertial_sense_ros2"
+          catkin_make test_unit_tests
+          catkin_make test_ros_bridge 
 
       - name: Run Unit Tests
         run: |          
-          cd ${GITHUB_WORKSPACE}/catkin_ws && source devel/setup.bash
+          source devel/setup.bash
           rm -rf build/test_results
           roscore &
-          catkin_make run_tests_inertial_sense_ros_gtest_test_unit_tests && catkin_test_results
+          catkin_make run_tests_inertial_sense_ros_gtest_test_unit_tests
+          catkin_test_results
           pkill roscore
 
       - name: Run Functional/Integration Tests (via hardware)
         run: |
-          cd ${GITHUB_WORKSPACE}/catkin_ws && source devel/setup.bash
-            rostest inertial_sense_ros test_ros_bridge.launch && catkin_test_results || (rostest --text inertial_sense_ros test_ros_bridge.launch && catkin_test_results && false)
+          source devel/setup.bash
+          roscore &
+          catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
+          catkin_test_results
 
+  ros2-bridge-tests:
+    name: "ROS2 Bridge Tests"
+    runs-on: [self-hosted, Linux, X64, docker, focal]
+    # if: false  # disable this job
+
+    container:
+      image: osrf/ros:jazzy-desktop
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
+
+    defaults:
+      run:
+        working-directory: ../ROS/ros2_ws # This is outside the scope of git
+        shell: bash
+
+    steps:
+      - name: Install libboost
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
+          apt-get update && apt-get -y install libboost-all-dev
+          "
+
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build ROS2 bridge
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          colcon build
+          "
+
+      - name: Run Functional/Integration Tests (via hardware)
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "          
+          source install/setup.bash
+          ros2 run inertial_sense_ros2 test_inertial_sense_ros2
+          "

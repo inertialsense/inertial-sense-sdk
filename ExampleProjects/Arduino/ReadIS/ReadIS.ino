@@ -64,7 +64,7 @@ void setup()
 
     // Ask for ins_1 message 20 times per second.  Ask for the whole thing, so
     // set 0's for the offset and size
-    messageSize = is_comm_get_data(&comm, DID_INS_1, 0, sizeof(ins_1_t), 1000);
+    messageSize = is_comm_get_data_to_buf(buffer, bufferSize, &comm, DID_INS_1, sizeof(ins_1_t), 0, 1000);
     Serial1.write(comm.rxBuf.start, messageSize); // Transmit the message to the inertialsense device
 }
 
@@ -82,12 +82,12 @@ void loop()
         switch (message_type)
         {
         case _PTYPE_INERTIAL_SENSE_DATA:
-            switch (comm.dataHdr.id)
+            switch (comm.rxPkt.dataHdr.id)
             {
             case DID_NULL:
                 break;
             case DID_INS_1:
-                handleINSMessage((ins_1_t *)(comm.pkt.data.ptr));
+                handleINSMessage((ins_1_t *)(comm.rxPkt.data.ptr));
                 break;
             default:
                 Serial.print("Got an unexpected message DID: ");

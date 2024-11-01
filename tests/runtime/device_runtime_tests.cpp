@@ -61,13 +61,18 @@ std::string charArrayToHex(uint8_t* arr, int arrSize)
 
 void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
 {
+    if (!m_enable)
+    {
+        return;
+    }
+    
     int size = comm.rxBuf.scanPrior - comm.rxBuf.head;
 
     std::string parser;
     switch (comm.rxBuf.head[0])
     {
     case PSC_ISB_PREAMBLE_BYTE1:    
-        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::GetDataSetName(comm.rxPkt.dataHdr.id));
+        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::DataName(comm.rxPkt.dataHdr.id));
         parser += ", size " + std::to_string(comm.rxPkt.dataHdr.size); 
         break;
     case PSC_NMEA_START_BYTE:       parser = std::string("NMEA ") + std::string((char*)comm.rxBuf.head, _MIN(size, MAX_MSG_LENGTH_NMEA));    break;
@@ -135,8 +140,8 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
     int id = getNmeaMsgId(msg, msgSize);
     switch(id)
     {
-    case NMEA_MSG_ID_GxGGA:     TestNmeaGga(msg, msgSize);      break;
-    case NMEA_MSG_ID_GxZDA:     TestNmeaZda(msg, msgSize);      break;
+    case NMEA_MSG_ID_GNGGA:     TestNmeaGga(msg, msgSize);      break;
+    case NMEA_MSG_ID_GNZDA:     TestNmeaZda(msg, msgSize);      break;
     }
 }
 
@@ -167,7 +172,7 @@ void DeviceRuntimeTests::TestNmeaZda(const uint8_t* msg, int msgSize)
     utc_time_t utcTime;
     nmea_parse_zda((char*)msg, msgSize, gpsTowMs, gpsWeek, utcDate, utcTime, C_GPS_LEAP_SECONDS);
 
-    printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
+    // printf("NMEA ZDA (%d ms): %.*s", gpsTowMs, msgSize, msg);
 
     CheckGpsDuplicate  ("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
     CheckGpsTimeReverse("NMEA ZDA Error", m_errorCount.nmeaZdaTime, gpsTowMs, gpsWeek, msg, msgSize, hist);
@@ -205,8 +210,8 @@ std::string printfToString(const char* format, ...)
 
 bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
 {
-    int toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
-    int histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
 
     if (toyMs == histToyMs)
     {   // Duplicate time
@@ -224,8 +229,8 @@ bool DeviceRuntimeTests::CheckGpsDuplicate(const char* description, int &count, 
 
 bool DeviceRuntimeTests::CheckGpsTimeReverse(const char* description, int &count, uint32_t towMs, uint32_t gpsWeek, const uint8_t* msg, int msgSize, msg_history_t &hist)
 {
-    int toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
-    int histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t toyMs = towMs + gpsWeek * C_MILLISECONDS_PER_WEEK;
+    int64_t histToyMs = hist.gpsTowMs + hist.gpsWeek * C_MILLISECONDS_PER_WEEK;
 
     if (toyMs < histToyMs)
     {   // Reversed time

@@ -1,6 +1,11 @@
 #include "convert_ins.h"
 #include "log_reader.h"
 
+#define STRINGIZE(x) #x
+#define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
+#define MESSAGE_VALUE(x) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " #x " = " STRINGIZE_VALUE_OF(x))
+#define CONCAT_MESSAGE(text, value) message(__FILE__ "(" STRINGIZE_VALUE_OF(__LINE__) "): " text " = " STRINGIZE_VALUE_OF(value))
+
 using namespace std;
 
 static py::object g_python_parent;  // Including this inside LogReader class causes problems w/ garbage collection.
@@ -76,6 +81,12 @@ void LogReader::forward_message(eDataIDs did, std::vector<gps_raw_wrapper_t>& ve
 
 bool LogReader::init(py::object python_class, std::string log_directory, py::list serials)
 {
+    printf("SDK Protocol: %d.%d.%d.%d\n", 
+        PROTOCOL_VERSION_CHAR0,
+        PROTOCOL_VERSION_CHAR1,
+        PROTOCOL_VERSION_CHAR2,
+        PROTOCOL_VERSION_CHAR3);
+
     vector<string> stl_serials = serials.cast<vector<string>>();
     cout << "Loading from: " << log_directory << endl;
     cout << "Serial numbers: ";
@@ -103,10 +114,10 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
 
     cout << logger_.DeviceCount() << " device(s):\n";
     vector<int> serialNumbers;
-    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
+    for (auto dev : logger_.DeviceLogs())
     {
-        cout << (i==0 ? "  " : ", ") << logger_.DeviceInfo(i)->serialNumber;
-        serialNumbers.push_back(logger_.DeviceInfo(i)->serialNumber);
+        cout << (serialNumbers.empty() ? "  " : ", ") << dev->SerialNumber();
+        serialNumbers.push_back(dev->SerialNumber());
     }
     cout << endl;
     serialNumbers_ = py::cast(serialNumbers);
@@ -116,10 +127,10 @@ bool LogReader::init(py::object python_class, std::string log_directory, py::lis
     return true;
 }
 
-void LogReader::organizeData(int device_id)
+void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
 {
     p_data_buf_t* data = NULL;
-    while ((data = logger_.ReadData(device_id)))
+    while ((data = logger_.ReadData(devLog)))
     {
         // if (data->hdr.id == DID_DEV_INFO)
         //     volatile int debug = 0;
@@ -158,7 +169,6 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_GPS1_VERSION, dev_log_->gps1Version );
         HANDLE_MSG( DID_GPS2_VERSION, dev_log_->gps2Version );
         HANDLE_MSG( DID_MAG_CAL, dev_log_->magCal );
-        HANDLE_MSG( DID_INTERNAL_DIAGNOSTIC, dev_log_->internalDiagnostic );
         HANDLE_MSG( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel );
         HANDLE_MSG( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc );
         HANDLE_MSG( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel );
@@ -222,6 +232,7 @@ void LogReader::organizeData(int device_id)
         HANDLE_MSG( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual);
         HANDLE_MSG( DID_RTK_DEBUG, dev_log_->rtkDebug);
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
+        HANDLE_MSG( DID_GPX_STATUS, dev_log_->gpxStatus );
         HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
 
         default:
@@ -251,7 +262,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_GPS1_VERSION, dev_log_->gps1Version, device_id );
     forward_message( DID_GPS2_VERSION, dev_log_->gps2Version, device_id );
     forward_message( DID_MAG_CAL, dev_log_->magCal, device_id );
-    forward_message( DID_INTERNAL_DIAGNOSTIC, dev_log_->internalDiagnostic, device_id );
     forward_message( DID_GPS1_RTK_POS_REL, dev_log_->gps1RtkPosRel, device_id );
     forward_message( DID_GPS1_RTK_POS_MISC, dev_log_->gps1RtkPosMisc, device_id );
     forward_message( DID_GPS2_RTK_CMP_REL, dev_log_->gps1RtkCmpRel, device_id );
@@ -316,12 +326,16 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_RTK_PHASE_RESIDUAL, dev_log_->rtkPhaseResidual, device_id);
     forward_message( DID_RTK_DEBUG, dev_log_->rtkDebug, device_id);
     // forward_message( DID_RTK_DEBUG_2, dev_log_->rtkDebug2, device_id);
+    forward_message( DID_GPX_STATUS, dev_log_->gpxStatus, device_id );
     forward_message( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id );
 }
 
 bool LogReader::load()
 {
-    for (int i = 0; i < (int)logger_.DeviceCount(); i++)
+    printf("LogReader::load() ");
+
+    std::vector<std::shared_ptr<cDeviceLog>> devices = logger_.DeviceLogs();
+    for (int i = 0; i < (int)devices.size(); i++)
     {
         if (dev_log_ != nullptr)
         {
@@ -329,7 +343,7 @@ bool LogReader::load()
         }
         dev_log_ = new DeviceLog();
 
-        organizeData(i);
+        organizeData(devices[i]);
         forwardData(i);
     }
 
@@ -342,7 +356,12 @@ pybind11::list LogReader::getSerialNumbers()
 }
 
 pybind11::list LogReader::protocolVersion()
-{ 
+{
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR0: ", PROTOCOL_VERSION_CHAR0)
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR1: ", PROTOCOL_VERSION_CHAR1)
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR2: ", PROTOCOL_VERSION_CHAR2)
+#pragma CONCAT_MESSAGE("PROTOCOL_VERSION_CHAR3: ", PROTOCOL_VERSION_CHAR3)
+
     vector<int> version;
     version.push_back(PROTOCOL_VERSION_CHAR0);
     version.push_back(PROTOCOL_VERSION_CHAR1);

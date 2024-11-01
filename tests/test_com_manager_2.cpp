@@ -41,7 +41,7 @@ struct comManagerTest
 
 static comManagerTest cm1, cm2;
 
-static int portRead(int port, unsigned char* buf, int len)
+static int portRead(unsigned int port, unsigned char* buf, int len)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->readFncCallCount++;
@@ -51,7 +51,7 @@ static int portRead(int port, unsigned char* buf, int len)
 	return c;
 }
 
-static int portWrite(int port, const unsigned char* buf, int len)
+static int portWrite(unsigned int port, const unsigned char* buf, int len)
 {
 	comManagerTest* t = (comManagerTest*)comManagerGetUserPointer(cmHandle);
 	t->sendFncCallCount++;

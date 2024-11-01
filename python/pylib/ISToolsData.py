@@ -204,6 +204,7 @@ class sSysParams(ct.Structure):
                 ('magInclination',  ct.c_float),
                 ('magDeclination',  ct.c_float),
                 ('genFaultCode',    ct.c_uint32),
+                ('upTime',          ct.c_double),
                 ]
 
 class sInsParams(ct.Structure):

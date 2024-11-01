@@ -28,7 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-void cDeviceLogKML::InitDeviceForWriting(int pHandle, std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
+void cDeviceLogKML::InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFileSize)
 {
 	for (int kid=0; kid<cDataKML::MAX_NUM_KID; kid++ )
 	{
@@ -40,7 +40,7 @@ void cDeviceLogKML::InitDeviceForWriting(int pHandle, std::string timestamp, std
 	}
 	m_isRefIns = false;
 
-	cDeviceLog::InitDeviceForWriting(pHandle, timestamp, directory, maxDiskSpace, maxFileSize);
+	cDeviceLog::InitDeviceForWriting(timestamp, directory, maxDiskSpace, maxFileSize);
 }
 
 
@@ -98,11 +98,9 @@ bool cDeviceLogKML::CloseWriteFile(int kid, sKmlLog &log)
 
 	// Create filename
 	log.fileCount++;
-	int serNum = m_devInfo.serialNumber;
+	uint32_t serNum = (device != nullptr ? device->devInfo.serialNumber : SerialNumber());
 	if (!serNum)
-	{
-		serNum = m_pHandle;
-	}
+		return false;
 
 	log.fileName = GetNewFileName(serNum, log.fileCount, m_kml.GetDatasetName(kid).c_str());
 
@@ -576,10 +574,9 @@ bool cDeviceLogKML::ReadChunkFromFile()
 	return true;
 }
 
-
 void cDeviceLogKML::SetSerialNumber(uint32_t serialNumber)
 {
-	m_devInfo.serialNumber = serialNumber;
+    m_devSerialNo = serialNumber;
 }
 
 

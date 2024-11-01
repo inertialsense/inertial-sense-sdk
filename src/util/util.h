@@ -6,15 +6,18 @@
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
  */
 
-#ifndef IS_GPX_UTIL_H
-#define IS_GPX_UTIL_H
+#ifndef INERTIALSENSE_SDK__UTIL_H
+#define INERTIALSENSE_SDK__UTIL_H
 
 #include <string>
 #include <memory>
 #include <stdexcept>
 
+#include "ISComm.h"
+
 namespace utils {
     std::string getCurrentTimestamp();
+    std::string did_hexdump(const char *raw_data, const p_data_hdr_t& hdr, int bytesPerLine);
 
     template<typename ... Args>
     std::string string_format(const std::string& format, Args ... args) {
@@ -30,4 +33,4 @@ namespace utils {
 };
 
 
-#endif //IS_GPX_UTIL_H
+#endif //INERTIALSENSE_SDK__UTIL_H

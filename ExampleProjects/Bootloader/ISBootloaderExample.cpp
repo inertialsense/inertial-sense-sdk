@@ -68,19 +68,19 @@ static void bootloaderStatusText(void* obj, eLogLevel level, const char* str, ..
 
 	if (ctx->m_sn != 0 && ctx->m_port_name.size() != 0)
 	{
-		printf("%s (SN%d):\r", ctx->m_port_name.c_str(), ctx->m_sn);
+		printf("%s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
 	}
 	else if(ctx->m_sn != 0)
 	{
-		printf("(SN%d):\r", ctx->m_sn);
+		printf("(SN%d):", ctx->m_sn);
 	}
 	else if (ctx->m_port_name.size() != 0)
 	{
-		printf("%s:\r", ctx->m_port_name.c_str());
+		printf("%s:", ctx->m_port_name.c_str());
 	}
 	else
 	{
-		printf("SN?:\r");
+		printf("SN?:");
 	}
 
 	printf("\t\t\t%s\r\n", buffer);

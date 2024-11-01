@@ -57,7 +57,11 @@ int main(int argc, char* argv[])
 
     // Setup and enable logger.  Select the LOGTYPE (i.e. dat, raw, csv)
     cISLogger logger;
-    logger.InitSave(cISLogger::eLogType::LOGTYPE_RAW, logPath);
+    auto devLog = logger.registerDevice(IS_HARDWARE_TYPE_IMX, 12345);   // if you know this information, you can pass it, but it's not important that it match your actual hardware.
+
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::LOGTYPE_RAW;
+    logger.InitSave(logPath, options);
     logger.EnableLogging(true);
 
     // Open serial port
@@ -69,7 +73,7 @@ int main(int argc, char* argv[])
 	}
 
     // Enable PPD data stream without disabling other messages
-	stream_configure_rmc_preset(RMC_PRESET_PPD_BITS, RMC_OPTIONS_PRESERVE_CTRL);
+	stream_configure_rmc_preset(RMC_PRESET_IMX_PPD, RMC_OPTIONS_PRESERVE_CTRL);
 
 	cout << "Started logger.  Press ctrl-c to quit." << endl;
 
@@ -84,9 +88,9 @@ int main(int argc, char* argv[])
 		if (int len = serialPortRead(&s_serialPort, buf, sizeof(buf)))
 		{
 			// Log serial port data to file
-			logger.LogData(0, len, buf);
+			logger.LogData(devLog, len, buf);
 
-			printf("Log file size: %.3f MB \r", logger.LogSizeMB());
+			printf("Log file size: %.3f MB \r", logger.LogSizeAllMB());
 		}
     }
 

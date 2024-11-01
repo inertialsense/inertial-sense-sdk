@@ -16,7 +16,6 @@ void ISFirmwareUpdater::setTarget(fwUpdate::target_t _target) {
     
     // request version info from the target
     target_devInfo = nullptr;
-    fwUpdate_requestVersionInfo(target);
     pauseUntil = current_timeMs() + 2000; // wait for 2 seconds for a response from the target (should be more than enough)
 }
 
@@ -67,7 +66,7 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeDFUUpdate(libusb_device* 
 //    }
 
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(target, 0, 0, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
-    if(pfnInfoProgress_cb != nullptr)
+    if (pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Requested firmware update with Image '%s', md5: %s", fwUpdate_getSessionTargetName(), filename.c_str(), md5_to_string(session_md5).c_str());
     return result;
 }
@@ -103,8 +102,8 @@ fwUpdate::update_status_e ISFirmwareUpdater::initializeUpdate(fwUpdate::target_t
     updateStartTime = current_timeMs();
     nextStartAttempt = current_timeMs() + attemptInterval;
     fwUpdate::update_status_e result = (fwUpdate_requestUpdate(_target, slot, flags, chunkSize, fileSize, session_md5, progressRate) ? fwUpdate::NOT_STARTED : fwUpdate::ERR_UNKNOWN);
-    if(pfnInfoProgress_cb != nullptr)
-        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Initiating update with image '%s', md5: %s", filename.c_str(), md5_to_string(session_md5).c_str());
+    if (pfnInfoProgress_cb != nullptr)
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Initiating update with image '%s' to target slot %d (%d bytes, md5: %s)", filename.c_str(), slot, fileSize, md5_to_string(session_md5).c_str());
     return result;
 }
 
@@ -128,7 +127,7 @@ bool ISFirmwareUpdater::fwUpdate_handleVersionResponse(const fwUpdate::payload_t
     remoteDevInfo.buildType = msg.data.version_resp.buildType;
     target_devInfo = &remoteDevInfo;
 
-    if(pfnInfoProgress_cb != nullptr) {
+    if (pfnInfoProgress_cb != nullptr) {
         if ((remoteDevInfo.hardwareType >= IS_HARDWARE_TYPE_UINS) && (remoteDevInfo.hardwareType <= IS_HARDWARE_TYPE_GPX)) {
             pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Received version info: %s-%d.%d.%d:SN-%05d, Fw %d.%d.%d.%d (%d)", g_isHardwareTypeNames[remoteDevInfo.hardwareType],
                                remoteDevInfo.hardwareVer[0], remoteDevInfo.hardwareVer[1], remoteDevInfo.hardwareVer[2], (remoteDevInfo.serialNumber != 0xFFFFFFFF ? remoteDevInfo.serialNumber : 0),
@@ -162,6 +161,13 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateResponse(const fwUpdate::payload_t 
 
     session_status = msg.data.update_resp.status;
     session_total_chunks = msg.data.update_resp.totl_chunks;
+
+    if (pfnInfoProgress_cb != nullptr) {
+        if (session_status == fwUpdate::READY)
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s; Expecting %d chunks.", fwUpdate_getStatusName(session_status), session_total_chunks);
+        else
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Received remote response: %s", fwUpdate_getStatusName(session_status));
+    }
 
     switch (session_status) {
         case fwUpdate::ERR_MAX_CHUNK_SIZE:    // indicates that the maximum chunk size requested in the original upload request is too large.  The host is expected to begin a new session with a smaller chunk size.
@@ -206,6 +212,8 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
                 case fwUpdate::REASON_NONE:
                     break;
             }
+            if (pfnInfoProgress_cb != nullptr)
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "To many resends of the same chunk; giving up with error %s", fwUpdate_getNiceStatusName(session_status));
             return false;
         }
     } else {
@@ -213,8 +221,8 @@ bool ISFirmwareUpdater::fwUpdate_handleResendChunk(const fwUpdate::payload_t &ms
         resent_chunkid_time = current_ms;
     }
 
-    if(pfnInfoProgress_cb != nullptr)
-        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "Requesting resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
+    if (pfnInfoProgress_cb != nullptr)
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "Remote requested resend of %d: %d", msg.data.req_resend.chunk_id, msg.data.req_resend.reason);
     nextChunkSend = current_timeMs() + nextChunkDelay;
     return fwUpdate_sendNextChunk(); // we don't have to send this right away, but sure, why not!
 }
@@ -229,13 +237,13 @@ bool ISFirmwareUpdater::fwUpdate_handleUpdateProgress(const fwUpdate::payload_t 
     float percent = msg.data.progress.num_chunks/(float)(msg.data.progress.totl_chunks)*100.f;
     const char* message = msg.data.progress.msg_len ? (const char*)&msg.data.progress.message : "";
 
-    if(pfnUploadProgress_cb != nullptr)
+    if (pfnUploadProgress_cb != nullptr)
         pfnUploadProgress_cb(this, percent);
 
-    if(pfnVerifyProgress_cb != nullptr)
+    if (pfnVerifyProgress_cb != nullptr)
         pfnVerifyProgress_cb(this, percent);
 
-    if(pfnInfoProgress_cb != nullptr)
+    if (pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, static_cast<ISBootloader::eLogLevel>(msg.data.progress.msg_level), message);
 
     progress_mutex.unlock();
@@ -249,12 +257,21 @@ bool ISFirmwareUpdater::fwUpdate_handleDone(const fwUpdate::payload_t &msg) {
 
 bool ISFirmwareUpdater::fwUpdate_isDone()
 {
-    return !(hasPendingCommands() || requestPending || ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED)));
+    bool cmdsPending = hasPendingCommands();
+    bool in_progress = ((fwUpdate_getSessionStatus() > fwUpdate::NOT_STARTED) && (fwUpdate_getSessionStatus() < fwUpdate::FINISHED));
+    bool is_done = !(cmdsPending || requestPending || in_progress);
+    return is_done;
 }
 
 bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool processed)
 {
     uint32_t lastMsgAge = 0;
+    static fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
+
+    if ((pfnInfoProgress_cb != nullptr) && (lastStatus != session_status)) {
+        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Session status changed: %s", fwUpdate_getStatusName(session_status));
+        lastStatus = session_status;
+    }
 
     switch(session_status) {
         case fwUpdate::NOT_STARTED:
@@ -282,9 +299,9 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
                             nextStartAttempt = current_timeMs() + attemptInterval;
                             if (fwUpdate_requestUpdate()) {
                                 startAttempts++;
-                                printf("[%s : %d] :: Requesting Firmware Update Start (Attempt %d)\n", portName, devInfo->serialNumber, startAttempts);
+                                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_DEBUG, "[%s : %d] :: Requesting Firmware Update start (Attempt %d)", portName, devInfo->serialNumber, startAttempts);
                             } else {
-                                printf("Error attempting to initiate Firmware Update\n");
+                                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Error attempting to initiate Firmware Update");
                             }
                         }
                     }
@@ -306,7 +323,7 @@ bool ISFirmwareUpdater::fwUpdate_step(fwUpdate::msg_types_e msg_type, bool proce
             requestPending = false;
             break; // do nothing, just wait
         case fwUpdate::FINISHED:
-            if(pfnInfoProgress_cb != nullptr)
+            if (pfnInfoProgress_cb != nullptr)
                 pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Firmware uploaded in %0.1f seconds", (current_timeMs() - updateStartTime) / 1000.f);
             if (hasPendingCommands()) {
                 requestPending = false;
@@ -392,7 +409,9 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
     VSNPRINTF(buffer, sizeof(buffer), errMsg, args);
     va_end(args);
 
-    if(pfnInfoProgress_cb != nullptr)
+    stepErrors.emplace_back(activeStep, cmd, buffer);
+
+    if (pfnInfoProgress_cb != nullptr)
         pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, buffer);
 
     if (failLabel.empty()) {
@@ -409,13 +428,25 @@ void ISFirmwareUpdater::handleCommandError(const std::string& cmd, int errCode, 
 }
 
 void ISFirmwareUpdater::runCommand(std::string cmd) {
+    if (pfnInfoProgress_cb != nullptr) {
+        static std::string priorCmd;
+        if (priorCmd != cmd)
+            pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Executing manifest command \"%s\"", cmd.c_str());
+        priorCmd = cmd;
+    }
+
     std::vector<std::string> args;
     splitString(cmd, '=', args);
     if (!args.empty()) {
         activeCommand = args[0];
-        if ((args[0] == "package") && (args.size() == 2)) {
-            bool isManifest = (args[1].length() >= 5) && (0 == args[1].compare (args[1].length() - 5, 5, ".yaml"));
-            pkg_error_e err_result = isManifest ? processPackageManifest(args[1]) : openFirmwarePackage(args[1]);
+        if (args.size() > 1) {
+            std::string remainder = args[1];
+            splitString(args[1], ',', args);
+        }
+
+        if ((activeCommand == "package") && (args.size() == 1)) {
+            bool isManifest = (args[0].length() >= 5) && (0 == args[0].compare (args[0].length() - 5, 5, ".yaml"));
+            pkg_error_e err_result = isManifest ? processPackageManifest(args[0]) : openFirmwarePackage(args[0]);
             if (err_result != PKG_SUCCESS) {
                 const char *err_msg = nullptr;
                 switch (err_result) {
@@ -446,7 +477,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                         err_msg = "Manifest image path is missing or invalid.";
                         break;
                     case PKG_ERR_IMAGE_FILE_NOT_FOUND:
-                        err_msg = "Manifest image reference is valid, but the the backing datafile is missing.";
+                        err_msg = "Manifest image reference is valid, but the backing datafile is missing.";
                         break;
                     case PKG_ERR_IMAGE_FILE_SIZE_MISMATCH:
                         err_msg = "Manifest's reported image size does not match the actual data file size.";
@@ -455,57 +486,91 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                         err_msg = "Manifest's reported image MD5 digest does not match the actual data file MD5 digest.";
                         break;
                 }
-                handleCommandError(args[0], err_result, "Error processing firmware package [%s]: %d :: %s", args[1].c_str(), err_result, err_msg);
+                handleCommandError(activeCommand, err_result, "Error processing firmware package [%s] (Error code: %d) :: %s", args[0].c_str(), err_result, err_msg);
 
             }
-        } else if ((args[0] == "target") && (args.size() == 2)) {
-            if (args[1] == "IMX5") setTarget(fwUpdate::TARGET_IMX5);
-            else if (args[1] == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
-            else if (args[1] == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
-            else if (args[1] == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
+        } else if (activeCommand[0] == ':') {
+            // new step section/target - we should reset certain states here if needed
+            activeStep = std::string(activeCommand.c_str() + 1);
+            if (activeCommand == ":IMX5") setTarget(fwUpdate::TARGET_IMX5);
+            else if (activeCommand == ":GPX1") setTarget(fwUpdate::TARGET_GPX1);
+            else if (activeCommand == ":GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
+            else if (activeCommand == ":GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
+            else session_target = target = fwUpdate::TARGET_HOST;
+            session_image_slot = slotNum = 0;
+            failLabel.clear();
+        } else if ((activeCommand == "target") && (args.size() == 1)) {
+            if (args[0] == "IMX5") setTarget(fwUpdate::TARGET_IMX5);
+            else if (args[0] == "GPX1") setTarget(fwUpdate::TARGET_GPX1);
+            else if (args[0] == "GNSS1") setTarget(fwUpdate::TARGET_SONY_CXD5610__1);
+            else if (args[0] == "GNSS2") setTarget(fwUpdate::TARGET_SONY_CXD5610__2);
             else {
-                handleCommandError(args[0], -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", args[1].c_str());
+                handleCommandError(activeCommand, -1, "Invalid Target specified: %s  (Valid targets are: IMX5, GPX1, GNSS1, GNSS2)", args[0].c_str());
             }
-        } else if ((args[0] == "on-error") && (args.size() == 2)) {
-            failLabel = args[1].c_str();
+        } else if ((activeCommand == "on-error") && (args.size() == 1)) {
+            failLabel = args[0].c_str();
             // all labels must start with a colon (:)
             if (failLabel[0] != ':') {
                 failLabel.clear();
-                handleCommandError(args[0], -1, "Invalid label. Labels must start with a colon (:).");
+                handleCommandError(activeCommand, -1, "Invalid label. Labels must start with a colon (:).");
             }
-        } else if ((args[0] == "slot") && (args.size() == 2)) {
-            slotNum = strtol(args[1].c_str(), nullptr, 10);
-        } else if ((args[0] == "timeout") && (args.size() == 2)) {
-            fwUpdate_setTimeoutDuration(strtol(args[1].c_str(), nullptr, 10));
-        } else if (args[0] == "force") {
-            forceUpdate = (args[1] == "true" ? true : false);
-        } else if ((args[0] == "chunk") && (args.size() == 2)) {
-            chunkSize = strtol(args[1].c_str(), nullptr, 10);
-        } else if ((args[0] == "rate") && (args.size() == 2)) {
-            progressRate = strtol(args[1].c_str(), nullptr, 10);
-        } else if ((args[0] == "delay") && (args.size() == 2)) {
-            pauseUntil = current_timeMs() + strtol(args[1].c_str(), nullptr, 10);;
-        } else if ((args[0] == "waitfor") && (args.size() >= 2) && (args.size() <= 3)) {
+        } else if ((activeCommand == "echo") && (args.size() == 1)) {
+            // simply outputs the argument string to the progress handler
+            // this is primarily for manifest authors to output information to the user
+            std::string msg;
+            joinStrings(args, ',', msg);
+            if (pfnInfoProgress_cb != nullptr)
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, msg.c_str());
+        } else if ((activeCommand == "slot") && (args.size() == 1)) {
+            slotNum = strtol(args[0].c_str(), nullptr, 10);
+        } else if ((activeCommand == "timeout") && (args.size() == 1)) {
+            fwUpdate_setTimeoutDuration(strtol(args[0].c_str(), nullptr, 10));
+        } else if (activeCommand == "force") {
+            forceUpdate = (args[0] == "true" ? true : false);
+        } else if ((activeCommand == "chunk") && (args.size() == 1)) {
+            chunkSize = strtol(args[0].c_str(), nullptr, 10);
+        } else if ((activeCommand == "rate") && (args.size() == 1)) {
+            progressRate = strtol(args[0].c_str(), nullptr, 10);
+        } else if ((activeCommand == "delay") && (args.size() == 1)) {
+            if (pfnInfoProgress_cb != nullptr)
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "Pausing for %0.2f seconds...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
+            pauseUntil = current_timeMs() + strtol(args[0].c_str(), nullptr, 10);
+        } else if ((activeCommand == "waitfor") && (args.size() >= 1) && (args.size() <= 3)) {
+            if ((args.size() == 3) && (args[2] == "true")) {
+                // we need to remove the "force" from this command, and then replace the existing command back on the queue.
+                commands.erase(commands.begin()); // pop this command off the front
+                commands.insert(commands.begin(), "" + activeCommand + "=" + args[0] + "," + args[1]); // and then re-insert it at the front again, but without the force argument
+
+                // force a new query, even if we previously had devInfo for this target, and use default values
+                pingTimeout = 0;
+                pingInterval = 1000;
+                target_devInfo = NULL;
+            }
             if (!target_devInfo) {
-                if (!pingTimeout) {
-                    pingTimeout = current_timeMs() + strtol(args[1].c_str(), nullptr, 10);
-                    if (args.size() == 3) {
-                        pingInterval = strtol(args[2].c_str(), nullptr, 10);
+                if (!pingTimeout) { // if pingTimeout == 0, then we haven't started yet, so parse args and setup schedule
+                    pingTimeout = current_timeMs() + strtol(args[0].c_str(), nullptr, 10);
+                    if (args.size() >= 2) {
+                        pingInterval = strtol(args[1].c_str(), nullptr, 10);
                     }
-                    return; // returning now will force this command to be re-executed (until it the timeout expires).
+                    if (pfnInfoProgress_cb != nullptr)
+                        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_INFO, "Requesting version info from target device (upto %0.2f seconds)...", strtol(args[0].c_str(), nullptr, 10) / 1000.0);
+                    return; // returning now will force this command to be re-executed (until the timeout expires).
                 }
                 if (pingTimeout < current_timeMs()) {
                     pingTimeout = pingNextRetry = 0;
-                    handleCommandError(args[0], -1, "Timeout waiting for response from target device.");
+                    handleCommandError(activeCommand, -1, "Timeout waiting for response from target device.");
                 } else if (pingNextRetry < current_timeMs()) {
                     pingNextRetry = current_timeMs() + pingInterval;
                     target_devInfo = nullptr;
                     fwUpdate_requestVersionInfo(target);
+
+                    if (pfnInfoProgress_cb != nullptr)
+                        pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_MORE_DEBUG, "Re-requesting version info from target device...");
                 }
                 return; // keep trying...
             }
-        } else if ((args[0] == "upload") && (args.size() == 2)) {
-            filename = args[1];
+        } else if ((activeCommand == "upload") && (args.size() == 1)) {
+            filename = args[0];
             fwUpdate_resetEngine();
 
             // TODO move this to it's own function before we expand this any father
@@ -520,7 +585,7 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
                 // TODO: We should be able to remove most of this after 2.1.0 has been released
                 if ( ((target & fwUpdate::TARGET_IMX5) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) ||
                      ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_GPX)) ) {
-                    // just copy the in the current "main" device's dev info, since they are the same device as the target
+                    // just copy in the current "main" device's dev info, since they are the same device as the target
                     remoteDevInfo = *devInfo;
                     target_devInfo = &remoteDevInfo;
                 } else if ((target & fwUpdate::TARGET_GPX1) && (devInfo->hardwareType == IS_HARDWARE_TYPE_IMX)) {
@@ -547,22 +612,26 @@ void ISFirmwareUpdater::runCommand(std::string cmd) {
 
             if (status < fwUpdate::NOT_STARTED) {
                 // there was an error -- probably should flush the command queue
-                handleCommandError(args[0], -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
+                handleCommandError(activeCommand, -1, "Error initiating Firmware upload: [%s] %s", filename.c_str(), fwUpdate_getStatusName(status));
             } else {
                 requestPending = true;
                 nextStartAttempt = current_timeMs() + attemptInterval;
                 // session_status = fwUpdate::NOT_STARTED;
             }
-        } else if (args[0] == "reset") {
-            bool hard = (args.size() == 2 && args[1] == "hard");
+        } else if (activeCommand == "reset") {
+            bool hard = (args.size() == 1 && args[0] == "hard");
             fwUpdate_requestReset(target, hard ? fwUpdate::RESET_HARD : fwUpdate::RESET_SOFT);
-            if(pfnInfoProgress_cb != nullptr)
-                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Issuing 'RESET'");
-        } else if (args[0][0] == ':') {
-            // new step section/target - we should reset certain states here if needed
-            session_target = target = fwUpdate::TARGET_HOST;
-            session_image_slot = slotNum = 0;
-            failLabel.clear();
+            if (pfnInfoProgress_cb != nullptr)
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "Requesting target reset (%s)", hard ? "hard" : "soft");
+        } else if (activeCommand == "finish") {
+            commands.clear();
+            bool reportErrors = (args.size() == 1 && args[0] == "true");
+            if (reportErrors && (pfnInfoProgress_cb != nullptr))
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_INFO, "TODO: Give some kind of finish report (errors: %s)", reportErrors ? "true" : "false");
+        } else {
+            // unknown command - ignore it
+            if (pfnInfoProgress_cb != nullptr)
+                pfnInfoProgress_cb(this, ISBootloader::IS_LOG_LEVEL_ERROR, "Unknown command: '%s'", activeCommand.c_str());
         }
     }
 
@@ -603,21 +672,23 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
             if (!actions.IsSequence())
                 return PKG_ERR_NO_ACTIONS; // actions must be a sequence (of maps)
 
-            std::string target_name = key.as<std::string>();
-            if ((target_name != "IMX5") &&
-                (target_name != "GPX1") &&
-                (target_name != "GNSS1") &&
-                (target_name != "GNSS2") )
-                return PKG_ERR_UNSUPPORTED_TARGET; // target name is invalid/unsupported
+            std::string step_name = key.as<std::string>();
+            commands.push_back(":" + step_name);
 
-            commands.push_back(":" + target_name);
-            commands.push_back("target=" + target_name);
             for (auto actions_iv : actions) {
                 for (auto cmd : actions_iv) {
                     auto cmd_name = cmd.first.as<std::string>();
                     auto cmd_arg = cmd.second.as<std::string>();
 
-                    if (cmd_name == "image") {
+                    if (cmd_name == "target") {
+                        std::string target_name = cmd_arg;
+                        if ((target_name != "IMX5") &&
+                            (target_name != "GPX1") &&
+                            (target_name != "GNSS1") &&
+                            (target_name != "GNSS2") )
+                            return PKG_ERR_UNSUPPORTED_TARGET; // target name is invalid/unsupported
+                        commands.push_back("target=" + target_name);
+                    } else if (cmd_name == "image") {
                         int image_slot = 0;
                         uint32_t image_size = 0;
                         md5hash_t image_hash = {};
@@ -688,19 +759,30 @@ ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(YAML::N
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::processPackageManifest(const std::string& manifest_file) {
-    YAML::Node manifest = YAML::LoadFile(manifest_file);
-    if (manifest.IsNull())
-        return PKG_ERR_PACKAGE_FILE_ERROR;
+    try {
+        YAML::Node manifest = YAML::LoadFile(manifest_file);
 
-    // always process the manifest from the manifest's path
-    std::string parentDir;
-    if (ISFileManager::getParentDirectory(manifest_file, parentDir)) {
-        if( chdir(parentDir.c_str()) )
-        {   // Handle error
+        if (manifest.IsNull())
+            return PKG_ERR_PACKAGE_FILE_ERROR;
+
+        // always process the manifest from the manifest's path
+        std::string parentDir;
+        if (ISFileManager::getParentDirectory(manifest_file, parentDir)) {
+            if (chdir(parentDir.c_str()))
+            {   // Handle error
+            }
         }
-    }
 
-    return processPackageManifest(manifest);
+        return processPackageManifest(manifest);
+    } catch (YAML::BadFile& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+    } catch (YAML::ParserException& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+    } catch (YAML::BadConversion& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;;
+    } catch (YAML::RepresentationException& e) {
+        return PKG_ERR_PACKAGE_FILE_ERROR;
+    }
 }
 
 ISFirmwareUpdater::pkg_error_e ISFirmwareUpdater::openFirmwarePackage(const std::string& pkg_file) {

@@ -30,16 +30,15 @@ PYBIND11_NUMPY_DTYPE(ins_4_t, week, timeOfWeek, insStatus, hdwStatus, qe2b, ve, 
 PYBIND11_NUMPY_DTYPE(system_command_t, command, invCommand);
 PYBIND11_NUMPY_DTYPE(nmea_msgs_t, options, nmeaBroadcastMsgs);
 PYBIND11_NUMPY_DTYPE(rmc_t, bits, options);
-PYBIND11_NUMPY_DTYPE(sys_params_t, timeOfWeekMs, insStatus, hdwStatus, imuTemp, baroTemp, mcuTemp, sysStatus, imuSamplePeriodMs, navOutputPeriodMs, sensorTruePeriod, flashCfgChecksum, navUpdatePeriodMs, genFaultCode);
+PYBIND11_NUMPY_DTYPE(sys_params_t, timeOfWeekMs, insStatus, hdwStatus, imuTemp, baroTemp, mcuTemp, sysStatus, imuSamplePeriodMs, navOutputPeriodMs, sensorTruePeriod, flashCfgChecksum, navUpdatePeriodMs, genFaultCode, upTime);
 PYBIND11_NUMPY_DTYPE(sys_sensors_t, time, temp, pqr, acc, mag, bar, barTemp, mslBar, humidity, vin, ana1, ana3, ana4);
 PYBIND11_NUMPY_DTYPE(nvm_flash_cfg_t, size, checksum, key, startupImuDtMs, startupNavDtMs, ser0BaudRate, ser1BaudRate, insRotation, insOffset, gps1AntOffset, dynamicModel, debug, gnssSatSigConst, sysCfgBits, refLla, lastLla, lastLlaTimeOfWeekMs, lastLlaWeek, lastLlaUpdateDistance, ioConfig, platformConfig, gps2AntOffset, zeroVelRotation, zeroVelOffset, gpsTimeUserDelay, magDeclination, gpsTimeSyncPeriodMs, startupGPSDtMs, RTKCfgBits, sensorConfig, gpsMinimumElevation, ser2BaudRate, wheelConfig, magInterferenceThreshold, magCalibrationQualityThreshold);
-PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, reserved);
+PYBIND11_NUMPY_DTYPE(gps_pos_t, week, timeOfWeekMs, status, ecef, lla, hMSL, hAcc, vAcc, pDop, cnoMean, towOffset, leapS, satsUsed, cnoMeanSigma, reserved);
 PYBIND11_NUMPY_DTYPE(gps_vel_t, timeOfWeekMs, vel, sAcc, status);
 PYBIND11_NUMPY_DTYPE(gps_sat_t, timeOfWeekMs, numSats, sat);
 PYBIND11_NUMPY_DTYPE(gps_sig_t, timeOfWeekMs, numSigs, sig);
 PYBIND11_NUMPY_DTYPE(gps_version_t, swVersion, hwVersion, extension);
 PYBIND11_NUMPY_DTYPE(mag_cal_t, state, progress, declination);
-PYBIND11_NUMPY_DTYPE(internal_diagnostic_t, gapCountSerialDriver, gapCountSerialParser, rxOverflowCount, txOverflowCount, checksumFailCount);
 PYBIND11_NUMPY_DTYPE(gps_rtk_rel_t, timeOfWeekMs, differentialAge, arRatio, baseToRoverVector, baseToRoverDistance, baseToRoverHeading, baseToRoverHeadingAcc, status);
 PYBIND11_NUMPY_DTYPE(gps_rtk_misc_t, timeOfWeekMs, accuracyPos, accuracyCov, arThreshold, gDop, hDop, vDop, baseLla, cycleSlipCount, roverGpsObservationCount, baseGpsObservationCount, roverGlonassObservationCount, baseGlonassObservationCount, roverGalileoObservationCount, baseGalileoObservationCount, roverBeidouObservationCount, baseBeidouObservationCount, roverQzsObservationCount, baseQzsObservationCount, roverGpsEphemerisCount, baseGpsEphemerisCount, roverGlonassEphemerisCount, baseGlonassEphemerisCount, roverGalileoEphemerisCount, baseGalileoEphemerisCount, roverBeidouEphemerisCount, baseBeidouEphemerisCount, roverQzsEphemerisCount, baseQzsEphemerisCount, roverSbasCount, baseSbasCount, baseAntennaCount, ionUtcAlmCount, correctionChecksumFailures, timeToFirstFixMs);
 // PYBIND11_NUMPY_DTYPE(sensors_t, time, temp, pqr, acc, mag, bar, barTemp, mslBar, humidity, vin, ana1, ana3, ana4);
@@ -61,12 +60,12 @@ PYBIND11_NUMPY_DTYPE(inl2_mag_obs_info_t, timeOfWeekMs, Ncal_samples, ready, cal
 // PYBIND11_NUMPY_DTYPE(gps_raw_t, receiverIndex, dataType, obsCount, reserved, data);
 // PYBIND11_NUMPY_DTYPE(gps_rtk_opt_t, mode, soltype, nf, navsys, elmin, snrmin, modear, glomodear, gpsmodear, sbsmodear, bdsmodear, arfilter, maxout, maxrej, minlock, minfixsats, minholdsats, mindropsats, rcvstds, minfix, armaxiter, dynamics, niter, intpref, rovpos, refpos, eratio, err, std, prn, sclkstab, thresar, elmaskar, elmaskhold, thresslip, varholdamb, gainholdamb, maxtdiff, fix_reset_base_msgs, maxinnocode, maxinnophase, maxnis, maxgdop, baseline, max_baseline_error, reset_baseline_error, max_ubx_error, ru, rb, maxaveep, outsingle, prcopt_t);
 PYBIND11_NUMPY_DTYPE(manufacturing_info_t, serialNumber, lotNumber, date, key, uid);
-PYBIND11_NUMPY_DTYPE(bit_t, state, hdwBitStatus, calBitStatus, tcPqrBias, tcAccBias, tcPqrSlope, tcAccSlope, tcPqrLinearity, tcAccLinearity, pqr, acc, pqrSigma, accSigma);
+PYBIND11_NUMPY_DTYPE(bit_t, command, lastCommand, state, reserved, hdwBitStatus, calBitStatus, tcPqrBias, tcAccBias, tcPqrSlope, tcAccSlope, tcPqrLinearity, tcAccLinearity, pqr, acc, pqrSigma, accSigma, testMode, testVar, detectedHardwareId);
 PYBIND11_NUMPY_DTYPE(inl2_ned_sigma_t, timeOfWeekMs, StdPosNed, StdVelNed, StdAttNed, StdAccBias, StdGyrBias, StdBarBias, StdMagDeclination);
 PYBIND11_NUMPY_DTYPE(strobe_in_time_t, week, timeOfWeekMs, pin, count);
 PYBIND11_NUMPY_DTYPE(diag_msg_t, timeOfWeekMs, messageLength, message);
 PYBIND11_NUMPY_DTYPE(survey_in_t, state, maxDurationSec, minAccuracy, elapsedTimeSec, hAccuracy, lla);
-// PYBIND11_NUMPY_DTYPE(port_monitor_t, portNumber, txTimeMs, txBytesPerS, rxTimeMs, rxBytesPerS, status);
+// PYBIND11_NUMPY_DTYPE(port_monitor_t, portNumber, txTimeMs, txBytesPerSec, rxTimeMs, rxBytesPerSec, status);
 // PYBIND11_NUMPY_DTYPE(port_monitor_t, port);
 // PYBIND11_NUMPY_DTYPE(evb2_t, week, timeOfWeekMs, firmwareVer, comBridgeCfg, loggerMode, loggerElapsedTimeMs, wifiSSID, wifiPSK, wifiIpAddr, serverIpAddr, serverPort);
 // PYBIND11_NUMPY_DTYPE(evb_status_t, week, timeOfWeekMs, firmwareVer, evbStatus, loggerMode, loggerElapsedTimeMs, wifiIpAddr, sysCommand);
@@ -77,10 +76,24 @@ PYBIND11_NUMPY_DTYPE(debug_string_t, s);
 // PYBIND11_NUMPY_DTYPE(pimu_mag_t, pimu, mag);
 // PYBIND11_NUMPY_DTYPE(can_config_t, can_period_mult, can_transmit_address, can_baudrate_kbps, can_receive_address);
 
+PYBIND11_NUMPY_DTYPE(gpx_gnss_status_t, reserved, fwUpdateState, initState, runState);
+PYBIND11_NUMPY_DTYPE(gpx_status_t, timeOfWeekMs, status, grmcBitsSer0, grmcBitsSer1, grmcBitsSer2, grmcBitsUSB, grmcNMEABitsSer0, grmcNMEABitsSer1, grmcNMEABitsSer2, grmcNMEABitsUSB, hdwStatus, mcuTemp, navOutputPeriodMs, flashCfgChecksum, rtkMode, gnssStatus, gpxSourcePort, upTime);
+
 PYBIND11_NUMPY_DTYPE(gtime_t, time, sec);
 PYBIND11_NUMPY_DTYPE(rtk_state_t, time, rp_ecef, rv_ecef, ra_ecef, bp_ecef, bv_ecef, qr, b, qb, sat_id);
 PYBIND11_NUMPY_DTYPE(rtk_residual_t, time, nv, sat_id_i, sat_id_j, type, v);
-PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, rover_position_error, reset_bias, start_relpos, end_relpos, start_rtkpos, pnt_pos_error, no_base_obs_data, diff_age_error, moveb_time_sync_error, waiting_for_rover_packet, waiting_for_base_packet, lsq_error, lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, obs_pairs_filtered, obs_pairs_used, raw_ptr_queue_overrun, raw_dat_queue_overrun);
+PYBIND11_NUMPY_DTYPE(rtk_debug_t, time, rej_ovfl, code_outlier, phase_outlier, code_large_residual, 
+                        phase_large_residual, invalid_base_position, bad_baseline_holdamb, base_position_error, 
+                        outc_ovfl, reset_timer, use_ubx_position, large_v2b, base_position_update, rover_position_error, 
+                        reset_bias, start_relpos, end_relpos, start_rtkpos, pnt_pos_error, no_base_obs_data, diff_age_error, 
+                        moveb_time_sync_error, waiting_for_rover_packet, waiting_for_base_packet, lsq_error, 
+                        lack_of_valid_sats, divergent_pnt_pos_iteration, chi_square_error, cycle_slips, ubx_error, 
+                        solStatus, rescode_err_marker, error_count, error_code, dist2base, reserved1, gdop_error, 
+                        warning_count, warning_code, double_debug, debug, obs_count_bas, obs_count_rov, 
+                        /*obs_pairs_filtered*/ reserved2, raw_ptr_queue_overrun, raw_dat_queue_overrun, 
+                        obs_unhealthy, obs_rover_avail, obs_base_avail, obs_pairs_used_float, obs_pairs_used_ar, 
+                        obs_eph_avail, obs_low_snr_rover, obs_low_snr_base, obs_high_snr_parity, obs_zero_L1_rover, 
+                        obs_zero_L1_base, obs_low_elev_rover, obs_low_elev_base, eph1RxCnt, eph2RxCnt, reserved);
 
 PYBIND11_NUMPY_DTYPE(obsd_t, time, sat, rcv, SNR, LLI, code, qualL, qualP, reserved, L, P, D);
 

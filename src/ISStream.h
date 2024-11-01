@@ -49,7 +49,7 @@ public:
 	* @param count the max count of bytes to write
 	* @return the number of bytes written, -1 if writing is not supported, 0 if no bytes written
 	*/
-    virtual int Write(const void* buffer, int count) { (void)buffer; (void)count; return -1; }
+	virtual int Write(const void* buffer, int count) { (void)buffer; (void)count; return -1; }
 
 	/**
 	* Flush the stream
