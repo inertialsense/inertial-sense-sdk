@@ -329,7 +329,7 @@ void LogReader::forwardData(int device_id)
 
 bool LogReader::load()
 {
-    printf("LogReader::load() ");
+    // printf("LogReader::load() \n");
 
     std::vector<std::shared_ptr<cDeviceLog>> devices = logger_.DeviceLogs();
     for (int i = 0; i < (int)devices.size(); i++)

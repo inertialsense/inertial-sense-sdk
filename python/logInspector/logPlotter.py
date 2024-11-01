@@ -990,6 +990,21 @@ class logPlot:
         self.setup_and_wire_legend()
         self.saveFig(fig, 'heading')
 
+    INS_STATUS_GPS_AIDING_POS = 0x00000100
+    INS_STATUS_POS_ALIGN_COARSE = 0x00000004
+    INS_STATUS_POS_ALIGN_FINE = 0x00000040
+
+    def is_dead_reckoning(self, insStatus):
+        # Ensure insStatus is a numpy array
+        insStatus = np.array(insStatus)
+
+        # Perform bitwise operations element-wise
+        condition1 = (insStatus & (self.INS_STATUS_POS_ALIGN_FINE | self.INS_STATUS_POS_ALIGN_COARSE)) != 0
+        condition2 = (insStatus & self.INS_STATUS_GPS_AIDING_POS) == 0
+
+    # Return element-wise AND of both conditions
+        return np.logical_and(condition1, condition2)
+
     def insStatus(self, fig=None):
         try:
             if fig is None:
@@ -1021,6 +1036,10 @@ class logPlot:
                 cnt += 1
                 ax.plot(instime, -cnt * 1.5 + ((iStatus & 0x00000040) != 0))
                 if r: ax.text(p1, -cnt * 1.5, 'Pos Fine')
+                cnt += 1
+                dead_reckoning = self.is_dead_reckoning(iStatus)
+                ax.plot(instime, -cnt * 1.5 + dead_reckoning, label='Dead Reckoning')
+                if r: ax.text(p1, -cnt * 1.5, 'Dead Reckoning')
                 cnt += 1
                 cnt += 1
 

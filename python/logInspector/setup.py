@@ -1,3 +1,4 @@
+import platform
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
@@ -28,6 +29,11 @@ class get_pybind_include(object):
     def __str__(self):
         import pybind11
         return pybind11.get_include(self.user)
+
+if platform.system() == 'Windows':
+    macros = [("UNICODE", "1")]     # Necessary for ISFileManager.cpp
+else:
+    macros = []
 
 static_libraries = ['InertialSenseSDK']
 static_lib_dir = '../..'

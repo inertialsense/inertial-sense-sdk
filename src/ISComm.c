@@ -246,7 +246,7 @@ int is_comm_check(is_comm_instance_t* c, uint8_t *buffer, int bufferSize)
         // | ENABLE_PROTOCOL_SPARTN 
         )) { return -1; }
     
-    if (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end) { return -1; }
+    if (c->rxPkt.data.ptr != NULL && (c->rxPkt.data.ptr < c->rxBuf.start || c->rxPkt.data.ptr > c->rxBuf.end)) { return -1; }
 
     // Everything matches
     return 0;

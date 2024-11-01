@@ -983,8 +983,8 @@ int main(int argc, char* argv[])
 {
     // Parse command line options
     if (!cltool_parseCommandLine(argc, argv))
-    {
-        // parsing failed
+    {   // parsing failed
+        g_inertialSenseDisplay.ShutDown();
         return -1;
     }
 
