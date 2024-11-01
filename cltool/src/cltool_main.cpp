@@ -306,7 +306,7 @@ void cltool_requestDataSets(InertialSense& inertialSenseInterface, std::vector<s
                 system_command_t cfg;
                 cfg.command = SYS_CMD_ENABLE_RTOS_STATS;
                 cfg.invCommand = ~cfg.command;
-                inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+                inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
                 break;
         }
     }
@@ -381,11 +381,11 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         // Enable broadcase of DID_MAG_CAL so we can observe progress and tell when the calibration is done (i.e. DID_MAG_CAL.state: 200=in progress, 201=done).
         inertialSenseInterface.BroadcastBinaryData(DID_MAG_CAL, 100);
         // Enable mag recal
-        inertialSenseInterface.SendRawData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, state));
+        inertialSenseInterface.SendData(DID_MAG_CAL, (uint8_t*)&g_commandLineOptions.magRecalMode, sizeof(g_commandLineOptions.magRecalMode), offsetof(mag_cal_t, state));
     }
     if (g_commandLineOptions.surveyIn.state)
     {   // Enable mult-axis 
-        inertialSenseInterface.SendRawData(DID_SURVEY_IN, (uint8_t*)&g_commandLineOptions.surveyIn, sizeof(survey_in_t), 0);
+        inertialSenseInterface.SendData(DID_SURVEY_IN, (uint8_t*)&g_commandLineOptions.surveyIn, sizeof(survey_in_t), 0);
     }
     if (g_commandLineOptions.rmcPreset)
     {
@@ -442,12 +442,12 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         {
             cfg.command = SYS_CMD_MANF_UNLOCK;
             cfg.invCommand = ~cfg.command;
-            inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+            inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
         }
 
         cfg.command = g_commandLineOptions.sysCommand;
         cfg.invCommand = ~cfg.command;
-        inertialSenseInterface.SendRawData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
+        inertialSenseInterface.SendData(DID_SYS_CMD, (uint8_t*)&cfg, sizeof(system_command_t), 0);
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }
@@ -460,7 +460,7 @@ static bool cltool_setupCommunications(InertialSense& inertialSenseInterface)
         manfInfo.key = 72720;
         manfInfo.platformType = g_commandLineOptions.platformType;
         // Write key (uint32_t) and platformType (int32_t), 8 bytes
-        inertialSenseInterface.SendRawData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
+        inertialSenseInterface.SendData(DID_MANUFACTURING_INFO, (uint8_t*)&manfInfo.key, sizeof(uint32_t)*2, offsetof(manufacturing_info_t, key));
         SLEEP_MS(XMIT_CLOSE_DELAY_MS);      // Delay to allow transmit time before port closes
         return false;
     }

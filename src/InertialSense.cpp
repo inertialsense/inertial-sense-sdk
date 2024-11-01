@@ -828,11 +828,6 @@ void InertialSense::SendData(eDataIDs dataId, uint8_t* data, uint32_t length, ui
     for (auto device : m_comManagerState.devices) { device->SendData(dataId, data, length, offset); }
 }
 
-void InertialSense::SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset)
-{
-    for (auto device : m_comManagerState.devices) { device->SendRawData(dataId, data, length, offset); }
-}
-
 void InertialSense::SendRaw(uint8_t* data, uint32_t length)
 {
     for (auto device : m_comManagerState.devices) { device->SendRaw(data, length); }

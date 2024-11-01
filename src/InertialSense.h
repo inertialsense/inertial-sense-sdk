@@ -304,23 +304,17 @@ public:
      */
     void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0);
 
-    /**
-    * Send data to the IMX - this is usually only used for advanced or special cases, normally you won't use this method
+   /**
+    * Send IS packet payload data to all devices; the payload data is wrapped in an ISB packet with the specified dataId
+    * and the appropriate checksum is calculated and appended.  This function can be used to send a subset of a data set.
+    * For example, to set only a portion of DID_FLASH_CONFIG, you could use SendData like this:
+    *   SendData(DID_FLASH_CONFIG, &cfg.refLla[0], sizeof(double)*3, offsetof(nvm_flash_cfg_t, refLla));
     * @param dataId the data id of the data to send
-    * @param data the data to send
+    * @param payload the data to send
     * @param length length of data to send
     * @param offset offset into data to send at
     */
-    void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset);
-
-    /**
-    * Send raw data to the IMX - (byte swapping disabled)
-    * @param dataId the data id of the data to send
-    * @param data the data to send
-    * @param length length of data to send
-    * @param offset offset into data to send at
-    */
-    void SendRawData(eDataIDs dataId, uint8_t* data, uint32_t length = 0, uint32_t offset = 0);
+    void SendData(eDataIDs dataId, uint8_t* data, uint32_t length, uint32_t offset = 0);
 
     /**
     * Send raw (bare) data directly to serial port

@@ -276,7 +276,7 @@ int comManagerDisableData(port_handle_t port, uint16_t did);
 * comManagerSend(port, PKT_TYPE_GET_DATA, 0, &data)
 * @endcode
 */
-int comManagerSend(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSend(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
 /**
 * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
@@ -293,7 +293,7 @@ int comManagerSend(port_handle_t port, uint8_t pFlags, const void *data, uint16_
 * comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
 * @endcode
 */
-int comManagerSendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
 // INTERNAL FUNCTIONS...
 /**
@@ -307,25 +307,7 @@ int comManagerSendData(port_handle_t port, const void* data, uint16_t did, uint1
 * @param pFlags Additional packet flags if needed.
 * @return 0 if success, anything else if failure
 */
-int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset);
-
-/**
-* Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
-* No byte swapping occurs.
-*
-* @param port the port handle to send data to
-* @param dataId the data id of the data to send
-* @param dataPtr pointer to the data structure to send
-* @param dataSize number of bytes to send
-* @param dataOffset offset into dataPtr to send at
-* @return 0 if success, anything else if failure
-*
-* Example:
-* @code
-* comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
-* @endcode
-*/
-int comManagerSendRawData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
+int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
 /**
 * Write bare data directly to the serial port.
@@ -573,7 +555,7 @@ public:
     * comManagerSend(port, PKT_TYPE_GET_DATA, 0, &data)
     * @endcode
     */
-    int send(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset);
+    int send(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
     /**
     * Convenience function that wraps comManagerSend for sending data structures.  Must be multiple of 4 bytes in size.
@@ -590,7 +572,7 @@ public:
     * comManagerSendData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
     * @endcode
     */
-    int sendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
+    int sendData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
     // INTERNAL FUNCTIONS...
     /**
@@ -604,25 +586,7 @@ public:
     * @param pFlags Additional packet flags if needed.
     * @return 0 if success, anything else if failure
     */
-    int sendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset);
-
-    /**
-    * Convenience function that wraps comManagerSend for sending data structures.  Allows arbitrary bytes size, 4 byte multiple not required.
-    * No byte swapping occurs.
-    *
-    * @param port the port handle to send data to
-    * @param dataId the data id of the data to send
-    * @param dataPtr pointer to the data structure to send
-    * @param dataSize number of bytes to send
-    * @param dataOffset offset into dataPtr to send at
-    * @return 0 if success, anything else if failure
-    *
-    * Example:
-    * @code
-    * comManagerSendRawData(0, DID_DEV_INFO, &g_devInfo, sizeof(dev_info_t), 0);
-    * @endcode
-    */
-    int sendRawData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset);
+    int sendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset = 0);
 
     /**
     * Write bare data directly to the serial port.

@@ -380,7 +380,7 @@ void ISComManager::getDataRmc(port_handle_t port, uint64_t rmcBits, uint32_t rmc
 }
 
 int comManagerSendData(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
-{	
+{
     return s_cm.sendData(port, data, did, size, offset);
 }
 
@@ -397,16 +397,6 @@ int comManagerSendDataNoAck(port_handle_t port, const void *data, uint16_t did, 
 int ISComManager::sendDataNoAck(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     return send(port, PKT_TYPE_DATA, data, did, size, offset);
-}
-
-int comManagerSendRawData(port_handle_t port, const void *data, uint16_t did, uint16_t size, uint16_t offset)
-{
-    return s_cm.sendRawData(port, data, did, size, offset);
-}
-
-int ISComManager::sendRawData(port_handle_t port, const void* data, uint16_t did, uint16_t size, uint16_t offset)
-{
-    return send(port, PKT_TYPE_SET_DATA, data, did, size, offset);
 }
 
 int comManagerSendRaw(port_handle_t port, const void *dataPtr, int dataSize)

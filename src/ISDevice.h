@@ -95,8 +95,7 @@ public:
     void QueryDeviceInfo() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
     void SavePersistent() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
     void SoftwareReset() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
-    void SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset) { comManagerSendData(port, data, dataId, length, offset); }
-    void SendRawData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset) { comManagerSendRawData(port, data, dataId, length, offset); }
+    void SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { comManagerSendData(port, data, dataId, length, offset); }
     void SendRaw(const uint8_t* data, uint32_t length) { comManagerSendRaw(port, data, length); }
     void SendNmea(const std::string& nmeaMsg);
     void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
