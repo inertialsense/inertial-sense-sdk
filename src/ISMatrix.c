@@ -645,6 +645,20 @@ f_t dot_Vec3_Vec3( const ixVector3 v1, const ixVector3 v2 )
 	        v1[2] * v2[2];
 }
 
+f_t dot_Vec4_Vec4( const ixVector4 v1, const ixVector4 v2 )
+{
+	return  v1[0] * v2[0] +
+	        v1[1] * v2[1] +
+	        v1[2] * v2[2] +
+	        v1[3] * v2[3];
+}
+
+double dot_Vec2d_Vec2d( const ixVector2d v1, const ixVector2d v2 )
+{
+    return  v1[0] * v2[0] +
+            v1[1] * v2[1];
+}
+
 double dot_Vec3d_Vec3d( const ixVector3d v1, const ixVector3d v2 )
 {
     return  v1[0] * v2[0] +
@@ -652,12 +666,12 @@ double dot_Vec3d_Vec3d( const ixVector3d v1, const ixVector3d v2 )
             v1[2] * v2[2];
 }
 
-f_t dot_Vec4_Vec4( const ixVector4 v1, const ixVector4 v2 )
+double dot_Vec4d_Vec4d( const ixVector4d v1, const ixVector4d v2 )
 {
-	return  v1[0] * v2[0] +
-	        v1[1] * v2[1] +
-	        v1[2] * v2[2] +
-	        v1[3] * v2[3];
+    return  v1[0] * v2[0] +
+            v1[1] * v2[1] +
+            v1[2] * v2[2] +
+            v1[3] * v2[3];
 }
 
 //_______________________________________________________________________________________________
