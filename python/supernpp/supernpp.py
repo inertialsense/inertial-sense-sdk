@@ -10,6 +10,8 @@ from pathlib import Path
 import sys
 import threading
 
+print(Path().resolve())
+
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
 sys.path.insert(1, '..')
