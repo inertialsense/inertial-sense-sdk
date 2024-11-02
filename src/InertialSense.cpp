@@ -223,7 +223,7 @@ ISDevice* InertialSense::registerNewDevice(port_handle_t port, dev_info_t devInf
     }
 
     // If we're here, we didn't find the device above
-    ISDevice* newDevice = m_newDeviceHandler(port);
+    ISDevice* newDevice = (m_newDeviceHandler ? m_newDeviceHandler(port) : new ISDevice(port));
     newDevice->port = port;
     newDevice->devInfo = devInfo;
     newDevice->hdwId = ENCODE_DEV_INFO_TO_HDW_ID(devInfo);

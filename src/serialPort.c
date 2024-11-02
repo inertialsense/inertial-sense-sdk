@@ -55,10 +55,10 @@ int serialPortOpen(port_handle_t port, const char* portName, int baudRate, int b
 {
     serial_port_t* serialPort = (serial_port_t*)port;
     if ((serialPort == 0) || (port == 0) || (serialPort->pfnOpen == 0))
-	{
+    {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-		return 0;
-	}
+        return 0;
+    }
     if (serialPort->pfnOpen(port, portName, baudRate, blocking) != 1) {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
@@ -97,37 +97,37 @@ int serialPortOpenRetry(port_handle_t port, const char* portName, int baudRate, 
 int serialPortIsOpen(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if ((serialPort == 0) || (serialPort->pfnIsOpen == 0))
-	{
+    if ((serialPort == 0) || (serialPort->pfnIsOpen == 0))
+    {
         if (serialPort && serialPort->pfnError) {
             serialPort->pfnError(port, -1, "port::IsOpen is not supported on this port.");
         }
-		return 0;
-	}
-	return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
+        return 0;
+    }
+    return (serialPort->pfnIsOpen ? serialPort->pfnIsOpen(port) : 1);
 }
 
 int serialPortClose(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if ((serialPort == 0) || (serialPort->pfnClose == 0))
-	{
+    if ((serialPort == 0) || (serialPort->pfnClose == 0))
+    {
         if (serialPort && serialPort->pfnError)
             serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
         return 0;
-	}
+    }
     return serialPort->pfnClose(port);
 }
 
 int serialPortFlush(port_handle_t port)
 {
     serial_port_t* serialPort = (serial_port_t*)port;
-	if ((serialPort == 0) || (serialPort->pfnFlush == 0))
-	{
+    if ((serialPort == 0) || (serialPort->pfnFlush == 0))
+    {
         if (serialPort && serialPort->pfnError) serialPort->pfnError(port, serialPort->errorCode, serialPort->error);
-		return 0;
-	}
-	return serialPort->pfnFlush(port);
+        return 0;
+    }
+    return serialPort->pfnFlush(port);
 }
 
 int serialPortDrain(port_handle_t port)

@@ -425,6 +425,17 @@ int comManagerSend(port_handle_t port, uint8_t pFlags, const void* data, uint16_
     return s_cm.send(port, pFlags, data, did, size, offset);
 }
 
+/**
+ * Packages and sends an ISb packet to the specified port
+ * @param port the port to send the data to
+ * @param pFlags the flags to be attributed to the packet
+ * @param data the payload data; this pointer should point to the start of the actual data to be sent,
+ *   which if sending only a partial payload, may not be the start of the payload buffer (see/use offset)
+ * @param did the data id associated with the payload
+ * @param size the size of the payload
+ * @param offset (optional) the offset into the receivers payload buffer, where this payload should be applied.
+ * @return 0 on success, and -1 on failure
+ */
 int ISComManager::send(port_handle_t port, uint8_t pFlags, const void *data, uint16_t did, uint16_t size, uint16_t offset)
 {
     // Return 0 on success, -1 on failure

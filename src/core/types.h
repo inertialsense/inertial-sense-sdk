@@ -25,8 +25,8 @@
 #define PORT_TYPE__COMM             0x0040    //! bit indicates that this port has an ISComm associated with it
 #define PORT_TYPE__HDW              0x0080    //! bit indicates that this port is static/hardware-defined
 
-#define PORT_ERROR__NONE            0x00
-#define PORT_ERROR__NOT_SUPPORTED   0x01
+#define PORT_ERROR__NONE                 0
+#define PORT_ERROR__NOT_SUPPORTED       -1
 
 #define PORT_OP__READ               0x00
 #define PORT_OP__WRITE              0x01
@@ -84,6 +84,13 @@ static inline int portRead(port_handle_t port, uint8_t* buf, unsigned int len) {
     return bytesRead;
 }
 
+/**
+ * Write the specified len bytes pointed to by buf to the provided port
+ * @param port the port to send the data to
+ * @param buf the buffer to send data from
+ * @param len the number of bytes to send
+ * @return the number of bytes sent (0 is valid), or <0 in the event of an error
+ */
 static inline int portWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
     if (port && ((base_port_t*)port)->portLogger) portLog(port, PORT_OP__WRITE, buf, len, ((base_port_t*)port)->portLoggerData);
     return (port && ((base_port_t*)port)->portWrite) ? ((base_port_t*)port)->portWrite(port, buf, len) : PORT_ERROR__NOT_SUPPORTED;

@@ -676,8 +676,8 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
     serial_port_t* serialPort = (serial_port_t*)port;
     serialPortHandle* handle = (serialPortHandle*)serialPort->handle;
     if (!handle) {
-        serialPort->errorCode = ENODEV;
-        serialPort->error = strerror(serialPort->errorCode);
+        serialPort->errorCode = ENOENT;
+        serialPort->error = "Internal port handle is NULL; Port is closed.";
         return -1;
     }
 
@@ -701,6 +701,9 @@ static int serialPortReadTimeoutPlatform(port_handle_t port, unsigned char* buff
         serialPort->error = NULL;
     }
 
+    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
+        COMM_PORT(port)->stats->rxBytes += result;
+    }
 
     debugDumpBuffer("{{ ", buffer, result);
     return result;
@@ -828,6 +831,10 @@ static int serialPortWritePlatform(port_handle_t port, const unsigned char* buff
         {   // Drain error
             return 0;
         }
+    }
+
+    if ((portType(port) & PORT_TYPE__COMM) && (COMM_PORT(port)->stats)) {
+        COMM_PORT(port)->stats->txBytes += bytes_written;
     }
 
     debugDumpBuffer(">> ", buffer, bytes_written);
