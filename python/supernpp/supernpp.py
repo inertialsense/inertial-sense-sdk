@@ -10,7 +10,10 @@ from pathlib import Path
 import sys
 import threading
 
-print(Path().resolve())
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+eprint(Path().resolve())
 
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
@@ -30,10 +33,10 @@ class SuperNPP():
         self.rmsFailResults = []
         self._key_lock = threading.Lock()
 
-        print("=====================  Init SuperNPP  =====================")
-        print("  Directory: ", self.directory)
-        print("  config_serials:", self.config_serials)
-        print("  startMode: ", self.startMode)
+        eprint("=====================  Init SuperNPP  =====================")
+        eprint("  Directory: ", self.directory)
+        eprint("  config_serials:", self.config_serials)
+        eprint("  startMode: ", self.startMode)
         self.findLogFiles(self.directory)
             
     def getSerialNumbers(self):
