@@ -6,7 +6,7 @@ This [ISLoggerSimpleExample](https://github.com/inertialsense/inertial-sense-sdk
 
 #### Project Files
 
-* [ISLoggerSimpleExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISLoggerSimple/ISLoggerSimpleExample.cpp)
+* [ISLoggerReadExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISLoggerSimple/ISLoggerReadExample.cpp)
 
 #### SDK Files
 
