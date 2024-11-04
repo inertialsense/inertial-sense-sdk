@@ -55,8 +55,21 @@ int cDataCSV::WriteHeaderToFile(FILE* pFile, uint32_t id)
 	string header("_ID_");
 	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
 	{
-		header += ",";
-		header += offset->first;
+		const std::string &name = offset->first;
+		const data_info_t &info = offset->second;
+		if (info.arraySize)
+		{	// Array
+			for (uint32_t i=0; i<info.arraySize; i++)
+			{
+				header += ",";
+				header += name + "[" + std::to_string(i) + "]";				
+			}
+		}
+		else
+		{	// Single element
+			header += ",";
+			header += name;
+		}
 	}
 	header += "\n";
 	fputs(header.c_str(), pFile);
@@ -135,7 +148,6 @@ int cDataCSV::WriteDataToFile(uint64_t orderId, FILE* pFile, const p_data_hdr_t&
 	char tmp[64];
 	SNPRINTF(tmp, 64, "%llu", (long long unsigned int)orderId);
 	fputs(tmp, pFile);
-	fputc(',', pFile);
 	fputs(s.c_str(), pFile);
 
 	// return the data string length plus comma plus order id string
@@ -175,7 +187,7 @@ bool cDataCSV::StringCSVToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uint3
 			{
 				return false;
 			}
-			foundQuotes = false;
+            foundQuotes = false;
 		}
 		else if (*i == '"')
 		{
@@ -201,8 +213,7 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 	uint8_t tmpBuffer[MAX_DATASET_SIZE];
 	uint32_t size = cISDataMappings::DataSize(hdr.id);
 	if (size > hdr.size)
-	{
-		// copy into temp buffer, zeroing out bytes that are not part of this packet
+	{	// copy into temp buffer, zeroing out bytes that are not part of this packet
 		memset(tmpBuffer, 0, hdr.offset);
 		memcpy(tmpBuffer + hdr.offset, buf, hdr.size);
 		uint32_t dataEnd = hdr.offset + hdr.size;
@@ -217,12 +228,22 @@ bool cDataCSV::DataToStringCSV(const p_data_hdr_t& hdr, const uint8_t* buf, stri
 
 	for (map_name_to_info_t::const_iterator offset = offsetMap->begin(); offset != offsetMap->end(); offset++)
 	{
-		cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp);
-		if (csv.length() != 0)
-		{
-			csv += ",";
+		const data_info_t &info = offset->second;
+		if (info.arraySize)
+		{	// Array
+			for (uint32_t i=0; i<info.arraySize; i++)
+			{
+				cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp, i);
+				csv += ",";
+				csv += tmp;
+			}
 		}
-		csv += tmp;
+		else
+		{	// Single element
+			cISDataMappings::DataToString(offset->second, &hdrCopy, bufPtr, tmp);
+			csv += ",";
+			csv += tmp;
+		}
 	}
 	csv += "\n";
 	return true;
