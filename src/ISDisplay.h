@@ -95,6 +95,7 @@ public:
 	void ProcessData(p_data_buf_t* data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
+	void PrintIsCommStats(is_comm_instance_t *comm);
 	void DataToStats(const p_data_t* data);
 	void PrintStats();
 	std::string DataToString(const p_data_t* data);

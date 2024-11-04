@@ -92,6 +92,8 @@ public:
 
     void ShowParseErrors(bool show) { m_showParseErrors = show; }
 
+    virtual is_comm_instance_t* IsCommInstance() { return NULL; }
+
 protected:
     bool OpenNewSaveFile();
 

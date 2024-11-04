@@ -588,6 +588,32 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	return false;
 }
 
+void cInertialSenseDisplay::PrintIsCommStats(is_comm_instance_t *comm)
+{
+	if (comm == NULL)
+		return;
+
+	std::string name;
+	for (int i=0; i<NUM_EPARSE_ERRORS; i++)
+	{
+		switch(i)
+		{
+		case EPARSE_INVALID_PREAMBLE:       name = "INVALID_PREAMBLE";               break;
+		case EPARSE_INVALID_SIZE:           name = "INVALID_SIZE";                   break;
+		case EPARSE_INVALID_CHKSUM:         name = "INVALID_CHKSUM";                 break;
+		case EPARSE_INVALID_DATATYPE:       name = "INVALID_DATATYPE";               break;
+		case EPARSE_MISSING_EOS_MARKER:     name = "MISSING_EOS_MARKER";             break;
+		case EPARSE_INCOMPLETE_PACKET:      name = "INCOMPLETE_PACKET";              break;
+		case EPARSE_INVALID_HEADER:         name = "INVALID_HEADER";                 break;
+		case EPARSE_INVALID_PAYLOAD:        name = "INVALID_PAYLOAD";                break;
+		case EPARSE_RXBUFFER_FLUSHED:       name = "RXBUFFER_FLUSHED";               break;
+		case EPARSE_STREAM_UNPARSABLE:      name = "STREAM_UNPARSABLE";              break;
+		default:                            name = "EPARSE " + std::to_string(i);    break;
+		}
+		cout << "  " << std::setw(24) << std::setfill(' ') << std::left << name << comm->rxErrorTypeCount[i] << "\n";
+	}
+}
+
 string cInertialSenseDisplay::VectortoString()
 {
 	stringstream ss;

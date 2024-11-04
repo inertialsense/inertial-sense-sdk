@@ -49,17 +49,23 @@ int main(int argc, char* argv[])
 		}
 
         p_data_buf_t* data = NULL;
-        // shared_ptr<cDeviceLog> deviceLog = logger.DeviceLogBySerialNumber(m_devLogger->SerialNumber());
         while ((data = deviceLog->ReadData()))
 		{
 #if 1
 			double replaySpeedX = 0;	// Set to zero for non-realtime, fast as possible
 			display.ProcessData(data, true, replaySpeedX);
 			display.PrintData();
-#else
+#endif
+
+#if 0
 			printf("ID: %3d\n", data->hdr.id);
 #endif
 		}
+
+#if 1
+		cout << "SN: " << deviceLog->SerialNumber() << "\n";
+		display.PrintIsCommStats(deviceLog->IsCommInstance());
+#endif
 	}
 
 	logger.CloseAllFiles();

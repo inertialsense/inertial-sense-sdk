@@ -183,7 +183,7 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
             "INVALID_HEADER",
             "INVALID_PAYLOAD",
             "RXBUFFER_FLUSHED",
-            "STREAM_UNPARSEABLE",
+            "STREAM_UNPARSABLE",
     };
 
     typedef union
