@@ -61,10 +61,6 @@ int main(int argc, char* argv[])
 			printf("ID: %3d\n", data->hdr.id);
 #endif
 		}
-
-#if 1
-		display.PrintIsCommStats(deviceLog->IsCommInstance(), deviceLog->SerialNumber());
-#endif
 	}
 
 	logger.CloseAllFiles();

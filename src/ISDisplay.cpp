@@ -588,30 +588,30 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	return false;
 }
 
-void cInertialSenseDisplay::PrintIsCommStats(is_comm_instance_t *comm, int serialNumber)
+void cInertialSenseDisplay::PrintIsCommErrors(is_comm_instance_t *comm, std::string filename)
 {
 	if (comm == NULL)
 		return;
 
-	if (serialNumber)
-	{
-		cout << "SN: " << std::setw(6) << serialNumber << " ";
-	}
-	cout << "is_comm stats: ";
-	
-	bool showParseErrors = false;
+	bool hasParseErrors = false;
 	for (int i=0; i<NUM_EPARSE_ERRORS; i++)
 	{
 		if (comm->rxErrorTypeCount[i])
 		{
-			showParseErrors = true;
+			hasParseErrors = true;
 			break;
 		}
 	}
 
-	if (showParseErrors)
+	if (!hasParseErrors)
+		return;	// Only print if there are errors
+
+	cout << filename << "\n";
+	cout << " is_comm stats: ";
+	
+	if (hasParseErrors)
 	{
-		cout << "PARSE ERRORS:\n";
+		cout << "PARSE ERRORS!!!\n";
 		std::string name;
 		for (int i=0; i<NUM_EPARSE_ERRORS; i++)
 		{
@@ -631,7 +631,7 @@ void cInertialSenseDisplay::PrintIsCommStats(is_comm_instance_t *comm, int seria
 			}
 			cout << "  " << std::setw(20) << std::setfill(' ') << std::left << name << std::setw(3) << comm->rxErrorTypeCount[i] << "     ";
 			if ((i+1)%3 == 0)
-			{
+			{	// print three columns
 				cout << "\n";
 			}
 		}

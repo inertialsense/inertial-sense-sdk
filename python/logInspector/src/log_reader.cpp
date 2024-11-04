@@ -330,11 +330,6 @@ void LogReader::forwardData(int device_id)
     forward_message( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray, device_id );
 }
 
-void printParseStats(shared_ptr<cDeviceLog> devLog)
-{
-    cInertialSenseDisplay::PrintIsCommStats(devLog->IsCommInstance(), devLog->SerialNumber());
-}
-
 bool LogReader::load()
 {
     // printf("LogReader::load() \n");
@@ -350,7 +345,6 @@ bool LogReader::load()
 
         organizeData(devices[i]);
         forwardData(i);
-        printParseStats(devices[i]);
     }
 
     return true;
