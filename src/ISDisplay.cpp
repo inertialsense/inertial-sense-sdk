@@ -588,30 +588,59 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	return false;
 }
 
-void cInertialSenseDisplay::PrintIsCommStats(is_comm_instance_t *comm)
+void cInertialSenseDisplay::PrintIsCommStats(is_comm_instance_t *comm, int serialNumber)
 {
 	if (comm == NULL)
 		return;
 
-	std::string name;
+	if (serialNumber)
+	{
+		cout << "SN: " << std::setw(6) << serialNumber << " ";
+	}
+	cout << "is_comm stats: ";
+	
+	bool showParseErrors = false;
 	for (int i=0; i<NUM_EPARSE_ERRORS; i++)
 	{
-		switch(i)
+		if (comm->rxErrorTypeCount[i])
 		{
-		case EPARSE_INVALID_PREAMBLE:       name = "INVALID_PREAMBLE";               break;
-		case EPARSE_INVALID_SIZE:           name = "INVALID_SIZE";                   break;
-		case EPARSE_INVALID_CHKSUM:         name = "INVALID_CHKSUM";                 break;
-		case EPARSE_INVALID_DATATYPE:       name = "INVALID_DATATYPE";               break;
-		case EPARSE_MISSING_EOS_MARKER:     name = "MISSING_EOS_MARKER";             break;
-		case EPARSE_INCOMPLETE_PACKET:      name = "INCOMPLETE_PACKET";              break;
-		case EPARSE_INVALID_HEADER:         name = "INVALID_HEADER";                 break;
-		case EPARSE_INVALID_PAYLOAD:        name = "INVALID_PAYLOAD";                break;
-		case EPARSE_RXBUFFER_FLUSHED:       name = "RXBUFFER_FLUSHED";               break;
-		case EPARSE_STREAM_UNPARSABLE:      name = "STREAM_UNPARSABLE";              break;
-		default:                            name = "EPARSE " + std::to_string(i);    break;
+			showParseErrors = true;
+			break;
 		}
-		cout << "  " << std::setw(24) << std::setfill(' ') << std::left << name << comm->rxErrorTypeCount[i] << "\n";
 	}
+
+	if (showParseErrors)
+	{
+		cout << "PARSE ERRORS:\n";
+		std::string name;
+		for (int i=0; i<NUM_EPARSE_ERRORS; i++)
+		{
+			switch(i)
+			{
+			case EPARSE_INVALID_PREAMBLE:       name = "INVALID_PREAMBLE";               break;
+			case EPARSE_INVALID_SIZE:           name = "INVALID_SIZE";                   break;
+			case EPARSE_INVALID_CHKSUM:         name = "INVALID_CHKSUM";                 break;
+			case EPARSE_INVALID_DATATYPE:       name = "INVALID_DATATYPE";               break;
+			case EPARSE_MISSING_EOS_MARKER:     name = "MISSING_EOS_MARKER";             break;
+			case EPARSE_INCOMPLETE_PACKET:      name = "INCOMPLETE_PACKET";              break;
+			case EPARSE_INVALID_HEADER:         name = "INVALID_HEADER";                 break;
+			case EPARSE_INVALID_PAYLOAD:        name = "INVALID_PAYLOAD";                break;
+			case EPARSE_RXBUFFER_FLUSHED:       name = "RXBUFFER_FLUSHED";               break;
+			case EPARSE_STREAM_UNPARSABLE:      name = "STREAM_UNPARSABLE";              break;
+			default:                            name = "EPARSE " + std::to_string(i);    break;
+			}
+			cout << "  " << std::setw(20) << std::setfill(' ') << std::left << name << std::setw(3) << comm->rxErrorTypeCount[i] << "     ";
+			if ((i+1)%3 == 0)
+			{
+				cout << "\n";
+			}
+		}
+	}
+	else
+	{
+		cout << "No parse errors.";
+	}
+	cout << "\n";
 }
 
 string cInertialSenseDisplay::VectortoString()

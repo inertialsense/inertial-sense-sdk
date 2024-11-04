@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         p_data_buf_t* data = NULL;
         while ((data = deviceLog->ReadData()))
 		{
-#if 1
+#if 0
 			double replaySpeedX = 0;	// Set to zero for non-realtime, fast as possible
 			display.ProcessData(data, true, replaySpeedX);
 			display.PrintData();
@@ -63,8 +63,7 @@ int main(int argc, char* argv[])
 		}
 
 #if 1
-		cout << "SN: " << deviceLog->SerialNumber() << "\n";
-		display.PrintIsCommStats(deviceLog->IsCommInstance());
+		display.PrintIsCommStats(deviceLog->IsCommInstance(), deviceLog->SerialNumber());
 #endif
 	}
 
