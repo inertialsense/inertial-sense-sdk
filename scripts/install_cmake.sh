@@ -12,4 +12,5 @@ curl -o /tmp/cmake-install.sh -L https://github.com/Kitware/CMake/releases/downl
       && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin \
       && rm /tmp/cmake-install.sh
 
+if [[ -e ~/.bashrc ]]; then source ~/.bashrc; fi
 popd > /dev/null
