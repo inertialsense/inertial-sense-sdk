@@ -115,12 +115,12 @@ using namespace std::chrono_literals;
 #define REPO_VERSION_MINOR 2   // [UPDATE_RELEASE_VERSION_HERE] The repo/firmware version should originate from git tag (like repositoryInfo.h used in EvalTool).  For now we set these manually.
 #define REPO_VERSION_REVIS 0
 
-#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                               \
-    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                      \
-                            [this](InertialSense *i, p_data_t *data, port_handle_t port)           \
-                            {                                                               \
-                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */                     \
-                                this->__cb_fun(DID, reinterpret_cast<__type *>(data->ptr)); \
+#define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
+    IS_.BroadcastBinaryData((DID), (__periodmultiple),                                                          \
+                            [this](InertialSense *i, p_data_t *data)                                            \
+                            {                                                                                   \
+                              /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */  \
+                                this->__cb_fun(DID, reinterpret_cast<__type *>(data->ptr));                     \
                             })
 
 

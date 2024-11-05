@@ -161,6 +161,7 @@ jobs:
           echo "::group::Install ROS packages."
           apt -y install ros-${ROS_DISTRO}-tf libusb-1.0-0-dev
           echo "::endgroup::"
+          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
 
       - name: Setup Catkin Workspace and Build
         run: |
