@@ -1683,7 +1683,7 @@ typedef struct PACKED
 #define RMC_OPTIONS_PRESERVE_CTRL       0x00000100	// Prevent any messages from getting turned off by bitwise OR'ing new message bits with current message bits.
 #define RMC_OPTIONS_PERSISTENT          0x00000200	// Save current port RMC to flash memory for use following reboot, eliminating need to re-enable RMC to start data streaming.  
 
-// RMC message data rates:
+                                                                // RMC message data rates:
 #define RMC_BITS_INS1                   0x0000000000000001      // rmc.insPeriodMs (4ms default)
 #define RMC_BITS_INS2                   0x0000000000000002      // "
 #define RMC_BITS_INS3                   0x0000000000000004      // "
