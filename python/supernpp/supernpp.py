@@ -10,6 +10,11 @@ from pathlib import Path
 import sys
 import threading
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+eprint(Path().resolve())
+
 sys.path.insert(1, '../../SDK/python/logInspector')
 sys.path.insert(1, '../logInspector')
 sys.path.insert(1, '..')
@@ -28,10 +33,10 @@ class SuperNPP():
         self.rmsFailResults = []
         self._key_lock = threading.Lock()
 
-        print("=====================  Init SuperNPP  =====================")
-        print("  Directory: ", self.directory)
-        print("  config_serials:", self.config_serials)
-        print("  startMode: ", self.startMode)
+        eprint("=====================  Init SuperNPP  =====================")
+        eprint("  Directory: ", self.directory)
+        eprint("  config_serials:", self.config_serials)
+        eprint("  startMode: ", self.startMode)
         self.findLogFiles(self.directory)
 
     def getSerialNumbers(self):
@@ -97,7 +102,7 @@ class SuperNPP():
                     self.log.calculateRMS()
                     passRMS = self.log.printRMSReport()
                     if passRMS == 1:
-                        f.write("[ pass ] " + sdir + "\n")
+                        f.write("[PASSED] " + sdir + "\n")
                         self.rmsPassResults.append(sdir)
                     else:
                         f.write("[FAILED] " + sdir + "\n")
@@ -123,17 +128,15 @@ class SuperNPP():
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if (".sdat" in file or ".dat" in file or ".raw" in file) and not ("base_station.raw" in file):
+                if (".dat" in file or ".raw" in file) and not ("base_station.raw" in file):
                     if ".dat" in file:
                         logType = "DAT"
                     elif ".raw" in file:
                         logType = "RAW"
 
-                    serNum = re.sub('[^0-9]','', file.split("_")[1]);
-                    if serNum:
-                        ser = int(serNum)
-                        if ser not in serials:
-                            serials.append(ser)
+                    ser = int(re.sub('[^0-9]','', file.split("_")[1]))
+                    if ser not in serials:
+                        serials.append(ser)
         else:
             serials = config_serials
 
@@ -279,7 +282,7 @@ if __name__ == "__main__":
     testSummaryFilename = directory+"/test_summary.txt"
     nppPrint("\n")
     nppPrint("====================  Super NPP Results  ====================")
-    print_case(testSummaryFilename, "  RMS Test PASSED:", "[ pass ]")
+    print_case(testSummaryFilename, "  RMS Test PASSED:", "[PASSED]")
     print_case(testSummaryFilename, "  RMS Test FAILED:", "[FAILED]")
     print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
     nppPrint("=============================================================")
