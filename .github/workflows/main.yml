@@ -212,12 +212,12 @@ jobs:
           ./install_sdk_dependencies.sh
           ./install_cmake.sh
           ./install_gtest.sh
+          chown -R 1003:1003 ../../
           "
 
       - name: Build ROS2 bridge
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
           colcon build
           "
 
