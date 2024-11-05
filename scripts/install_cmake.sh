@@ -9,7 +9,6 @@ echo_blue "==============================================="
 
 curl -o /tmp/cmake-install.sh -L https://github.com/Kitware/CMake/releases/download/v3.26.0/cmake-3.26.0-linux-x86_64.sh \
       && chmod u+x /tmp/cmake-install.sh \
-      && mkdir /usr/bin \
       && /tmp/cmake-install.sh --skip-license --prefix=/usr/bin \
       && rm /tmp/cmake-install.sh
 

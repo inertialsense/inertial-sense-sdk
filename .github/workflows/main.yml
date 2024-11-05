@@ -192,11 +192,12 @@ jobs:
         shell: bash
 
     steps:
-      - name: Install libboost
+      - name: Install libboost and other pre-checkout dependencies
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
-          apt-get update && apt-get -y install libboost-all-dev
+          apt-get update && apt-get -y install libboost-all-dev python3-pip python3-venv
+          pip install git semver
+          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true 
           "
 
       - name: Checkout source and submodules
