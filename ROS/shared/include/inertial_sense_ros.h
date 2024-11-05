@@ -117,7 +117,7 @@ using namespace std::chrono_literals;
 
 #define SET_CALLBACK(DID, __type, __cb_fun, __periodmultiple)                                                   \
     IS_.BroadcastBinaryData((eDataIDs)(DID), (int)(__periodmultiple), (pfnHandleBinaryData)                     \
-                            [this](InertialSense *i, p_data_t *data, port_handle_t port)                        \
+                            [this](InertialSense *i, p_data_t *data, void* port)                        \
                             {                                                                                   \
                               /* RCLCPP_INFO(rclcpp::get_logger("got_message"),"Got message %d", DID);      */  \
                                 this->__cb_fun((eDataIDs)DID, reinterpret_cast<__type *>(data->ptr));           \
