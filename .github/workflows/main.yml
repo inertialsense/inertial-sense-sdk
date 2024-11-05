@@ -121,16 +121,24 @@ jobs:
         shell: bash
 
     steps:
-      - name: Update Git version to make actions/checkout happy
+      - name: Update Git & CMake versions
         working-directory: .
         run: |
           echo "::group::Install software-properties-common and dependencies."
-          apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev
+          apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev gpg wget curl
           echo "::endgroup::"
           echo "::group::Configure git-core ppa and install latest."
           add-apt-repository ppa:git-core/ppa -y && apt -y install git
           echo "::endgroup::"
           git --version
+          echo "::group::Configure Kitware CMake PPA."
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+          echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ `lsb_release -sc` main" | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+          apt-get update
+          test -f /usr/share/doc/kitware-archive-keyring/copyright ||
+          rm /usr/share/keyrings/kitware-archive-keyring.gpg  
+          apt-get -y install kitware-archive-keyring cmake
+          echo "::endgroup::"
 
       - name: Checkout source and submodules
         uses: actions/checkout@v4
@@ -142,7 +150,6 @@ jobs:
       - name: Install dependencies
         working-directory: scripts
         run: |
-          ./install_cmake.sh
           ./install_sdk_dependencies.sh
           ./install_gtest.sh
   
@@ -193,10 +200,29 @@ jobs:
         shell: bash
 
     steps:
+      - name: Update Git & CMake versions
+        working-directory: .
+        run: |
+          echo "::group::Install software-properties-common and dependencies."
+          apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev gpg wget curl
+          echo "::endgroup::"
+          echo "::group::Configure git-core ppa and install latest."
+          add-apt-repository ppa:git-core/ppa -y && apt -y install git
+          echo "::endgroup::"
+          git --version
+          echo "::group::Configure Kitware CMake PPA."
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+          echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ `lsb_release -sc` main" | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+          apt-get update
+          test -f /usr/share/doc/kitware-archive-keyring/copyright ||
+          rm /usr/share/keyrings/kitware-archive-keyring.gpg  
+          apt-get -y install kitware-archive-keyring cmake
+          echo "::endgroup::"
+
       - name: Install libboost and other pre-checkout dependencies
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          mkdir -r .cache/pip
+          mkdir -p .cache/pip
           apt-get update && apt-get -y install libboost-all-dev python3-pip python3-venv python3-git python3-semver
           rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true 
           "
@@ -213,7 +239,6 @@ jobs:
           /ros_entrypoint.sh /bin/bash -e -c "
           cd ../../inertial-sense-sdk/scripts
           ./install_sdk_dependencies.sh
-          ./install_cmake.sh
           ./install_gtest.sh
           chown -R 1003:1003 ../../
           "
