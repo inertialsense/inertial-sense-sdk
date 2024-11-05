@@ -195,8 +195,7 @@ jobs:
       - name: Install libboost and other pre-checkout dependencies
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
-          apt-get update && apt-get -y install libboost-all-dev python3-pip python3-venv
-          pip install git semver
+          apt-get update && apt-get -y install libboost-all-dev python3-pip python3-venv python3-git python3-semver
           rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true 
           "
 
@@ -214,9 +213,7 @@ jobs:
 
       - name: Build ROS2 bridge
         run: |
-          /ros_entrypoint.sh /bin/bash -e -c "
-          colcon build
-          "
+          /ros_entrypoint.sh /bin/bash -e -c "colcon build"
 
       - name: Run Functional/Integration Tests (via hardware)
         run: |
