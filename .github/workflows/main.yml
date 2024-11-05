@@ -136,6 +136,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
+          fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
           submodules: recursive
 
       - name: Install dependencies
@@ -195,6 +196,7 @@ jobs:
       - name: Install libboost and other pre-checkout dependencies
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
+          mkdir -r .cache/pip
           apt-get update && apt-get -y install libboost-all-dev python3-pip python3-venv python3-git python3-semver
           rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true 
           "
@@ -203,6 +205,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
 
       - name: Install dependencies
         working-directory: scripts
@@ -218,6 +221,7 @@ jobs:
       - name: Build ROS2 bridge
         run: |
           /ros_entrypoint.sh /bin/bash -e -c "
+          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
           colcon build
           "
 
