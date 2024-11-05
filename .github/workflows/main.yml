@@ -192,12 +192,10 @@ jobs:
         shell: bash
 
     steps:
-      - name: Install libboost
-        run: |
-          /ros_entrypoint.sh /bin/bash -e -c "
-          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
-          apt-get update && apt-get -y install libboost-all-dev
-          "
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install dependencies
         working-directory: scripts
@@ -205,11 +203,10 @@ jobs:
           ./install_cmake.sh
           ./install_sdk_dependencies.sh
           ./install_gtest.sh
-
-      - name: Checkout source and submodules
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+          /ros_entrypoint.sh /bin/bash -e -c "
+          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
+          apt-get update && apt-get -y install libboost-all-dev
+          "
 
       - name: Build ROS2 bridge
         run: |
