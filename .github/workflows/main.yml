@@ -100,7 +100,7 @@ jobs:
         run: ./build_sdk_examples.bat
 
   ros-bridge-tests:
-    name: "ROS Bridge Tests"
+    name: "ROS1 Bridge Tests"
     runs-on: [self-hosted, Linux, X64, docker, focal]
     # if: false  # disable this job
 
@@ -141,6 +141,7 @@ jobs:
       - name: Install dependencies
         working-directory: scripts
         run: |
+          ./install_cmake.sh
           ./install_sdk_dependencies.sh
           ./install_gtest.sh
   
@@ -197,6 +198,13 @@ jobs:
           rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true
           apt-get update && apt-get -y install libboost-all-dev
           "
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: |
+          ./install_cmake.sh
+          ./install_sdk_dependencies.sh
+          ./install_gtest.sh
 
       - name: Checkout source and submodules
         uses: actions/checkout@v4
