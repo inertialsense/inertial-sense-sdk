@@ -239,35 +239,29 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 unsigned int cLogStats::Count()
 {
     unsigned int count = 0;
-
     for (auto& [ptype, msg] : msgs) 
     {
         count  += msg.count;
     }
-
     return count;
 }
 
 unsigned int cLogStats::Errors()
 {
     unsigned int errors = 0;
-
     for (auto& [ptype, msg] : msgs) 
     {
         errors += msg.errors;
     }
-
     return errors;
 }
 
 string cLogStats::Stats()
 {
     std::stringstream ss;
-
     unsigned int count = Count();
     unsigned int errors = Errors();
     ss << "Total: count " << count << ", errors " << errors << std::endl;
-
     for (auto& [ptype, msg] : msgs) 
     {
         ss << MessageStats(ptype, msg);
@@ -279,7 +273,6 @@ void cLogStats::WriteToFile(const string& file_name)
 {
     unsigned int count = Count();
     // unsigned int errors = Errors();
-
     if (count != 0)
     {   // Write log stats to disk
         statsFile = CreateISLogFile(file_name, "wb");

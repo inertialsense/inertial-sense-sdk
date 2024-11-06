@@ -31,8 +31,20 @@ TEST(ISDataMappings, StringToDataToString)
 		EXPECT_EQ(str1, str2);
 	}
 
+#if 0	// Print keys for flashMap
+	for (const auto& [key, value] : flashMap) 
+	{
+        std::cout << key << std::endl;
+    }
+#endif
+
 	{	// Floating Point Test
-		const data_info_t& info = flashMap.at("gps1AntOffset");
+		string key = "gps1AntOffset";
+		if (flashMap.find(key) == flashMap.end())
+		{	// Key not present.  Include brackets.  In ISDataMappings, we use both multi-element single-variables and single-element multi-variables to represent arrays.
+			key += "[0]";
+		}
+		const data_info_t& info = flashMap.at(key);
 		float gps1AntOffset1 = 1.234f;
 		str1 = to_string(gps1AntOffset1);
 
