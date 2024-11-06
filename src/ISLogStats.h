@@ -16,7 +16,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <string>
 #include <cstdint>
 #include <map>
-#include <utility>
 
 #include "data_sets.h"
 #include "ISComm.h"
@@ -62,7 +61,8 @@ public:
 	void LogDataRealtime(protocol_type_t ptype, int id, double timestamp=0.0);
 	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
 	void PrintStats();
-	std::pair<unsigned int, unsigned int> CountAndErrors();
+	unsigned int Count();
+	unsigned int Errors();
 	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true);
 	std::string Stats();
 	void WriteToFile(const std::string& fileName);
