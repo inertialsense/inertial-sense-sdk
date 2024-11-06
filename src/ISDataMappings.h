@@ -94,7 +94,7 @@ typedef struct
 	double conversion;			// Unit conversion when converting to string
 } data_info_t;
 
-CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
+CONST_EXPRESSION uint32_t s_eDataTypeSize[DATA_TYPE_COUNT] =
 {
     (uint32_t)sizeof(int8_t),
     (uint32_t)sizeof(uint8_t),
@@ -108,6 +108,22 @@ CONST_EXPRESSION uint32_t s_eDataTypeSizes[DATA_TYPE_COUNT] =
     (uint32_t)sizeof(double),
     (uint32_t)0, // string, must be set to actual size by caller
     (uint32_t)0  // binary, must be set to actual size by caller
+};
+
+CONST_EXPRESSION uint32_t s_eDataTypeHexStringSize[DATA_TYPE_COUNT] =
+{	// Number of characters in hexidecimal string including prefix "0x" 
+    (uint32_t)4,	// 0x00
+    (uint32_t)4,    // 0x00
+    (uint32_t)6,    // 0x0000
+    (uint32_t)6,    // 0x0000
+    (uint32_t)10,   // 0x0000000000
+    (uint32_t)10,   // 0x0000000000
+    (uint32_t)18,   // 0x00000000000000000000
+    (uint32_t)18,   // 0x00000000000000000000
+    (uint32_t)0,
+    (uint32_t)0,
+    (uint32_t)0,
+    (uint32_t)0
 };
 
 #if !PLATFOM_IS_EMBEDDED
@@ -236,8 +252,8 @@ public:
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
 		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
 		{
-			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
-			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
+			assert((s_eDataTypeSize[type] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSize[type] == dinfo->size) && "Data type size mismatch");
 		}
     }
 
@@ -286,8 +302,8 @@ public:
         static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
 		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
         {
-            assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
-            assert((s_eDataTypeSizes[type]*arraySize == size) && "Data type size mismatch");
+            assert((s_eDataTypeSize[type] != 0) && "Data type size invalid");
+            assert((s_eDataTypeSize[type]*arraySize == size) && "Data type size mismatch");
         }
     }
 
@@ -300,7 +316,7 @@ public:
 		double conversion = 1.0,
 		uint32_t typeSize = 0)
     {
-		uint32_t size = (typeSize ? typeSize : s_eDataTypeSizes[type]);
+		uint32_t size = (typeSize ? typeSize : s_eDataTypeSize[type]);
 		uint32_t arraySize = 0; 	// Zero for single element 
 		uint32_t elementSize = size;
 
@@ -333,8 +349,8 @@ public:
         // static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
 		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
 		{
-			assert((s_eDataTypeSizes[type] != 0 || (type == DATA_TYPE_STRING)) && "Data type size invalid");
-			assert((s_eDataTypeSizes[type] == dinfo->size) && "Data type size mismatch");
+			assert((s_eDataTypeSize[type] != 0 || (type == DATA_TYPE_STRING)) && "Data type size invalid");
+			assert((s_eDataTypeSize[type] == dinfo->size) && "Data type size mismatch");
 		}
     }
 
@@ -348,7 +364,7 @@ public:
 		double conversion = 1.0,
 		uint32_t typeSize = 0)
     {
-		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSizes[type]);
+		uint32_t elementSize = (typeSize ? typeSize : s_eDataTypeSize[type]);
 		uint32_t size = elementSize * arraySize;
 
         // Populate the map with the new entry
@@ -381,10 +397,20 @@ public:
         // static_assert((uint32_t)sizeof(FieldType) == sizeof(FieldType), "Field type is an unexpected size");
 		if ((type != DATA_TYPE_STRING) && (type != DATA_TYPE_BINARY))
 		{
-			assert((s_eDataTypeSizes[type] != 0) && "Data type size invalid");
-			assert((s_eDataTypeSizes[type]*arraySize == size) && "Data type size mismatch");
+			assert((s_eDataTypeSize[type] != 0) && "Data type size invalid");
+			assert((s_eDataTypeSize[type]*arraySize == size) && "Data type size mismatch");
 		}
     }
+
+	void AddLlaDegM(const std::string& name, 
+		uint32_t offset,
+		const std::string& description = "",
+		int flags = 0)
+    {
+		AddMember2(name + "[0]", offset + 0*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[1]", offset + 1*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[2]", offset + 2*sizeof(double), DATA_TYPE_F64, "m", description, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+	}
 
 private:
 	data_set_t& ds;						// data set reference
@@ -432,13 +458,13 @@ public:
 	* Get the info for a data id
 	* @return the info for the data id, or NULL if none found
 	*/
-	static const map_name_to_info_t* NameToInfo(uint32_t did);
+	static const map_name_to_info_t* NameToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
 	* @return map pointer for the data id, or NULL if none found
 	*/
-	static const map_index_to_info_t* IndexToInfo(uint32_t did);
+	static const map_index_to_info_t* IndexToInfoMap(uint32_t did);
 
 	/**
 	* Get map pointer for a data id
@@ -538,6 +564,11 @@ protected:
     #define PROTECT_UNALIGNED_ASSIGNS
     template<typename T>
     static inline void protectUnalignedAssign(void* out, T in) {
+		// This gets called from cISDataMappings::StringToVariable
+		if (errno == ERANGE) {
+        	// std::cerr << "Underflow or overflow error: value is out of range" << std::endl;
+        	return;		// abort to prevent use of invalid number: -1 (0xFFFFFFFFFFFFFFFF)
+    	}
     #ifdef PROTECT_UNALIGNED_ASSIGNS
         memcpy((void*)out, (void*)&in, sizeof(T));
     #else

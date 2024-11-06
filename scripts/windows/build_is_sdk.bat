@@ -31,7 +31,7 @@ IF %CLEAN%==1 (
     echo.
     echo === Building SDK %BUILD_TYPE% ===
     @REM cmake -S . "-DCMAKE_BUILD_TYPE=Release" && cmake --build . --config Release -j 7
-    cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=%BUILD_TYPE%" && cmake --build ./build --config %BUILD_TYPE% -j 7
+    cmake -S . -B ./build "-DCMAKE_BUILD_TYPE=%BUILD_TYPE%" && cmake --build ./build --config %BUILD_TYPE% -j %NUMBER_OF_PROCESSORS%
     SET "EXIT_CODE=%ERRORLEVEL%"
 )
 

@@ -1,3 +1,6 @@
+import platform
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 import os.path
 import sys
 import glob
@@ -37,6 +40,10 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+if platform.system() == 'Windows':
+    macros = [("UNICODE", "1")]     # Necessary for ISFileManager.cpp
+else:
+    macros = []
 
 
 static_libraries = ['InertialSenseSDK']
@@ -75,6 +82,7 @@ ext_modules = [
         "inertialsense.logs.log_reader",
         sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
         include_dirs = include_dirs,
+        define_macros=macros,
         extra_objects=extra_objects
     ),
 ]
@@ -164,7 +172,7 @@ setup(
         'pandas',
         'pybind11>=2.12',
         'pyqt5',
-        'pyserial', 
+        'pyserial',
         'scipy',
         'simplekml',
         'tqdm',

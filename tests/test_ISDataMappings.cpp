@@ -11,7 +11,7 @@ TEST(ISDataMappings, StringToDataToString)
 	string str2;
 	uDatasets d = {};
 
-	const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfo(DID_FLASH_CONFIG);
+	const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(DID_FLASH_CONFIG);
 
 	{	// Integer Test
 		const data_info_t& info = flashMap.at("ser0BaudRate");

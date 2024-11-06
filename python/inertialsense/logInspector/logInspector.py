@@ -79,15 +79,15 @@ def setDataInformationDirectory(path, startMode=START_MODE_HOT):
         data['dataInfo']['dataDirectory'] = os.path.dirname(path).replace('\\','/')
         data['dataInfo']['subDirectories'] = [os.path.basename(path)]
         serialnumbers = []
-        logtype = 'DAT'
+        logtype = 'RAW'
         for root, dirs, files in os.walk(path):
             for filename in files:
                 if "LOG_SN" in filename:
                     serialnum = re.search(r'\d+', filename).group()
                     if serialnum not in serialnumbers:
                         serialnumbers += [serialnum]
-                if ".raw" in filename.lower():
-                    logtype = "RAW"
+                if ".dat" in filename.lower():
+                    logtype = "DAT"
 
         data['processData'] = {}
         data['processData']['datasets'] = [{}]
