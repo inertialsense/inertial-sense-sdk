@@ -152,6 +152,7 @@ extern "C" {
     #endif
 #endif
 
+double current_timeSecD();
 unsigned int current_timeSec();
 unsigned int current_timeMs();
 uint64_t current_timeUs();

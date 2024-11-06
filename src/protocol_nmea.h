@@ -11,8 +11,6 @@
 #define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
 #define NMEA_CMD_SIZE                                   10
 
-#define UINT32_MATCH(u1,u2)	((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
-
 enum eNmeaProtocolVersion
 {
     NMEA_PROTOCOL_2P3 		= 0,	// <4.10
@@ -43,8 +41,6 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
-int getNmeaMsgId(const void* a, int aSize);
-int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////

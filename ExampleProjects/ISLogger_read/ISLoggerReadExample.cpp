@@ -36,9 +36,9 @@ int main(int argc, char* argv[])
 
 	// Utility class for ctrl-c handling
 	cInertialSenseDisplay display;
-	display.SetDisplayMode(cInertialSenseDisplay::DMODE_SCROLL);
+	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_SCROLL);
 	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
-	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_STATS);	
+	display.SetDisplayMode(cInertialSenseDisplay::DMODE_STATS);	
 
 	std::vector<shared_ptr<cDeviceLog>> devices = logger.DeviceLogs();
     for (auto deviceLog : devices)

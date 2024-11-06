@@ -10,21 +10,25 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 #include <string>
 
+#include "ISDataMappings.h"
 #include "ISLogFile.h"
 #include "ISLogFileFactory.h"
-#include "ISDataMappings.h"
 #include "ISLogStats.h"
+#include "ISUtilities.h"
 #include "protocol_nmea.h"
 
 using namespace std;
 
 
-cLogStatDataId::cLogStatDataId()
+cLogStatMsgId::cLogStatMsgId()
 {
     count = 0;
-    errorCount = 0;
+    errors = 0;
     averageTimeDelta = 0.0;
     totalTimeDelta = 0.0;
     lastTimestamp = 0.0;
@@ -35,7 +39,7 @@ cLogStatDataId::cLogStatDataId()
     timestampDropCount = 0;
 }
 
-void cLogStatDataId::LogTimestamp(double timestamp)
+void cLogStatMsgId::LogTimestamp(double timestamp)
 {
     // check for corrupt data
     if (_ISNAN(timestamp) || timestamp < 0.0 || timestamp > 999999999999.0)
@@ -58,12 +62,12 @@ void cLogStatDataId::LogTimestamp(double timestamp)
     lastTimestamp = timestamp;
 }
 
-void cLogStatDataId::Printf()
+void cLogStatMsgId::PrintStats()
 {
 
 #if !PLATFORM_IS_EMBEDDED
 
-    printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
+    printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errors);
     printf(" Time delta: (ave, min, max) %f, %f, %f\r\n", averageTimeDelta, minTimestampDelta, maxTimestampDelta);
     printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
 
@@ -78,93 +82,107 @@ cLogStats::cLogStats()
 
 void cLogStats::Clear()
 {
-    for (uint32_t id = 0; id < DID_COUNT; id++)
+    for (auto& [ptype, msg] : msgs) 
     {
-        isbStats[id] = {};
-        isbStats[id].minTimestampDelta = 1.0E6;
-    }
-    errorCount = 0;
-    count = 0;
-}
-
-void cLogStats::LogError(const p_data_hdr_t* hdr)
-{
-    errorCount++;
-    if (hdr != NULL && hdr->id < DID_COUNT)
-    {
-        cLogStatDataId& d = isbStats[hdr->id];
-        d.errorCount++;
-    }
-}
-
-cLogStatDataId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
-{
-    switch (ptype)
-    {
-    default: return NULL;
-    case _PTYPE_INERTIAL_SENSE_DATA:
-    case _PTYPE_INERTIAL_SENSE_CMD:     return &isbStats[id];
-    case _PTYPE_NMEA:                   return &nmeaStats[id];
-    case _PTYPE_UBLOX:                  return &ubloxStats[id];
-    case _PTYPE_RTCM3:                  return &rtcm3Stats[id];
-    }
-}
-
-void cLogStats::LogData(uint32_t id, protocol_type_t ptype)
-{
-    cLogStatDataId *d = MsgStats(ptype, id);
-    if (d)
-    {
-        d->count++;
-    }
-    count++;
-}
-
-void cLogStats::LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype)
-{
-    cLogStatDataId *d = MsgStats(ptype, id);
-    if (d)
-    {
-        d->count++;
-        if (timestamp != 0.0)
+        msg.count = 0;
+        msg.errors = 0;
+        for (uint32_t id=0; id < DID_COUNT; id++)
         {
-            d->LogTimestamp(timestamp);
+            msg.stats[id] = {};
+            msg.stats[id].minTimestampDelta = 1.0E6;
         }
     }
-    count++;
 }
 
-void cLogStats::Printf()
+void cLogStats::IsbLogError(const p_data_hdr_t* hdr)
 {
+    sLogStatPType &msg = msgs[_PTYPE_INERTIAL_SENSE_DATA];
+
+    msg.errors++;
+    if (hdr != NULL && hdr->id < DID_COUNT)
+    {
+        cLogStatMsgId& d = msg.stats[hdr->id];
+        d.errors++;
+    }
+}
+
+void cLogStats::LogDataRealtime(protocol_type_t ptype, int id, double timestamp)
+{
+    if (timestamp == 0.0)
+    {
+        timestamp = current_timeSecD();
+    }
+    LogData(ptype, id, timestamp);
+}
+
+void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
+{
+    sLogStatPType &msg = msgs[ptype];
+    cLogStatMsgId &d = msg.stats[id];
+    msg.count++;
+    d.count++;
+
+    if (timestamp != 0.0)
+    {   // Use system time
+        msgs[ptype].stats[id].LogTimestamp(timestamp);
+    }
+}
+
+void cLogStats::PrintStats()
+{
+
+#if 1
+    cout << Stats();
+
+#else
 
 #if !PLATFORM_IS_EMBEDDED
 
-    printf("LOG STATS\r\n");
-    printf("----------");
-    printf("Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
+    printf("Count: %llu,   Errors: %llu\n", (unsigned long long)count, (unsigned long long)errors);
     for (auto it = isbStats.begin(); it != isbStats.end(); ++it) 
     {
         int id = it->first;
-        cLogStatDataId &d = it->second;
+        cLogStatMsgId &d = it->second;
         if (d.count != 0)
         {
-            printf(" ISB: %d\r\n", id);
-            d.Printf();
-            printf("\r\n");
+            printf(" ISB: %d\n", id);
+            d.PrintStats();
+            printf("\n");
         }
     }
 
 #endif
 
+#endif
+
 }
 
-void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype)
+string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime)
 {
-    for (auto it = msgStats.begin(); it != msgStats.end(); ++it) 
+    std::stringstream ss;
+
+    string msgName;
+    int colWidName = 24;
+    switch (ptype)
     {
-        uint32_t id = it->first;
-        cLogStatDataId& stat = it->second;
-        if (stat.count == 0 && stat.errorCount == 0)
+    default:                                msgName = "UNKNOWN";    break;
+    case _PTYPE_INERTIAL_SENSE_CMD:         msgName = "ISB-CMD";    break;
+    case _PTYPE_INERTIAL_SENSE_DATA:        msgName = "ISB";        break;
+    case _PTYPE_NMEA:                       msgName = "NMEA";       colWidName = 8;      break;
+    case _PTYPE_UBLOX:                      msgName = "UBLOX";      colWidName = 8;      break;
+    case _PTYPE_RTCM3:                      msgName = "RTCM3";      break;
+    case _PTYPE_SPARTN:                     msgName = "SPARTN";     break;
+    case _PTYPE_SONY:                       msgName = "SONY";       break;
+    }
+
+    ss << std::endl;
+    ss << msgName << ": count " << msg.count << ", errors " << msg.errors << std::endl;
+
+    ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count Errors  dtMs( ave, min, max)   drops" << std::endl;
+
+    for (auto& [id, stat] : msg.stats)
+    {
+        if (stat.count == 0 && stat.errors == 0)
         {   // Exclude zero count stats
             continue;
         }
@@ -174,49 +192,86 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
         {
         case _PTYPE_INERTIAL_SENSE_CMD:
         case _PTYPE_INERTIAL_SENSE_DATA:
-            statsFile->lprintf("%s - ID: %d (%s)\r\n", msgName, id, cISDataMappings::DataName(id));
+            ss << std::setw(3) << std::right << id << " " << std::setw(colWidName) << std::left << cISDataMappings::DataName(id) << std::right;
             break;
 
-        case _PTYPE_NMEA: 
-            {
+        case _PTYPE_NMEA: {
                 char talker[10] = {0};
                 nmeaMsgIdToTalker(id, talker, sizeof(talker));
-                statsFile->lprintf("%s - %s\r\n", msgName, talker);
+                ss << std::setw(3) << ::right << id << " " << std::setw(colWidName) << std::left << talker << std::right;
             }
             break;
 
-        case _PTYPE_UBLOX: 
-            {
+        case _PTYPE_UBLOX: {
                 uint8_t msgClass = 0xFF & (id>>0);
                 uint8_t msgID    = 0xFF & (id>>8);
-                statsFile->lprintf("%s - Class ID (0x%02x 0x%02x)\r\n", msgName, msgClass, msgID);
+                ss << "Class ID (0x" << std::hex << msgClass << "0x" << std::hex << msgID << ")" << std::hex << std::endl;
             }
             break;
 
         default:
-            statsFile->lprintf("%s - ID: %d\r\n", msgName, id);
+            ss << std::setw(3) << id;
             break;
         }
-        statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
-        statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
-        statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
-        statsFile->lprintf("\r\n");
+
+        ss << std::setw(6) << std::setfill(' ') << stat.count << std::setw(7) << stat.errors;
+        if (showDeltaTime)
+        {
+#define DT_COL_WIDTH    6
+            if (stat.timestampDeltaCount)
+            {
+                int dtMsAve = int(stat.averageTimeDelta*1000.0);
+                int dtMsMin = int(stat.minTimestampDelta*1000.0);
+                int dtMsMax = int(stat.maxTimestampDelta*1000.0);
+                ss << "  (" 
+                   << std::setw(DT_COL_WIDTH) << dtMsAve << "," 
+                   << std::setw(DT_COL_WIDTH) << dtMsMin << "," 
+                   << std::setw(DT_COL_WIDTH) << dtMsMax << ") " 
+                   << std::setw(5) << stat.timestampDropCount;
+            }
+        }
+        ss << std::endl;
     }
+
+    return ss.str();
+}
+
+std::pair<unsigned int, unsigned int> cLogStats::CountAndErrors()
+{
+    unsigned int count = 0;
+    unsigned int errors = 0;
+
+    for (auto& [ptype, msg] : msgs) 
+    {
+        count  += msg.count;
+        errors += msg.errors;
+    }
+
+    return {count, errors};
+}
+
+string cLogStats::Stats()
+{
+    std::stringstream ss;
+
+    auto [count, errors] = CountAndErrors();
+    ss << "Total: count " << count << ", errors " << errors << std::endl;
+
+    for (auto& [ptype, msg] : msgs) 
+    {
+        ss << MessageStats(ptype, msg);
+    }
+    return ss.str();
 }
 
 void cLogStats::WriteToFile(const string& file_name)
 {
+    auto [count, errors] = CountAndErrors();
+
     if (count != 0)
-    {
-        // flush log stats to disk
+    {   // Write log stats to disk
         statsFile = CreateISLogFile(file_name, "wb");
-        statsFile->lprintf("Total msg count: %d,   Total errors: %d\r\n\r\n", count, errorCount);
-
-        WriteMsgStats(isbStats,   "ISB",   _PTYPE_INERTIAL_SENSE_DATA);
-        WriteMsgStats(nmeaStats,  "NMEA" , _PTYPE_NMEA);
-        WriteMsgStats(ubloxStats, "UBLOX", _PTYPE_UBLOX);
-        WriteMsgStats(rtcm3Stats, "RTCM3", _PTYPE_RTCM3);
-
+        statsFile->lprintf("%s", Stats().c_str());
         CloseISLogFile(statsFile);
     }
 }

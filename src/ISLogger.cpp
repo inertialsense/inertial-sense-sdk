@@ -513,18 +513,17 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     if (isHeaderCorrupt(dataHdr))
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
-        m_logStats.LogError(dataHdr);
+        m_logStats.IsbLogError(dataHdr);
     }
     else if (!deviceLog->SaveData(dataHdr, dataBuf))
     {
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats.LogError(dataHdr);
+        m_logStats.IsbLogError(dataHdr);
     }
 #if 1
     else
     {	// Success
-        double timestamp = cISDataMappings::Timestamp(dataHdr, dataBuf);
-        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -566,7 +565,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
     {	// Save Error
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats.LogError(NULL);
+        m_logStats.IsbLogError(NULL);
     }
     else
     {	// Success
@@ -585,13 +584,12 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     while (isDataCorrupt(data = deviceLog->ReadData()))
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
-        m_logStats.LogError(&data->hdr);
+        m_logStats.IsbLogError(&data->hdr);
         data = NULL;
     }
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
     }
     return data;
 }

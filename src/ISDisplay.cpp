@@ -588,30 +588,20 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 	return false;
 }
 
-void cInertialSenseDisplay::PrintIsCommErrors(is_comm_instance_t *comm, std::string filename)
+string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
 	if (comm == NULL)
-		return;
+		return "";
 
-	bool hasParseErrors = false;
-	for (int i=0; i<NUM_EPARSE_ERRORS; i++)
+	std::stringstream ss;
+	ss << std::endl;
+	ss << "is_comm stats:  Rx " << comm->rxPktCount << std::endl;
+
+	if (comm->rxErrorCount)
 	{
-		if (comm->rxErrorTypeCount[i])
-		{
-			hasParseErrors = true;
-			break;
-		}
-	}
-
-	if (!hasParseErrors)
-		return;	// Only print if there are errors
-
-	cout << filename << "\n";
-	cout << " is_comm stats: ";
-	
-	if (hasParseErrors)
-	{
-		cout << "PARSE ERRORS!!!\n";
+#define HLINE_DIVIDER "====================================================================================="
+		ss << HLINE_DIVIDER << std::endl;
+		ss << comm->rxErrorCount << " PARSE ERRORS!!!" << std::endl;
 		std::string name;
 		for (int i=0; i<NUM_EPARSE_ERRORS; i++)
 		{
@@ -629,18 +619,22 @@ void cInertialSenseDisplay::PrintIsCommErrors(is_comm_instance_t *comm, std::str
 			case EPARSE_STREAM_UNPARSABLE:      name = "STREAM_UNPARSABLE";              break;
 			default:                            name = "EPARSE " + std::to_string(i);    break;
 			}
-			cout << "  " << std::setw(20) << std::setfill(' ') << std::left << name << std::setw(3) << comm->rxErrorTypeCount[i] << "     ";
+			ss << "  " << std::setw(20) << std::setfill(' ') << std::left << name << std::setw(3) << comm->rxErrorTypeCount[i] << "     ";
 			if ((i+1)%3 == 0)
 			{	// print three columns
-				cout << "\n";
+				ss << std::endl;
 			}
 		}
+		ss << std::endl;
+		ss << HLINE_DIVIDER << std::endl;
 	}
 	else
 	{
-		cout << "No parse errors.";
+		ss << "No parse errors.";
 	}
-	cout << "\n";
+	ss << std::endl;
+
+	return ss.str();
 }
 
 string cInertialSenseDisplay::VectortoString()
@@ -810,7 +804,7 @@ char* cInertialSenseDisplay::StatusToString(char* ptr, char* ptrEnd, const uint3
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\tErrors    Rx parse %d, temperature %d, self-test %d\n",
 		HDW_STATUS_COM_PARSE_ERROR_COUNT(hdwStatus),
 		(hdwStatus & HDW_STATUS_ERR_TEMPERATURE) != 0,
-		(hdwStatus & HDW_STATUS_BIT_FAULT) != 0);
+		(hdwStatus & HDW_STATUS_BIT_MASK) == HDW_STATUS_BIT_FAULT);
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t\thdwStatus (0x%08X)", hdwStatus);
     std::string statusStr;

@@ -104,17 +104,13 @@ bool cDeviceLog::OpenWithSystemApp()
 
 bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-    if (dataHdr != NULL)
-    {
-		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::Timestamp(dataHdr, dataBuf) : 0.0);
-        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp, ptype);
-	}
+	LogStatsRealtime(dataHdr, dataBuf, ptype);
     return true;
 }
 
 bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
-   return true;
+	return true;
 }
 
 bool cDeviceLog::SetupReadInfo(const string& directory, const string& serialNum, const string& timeStamp)
@@ -235,20 +231,39 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
     );
 }
 
+void cDeviceLog::LogStatsFromFile(p_data_buf_t *data)
+{ 
+	double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
+	m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);  
+}
+
+void cDeviceLog::LogStatsFromFile(protocol_type_t ptype, int id, double timestamp)
+{ 
+	m_logStats.LogData(ptype, id, timestamp);  
+}
+
+void cDeviceLog::LogStatsRealtime(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
+{
+    if (dataHdr != NULL)
+    {
+		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::Timestamp(dataHdr, dataBuf) : current_timeSecD());
+        m_logStats.LogData(ptype, dataHdr->id, timestamp);
+	}
+}
+
+void cDeviceLog::LogStatsRealtime(protocol_type_t ptype, int id, double timestamp) 
+{
+	if (timestamp == 0.0)
+	{	// Use system time
+		timestamp = current_timeSecD();
+	}
+	m_logStats.LogData(ptype, id, timestamp);
+}
+
 ISDevice* cDeviceLog::Device() {
     return (ISDevice*)device;
 }
 const dev_info_t* cDeviceLog::DeviceInfo() {
     return (dev_info_t*)&(device->devInfo);
 }
-
-void cDeviceLog::OnReadData(p_data_buf_t* data)
-{
-    if (data != NULL)
-    {
-        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
-    }
-}
-
 
