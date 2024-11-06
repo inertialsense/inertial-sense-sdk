@@ -141,7 +141,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 break;
             }
 
-            cDeviceLog::LogStatsRealtime(ptype, m_comm.rxPkt.id, timestamp);
+            LogStatsRealtime(ptype, m_comm.rxPkt.id, timestamp);
             globalLogStats.LogDataRealtime(ptype, m_comm.rxPkt.id, timestamp);
         }
     }

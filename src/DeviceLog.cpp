@@ -78,11 +78,8 @@ void cDeviceLog::InitDeviceForReading()
 
 bool cDeviceLog::CloseAllFiles()
 {
-    if (device == nullptr)
-        return false;
-
     if (m_writeMode) {
-        string str = m_directory + "/stats_SN" + to_string(device->devInfo.serialNumber) + ".txt";
+        string str = m_directory + "/stats_SN" + to_string(m_devSerialNo) + ".txt";
         m_logStats.WriteToFile(str);
     }
     return true;

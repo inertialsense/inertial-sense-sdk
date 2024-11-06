@@ -33,10 +33,6 @@ int main(int argc, char* argv[])
 	// STEP 2: Instantiate InertialSense class
 	// InertialSense class wraps communications and logging in a convenient, easy to use class
 	InertialSense inertialSense(msgHandlerIsb);
-	// if (!inertialSense.Open(argv[1]))
-	// {
-	// 	std::cout << "Failed to open com port at " << argv[1] << std::endl;
-	// }
 
 	// STEP 3: Enable data logger
 	// get log type from command line
