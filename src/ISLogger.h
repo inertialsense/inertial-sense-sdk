@@ -162,8 +162,9 @@ public:
         float driveUsageLimitPercent = 0.5f, 
         bool useSubFolderTimestamp = true,
         bool enableCsvIns2ToIns1Conversion = true);
-    const cLogStats& GetStats() { return m_logStats; }
-    eLogType GetType() { return m_logType; }
+    unsigned int Count() { return m_logStats.Count(); }
+    unsigned int Errors() { return m_logStats.Errors(); }
+    eLogType Type() { return m_logType; }
 
     /**
     * Get the timeout flush parameter in seconds
