@@ -11,14 +11,11 @@ from os.path import expanduser, exists
 from scipy.interpolate import interp1d
 
 file_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.normpath(file_path + '/..'))
-sys.path.append(os.path.normpath(file_path + '/../math/src'))
+sys.path.insert(0, os.path.normpath(file_path + '/../..'))
 
-from log_reader import LogReader
-# from ci_hdw.data_sets import *
-from pylib.data_sets import *
-from inertialsense_math.pose import *
-from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
+from inertialsense.tools.data_sets import *
+from inertialsense.math.pose import *
+from inertialsense.logs.log_reader import LogReader
 
 RAD2DEG = 180.0 / np.pi
 DEG2RAD = np.pi / 180.0

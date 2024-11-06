@@ -1,16 +1,23 @@
-from ctypes import sizeof
 import math, allantools, sys, yaml, os
-from typing import List, Any, Union
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from os.path import expanduser
-from inertialsense_math.pose import *
 from datetime import date, datetime
 import pandas as pd
 
-from ui import InteractiveLegend
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.normpath(file_path + '/..'))
+
+from inertialsense.math.pose import *
+from inertialsense.logInspector.ui import InteractiveLegend
+
+from inertialsense.logs.logReader import Log
+from inertialsense.tools.ISToolsData import *
+from inertialsense.tools.ISToolsDataSorted import *
+from inertialsense.tools.data_sets import *
+from inertialsense.math.pose import quat2euler, lla2ned, quatRot, quatConjRot, quat_ecef2ned
 
 BLACK = r"\u001b[30m"
 RED = r"\u001b[31m"
@@ -31,16 +38,6 @@ SHOW_GPS2 = 0
 SHOW_GPS_W_INS = 1
 SHOW_HEADING_ARROW = 0
 
-file_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.normpath(file_path + '/..'))
-sys.path.append(os.path.normpath(file_path + '/../math/src'))
-
-from logReader import Log
-from pylib.ISToolsDataSorted import refLla, getTimeFromTowMs, getTimeFromTow, setGpsWeek, getTimeFromGTime
-from pylib.data_sets import *
-from inertialsense_math.pose import quat2euler, lla2ned, rotmat_ecef2ned, quatRot, quatConjRot, quat_ecef2ned
-import datetime
-
 class logPlot:
     def __init__(self, show, save, format, log):
         self.show = show
@@ -49,7 +46,6 @@ class logPlot:
         self.d = 1
         self.residual = False
         self.timestamp = False
-        self.xAxisSample = False
         self.enableLegends = False  # Enable interactive legends
         if self.enableLegends:
             self.legends = InteractiveLegend()
@@ -81,9 +77,6 @@ class logPlot:
 
     def enableTimestamp(self, enable):
         self.timestamp = enable
-
-    def enableXAxisSample(self, enable):
-        self.xAxisSample = enable
 
     def setActiveSerials(self, serials):
         self.active_devs = []
@@ -120,7 +113,7 @@ class logPlot:
         try:
             data = self.log.data[dev, DID][field][::self.d]
             if removeLeadingZeros:
-                # Copy the first nonzero data entry to leading zeros 
+                # Copy the first nonzero data entry to leading zeros
                 # (e.g. first position initialized from GNSS to the initial default position in AHRS)
                 startIdx = np.nonzero(data)[0][0]
                 data[0:startIdx] = data[startIdx]
@@ -331,7 +324,7 @@ class logPlot:
         for d in self.active_devs:
             time = getTimeFromTow(self.getData(d, DID_INS_2, 'timeOfWeek'), True)
             lla = self.getData(d, DID_INS_2, 'lla', True)
-            if len(lla) != len(time):
+            if len(lla) == 0 or len(time) == 0 or len(lla) != len(time):
                 continue
             ax[0].plot(time, lla[:,0], label=self.log.serials[d])
             ax[1].plot(time, lla[:,1])
@@ -837,7 +830,12 @@ class logPlot:
         filepath = self.log.directory + "/enu.out"
         if ~os.path.isfile(filepath):
             return [], [], []
-        df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+
+        try:
+            df = pd.read_csv(filepath, skiprows=2, header=None, index_col=None, names=[ 'date', 'time', 'e-baseline', 'n-baseline', 'u-baseline', 'Q', 'ns', 'sde', 'sdn', 'sdu', 'sden', 'sdnu', 'sdue', 'age', 'ratio', 'baseline'], delim_whitespace=True)
+        except:
+            print(f"gpx1Heading:: Unable to open '{filepath}'")
+            return None
 
         df['datetime'] = df[['date','time']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
         df['datetime'] = pd.to_datetime(df['datetime'] , format = '%Y/%m/%d %H:%M:%S.%f')
@@ -858,7 +856,7 @@ class logPlot:
         baselineNED = baselineNED[n:,:]
 
         gpxHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
-        return gpxTime, baselineNED, gpxHeading, 
+        return [gpxTime, baselineNED, gpxHeading]
 
 
     def heading(self, fig=None):
@@ -1211,158 +1209,12 @@ class logPlot:
         except:
             print(RED + "problem plotting hdwStatus: " + sys.exc_info()[0] + RESET)
 
-    def gpxStatus(self, fig=None):
-        try:
-            if fig is None:
-                fig = plt.figure()
-            ax = fig.subplots(1, 1, sharex=True)
-            fig.suptitle('GPX Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
-
-            for d in self.active_devs:
-                r = d == self.active_devs[0]    # plot text w/ first device
-                cnt = 0
-                time = getTimeFromTowMs(self.getData(d, DID_GPX_STATUS, 'timeOfWeekMs'))
-                status = self.getData(d, DID_GPX_STATUS, 'status')
-
-                ax.plot(time, -cnt * 1.5 + ((status & 0x0000000F) >> 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'Com parse err count')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((status & 0xFF000000) >> 24))
-                if r: ax.text(p1, -cnt * 1.5, 'Fatal event')
-                cnt += 1
-                cnt += 1
-                
-            ax.grid(True)
-
-            self.setup_and_wire_legend()
-            self.saveFig(fig, 'GPX Status')
-        except:
-            print(RED + "problem plotting GPX status: " + sys.exc_info()[0] + RESET)
-
-    def gpxHdwStatus(self, fig=None):
-        try:
-            if fig is None:
-                fig = plt.figure()
-            ax = fig.subplots(1, 1, sharex=True)
-            fig.suptitle('GPX Hardware Status - ' + os.path.basename(os.path.normpath(self.log.directory)))
-
-            for d in self.active_devs:
-                r = d == self.active_devs[0]    # plot text w/ first device
-                cnt = 0
-                time = getTimeFromTowMs(self.getData(d, DID_GPX_STATUS, 'timeOfWeekMs'))
-                hStatus = self.getData(d, DID_GPX_STATUS, 'hdwStatus')
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000001) != 0))
-                p1 = ax.get_xlim()[0] + 0.02 * (ax.get_xlim()[1] - ax.get_xlim()[0])
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Sat RX')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000002) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Sat RX')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000004) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 TOW Valid')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000005) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 TOW Valid')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 4))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Reset Count')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000070) >> 8))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Reset Count')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000080) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS1 Fault')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00000800) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GNSS2 Fault')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00001000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'FW Update Required')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00004000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Sys Reset Required')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00008000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Flash Write Pending')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00010000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Com Tx Limited')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00020000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Com Rx Overrun')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00040000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 PPS')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00080000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 PPS')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00100000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 low CN0')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00200000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 low CN0')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00400000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS1 CN0 IR')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x00800000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err GPS2 CN0 IR')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x0300000) >> 24))
-                if r: ax.text(p1, -cnt * 1.5, 'BIT: Off, Running, Passed, Fault')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x04000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Err Temperature')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x08000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'GPS PPS Timesync')
-                cnt += 1
-                cnt += 1
-
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x10000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Reset Backup Mode')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x20000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Watchdog Reset')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x30000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Software Reset')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x40000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Hardware Reset')
-                cnt += 1
-                ax.plot(time, -cnt * 1.5 + ((hStatus & 0x80000000) != 0))
-                if r: ax.text(p1, -cnt * 1.5, 'Critical Sys Fault')
-                cnt += 1
-                cnt += 1
-                
-            ax.grid(True)
-
-            self.setup_and_wire_legend()
-            self.saveFig(fig, 'GPX Hardware Status')
-        except:
-            print(RED + "problem plotting GPX hdwStatus: " + sys.exc_info()[0] + RESET)
-
-
     def gpsStats(self, fig=None, did_gps_pos=DID_GPS1_POS):
         # try:
         if fig is None:
             fig = plt.figure()
 
-        ax = fig.subplots(6, 1, sharex=True, gridspec_kw={'height_ratios': [1, 2, 2, 2, 1, 1]})
+        ax = fig.subplots(5, 1, sharex=True, gridspec_kw={'height_ratios': [1, 2, 2, 2, 1]})
         did_gps_vel = did_gps_pos+(DID_GPS1_VEL-DID_GPS1_POS)
         if did_gps_pos==DID_GPS1_POS:
             gps_num = 1
@@ -1374,7 +1226,6 @@ class logPlot:
         self.configureSubplot(ax[2], 'Position Accuracy (m)', 'm')
         self.configureSubplot(ax[3], 'Speed Accuracy: sAcc (m/s)', 'm/s')
         self.configureSubplot(ax[4], 'Status', '')
-        self.configureSubplot(ax[5], 'CNO Sigma', '')
 
         plot_legend = 1
         for d in self.active_devs:
@@ -1411,8 +1262,6 @@ class logPlot:
             ax[4].plot(time, -cnt * 1.5 + ((gStatus & 0x00004000) != 0))
             if r: ax[4].text(p1, -cnt * 1.5, 'GPS Compass Baseline UNSET')
             cnt += 1
-
-            ax[5].plot(time, self.getData(d, did_gps_pos, 'cnoMeanSigma'), label=self.log.serials[d])
 
         self.setPlotYSpanMin(ax[1], 5)
 
@@ -1508,19 +1357,25 @@ class logPlot:
                 continue
             baseToRoverECEF = self.getData(d, relDid, 'baseToRoverVector')
 
-            qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
-            baselineNED = quatConjRot(qe2n, baseToRoverECEF)
-            # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
+            if rtkRelTime.size:
+                qe2n = quat_ecef2ned(gpsLla[-1,:]*np.pi/180.0)
+                baselineNED = quatConjRot(qe2n, baseToRoverECEF)
+                # gpsHeading = np.arctan2(baselineNED[:,1], baselineNED[:,0])
 
-            ax[0].plot(rtkRelTime, baselineNED[:,0])
-            ax[1].plot(rtkRelTime, baselineNED[:,1])
+                ax[0].plot(rtkRelTime, baselineNED[:,0])
+                ax[1].plot(rtkRelTime, baselineNED[:,1])
 
-            gpxTime, gpxBaselineNED, gpxHeading = self.gpx1Heading()
+            heading = self.gpx1Heading()
+            if heading is not None:
+                gpxTime = heading[0]
+                gpxBaselineNED = heading[1]
+                gpxHeading = heading[2]
+
             if len(gpxTime) == 0 or len(gpxBaselineNED) == 0:
                 continue
 
-            ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
-            ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
+                ax[0].plot(gpxTime, gpxBaselineNED[:,0], label="GPX")
+                ax[1].plot(gpxTime, gpxBaselineNED[:,1], label="GPX")
 
             self.legends_add(ax[0].legend(ncol=2))
 
@@ -1741,7 +1596,7 @@ class logPlot:
             gps2_data = np.delete(gps2_data, del_ind)
             t2 = np.delete(t2, del_ind)
             N2 = len(gps2_data)
-            if (N1 != N2): 
+            if (N1 != N2):
                 continue
 
             Nsat = len(sat)
@@ -2260,7 +2115,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($deg/hr$), ARW: %.3g $deg/\sqrt{hr}$,  BI: %.3g $deg/hr$' % (np.mean(sumARW[i][n]) + np.std(sumARW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'deg/hr')
 
         for i in range(pqrCount):
             for d in range(3):
@@ -2340,7 +2195,7 @@ class logPlot:
                         alable += '%d ' % n
                     else:
                         alable += ' '
-                    self.configureSubplot(ax[i, n], alable + axislable + ' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
+                    self.configureSubplot(ax[i, n], alable + axislable + r' ($m/s^2$), RW: %.3g $m/s/\sqrt{hr}$, BI: %.3g $m/s^2$' % (np.mean(sumRW[i][n]) + np.std(sumRW[i][n]), np.mean(sumBI[i][n]) + np.std(sumBI[i][n])), 'm/s^2')
 
         for i in range(accCount):
             for d in range(3):
@@ -2505,11 +2360,12 @@ class logPlot:
                 ax[1].plot(timeGps, altGps)
             if len(timeIns) == len(altIns) and len(altIns) > 0:
                 ax[2].plot(timeIns, altIns)
-            if len(altGps) > 0:
-                ax[3].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
-                ax[3].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
-            elif len(mslBar) > 0:
-                ax[3].plot(timeBar, mslBar, label=("Bar %s" % self.log.serials[d]))
+            if len(mslBar) > 0:
+                if len(altGps) > 0:
+                    ax[3].plot(timeBar, mslBar - (mslBar[0] - altGps[0]), label=("Bar %s" % self.log.serials[d]))
+                    ax[3].plot(timeGps, altGps, label=("GPS %s" % self.log.serials[d]))
+                elif len(mslBar) > 0:
+                    ax[3].plot(timeBar, mslBar, label=("Bar %s" % self.log.serials[d]))
 
         self.legends_add(ax[0].legend(ncol=2))
         self.legends_add(ax[3].legend(ncol=2))
@@ -2770,13 +2626,13 @@ class logPlot:
         N = 4
         if refImuPresent:
             N = N + 2
-        ax = fig.subplots(N, 1, sharex=(self.xAxisSample==0))
+        ax = fig.subplots(N, 1, sharex=True)
 
         fig.suptitle('Timestamps - ' + os.path.basename(os.path.normpath(self.log.directory)))
         self.configureSubplot(ax[0], 'INS dt', 's')
         self.configureSubplot(ax[1], 'GPS dt', 's')
         self.configureSubplot(ax[2], 'IMU Integration Period', 's')
-        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's', xlabel = 'Message Index' if self.xAxisSample else 'Time of Week' )
+        self.configureSubplot(ax[3], 'IMU Delta Timestamp', 's')
 
         for d in self.active_devs_no_ref:
             dtIns = self.getData(d, DID_INS_2, 'timeOfWeek')[1:] - self.getData(d, DID_INS_2, 'timeOfWeek')[0:-1]
@@ -2817,20 +2673,11 @@ class logPlot:
                 deltaTimestamp = deltaTimestamp / self.d
                 timeImu = getTimeFromTow(timeImu3[1:] + towOffset)
 
-            if self.xAxisSample:
-                xIns = np.arange(0, np.shape(dtIns)[0])
-                xGps = np.arange(0, np.shape(dtGps)[0])
-                xImu = np.arange(0, np.shape(deltaTimestamp)[0])
-            else:
-                xIns = timeIns
-                xGps = timeGps
-                xImu = timeImu
-
-            ax[0].plot(xIns, dtIns, label=self.log.serials[d])
-            ax[1].plot(xGps, dtGps)
+            ax[0].plot(timeIns, dtIns, label=self.log.serials[d])
+            ax[1].plot(timeGps, dtGps)
             if integrationPeriod.size:
-                ax[2].plot(xImu, integrationPeriod)
-            ax[3].plot(xImu, deltaTimestamp)
+                ax[2].plot(timeImu, integrationPeriod)
+            ax[3].plot(timeImu, deltaTimestamp)
 
         self.setPlotYSpanMin(ax[0], 0.005)
         self.setPlotYSpanMin(ax[1], 0.005)
@@ -3409,7 +3256,7 @@ class logPlot:
             eff_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'effDuty_r')
             vel_l = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_l')
             vel_r = self.getData(d, DID_EVB_LUNA_VELOCITY_CONTROL, 'vel_r')
-            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point  
+            actuatorTrim_l = 0.545               # (duty) Angle that sets left actuator zero velocity (center) position relative to home point
             actuatorTrim_r = 0.625               # (duty) Angle that sets right actuator zero velocity (center) position relative to home point
             eff_l -= actuatorTrim_l
             eff_r -= actuatorTrim_r
@@ -3741,13 +3588,13 @@ class logPlot:
             plt.show()
 
 
-if __name__ == '__main__':
+def main():
     np.set_printoptions(linewidth=200)
     home = expanduser("~")
     file = open(home + "/Documents/Inertial_Sense/config.yaml", 'r')
     config = yaml.load(file)
     directory = config["directory"]
-    directory = "/home/superjax/Code/IS-src/cpp/SDK/cltool/build/IS_logs"
+    directory = "/home/superjax/Code/IS-inertialsense/cpp/SDK/cltool/build/IS_logs"
     directory = r"C:\Users\quaternion\Downloads\20181218_Compass_Drive\20181218 Compass Drive\20181218_101023"
     serials = config['serials']
 
@@ -3776,3 +3623,6 @@ if __name__ == '__main__':
     # plotter.groundVehicle()
 
     plotter.showFigs()
+
+if __name__ == '__main__':
+    main()

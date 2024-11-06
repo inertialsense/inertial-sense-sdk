@@ -1,25 +1,20 @@
 #!/usr/bin/python3
 
-import os
-import re
+import os, sys, re, time, threading
 from subprocess import Popen
-from os.path import normpath, basename
 from threading import Thread
-import time
 from pathlib import Path
-import sys
-import threading
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 eprint(Path().resolve())
 
-sys.path.insert(1, '../../SDK/python/logInspector')
-sys.path.insert(1, '../logInspector')
-sys.path.insert(1, '..')
+file_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.normpath(file_path + '/..'))
+sys.path.insert(0, os.path.normpath(file_path + '/../..'))
 
-from logReader import Log
+from inertialsense.logs.logReader import Log
 
 class SuperNPP():
     def __init__(self, directory, config_serials, startMode=0, computeRMS=0):		# start mode 0=hot, 1=cold, 2=factory
@@ -38,7 +33,7 @@ class SuperNPP():
         eprint("  config_serials:", self.config_serials)
         eprint("  startMode: ", self.startMode)
         self.findLogFiles(self.directory)
-            
+
     def getSerialNumbers(self):
         return self.log.getSerialNumbers()
 
@@ -51,7 +46,7 @@ class SuperNPP():
     def findLogFiles(self, directory):
         # print("findLogFiles: ", directory)
         for file in os.listdir(directory):
-            if ".sdat" in file or ".dat" in file or ".raw" in file:
+            if ".dat" in file or ".raw" in file:
                 self.subdirs.append(directory)
                 break
         # Recursively search for data in sub directories
@@ -84,7 +79,7 @@ class SuperNPP():
             thread.join()
 
         # Record list of logs to be processed
-        logListFilename = directory+"/test_summary.txt"        
+        logListFilename = directory+"/test_summary.txt"
         try:
             os.remove(logListFilename)      # Remove old file
         except OSError:
@@ -123,12 +118,19 @@ class SuperNPP():
         # subdir = os.path.basename(os.path.normpath(folder))
         (folder, subdir) = os.path.split(folder)
 
+        # Find serial numbers, and determine the log type
+        logType = "DAT"
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if (".sdat" in file or ".dat" in file or ".raw" in file) and (not "base_station.raw" in file) :
-                    ser = int(re.sub('[^0-9]','', file.split("_")[1]))
-                    if ser not in serials:
+                if ".dat" in file or ".raw" in file:
+                    if ".dat" in file:
+                        logType = "DAT"
+                    elif ".raw" in file:
+                        logType = "RAW"
+
+                    serNum = int(re.sub('[^0-9]','', file.split("_")[1]));
+                    if serNum and (serNum not in serials):
                         serials.append(ser)
         else:
             serials = config_serials
@@ -136,16 +138,8 @@ class SuperNPP():
         print("serial numbers")
         print(serials)
 
-        # Determine the log type
-        logType = "DAT"
-        for file in os.listdir(os.path.join(folder,subdir)):
-            if ".sdat" in file:
-                logType = "SDAT"
-            elif ".dat" in file:
-                logType = "DAT"
-            elif ".raw" in file:
-                logType = "RAW"
-
+        if os.name == 'posix':
+            cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
         file_path = os.path.dirname(os.path.realpath(__file__))
         npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
@@ -235,8 +229,7 @@ def print_case(filename, title_string, search_string):
         nppPrint(title_string + " " + str(count))
         print_lines_with_string(filename, search_string)
 
-if __name__ == "__main__":
-
+def main():
     print("Running SuperNPP")
     npp_build_folder = "../../../cpp/NavPostProcess/build"
     # buildNPP(npp_build_folder)
@@ -252,7 +245,7 @@ if __name__ == "__main__":
         directory = sys.argv[1]
 
     # Debug
-    # directory = '/home/walt/src/IS-src/scripts/../../goldenlogs/AHRS'
+    # directory = '/home/walt/inertialsense/IS-inertialsense/scripts/../../goldenlogs/AHRS'
     # directory = os.path.join('C:/','_IS','goldenlogs','AHRS')
     # directory = os.path.join('C:/','_IS','goldenlogs')
     # directory = 'C:/_IS/goldenlogs'
@@ -291,3 +284,5 @@ if __name__ == "__main__":
 
     snpp.exitHack()
 
+if __name__ == "__main__":
+    main()

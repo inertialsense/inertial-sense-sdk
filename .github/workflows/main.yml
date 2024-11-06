@@ -61,7 +61,9 @@ jobs:
         run: ./build_cltool.sh
 
       - name: Build LogInspector
-        run: ./build_log_inspector.sh
+        run: |
+          ./install_log_inspector_dependencies.sh
+          ./build_log_inspector.sh
 
       - name: Build SDK Examples
         run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
@@ -87,8 +89,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-#      - name: SDK Unit Tests
-#        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+      - name: Build SDK
+        run: ./build_is_sdk.bat
+
+      # - name: SDK Unit Tests
+      #   run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
 
       - name: Build CLTool
         run: ./build_cltool.bat
