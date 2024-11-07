@@ -90,7 +90,7 @@ public:
     virtual ~cISLogger();
 
     // Setup logger to read from file
-    bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_DAT, std::vector<std::string> serials = {});
+    bool LoadFromDirectory(const std::string& directory, eLogType logType = LOGTYPE_RAW, std::vector<std::string> serials = {});
 
     // Setup logger for writing to file
     bool InitSave(const std::string& directory = g_emptyString, const sSaveOptions& options = cISLogger::sSaveOptions());
@@ -165,8 +165,9 @@ public:
         float driveUsageLimitPercent = 0.5f,
         bool useSubFolderTimestamp = true,
         bool enableCsvIns2ToIns1Conversion = true);
-    const cLogStats& GetStats() { return m_logStats; }
-    eLogType GetType() { return m_logType; }
+    unsigned int Count() { return m_logStats.Count(); }
+    unsigned int Errors() { return m_logStats.Errors(); }
+    eLogType Type() { return m_logType; }
 
     /**
     * Get the timeout flush parameter in seconds
@@ -230,6 +231,8 @@ public:
     }
 
     static bool ParseFilename(std::string filename, int &serialNum, std::string &date, std::string &time, int &index);
+    void PrintStatistics();
+    void PrintLogDiskUsage();
 
     /**
      * These are static functions which need to use the port_handle_t to identify which cDeviceLog instance they belong to

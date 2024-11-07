@@ -276,16 +276,18 @@ static void PopulateMapRmc(data_set_t data_set[DID_COUNT], uint32_t did)
 
 void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
 {
+    std::string str;
     DataMapper<ins_1_t> mapper(data_set, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
     mapper.AddMember("week", &ins_1_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags );
     mapper.AddMember("timeOfWeek", &ins_1_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_1_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_1_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("theta", &ins_1_t::theta, DATA_TYPE_F32, 3, SYM_DEG, "Euler angle: roll, pitch, yaw",   flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
-    mapper.AddArray("uvw", &ins_1_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddArray("ned", &ins_1_t::ned, DATA_TYPE_F32, 3, "m", "North offset from reference LLA", flags);
-    mapper.AddLlaDegM("lla", offsetof(ins_1_t, lla), "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddVec3Rpy("theta", offsetof(ins_1_t, theta), DATA_TYPE_F32, SYM_DEG, "euler angle", flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
+    mapper.AddVec3Xyz("uvw", offsetof(ins_1_t,uvw), DATA_TYPE_F32, "m/s", "velocity in body frame", flags);
+    str = " offset from reference LLA";
+    mapper.AddVec3("ned", offsetof(ins_1_t,ned), DATA_TYPE_F32, "m", "North"+str, "East"+str, "Down"+str, flags);
+    mapper.AddLlaDegM("lla", offsetof(ins_1_t, lla), "WGS84 coordinate", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -296,9 +298,10 @@ static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeek", &ins_2_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_2_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_2_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("qn2b", &ins_2_t::qn2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("uvw", &ins_2_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddLlaDegM("lla", offsetof(ins_2_t, lla), "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
+    std::string str = " quaternion body rotation with respect to NED";
+    mapper.AddVec4("qn2b", offsetof(ins_2_t, qn2b), DATA_TYPE_F32, "", "W"+str, "X"+str, "Y"+str, "Z"+str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddVec3Xyz("uvw", offsetof(ins_2_t, uvw), DATA_TYPE_F32, "m/s", "velocity in body frame", flags);
+    mapper.AddLlaDegM("lla", offsetof(ins_2_t, lla), "WGS84 coordinate", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -309,9 +312,10 @@ static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeek", &ins_3_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_3_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_3_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("qn2b", &ins_3_t::qn2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to NED: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("uvw", &ins_3_t::uvw, DATA_TYPE_F32, 3, "m/s", "Velocity in body frame", flags);
-    mapper.AddLlaDegM("lla", offsetof(ins_3_t, lla), "WGS84 coordinate: latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
+    std::string str = " quaternion body rotation with respect to NED";
+    mapper.AddVec4("qn2b", offsetof(ins_3_t, qn2b), DATA_TYPE_F32, "", "W"+str, "X"+str, "Y"+str, "Z"+str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddVec3Xyz("uvw", offsetof(ins_3_t, uvw), DATA_TYPE_F32, "m/s", "velocity in body frame", flags);
+    mapper.AddLlaDegM("lla", offsetof(ins_3_t, lla), "WGS84 coordinate", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("msl", &ins_3_t::msl, DATA_TYPE_F32, "m", "Height above mean sea level (MSL)", flags);
 }
 
@@ -323,9 +327,10 @@ static void PopulateMapIns4(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeek", &ins_4_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
     mapper.AddMember("insStatus", &ins_4_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_4_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
-    mapper.AddArray("qe2b", &ins_4_t::qe2b, DATA_TYPE_F32, 4, "", "Quaternion body rotation with respect to ECEF: W, X, Y, Z", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddArray("ve", &ins_4_t::ve, DATA_TYPE_F32, 3, "m/s", "Velocity in ECEF (earth-centered earth-fixed) frame", flags);
-    mapper.AddArray("ecef", &ins_4_t::ecef, DATA_TYPE_F64, 3, "m", "Position in ECEF (earth-centered earth-fixed) frame", flags);
+    std::string str = " quaternion body rotation with respect to ECEF";
+    mapper.AddVec4("qe2b", offsetof(ins_4_t, qe2b), DATA_TYPE_F32, "", "W"+str, "X"+str, "Y"+str, "Z"+str, DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
+    mapper.AddVec3Xyz("ve", offsetof(ins_4_t,ve), DATA_TYPE_F32, "m/s", "velocity in ECEF (earth-centered earth-fixed) frame", flags);
+    mapper.AddVec3Xyz("ecef", offsetof(ins_4_t,ecef), DATA_TYPE_F64, "m", "position in ECEF (earth-centered earth-fixed) frame", flags);
 }
 
 static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -335,7 +340,7 @@ static void PopulateMapGpsPos(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &gps_pos_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("status", &gps_pos_t::status, DATA_TYPE_UINT32, "", "GPS status: [0x000000xx] number of satellites used, [0x0000xx00] fix type, [0x00xx0000] status flags", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_GPS_STATUS);
     mapper.AddArray("ecef", &gps_pos_t::ecef, DATA_TYPE_F64, 3, "m", "Position in ECEF {x,y,z}", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddLlaDegM("lla", offsetof(gps_pos_t, lla), "Latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_7);
+    mapper.AddLlaDegM("lla", offsetof(gps_pos_t, lla), "", "ellipsoid altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_7);
     mapper.AddMember("hMSL", &gps_pos_t::hMSL, DATA_TYPE_F32, "m", "Meters above sea level", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("hAcc", &gps_pos_t::hAcc, DATA_TYPE_F32, "m", "Position horizontal accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("vAcc", &gps_pos_t::vAcc, DATA_TYPE_F32, "m", "Position vertical accuracy", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
@@ -544,14 +549,10 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("ser0BaudRate", &nvm_flash_cfg_t::ser0BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 0 baud rate");
     mapper.AddMember("ser1BaudRate", &nvm_flash_cfg_t::ser1BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 1 baud rate");
     mapper.AddMember("ser2BaudRate", &nvm_flash_cfg_t::ser2BaudRate, DATA_TYPE_UINT32, "bps", "Serial port 2 baud rate");
-    str = "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.";
-    mapper.AddArray("insRotation", &nvm_flash_cfg_t::insRotation, DATA_TYPE_F32, 3, SYM_DEG, "Roll "  + str, 0, C_RAD2DEG);
-    str = "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.";
-    mapper.AddArray("insOffset", &nvm_flash_cfg_t::insOffset, DATA_TYPE_F32, 3, "m", "X " + str);
-    str = "offset from Sensor Frame origin to GPS1 antenna.";
-    mapper.AddArray("gps1AntOffset", &nvm_flash_cfg_t::gps1AntOffset, DATA_TYPE_F32, 3, "m", "X " + str);
-    str = "offset from Sensor Frame origin to GPS2 antenna.";
-    mapper.AddArray("gps2AntOffset", &nvm_flash_cfg_t::gps2AntOffset, DATA_TYPE_F32, 3, "m", "X " + str);
+    mapper.AddVec3Rpy("insRotation", offsetof(nvm_flash_cfg_t,insRotation), DATA_TYPE_F32, SYM_DEG, "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: yaw, pitch, roll.", 0, C_RAD2DEG);
+    mapper.AddVec3Xyz("insOffset", offsetof(nvm_flash_cfg_t,insOffset), DATA_TYPE_F32, "m", "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.");
+    mapper.AddVec3Xyz("gps1AntOffset", offsetof(nvm_flash_cfg_t,gps1AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS1 antenna.");
+    mapper.AddVec3Xyz("gps2AntOffset", offsetof(nvm_flash_cfg_t,gps2AntOffset), DATA_TYPE_F32, "m", "offset from Sensor Frame origin to GPS2 antenna.");
 
     mapper.AddMember("gpsTimeSyncPeriodMs", &nvm_flash_cfg_t::gpsTimeSyncPeriodMs, DATA_TYPE_UINT32, "ms", "GPS time synchronization pulse period.", 0, 1.0);
     mapper.AddMember("gpsTimeUserDelay", &nvm_flash_cfg_t::gpsTimeUserDelay, DATA_TYPE_F32, "s", "User defined delay for GPS time.  This parameter can be used to account for GPS antenna cable delay.", DATA_FLAGS_FIXED_DECIMAL_3, 1.0);
@@ -578,8 +579,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     str += "Acc DLPF (Hz) 0xF000:[0=218, 1=218, 2=99, 3=45, 4=21, 5=10, 6=5], ";
     mapper.AddMember("sensorConfig", &nvm_flash_cfg_t::sensorConfig, DATA_TYPE_UINT32, "", str, DATA_FLAGS_DISPLAY_HEX);
 
-    mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference latitude, longitude, ellipsoid altitude for north east down (NED) calculations", DATA_FLAGS_READ_ONLY);
-    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last lattitude, latitude, ellipsoid altitude. (Aids GPS startup)", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("refLla", offsetof(nvm_flash_cfg_t, refLla), "Reference for north east down (NED) calculations" , "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("lastLla", offsetof(nvm_flash_cfg_t, lastLla), "Last known position (Aids GPS startup)", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("lastLlaTimeOfWeekMs", &nvm_flash_cfg_t::lastLlaTimeOfWeekMs, DATA_TYPE_UINT32, "ms", "Last LLA update time since Sunday morning");
     mapper.AddMember("lastLlaWeek", &nvm_flash_cfg_t::lastLlaWeek, DATA_TYPE_UINT32, "week", "Last LLA update Weeks since Jan 6, 1980");
     mapper.AddMember("lastLlaUpdateDistance", &nvm_flash_cfg_t::lastLlaUpdateDistance, DATA_TYPE_F32, "m", "Distance between current and last LLA that triggers an update of lastLLA)");
@@ -587,9 +588,10 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
 	mapper.AddMember("magInterferenceThreshold", &nvm_flash_cfg_t::magInterferenceThreshold, DATA_TYPE_F32, "", "Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection.");
 	mapper.AddMember("magCalibrationQualityThreshold", &nvm_flash_cfg_t::magCalibrationQualityThreshold, DATA_TYPE_F32, "", "Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good.");
     str = "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll.";
-    mapper.AddArray("zeroVelRotation", &nvm_flash_cfg_t::zeroVelRotation, DATA_TYPE_F32, 3, SYM_DEG, "Roll " + str, 0, C_RAD2DEG);
+    mapper.AddArray("zeroVelRotation", &nvm_flash_cfg_t::zeroVelRotation, DATA_TYPE_F32, 3, SYM_DEG, "Roll, pitch, yaw " + str, 0, C_RAD2DEG);
+    // Do not change `zeroVelOffset` registration from mapper.AddArray() to mapper.AddVec3Xyz() as it is used in a ci test.  
     str = "offset from Intermediate Output Frame to INS Output Frame.  INS rotation is applied before this.";
-    mapper.AddArray("zeroVelOffset", &nvm_flash_cfg_t::zeroVelOffset, DATA_TYPE_F32, 3, "m", "X " + str);
+    mapper.AddArray("zeroVelOffset", &nvm_flash_cfg_t::zeroVelOffset, DATA_TYPE_F32, 3, "m", "X,Y,Z " + str);
     mapper.AddMember2("wheelConfig.bits", offsetof(nvm_flash_cfg_t, wheelConfig.bits), DATA_TYPE_UINT32, "", "Wheel encoder config bits: 0x1 enable encoders, 0x2 kinematic constraints", DATA_FLAGS_DISPLAY_HEX);
     mapper.AddArray2("wheelConfig.transform.e_b2w", offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w), DATA_TYPE_F32, 3, "rad", "Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddArray2("wheelConfig.transform.e_b2w_sigma", offsetof(nvm_flash_cfg_t, wheelConfig.transform.e_b2w_sigma), DATA_TYPE_F32, 3, "m", "Standard deviation of Euler angles describing the rotation from imu (body) to the wheel frame (center of the non-steering axle)", DATA_FLAGS_FIXED_DECIMAL_2);
@@ -706,7 +708,7 @@ static void PopulateMapSurveyIn(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("minAccuracy", &survey_in_t::minAccuracy, DATA_TYPE_F32, "m", "Required horizontal accuracy for survey to complete before maxDuration.", DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("elapsedTimeSec", &survey_in_t::elapsedTimeSec, DATA_TYPE_UINT32, "s", "Elapsed time of the survey.");
     mapper.AddMember("currentAccuracy", &survey_in_t::hAccuracy, DATA_TYPE_F32, "m", "Approximate horizontal accuracy of the survey.", DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddLlaDegM("lla", offsetof(survey_in_t, lla), "Surveyed latitude, longitude, ellipsoid altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("lla", offsetof(survey_in_t, lla), "Surveyed", "ellipsoid altitude", DATA_FLAGS_READ_ONLY);
 }
 
 static void PopulateMapEvbStatus(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -968,7 +970,7 @@ static void PopulateMapGpsRtkMisc(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("gDop", &gps_rtk_misc_t::gDop, DATA_TYPE_F32, "m", "Geomatic dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("hDop", &gps_rtk_misc_t::hDop, DATA_TYPE_F32, "m", "Horizontal dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("vDop", &gps_rtk_misc_t::vDop, DATA_TYPE_F32, "m", "Vertical dilution of precision", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddLlaDegM("baseLla", offsetof(gps_rtk_misc_t, baseLla), "Base position in latitude, longitude, altitude", DATA_FLAGS_READ_ONLY);
+    mapper.AddLlaDegM("baseLla", offsetof(gps_rtk_misc_t, baseLla), "Base position", "altitude", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("cycleSlipCount", &gps_rtk_misc_t::cycleSlipCount, DATA_TYPE_UINT32, "int", "Cycle slip counter", DATA_FLAGS_READ_ONLY);
 
     mapper.AddMember("roverGpsObservationCount", &gps_rtk_misc_t::roverGpsObservationCount, DATA_TYPE_UINT32, "int", "Rover gps observation element counter", DATA_FLAGS_READ_ONLY);
@@ -1978,6 +1980,13 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
         }
     }
     return 0.0;
+}
+
+double cISDataMappings::TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf)
+{
+    double timestamp = Timestamp(hdr, buf);
+    if (timestamp==0.0) { timestamp = current_timeSecD(); }
+    return timestamp;
 }
 
 const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf)

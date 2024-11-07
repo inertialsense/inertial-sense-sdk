@@ -896,3 +896,157 @@ void devInfoPopulateMissingHardware(dev_info_t *devInfo)
     }
 }
 
+/**
+ * decodes the NMEA GSV family of messages
+ * Returns: message id (see eNmeaMsgId)
+ *  Error   -1 for NMEA head not found 
+ * 	        -2 for invalid length
+ *          -3 other error 
+*/
+int decodeGSV(char* a, int aSize)
+{
+    if (aSize < 6 || !(a))     // five characters required (i.e. "$INFO")
+        return -2;
+
+    int msgNum = NMEA_MSG_ID_GNGSV_START;
+
+    if ((a[1] == 'x') || (a[1] == 'X') || (a[1] == 'N'))  {;} // DO NOTHING
+    else if (a[1] == 'P')  msgNum += NMEA_GNGSV_GPS_OFFSET;
+    else if (a[1] == 'A')  msgNum += NMEA_GNGSV_GAL_OFFSET;
+    else if (a[1] == 'B')  msgNum += NMEA_GNGSV_BEI_OFFSET;
+    else if (a[1] == 'Q')  msgNum += NMEA_GNGSV_QZS_OFFSET;
+    else if (a[1] == 'L')  msgNum += NMEA_GNGSV_GLO_OFFSET;
+    else                   return -3;
+
+    // Parse freqencies
+    // Enable all Freqs ie GNGSV,
+    if (a[5] == ',' || a[5] == '*')
+        msgNum |= (NMEA_GNGSV_FREQ_BAND1_BIT | NMEA_GNGSV_FREQ_BAND2_BIT | NMEA_GNGSV_FREQ_BAND3_BIT | NMEA_GNGSV_FREQ_5_BIT);
+    else // special case ie GNGSV_1_2_3_5
+    {
+        for (int i = 5; i < aSize; i++)
+        {
+            if (a[i] == '_')         continue;
+            else if (a[i] == '1')    msgNum |= NMEA_GNGSV_FREQ_BAND1_BIT;
+            else if (a[i] == '2')    msgNum |= NMEA_GNGSV_FREQ_BAND2_BIT;
+            else if (a[i] == '3')    msgNum |= NMEA_GNGSV_FREQ_BAND3_BIT;
+            else if (a[i] == '5')    msgNum |= NMEA_GNGSV_FREQ_5_BIT;
+            else                    break;
+        }
+    }
+
+    return msgNum;
+}
+
+#define UINT32_MATCH(u1,u2)	((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
+
+int getNmeaMsgId(const void *msg, int msgSize)
+{
+    if (msgSize < 5)     // five characters required (i.e. "$INFO")
+        return -2;
+
+    char *cptr = (char*)msg;
+    char *talker = &cptr[1];
+
+    switch(*talker)
+    {
+    case 'A':
+        if      (UINT32_MATCH(talker,"ASCE"))       { return NMEA_MSG_ID_ASCE; }
+        break;
+
+    case 'B':
+        if      (UINT32_MATCH(talker,"BLEN"))       { return NMEA_MSG_ID_BLEN; }
+        break;
+
+    case 'E':
+        if      (UINT32_MATCH(talker,"EBLE"))       { return NMEA_MSG_ID_EBLE; }
+        break;
+
+    case 'G':
+        if      (UINT32_MATCH(talker+2,"GGA,"))     { return NMEA_MSG_ID_GNGGA; }
+        else if (UINT32_MATCH(talker+2,"GLL,"))     { return NMEA_MSG_ID_GNGLL; }
+        else if (UINT32_MATCH(talker+2,"GSA,"))     { return NMEA_MSG_ID_GNGSA; }
+        else if (UINT32_MATCH(talker+2,"GSV,"))     { return decodeGSV(talker, msgSize-1); }
+        else if (UINT32_MATCH(talker+2,"GSV_"))     { return decodeGSV(talker, msgSize-1); }
+        else if (UINT32_MATCH(talker+2,"RMC,"))     { return NMEA_MSG_ID_GNRMC; }
+        else if (UINT32_MATCH(talker+2,"VTG,"))     { return NMEA_MSG_ID_GNVTG; }
+        else if (UINT32_MATCH(talker+2,"ZDA,"))     { return NMEA_MSG_ID_GNZDA; }
+        break;
+
+    case 'I':
+        if      (UINT32_MATCH(talker,"INFO"))       { return NMEA_MSG_ID_INFO; }
+        else if (UINT32_MATCH(talker,"INTE"))       { return NMEA_MSG_ID_INTEL; }
+        break;
+
+    case 'P':
+        if      (UINT32_MATCH(talker,"PIMU"))       { return NMEA_MSG_ID_PIMU;  }
+        else if (UINT32_MATCH(talker,"PINS"))       { return (cptr[5]=='1' ? NMEA_MSG_ID_PINS1 : NMEA_MSG_ID_PINS2); }
+        else if (UINT32_MATCH(talker,"PERS"))       { return NMEA_MSG_ID_PERS;  }
+        else if (UINT32_MATCH(talker,"PGPS"))       { return NMEA_MSG_ID_PGPSP; }
+        else if (UINT32_MATCH(talker,"PPIM"))       { return NMEA_MSG_ID_PPIMU; }
+        else if (UINT32_MATCH(talker,"PRIM"))       { return NMEA_MSG_ID_PRIMU; }
+        else if (UINT32_MATCH(talker,"PASH"))       { return NMEA_MSG_ID_PASHR; }
+        break;
+
+    case 'S':
+        if      (UINT32_MATCH(talker,"STPB"))       { return NMEA_MSG_ID_STPB; }
+        else if (UINT32_MATCH(talker,"STPC"))       { return NMEA_MSG_ID_STPC; }
+        else if (UINT32_MATCH(talker,"SRST"))       { return NMEA_MSG_ID_SRST; }
+        break;		
+    }
+
+    return -1;
+}
+
+int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize)
+{
+    if (bufSize < 5)
+    {
+        return -1;
+    }
+
+    int n = 0;
+    switch(msgId)
+    {
+    default: return -1;
+    case NMEA_MSG_ID_PIMU:	memcpy(buf, "PIMU",  n = 4);	break;
+    case NMEA_MSG_ID_PPIMU:	memcpy(buf, "PPIMU", n = 5);	break;
+    case NMEA_MSG_ID_PRIMU:	memcpy(buf, "PRIMU", n = 5);	break;
+    case NMEA_MSG_ID_PINS1:	memcpy(buf, "PINS1", n = 5);	break;
+    case NMEA_MSG_ID_PINS2:	memcpy(buf, "PINS2", n = 5);	break;
+    case NMEA_MSG_ID_PGPSP:	memcpy(buf, "PGPSP", n = 5);	break;
+    case NMEA_MSG_ID_GNGGA:	memcpy(buf, "GNGGA", n = 5);	break;
+    case NMEA_MSG_ID_GNGLL:	memcpy(buf, "GNGLL", n = 5);	break;
+    case NMEA_MSG_ID_GNGSA:	memcpy(buf, "GNGSA", n = 5);	break;
+    case NMEA_MSG_ID_GNRMC:	memcpy(buf, "GNRMC", n = 5);	break;
+    case NMEA_MSG_ID_GNZDA:	memcpy(buf, "GNZDA", n = 5);	break;
+    case NMEA_MSG_ID_PASHR:	memcpy(buf, "PASHR", n = 5);	break;
+    case NMEA_MSG_ID_PSTRB:	memcpy(buf, "PSTRB", n = 5);	break;
+    case NMEA_MSG_ID_INFO:	memcpy(buf, "INFO",  n = 4);	break;
+    case NMEA_MSG_ID_GNGSV:	memcpy(buf, "GNGSV", n = 5);	break;
+    case NMEA_MSG_ID_GNVTG:	memcpy(buf, "GNVTG", n = 5);	break;
+    case NMEA_MSG_ID_INTEL:	memcpy(buf, "INTEL", n = 5);	break;
+
+    case NMEA_MSG_ID_ASCE:	memcpy(buf, "ASCE", n = 4);		break;
+    case NMEA_MSG_ID_BLEN:	memcpy(buf, "BLEN", n = 4);		break;
+    case NMEA_MSG_ID_EBLE:	memcpy(buf, "EBLE", n = 4);		break;
+    case NMEA_MSG_ID_NELB:	memcpy(buf, "NELB", n = 4);		break;
+    case NMEA_MSG_ID_PERS:	memcpy(buf, "PERS", n = 4);		break;
+    case NMEA_MSG_ID_SRST:	memcpy(buf, "SRST", n = 4);		break;
+    case NMEA_MSG_ID_STPB:	memcpy(buf, "STPB", n = 4);		break;
+    case NMEA_MSG_ID_STPC:	memcpy(buf, "STPC", n = 4);		break;
+    }
+    // Null terminate
+    ((uint8_t*)buf)[n] = 0;
+
+    return 0;
+}
+
+unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
+{
+	unsigned int bits = 0;
+	int i;
+	for (i = pos; i < pos + len; i++) bits = (bits << 1) + ((buff[i / 8] >> (7 - i % 8)) & 1u);
+	return bits;
+}
+

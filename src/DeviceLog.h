@@ -101,6 +101,12 @@ public:
 
     void ShowParseErrors(bool show) { m_showParseErrors = show; }
 
+    void UpdateStatsFromFile(p_data_buf_t *data);
+    void UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp);
+    std::string LogStatsString() { return m_logStats.Stats(); }
+
+    virtual is_comm_instance_t* IsCommInstance() { return NULL; }
+
     void addIndexRecord();
     bool writeIndexChunk();
 
@@ -137,8 +143,6 @@ protected:
     bool m_showPoints;
     bool m_showPointTimestamps = true;
     double m_pointUpdatePeriodSec = 1.0f;
-
-private:
     cLogStats m_logStats;
     std::vector<index_record_t> m_indexChunks;    //! a list of current index records, waiting to be written to disk
     uint32_t m_lastIndexOffset = 0;               //! essentially, the last known size of the log file, as written to disk; this should be updated with each chunk-write to be the new size of the log file

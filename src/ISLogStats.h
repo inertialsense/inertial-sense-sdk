@@ -23,44 +23,45 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
 
-class cLogStatDataId
+class cLogStatMsgId
 {
 public:
-	uint64_t count; // count for this data id
-	uint64_t errorCount; // error count for this data id
-	double averageTimeDelta; // average time delta for the data id
-	double totalTimeDelta; // sum of all time deltas
+	unsigned int count;         // count for this data id
+	unsigned int errors;        // error count for this data id
+	double averageTimeDelta;    // average time delta for the data id
+	double totalTimeDelta;      // sum of all time deltas
 	double lastTimestamp;
 	double lastTimestampDelta;
 	double minTimestampDelta;
 	double maxTimestampDelta;
-	uint64_t timestampDeltaCount;
-	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
+	unsigned int timestampDeltaCount;
+	unsigned int timestampIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
-	cLogStatDataId();
+	cLogStatMsgId();
 	void LogTimestamp(double timestamp);
-	void Printf();
+};
+
+struct sLogStatPType
+{
+	std::map<int, cLogStatMsgId> stats;     // ID, cLogStatMsgId
+	unsigned int count;                     // count of all message ids
+	unsigned int errors;                    // total error count
 };
 
 class cLogStats
 {
 public:
-	std::map<int, cLogStatDataId> isbStats;
-	std::map<int, cLogStatDataId> nmeaStats;
-	std::map<int, cLogStatDataId> rtcm3Stats;
-	std::map<int, cLogStatDataId> ubloxStats;
-	uint64_t count; // count of all data ids
-	uint64_t errorCount; // total error count
+	std::map<protocol_type_t, sLogStatPType> msgs;
 	cISLogFileBase* statsFile;
 
 	cLogStats();
 	void Clear();
-	void LogError(const p_data_hdr_t* hdr);
-	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t id);
-	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void Printf();
-	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
+	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
+	unsigned int Count();
+	unsigned int Errors();
+	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
+	std::string Stats();
 	void WriteToFile(const std::string& fileName);
 };
 

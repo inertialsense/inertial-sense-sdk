@@ -9,10 +9,9 @@ cd %SDK_DIR%\python\
 
 @REM python -m pip install logInspector/
 
-cd logInspector
-pip3 install setuptools pybind11
+pip3 install setuptools pybind11 wheel
 ::pip3 install logInspector/
-python setup.py build_ext --inplace
+python setup.py bdist_wheel sdist build_ext --inplace
 
 set ERROR_LVL=%errorlevel%
 

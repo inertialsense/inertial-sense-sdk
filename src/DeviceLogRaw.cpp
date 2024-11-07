@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
+#include "ISDisplay.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 #include "message_stats.h"
@@ -80,7 +81,6 @@ bool cDeviceLogRaw::FlushToFile()
     return false;
 }
 
-
 bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
     cDeviceLog::SaveData(dataSize, dataBuf, globalLogStats);    // call into the super, in case it needs to do something special
@@ -89,31 +89,14 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
     {
         protocol_type_t ptype;
-        double timestamp;
         if ((ptype = is_comm_parse_byte(&m_comm, *dPtr)) != _PTYPE_NONE)
         {
+            double timestamp = 0.0;
+
             switch (ptype)
             {
             default:
-                globalLogStats.LogData(0, ptype);
-                break;
-
-            case _PTYPE_RTCM3:
-                m_comm.rxPkt.dataHdr.id = messageStatsGetbitu((const unsigned char*)m_comm.rxPkt.data.ptr, 24, 12);
-                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-                break;
-
-            case _PTYPE_UBLOX:
-                m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr + 2);
-                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-                break;
-
-            case _PTYPE_NMEA:
-                m_comm.rxPkt.dataHdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
-                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+                timestamp = current_timeSecD();
                 break;
 
             case _PTYPE_PARSE_ERROR:
@@ -127,15 +110,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 {
+                    timestamp = cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;
-
-                    uint8_t *dataPtr = m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset;
-
-                    timestamp = cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, dataPtr);
-                    globalLogStats.LogDataAndTimestamp(m_comm.rxPkt.dataHdr.id, timestamp);
-
-                    // cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO) {
                         // if we have a device struct, let's use it, otherwise we'll just copy into our local copy
@@ -169,6 +147,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 }
                 break;
             }
+
+            // Update log statistics
+        	m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
+            globalLogStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
         }
     }
 
@@ -259,10 +241,10 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
     m_protocolType = _PTYPE_NONE;
     while (m_protocolType != _PTYPE_INERTIAL_SENSE_DATA)
     {
+        // Read next chunk from file
         pkt = ReadPacketFromChunk(m_protocolType);
         if (!pkt && !ReadChunkFromFile())
-        {
-            // Read next chunk from file
+        {   // File is empty
             return NULL;
         }
     }
@@ -293,6 +275,10 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
 
     return NULL;
 }
+    }
+
+    return data;
+}
 
 packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 {
@@ -321,6 +307,12 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
         {
             if (ptype == _PTYPE_NMEA)
                 m_comm.rxPkt.hdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.data.size);
+            else if (ptype == _PTYPE_PARSE_ERROR) {
+                if (m_showParseErrors)
+                {
+                    if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
+                }
+            }
             return &m_comm.rxPkt;
         }
     }

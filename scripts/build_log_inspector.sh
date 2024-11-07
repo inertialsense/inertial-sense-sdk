@@ -30,14 +30,14 @@ PYTHON_VERSION=$(python3 --version 2>&1)
 PYTHON_MAJOR_VERSION=$(echo $PYTHON_VERSION | awk '{print $2}' | cut -d. -f1)
 PYTHON_MINOR_VERSION=$(echo $PYTHON_VERSION | awk '{print $2}' | cut -d. -f2)
 # Define your pip install command
-PIP_INSTALL_COMMAND="pip3 install logInspector/"
+PIP_INSTALL_COMMAND="pip3 install python/"
 # Check if the Python version is 3.11 or higher
 if [[ $PYTHON_MAJOR_VERSION -eq 3 && $PYTHON_MINOR_VERSION -ge 11 ]] || [[ $PYTHON_MAJOR_VERSION -gt 3 ]]; then
     # If Python version is 3.11 or higher, use --break-system-packages option
     PIP_INSTALL_COMMAND="$PIP_INSTALL_COMMAND --break-system-packages"
 fi
 
-pushd "../python/logInspector" > /dev/null
+pushd "../python" > /dev/null
     if [ "${CLEAN}" == "true" ]; then
         echo -e "\n\n=== Running make clean... ==="
         rm -rf tmp build log_reader.egg-info log_reader.cpython*
@@ -48,7 +48,8 @@ pushd "../python/logInspector" > /dev/null
         cd ..
         echo "$PIP_INSTALL_COMMAND"
         $PIP_INSTALL_COMMAND
-        cd logInspector
+        cd python
+        # python3 setup.py bdist_wheel sdist build_ext --inplace        # This fails to build (WHJ)
         python3 setup.py build_ext --inplace
     fi
 popd > /dev/null
