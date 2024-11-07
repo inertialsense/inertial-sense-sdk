@@ -79,7 +79,7 @@ class SuperNPP():
             thread.join()
 
         # Record list of logs to be processed
-        logListFilename = directory+"/test_summary.txt"
+        logListFilename = self.directory+"/test_summary.txt"
         try:
             os.remove(logListFilename)      # Remove old file
         except OSError:
