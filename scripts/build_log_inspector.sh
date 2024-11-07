@@ -49,7 +49,8 @@ pushd "../python" > /dev/null
         echo "$PIP_INSTALL_COMMAND"
         $PIP_INSTALL_COMMAND
         cd python
-        python3 setup.py bdist_wheel sdist build_ext --inplace
+        # python3 setup.py bdist_wheel sdist build_ext --inplace        # This fails to build (WHJ)
+        python3 setup.py build_ext --inplace
     fi
 popd > /dev/null
 
