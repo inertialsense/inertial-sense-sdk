@@ -3,10 +3,13 @@
 echo Building Log Inspector
 echo.
 
+call %SDK_DIR%\scripts\windows\build_is_sdk.bat
+
 :: Set SDK_DIR as  directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
 cd %SDK_DIR%\python\inertialsense\
-@REM cd %SDK_DIR%\python\inertialsense\tools\
+
+call %SDK_DIR%\scripts\windows\build_is_sdk.bat
 
 @REM python -m pip install logInspector/
 
