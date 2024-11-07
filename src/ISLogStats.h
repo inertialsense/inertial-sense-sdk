@@ -35,7 +35,7 @@ public:
 	double minTimestampDelta;
 	double maxTimestampDelta;
 	unsigned int timestampDeltaCount;
-	unsigned int timestampDropCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
+	unsigned int timestampIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
 	cLogStatMsgId();
 	void LogTimestamp(double timestamp);

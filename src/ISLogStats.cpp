@@ -36,7 +36,7 @@ cLogStatMsgId::cLogStatMsgId()
     maxTimestampDelta = 0.0;
     minTimestampDelta = 1.0E6;
     timestampDeltaCount = 0;
-    timestampDropCount = 0;
+    timestampIrregCount = 0;
 }
 
 void cLogStatMsgId::LogTimestamp(double timestamp)
@@ -55,7 +55,7 @@ void cLogStatMsgId::LogTimestamp(double timestamp)
         averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
         if (lastTimestampDelta != 0.0 && (fabs(delta - lastTimestampDelta) > (lastTimestampDelta * 0.5)))
         {
-            timestampDropCount++;
+            timestampIrregCount++;
         }
         lastTimestampDelta = delta;
     }
@@ -130,7 +130,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 
     ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count";
     if (showErrors)     { ss << " Errors"; }
-    if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Drops"; }
+    if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Irreg"; }
     ss << endl;
 
     for (std::map<int, cLogStatMsgId>::iterator it = msg.stats.begin(); it != msg.stats.end(); ++it)
@@ -184,7 +184,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
                    << std::setw(DT_COL_WIDTH) << dtMsAve << " " 
                    << std::setw(DT_COL_WIDTH) << dtMsMin << " " 
                    << std::setw(DT_COL_WIDTH) << dtMsMax << ") " 
-                   << std::setw(5) << stat.timestampDropCount;
+                   << std::setw(5) << stat.timestampIrregCount;
             }
         }
         ss << endl;
