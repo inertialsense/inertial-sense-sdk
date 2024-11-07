@@ -101,12 +101,27 @@ bool cDeviceLog::OpenWithSystemApp()
 
 bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-	LogStatsRealtime(dataHdr, dataBuf, ptype);
+	// Update log statistics
+	if (dataHdr != NULL)
+    {
+		double timestamp;
+		if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
+		{
+			timestamp = cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf);
+		}
+		else
+		{
+			timestamp = current_timeSecD();
+		}  
+        m_logStats.LogData(ptype, dataHdr->id, timestamp);
+	}
+
     return true;
 }
 
 bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
+	// Update log statistics done in cDeviceLogRaw::SaveData()
 	return true;
 }
 
@@ -228,33 +243,15 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
     );
 }
 
-void cDeviceLog::LogStatsFromFile(p_data_buf_t *data)
+void cDeviceLog::UpdateStatsFromFile(p_data_buf_t *data)
 { 
 	double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
 	m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);  
 }
 
-void cDeviceLog::LogStatsFromFile(protocol_type_t ptype, int id, double timestamp)
+void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp)
 { 
 	m_logStats.LogData(ptype, id, timestamp);  
-}
-
-void cDeviceLog::LogStatsRealtime(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
-{
-    if (dataHdr != NULL)
-    {
-		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::Timestamp(dataHdr, dataBuf) : current_timeSecD());
-        m_logStats.LogData(ptype, dataHdr->id, timestamp);
-	}
-}
-
-void cDeviceLog::LogStatsRealtime(protocol_type_t ptype, int id, double timestamp) 
-{
-	if (timestamp == 0.0)
-	{	// Use system time
-		timestamp = current_timeSecD();
-	}
-	m_logStats.LogData(ptype, id, timestamp);
 }
 
 ISDevice* cDeviceLog::Device() {

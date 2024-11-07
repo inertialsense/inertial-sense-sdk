@@ -35,11 +35,10 @@ public:
 	double minTimestampDelta;
 	double maxTimestampDelta;
 	unsigned int timestampDeltaCount;
-	unsigned int timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
+	unsigned int timestampDropCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
 	cLogStatMsgId();
 	void LogTimestamp(double timestamp);
-	void PrintStats();
 };
 
 struct sLogStatPType
@@ -58,12 +57,10 @@ public:
 	cLogStats();
 	void Clear();
 	void IsbLogError(const p_data_hdr_t* hdr);
-	void LogDataRealtime(protocol_type_t ptype, int id, double timestamp=0.0);
 	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
-	void PrintStats();
 	unsigned int Count();
 	unsigned int Errors();
-	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true);
+	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
 	std::string Stats();
 	void WriteToFile(const std::string& fileName);
 };

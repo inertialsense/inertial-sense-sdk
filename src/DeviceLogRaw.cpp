@@ -101,7 +101,6 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 break;
 
 			case _PTYPE_PARSE_ERROR:
-                timestamp = current_timeSecD();
 				if (m_showParseErrors)
 				{ 
 					if (m_comm.rxErrorCount>1) 
@@ -114,7 +113,7 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 {
-                    timestamp = cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                    timestamp = cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;
@@ -141,8 +140,9 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 break;
             }
 
-            LogStatsRealtime(ptype, m_comm.rxPkt.id, timestamp);
-            globalLogStats.LogDataRealtime(ptype, m_comm.rxPkt.id, timestamp);
+            // Update log statistics
+        	m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
+            globalLogStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
         }
     }
 
@@ -219,7 +219,7 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
             // if (m_comm.rxErrorCount)
             {
             	cout << m_fileName << "\n";
-                m_logStats.PrintStats();
+                cout << m_logStats.Stats();
                 cout << cInertialSenseDisplay::PrintIsCommStatus(&m_comm);
             }
             return NULL;
@@ -256,13 +256,8 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
         protocol_type_t ptype;
         if ((ptype = is_comm_parse_byte(&m_comm, data)) != _PTYPE_NONE)
         {
-            double timestamp = 0.0;
-
             switch (ptype)
             {
-            default:    // Do nothing
-                break;
-
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
@@ -270,15 +265,18 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
                 }
                 break;
 
+            default:
+                m_logStats.LogData(ptype, m_comm.rxPkt.id);
+                break;
+
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
-                timestamp = cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
+
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
                 return &m_pData;
             }
-
-            cDeviceLog::LogStatsFromFile(ptype, m_comm.rxPkt.id, timestamp);
         }
     }
 

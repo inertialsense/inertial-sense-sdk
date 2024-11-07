@@ -62,19 +62,6 @@ void cLogStatMsgId::LogTimestamp(double timestamp)
     lastTimestamp = timestamp;
 }
 
-void cLogStatMsgId::PrintStats()
-{
-
-#if !PLATFORM_IS_EMBEDDED
-
-    printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errors);
-    printf(" Time delta: (ave, min, max) %f, %f, %f\r\n", averageTimeDelta, minTimestampDelta, maxTimestampDelta);
-    printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
-
-#endif
-
-}
-
 cLogStats::cLogStats()
 {
     Clear();
@@ -106,15 +93,6 @@ void cLogStats::IsbLogError(const p_data_hdr_t* hdr)
     }
 }
 
-void cLogStats::LogDataRealtime(protocol_type_t ptype, int id, double timestamp)
-{
-    if (timestamp == 0.0)
-    {
-        timestamp = current_timeSecD();
-    }
-    LogData(ptype, id, timestamp);
-}
-
 void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
 {
     sLogStatPType &msg = msgs[ptype];
@@ -128,57 +106,31 @@ void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
     }
 }
 
-void cLogStats::PrintStats()
+string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime, bool showErrors)
 {
-
-#if 1
-    cout << Stats();
-
-#else
-
-#if !PLATFORM_IS_EMBEDDED
-
-    printf("Count: %llu,   Errors: %llu\n", (unsigned long long)count, (unsigned long long)errors);
-    for (auto it = isbStats.begin(); it != isbStats.end(); ++it) 
-    {
-        int id = it->first;
-        cLogStatMsgId &d = it->second;
-        if (d.count != 0)
-        {
-            printf(" ISB: %d\n", id);
-            d.PrintStats();
-            printf("\n");
-        }
-    }
-
-#endif
-
-#endif
-
-}
-
-string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime)
-{
-    std::stringstream ss;
-
     string msgName;
     int colWidName = 24;
     switch (ptype)
     {
-    default:                                msgName = "UNKNOWN";    break;
-    case _PTYPE_INERTIAL_SENSE_CMD:         msgName = "ISB-CMD";    break;
-    case _PTYPE_INERTIAL_SENSE_DATA:        msgName = "ISB";        break;
-    case _PTYPE_NMEA:                       msgName = "NMEA";       colWidName = 8;      break;
-    case _PTYPE_UBLOX:                      msgName = "UBLOX";      colWidName = 8;      break;
-    case _PTYPE_RTCM3:                      msgName = "RTCM3";      break;
-    case _PTYPE_SPARTN:                     msgName = "SPARTN";     break;
-    case _PTYPE_SONY:                       msgName = "SONY";       break;
+    default:                                msgName = "Ptype " + std::to_string(ptype);  break;
+    case _PTYPE_PARSE_ERROR:                msgName = "Parse Error";    break;
+    case _PTYPE_INERTIAL_SENSE_CMD:         msgName = "ISB-CMD";        break;
+    case _PTYPE_INERTIAL_SENSE_DATA:        msgName = "ISB";            break;
+    case _PTYPE_NMEA:                       msgName = "NMEA";           colWidName = 8;  break;
+    case _PTYPE_UBLOX:                      msgName = "UBLOX";          colWidName = 8;  break;
+    case _PTYPE_RTCM3:                      msgName = "RTCM3";          break;
+    case _PTYPE_SPARTN:                     msgName = "SPARTN";         break;
+    case _PTYPE_SONY:                       msgName = "SONY";           break;
     }
 
+    std::stringstream ss;
     ss << std::endl;
-    ss << msgName << ": count " << msg.count << ", errors " << msg.errors << std::endl;
+    ss << msgName << ": count " << msg.count << ", errors " << msg.errors << " _____________________" << std::endl;
 
-    ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count Errors  dtMs( ave, min, max)   drops" << std::endl;
+    ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count";
+    if (showErrors)     { ss << " Errors"; }
+    if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Drops"; }
+    ss << std::endl;
 
     for (auto& [id, stat] : msg.stats)
     {
@@ -214,18 +166,19 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
             break;
         }
 
-        ss << std::setw(6) << std::setfill(' ') << stat.count << std::setw(7) << stat.errors;
+        ss << std::setw(6) << std::setfill(' ') << stat.count;
+        if (showErrors)     { ss << std::setw(7) << stat.errors; }
         if (showDeltaTime)
         {
-#define DT_COL_WIDTH    6
+#define DT_COL_WIDTH    5
             if (stat.timestampDeltaCount)
             {
                 int dtMsAve = int(stat.averageTimeDelta*1000.0);
                 int dtMsMin = int(stat.minTimestampDelta*1000.0);
                 int dtMsMax = int(stat.maxTimestampDelta*1000.0);
                 ss << "  (" 
-                   << std::setw(DT_COL_WIDTH) << dtMsAve << "," 
-                   << std::setw(DT_COL_WIDTH) << dtMsMin << "," 
+                   << std::setw(DT_COL_WIDTH) << dtMsAve << " " 
+                   << std::setw(DT_COL_WIDTH) << dtMsMin << " " 
                    << std::setw(DT_COL_WIDTH) << dtMsMax << ") " 
                    << std::setw(5) << stat.timestampDropCount;
             }
@@ -264,6 +217,13 @@ string cLogStats::Stats()
     ss << "Total: count " << count << ", errors " << errors << std::endl;
     for (auto& [ptype, msg] : msgs) 
     {
+        switch (ptype)
+        {   // Skip these
+        case _PTYPE_PARSE_ERROR:
+        case _PTYPE_INERTIAL_SENSE_ACK: continue;
+        default: break;
+        }
+
         ss << MessageStats(ptype, msg);
     }
     return ss.str();

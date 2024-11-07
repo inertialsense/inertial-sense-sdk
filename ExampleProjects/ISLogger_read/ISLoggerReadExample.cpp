@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
 	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_SCROLL);
 	// display.SetDisplayMode(cInertialSenseDisplay::DMODE_PRETTY);
 	display.SetDisplayMode(cInertialSenseDisplay::DMODE_STATS);	
+    display.SetKeyboardNonBlocking();
 
 	std::vector<shared_ptr<cDeviceLog>> devices = logger.DeviceLogs();
     for (auto deviceLog : devices)
@@ -61,7 +62,12 @@ int main(int argc, char* argv[])
 			printf("ID: %3d\n", data->hdr.id);
 #endif
 		}
+
+		// Scan for "q" press to exit program
+		display.GetKeyboardInput();
 	}
+	// Revert non-blocking keyboard
+	display.ResetTerminalMode();
 
 	logger.CloseAllFiles();
 }

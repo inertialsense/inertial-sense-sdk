@@ -91,10 +91,9 @@ public:
 
     void ShowParseErrors(bool show) { m_showParseErrors = show; }
 
-    void LogStatsFromFile(p_data_buf_t *data);
-    void LogStatsFromFile(protocol_type_t ptype, int id, double timestamp);
-    void LogStatsRealtime(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype);
-    void LogStatsRealtime(protocol_type_t ptype, int id, double timestamp);
+    void UpdateStatsFromFile(p_data_buf_t *data);
+    void UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp);
+    std::string LogStatsString() { return m_logStats.Stats(); }
 
     virtual is_comm_instance_t* IsCommInstance() { return NULL; }
 

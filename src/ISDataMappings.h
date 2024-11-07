@@ -603,6 +603,14 @@ public:
     static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
 
 	/**
+	* Get a timestamp from data if available.  If not, use the current local time.
+	* @param hdr data header
+	* @param buf data buffer
+	* @return timestamp, or current local time if no timestamp available
+	*/
+	static double TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf);
+
+	/**
 	* Check whether field data can be retrieved given a data packet
 	* @param info metadata for the field to get
 	* @param arrayIndex index into array

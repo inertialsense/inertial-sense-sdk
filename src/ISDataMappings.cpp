@@ -1975,6 +1975,13 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
     return 0.0;
 }
 
+double cISDataMappings::TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf)
+{
+    double timestamp = Timestamp(hdr, buf);
+    if (timestamp==0.0) { timestamp = current_timeSecD(); }
+    return timestamp;
+}
+
 const uint8_t* cISDataMappings::FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf)
 {
     if (info.arraySize && arrayIndex >= info.arraySize)
