@@ -141,7 +141,7 @@ class SuperNPP():
         if os.name == 'posix':
             cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
         file_path = os.path.dirname(os.path.realpath(__file__))
-        npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
+        npp_build_folder = os.path.normpath(file_path + '../../../../../cpp/NavPostProcess/build')
 
         if os.name == 'posix':  # Linux
             exename = './navpp'
