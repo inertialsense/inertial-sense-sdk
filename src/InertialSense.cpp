@@ -275,7 +275,7 @@ void InertialSense::LoggerThread(void* info)
             // log the packets
             for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
             {
-                if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
+                if (inertialSense->m_logger.Type() != cISLogger::LOGTYPE_RAW) {
                     size_t numPackets = i->second.size();
                     for (size_t j = 0; j < numPackets; j++) {
                         auto device = inertialSense->m_comManagerState.devices[i->first];
@@ -503,7 +503,6 @@ bool InertialSense::UpdateServer()
         // Search comm buffer for valid packets
         while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
         {
-            int id = 0;	// len = 0;
             string str;
 
             switch (ptype)
@@ -518,34 +517,11 @@ bool InertialSense::UpdateServer()
                     }
                     if (ptype == _PTYPE_RTCM3)
                     {
-                        // len = messageStatsGetbitu(comm->rxPkt.data.ptr, 14, 10);
-                        id = messageStatsGetbitu(comm->rxPkt.data.ptr, 24, 12);
-                        if ((id == 1029) && (comm->rxPkt.data.size < 1024))
+                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
                         {
                             str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
                         }
                     }
-                    else if (ptype == _PTYPE_UBLOX)
-                    {
-                        id = *((uint16_t*)(&comm->rxPkt.data.ptr[2]));
-                    }
-                    break;
-
-                case _PTYPE_PARSE_ERROR:
-                    break;
-
-                case _PTYPE_INERTIAL_SENSE_DATA:
-                case _PTYPE_INERTIAL_SENSE_CMD:
-                    id = comm->rxPkt.hdr.id;
-                    break;
-
-                case _PTYPE_NMEA:
-                {	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)
-                    uint8_t *pStart = comm->rxPkt.data.ptr + 2;
-                    uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
-                    pStart = _MAX(pStart, pEnd - 8);
-                    memcpy(&id, pStart, (pEnd - pStart));
-                }
                     break;
 
                 default:
@@ -554,7 +530,7 @@ bool InertialSense::UpdateServer()
 
             if (ptype != _PTYPE_NONE)
             {	// Record message info
-                messageStatsAppend(str, m_serverMessageStats, ptype, id, m_timeMs);
+                messageStatsAppend(str, m_serverMessageStats, ptype, comm->rxPkt.id, m_timeMs);
             }
         }
     }
@@ -587,7 +563,6 @@ bool InertialSense::UpdateClient()
         // Search comm buffer for valid packets
         while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE)
         {
-            int id = 0;
             string str;
 
             switch (ptype)
@@ -599,15 +574,10 @@ bool InertialSense::UpdateClient()
 
                     if (ptype == _PTYPE_RTCM3)
                     {
-                        id = messageStatsGetbitu(comm->rxPkt.data.ptr, 24, 12);
-                        if ((id == 1029) && (comm->rxPkt.data.size < 1024))
+                        if ((comm->rxPkt.id == 1029) && (comm->rxPkt.data.size < 1024))
                         {
                             str = string().assign(reinterpret_cast<char*>(comm->rxPkt.data.ptr + 12), comm->rxPkt.data.size - 12);
                         }
-                    }
-                    else if (ptype == _PTYPE_UBLOX)
-                    {
-                        id = *((uint16_t*)(&comm->rxPkt.data.ptr[2]));
                     }
                     break;
 
@@ -619,27 +589,13 @@ bool InertialSense::UpdateClient()
                     error++;
                     break;
 
-                case _PTYPE_INERTIAL_SENSE_DATA:
-                case _PTYPE_INERTIAL_SENSE_CMD:
-                    id = comm->rxPkt.hdr.id;
-                    break;
-
-                case _PTYPE_NMEA:
-                {	// Use first four characters before comma (e.g. PGGA in $GPGGA,...)
-                    uint8_t *pStart = comm->rxPkt.data.ptr + 2;
-                    uint8_t *pEnd = std::find(pStart, pStart + 8, ',');
-                    pStart = _MAX(pStart, pEnd - 8);
-                    memcpy(&id, pStart, (pEnd - pStart));
-                }
-                    break;
-
                 default:
                     break;
             }
 
             if (ptype != _PTYPE_NONE)
             {	// Record message info
-                messageStatsAppend(str, m_clientMessageStats, ptype, id, m_timeMs);
+                messageStatsAppend(str, m_clientMessageStats, ptype, comm->rxPkt.id, m_timeMs);
             }
         }
     }

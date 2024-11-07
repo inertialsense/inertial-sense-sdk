@@ -23,6 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
+#include "ISDisplay.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 #include "message_stats.h"
@@ -83,38 +84,20 @@ bool cDeviceLogRaw::FlushToFile()
     return false;
 }
 
-
 bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
     // Parse messages for statistics and DID_DEV_INFO
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
     {
         protocol_type_t ptype;
-        double timestamp;
         if ((ptype = is_comm_parse_byte(&m_comm, *dPtr)) != _PTYPE_NONE)
         {
+            double timestamp = 0.0;
+
             switch (ptype)
             {
             default:
-                globalLogStats.LogData(0, ptype);
-                break;
-
-            case _PTYPE_RTCM3:
-                m_comm.rxPkt.dataHdr.id = messageStatsGetbitu((const unsigned char*)m_comm.rxPkt.data.ptr, 24, 12);
-                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-                break;
-
-			case _PTYPE_UBLOX:
-				m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
-				globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-				cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
-				break;
-
-            case _PTYPE_NMEA:
-                m_comm.rxPkt.dataHdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
-                globalLogStats.LogData(m_comm.rxPkt.dataHdr.id, ptype);
-                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+                timestamp = current_timeSecD();
                 break;
 
 			case _PTYPE_PARSE_ERROR:
@@ -130,15 +113,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 {
+                    timestamp = cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
+
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;
-
-                    uint8_t *dataPtr = m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset;
-
-                    timestamp = cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, dataPtr);
-                    globalLogStats.LogDataAndTimestamp(m_comm.rxPkt.dataHdr.id, timestamp);
-
-                    cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO) {
                         // if we have a device struct, let's use it, otherwise we'll just copy into our local copy
@@ -161,6 +139,10 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 }
                 break;
             }
+
+            // Update log statistics
+        	m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
+            globalLogStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
         }
     }
 
@@ -233,13 +215,11 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
     {
         // Read next chunk from file
         if (!ReadChunkFromFile())
-        {
+        {   // File is empty
             return NULL;
         }
     }
 
-    // Read is good
-    cDeviceLog::OnReadData(data);
     return data;
 }
 
@@ -272,13 +252,6 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
         {
             switch (ptype)
             {
-            default:
-            // case _PTYPE_RTCM3:
-            // case _PTYPE_UBLOX:
-            // case _PTYPE_NMEA:
-                // Do nothing
-                break;
-
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
@@ -286,8 +259,14 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
                 }
                 break;
 
+            default:
+                m_logStats.LogData(ptype, m_comm.rxPkt.id);
+                break;
+
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
+
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
                 return &m_pData;

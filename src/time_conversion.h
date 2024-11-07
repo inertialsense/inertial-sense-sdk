@@ -1,6 +1,10 @@
 #ifndef _C_TIMECONV_H_
 #define _C_TIMECONV_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctime>
 #include "stdint.h"
 
@@ -430,5 +434,9 @@ int TIMECONV_GetGPSTimeFromYearAndDayOfYear(
  );
 
 #endif  // #if 0
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _C_TIMECONV_H_

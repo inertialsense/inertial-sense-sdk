@@ -1,12 +1,12 @@
 # SDK: Simple Data Logging Example
 
-This [ISLoggerSimpleExample](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISLoggerSimple) project demonstrates how to use the **cISLogger** c++ class in the [Inertial Sense SDK](https://github.com/inertialsense/inertial-sense-sdk) to log data from [InertialSense](https://inertialsense.com) products (IMX and GPX).
+This [ISLoggerWrite](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISLogger_write) project demonstrates how to use the **cISLogger** c++ class in the [Inertial Sense SDK](https://github.com/inertialsense/inertial-sense-sdk) to log data from [InertialSense](https://inertialsense.com) products (IMX and GPX).
 
 ## Files
 
 #### Project Files
 
-* [ISLoggerSimpleExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISLoggerSimple/ISLoggerSimpleExample.cpp)
+* [ISLoggerWriteExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/ISLogger_write/ISLoggerWriteExample.cpp)
 
 #### SDK Files
 
@@ -87,7 +87,7 @@ There must be data streaming out of the IMX in order to log data.  The Post Proc
    ```
 2. Create build directory
    ``` bash
-   cd inertial-sense-sdk/ExampleProjects/ISLoggerSimple
+   cd inertial-sense-sdk/ExampleProjects/ISLogger_write
    mkdir build
    ```
 3. Run cmake from within build directory
@@ -108,7 +108,7 @@ There must be data streaming out of the IMX in order to log data.  The Post Proc
    ```
 6. Run executable
    ``` bash
-   ./build/ISLoggerSimpleExample /dev/ttyACM0
+   ./build/ISLoggerWrite /dev/ttyACM0
    ```
 
 ## Compile & Run (Windows MS Visual Studio)
@@ -126,7 +126,7 @@ There must be data streaming out of the IMX in order to log data.  The Post Proc
 4. **Run the Executable:** 
 
    ``` bash
-   C:\inertial-sense-sdk\ExampleProjects\ISLoggerSimple\VS_project\Release\ISLoggerSimpleExample.exe COM3
+   C:\inertial-sense-sdk\ExampleProjects\ISLogger_write\VS_project\Release\ISLoggerWrite.exe COM3
    ```
 
 ## Summary
