@@ -55,7 +55,7 @@ class Log:
         self.c_log.init(self, directory, serials)
         self.c_log.load()
         self.serials = self.c_log.getSerialNumbers()
-        self.sanitize()
+        # self.sanitize()
         self.data = np.array(self.data, dtype=object)
         self.directory = directory
         self.mount_bias_filepath = directory + '/angular_mount_bias.yml'

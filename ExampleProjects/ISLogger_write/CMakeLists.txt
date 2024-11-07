@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
 
-project(ISLoggerSimpleExample)
+project(ISLoggerWrite)
 
 set(IS_SDK_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
 
@@ -20,7 +20,7 @@ include_directories(
 link_directories(${IS_SDK_DIR})
 
 # Define the executable
-add_executable(${PROJECT_NAME} ISLoggerSimpleExample.cpp)
+add_executable(${PROJECT_NAME} ISLoggerWriteExample.cpp)
 
 # Find pthread package
 find_package(Threads REQUIRED)

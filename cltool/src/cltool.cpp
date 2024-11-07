@@ -1011,7 +1011,13 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             splitString(keyValues[i], '=', keyAndValue);
             if (keyAndValue.size() == 1) 
             {   // Display only select flash config value(s)
-                int arrayIndex = extract_array_index(keyAndValue[0]);
+                int arrayIndex = -1;
+                // Some arrays are multi-element single-variable and some are single-element multi-variable. 
+                if (flashMap.find(keyAndValue[0]) == flashMap.end())
+                {   // Unrecognized key.  See if we are using a multi-element single-variable.
+                    arrayIndex = extract_array_index(keyAndValue[0]);
+                }
+
                 data_mapping_string_t stringBuffer;
                 for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
                 {
@@ -1056,10 +1062,16 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             } 
             else if (keyAndValue.size() == 2)
             {   // Set select flash config values
-                int arrayIndex = extract_array_index(keyAndValue[0]);
+                int arrayIndex = -1;
+
+                // Some arrays are multi-element single-variable and some are single-element multi-variable. 
+                if (flashMap.find(keyAndValue[0]) == flashMap.end())
+                {   // Unrecognized key.  See if we are using a multi-element single-variable.
+                    arrayIndex = extract_array_index(keyAndValue[0]);
+                }
 
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
-                {
+                {   
                     cout << "Unrecognized DID_FLASH_CONFIG key '" << keyAndValue[0] << "' specified, ignoring." << endl;
                 }
                 else

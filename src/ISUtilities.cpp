@@ -200,6 +200,25 @@ extern "C" {
 
 #endif
 
+/** System time in seconds */
+double current_timeSecD() {
+#if PLATFORM_IS_WINDOWS
+    // Time since week start (Sunday morning) in seconds, GMT
+    LARGE_INTEGER StartingTime;
+    LARGE_INTEGER Frequency;
+
+    QueryPerformanceCounter(&StartingTime);
+    QueryPerformanceFrequency(&Frequency);
+
+    return static_cast<double>(StartingTime.QuadPart) / Frequency.QuadPart;
+#else
+    // Time since epoch, January 1, 1970 (midnight UTC/GMT) in seconds
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec + tv.tv_usec / 1000000.0;
+#endif
+}
+
 unsigned int current_timeSec() {
 #if PLATFORM_IS_WINDOWS
 	SYSTEMTIME st;
@@ -215,7 +234,6 @@ unsigned int current_timeSec() {
 /** System time in milliseconds */
 unsigned int current_timeMs() {
 #if PLATFORM_IS_WINDOWS
-
 	// Time since week start (Sunday morning) in milliseconds, GMT
 	SYSTEMTIME st;
 	GetSystemTime(&st);

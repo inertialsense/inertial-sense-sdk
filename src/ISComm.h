@@ -398,6 +398,9 @@ typedef struct
 
     /** Packet size including header and checksum */
     uint16_t            size;
+
+    /** Packet ID */
+    uint16_t            id;
 } packet_t;
 
 /** Represents a packet header and body */
@@ -551,7 +554,7 @@ typedef enum {
     EPARSE_INVALID_HEADER,
     EPARSE_INVALID_PAYLOAD,
     EPARSE_RXBUFFER_FLUSHED,
-    EPARSE_STREAM_UNPARSEABLE,
+    EPARSE_STREAM_UNPARSABLE,
     NUM_EPARSE_ERRORS
 } eParseErrorType;
 
@@ -909,7 +912,6 @@ uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size
 uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 #define is_comm_isb_checksum16  is_comm_fletcher16
 // #define is_comm_isb_checksum16  is_comm_xor16
-
 
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
