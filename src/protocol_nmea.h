@@ -69,6 +69,12 @@ int nmea_gsv_gnss(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig, u
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
 int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel);
 
+/**
+ * Converts NMEA message ID (eNmeaMsgIdInx) to talker string.
+ * Returns the talker string on success, or an an empty string on error
+*/
+std::string nmeaMsgIdToTalker(int msgId);
+
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////

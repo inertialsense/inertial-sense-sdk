@@ -2725,4 +2725,41 @@ void gsv_clear_const_mask()
     memset(&s_gsvMask, 0, sizeof(gsvMask_t));
 }
 
+/**
+ * Converts NMEA message ID (eNmeaMsgIdInx) to talker string.
+ * Returns the talker string on success, or an an empty string on error
+*/
+std::string nmeaMsgIdToTalker(int msgId)
+{
+    switch(msgId)
+    {
+        case NMEA_MSG_ID_PIMU:  return "PIMU";
+        case NMEA_MSG_ID_PPIMU: return "PPIMU";
+        case NMEA_MSG_ID_PRIMU: return "PRIMU";
+        case NMEA_MSG_ID_PINS1: return "PINS1";
+        case NMEA_MSG_ID_PINS2: return "PINS2";
+        case NMEA_MSG_ID_PGPSP: return "PGPSP";
+        case NMEA_MSG_ID_GNGGA: return "GNGGA";
+        case NMEA_MSG_ID_GNGLL: return "GNGLL";
+        case NMEA_MSG_ID_GNGSA: return "GNGSA";
+        case NMEA_MSG_ID_GNRMC: return "GNRMC";
+        case NMEA_MSG_ID_GNZDA: return "GNZDA";
+        case NMEA_MSG_ID_PASHR: return "PASHR";
+        case NMEA_MSG_ID_PSTRB: return "PSTRB";
+        case NMEA_MSG_ID_INFO:  return "INFO";
+        case NMEA_MSG_ID_GNGSV: return "GNGSV";
+        case NMEA_MSG_ID_GNVTG: return "GNVTG";
+        case NMEA_MSG_ID_INTEL: return "INTEL";
+        case NMEA_MSG_ID_ASCE:  return "ASCE";
+        case NMEA_MSG_ID_BLEN:  return "BLEN";
+        case NMEA_MSG_ID_EBLE:  return "EBLE";
+        case NMEA_MSG_ID_NELB:  return "NELB";
+        case NMEA_MSG_ID_PERS:  return "PERS";
+        case NMEA_MSG_ID_SRST:  return "SRST";
+        case NMEA_MSG_ID_STPB:  return "STPB";
+        case NMEA_MSG_ID_STPC:  return "STPC";
+    }
+
+    return "";
+}
 
