@@ -47,7 +47,7 @@ using namespace std;
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ		0
-
+#define STATS_ALL_FILENAME          "/stats_all.txt"
 
 const string cISLogger::g_emptyString;
 
@@ -155,7 +155,7 @@ void cISLogger::Update()
         }
     }
 
-    ISFileManager::TouchFile(m_directory + "/stats.txt");
+    ISFileManager::TouchFile(m_directory + STATS_ALL_FILENAME);
 }
 
 bool cISLogger::InitSave(const string &directory, const sSaveOptions &options) 
@@ -224,7 +224,7 @@ bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
     }
 
     // create empty stats file to track timestamps
-    string str = m_directory + (options.subDirectory.empty() ? "" : "/" + options.subDirectory) + "/stats.txt";
+    string str = m_directory + (options.subDirectory.empty() ? "" : "/" + options.subDirectory) + STATS_ALL_FILENAME;
     cISLogFileBase *statsFile = CreateISLogFile(str, "w");
     CloseISLogFile(statsFile);
 
@@ -625,7 +625,7 @@ void cISLogger::CloseAllFiles()
             it.second->CloseAllFiles();
     }
 
-    m_logStats.WriteToFile(m_directory + "/stats.txt");
+    m_logStats.WriteToFile(m_directory + STATS_ALL_FILENAME);
     m_errorFile.close();
 
     PrintStatistics();
