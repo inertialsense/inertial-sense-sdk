@@ -34,7 +34,7 @@ void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0)
 	rmc.bits = bits;
 	rmc.options = options;
 
-	is_comm_data(&s_serialPort.comm, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
+	is_comm_data(&s_serialPort, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
 }
 
 int main(int argc, char* argv[])

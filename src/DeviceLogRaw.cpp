@@ -215,7 +215,9 @@ bool cDeviceLogRaw::WriteChunkToFile()
     return true;
 }
 
-packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype) {
+
+packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype) 
+{
     packet_t* pkt = NULL;
 
     // Read data from chunk
@@ -228,53 +230,38 @@ packet_t* cDeviceLogRaw::ReadPacket(protocol_type_t &ptype) {
         }
     }
 
-    // Read is good, and pkt is guaranteed !NULL
-    cDeviceLog::OnReadPacket(pkt, ptype);
     return pkt;
 }
 
+
 p_data_buf_t* cDeviceLogRaw::ReadData()
 {
-    packet_t* pkt = NULL;
-
     // Read data from chunk
-    m_protocolType = _PTYPE_NONE;
-    while (m_protocolType != _PTYPE_INERTIAL_SENSE_DATA)
+    while (1)
     {
-        // Read next chunk from file
-        pkt = ReadPacketFromChunk(m_protocolType);
-        if (!pkt && !ReadChunkFromFile())
-        {   // File is empty
-            return NULL;
+        protocol_type_t ptype;
+        ReadPacketFromChunk(ptype);
+        switch (ptype)
+        {
+        default:    // Skip other protocols
+            break;
+
+        case _PTYPE_INERTIAL_SENSE_CMD:
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            return &m_pData;
+
+        case _PTYPE_NONE:   
+            // Read next chunk from file
+            if (!ReadChunkFromFile())
+            {   // File is empty
+                return NULL;
+            }
         }
     }
 
-    // Read is good, and pkt is guaranteed !NULL
-    cDeviceLog::OnReadPacket(pkt, m_protocolType);
-
-    switch (m_protocolType)
-    {
-        case _PTYPE_INERTIAL_SENSE_DATA:
-        case _PTYPE_INERTIAL_SENSE_CMD:
-            m_pData.hdr = m_comm.rxPkt.dataHdr;
-            memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
-            return &m_pData;
-
-        case _PTYPE_PARSE_ERROR:
-            if (m_showParseErrors)
-            {
-                if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
-            }
-            break;
-        default:
-            // case _PTYPE_RTCM3:
-            // case _PTYPE_UBLOX:
-            // case _PTYPE_NMEA:
-            break;
-    }
-
-    return &m_pData;
+    return NULL;
 }
+
 
 packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 {
@@ -301,13 +288,25 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 
         if ((ptype = is_comm_parse_byte(&m_comm, data)) != _PTYPE_NONE)
         {
-            if (ptype == _PTYPE_NMEA)
-                m_comm.rxPkt.hdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.data.size);
-            else if (ptype == _PTYPE_PARSE_ERROR) {
+            switch (ptype)
+            {
+            case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
                     if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
                 }
+                break;
+
+            default:
+                m_logStats.LogData(ptype, m_comm.rxPkt.id);
+                break;
+
+            case _PTYPE_INERTIAL_SENSE_DATA:
+            case _PTYPE_INERTIAL_SENSE_CMD:
+                m_logStats.LogData(ptype, m_comm.rxPkt.id, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
+
+                m_pData.hdr = m_comm.rxPkt.dataHdr;
+                memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
             }
             return &m_comm.rxPkt;
         }
