@@ -480,7 +480,7 @@ int nmea_dev_info(char a[], const int aSize, dev_info_t &info)
 }
 
 /**
- * Genterates NMEA ASCE request response
+ * Generates NMEA ASCE request response
 */
 int nmea_ASCE(char a[], const int aSize, rmcNmea_t* nRMC)
 {

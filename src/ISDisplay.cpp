@@ -97,7 +97,7 @@ cInertialSenseDisplay::cInertialSenseDisplay(eDisplayMode displayMode)
 
 	if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)ctrlHandler, true))
 	{
-		std::cout << "Failed to set console ctrl handler!" << std::endl;
+		std::cout << "Failed to set console ctrl handler!" << endl;
 	}
 
 #else
@@ -264,7 +264,7 @@ string cInertialSenseDisplay::Connected()
 		}
 		stream << " (" << bytesPerS << " bytes/s)";
 	}
-	stream << "     " << std::endl;
+	stream << "     " << endl;
 
 	return stream.str();
 }
@@ -561,7 +561,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 		else
 			cout << Connected() << endl;
 
-		cout << VectortoString();
+		cout << VectorToString();
 		return true;
 
 	case DMODE_EDIT:
@@ -594,14 +594,14 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 		return "";
 
 	std::stringstream ss;
-	ss << std::endl;
-	ss << "is_comm stats:  Rx " << comm->rxPktCount << std::endl;
+	ss << "is_comm stats:  Rx " << comm->rxPktCount;
 
 	if (comm->rxErrorCount)
 	{
-#define HLINE_DIVIDER "====================================================================================="
-		ss << HLINE_DIVIDER << std::endl;
-		ss << comm->rxErrorCount << " PARSE ERRORS!!!" << std::endl;
+#define HLINE_DIVIDER "=========================================================================="
+		ss << endl;
+		ss << HLINE_DIVIDER << endl;
+		ss << comm->rxErrorCount << " PARSE ERRORS!!!" << endl;
 		std::string name;
 		for (int i=0; i<NUM_EPARSE_ERRORS; i++)
 		{
@@ -619,25 +619,25 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 			case EPARSE_STREAM_UNPARSABLE:      name = "STREAM_UNPARSABLE";              break;
 			default:                            name = "EPARSE " + std::to_string(i);    break;
 			}
-			ss << "  " << std::setw(20) << std::setfill(' ') << std::left << name << std::setw(3) << comm->rxErrorTypeCount[i] << "     ";
+			ss << std::setw(5) << std::right << comm->rxErrorTypeCount[i] << " " << std::setw(20) << std::setfill(' ') << std::left << name << std::right;
 			if ((i+1)%3 == 0)
 			{	// print three columns
-				ss << std::endl;
+				ss << endl;
 			}
 		}
-		ss << std::endl;
-		ss << HLINE_DIVIDER << std::endl;
+		ss << endl;
+		ss << HLINE_DIVIDER;
 	}
 	else
 	{
-		ss << "No parse errors.";
+		ss << "   No parse errors.";
 	}
-	ss << std::endl;
+	ss << endl;
 
 	return ss.str();
 }
 
-string cInertialSenseDisplay::VectortoString()
+string cInertialSenseDisplay::VectorToString()
 {
 	stringstream ss;
 

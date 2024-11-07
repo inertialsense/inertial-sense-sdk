@@ -42,7 +42,6 @@ void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0)
 	serialPortWrite(&s_serialPort, buf, len);
 }
 
-
 int main(int argc, char* argv[])
 {
 	if (argc < 2)
@@ -74,6 +73,10 @@ int main(int argc, char* argv[])
     // Enable PPD data stream without disabling other messages
 	stream_configure_rmc_preset(RMC_PRESET_IMX_PPD, RMC_OPTIONS_PRESERVE_CTRL);
 
+	// Enable NMEA messages: PINS1, PPIMU, and GNGGA
+	const uint8_t asceMsg[] = "$ASCE,0,PINS1,2,PPIMU,1,GNGGA,1*16\r\n";
+	serialPortWrite(&s_serialPort, asceMsg, sizeof(asceMsg));
+
 	cout << "Started logger.  Press ctrl-c to quit." << endl;
 
 	// Utility class for ctrl-c handling
@@ -93,7 +96,7 @@ int main(int argc, char* argv[])
 			display.Clear();
 			display.Home();
 			display.Hello();
-			logger.PrintMessageStats();
+			logger.PrintStatistics();
 			logger.PrintLogDiskUsage();
 #endif
 		}

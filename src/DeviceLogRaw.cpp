@@ -216,12 +216,6 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
         // Read next chunk from file
         if (!ReadChunkFromFile())
         {   // File is empty
-            // if (m_comm.rxErrorCount)
-            {
-            	cout << m_fileName << "\n";
-                cout << m_logStats.Stats();
-                cout << cInertialSenseDisplay::PrintIsCommStatus(&m_comm);
-            }
             return NULL;
         }
     }

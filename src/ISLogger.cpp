@@ -28,6 +28,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISFileManager.h"
 #include "ISLogger.h"
 #include "ISDataMappings.h"
+#include "ISDisplay.h"
 #include "ISLogFileFactory.h"
 #include "ISUtilities.h"
 
@@ -88,13 +89,11 @@ bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
     bool isCorrupt = true;
 
     if (hdr != NULL)
-    {
-        // if any case is true this is corrupt
+    {   // if any case is true this is corrupt
         isCorrupt = (hdr->size == 0 ||
             hdr->offset + hdr->size > MAX_DATASET_SIZE ||
             hdr->id == 0 ||
             hdr->offset % 4 != 0);
-
     }
 
     return isCorrupt;
@@ -513,12 +512,12 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     if (isHeaderCorrupt(dataHdr))
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
-        m_logStats.IsbLogError(dataHdr);
+        m_logStats.LogError(dataHdr);
     }
     else if (!deviceLog->SaveData(dataHdr, dataBuf))
     {
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats.IsbLogError(dataHdr);
+        m_logStats.LogError(dataHdr);
     }
 #if 1
     else
@@ -565,7 +564,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
     {	// Save Error
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats.IsbLogError(NULL);
+        m_logStats.LogError(NULL);
     }
     else
     {	// Success
@@ -584,7 +583,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     while (isDataCorrupt(data = deviceLog->ReadData()))
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
-        m_logStats.IsbLogError(&data->hdr);
+        m_logStats.LogError(&data->hdr);
         data = NULL;
     }
     if (data != NULL)
@@ -628,6 +627,8 @@ void cISLogger::CloseAllFiles()
 
     m_logStats.WriteToFile(m_directory + "/stats.txt");
     m_errorFile.close();
+
+    PrintStatistics();
 }
 
 void cISLogger::FlushToFile()
@@ -883,12 +884,22 @@ void cISLogger::PrintProgress()
 #endif
 }
 
-void cISLogger::PrintMessageStats()
+void cISLogger::PrintStatistics()
 {
     for (auto it : m_devices)
-    {
-        cout << "SN " << it.second->SerialNumber() << endl;
-        cout << it.second->LogStatsString();
+    {   // Print message statistics 
+        std::shared_ptr<cDeviceLog> dev = it.second;
+        cout << endl;
+        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
+        cout << dev->LogStatsString();
+    }
+
+    for (auto it : m_devices)
+    {   // Print errors
+        std::shared_ptr<cDeviceLog> dev = it.second;
+        cout << endl;
+        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
+        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
     }
 }
 

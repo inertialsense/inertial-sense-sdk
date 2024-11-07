@@ -147,7 +147,7 @@ public:
 	void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
 private:
-	std::string VectortoString();
+	std::string VectorToString();
 	void DataToVector(const p_data_t* data);
 
 	bool m_nonblockingkeyboard = false;

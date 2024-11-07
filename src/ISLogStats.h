@@ -56,7 +56,7 @@ public:
 
 	cLogStats();
 	void Clear();
-	void IsbLogError(const p_data_hdr_t* hdr);
+	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
 	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
 	unsigned int Count();
 	unsigned int Errors();

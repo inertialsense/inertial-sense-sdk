@@ -61,6 +61,10 @@ int main(int argc, char* argv[])
 #if 0
 			printf("ID: %3d\n", data->hdr.id);
 #endif
+
+#if 0
+			logger.PrintStatistics();
+#endif
 		}
 
 		// Scan for "q" press to exit program

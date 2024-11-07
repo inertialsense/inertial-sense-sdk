@@ -81,9 +81,9 @@ void cLogStats::Clear()
     }
 }
 
-void cLogStats::IsbLogError(const p_data_hdr_t* hdr)
+void cLogStats::LogError(const p_data_hdr_t* hdr, protocol_type_t ptype)
 {
-    sLogStatPType &msg = msgs[_PTYPE_INERTIAL_SENSE_DATA];
+    sLogStatPType &msg = msgs[ptype];
 
     msg.errors++;
     if (hdr != NULL && hdr->id < DID_COUNT)
@@ -124,13 +124,12 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
     }
 
     std::stringstream ss;
-    ss << std::endl;
-    ss << msgName << ": count " << msg.count << ", errors " << msg.errors << " _____________________" << std::endl;
+    ss << msgName << ": count " << msg.count << ", errors " << msg.errors << " _____________________" << endl;
 
     ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count";
     if (showErrors)     { ss << " Errors"; }
     if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Drops"; }
-    ss << std::endl;
+    ss << endl;
 
     for (auto& [id, stat] : msg.stats)
     {
@@ -157,7 +156,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
         case _PTYPE_UBLOX: {
                 uint8_t msgClass = 0xFF & (id>>0);
                 uint8_t msgID    = 0xFF & (id>>8);
-                ss << "Class ID (0x" << std::hex << msgClass << "0x" << std::hex << msgID << ")" << std::hex << std::endl;
+                ss << "Class ID (0x" << std::hex << msgClass << "0x" << std::hex << msgID << ")" << std::hex << endl;
             }
             break;
 
@@ -183,7 +182,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
                    << std::setw(5) << stat.timestampDropCount;
             }
         }
-        ss << std::endl;
+        ss << endl;
     }
 
     return ss.str();
@@ -213,13 +212,13 @@ string cLogStats::Stats()
 {
     std::stringstream ss;
     unsigned int count = Count();
-    unsigned int errors = Errors();
-    ss << "Total: count " << count << ", errors " << errors << std::endl;
+    ss << "Total: count " << count << endl;
     for (auto& [ptype, msg] : msgs) 
     {
         switch (ptype)
         {   // Skip these
         case _PTYPE_PARSE_ERROR:
+        case _PTYPE_INERTIAL_SENSE_CMD:
         case _PTYPE_INERTIAL_SENSE_ACK: continue;
         default: break;
         }
