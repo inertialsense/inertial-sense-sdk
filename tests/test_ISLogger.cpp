@@ -218,10 +218,9 @@ TEST(ISLogger, logReader_raw)
     for (auto msg : messages) {
         logger.LogData(devLogger, msg->size(), (const uint8_t*)msg->data());
     }
-    cLogStats stats = logger.GetStats();
     logger.CloseAllFiles();
 
-    EXPECT_EQ(stats.count, messages.size()) << "LogStats of messages written doesn't match messages written.";
+    EXPECT_EQ(logger.Count(), messages.size()) << "LogStats of messages written doesn't match messages written.";
 
     vector<ISFileManager::file_info_t> originalFiles;
     ISFileManager::GetAllFilesInDirectory(logPath, false, "\\.raw$", originalFiles);
@@ -236,7 +235,7 @@ TEST(ISLogger, logReader_raw)
     cISLogger loggerReader;
     EXPECT_TRUE(loggerReader.LoadFromDirectory(logPath, cISLogger::eLogType::LOGTYPE_RAW));
     loggerReader.ShowParseErrors(true);              // Allow garbage data tests to hide parse errors
-    cDeviceLogRaw* rawLogReader = (cDeviceLogRaw*)(loggerReader.DeviceLogs()[0].get());
+//    cDeviceLogRaw* rawLogReader = (cDeviceLogRaw*)(loggerReader.DeviceLogs()[0].get());
 
     protocol_type_t origPType;
     protocol_type_t readPType;

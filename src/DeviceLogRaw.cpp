@@ -273,11 +273,7 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
             break;
     }
 
-    return NULL;
-}
-    }
-
-    return data;
+    return &m_pData;
 }
 
 packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)

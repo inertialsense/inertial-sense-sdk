@@ -274,7 +274,7 @@ void cDeviceLog::OnReadPacket(packet_t* pkt, protocol_type_t ptype) {
     if (pkt != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
-        m_logStats.LogDataAndTimestamp(pkt->dataHdr.id, timestamp, ptype);
+        m_logStats.LogData(ptype, pkt->dataHdr.id, timestamp);
     }
 }
 
@@ -283,7 +283,7 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
     if (data != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);
     }
 }
 
@@ -295,7 +295,7 @@ void cDeviceLog::addIndexRecord() {
         index_record_t newRec;
         newRec.time = timeSinceStart;
         newRec.offset = m_lastIndexOffset;
-        newRec.msg_id = m_logStats.count;
+        newRec.msg_id = m_logStats.Count();
         newRec.reserved = 0;
         m_indexChunks.push_back(newRec);
     } else {

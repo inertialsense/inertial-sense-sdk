@@ -657,7 +657,7 @@ packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceL
     if (pkt != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
-        m_logStats.LogDataAndTimestamp(pkt->dataHdr.id, timestamp);
+        m_logStats.LogData(ptype, pkt->dataHdr.id, timestamp);
     }
     return pkt;
 }
