@@ -9,8 +9,6 @@ call %SDK_DIR%\scripts\windows\build_is_sdk.bat
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
 cd %SDK_DIR%\python\inertialsense\
 
-call %SDK_DIR%\scripts\windows\build_is_sdk.bat
-
 @REM python -m pip install logInspector/
 
 pip3 install setuptools pybind11 wheel
