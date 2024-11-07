@@ -619,6 +619,8 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 
 void cISLogger::CloseAllFiles()
 {
+    PrintStatistics();
+
     for (auto it : m_devices)
     {
         if (it.second != nullptr)
@@ -627,8 +629,6 @@ void cISLogger::CloseAllFiles()
 
     m_logStats.WriteToFile(m_directory + STATS_ALL_FILENAME);
     m_errorFile.close();
-
-    PrintStatistics();
 }
 
 void cISLogger::FlushToFile()
@@ -889,6 +889,8 @@ void cISLogger::PrintStatistics()
     for (auto it : m_devices)
     {   // Print message statistics 
         std::shared_ptr<cDeviceLog> dev = it.second;
+        if (dev==NULL)
+            continue;
         cout << endl;
         cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
         cout << dev->LogStatsString();
@@ -897,6 +899,8 @@ void cISLogger::PrintStatistics()
     for (auto it : m_devices)
     {   // Print errors
         std::shared_ptr<cDeviceLog> dev = it.second;
+        if (dev==NULL)
+            continue;
         cout << endl;
         cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
         cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
