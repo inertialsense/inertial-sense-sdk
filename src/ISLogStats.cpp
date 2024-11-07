@@ -69,8 +69,10 @@ cLogStats::cLogStats()
 
 void cLogStats::Clear()
 {
-    for (auto& [ptype, msg] : msgs) 
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
     {
+        protocol_type_t ptype = it->first;
+        sLogStatPType& msg = it->second;
         msg.count = 0;
         msg.errors = 0;
         for (uint32_t id=0; id < DID_COUNT; id++)
@@ -131,8 +133,11 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
     if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Drops"; }
     ss << endl;
 
-    for (auto& [id, stat] : msg.stats)
+    for (std::map<int, cLogStatMsgId>::iterator it = msg.stats.begin(); it != msg.stats.end(); ++it)
     {
+        int id = it->first;
+        cLogStatMsgId& stat = it->second;
+
         if (stat.count == 0 && stat.errors == 0)
         {   // Exclude zero count stats
             continue;
@@ -191,9 +196,9 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 unsigned int cLogStats::Count()
 {
     unsigned int count = 0;
-    for (auto& [ptype, msg] : msgs) 
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
     {
-        count  += msg.count;
+        count += it->second.count;
     }
     return count;
 }
@@ -201,10 +206,10 @@ unsigned int cLogStats::Count()
 unsigned int cLogStats::Errors()
 {
     unsigned int errors = 0;
-    for (auto& [ptype, msg] : msgs) 
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
     {
-        errors += msg.errors;
-    }
+        errors += it->second.errors;
+    }    
     return errors;
 }
 
@@ -213,8 +218,10 @@ string cLogStats::Stats()
     std::stringstream ss;
     unsigned int count = Count();
     ss << "Total: count " << count << endl;
-    for (auto& [ptype, msg] : msgs) 
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
     {
+        protocol_type_t ptype = it->first;
+        sLogStatPType& msg = it->second;
         switch (ptype)
         {   // Skip these
         case _PTYPE_PARSE_ERROR:
