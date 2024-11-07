@@ -104,15 +104,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
 	// Update log statistics
 	if (dataHdr != NULL)
     {
-		double timestamp;
-		if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
-		{
-			timestamp = cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf);
-		}
-		else
-		{
-			timestamp = current_timeSecD();
-		}  
+		double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
         m_logStats.LogData(ptype, dataHdr->id, timestamp);
 	}
 

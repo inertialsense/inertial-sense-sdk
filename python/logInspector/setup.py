@@ -79,8 +79,6 @@ ext_modules = [
             get_pybind_include(user=True)
         ],
         language='c++',
-        extra_compile_args=['-g'],  # Adds debug information
-        extra_link_args=['-g'],     # Adds debug information to the linking step
     ),
 ]
 

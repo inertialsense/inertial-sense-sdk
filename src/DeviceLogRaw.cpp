@@ -212,7 +212,7 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
 
     // Read data from chunk
     while (!(data = ReadDataFromChunk()))
-    {        
+    {
         // Read next chunk from file
         if (!ReadChunkFromFile())
         {   // File is empty
