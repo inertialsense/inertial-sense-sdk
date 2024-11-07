@@ -598,7 +598,7 @@ string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 
 	if (comm->rxErrorCount)
 	{
-#define HLINE_DIVIDER "=========================================================================="
+#define HLINE_DIVIDER "============================================================================"
 		ss << endl;
 		ss << HLINE_DIVIDER << endl;
 		ss << comm->rxErrorCount << " PARSE ERRORS!!!" << endl;
