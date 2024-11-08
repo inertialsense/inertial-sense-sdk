@@ -38,7 +38,9 @@ namespace ISFileManager
     // files contains the full path to the file
     // return false if no files found, true otherwise
     bool GetAllFilesInDirectory(const std::string& directory, bool recursive, std::vector<std::string>& files);
+    bool GetAllFilesInDirectory(const std::string& directory, bool recursive, std::vector<file_info_t>& files);
     bool GetAllFilesInDirectory(const std::string& directory, bool recursive, const std::string& regexPattern, std::vector<std::string>& files);
+    bool GetAllFilesInDirectory(const std::string& directory, bool recursive, const std::string& regexPattern, std::vector<file_info_t>& files);
 
     bool DeleteFile(const std::string& fullFilePath);
     void DeleteDirectory(const std::string& directory, bool recursive = true);

@@ -17,15 +17,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 cmd_options_t g_commandLineOptions = {};
-serial_port_t g_serialPort;
+port_handle_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
 
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend)
 {
     (void)cmHandle;
-    (void)pHandle;
-    return serialPortWrite(&g_serialPort, bufferToSend->buf, bufferToSend->size);
+    (void)port;
+    return serialPortWrite(g_serialPort, bufferToSend->buf, bufferToSend->size);
 }
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
@@ -330,7 +330,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 printf("EVO Enabled!\n");
             }
             else if ((i + 1) < argc)
-                printf("EVO destination file: MISSING! See usage!\n"); 
+                printf("EVO destination file: MISSING! See usage!\n");
             else if ((i + 2) < argc)
                 printf("EVO SRC file type: MISSING! See usage!\n");
             else
@@ -471,6 +471,20 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-presetINS"))
         {
             g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-preset="))
+        {
+            if (startsWith(a, "-preset=INS"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            else if (startsWith(a, "-preset=PPD"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD;
+            else if (startsWith(a, "-preset=PPD_GROUND_VEHICLE"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            else if (startsWith(a, "-preset=PPD_RTK"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_RTK_DBG;
+            else if (startsWith(a, "-preset=PPD_GPX"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -904,7 +918,7 @@ void cltool_outputUsage()
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
 	cout << "    -lmb=" << boldOff << "MB         File culling: Log drive usage limit in MB. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB << "). `-lmb=0 -lms=0` disables file culling." << endlbOn;
 	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;

@@ -22,6 +22,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISDisplay.h"
 #include "ISPose.h"
 #include "ISEarth.h"
+#include "ISDevice.h"
 
 #if PLATFORM_IS_WINDOWS
 
@@ -249,21 +250,25 @@ string cInertialSenseDisplay::Connected()
 	std::ostringstream stream;
 	stream << Header() << "Connected.  ";
     stream << std::fixed << std::setprecision(1) << runtime << "s";
-	stream << ", Tx " << (m_comm ? std::to_string(m_comm->txPktCount) : "--");
-	stream << ", Rx " << (m_comm ? std::to_string(m_comm->rxPktCount) : "--");
-	if (m_port)
-	{	// Compute data rate in KB/s
-		static unsigned int lastUpdateMs = timeMs;
-		static int bytesLast = 0;
-		static int bytesPerS = 0;
-		if (timeMs - lastUpdateMs >= 1000)
-		{
-			bytesPerS = m_port->rxBytes - bytesLast;
-			bytesLast = m_port->rxBytes;
-			lastUpdateMs = timeMs;
-		}
-		stream << " (" << bytesPerS << " bytes/s)";
-	}
+
+    if (m_device && m_device->port && ((portType(m_device->port) & PORT_TYPE__COMM) == PORT_TYPE__COMM)) {
+        comm_port_t* comPort = COMM_PORT(m_device->port);
+        stream << ", Tx " << std::to_string(comPort->comm.txPktCount);
+        stream << ", Rx " << std::to_string(comPort->comm.rxPktCount);
+        if (comPort->stats) {
+            // TODO: This can probably go away after confirming that it works as expected after the merge
+//            static unsigned int lastUpdateMs = timeMs;
+//            static int bytesLast = 0;
+//            static int bytesPerS = 0;
+//            if (timeMs - lastUpdateMs >= 1000)
+//            {
+//                bytesPerS = m_port->rxBytes - bytesLast;
+//                bytesLast = m_port->rxBytes;
+//                lastUpdateMs = timeMs;
+//            }
+            stream << " (" << (comPort->stats->rxBytesPerSec ? std::to_string(comPort->stats->rxBytesPerSec) : "--") << " bytes/s)";
+        }
+    }
 	stream << "     " << endl;
 
 	return stream.str();
@@ -503,7 +508,7 @@ void cInertialSenseDisplay::ProcessData(p_data_t* data, bool enableReplay, doubl
 	}
 
 	if (m_editData.did == data->hdr.id)
-	{	// Copy data 
+	{	// Copy data
 		copyDataPToDataP(&m_editData.pData, data, MAX_DATASET_SIZE);
 	}
 
@@ -753,7 +758,7 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 	default:
         if (m_showRawHex)
             str = DataToStringRawHex((const char *)data->ptr, data->hdr, 32);
-		else if (m_editData.did == data->hdr.id)	
+		else if (m_editData.did == data->hdr.id)
 		{	// Default view
 			str = DatasetToString(&m_editData.pData);
 		}
@@ -1572,10 +1577,12 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, const 
 
 string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool full)
 {
-    char buf[BUF_SIZE];
-    char* ptr = buf;
-    char* ptrEnd = buf + BUF_SIZE;
 
+    char buf[BUF_SIZE];
+    sprintf(buf, " %s %s", ISDevice::getName(info).c_str(), ISDevice::getFirmwareInfo(info, 1).c_str());
+    return string(buf);
+
+/*
     // Single line format
     ptr += SNPRINTF(ptr, ptrEnd - ptr, " SN%d",
         info.serialNumber
@@ -1646,6 +1653,7 @@ string cInertialSenseDisplay::DataToStringDevInfo(const dev_info_t &info, bool f
     }
 
     return buf;
+*/
 }
 
 string cInertialSenseDisplay::DataToStringSensorsADC(const sys_sensors_adc_t &sensorsADC, const p_data_hdr_t &hdr) {
@@ -1760,9 +1768,9 @@ string cInertialSenseDisplay::DataToStringGPXStatus(const gpx_status_t &gpxStatu
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, ",  status 0x%08x,  hdwStatus 0x%08x\n", gpxStatus.status, gpxStatus.hdwStatus);
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    gnss1/2:  runState %d/%d,  FwUpState %d/%d,  initState %d/%d\n", 
-		gpxStatus.gnssStatus[0].runState, 		gpxStatus.gnssStatus[1].runState, 
-		gpxStatus.gnssStatus[0].fwUpdateState, gpxStatus.gnssStatus[1].fwUpdateState, 
-		gpxStatus.gnssStatus[0].initState,		gpxStatus.gnssStatus[1].initState);
+		gpxStatus.gnssStatus[0].runState,       gpxStatus.gnssStatus[1].runState,
+		gpxStatus.gnssStatus[0].fwUpdateState,  gpxStatus.gnssStatus[1].fwUpdateState,
+		gpxStatus.gnssStatus[0].initState,      gpxStatus.gnssStatus[1].initState);
 	ptr += SNPRINTF(ptr, ptrEnd - ptr, "    mcuTemp %0.2lf,  upTime %0.3lf\n", gpxStatus.mcuTemp, gpxStatus.upTime);
 
     return buf;
@@ -1792,17 +1800,17 @@ string cInertialSenseDisplay::DataToStringDebugArray(const debug_array_t &debug,
 #else
 #endif
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    i[]: ");
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < DEBUG_I_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10d", debug.i[i]);
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n    f[]: ");
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < DEBUG_F_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4f", debug.f[i]);
     }
 
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n   lf[]: ");
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < DEBUG_LF_ARRAY_SIZE; i++) {
         ptr += SNPRINTF(ptr, ptrEnd - ptr, "\t%10.4lf", debug.lf[i]);
     }
 
@@ -1985,7 +1993,7 @@ string cInertialSenseDisplay::DataToStringGeneric(const p_data_t* data)
 
 string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 {
-	if (m_editData.mapInfo == NULL || data == NULL || 
+	if (m_editData.mapInfo == NULL || data == NULL ||
 		data->ptr == NULL || data->hdr.id == 0 || data->hdr.size == 0)
 	{
 		return "";
@@ -1997,7 +2005,15 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 	char buf[BUF_SIZE];
 	char* ptr = buf;
 	char* ptrEnd = buf + BUF_SIZE;
-	DISPLAY_SNPRINTF("(%3d) %s:      W up, S down\n", data->hdr.id, cISDataMappings::DataName(data->hdr.id));
+	DISPLAY_SNPRINTF("(%3d) %s:      \n", data->hdr.id, cISDataMappings::DataName(data->hdr.id));
+
+	if (m_editData.mapInfo->empty())
+	{
+		DISPLAY_SNPRINTF("(output not defined)\n");    // Data to string not defined in either ISDataMappings.cpp or ISDisplay.cpp
+	}
+	else
+	{
+		DISPLAY_SNPRINTF("W up, S down\n");
 
 		data_mapping_string_t tmp;
 		for (map_name_to_info_t::const_iterator it = m_editData.mapInfoBegin; it != m_editData.mapInfoEnd; it++)
@@ -2005,25 +2021,54 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 			if (it == m_editData.mapInfoEnd)
 				break;
 
-		const data_info_t& info = it->second;
+			const data_info_t& info = it->second;
 
 		if (info.arraySize)
-		{	// Array
+			{	// Array
 			for (uint32_t i=0; i < info.arraySize; i++)
-			{
+				{
+					// Print value
+					if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
+					{	// Show keyboard value
+						DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
+					}
+					else
+					{	// Show received value
+						cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp, i, info.elementSize);
+						DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
+					}
+
+					// Print selection marker
+					if ((it == m_editData.mapInfoSelection) && (i == m_editData.selectionArrayIdx))
+					{
+						if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
+						else                        { DISPLAY_SNPRINTF("*"); }
+					}
+					else
+					{
+						DISPLAY_SNPRINTF(" ");
+					}
+
+					// Print value name
+					DISPLAY_SNPRINTF(" %s[%d]\n", it->first.c_str(), i);
+				}
+			}
+			else
+			{	// Single element
+
 				// Print value
-				if (it == m_editData.mapInfoSelection && m_editData.editEnabled && (i == m_editData.selectionArrayIdx))
+				if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
 				{	// Show keyboard value
 					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
 				}
 				else
 				{	// Show received value
-					cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp, i, info.elementSize);
+					cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp);
 					DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
 				}
 
 				// Print selection marker
-				if ((it == m_editData.mapInfoSelection) && (i == m_editData.selectionArrayIdx))
+				if (it == m_editData.mapInfoSelection)
 				{
 					if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
 					else                        { DISPLAY_SNPRINTF("*"); }
@@ -2034,36 +2079,8 @@ string cInertialSenseDisplay::DatasetToString(const p_data_t* data)
 				}
 
 				// Print value name
-				DISPLAY_SNPRINTF(" %s[%d]\n", it->first.c_str(), i);
+				DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
 			}
-		}
-		else
-		{	// Single element
-
-			// Print value
-			if (it == m_editData.mapInfoSelection && m_editData.editEnabled)
-			{	// Show keyboard value
-				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, m_editData.field.c_str());
-			}
-			else
-			{	// Show received value
-				cISDataMappings::DataToString(info, &(data->hdr), (uint8_t*)&d, tmp);
-				DISPLAY_SNPRINTF(DTS_VALUE_FORMAT, tmp);
-			}
-
-			// Print selection marker
-			if (it == m_editData.mapInfoSelection)
-			{
-				if (m_editData.editEnabled) { DISPLAY_SNPRINTF("X"); }
-				else                        { DISPLAY_SNPRINTF("*"); }
-			}
-			else
-			{
-				DISPLAY_SNPRINTF(" ");
-			}
-
-			// Print value name
-			DISPLAY_SNPRINTF(" %s\n", it->first.c_str());
 		}
 	}
 
@@ -2168,7 +2185,7 @@ void cInertialSenseDisplay::SelectEditDataset(int did, bool readOnlyMode)
 		SetDisplayMode(cInertialSenseDisplay::DMODE_EDIT);
 	}
 
-#if 0	// Disabled because it causes zeros to be read on the single did (i.e. -did 1=0) 
+#if 0	// Disabled because it causes zeros to be read on the single did (i.e. -did 1=0)
 	// Stuff zeros in so that write-only datasets will appear
 	p_data_t data = {};
 	data.hdr.id = did;
@@ -2246,7 +2263,7 @@ void cInertialSenseDisplay::VarSelectDecrement()
 		m_editData.selectionArrayIdx = (m_editData.mapInfoSelection->second.arraySize-1);
 		Clear();
 	}
-	
+
 	m_editData.editEnabled = false; 
 }
 

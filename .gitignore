@@ -1,13 +1,4 @@
-cmake-build-*/
-.cmake/
-build/
-obj/
-x64
-Release/
-Debug/
-IS_logs/
-CMakeFiles/
-
+# Ignore files
 *.autosave
 *.elf
 *.gch
@@ -29,13 +20,26 @@ Makefile
 CMakeCache.txt
 cmake_install.cmake
 libInertialSenseSDK.a
-scripts/.venv/
-python/venv/
-python/logInspector/.eggs/
-ros/install/
-ros/log/
-ros/ros2/install/
-ros/ros2/log/
 
-ExampleProjects/Arduino/ReadIS/src/
-ExampleProjects/LogReader_RegCmp/Log/
+# Ignore all directories anywhere in the repo
+cmake-build-*/
+.cmake/
+build/
+obj/
+x64
+Release/
+Debug/
+IS_logs/
+CMakeFiles/
+
+# Ignore directories at the root
+/ExampleProjects/Arduino/ReadIS/src
+/ExampleProjects/LogReader_RegCmp/Log
+/python/venv
+/python/logInspector/.eggs
+/ros/install
+/ros/log
+/ros/ros2/install
+/ros/ros2/log
+/scripts/.venv
+/src/version

@@ -132,6 +132,7 @@ class SuperNPP():
                     serNum = int(re.sub('[^0-9]','', file.split("_")[1]));
                     if serNum and (serNum not in serials):
                         serials.append(serNum)
+
         else:
             serials = config_serials
 
@@ -142,6 +143,7 @@ class SuperNPP():
             cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
         file_path = os.path.dirname(os.path.realpath(__file__))
         npp_build_folder = os.path.normpath(file_path + '../../../../../cpp/NavPostProcess/build')
+
         if os.name == 'posix':  # Linux
             exename = './navpp'
         else:                   # Windows

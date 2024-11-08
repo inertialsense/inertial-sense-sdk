@@ -17,28 +17,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "DataChunk.h"
 #include "ISLogFileBase.h"
 #include "ISLogFileFactory.h"
+#include "version/version.h"
 
 cDataChunk::cDataChunk()
 {
 	Clear();
 	m_hdr.marker = DATA_CHUNK_MARKER;
     #ifdef CHUNK_VER_1
-	m_hdr.version = 1;
-	m_hdr.classification = ' ' << 8 | 'U';
-	m_hdr.grpNum = 0;				//!< Chunk group number
-	m_hdr.devSerialNum = 0;			//!< Serial number
-	m_hdr.reserved = 0;				//!< Reserved
+	m_hdr.v1.version = 1;
+	m_hdr.v1.classification = ' ' << 8 | 'U';
+	m_hdr.v1.grpNum = 0;				//!< Chunk group number
+	m_hdr.v1.devSerialNum = 0;			//!< Serial number
+	m_hdr.v1.reserved = 0;				//!< Reserved
     #else
     m_hdr.version = 2;
-    m_hdr.dataSize = 34;
+    m_hdr.dataOffset = 34;
     m_hdr.protocolVersion[0] = PROTOCOL_VERSION_CHAR0;
     m_hdr.protocolVersion[1] = PROTOCOL_VERSION_CHAR1;
-    m_hdr.grpNum = 0;				//!< Chunk group number
-    m_hdr.devSerialNum = 0;			//!< Serial number
-    m_hdr.fwVersion[0] = 0;			//!< clear firmware
-    m_hdr.fwVersion[1] = 0;			//!< clear firmware
-    m_hdr.fwVersion[2] = 0;			//!< clear firmware
-    m_hdr.fwVersion[3] = 0;			//!< clear firmware
+    m_hdr.grpNum = 0;                                       //!< Chunk group number
+    m_hdr.devSerialNum = 0;                                 //!< Serial number
+    m_hdr.fwVersion[0] = IS_SDK_VERSION_MAJOR;                 //!< default to the SDK version in the event that the device doesn't provide its own version
+    m_hdr.fwVersion[1] = IS_SDK_VERSION_MINOR;                 //!< default to the SDK version in the event that the device doesn't provide its own version
+    m_hdr.fwVersion[2] = IS_SDK_VERSION_PATCH;                 //!< default to the SDK version in the event that the device doesn't provide its own version
+    m_hdr.fwVersion[3] = 0xff;                              //!< -1 indicated that this is the SDK version (it should be overwritten if the device submits devInfo)
     #endif
     m_buffTail = m_buffHead + DEFAULT_CHUNK_DATA_SIZE;
 	m_dataHead = m_buffHead;
@@ -203,21 +204,23 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 	Clear();
 
 	int32_t nBytes = 0;
-
-	if (readHeader)
+    if (readHeader)
 	{
-		// Read chunk header
         auto hdrSize = sizeof(sChunkHeader);
-		nBytes += static_cast<int32_t>(pFile->read(&m_hdr, hdrSize));
+        nBytes = static_cast<int32_t>(pFile->read(&m_hdr, hdrSize));
 
-		// Error checking
-		if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
-		{
-			return -1;
-		}
+        // Error checking
+        if (m_hdr.dataSize != ~(m_hdr.invDataSize) || nBytes <= 0)
+        {
+            return -1;
+        }
 
-		// Read additional chunk header
-		nBytes += ReadAdditionalChunkHeader(pFile);
+        // Read additional chunk header
+        nBytes += ReadAdditionalChunkHeader(pFile);
+
+        if (m_hdr.version == 1) {
+        } else {
+        }
 	}
 	else
 	{

@@ -157,6 +157,8 @@ unsigned int current_timeSec();
 unsigned int current_timeMs();
 uint64_t current_timeUs();
 
+uint32_t current_uptimeMs();
+
 uint64_t timerUsStart();
 uint64_t timerUsEnd(uint64_t start);
 uint64_t timerRawStart();

@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
 #include <deque>
+
 #include "com_manager.h"
 #include "ring_buffer.h"
 #include "protocol_nmea.h"
+
+#include "test_serial_utils.h"
 
 #if 0
 extern "C"
@@ -22,7 +25,7 @@ extern "C"
 #define TEST_PROTO_SPARTN	0
 
 #define TASK_PERIOD_MS		1				// 1 KHz
-#if 0
+#if 1
 #define DEBUG_PRINTF	printf
 #else
 #define DEBUG_PRINTF	
@@ -30,23 +33,25 @@ extern "C"
 
 #define PORT_BUFFER_SIZE	8192
 
+// FIXME:: This struct is effectively redundant now to ISDevice and the Serial port refactor (that moves ISComm, etc into the port_handle_t)
+//  We should also be able to implement a "virtual serial port" that provides serial emulation, without the need for ring-buffers, etc.
 typedef struct
 {
-	com_manager_t			cm;
+	ISComManager			cm;
 	com_manager_status_t	cmBufStatus[NUM_COM_PORTS] = { 0 };
 	broadcast_msg_t			cmBufBcastMsg[MAX_NUM_BCAST_MSGS] = { 0 };
 	struct  
 	{
 		dev_info_t			devInfo;
 		nvm_flash_cfg_t		nvmFlashCfg;
-		nmea_msgs_t		nmeaMsgs;
+		nmea_msgs_t		    nmeaMsgs;
 	}						msgs = { 0 };
 
 	// Used to simulate serial ports
-	ring_buf_t				portRxBuf;
-	uint8_t					portRxBuffer[PORT_BUFFER_SIZE];
-	ring_buf_t				portTxBuf;
-	uint8_t					portTxBuffer[PORT_BUFFER_SIZE];
+//	ring_buf_t				portRxBuf;
+//	uint8_t					portRxBuffer[PORT_BUFFER_SIZE];
+//	ring_buf_t				portTxBuf;
+//	uint8_t					portTxBuffer[PORT_BUFFER_SIZE];
 } test_data_t;
 
 typedef struct
@@ -67,12 +72,13 @@ static std::deque<data_holder_t> g_testRxDeque;
 static std::deque<data_holder_t> g_testTxDeque;
 
 
-static int portRead(unsigned int port, unsigned char* buf, int len)
+/*
+static int portRead(port_handle_t port, unsigned char* buf, int len)
 {
 	return ringBufRead(&tcm.portRxBuf, buf, len);
 }
 
-static int portWrite(unsigned int port, const unsigned char* buf, int len)
+static int portWrite(port_handle_t port, const unsigned char* buf, int len)
 {
 	if (ringBufWrite(&tcm.portTxBuf, (unsigned char*)buf, len))
 	{	// Buffer overflow
@@ -81,39 +87,48 @@ static int portWrite(unsigned int port, const unsigned char* buf, int len)
 	}
 	return len;
 }
+*/
 
-static int postRxRead(unsigned int port, p_data_t* dataRead)
+static int postRxRead(p_data_t* dataRead, port_handle_t port)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
 
-	DEBUG_PRINTF("[%2d] postRxRead() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), td.did, td.size);
+	DEBUG_PRINTF("[%2d] postRxRead() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), dataRead->hdr.id, dataRead->hdr.size);
+    DEBUG_PRINTF("  -- [%2d] testRxQueue() DID: %3d, size: %3d\n", (int)g_testRxDeque.size(), td.did, td.size);
 
-	EXPECT_EQ(td.did, dataRead->hdr.id);
-	EXPECT_EQ(td.size, dataRead->hdr.size);
-	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0);
+	EXPECT_EQ(td.did, dataRead->hdr.id) << "Parsed DID " << (int)dataRead->hdr.id << " but expected DID " << (int)td.did << "." << std::endl;
+	EXPECT_EQ(td.size, dataRead->hdr.size) << "Parsed packet size " << (int)dataRead->hdr.size << " but expected " << (int)td.size << "." << std::endl;
+	EXPECT_TRUE(memcmp(&td.data, dataRead->ptr, td.size)==0) << "Packet contents did not match expected contents." << std::endl;
     return 0;
 }
 
-static int disableBroadcasts(int port)
+static int disableBroadcasts(port_handle_t port)
 {
     return 0;
 }
 
-int prepDevInfo(unsigned int port, p_data_hdr_t* dataHdr)
+int prepDevInfo(port_handle_t port, p_data_hdr_t* dataHdr)
 {
 	return 1;
 }
 
-int writeNvrUserpageFlashCfg(unsigned int port, p_data_t* data)
+int writeNvrUserpageFlashCfg(p_data_t* data, port_handle_t port)
 {
     return 0;
 }
 
 // return 1 on success, 0 on failure
-static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
+static int msgHandlerBinaryData(p_data_t* msg, port_handle_t port)
 {
-// 	comWrite(pHandle, line, lineLength); // echo back
+    postRxRead(msg, port);
+    return 0;
+}
+
+// return 1 on success, 0 on failure
+static int msgHandlerNmea(const uint8_t* msg, int msgSize, port_handle_t port)
+{
+// 	comWrite(port, line, lineLength); // echo back
 // 	time_delay_msec(50); // give time for the echo to come back
 
 	if (msgSize == 10)
@@ -121,11 +136,11 @@ static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
 		switch (getNmeaMsgId(msg, msgSize))
 		{
 		case NMEA_MSG_ID_ASCE:	// query NMEA message broadcast rates
-		// 		writeNmeaBcastPeriod(cmHandle, pHandle, NULLPTR);
+		// 		writeNmeaBcastPeriod(cmHandle, port, NULLPTR);
 			break;
 
 		case NMEA_MSG_ID_STPB: // stop all broadcasts on all ports
-			disableBroadcasts(-1);
+			disableBroadcasts(0);
 			break;
 
 		case NMEA_MSG_ID_STPC: // stop all broadcasts on current port
@@ -151,7 +166,7 @@ static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
 		// {
 		// case NMEA_MSG_ID_NELB: // SAM bootloader assistant (SAM-BA) enable
 // 			if (msgSize == 22 &&	// 16 character commands (i.e. "$NELB,!!SAM-BA!!\0*58\r\n")
-// 				(pHandle == COM0_PORT_NUM || pHandle == USB_PORT_NUM) &&
+// 				(port == COM0_PORT_NUM || port == USB_PORT_NUM) &&
 // 				strncmp((const char*)(msg + 6), "!!SAM-BA!!", 6) == 0)
 // 			{
 // 			}
@@ -171,7 +186,7 @@ static int msgHandlerNmea(unsigned int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerUblox(unsigned int port, const uint8_t* msg, int msgSize)
+static int msgHandlerUblox(const uint8_t* msg, int msgSize, port_handle_t port)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -209,7 +224,7 @@ static int msgHandlerUblox(unsigned int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerRtcm3(unsigned int port, const uint8_t* msg, int msgSize)
+static int msgHandlerRtcm3(const uint8_t* msg, int msgSize, port_handle_t port)
 {
 	data_holder_t td = g_testRxDeque.front();
 	g_testRxDeque.pop_front();
@@ -247,7 +262,7 @@ static int msgHandlerRtcm3(unsigned int port, const uint8_t* msg, int msgSize)
 	return 0;
 }
 
-static int msgHandlerError(unsigned int port, is_comm_instance_t* comm)
+static int msgHandlerError(port_handle_t port)
 {
 	return 0;
 }
@@ -264,45 +279,49 @@ static void printNmeaMessage(const char *name, const uint8_t* str, int size)
 }
 
 
-#define NUM_HANDLES			1
-static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
-static uint8_t				s_comm_buffer[NUM_HANDLES*PKT_BUF_SIZE] = { 0 };
-static com_manager_port_t	s_cmPort = {};
+//#define NUM_HANDLES			1
+
+//comm_port_t g_testPort = { .base = { .pnum = 0, .ptype = PORT_TYPE__COMM }, .comm = { }, };
+//#define TEST_PORT ((port_handle_t)(&g_testPort))
+static is_comm_instance_t& s_comm = g_testPorts[0].comm.comm;
+static uint8_t* s_comm_buffer = g_testPorts[0].comm.buffer;
+
+// static is_comm_instance_t   s_comm[NUM_HANDLES] = { 0 };
+// static uint8_t				s_comm_buffer[NUM_HANDLES*PKT_BUF_SIZE] = { 0 };
+// static com_manager_port_t	s_cmPort = {};
 
 static bool initComManager(test_data_t &t)
 {
-	// Init ComManager
-	com_manager_init_t cmInit = {};
-	cmInit.broadcastMsg = t.cmBufBcastMsg;
-	cmInit.broadcastMsgSize = sizeof(t.cmBufBcastMsg);
-	is_comm_callbacks_t callbacks = {};
-	callbacks.nmea 	= msgHandlerNmea;
-	callbacks.ublox = msgHandlerUblox;
-	callbacks.rtcm3 = msgHandlerRtcm3;
-	callbacks.error = msgHandlerError;
-	if (comManagerInitInstance(&(t.cm), NUM_HANDLES, TASK_PERIOD_MS, portRead, portWrite, 0, postRxRead, 0, disableBroadcasts, &cmInit, &s_cmPort, &callbacks))
-	{	// Fail to init
-		return false;
-	}
+	if (t.cm.init(NULL, TASK_PERIOD_MS, postRxRead, 0, 0, disableBroadcasts, &g_cmBufBcastMsg))
+		return false;   // Failed to init
 
-	comManagerRegisterInstance(&(t.cm), DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
-	comManagerRegisterInstance(&(t.cm), DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
+    t.cm.registerIsbDataHandler(postRxRead);
+    t.cm.registerProtocolHandler(_PTYPE_NMEA, msgHandlerNmea);
+    t.cm.registerProtocolHandler(_PTYPE_UBLOX, msgHandlerUblox);
+    t.cm.registerProtocolHandler(_PTYPE_RTCM3, msgHandlerRtcm3);
+
+	t.cm.registerDid(DID_DEV_INFO, prepDevInfo, 0, &(t.msgs.devInfo), 0, sizeof(dev_info_t), 0);
+    t.cm.registerDid(DID_FLASH_CONFIG, 0, writeNvrUserpageFlashCfg, &t.msgs.nvmFlashCfg, 0, sizeof(nvm_flash_cfg_t), 0);
 
 	// Enable/disable protocols
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
-	s_cmPort.comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
+	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_ISB * TEST_PROTO_ISB);
+	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_NMEA * TEST_PROTO_NMEA);
+	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_UBLOX * TEST_PROTO_UBLOX);
+	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_RTCM3 * TEST_PROTO_RTCM3);
+	s_comm.config.enabledMask |= (uint32_t)(ENABLE_PROTOCOL_SPARTN * TEST_PROTO_SPARTN);
+
+    t.cm.registerPort(TEST0_PORT);
 
 	return true;
 }
 
 bool init(test_data_t &t)
 {
+    initTestPorts();
+
 	// Init Port Buffers
-	ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
-	ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
+	// ringBufInit(&(t.portTxBuf), t.portTxBuffer, sizeof(t.portTxBuffer), 1);
+	// ringBufInit(&(t.portRxBuf), t.portRxBuffer, sizeof(t.portRxBuffer), 1);
 
 	return initComManager(t);
 }
@@ -505,7 +524,7 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 			DEBUG_PRINTF("[%2d] ", (int)testDeque.size());
 			switch (td.ptype)
 			{
-			case PSC_ISB_PREAMBLE:
+                case _PTYPE_INERTIAL_SENSE_DATA:
 				DEBUG_PRINTF("DID: %3d, size: %3d\n", td.did, td.size);
 				break;
 			case _PTYPE_NMEA:
@@ -534,12 +553,44 @@ static void generateData(std::deque<data_holder_t> &testDeque)
 	}
 }
 
+static void sendDequeToPort(std::deque<data_holder_t> &testDeque, port_handle_t port)
+{
+    int k=0;
+
+    for (int i = 0; i < testDeque.size(); i++)
+    {
+        data_holder_t &td = testDeque[i];
+        int n = 0;
+
+        // Write packetized data to port's buffer
+        switch (td.ptype)
+        {
+            case _PTYPE_INERTIAL_SENSE_DATA:
+                // Packetize data and write
+                n = is_comm_data(TEST0_PORT, td.did, td.size, 0, (void*)&(td.data));
+                td.pktSize = n;
+                EXPECT_GT(n, 0);
+                break;
+
+            case _PTYPE_NMEA:
+            case _PTYPE_UBLOX:
+            case _PTYPE_RTCM3:
+                td.pktSize = td.size;
+                EXPECT_GT(TEST0_PORT->base.portWrite(TEST0_PORT, td.data.buf, td.size), 0);
+                break;
+        }
+    }
+
+    // Buffer overflow not allowed for test
+    ASSERT_GT(TEST0_PORT->base.portFree(TEST0_PORT), 0);
+}
+
 
 static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *rbuf)
 {
 	is_comm_instance_t		comm;
 	uint8_t					comm_buffer[2048] = { 0 };
-	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer));
+	is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);   // TODO: Should we be using callbacks??  Probably
 
 	int k=0;
 
@@ -573,6 +624,58 @@ static void addDequeToRingBuf(std::deque<data_holder_t> &testDeque, ring_buf_t *
 }
 
 
+/**
+ * This function pulls/reads data from the passed port, and compares it with the items in the Deque
+ * @param testDeque
+ * @param t
+ */
+void parseDequeFromPort(std::deque<data_holder_t> &testDeque, port_handle_t port)
+{
+    is_comm_instance_t		comm;
+    uint8_t					comm_buffer[2048] = { 0 };
+    is_comm_init(&comm, comm_buffer, sizeof(comm_buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use passed port
+    unsigned char c;
+    protocol_type_t ptype;
+    uDatasets dataWritten;
+
+    test_port_t* testPort = (test_port_t*)port;
+    while (portAvailable(port) > 0)
+    {
+        portRead(port, &c, 1);
+        //ringBufRead(&t.portTxBuf, &c, 1);
+
+        if((ptype = is_comm_parse_byte(&comm, c)) != _PTYPE_NONE)
+        {
+            data_holder_t td = testDeque.front();
+            testDeque.pop_front();
+
+            switch (ptype)
+            {
+                case _PTYPE_INERTIAL_SENSE_DATA:
+                    // Found data
+                    DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
+                    is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
+                    EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
+                    break;
+
+                case _PTYPE_UBLOX:	DEBUG_PRINTF("Found data: UBLOX\n");
+                    break;
+                case _PTYPE_RTCM3:	DEBUG_PRINTF("Found data: RTCM3\n");
+                    break;
+
+                case _PTYPE_NMEA:
+                    printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+                    break;
+            }
+
+            EXPECT_EQ(td.size, comm.rxPkt.data.size);
+            EXPECT_TRUE(memcmp(td.data.buf, comm.rxPkt.data.ptr, td.size) == 0);
+        }
+    }
+}
+
+
+/*
 void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 {
 	is_comm_instance_t		comm;
@@ -592,18 +695,18 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 			testDeque.pop_front();
 
 			switch (ptype)
-			{
+            {
 			case _PTYPE_INERTIAL_SENSE_DATA:
 				// Found data
 				DEBUG_PRINTF("Found data: did %3d, size %3d\n", comm.rxPkt.hdr.id, comm.rxPkt.data.size);
-
 				is_comm_copy_to_struct(&dataWritten, &comm, sizeof(uDatasets));
-
 				EXPECT_EQ(td.did, comm.rxPkt.hdr.id);
 				break;
 
-			case _PTYPE_UBLOX:	DEBUG_PRINTF("Found data: UBLOX\n");	break;
-			case _PTYPE_RTCM3:	DEBUG_PRINTF("Found data: RTCM3\n");	break;
+			case _PTYPE_UBLOX:	DEBUG_PRINTF("Found data: UBLOX\n");
+                break;
+			case _PTYPE_RTCM3:	DEBUG_PRINTF("Found data: RTCM3\n");
+                break;
 
 			case _PTYPE_NMEA:
 				printNmeaMessage("Found data", comm.rxPkt.data.ptr, comm.rxPkt.data.size);
@@ -615,6 +718,7 @@ void parseDataPortTxBuf(std::deque<data_holder_t> &testDeque, test_data_t &t)
 		}
 	}
 }
+*/
 
 
 static void ringBuftoRingBufWrite(ring_buf_t *dst, ring_buf_t *src, int len)
@@ -643,24 +747,24 @@ TEST(ComManager, BasicTxTest)
 		switch (td.ptype)
 		{
 		default:	// IS binary
-			comManagerSendDataNoAckInstance(&tcm.cm, 0, &td.data, td.did, td.size, 0);
+			tcm.cm.sendDataNoAck(TEST0_PORT, &td.data, td.did, td.size, 0);
 			break;
 
 		case _PTYPE_NMEA:
 		case _PTYPE_UBLOX:
 		case _PTYPE_RTCM3:
-			portWrite(0, td.data.buf, td.size);
+			portWrite(TEST0_PORT, td.data.buf, td.size);
 			break;
 		}
 
 	}
 
 	// Test that data parsed from Tx port matches deque data
-	parseDataPortTxBuf(g_testTxDeque, tcm);
+    parseDequeFromPort(g_testTxDeque, TEST0_PORT);
 
 	// Check that we got all data
 	EXPECT_TRUE(g_testTxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portTxBuf) == 0);
+	EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
 #endif
 
@@ -668,26 +772,28 @@ TEST(ComManager, BasicTxTest)
 #if 1
 TEST(ComManager, BasicRxTest)
 {
+    initTestPorts();
+
 	// Initialize Com Manager
 	init(tcm);
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);
 
-	// Add deque data to Rx port ring buffer
-	addDequeToRingBuf(g_testRxDeque, &tcm.portRxBuf);
+	// Write deque data to Loopback port
+    sendDequeToPort(g_testRxDeque, TEST0_PORT);
 
-	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
+	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", portAvailable(TEST0_PORT));
 
-	while (!ringBufEmpty(&tcm.portRxBuf))
+	while (portAvailable(TEST0_PORT))
 	{
 		// Step Com Manager and check that was received correctly inside postRxRead()
-		comManagerStepInstance(&tcm.cm);	// 2048 byte limit each step
+		tcm.cm.step();	// 2048 byte limit each step
 	}
 
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
+	EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
 #endif
 
@@ -709,6 +815,7 @@ TEST(ComManager, SegmentedRxTest)
 	generateData(g_testRxDeque);
 
 	// Add deque data to temporary ring buffer
+    //sendDequeToPort(g_testRxDeque, TEST0_PORT);
 	addDequeToRingBuf(g_testRxDeque, &tmpRBuf);
 
 	DEBUG_PRINTF("Checking Data:\n");
@@ -718,20 +825,19 @@ TEST(ComManager, SegmentedRxTest)
 	int bytesToWrite = ringBufUsed(&tmpRBuf) / TIMES_TO_DIVIDE_DATA;
 	while (!ringBufEmpty(&tmpRBuf) && !g_testRxDeque.empty())
 	{
-		// Partial write of data
-		ringBuftoRingBufWrite(&tcm.portRxBuf, &tmpRBuf, bytesToWrite);
+		// Partial write of data -- we're bypassing the port handler and directly copying data between ring-buffers
+		ringBuftoRingBufWrite(&(TEST0_PORT->loopbackPortBuf), &tmpRBuf, bytesToWrite);
 
-		while (!ringBufEmpty(&tcm.portRxBuf))
+		while (portAvailable(TEST0_PORT))
 		{
 			// Step Com Manager and check that was received correctly inside postRxRead()
-			comManagerStepInstance(&tcm.cm);
-			comManagerStepInstance(&tcm.cm);
+			tcm.cm.step();
 		}
 	}
 
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufEmpty(&tcm.portRxBuf));
+	EXPECT_TRUE(ringBufEmpty(&(TEST0_PORT->loopbackPortBuf)));
 }
 #endif
 
@@ -766,19 +872,20 @@ TEST(ComManager, RxWithGarbageTest)
 	}
 
 	// Add deque data to Rx port ring buffer
-	addDequeToRingBuf(testRxDequeWithGarbage, &tcm.portRxBuf);
+    sendDequeToPort(testRxDequeWithGarbage, TEST0_PORT);
+	// addDequeToRingBuf(testRxDequeWithGarbage, &tcm.portRxBuf);
 
-	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
+	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", portAvailable(TEST0_PORT));
 
-	while (!ringBufEmpty(&tcm.portRxBuf))
+	while (portAvailable(TEST0_PORT))
 	{
 		// Step Com Manager and check that was received correctly inside postRxRead()
-		comManagerStepInstance(&tcm.cm);	// 2048 byte limit each step
+		tcm.cm.step();	// 2048 byte limit each step
 	}
 
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
+	EXPECT_TRUE(portAvailable(TEST0_PORT) == 0);
 }
 #endif
 
@@ -788,22 +895,28 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 {
 	// This test ensures that packets can be read and decoded to the alternate buffer (not in the default comm.rxBuf.start buffer).
 
-	// Init Port Buffers
-	ringBufInit(&(tcm.portTxBuf), tcm.portTxBuffer, sizeof(tcm.portTxBuffer), 1);
-	ringBufInit(&(tcm.portRxBuf), tcm.portRxBuffer, sizeof(tcm.portRxBuffer), 1);
+    // Init Port Buffers
+    ring_buf_t				portRxBuf;
+    uint8_t					portRxBuffer[PORT_BUFFER_SIZE];
+    ringBufInit(&portRxBuf, portRxBuffer, sizeof(portRxBuffer), 1);
+
+    ring_buf_t				portTxBuf;
+    uint8_t					portTxBuffer[PORT_BUFFER_SIZE];
+    ringBufInit(&portTxBuf, portTxBuffer, sizeof(portTxBuffer), 1);
+
 	initComManager(tcm);
 
-	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
+	is_comm_instance_t &comm = COMM_PORT(TEST0_PORT)->comm;
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);
 
 	// Add deque data to Rx port ring buffer
-	addDequeToRingBuf(g_testRxDeque, &tcm.portRxBuf);
+	addDequeToRingBuf(g_testRxDeque, &portRxBuf);
 
-	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
+	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&portRxBuf));
 
-	while (!ringBufEmpty(&tcm.portRxBuf))
+	while (!ringBufEmpty(&portRxBuf))
 	{
 		// Get available size of comm buffer
 		int n = is_comm_free(&comm);
@@ -812,7 +925,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&tcm.portRxBuf, comm.rxBuf.tail, n)))
+		if ((n = ringBufRead(&portRxBuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
 			comm.rxBuf.tail += n;
@@ -863,7 +976,7 @@ TEST(ComManager, Evb2AltDecodeBufferTest)
 
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
+	EXPECT_TRUE(ringBufUsed(&portRxBuf) == 0);
 }
 #endif
 
@@ -873,12 +986,19 @@ TEST(ComManager, Evb2DataForwardTest)
 {
 	// This test ensures that packets can be read, decoded, and forwarded for EVB-2 com_bridge without corrupting the data.
 
-	// Init Port Buffers
-	ringBufInit(&(tcm.portTxBuf), tcm.portTxBuffer, sizeof(tcm.portTxBuffer), 1);
-	ringBufInit(&(tcm.portRxBuf), tcm.portRxBuffer, sizeof(tcm.portRxBuffer), 1);
-	initComManager(tcm);
+    // Init Port Buffers
+    ring_buf_t				portRxBuf;
+    uint8_t					portRxBuffer[PORT_BUFFER_SIZE];
+    ringBufInit(&portRxBuf, portRxBuffer, sizeof(portRxBuffer), 1);
 
-	is_comm_instance_t &comm = (tcm.cm.ports[0].comm);
+    ring_buf_t				portTxBuf;
+    uint8_t					portTxBuffer[PORT_BUFFER_SIZE];
+    ringBufInit(&portTxBuf, portTxBuffer, sizeof(portTxBuffer), 1);
+
+	initComManager(tcm);
+    // tcm.cm.setBinaryDataCallback(NULL); // This is initialized in initComManager() but will cause this to fail unless we clear it (double-remove from deque, if not set to NULL)
+
+	is_comm_instance_t &comm = COMM_PORT(TEST0_PORT)->comm;
 
 	// Generate and add data to deque
 	generateData(g_testRxDeque);
@@ -895,7 +1015,7 @@ TEST(ComManager, Evb2DataForwardTest)
 
 	int originalRingBufferUsed = ringBufUsed(&evbRbuf);
 
-	std::deque<data_holder_t> testRxDequeCopy = g_testRxDeque;
+	std::deque<data_holder_t> testRxDequeCopy = g_testRxDeque; // Yes, we *actually* want a COMPLETE copy
 
 	while (!ringBufEmpty(&evbRbuf))
 	{
@@ -926,13 +1046,13 @@ TEST(ComManager, Evb2DataForwardTest)
 				switch (ptype)
 				{
 				case _PTYPE_INERTIAL_SENSE_DATA:
-					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.hdr), sizeof(packet_hdr_t));
+					ringBufWrite(&portRxBuf, (uint8_t*)&(comm.rxPkt.hdr), sizeof(packet_hdr_t));
 					if (comm.rxPkt.offset)
 					{
-						ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.offset), sizeof(comm.rxPkt.offset));
+						ringBufWrite(&portRxBuf, (uint8_t*)&(comm.rxPkt.offset), sizeof(comm.rxPkt.offset));
 					}
-					ringBufWrite(&tcm.portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
-					ringBufWrite(&tcm.portRxBuf, (uint8_t*)&(comm.rxPkt.checksum), sizeof(comm.rxPkt.checksum));
+					ringBufWrite(&portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+					ringBufWrite(&portRxBuf, (uint8_t*)&(comm.rxPkt.checksum), sizeof(comm.rxPkt.checksum));
 
 					if (td.pktSize != comm.rxPkt.size)
 					{
@@ -943,7 +1063,7 @@ TEST(ComManager, Evb2DataForwardTest)
 				case _PTYPE_UBLOX:
 				case _PTYPE_RTCM3:
 				{
-					ringBufWrite(&tcm.portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
+					ringBufWrite(&portRxBuf, comm.rxPkt.data.ptr, comm.rxPkt.data.size);
 
 					if (td.pktSize != comm.rxPkt.size)
 					{
@@ -959,13 +1079,12 @@ TEST(ComManager, Evb2DataForwardTest)
 		}
 	}
 
-	int forwardRingBufferUsed = ringBufUsed(&tcm.portRxBuf);
+	int forwardRingBufferUsed = ringBufUsed(&portRxBuf);
 	ASSERT_TRUE(forwardRingBufferUsed == originalRingBufferUsed);
-	
 
-	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&tcm.portRxBuf));
+	DEBUG_PRINTF("===============  Checking Data.  Size: %d  ===============\n", ringBufUsed(&portRxBuf));
 
-	while (!ringBufEmpty(&tcm.portRxBuf))
+	while (!ringBufEmpty(&portRxBuf))
 	{
 		// Get available size of comm buffer
 		int n = is_comm_free(&comm);
@@ -974,7 +1093,7 @@ TEST(ComManager, Evb2DataForwardTest)
 		n = _MIN(n, 5);
 
 		// Read data directly into comm buffer
-		if ((n = ringBufRead(&tcm.portRxBuf, comm.rxBuf.tail, n)))
+		if ((n = ringBufRead(&portRxBuf, comm.rxBuf.tail, n)))
 		{
 			// Update comm buffer tail pointer
 			comm.rxBuf.tail += n;
@@ -1028,7 +1147,7 @@ TEST(ComManager, Evb2DataForwardTest)
 
 	// Check that no data was left behind 
 	EXPECT_TRUE(g_testRxDeque.empty());
-	EXPECT_TRUE(ringBufUsed(&tcm.portRxBuf) == 0);
+	EXPECT_TRUE(ringBufUsed(&portRxBuf) == 0);
 }
 #endif
 

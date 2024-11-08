@@ -396,7 +396,7 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
         rs_.imu.enabled = true;
         odometryIdentity(msg_odom_ned);
         if (!firstrun)
-            return;;
+            return;
     }
 
     if (rs_.odom_ins_ecef.enabled && !(rs_.did_ins4.streaming && imuStreaming_))
@@ -2268,14 +2268,16 @@ bool InertialSenseROS::perform_mag_cal_srv_callback(std_srvs::Trigger::Request &
     uint32_t single_axis_command = 2;
     IS_.SendData(DID_MAG_CAL, reinterpret_cast<uint8_t *>(&single_axis_command), sizeof(uint32_t), offsetof(mag_cal_t, state));
 
+
+    // FIXME: Not sure what is happening here, but its incorrect post-port_handle_t refactor
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
+    port_handle_t port = IS_.SerialPort();
     uint8_t inByte;
     int n;
 
-    while ((n = serialPortReadCharTimeout(serialPort, &inByte, 20)) > 0)
+    while ((n = serialPortReadCharTimeout(port, &inByte, 20)) > 0)
     {
         // Search comm buffer for valid packets
         if (is_comm_parse_byte(&comm, inByte) == _PTYPE_INERTIAL_SENSE_DATA && comm.rxPkt.dataHdr.id == DID_INS_1)
@@ -2301,8 +2303,8 @@ bool InertialSenseROS::perform_multi_mag_cal_srv_callback(std_srvs::Trigger::Req
 
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
-    serial_port_t *serialPort = IS_.SerialPort();
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably -- but probably we should use the port below, and its buffer/callbacks
+    port_handle_t port = IS_.SerialPort();
     uint8_t inByte;
     int n;
 
