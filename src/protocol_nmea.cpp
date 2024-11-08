@@ -885,7 +885,7 @@ void update_nmea_speed(gps_pos_t &pos, gps_vel_t &vel)
             quat_ecef2ned(C_DEG2RAD_F*(float)pos.lla[0], C_DEG2RAD_F*(float)pos.lla[1], qe2n);
             quatConjRot(s_dataSpeed.velNed, qe2n, vel.vel);
         }
-        s_dataSpeed.speed2dMps = MAG_VEC2(s_dataSpeed.velNed);
+        s_dataSpeed.speed2dMps = mag_Vec2(s_dataSpeed.velNed);
         s_dataSpeed.speed2dKnots = C_METERS_KNOTS_F * s_dataSpeed.speed2dMps;
     }
 }

@@ -29,17 +29,14 @@ extern "C" {
 #define DOT_VEC2(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1])
 #define DOT_VEC3(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2])
 #define DOT_VEC4(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2] + (v)[3]*(v)[3])
-#define DOT_VEC2d(v)    DOT_VEC2(v)
-#define DOT_VEC3d(v)    DOT_VEC3(v)
-#define DOT_VEC4d(v)    DOT_VEC4(v)
 
 // Magnitude or Norm 
 #define MAG_VEC2(v)     (_SQRT(DOT_VEC2(v)))
 #define MAG_VEC3(v)     (_SQRT(DOT_VEC3(v)))
 #define MAG_VEC4(v)     (_SQRT(DOT_VEC4(v)))
-#define MAG_VEC2D(v)    (sqrt(DOT_VEC2d(v)))
-#define MAG_VEC3D(v)    (sqrt(DOT_VEC3d(v)))
-#define MAG_VEC4D(v)    (sqrt(DOT_VEC4d(v)))
+#define MAG_VEC2D(v)    (sqrt(DOT_VEC2(v)))
+#define MAG_VEC3D(v)    (sqrt(DOT_VEC3(v)))
+#define MAG_VEC4D(v)    (sqrt(DOT_VEC4(v)))
 
 #define EPSF32 (1.0e-16f)  // Smallest number for safe division
 #define EPSF64 (1.0e-16l)  // Smallest number for safe division
@@ -47,10 +44,10 @@ extern "C" {
 #define RECIPNORM_VEC2(v)	(1.0f/_MAX(MAG_VEC2(v), EPSF32))
 #define RECIPNORM_VEC3(v)	(1.0f/_MAX(MAG_VEC3(v), EPSF32))
 #define RECIPNORM_VEC4(v)	(1.0f/_MAX(MAG_VEC4(v), EPSF32))
-#define RECIPNORM_VEC3d(v)	(1.0l/_MAX(MAG_VEC3D(v), EPSF64))
-#define RECIPNORM_VEC4d(v)	(1.0l/_MAX(MAG_VEC4D(v), EPSF64))
+#define RECIPNORM_VEC3D(v)	(1.0l/_MAX(MAG_VEC3D(v), EPSF64))
+#define RECIPNORM_VEC4D(v)	(1.0l/_MAX(MAG_VEC4D(v), EPSF64))
 
-#define unwrap_Vec3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
+#define UNWRAP_VEC3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
 #define VEC3_ONELESSTHAN_X(v,x)		( ((v[0])<(x))  || ((v[1])<(x))  || ((v[2])<(x)) )
 #define VEC3_ONEGRTRTHAN_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )
@@ -59,10 +56,6 @@ extern "C" {
 #define VEC3_ISZERO(v)				( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
 #define VEC3_ISANYZERO(v)			( ((v[0])==(0.0f))  || ((v[1])==(0.0f))  || ((v[2])==(0.0f)) )
 #define VEC3_ISANYNONZERO(v)		( ((v[0])!=(0.0f))  || ((v[1])!=(0.0f))  || ((v[2])!=(0.0f)) )
-
-#define MAT3X3_ISIDENTITY(m)        ( (m[0]==1.0f) && (m[1]==0.0f) && (m[2]==0.0f) && \
-                                      (m[3]==0.0f) && (m[4]==1.0f) && (m[5]==0.0f) && \
-                                      (m[6]==0.0f) && (m[7]==0.0f) && (m[8]==1.0f) )
 
 #define SET_VEC3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
 #define SET_VEC4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
@@ -255,7 +248,7 @@ void abs_Vec3d( ixVector3d result, const ixVector3d v );
 void abs_Vec4d( ixVector4d result, const ixVector4d v );
 
 /* Dot product
- * result = v1(n) dot v2(n)
+ * result = v(n) dot v(n)
  */
 f_t dot_Vec2(const ixVector2 v);
 f_t dot_Vec3(const ixVector3 v);
@@ -263,12 +256,23 @@ f_t dot_Vec4(const ixVector4 v);
 double dot_Vec2d(const ixVector2d v);
 double dot_Vec3d(const ixVector3d v);
 double dot_Vec4d(const ixVector4d v);
+
+/* Dot product
+ * result = v1(n) dot v2(n)
+ */
 f_t dot_Vec2_Vec2(const ixVector2 v1, const ixVector2 v2 );
 f_t dot_Vec3_Vec3(const ixVector3 v1, const ixVector3 v2 );
 f_t dot_Vec4_Vec4(const ixVector4 v1, const ixVector4 v2 );
 double dot_Vec2d_Vec2d(const ixVector2d v1, const ixVector2d v2 );
 double dot_Vec3d_Vec3d(const ixVector3d v1, const ixVector3d v2 );
 double dot_Vec4d_Vec4d(const ixVector4d v1, const ixVector4d v2 );
+
+/* Vector magnitude
+ * result = sqrt( v(n) dot v(n) )
+ */
+f_t mag_Vec2( const ixVector2 v);
+f_t mag_Vec3( const ixVector3 v);
+f_t mag_Vec4( const ixVector4 v);
 
 /* Cross product
  * result(3) = v1(3) x v2(3)
@@ -508,6 +512,10 @@ static __inline void zero_MatMxN( f_t *M, i_t m, i_t n )
 	}
 }
 
+/**
+ * Return 1 if 3x3 matrix is an identity, 0 if not.
+ */
+int mat3x3_IsIdentity(const f_t m[]);
 
 /* Copy vector
  * result(3) = v(3)
@@ -658,7 +666,7 @@ static __inline void normalize_Vec4( ixVector4 result, const ixVector4 v )
 static __inline void normalize_Vec4d( ixVector4d result, const ixVector4d v )
 {
 	// Normalize vector
-	mul_Vec4d_X( result, v, RECIPNORM_VEC4d(v) );
+	mul_Vec4d_X( result, v, RECIPNORM_VEC4D(v) );
 }
 
 /*
