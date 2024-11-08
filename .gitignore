@@ -37,5 +37,6 @@ ros/log/
 ros/ros2/install/
 ros/ros2/log/
 
-ExampleProjects/Arduino/ReadIS/src/
-ExampleProjects/LogReader_RegCmp/Log/
+/ExampleProjects/Arduino/ReadIS/src
+/ExampleProjects/LogReader_RegCmp/Log
+/src/version
