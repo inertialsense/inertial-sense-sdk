@@ -40,7 +40,7 @@ fi
 pushd "../python" > /dev/null
     if [ "${CLEAN}" == "true" ]; then
         echo -e "\n\n=== Running make clean... ==="
-        rm -rf build
+        rm -rf tmp build log_reader.egg-info log_reader.cpython*
         rm -f *.so
         rm -f *.pyc
     else

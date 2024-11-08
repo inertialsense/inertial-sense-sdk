@@ -46,7 +46,7 @@ class SuperNPP():
     def findLogFiles(self, directory):
         # print("findLogFiles: ", directory)
         for file in os.listdir(directory):
-            if ".dat" in file or ".raw" in file:
+            if (".dat" in file or ".raw" in file) and (not "base_station.raw" in file):
                 self.subdirs.append(directory)
                 break
         # Recursively search for data in sub directories
