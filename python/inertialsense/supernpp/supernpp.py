@@ -123,7 +123,6 @@ class SuperNPP():
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-<<<<<<< HEAD:python/inertialsense/supernpp/supernpp.py
                 if ".dat" in file or ".raw" in file:
                     if ".dat" in file:
                         logType = "DAT"
@@ -132,11 +131,6 @@ class SuperNPP():
 
                     ser = int(re.sub('[^0-9]','', file.split("_")[1]));
                     if ser and (ser not in serials):
-=======
-                if (".sdat" in file or ".dat" in file or ".raw" in file) and (not "base_station.raw" in file):
-                    ser = int(re.sub('[^0-9]','', file.split("_")[1]))
-                    if ser not in serials:
->>>>>>> origin/2.2.0-rc:python/supernpp/supernpp.py
                         serials.append(ser)
         else:
             serials = config_serials
