@@ -232,6 +232,7 @@ public:
 
     static bool ParseFilename(std::string filename, int &serialNum, std::string &date, std::string &time, int &index);
     void PrintStatistics();
+    void PrintIsCommStatus();
     void PrintLogDiskUsage();
 
     /**

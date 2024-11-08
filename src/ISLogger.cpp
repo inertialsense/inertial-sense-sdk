@@ -692,6 +692,7 @@ packet_t* cISLogger::ReadNextPacket(protocol_type_t& ptype, size_t& devIndex)
 void cISLogger::CloseAllFiles()
 {
     // PrintStatistics();
+    PrintIsCommStatus();
 
     for (auto it : m_devices)
     {
@@ -968,6 +969,11 @@ void cISLogger::PrintStatistics()
         cout << dev->LogStatsString();
     }
 
+    PrintIsCommStatus();
+}
+
+void cISLogger::PrintIsCommStatus()
+{
     for (auto it : m_devices)
     {   // Print errors
         std::shared_ptr<cDeviceLog> dev = it.second;
