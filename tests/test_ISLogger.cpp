@@ -276,9 +276,9 @@ TEST(ISLogger, logReader_raw)
         }
 
         // Compare DIDs
-        if (origPkt->hdr.id != readPkt->hdr.id)
+        if (origPkt->id != readPkt->id)
         {
-            EXPECT_EQ(origPkt->hdr.id, readPkt->hdr.id) << "MISMATCHED DID: " << (int)(origPkt->hdr.id) << "," << (int)(readPkt->hdr.id) << " size: " << origPkt->hdr.payloadSize << "," << readPkt->hdr.payloadSize << " offset:" << origPkt->offset << "," << readPkt->offset << " msgIndex: " << msgIndex << std::endl;
+            EXPECT_EQ(origPkt->id, readPkt->id) << "MISMATCHED DID: " << (int)(origPkt->id) << "," << (int)(readPkt->id) << " size: " << origPkt->hdr.payloadSize << "," << readPkt->hdr.payloadSize << " offset:" << origPkt->offset << "," << readPkt->offset << " msgIndex: " << msgIndex << std::endl;
             // break;
         }
 

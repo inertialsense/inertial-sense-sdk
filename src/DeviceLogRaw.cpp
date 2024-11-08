@@ -270,6 +270,7 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
     // Ensure chunk has data
     if (chunkSize <= 0)
     {
+        ptype = _PTYPE_NONE;
         return NULL;
     }
 
@@ -279,6 +280,7 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
 
         if (dataPtr == NULL)
         {	// No more data
+            ptype = _PTYPE_NONE;
             return NULL;
         }
 
@@ -312,6 +314,7 @@ packet_t* cDeviceLogRaw::ReadPacketFromChunk(protocol_type_t& ptype)
         }
     }
 
+    ptype = _PTYPE_NONE;
     return NULL;
 }
 
