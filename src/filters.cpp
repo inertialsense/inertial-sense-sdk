@@ -431,7 +431,7 @@ void integrateDeltaThetaVelBortz(ixVector3 theta, ixVector3 vel, imus_t *imu, im
         cross_Vec3(thxthxwb, theta, thxwb);
         cross_Vec3(thxab, theta, ab);
         cross_Vec3(thxthxab, theta, thxab);
-        mag_theta2 = dot_Vec3(theta);
+        mag_theta2 = DOT_VEC3(theta);
         mag_theta4 = mag_theta2 * mag_theta2;
         Kw = Kw0 + mag_theta2 * Kw1 + mag_theta4 * Kw2; // + mag_theta4 * mag_theta2 * Kw3; <--- the last term is negligibly small
         for (int i = 0; i < 3; i++) {
