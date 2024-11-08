@@ -110,7 +110,7 @@ bool testVectors()
 		VEC3_CLOSE(IS_v1_normalized, eig_v1_normalized);
 
 		// Norm
-		f_t IS_v1_norm = mag_Vec3(IS_v1);
+		f_t IS_v1_norm = MAG_VEC3(IS_v1);
 		double eig_v1_norm = eig_v1.norm();
 		REQUIRE_SUPER_CLOSE(IS_v1_norm, eig_v1_norm);
 #endif

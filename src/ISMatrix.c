@@ -632,6 +632,48 @@ void abs_Vec4d( ixVector4d result, const ixVector4d v )
 	result[3] = fabs(v[3]);
 }
 
+f_t dot_Vec2( const ixVector2 v)
+{
+	return  v[0] * v[0] +
+			v[1] * v[1];
+}
+
+f_t dot_Vec3( const ixVector3 v)
+{
+	return  v[0] * v[0] +
+	        v[1] * v[1] +
+	        v[2] * v[2];
+}
+
+f_t dot_Vec4( const ixVector4 v)
+{
+	return  v[0] * v[0] +
+	        v[1] * v[1] +
+	        v[2] * v[2] +
+	        v[3] * v[3];
+}
+
+double dot_Vec2d( const ixVector2d v)
+{
+    return  v[0] * v[0] +
+            v[1] * v[1];
+}
+
+double dot_Vec3d( const ixVector3d v)
+{
+    return  v[0] * v[0] +
+            v[1] * v[1] +
+            v[2] * v[2];
+}
+
+double dot_Vec4d( const ixVector4d v)
+{
+    return  v[0] * v[0] +
+            v[1] * v[1] +
+            v[2] * v[2] +
+            v[3] * v[3];
+}
+
 f_t dot_Vec2_Vec2( const ixVector2 v1, const ixVector2 v2 )
 {
 	return  v1[0] * v2[0] +
