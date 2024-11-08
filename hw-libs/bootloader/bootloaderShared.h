@@ -6,6 +6,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "serialPort.h"
+
 #ifdef IMX_5
 #include "drivers/d_flash.h"	// Contains overrides for macros below
 #endif
@@ -172,6 +174,22 @@ typedef union
 	} data;
 	uint8_t bytes[BOOTLOADER_FLASH_BOOTLOADER_HEADER_SIZE]; // any additional bytes are reserved space
 } bootloader_header_t;
+
+// #define NUM_COM_PORTS   4
+typedef struct {
+    base_port_t base;
+} bl_port_t;
+typedef bl_port_t* bl_port_handle;
+extern port_handle_t    g_ports[NUM_COM_PORTS];
+
+#define PORT(n)         (g_ports[n])
+#define COM0_PORT       PORT(COM0_PORT_NUM)
+#define COM1_PORT       PORT(COM1_PORT_NUM)
+#define COM2_PORT       PORT(COM2_PORT_NUM)
+#define COM3_PORT       PORT(COM3_PORT_NUM)
+#define USB_PORT        PORT(USB_PORT_NUM)
+#define SPI_PORT        PORT(SPI_PORT_NUM)
+
 
 extern uint8_t bootloaderRequiredSignature_EVB_2_16K[BOOTLOADER_SIGNATURE_SIZE];
 extern uint8_t bootloaderRequiredSignature_uINS_3_16K[BOOTLOADER_SIGNATURE_SIZE];

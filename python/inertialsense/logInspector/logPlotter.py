@@ -9,6 +9,7 @@ import pandas as pd
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.normpath(file_path + '/..'))
+sys.path.append(os.path.normpath(file_path + '/../math/src'))
 
 from inertialsense.math.pose import *
 from inertialsense.logInspector.ui import InteractiveLegend

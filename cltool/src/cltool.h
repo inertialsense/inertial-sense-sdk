@@ -117,6 +117,7 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
     uint32_t updateFirmwareSlot = 0;
 	uint32_t runDurationMs = 0;				// Run for this many millis before exiting (0 = indefinitely)
 	bool list_devices = false;				// if true, dumps results of findDevices() including port name.
+    int verbose = 0;                        // incremented for each -verbose argument found
 	EVFContainer_t evFCont = {0};
 	EVOContainer_t evOCont;
 
@@ -125,12 +126,12 @@ typedef struct cmd_options_s // we need to name this to make MSVC happy, since w
 } cmd_options_t;
 
 extern cmd_options_t g_commandLineOptions;
-extern serial_port_t g_serialPort;
+extern port_handle_t g_serialPort;
 extern cInertialSenseDisplay g_inertialSenseDisplay;
 extern bool g_ctrlCPressed;
 
 int cltool_main(int argc, char* argv[]);
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend);
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend);
 
 // returns false if failure
 bool cltool_setupLogger(InertialSense& inertialSenseInterface);

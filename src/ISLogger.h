@@ -66,10 +66,10 @@ public:
         uint32_t maxFileSize;                       // Largest size of each individual log file.
         bool useSubFolderTimestamp;                 // Cause each log instance to be written to separate timestamped folder.
         std::string timeStamp;                      // Used to name each log instance directory.  System date and time used if left empty.
-        std::string subDirectory;                   // Write logs into sub-directory of this name inside log instance directory. 
+        std::string subDirectory;                   // Write logs into sub-directory of this name inside log instance directory.
 
         sSaveOptions(                               // Default Options:
-            eLogType type = LOGTYPE_RAW,            // Raw packetized serial.  
+            eLogType type = LOGTYPE_RAW,            // Raw packetized serial.
             float limitPercent = 0.5,               // 50% of total drive
             float limitMb = 0,                      // Drive usage limit in MB.  0 disables this limit
             uint32_t fileSize = 5 * 1024 * 1024,    // 5 MB size of each individual file in log
@@ -100,7 +100,7 @@ public:
     bool InitSaveTimestamp(const std::string& timeStamp, const std::string& directory = g_emptyString, const std::string& subDirectory = g_emptyString, eLogType logType = LOGTYPE_DAT, float driveUsageLimitPercent = 0.5f, uint32_t maxFileSize = 1024 * 1024 * 5, bool useSubFolderTimestamp = true);
 
     // Establish link between devices and this logger
-    std::shared_ptr<cDeviceLog> registerDevice(ISDevice& device);
+    std::shared_ptr<cDeviceLog> registerDevice(ISDevice* device);
     std::shared_ptr<cDeviceLog> registerDevice(uint16_t hdwId, uint32_t serialNo);
     std::shared_ptr<cDeviceLog> registerDevice(dev_info_t& devInfo) { return registerDevice(ENCODE_DEV_INFO_TO_HDW_ID(devInfo), devInfo.serialNumber); }
 
@@ -113,6 +113,9 @@ public:
     p_data_buf_t* ReadData(std::shared_ptr<cDeviceLog> devLogger = nullptr);
     p_data_buf_t* ReadData(size_t devIndex);
     p_data_buf_t* ReadNextData(size_t& devIndex);
+    packet_t* ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceLog> devLogger = nullptr);
+    packet_t* ReadPacket(protocol_type_t& ptype, size_t devIndex);
+    packet_t* ReadNextPacket(protocol_type_t& ptype, size_t& devIndex);
     void EnableLogging(bool enabled) { m_enabled = enabled; }
     bool Enabled() { return m_enabled; }
     void CloseAllFiles();
@@ -141,7 +144,7 @@ public:
 
     /**
      * @brief Copy (convert) one log to another log type.
-     * 
+     *
      * @param log Input log
      * @param timestamp Time to use on the output log
      * @param outputDir Directory to write output log
@@ -149,8 +152,8 @@ public:
      * @param maxFileSize Max size of the individual output files
      * @param driveUsageLimitPercent Drive usage limit in percent of total drive space
      * @param driveUsageLimitMb Drive usage limit in MB
-     * @param useSubFolderTimestamp Output logs should be written into a timestamped subdirectory 
-     * @param enableCsvIns2ToIns1Conversion  Convert Ins2 to Ins1 within the log 
+     * @param useSubFolderTimestamp Output logs should be written into a timestamped subdirectory
+     * @param enableCsvIns2ToIns1Conversion  Convert Ins2 to Ins1 within the log
      * @return true if log copy (conversion) output was successful, false if not.
      */
     bool CopyLog(
@@ -159,7 +162,7 @@ public:
         const std::string& outputDir = g_emptyString,
         eLogType logType = LOGTYPE_DAT,
         uint32_t maxFileSize = DEFAULT_LOGS_MAX_FILE_SIZE,
-        float driveUsageLimitPercent = 0.5f, 
+        float driveUsageLimitPercent = 0.5f,
         bool useSubFolderTimestamp = true,
         bool enableCsvIns2ToIns1Conversion = true);
     unsigned int Count() { return m_logStats.Count(); }
@@ -216,10 +219,6 @@ public:
         {
             return cISLogger::eLogType::LOGTYPE_KML;
         }
-        else if (logTypeString == "sdat")
-        {
-            return cISLogger::eLogType::LOGTYPE_SDAT;
-        }
         else if (logTypeString == "json")
         {
             return cISLogger::eLogType::LOGTYPE_JSON;
@@ -236,6 +235,28 @@ public:
     void PrintIsCommStatus();
     void PrintLogDiskUsage();
 
+    /**
+     * These are static functions which need to use the port_handle_t to identify which cDeviceLog instance they belong to
+     * and then call into that logger as needed...
+     */
+    std::shared_ptr<cDeviceLog> getDeviceLogByPort(port_handle_t port);
+
+    static inline int logPortData(port_handle_t port, uint8_t op, const uint8_t* buf, unsigned int len, void* userData) {
+        // remember, that as a logger, we GENERALLY are only interested in WRITING data, regardless of whether that data is sent or received.
+
+        if (!userData)
+            return -1;
+
+        cISLogger* logInstance = (cISLogger*)userData;
+        auto devLog = logInstance->getDeviceLogByPort(port);
+        return (devLog && logInstance->LogData(devLog, len, buf)) ? 1 : -1;
+    }
+
+    static int logPortWrite(port_handle_t port, const uint8_t* buf, unsigned int len) {
+        // FIXME: We currently aren't interested in logging data that we have SENT (portWrite) to the device, only the response back from the device
+        return -1;
+    }
+
 private:
 #if CPP11_IS_ENABLED
     cISLogger(const cISLogger& copy) = delete;
@@ -243,7 +264,7 @@ private:
     cISLogger(const cISLogger& copy); // Disable copy constructors
 #endif
 
-    bool InitDevicesForWriting(std::vector<ISDevice>& devices);
+    bool InitDevicesForWriting(std::vector<ISDevice*>& devices);
     void Cleanup();
     void PrintProgress();
 
@@ -287,6 +308,5 @@ private:
     int						m_progress = 0;
     bool					m_showParseErrors = true;
 };
-
 
 #endif // IS_LOGGER_H

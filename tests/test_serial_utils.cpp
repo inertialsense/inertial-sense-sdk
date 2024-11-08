@@ -6,7 +6,13 @@
  * @copyright Copyright (c) 2024 Inertial Sense, Inc. All rights reserved.
  */
 
-#include "../src/ISComm.h"
+#include <array>
+#include <string>
+#include <stdexcept>
+
+#include "ISComm.h"
+#include "util/util.h"
+#include "com_manager.h"
 #include "test_serial_utils.h"
 
 #if PLATFORM_IS_EMBEDDED
@@ -23,15 +29,18 @@
 #define TIME_DELAY_USEC(us)     SLEEP_US(us)
 #endif
 
+test_port_t g_testPorts[NUM_COM_PORTS] = {};
+
+std::array<broadcast_msg_t, MAX_NUM_BCAST_MSGS> g_cmBufBcastMsg; // [MAX_NUM_BCAST_MSGS];
 
 #if PLATFORM_IS_EMBEDDED
-void serWriteInPieces(int serPort, const unsigned char *buf, int length)
+void serWriteInPieces(port_handle_t port, const unsigned char *buf, int length)
 {
     int left = length; 
     for (int send=1; left>0; send*=2)
     {
         send = _MIN(left, send);
-        serWrite(serPort, &(buf[length - left]), send);
+        serWrite(port, &(buf[length - left]), send);
         left -= send; 
     }
 }
@@ -44,7 +53,7 @@ void serWriteInPieces(int serPort, const unsigned char *buf, int length)
  * @param dstPort Serial port to write to.
  * @param testMode Enable test mode to perform sequential serWrite() calls back to back to test capability of the serial driver.
  */
-void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, unsigned int srcPort, unsigned int dstPort, uint32_t led, int testMode)
+void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, port_handle_t srcPort, port_handle_t dstPort, uint32_t led, int testMode)
 {
 #if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
     while(1)
@@ -140,6 +149,47 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
     }
 }
 #endif  // PLATFORM_IS_EMBEDDED
+
+
+static int loopbackPortRead(port_handle_t port, unsigned char* buf, unsigned int len)
+{
+    return ringBufRead(&((test_port_t*)port)->loopbackPortBuf, buf, len);
+}
+
+static int loopbackPortWrite(port_handle_t port, const unsigned char* buf, unsigned int len)
+{
+    if (ringBufWrite(&((test_port_t*)port)->loopbackPortBuf, (unsigned char*)buf, len))
+    {   
+        // Buffer overflow
+        #if !defined(GPX_1)
+            throw new std::out_of_range(utils::string_format("loopbackPortWrite ring buffer overflow: %d !!!\n", ringBufUsed(&((test_port_t*)port)->loopbackPortBuf) + len));
+        #endif
+    }
+    return len;
+}
+
+static int loopbackPortFree(port_handle_t port) {
+    return ringBufFree(&((test_port_t*)port)->loopbackPortBuf);
+}
+
+static int loopbackPortAvailable(port_handle_t port) {
+    return ringBufUsed(&((test_port_t*)port)->loopbackPortBuf);
+}
+
+void initTestPorts() {
+    int portNum = 0;
+    for (test_port_t& port : g_testPorts) {
+        port.base.pnum = portNum;
+        port.base.ptype = PORT_TYPE__LOOPBACK | PORT_TYPE__COMM;
+        port.base.portRead = loopbackPortRead;
+        port.base.portWrite = loopbackPortWrite;
+        port.base.portFree = loopbackPortFree;
+        port.base.portAvailable = loopbackPortAvailable;
+        ringBufInit(&port.loopbackPortBuf, port.loopbackportBuffer, PORT_BUFFER_SIZE, 1);
+
+        portNum++;
+    }
+}
 
 /**
  * @brief Manual test used to verify that a repeating consecutive series of uint8 data from 

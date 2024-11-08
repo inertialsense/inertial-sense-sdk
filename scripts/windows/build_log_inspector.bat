@@ -3,7 +3,7 @@
 echo Build Log Inspector
 echo.
 
-:: Set SDK_DIR as  directory path
+:: Set SDK_DIR as directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
 
 :: Build SDK cpp needed by LogInspector

@@ -229,6 +229,7 @@ void LogReader::organizeData(shared_ptr<cDeviceLog> devLog)
         HANDLE_MSG( DID_RTK_DEBUG, dev_log_->rtkDebug);
         // HANDLE_MSG( DID_RTK_DEBUG_2, dev_log_->rtkDebug2);
         HANDLE_MSG( DID_GPX_DEBUG_ARRAY, dev_log_->gpxDebugArray );
+        // HANDLE_MSG( DID_GPX_PORT_MONITOR, dev_log_->portMonitor );
 
         default:
             //            printf("Unhandled IS message DID: %d\n", message_type);

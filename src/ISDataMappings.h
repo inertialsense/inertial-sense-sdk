@@ -111,7 +111,7 @@ CONST_EXPRESSION uint32_t s_eDataTypeSize[DATA_TYPE_COUNT] =
 };
 
 CONST_EXPRESSION uint32_t s_eDataTypeHexStringSize[DATA_TYPE_COUNT] =
-{	// Number of characters in hexidecimal string including prefix "0x" 
+{	// Number of characters in hexidecimal string including prefix "0x"
     (uint32_t)4,	// 0x00
     (uint32_t)4,    // 0x00
     (uint32_t)6,    // 0x0000
@@ -220,11 +220,11 @@ public:
         using FieldType = typename std::remove_cv<typename std::remove_reference<decltype(((MAP_TYPE*)nullptr)->*member)>::type>::type;
         uint32_t offset = (uint32_t)(uintptr_t)&(((MAP_TYPE*)nullptr)->*member);
 		uint32_t size = (uint32_t)sizeof(FieldType);
-		uint32_t arraySize = 0; 	// Zero for single element 
+		uint32_t arraySize = 0; 	// Zero for single element
 		uint32_t elementSize = size;
 
         // Populate the map with the new entry
-        ds.nameToInfo[name] = { 
+        ds.nameToInfo[name] = {
             offset,
             size,
             type,
@@ -273,7 +273,7 @@ public:
 		uint32_t elementSize = size/arraySize;
 
         // Populate the map with the new entry
-        ds.nameToInfo[name] = { 
+        ds.nameToInfo[name] = {
             offset,
             size, 
             type,
@@ -317,11 +317,11 @@ public:
 		uint32_t typeSize = 0)
     {
 		uint32_t size = (typeSize ? typeSize : s_eDataTypeSize[type]);
-		uint32_t arraySize = 0; 	// Zero for single element 
+		uint32_t arraySize = 0; 	// Zero for single element
 		uint32_t elementSize = size;
 
         // Populate the map with the new entry
-        ds.nameToInfo[name] = { 
+        ds.nameToInfo[name] = {
             offset,
             size,
             type,
@@ -368,7 +368,7 @@ public:
 		uint32_t size = elementSize * arraySize;
 
         // Populate the map with the new entry
-        ds.nameToInfo[name] = { 
+        ds.nameToInfo[name] = {
             offset,
             size, 
             type,
@@ -529,6 +529,18 @@ public:
 	static const data_info_t* ElementToInfo(uint32_t did, uint32_t element, uint32_t &arrayIndex);
 
 	/**
+	* Get map pointer for a data id
+	* @return map pointer for the data id, or NULL if none found
+	*/
+	static const map_index_to_info_t* GetIndexMapInfo(uint32_t dataId);
+
+	/**
+	* Get data info pointer based on data id and field index number
+	* @return the data info for data id field, or NULL if none found
+	*/
+	// static const data_info_t* cISDataMappings::GetFieldDataInfo(uint32_t dataId, uint32_t field);
+
+	/**
 	* Get number of elements of a given data id.  Arrays get counted as multiple elements.
 	* @param did the data id
 	* @return number of elements or 0 if not found or unknown
@@ -619,6 +631,15 @@ public:
 	* @return pointer to get data if valid or NULL if not valid.
 	*/
 	static const uint8_t* FieldData(const data_info_t& info, uint32_t arrayIndex, const p_data_hdr_t* hdr, const uint8_t* buf);
+
+    /**
+     * returns the data_info_t of a field into DataSets by its offset into the data buffer,
+     * @param did the Data ID the field belongs to
+     * @param offset the offset from the start of the struct where the field belongs
+     * @return a pointer to the nearest data_info_t which addresses this offset, without exceeding the offset,
+     *   or NULL if there is no field info to covers the specified offset
+     */
+    static const data_info_t* FieldInfoByOffset(uint32_t did, uint16_t offset);
 
 protected:
 	static const char* const m_dataIdNames[];

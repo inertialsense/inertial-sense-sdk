@@ -40,15 +40,17 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
+if platform.system() == 'Windows':
+    macros = [("UNICODE", "1")]     # Necessary for ISFileManager.cpp
+else:
+    macros = []
+
 static_libraries = ['InertialSenseSDK']
 static_lib_dir = '..'
 libraries = []
 library_dirs = []
 
 if sys.platform == 'win32':
-    #libraries.extend(static_libraries)
-    #library_dirs.append(static_lib_dir)
-    #extra_objects = []
     extra_objects = ['..\\build\\Release\\InertialSenseSDK.lib']
 else: # POSIX
     extra_objects = ['{}/lib{}.a'.format(static_lib_dir, l) for l in static_libraries]
@@ -122,7 +124,7 @@ class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
     c_opts = {
         'msvc': ['/EHsc'],
-        'unix': ['-O3'],
+        'unix': ['-O0', '-g'],
     }
 
     if sys.platform == 'darwin':
@@ -176,7 +178,7 @@ setup(
         "dev": [ "pytest>=7.0", "twine>=4.0.2"],
     },
 
-    # setup_requires=['pybind11>=2.12', 'setuptools', 'wheel'],
+    setup_requires=['pybind11>=2.12', 'setuptools', 'wheel'],
 
     # cmdclass={'build': BuildCommand, 'build_ext': BuildExt},
     cmdclass={'build_ext': BuildExt},
