@@ -1,6 +1,6 @@
 @echo off
 
-echo Building Log Inspector
+echo Build Log Inspector
 echo.
 
 :: Set SDK_DIR as directory path

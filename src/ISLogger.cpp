@@ -691,7 +691,7 @@ packet_t* cISLogger::ReadNextPacket(protocol_type_t& ptype, size_t& devIndex)
 
 void cISLogger::CloseAllFiles()
 {
-    PrintStatistics();
+    // PrintStatistics();
 
     for (auto it : m_devices)
     {
