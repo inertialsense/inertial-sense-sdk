@@ -129,9 +129,10 @@ class SuperNPP():
                     elif ".raw" in file:
                         logType = "RAW"
 
-                    ser = int(re.sub('[^0-9]','', file.split("_")[1]));
-                    if ser and (ser not in serials):
-                        serials.append(ser)
+                    serNum = int(re.sub('[^0-9]','', file.split("_")[1]));
+                    if serNum and (serNum not in serials):
+                        serials.append(serNum)
+
         else:
             serials = config_serials
 
