@@ -124,7 +124,7 @@ protected:
     double m_pointUpdatePeriodSec = 1.0f;
 
 private:
-    cLogStats m_logStats;
+    // cLogStats m_logStats;
 };
 
 #endif // DEVICE_LOG_H

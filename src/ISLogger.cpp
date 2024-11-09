@@ -563,15 +563,15 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     }
 
     m_lastCommTime = GetTime();
-    if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
-    {	// Save Error
-        m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        // m_logStats.LogError(NULL);
-    }
-    else
-    {	// Success
+    // if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
+    // {	// Save Error
+    //     m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
+    //     // m_logStats.LogError(NULL);
+    // }
+    // else
+    // {	// Success
 
-    }
+    // }
     return true;
 }
 
