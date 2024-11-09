@@ -55,14 +55,6 @@ public:
 	// cISLogFileBase* statsFile = NULL;
 
 	cLogStats();
-	void Clear();
-	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
-	unsigned int Count();
-	unsigned int Errors();
-	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
-	std::string Stats();
-	void WriteToFile(const std::string& fileName);
 };
 
 
