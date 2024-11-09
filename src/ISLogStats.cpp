@@ -40,31 +40,11 @@ cLogStatMsgId::cLogStatMsgId()
 }
 
 void cLogStatMsgId::LogTimestamp(double timestamp)
-{
-    // check for corrupt data
-    if (_ISNAN(timestamp) || timestamp < 0.0 || timestamp > 999999999999.0)
-    {
-        return;
-    }
-    else if (lastTimestamp > 0.0)
-    {
-        double delta = fabs(timestamp - lastTimestamp);
-        minTimestampDelta = _MIN(delta, minTimestampDelta);
-        maxTimestampDelta = _MAX(delta, maxTimestampDelta);
-        totalTimeDelta += delta;
-        averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
-        if (lastTimestampDelta != 0.0 && (fabs(delta - lastTimestampDelta) > (lastTimestampDelta * 0.5)))
-        {
-            timestampIrregCount++;
-        }
-        lastTimestampDelta = delta;
-    }
-    lastTimestamp = timestamp;
+{    
 }
 
 cLogStats::cLogStats()
 {
-    Clear();
 }
 
 void cLogStats::Clear()
