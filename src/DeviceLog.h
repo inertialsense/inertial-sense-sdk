@@ -125,6 +125,8 @@ protected:
     bool m_showPoints;
     bool m_showPointTimestamps = true;
     double m_pointUpdatePeriodSec = 1.0f;
+
+private:
     cLogStats m_logStats;
 };
 

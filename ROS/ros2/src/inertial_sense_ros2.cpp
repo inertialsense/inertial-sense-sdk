@@ -674,7 +674,7 @@ void InertialSenseROS::start_log()
 
 	cISLogger::sSaveOptions options;
 	options.logType = cISLogger::LOGTYPE_RAW;
-	IS_.EnableLogger(true, filename, options, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
+//	IS_.EnableLogger(true, filename, options, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
 }
 
 void InertialSenseROS::configure_ascii_output()
