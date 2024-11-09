@@ -269,6 +269,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     bool log_enabled = nh_->declare_parameter<bool>("enable_log", false);
     ph.nodeParam("enable_log", log_enabled_, log_enabled);
 
+
     // advanced Parameters
     int io_config_bits = nh_->declare_parameter<int>("io_config", 39624800);
     setIoConfigBits_ = ph.nodeParam("ioConfig", ioConfigBits_, io_config_bits);
@@ -671,10 +672,7 @@ void InertialSenseROS::start_log()
     std::string filename = getenv("HOME");
     filename += "/Documents/Inertial_Sense/Logs/" + cISLogger::CreateCurrentTimestamp();
     RCLCPP_INFO_STREAM(rclcpp::get_logger("creating_log"),"InertialSenseROS: Creating log in " << filename << " folder");
-
-	cISLogger::sSaveOptions options;
-	options.logType = cISLogger::LOGTYPE_RAW;
-//	IS_.EnableLogger(true, filename, options, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
+    IS_.SetLoggerEnabled(true, filename, cISLogger::LOGTYPE_DAT, RMC_PRESET_IMX_PPD_GROUND_VEHICLE);
 }
 
 void InertialSenseROS::configure_ascii_output()
