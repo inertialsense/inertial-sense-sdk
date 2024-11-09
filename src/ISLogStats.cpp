@@ -69,68 +69,83 @@ cLogStats::cLogStats()
 
 void cLogStats::Clear()
 {
+	return;
+
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
+    {
+        // protocol_type_t ptype = it->first;
+        sLogStatPType& msg = it->second;
+        msg.count = 0;
+        msg.errors = 0;
     for (uint32_t id = 0; id < DID_COUNT; id++)
     {
-        isbStats[id] = {};
-        isbStats[id].minTimestampDelta = 1.0E6;
+            msg.stats[id] = {};
+            msg.stats[id].minTimestampDelta = 1.0E6;
     }
-    errorCount = 0;
-    count = 0;
+    }
 }
 
-void cLogStats::LogError(const p_data_hdr_t* hdr)
+void cLogStats::LogError(const p_data_hdr_t* hdr, protocol_type_t ptype)
 {
-    errorCount++;
+	return;
+
+    sLogStatPType &msg = msgs[ptype];
+
+    msg.errors++;
     if (hdr != NULL && hdr->id < DID_COUNT)
     {
-        cLogStatMsgId& d = isbStats[hdr->id];
+        cLogStatMsgId& d = msg.stats[hdr->id];
         d.errors++;
     }
 }
 
-cLogStatMsgId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
+void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
 {
-    switch (ptype)
-    {
-    default: return NULL;
-    case _PTYPE_INERTIAL_SENSE_DATA:
-    case _PTYPE_INERTIAL_SENSE_CMD:     return &isbStats[id];
-    case _PTYPE_NMEA:                   return &nmeaStats[id];
-    case _PTYPE_UBLOX:                  return &ubloxStats[id];
-    case _PTYPE_RTCM3:                  return &rtcm3Stats[id];
-    }
-}
+	return;
 
-void cLogStats::LogData(uint32_t id, protocol_type_t ptype)
-{
-    cLogStatMsgId *d = MsgStats(ptype, id);
-    if (d)
-    {
-        d->count++;
-    }
-    count++;
-}
+    sLogStatPType &msg = msgs[ptype];
+    cLogStatMsgId &d = msg.stats[id];
+    msg.count++;
+    d.count++;
 
-void cLogStats::LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype)
-{
-    cLogStatMsgId *d = MsgStats(ptype, id);
-    if (d)
-    {
-        d->count++;
     if (timestamp != 0.0)
-        {
-            d->LogTimestamp(timestamp);
+    {   // Use system time
+        msgs[ptype].stats[id].LogTimestamp(timestamp);
     }
-    }
-    count++;
 }
 
-void cLogStats::WriteMsgStats(std::map<int, cLogStatMsgId> &msgStats, const char* msgName, protocol_type_t ptype)
+string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime, bool showErrors)
+{
+	return "";
+
+    string msgName;
+    int colWidName = 24;
+    switch (ptype)
+{
+    default:                                msgName = "Ptype " + std::to_string(ptype);  break;
+    case _PTYPE_PARSE_ERROR:                msgName = "Parse Error";    break;
+    case _PTYPE_INERTIAL_SENSE_CMD:         msgName = "ISB-CMD";        break;
+    case _PTYPE_INERTIAL_SENSE_DATA:        msgName = "ISB";            break;
+    case _PTYPE_NMEA:                       msgName = "NMEA";           colWidName = 8;  break;
+    case _PTYPE_UBLOX:                      msgName = "UBLOX";          colWidName = 8;  break;
+    case _PTYPE_RTCM3:                      msgName = "RTCM3";          break;
+    case _PTYPE_SPARTN:                     msgName = "SPARTN";         break;
+    case _PTYPE_SONY:                       msgName = "SONY";           break;
+}
+
+    std::stringstream ss;
+    ss << msgName << ": count " << msg.count << ", errors " << msg.errors << " _____________________" << endl;
+
+    ss << " ID " << std::setw(colWidName) << std::left << "Name" << std::right << " Count";
+    if (showErrors)     { ss << " Errors"; }
+    if (showDeltaTime)  { ss << "  dtMs(avg  min  max) Irreg"; }
+    ss << endl;
+
+    for (std::map<int, cLogStatMsgId>::iterator it = msg.stats.begin(); it != msg.stats.end(); ++it)
     {
-    for (auto it = msgStats.begin(); it != msgStats.end(); ++it) 
-    {
-        uint32_t id = it->first;
+        int id = it->first;
         cLogStatMsgId& stat = it->second;
+
         if (stat.count == 0 && stat.errors == 0)
         {   // Exclude zero count stats
             continue;
@@ -141,47 +156,105 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatMsgId> &msgStats, const char
         {
         case _PTYPE_INERTIAL_SENSE_CMD:
         case _PTYPE_INERTIAL_SENSE_DATA:
-            statsFile->lprintf("%s - ID: %d (%s)\r\n", msgName, id, cISDataMappings::DataName(id));
+            ss << std::setw(3) << std::right << id << " " << std::setw(colWidName) << std::left << cISDataMappings::DataName(id) << std::right;
             break;
 
-        case _PTYPE_NMEA: 
-            {
+        case _PTYPE_NMEA: {
                 char talker[10] = {0};
                 nmeaMsgIdToTalker(id, talker, sizeof(talker));
-                statsFile->lprintf("%s - %s\r\n", msgName, talker);
+                ss << std::setw(3) << ::right << id << " " << std::setw(colWidName) << std::left << talker << std::right;
             }
             break;
 
-        case _PTYPE_UBLOX: 
-            {
+        case _PTYPE_UBLOX: {
                 uint8_t msgClass = 0xFF & (id>>0);
                 uint8_t msgID    = 0xFF & (id>>8);
-                statsFile->lprintf("%s - Class ID (0x%02x 0x%02x)\r\n", msgName, msgClass, msgID);
+                ss << "Class ID (0x" << std::hex << msgClass << "0x" << std::hex << msgID << ")" << std::hex << endl;
             }
             break;
 
         default:
-            statsFile->lprintf("%s - ID: %d\r\n", msgName, id);
+            ss << std::setw(3) << id;
             break;
         }
-        statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errors);
-        statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
-        statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampIrregCount);
-        statsFile->lprintf("\r\n");
+
+        ss << std::setw(6) << std::setfill(' ') << stat.count;
+        if (showErrors)     { ss << std::setw(7) << stat.errors; }
+        if (showDeltaTime)
+        {
+#define DT_COL_WIDTH    5
+            if (stat.timestampDeltaCount)
+            {
+                int dtMsAve = int(stat.averageTimeDelta*1000.0);
+                int dtMsMin = int(stat.minTimestampDelta*1000.0);
+                int dtMsMax = int(stat.maxTimestampDelta*1000.0);
+                ss << "  (" 
+                   << std::setw(DT_COL_WIDTH) << dtMsAve << " " 
+                   << std::setw(DT_COL_WIDTH) << dtMsMin << " " 
+                   << std::setw(DT_COL_WIDTH) << dtMsMax << ") " 
+                   << std::setw(5) << stat.timestampIrregCount;
     }
+}
+        ss << endl;
+}
+
+    return ss.str();
+}
+
+unsigned int cLogStats::Count()
+{
+	return 0;
+    unsigned int count = 0;
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
+    {
+        count += it->second.count;
+    }
+    return count;
+}
+
+unsigned int cLogStats::Errors()
+{
+	return 0;
+    unsigned int errors = 0;
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
+    {
+        errors += it->second.errors;
+    }    
+    return errors;
+}
+
+string cLogStats::Stats()
+{
+	return "";
+    std::stringstream ss;
+    unsigned int count = Count();
+    ss << "Total: count " << count << endl;
+    for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
+    {
+        protocol_type_t ptype = it->first;
+        sLogStatPType& msg = it->second;
+        switch (ptype)
+        {   // Skip these
+        case _PTYPE_PARSE_ERROR:
+        case _PTYPE_INERTIAL_SENSE_CMD:
+        case _PTYPE_INERTIAL_SENSE_ACK: continue;
+        default: break;
+        }
+
+        ss << MessageStats(ptype, msg);
+    }
+    return ss.str();
 }
 
 void cLogStats::WriteToFile(const string& file_name)
 {
+	return;
+    unsigned int count = Count();
+    // unsigned int errors = Errors();
     if (count != 0)
-    {
-        // flush log stats to disk
-
-        WriteMsgStats(isbStats,   "ISB",   _PTYPE_INERTIAL_SENSE_DATA);
-        WriteMsgStats(nmeaStats,  "NMEA" , _PTYPE_NMEA);
-        WriteMsgStats(ubloxStats, "UBLOX", _PTYPE_UBLOX);
-        WriteMsgStats(rtcm3Stats, "RTCM3", _PTYPE_RTCM3);
-
+    {   // Write log stats to disk
+        statsFile = CreateISLogFile(file_name, "wb");
+        statsFile->lprintf("%s", Stats().c_str());
         CloseISLogFile(statsFile);
     }
 }

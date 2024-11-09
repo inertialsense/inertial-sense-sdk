@@ -51,23 +51,17 @@ struct sLogStatPType
 class cLogStats
 {
 public:
-	std::map<int, cLogStatMsgId> isbStats;
-	std::map<int, cLogStatMsgId> nmeaStats;
-	std::map<int, cLogStatMsgId> rtcm3Stats;
-	std::map<int, cLogStatMsgId> ubloxStats;
-	uint64_t count; // count of all data ids
-	uint64_t errorCount; // total error count
+	std::map<protocol_type_t, sLogStatPType> msgs;
 	cISLogFileBase* statsFile;
 
 	cLogStats();
 	void Clear();
-	void LogError(const p_data_hdr_t* hdr);
-	cLogStatMsgId* MsgStats(protocol_type_t ptype, uint32_t id);
-	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	unsigned int Count() { return 0; }
-	unsigned int Errors() { return 0; }
-	void WriteMsgStats(std::map<int, cLogStatMsgId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
+	void LogError(const p_data_hdr_t* hdr, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	void LogData(protocol_type_t ptype, int id, double timestamp=0.0);
+	unsigned int Count();
+	unsigned int Errors();
+	std::string MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime=true, bool showErrors=false);
+	std::string Stats();
 	void WriteToFile(const std::string& fileName);
 };
 
