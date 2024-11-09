@@ -16,32 +16,33 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 using namespace std;
 
-
 cmd_options_t g_commandLineOptions = {};
-serial_port_t g_serialPort;
+port_handle_t g_serialPort;
 cInertialSenseDisplay g_inertialSenseDisplay;
 static bool g_internal = false;
 
-int cltool_serialPortSendComManager(CMHANDLE cmHandle, int pHandle, buffer_t* bufferToSend)
+int cltool_serialPortSendComManager(CMHANDLE cmHandle, port_handle_t port, buffer_t* bufferToSend)
 {
     (void)cmHandle;
-    (void)pHandle;
-    return serialPortWrite(&g_serialPort, bufferToSend->buf, bufferToSend->size);
+    (void)port;
+    return serialPortWrite(g_serialPort, bufferToSend->buf, bufferToSend->size);
 }
 
 bool cltool_setupLogger(InertialSense& inertialSenseInterface)
-{
-    // Enable logging in continuous background mode
-    return inertialSenseInterface.SetLoggerEnabled (
-        g_commandLineOptions.enableLogging, // enable logger
-        g_commandLineOptions.logPath, // path to log to, if empty defaults to DEFAULT_LOGS_DIRECTORY
-        cISLogger::ParseLogType(g_commandLineOptions.logType), // log type
-        g_commandLineOptions.rmcPreset, // Stream rmc preset
-        RMC_OPTIONS_PRESERVE_CTRL,
-        g_commandLineOptions.maxLogSpacePercent, // max space in percentage of free space to use, 0 for unlimited
-        g_commandLineOptions.maxLogFileSize, // each log file will be no larger than this in bytes
-        g_commandLineOptions.logSubFolder // log sub folder name
-    );
+{   // Enable logging in continuous background mode
+    cISLogger::sSaveOptions options;
+    options.logType = cISLogger::ParseLogType(g_commandLineOptions.logType);
+    options.driveUsageLimitPercent = g_commandLineOptions.logDriveUsageLimitPercent;    // max drive limit in percentage, 0 to disable limit
+    options.driveUsageLimitMb = g_commandLineOptions.logDriveUsageLimitMb;              // max drive limit in MB, 0 to disable limit
+    options.maxFileSize = g_commandLineOptions.maxLogFileSize;                          // each log file will be no larger than this in bytes
+    options.useSubFolderTimestamp = g_commandLineOptions.logSubFolder != cISLogger::g_emptyString;
+    options.timeStamp = g_commandLineOptions.logSubFolder;                              // log sub folder name
+    return inertialSenseInterface.EnableLogger(
+        g_commandLineOptions.enableLogging,
+        g_commandLineOptions.logPath,
+        options,
+        g_commandLineOptions.rmcPreset,
+        RMC_OPTIONS_PRESERVE_CTRL);
 }
 
 static bool startsWith(const char* str, const char* pre)
@@ -56,16 +57,17 @@ static bool matches(const char* str, const char* pre)
     return lenstr != lenpre ? false : strncasecmp(pre, str, lenpre) == 0;
 }
 
-#define CL_DEFAULT_BAUD_RATE                IS_BAUDRATE_DEFAULT
-#define CL_DEFAULT_DEVICE_PORT                 "*"
-#define CL_DEFAULT_DISPLAY_MODE             cInertialSenseDisplay::DMODE_SCROLL
-#define CL_DEFAULT_LOG_TYPE                 "dat"
-#define CL_DEFAULT_LOGS_DIRECTORY           DEFAULT_LOGS_DIRECTORY
-#define CL_DEFAULT_ENABLE_LOGGING           false
-#define CL_DEFAULT_MAX_LOG_FILE_SIZE        1024 * 1024 * 5
-#define CL_DEFAULT_MAX_LOG_SPACE_PERCENT    0.5f
-#define CL_DEFAULT_REPLAY_SPEED             1.0
-#define CL_DEFAULT_BOOTLOAD_VERIFY          false
+#define CL_DEFAULT_BAUD_RATE                        IS_BAUDRATE_DEFAULT
+#define CL_DEFAULT_DEVICE_PORT                      "*"
+#define CL_DEFAULT_DISPLAY_MODE                     cInertialSenseDisplay::DMODE_SCROLL
+#define CL_DEFAULT_LOG_TYPE                         "raw"
+#define CL_DEFAULT_LOGS_DIRECTORY                   DEFAULT_LOGS_DIRECTORY
+#define CL_DEFAULT_ENABLE_LOGGING                   false
+#define CL_DEFAULT_MAX_LOG_FILE_SIZE                1024 * 1024 * 5
+#define CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT    0.5f
+#define CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB         0
+#define CL_DEFAULT_REPLAY_SPEED                     1.0
+#define CL_DEFAULT_BOOTLOAD_VERIFY                  false
 
 bool read_did_argument(stream_did_t *dataset, string s)
 {
@@ -82,13 +84,13 @@ bool read_did_argument(stream_did_t *dataset, string s)
             name = s.substr(0, pos);
         }
 
-        did = cISDataMappings::GetDataSetId(name);
+        did = cISDataMappings::Did(name);
     }
 
     if (did > DID_NULL && did < DID_COUNT)
     {   // DID is valid
         dataset->did = did;
-        dataset->periodMultiple = 1;
+        dataset->periodMultiple = cISDataMappings::DefaultPeriodMultiple(did);      // Use default to prevent 1ms period streaming for non-rmc messages
 
         if (pos != std::string::npos)
         {   // Contains '='
@@ -126,7 +128,7 @@ void print_dids()
     for (eDataIDs id = 0; id < DID_COUNT; id++)
 #endif
     {
-        printf("(%d) %s\n", id, cISDataMappings::GetDataSetName(id));
+        printf("(%d) %s\n", id, cISDataMappings::DataName(id));
     }
     cltool_outputHelp();
 }
@@ -148,11 +150,13 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.logPath = CL_DEFAULT_LOGS_DIRECTORY;
     g_commandLineOptions.logSubFolder = cISLogger::CreateCurrentTimestamp();
     g_commandLineOptions.maxLogFileSize = CL_DEFAULT_MAX_LOG_FILE_SIZE;
-    g_commandLineOptions.maxLogSpacePercent = CL_DEFAULT_MAX_LOG_SPACE_PERCENT;
+    g_commandLineOptions.logDriveUsageLimitPercent = CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT;
+    g_commandLineOptions.logDriveUsageLimitMb = CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB;
     g_commandLineOptions.replaySpeed = CL_DEFAULT_REPLAY_SPEED;
     g_commandLineOptions.bootloaderVerify = CL_DEFAULT_BOOTLOAD_VERIFY;
     g_commandLineOptions.timeoutFlushLoggerSeconds = 3;
-    g_commandLineOptions.asciiMessages = "";
+    g_commandLineOptions.nmeaRx = false;
+    g_commandLineOptions.nmeaMessage = "";
     g_commandLineOptions.updateBootloaderFilename = "";
     g_commandLineOptions.forceBootloaderUpdate = false;
 
@@ -162,7 +166,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
     g_commandLineOptions.outputOnceDid = 0;
     g_commandLineOptions.platformType = -1;
     g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;
-    g_commandLineOptions.runDuration = 0; // run until interrupted, by default
+    g_commandLineOptions.runDurationMs = 0; // run until interrupted, by default
 
     if(argc <= 1)
     {   // Display usage menu if no options are provided
@@ -181,12 +185,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             a++;
         }
 
-        if (startsWith(a, "-asciiMessages="))
-        {
-            g_commandLineOptions.asciiMessages = &a[15];
-            enable_display_mode();
-        }
-        else if (startsWith(a, "-base="))
+        if (startsWith(a, "-base="))
         {
             g_commandLineOptions.baseConnection = &a[6];
             enable_display_mode();
@@ -209,12 +208,49 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-dur="))
         {
-            g_commandLineOptions.runDuration = (uint32_t)(atof(&a[5])*1000.0);
+            g_commandLineOptions.runDurationMs = (uint32_t)(atof(&a[5])*1000.0);
         }
         else if (startsWith(a, "-dids"))
         {
             print_dids();
             return false;
+        }
+        else if (startsWith(a, "-did") && (i + 1) < argc)
+        {
+            while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"
+            {
+                if (g_commandLineOptions.outputOnceDid)
+                {
+                    i++; // if we've previously parsed a "onceDid" then ignore all others (and all before it)
+                }
+                else
+                {
+                    stream_did_t dataset = {};
+                    if (read_did_argument(&dataset, argv[++i]))    // use next argument
+                    {
+                        if (dataset.periodMultiple == 0)
+                        {
+                            g_commandLineOptions.outputOnceDid = dataset.did;
+                            g_commandLineOptions.datasets.clear();
+                        }
+                        g_commandLineOptions.datasets.push_back(dataset);
+                    }
+                }
+            }
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-edit"))
+        {
+            stream_did_t dataset = {};
+            if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))    // use next argument
+            {
+                g_commandLineOptions.datasetEdit = dataset;
+            }
+            else
+            {   // Invalid argument
+                print_dids();
+                return false;
+            }
         }
         else if (startsWith(a, "-evf="))
         {
@@ -229,7 +265,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 printf("EVF Target: device GNSS1 port.\n");
             else if (g_commandLineOptions.evFCont.dest == 2)
                 printf("EVF Target: device GNSS2 port.\n");
-            else 
+            else
             {
                 printf("EVF Target: INVALID '%s'\n", token);
                 g_commandLineOptions.evFCont.sendEVF = false;
@@ -278,42 +314,28 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             printf("EVF Enabled!");
 
         }
-        else if (startsWith(a, "-did") && (i + 1) < argc)
+        else if (startsWith(a, "-evo"))
         {
-            while ((i + 1) < argc && !startsWith(argv[i + 1], "-"))    // next argument doesn't start with "-"
+            if ((i + 3) < argc)
             {
-                if (g_commandLineOptions.outputOnceDid)
-                {
-                    i++;
-                }
-                else
-                {
-                    stream_did_t dataset = {};
-                    if (read_did_argument(&dataset, argv[++i]))    // use next argument
-                    {
-                        if (dataset.periodMultiple == 0)
-                        {
-                            g_commandLineOptions.outputOnceDid = dataset.did;
-                            g_commandLineOptions.datasets.clear();
-                        }
-                        g_commandLineOptions.datasets.push_back(dataset);
-                    }
-                }
+                g_commandLineOptions.evOCont.extractEv = true;
+
+                g_commandLineOptions.evOCont.inFile = argv[++i];
+                g_commandLineOptions.evOCont.logType = argv[++i];
+                g_commandLineOptions.evOCont.outFile = argv[++i];
+
+                printf("EVO src file: %s\n", g_commandLineOptions.evOCont.inFile.c_str());
+                printf("EVO src file type: %s\n", g_commandLineOptions.evOCont.logType.c_str());
+                printf("EVO dest file: %s\n", g_commandLineOptions.evOCont.outFile.c_str());
+                printf("EVO Enabled!\n");
             }
-            enable_display_mode();
-        }
-        else if (startsWith(a, "-edit"))
-        {
-            stream_did_t dataset = {};
-            if (((i + 1) < argc) && read_did_argument(&dataset, argv[++i]))    // use next argument
-            {
-                g_commandLineOptions.datasetEdit = dataset;
-            }
+            else if ((i + 1) < argc)
+                printf("EVO destination file: MISSING! See usage!\n");
+            else if ((i + 2) < argc)
+                printf("EVO SRC file type: MISSING! See usage!\n");
             else
-            {   // Invalid argument
-                print_dids();
-                return false;
-            }
+                printf("EVO SRC file: MISSING! See usage!\n");
+
         }
         else if (startsWith(a, "-factoryReset"))
         {
@@ -344,18 +366,41 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             cltool_outputUsage();
             return false;
         }
-        else if (startsWith(a, "-lms="))
+        else if (startsWith(a, "-list-devices"))
         {
-            g_commandLineOptions.maxLogSpacePercent = (float)atof(&a[5]);
+            g_commandLineOptions.list_devices = true;
+            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
         }
         else if (startsWith(a, "-lmf="))
         {
             g_commandLineOptions.maxLogFileSize = (uint32_t)strtoul(&a[5], NULL, 10);
         }
+        else if (startsWith(a, "-lmb="))
+        {
+            g_commandLineOptions.logDriveUsageLimitMb = (float)atof(&a[5]);
+        }
+        else if (startsWith(a, "-lms="))
+        {
+            g_commandLineOptions.logDriveUsageLimitPercent = (float)atof(&a[5]);
+        }
+        else if (startsWith(a, "-lm"))
+        {
+            g_commandLineOptions.listenMode = true;
+            g_commandLineOptions.disableDeviceValidation = true;
+            enable_display_mode();
+        }
         else if (startsWith(a, "-log-flush-timeout="))
         {
             g_commandLineOptions.timeoutFlushLoggerSeconds = strtoul(&a[19], NULLPTR, 10);
             enable_display_mode();
+        }
+        else if (startsWith(a, "-lon"))
+        {
+            g_commandLineOptions.enableLogging = true;
+        }
+        else if (startsWith(a, "-lp") && (i + 1) < argc)
+        {
+            g_commandLineOptions.logPath = argv[++i];    // use next argument;
         }
         else if (startsWith(a, "-lts="))
         {
@@ -373,17 +418,9 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.logSubFolder = subFolder;
             }
         }
-        else if (startsWith(a, "-lp") && (i + 1) < argc)
-        {
-            g_commandLineOptions.logPath = argv[++i];    // use next argument;
-        }
         else if (startsWith(a, "-lt="))
         {
             g_commandLineOptions.logType = &a[4];
-        }
-        else if (startsWith(a, "-lon"))
-        {
-            g_commandLineOptions.enableLogging = true;
         }
         else if (startsWith(a, "-magRecal"))
         {
@@ -391,6 +428,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.magRecal = true;
             g_commandLineOptions.magRecalMode = strtol(a + 9, NULL, 10);
             enable_display_mode();
+        }
+        else if (startsWith(a, "-nmea="))
+        {
+            g_commandLineOptions.nmeaMessage = &a[6];
+            g_commandLineOptions.nmeaRx = true;
+        }
+        else if (startsWith(a, "-nmea"))
+        {
+            g_commandLineOptions.nmeaRx = true;
         }
         else if (startsWith(a, "-platform"))
         {
@@ -412,14 +458,33 @@ bool cltool_parseCommandLine(int argc, char* argv[])
                 g_commandLineOptions.platformType = platformType;
             }
         }
-        else if (startsWith(a, "-presetPPD"))
+        else if (startsWith(a, "-presetGPXPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_PPD_GROUND_VEHICLE;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
-        else if (startsWith(a, "-presetINS2"))
+        else if (startsWith(a, "-presetPPD"))
         {
-            g_commandLineOptions.rmcPreset = RMC_PRESET_INS_BITS;
+            g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-presetINS"))
+        {
+            g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            enable_display_mode();
+        }
+        else if (startsWith(a, "-preset="))
+        {
+            if (startsWith(a, "-preset=INS"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_INS;
+            else if (startsWith(a, "-preset=PPD"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD;
+            else if (startsWith(a, "-preset=PPD_GROUND_VEHICLE"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_GROUND_VEHICLE;
+            else if (startsWith(a, "-preset=PPD_RTK"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_IMX_PPD_RTK_DBG;
+            else if (startsWith(a, "-preset=PPD_GPX"))
+                g_commandLineOptions.rmcPreset = RMC_PRESET_GPX_PPD;
             enable_display_mode();
         }
         else if (startsWith(a, "-persistent"))
@@ -434,6 +499,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         {
             g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_RAW_PARSE;
         }
+
         else if (startsWith(a, "-rp") && (i + 1) < argc)
         {
             g_commandLineOptions.replayDataLog = true;
@@ -471,8 +537,7 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         }
         else if (startsWith(a, "-stats"))
         {
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_STATS;
-            enable_display_mode();
+            enable_display_mode(cInertialSenseDisplay::DMODE_STATS);
         }
         else if (startsWith(a, "-survey="))
         {
@@ -488,6 +553,10 @@ bool cltool_parseCommandLine(int argc, char* argv[])
         else if (startsWith(a, "-sysCmd="))
         {
             g_commandLineOptions.sysCommand = (uint32_t)strtoul(&a[8], NULL, 10);
+            switch(g_commandLineOptions.sysCommand)
+            {   // Disable device validation
+                case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:        g_commandLineOptions.disableDeviceValidation = true;    break;
+            }
         }
         else if (startsWith(a, "-s"))
         {
@@ -523,10 +592,15 @@ bool cltool_parseCommandLine(int argc, char* argv[])
             g_commandLineOptions.updateFirmwareTarget = fwUpdate::TARGET_HOST;      // use legacy firmware update mechanism
             g_commandLineOptions.bootloaderVerify = true;
         }
-        else if (startsWith(a, "-list-devices"))
+        else if (startsWith(a, "-vd"))
         {
-            g_commandLineOptions.list_devices = true;
-            g_commandLineOptions.displayMode = cInertialSenseDisplay::DMODE_QUIET;
+            g_commandLineOptions.disableDeviceValidation = true;
+        }
+        else if (startsWith(a, "-verbose"))
+        {
+            g_commandLineOptions.verboseLevel = ISBootloader::IS_LOG_LEVEL_INFO;
+            if (a[8] == '=')
+                g_commandLineOptions.verboseLevel = atoi(&a[9]);
         }
         else if (startsWith(a, "-v") || startsWith(a, "--version"))
         {
@@ -598,6 +672,162 @@ bool cltool_replayDataLog()
     return true;
 }
 
+void event_outputEvToFile(string fileName, uint8_t* data, int len)
+{
+    std::ofstream outfile;
+
+    outfile.open(fileName, std::ios_base::app | std::ios_base::binary); // append instead of overwrite
+    outfile.write((const char*)data, len);
+    outfile.close();
+}
+
+bool cltool_extractEventData()
+{
+    is_comm_instance_t c;
+    uint8_t evScratch[1028 + DID_EVENT_HEADER_SIZE];
+    c.rxBuf.start = evScratch;
+    c.rxBuf.size = 1028 + DID_EVENT_HEADER_SIZE;
+
+    std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+    if (g_commandLineOptions.evOCont.inFile.length() == 0)
+    {
+        cout << "Please specify the parse log path!" << endl;
+        return false;
+    }
+
+    if (g_commandLineOptions.evOCont.outFile.length() == 0)
+    {
+        cout << "Please specify the output log path!" << endl;
+        return false;
+    }
+
+    cISLogger logger;
+    if (!logger.LoadFromDirectory(g_commandLineOptions.evOCont.inFile, cISLogger::ParseLogType(g_commandLineOptions.evOCont.logType), { "ALL" }))
+    {
+        cout << "Failed to load log files: " << g_commandLineOptions.evOCont.inFile << endl;
+        return false;
+    }
+
+
+    // time do handle our output dir
+    // does it exist?
+    struct stat info;
+    if (stat(g_commandLineOptions.evOCont.outFile.c_str(), &info) == 0)
+    {
+        if (info.st_mode & S_IFDIR)
+            cout << "Found output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+        else
+        {
+            cout << "Output dir not a folder: " << g_commandLineOptions.evOCont.outFile << endl;
+            return false;
+        }
+    }
+    else
+    {
+        // the folder does not exist try to create it
+        // creating output files
+        #if PLATFORM_IS_WINDOWS
+            if (mkdir(g_commandLineOptions.evOCont.outFile.c_str()) == 0)
+        #else
+            if (mkdir(g_commandLineOptions.evOCont.outFile.c_str(), 0777))
+        #endif
+
+            cout << "Created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+        else
+        {
+            cout << "Failed to created output dir: " << g_commandLineOptions.evOCont.outFile << endl;
+            return false;
+        }
+    }
+
+    cout << "Parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
+
+    p_data_buf_t* data;
+    // for (int d=0; d<logger.DeviceCount(); d++)
+    for (auto dl : logger.DeviceLogs())
+    {
+
+        string deviceFolder = g_commandLineOptions.evOCont.outFile + "/SN-" + std::to_string(dl->SerialNumber());
+
+        if (stat(deviceFolder.c_str(), &info) == 0)
+        {
+            if (!(info.st_mode & S_IFDIR))
+            {
+                cout << "Output dir not a folder skipping: " << deviceFolder << endl;
+                continue;
+            }
+        }
+        else
+        {
+            // the folder does not exist try to create it
+            // creating output files
+            #if PLATFORM_IS_WINDOWS
+                if (mkdir(deviceFolder.c_str()) == 0)
+            #else
+                if (mkdir(deviceFolder.c_str(), 0777))
+            #endif
+                cout << "Created output dir: " << deviceFolder << endl;
+            else
+            {
+                cout << "Failed to created output dir: " << deviceFolder << endl;
+                continue;
+            }
+        }
+
+        int count = 0;
+
+        // cycle through data
+        while (((data = logger.ReadData(dl)) != NULL))
+        {
+            p_data_t d = { data->hdr, data->buf };
+
+            if (d.hdr.id == DID_EVENT)
+            {
+                did_event_t* ev = (did_event_t*)data->buf;
+                memset(evScratch, 0, 1028 + DID_EVENT_HEADER_SIZE);
+                memcpy(evScratch, ev->data, ev->length);
+
+                string fileName;
+
+                switch (ev->msgTypeID)
+                {
+                    case EVENT_MSG_TYPE_ID_RAW:  fileName = deviceFolder + "/out.raw"; break;
+                    case EVENT_MSG_TYPE_ID_ASCII: fileName = deviceFolder + "/out.txt";  break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR1:
+                        fileName = deviceFolder + "/rcvr1.rtcm";
+                        c.rxBuf.size = ev->length;
+                        c.rxBuf.head = evScratch;
+                        c.rxBuf.end = evScratch + ev->length;
+                        c.rxBuf.tail = evScratch + ev->length;
+                        c.rxBuf.scan = evScratch;
+
+                        c.processPkt = nullptr;
+
+                        is_comm_parse_timeout(&c, 0);
+                        break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_RCVR2: fileName = deviceFolder + "/rcvr2.rtcm";  break;
+                    case EVENT_MSG_TYPE_ID_RTMC3_EXT: fileName = deviceFolder + "/rcvr_ext.rtcm";  break;
+                    case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR1: fileName = deviceFolder + "/rcvr1.sbp";  break;
+                    case EVENT_MSG_TYPE_ID_SONY_BIN_RCVR2: fileName = deviceFolder + "/rcvr2.sbp";  break;
+                    default:
+                        fileName = deviceFolder + "/UNKNOWN_" + std::to_string(ev->msgTypeID) + ".Bin";
+                        printf("Event type %d found but is not supported. Output at: %s\n", ev->msgTypeID, fileName.c_str());
+                        break;
+                }
+                event_outputEvToFile(fileName, evScratch, ev->length);
+            }
+
+            if(++count % 5000 == 0)
+                printf("Read %d msgs from SN-%d\n", count, dl->SerialNumber());
+
+        }
+    }
+
+    cout << "Done parsing log files: " << g_commandLineOptions.evOCont.inFile << endl;
+    return true;
+}
+
 void cltool_outputUsage()
 {
 	cout << boldOff;
@@ -612,7 +842,7 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -did 3=5              " << EXAMPLE_SPACE_1 << boldOff << " # stream DID_PIMU at startupNavDtMs x 5" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD            " << EXAMPLE_SPACE_1 << boldOff << " # stream post processing data (PPD) with INS2" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -presetPPD -lon -lts=1" << EXAMPLE_SPACE_1 << boldOff << " # stream PPD + INS2 data, logging, dir timestamp" << endlbOff;
-	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CFG   " << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
+	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -edit DID_FLASH_CONFIG" << EXAMPLE_SPACE_1 << boldOff << " # edit DID_FLASH_CONFIG message" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -baud=115200 -did 5 13=10 " << boldOff << " # stream at 115200 bps, GPS streamed at 10x startupGPSDtMs" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -c * -baud=921600              "                    << EXAMPLE_SPACE_2 << boldOff << " # 921600 bps baudrate on all serial ports" << endlbOff;
 	cout << "    " << APP_NAME << APP_EXT << " -rp " <<     EXAMPLE_LOG_DIR                                              << boldOff << " # replay log files from a folder" << endlbOff;
@@ -623,31 +853,28 @@ void cltool_outputUsage()
 	cout << "    " << APP_NAME << APP_EXT << " -c "  <<     EXAMPLE_PORT << " -uf " << EXAMPLE_FIRMWARE_FILE << " -ub " << EXAMPLE_BOOTLOADER_FILE << " -uv" << boldOff << endlbOff;
 	cout << endlbOn;
 	cout << "OPTIONS (General)" << endl;
+	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
+	cout << "    -c " << boldOff << "DEVICE_PORT  Select serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four." << endlbOn;
+	cout << "    -dboc" << boldOff << "           Send stop-broadcast command `$STPB` on close." << endlbOn;
 	cout << "    -h --help" << boldOff << "       Display this help menu." << endlbOn;
     cout << "    -list-devices" << boldOff << "   Discovers and prints a list of discovered Inertial Sense devices and connected ports." << endlbOn;
-    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
-	cout << "    -c " << boldOff << "DEVICE_PORT  Select the serial port. Set DEVICE_PORT to \"*\" for all ports or \"*4\" for only first four available." << endlbOn;
-	cout << "    -baud=" << boldOff << "BAUDRATE  Set serial port baudrate.  Options: " << IS_BAUDRATE_115200 << ", " << IS_BAUDRATE_230400 << ", " << IS_BAUDRATE_460800 << ", " << IS_BAUDRATE_921600 << " (default)" << endlbOn;
+    cout << "    -lm" << boldOff << "             Listen mode for ISB. Disables device verification (-vd) and does not send stop-broadcast command on start." << endlbOn;
 	cout << "    -magRecal[n]" << boldOff << "    Recalibrate magnetometers: 0=multi-axis, 1=single-axis" << endlbOn;
+	cout << "    -nmea=[s]" << boldOff << "       Send NMEA message s with added checksum footer. Display rx messages. (`-nmea=ASCE,0,GxGGA,1`)" << endlbOn;
+	cout << "    -nmea" << boldOff << "           Listen mode for NMEA message without sending stop-broadcast command `$STPB` at start." << endlbOn;
 	cout << "    -q" << boldOff << "              Quiet mode, no display." << endlbOn;
+    cout << "    -raw-out" << boldOff << "        Outputs all data in a human-readable raw format (used for debugging/learning the ISB protocol)." << endlbOn;
 	cout << "    -reset         " << boldOff << " Issue software reset." << endlbOn;
 	cout << "    -s" << boldOff << "              Scroll displayed messages to show history." << endlbOn;
 	cout << "    -stats" << boldOff << "          Display statistics of data received." << endlbOn;
 	cout << "    -survey=[s],[d]" << boldOff << " Survey-in and store base position to refLla: s=[" << SURVEY_IN_STATE_START_3D << "=3D, " << SURVEY_IN_STATE_START_FLOAT << "=float, " << SURVEY_IN_STATE_START_FIX << "=fix], d=durationSec" << endlbOn;
-    cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
-	cout << "    -uf " << boldOff << "FILEPATH    Update application firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud rate limits." << endlbOn;
-	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used along with option -uf." << endlbOn;
-	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
-    cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
-    cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
-    cout << "         target: t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
-    cout << "         portMask: po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
-    cout << "         priorityLevel: pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn; 
-    cout << "             It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors,"  << endlbOn;
-    cout << "         msgTypeIdMask id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
-    cout << "             See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
-    cout << "             at all times to allow broadcast of critical errors." << endlbOn;
-	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) preceeded by unlock command then exit the program." << endlbOn;
+	cout << "    -sysCmd=[c]" << boldOff << "     Send DID_SYS_CMD c (see eSystemCommand) command then exit the program." << endlbOn;
+    cout << "    -vd" << boldOff << "             Disable device validation.  Use to keep port(s) open even if device response is not received." << endlbOn;
+    cout << "    -verbose[=n] " << boldOff << "   Enable verbose event logging. Use optional '=n' to specify log level between 0 (errors only) and 99 (all events)" << endlbOn;
+	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
+
+	cout << endlbOn;
+	cout << "OPTIONS (Special)" << endl;
 	cout << "    -factoryReset " << boldOff << "  Reset IMX flash config to factory defaults." << endlbOn;
 	cout << "    -romBootloader " << boldOff << " Reboot into ROM bootloader mode.  Requires power cycle and reloading bootloader and firmware." << endlbOn;
 	if (g_internal)
@@ -655,7 +882,25 @@ void cltool_outputUsage()
 	cout << "    -chipEraseIMX " << boldOff << "  CAUTION!!! Erase everything on IMX (firmware, config, calibration, etc.)" << endlbOn;
 	cout << "    -platform=[t]" << boldOff << "   CAUTION!!! Sets the manufacturing platform type in OTP memory (only get 15 writes)." << endlbOn;
 	}
-	cout << "    -v" << boldOff << "              Print version information." << endlbOn;
+
+	cout << endlbOn;
+	cout << "OPTIONS (Event)" << endl;
+    cout << "    -evf=[t],[po],[pr],[id]" << boldOff << "    Sets which DID_EVENT's can be broadcast for debug purposes." << endlbOn;
+    cout << "         target:" << boldOff << "        t=[0=device, 1=device's GNSS1 port, 2=device's GNSS2 port]," << endlbOn;
+    cout << "         portMask:" << boldOff << "      po=[0x80=currentPort, 0x08=USB port, 0x04=UART2, 0x02=UART1, 0x01=UART)]," << endlbOn;
+    cout << "         priorityLevel:" << boldOff << " pr=[Priority ID's to be enabled. See:eEventPriority for protocol EV_ID values]." << endlbOn;
+    cout << "         " << boldOff << "    It is recommended to have a minimum level of 1 at all times to allow broadcast of critical errors."  << endlbOn;
+    cout << "         msgTypeIdMask:" << boldOff << " id=[Protocol ID's to be enabled. Mask together protocol EV_ID value (0x01 << EV_ID)." << endlbOn;
+    cout << "         " << boldOff << "    See:eEventProtocol for protocol EV_ID values]. It is recommended to mask (0x01 << EVENT_MSG_TYPE_ID_ASCII)" << endlbOn;
+    cout << "         " << boldOff << "    at all times to allow broadcast of critical errors." << endlbOn;
+
+	cout << endlbOn;
+	cout << "OPTIONS (Firmware Update)" << endl;
+    cout << "    -ufpkg " << boldOff << "FILEPATH Update firmware using firmware package file (.fpkg) at FILEPATH." << endlbOn;
+	cout << "    -uf " << boldOff << "FILEPATH    Update app firmware using .hex file FILEPATH.  Add -baud=115200 for systems w/ baud limits." << endlbOn;
+	cout << "    -ub " << boldOff << "FILEPATH    Update bootloader using .bin file FILEPATH if version is old. Must be used with option -uf." << endlbOn;
+	cout << "    -fb " << boldOff << "            Force bootloader update regardless of the version." << endlbOn;
+    cout << "    -uv " << boldOff << "            Run verification after application firmware update." << endlbOn;
 
 	cout << endlbOn;
 	cout << "OPTIONS (Message Streaming)" << endl;
@@ -667,14 +912,16 @@ void cltool_outputUsage()
 	cout << "          DID_GPS2_RTK_CMP_REL, DID_BAROMETER, DID_MAGNETOMETER, DID_FLASH_CONFIG (see data_sets.h for complete list)" << endlbOn;
 	cout << "    -dids          " << boldOff << " Print list of all DID datasets" << endlbOn;
 	cout << "    -persistent    " << boldOff << " Save current streams as persistent messages enabled on startup" << endlbOn;
-	cout << "    -presetPPD     " << boldOff << " Stream preset post processing datasets (PPD)" << endlbOn;
-	cout << "    -presetINS2    " << boldOff << " Stream preset INS2 datasets" << endlbOn;
+	cout << "    -presetPPD     " << boldOff << " Send RMC preset to enable IMX post processing data (PPD) stream" << endlbOn;
+	cout << "    -presetINS     " << boldOff << " Send RMC preset to enable INS data stream" << endlbOn;
+	cout << "    -presetGPXPPD  " << boldOff << " Send RMC preset to enable GPX post processing data (PPD) stream" << endlbOn;
 	cout << endlbOn;
 	cout << "OPTIONS (Logging to file, disabled by default)" << endl;
 	cout << "    -lon" << boldOff << "            Enable logging" << endlbOn;
-	cout << "    -lt=" << boldOff << "TYPE        Log type: dat (default), raw, sdat, kml or csv" << endlbOn;
+	cout << "    -lt=" << boldOff << "TYPE        Log type: raw (default), dat, kml or csv" << endlbOn;
 	cout << "    -lp " << boldOff << "PATH        Log data to path (default: ./" << CL_DEFAULT_LOGS_DIRECTORY << ")" << endlbOn;
-	cout << "    -lms=" << boldOff << "PERCENT    Log max space in percent of free space (default: " << CL_DEFAULT_MAX_LOG_SPACE_PERCENT << ")" << endlbOn;
+	cout << "    -lmb=" << boldOff << "MB         File culling: Log drive usage limit in MB. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_MB << "). `-lmb=0 -lms=0` disables file culling." << endlbOn;
+	cout << "    -lms=" << boldOff << "PERCENT    File culling: Log drive space limit in percent of total drive, 0.0 to 1.0. (default: " << CL_DEFAULT_LOG_DRIVE_USAGE_LIMIT_PERCENT << ")" << endlbOn;
 	cout << "    -lmf=" << boldOff << "BYTES      Log max file size in bytes (default: " << CL_DEFAULT_MAX_LOG_FILE_SIZE << ")" << endlbOn;
 	cout << "    -lts=" << boldOff << "0          Log sub folder, 0 or blank for none, 1 for timestamp, else use as is" << endlbOn;
 	cout << "    -r" << boldOff << "              Replay data log from default path" << endlbOn;
@@ -714,13 +961,31 @@ void cltool_outputHelp()
     cout << endlbOff << "Run \"" << boldOn << "cltool -h" << boldOff << "\" to display the help menu." << endl;
 }
 
+// Return the index into an array if specified and remove from string.  i.e. `insOffset[2]` returns 2 and str is reduced to `insOffset`.
+int extract_array_index(std::string &str)
+{
+    int arrayIndex = -1;
+    size_t openBracketPos  = str.find('[');
+    size_t closeBracketPos = str.find(']');
+    if (openBracketPos != std::string::npos && closeBracketPos != std::string::npos && openBracketPos < closeBracketPos)
+    {   // Extract array index
+        std::string indexStr = str.substr(openBracketPos + 1, closeBracketPos - openBracketPos - 1);
+        arrayIndex = std::stoi(indexStr);
+
+        // Remove index from variable name
+        str = str.substr(0, openBracketPos);
+    }
+
+    return arrayIndex;
+}
+
 bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCfgString)
 {
     inertialSenseInterface.WaitForFlashSynced();
 
     nvm_flash_cfg_t flashCfg;
     inertialSenseInterface.FlashConfig(flashCfg);
-    const map_name_to_info_t& flashMap = *cISDataMappings::GetMapInfo(DID_FLASH_CONFIG);
+    const map_name_to_info_t& flashMap = *cISDataMappings::NameToInfoMap(DID_FLASH_CONFIG);
 
     if (flashCfgString.length() < 2)
     {   // Display entire flash config
@@ -728,9 +993,23 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
         cout << "Current flash config" << endl;
         for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
         {
-            if (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashCfg, stringBuffer))
-            {
-                cout << i->second.name << " = " << stringBuffer << endl;
+            const data_info_t& info = i->second;
+            if (info.arraySize)
+            {   // Array
+                for (int i=0; i < info.arraySize; i++)
+                {
+                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, i))
+                    {
+                        cout << info.name << "[" << i << "] = " << stringBuffer << endl;
+                    }
+                }
+            }
+            else
+            {   // Single Elements
+                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer))
+                {
+                    cout << info.name << " = " << stringBuffer << endl;
+                }
             }
         }
     }
@@ -745,18 +1024,66 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
             vector<string> keyAndValue;
             splitString(keyValues[i], '=', keyAndValue);
             if (keyAndValue.size() == 1) 
-            {   // Display only select flash config values
+            {   // Display only select flash config value(s)
+                int arrayIndex = -1;
+                // Some arrays are multi-element single-variable and some are single-element multi-variable.
+                if (flashMap.find(keyAndValue[0]) == flashMap.end())
+                {   // Unrecognized key.  See if we are using a multi-element single-variable.
+                    arrayIndex = extract_array_index(keyAndValue[0]);
+                }
+
                 data_mapping_string_t stringBuffer;
                 for (map_name_to_info_t::const_iterator i = flashMap.begin(); i != flashMap.end(); i++)
                 {
-                    if ((i->second.name == keyAndValue[0]) && (cISDataMappings::DataToString(i->second, NULL, (const uint8_t*)&flashCfg, stringBuffer)))
+                    const data_info_t& info = i->second;
+                    if (info.name == keyAndValue[0])
                     {
-                        cout << i->second.name << " = " << stringBuffer << endl;
+                        if (info.arraySize)
+                        {   // Array
+                            if (arrayIndex == -1)
+                            {   // Array: all elements
+                                for (int arrayIndex=0; arrayIndex<info.arraySize; arrayIndex++)
+                                {
+                                    if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, arrayIndex))
+                                    {
+                                        cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
+                                    }
+                                }
+                            }
+                            else
+                            {   // Array: Single element
+                                if (arrayIndex >= info.arraySize)
+                                {   // Index out of bound
+                                    cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
+                                    return false;
+                                }
+
+                                if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer, _MAX(0, arrayIndex)))
+                                {
+                                    cout << info.name << "[" << arrayIndex << "] = " << stringBuffer << endl;
+                                }
+                            }
+                        }
+                        else
+                        {   // Single element
+                            if (cISDataMappings::DataToString(info, NULL, (const uint8_t*)&flashCfg, stringBuffer))
+                            {
+                                cout << info.name << " = " << stringBuffer << endl;
+                            }
+                        }
                     }
                 }
             } 
             else if (keyAndValue.size() == 2)
             {   // Set select flash config values
+                int arrayIndex = -1;
+
+                // Some arrays are multi-element single-variable and some are single-element multi-variable.
+                if (flashMap.find(keyAndValue[0]) == flashMap.end())
+                {   // Unrecognized key.  See if we are using a multi-element single-variable.
+                    arrayIndex = extract_array_index(keyAndValue[0]);
+                }
+
                 if (flashMap.find(keyAndValue[0]) == flashMap.end())
                 {
                     cout << "Unrecognized DID_FLASH_CONFIG key '" << keyAndValue[0] << "' specified, ignoring." << endl;
@@ -764,10 +1091,18 @@ bool cltool_updateFlashCfg(InertialSense& inertialSenseInterface, string flashCf
                 else
                 {
                     const data_info_t& info = flashMap.at(keyAndValue[0]);
-                    int radix = (keyAndValue[1].compare(0, 2, "0x") == 0 ? 16 : 10);
-                    int substrIndex = 2 * (radix == 16); // skip 0x for hex
-                    const string& str = keyAndValue[1].substr(substrIndex);
-                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, radix);
+                    if (info.arraySize && arrayIndex >= info.arraySize)
+                    {   // Array index out of bound
+                        cout << info.name << "[" << arrayIndex << "] " << " invalid array index" << endl;
+                        return false;
+                    }
+                    string str = keyAndValue[1];
+                    if (str.compare(0, 2, "0x") == 0)
+                    {   // Remove "0x" from hexidecimal
+                        str = str.substr(2);
+                    }
+                    // Address how elem
+                    cISDataMappings::StringToData(str.c_str(), (int)str.length(), NULL, (uint8_t*)&flashCfg, info, _MAX(0, arrayIndex));
                     cout << "Setting DID_FLASH_CONFIG." << keyAndValue[0] << " = " << keyAndValue[1].c_str() << endl;
                     modified = true;
                 }

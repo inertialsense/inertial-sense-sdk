@@ -85,14 +85,6 @@ string messageDescriptionRtcm3(int id)
 	return "";
 }
 
-unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len)
-{
-	unsigned int bits = 0;
-	int i;
-	for (i = pos; i < pos + len; i++) bits = (bits << 1) + ((buff[i / 8] >> (7 - i % 8)) & 1u);
-	return bits;
-}
-
 static msg_stats_t createNewMsgStats(int timeMs, string description = "")
 {
 	msg_stats_t s = {};
@@ -116,7 +108,7 @@ void messageStatsAppend(string message, mul_msg_stats_t &msgStats, unsigned int 
 	case _PTYPE_INERTIAL_SENSE_DATA:
 		if (msgStats.isb.find(id) == msgStats.isb.end())
 		{	// Create new 
-			msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::GetDataSetName(id));
+			msgStats.isb[id] = createNewMsgStats(timeMs, cISDataMappings::DataName(id));
 		}
 
 		{	// Update count and timestamps

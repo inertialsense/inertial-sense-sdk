@@ -72,7 +72,7 @@ void DeviceRuntimeTests::ProcessParseError(is_comm_instance_t &comm)
     switch (comm.rxBuf.head[0])
     {
     case PSC_ISB_PREAMBLE_BYTE1:    
-        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::GetDataSetName(comm.rxPkt.dataHdr.id));
+        parser = std::string("ISB id ") + std::to_string(comm.rxPkt.dataHdr.id) + " " + std::string(cISDataMappings::DataName(comm.rxPkt.dataHdr.id));
         parser += ", size " + std::to_string(comm.rxPkt.dataHdr.size); 
         break;
     case PSC_NMEA_START_BYTE:       parser = std::string("NMEA ") + std::string((char*)comm.rxBuf.head, _MIN(size, MAX_MSG_LENGTH_NMEA));    break;
@@ -140,8 +140,8 @@ void DeviceRuntimeTests::ProcessNMEA(const uint8_t* msg, int msgSize)
     int id = getNmeaMsgId(msg, msgSize);
     switch(id)
     {
-    case NMEA_MSG_ID_GxGGA:     TestNmeaGga(msg, msgSize);      break;
-    case NMEA_MSG_ID_GxZDA:     TestNmeaZda(msg, msgSize);      break;
+    case NMEA_MSG_ID_GNGGA:     TestNmeaGga(msg, msgSize);      break;
+    case NMEA_MSG_ID_GNZDA:     TestNmeaZda(msg, msgSize);      break;
     }
 }
 

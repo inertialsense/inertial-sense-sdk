@@ -10,12 +10,13 @@
 #define INERTIALSENSESDK_ISDEVICE_H
 
 #include <memory>
+#include <functional>
 
 #include "DeviceLog.h"
+#include "ISBootloaderBase.h"
 #include "protocol/FirmwareUpdate.h"
+#include "protocol_nmea.h"
 #include "ISFirmwareUpdater.h"
-
-#include <functional>
 
 extern "C"
 {
@@ -25,6 +26,8 @@ extern "C"
     #include "serialPortPlatform.h"
 }
 
+#define BOOTLOADER_RETRIES          10
+#define BOOTLOADER_RESPONSE_DELAY   100
 
 #define PRINT_DEBUG 0
 #if PRINT_DEBUG
@@ -34,6 +37,7 @@ extern "C"
 #endif
 
 class ISFirmwareUpdater;
+class cISLogger;
 
 class ISDevice {
 public:
@@ -43,130 +47,193 @@ public:
         HDW_STATE_APP,
     };
 
-    int portHandle = 0;
-    serial_port_t serialPort = { };
-    CMHANDLE cmInstance = { 0 };
+    static ISDevice invalidRef;
+    static std::string getIdAsString(const dev_info_t& devInfo);
+    static std::string getName(const dev_info_t& devInfo);
+    static std::string getFirmwareInfo(const dev_info_t& devInfo, int detail = 1, eHdwRunStates hdwRunState = eHdwRunStates::HDW_STATE_APP);
+
+    ISDevice() {
+        flashCfg.checksum = (uint32_t)-1;
+    }
+
+    ISDevice(port_handle_t _port) {
+        flashCfg.checksum = (uint32_t)-1;
+        port = _port;
+    }
+
+    ISDevice(const ISDevice& src) : devLogger(src.devLogger) {
+        port = src.port;
+        hdwId = src.hdwId;
+        hdwRunState = src.hdwRunState;
+        devInfo = src.devInfo;
+        flashCfg = src.flashCfg;
+        flashCfgUploadTimeMs = src.flashCfgUploadTimeMs;
+        flashCfgUploadChecksum = src.flashCfgUploadChecksum;
+        evbFlashCfg = src.evbFlashCfg;
+        sysCmd = src.sysCmd;
+        // devLogger = src.devLogger.get();
+        closeStatus = src.closeStatus;
+    }
+
+    ~ISDevice() {
+        //if (port && serialPortIsOpen(port))
+        //    serialPortClose(port);
+        port = 0;
+        hdwId = IS_HARDWARE_TYPE_UNKNOWN;
+        hdwRunState = HDW_STATE_UNKNOWN;
+    }
+
+    /**
+     * @return true is this ISDevice has a valid, and open port
+     */
+    bool isConnected() { return (port && serialPortIsOpen(port)); }
+
+    bool step();
+
+    std::string getIdAsString();
+    std::string getName();
+    std::string getFirmwareInfo(int detail = 1);
+    std::string getDescription();
+
+    void registerWithLogger(cISLogger* logger);
+
+    // Convenience Functions
+    bool BroadcastBinaryData(uint32_t dataId, int periodMultiple);
+    void BroadcastBinaryDataRmcPreset(uint64_t rmcPreset, uint32_t rmcOptions) { comManagerGetDataRmc(port, rmcPreset, rmcOptions); }
+    void GetData(eDataIDs dataId, uint16_t length=0, uint16_t offset=0, uint16_t period=0) { comManagerGetData(port, dataId, length, offset, period); }
+    void QueryDeviceInfo() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE); }
+    void SavePersistent() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SAVE_PERSISTENT_MESSAGES_TO_FLASH, NMEA_CMD_SIZE); }
+    void SoftwareReset() { comManagerSendRaw(port, (uint8_t*)NMEA_CMD_SOFTWARE_RESET, NMEA_CMD_SIZE); }
+    void SendData(eDataIDs dataId, const uint8_t* data, uint32_t length, uint32_t offset = 0) { comManagerSendData(port, data, dataId, length, offset); }
+    void SendRaw(const uint8_t* data, uint32_t length) { comManagerSendRaw(port, data, length); }
+    void SendNmea(const std::string& nmeaMsg);
+    void SetEventFilter(int target, uint32_t msgTypeIdMask, uint8_t portMask, int8_t priorityLevel);
+    void SetSysCmd(const uint32_t command);
+    void StopBroadcasts(bool allPorts = false) { comManagerSendRaw(port, (uint8_t*)(allPorts ? NMEA_CMD_STOP_ALL_BROADCASTS_ALL_PORTS : NMEA_CMD_STOP_ALL_BROADCASTS_CUR_PORT), NMEA_CMD_SIZE); }
+
+    /**
+     * @returns true is the device is indicated that a reset is required; this state SHOULD be acted on by resetting the device to ensure that it is operating as expected
+     */
+    bool isResetRequired() { return ((devInfo.hardwareType == IS_HARDWARE_TYPE_IMX) && (sysParams.hdwStatus & HDW_STATUS_SYSTEM_RESET_REQUIRED)) ||
+                             ((devInfo.hardwareType == IS_HARDWARE_TYPE_GPX) && (gpxStatus.hdwStatus & GPX_HDW_STATUS_SYSTEM_RESET_REQUIRED)); }
+
+    /**
+     * Immediately issues s SysCmd to instruct the device to reset immediately
+     * @return true if the request was successfully sent, false if the action was not able to be performed.
+     */
+    bool reset();
+
+    /**
+     * @returns true if reset() was called recently, and we are waiting for the device to return.
+     */
+    bool isResetPending() { return current_timeMs() < nextResetTime; }
+
+    bool hasPendingFlashWrites(uint32_t& ageSinceLastPendingWrite);
+
+    const dev_info_t& DeviceInfo() { return devInfo; }
+    const sys_params_t& SysParams() { return sysParams; }
+
+    // OH, ALL THE FLASHY-SYNCY STUFF
+    bool FlashConfig(nvm_flash_cfg_t& flashCfg_);
+    bool SetFlashConfig(nvm_flash_cfg_t& flashCfg_);
+
+    /**
+     * A fancy function that attempts to synchronize flashcfg between host and device - Honestly, I'm not sure its use case
+     * @param timeMs
+     */
+    void SyncFlashConfig(unsigned int timeMs);
+
+    /**
+    * Indicates whether the current IMX flash config has been downloaded and available via FlashConfig().
+    * @param port the port to get flash config for
+    * @return true if the flash config is valid, currently synchronized, otherwise false.
+    */
+    bool FlashConfigSynced() { return  (flashCfg.checksum == sysParams.flashCfgChecksum) && (flashCfgUploadTimeMs==0) && !FlashConfigUploadFailure(); }
+
+    /**
+     * Another fancy function that blocks until a flash sync has actually occurred, returning true if successful or false if it couldn't (timeout?  validation?  bad connection?  -- who knows?)
+     * @return
+     */
+    bool WaitForFlashSynced();
+
+    bool waitForFlashWrite();
+
+    /**
+     * A kind-of-redundant function?? I'm not sure how this is exactly different (or better?) than WaitForFlashSynced()?
+     * @return
+     */
+    bool verifyFlashConfigUpload();
+
+    /**
+     * Failed to upload flash configuration for any reason.
+     * @param port the port to get flash config for
+     * @return true Flash config upload was either not received or rejected.
+     */
+    bool FlashConfigUploadFailure() { return flashCfgUploadChecksum && (flashCfgUploadChecksum != sysParams.flashCfgChecksum); }
+
+    void UpdateFlashConfigChecksum(nvm_flash_cfg_t& flashCfg_);
+
+    /**
+    * Gets current update status for selected device index
+    * @param deviceIndex
+    */
+    fwUpdate::update_status_e getUpdateStatus() { return fwLastStatus; };
+
+
+    port_handle_t port = 0;
     // libusb_device* usbDevice = nullptr; // reference to the USB device (if using a USB connection), otherwise should be nullptr.
 
-    uint16_t hdwId;                         //! hardware type and version (ie, IMX-5.0)
-    eHdwRunStates hdwRunState;                   //! state of hardware (running, bootloader, etc).
+    is_hardware_t               hdwId = IS_HARDWARE_ANY;             //! hardware type and version (ie, IMX-5.0)
+    eHdwRunStates               hdwRunState = HDW_STATE_UNKNOWN;     //! state of hardware (running, bootloader, etc).
 
-    dev_info_t devInfo = { };
-    sys_params_t sysParams = { };
-    nvm_flash_cfg_t flashCfg = { };
-    unsigned int flashCfgUploadTimeMs = 0;		// (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
-    uint32_t flashCfgUploadChecksum = 0;
-    evb_flash_cfg_t evbFlashCfg = { };
-    system_command_t sysCmd = { };
+    dev_info_t                  devInfo = { };
+    sys_params_t                sysParams = { };
+    gpx_status_t                gpxStatus = { };
+    nvm_flash_cfg_t             flashCfg = { };
+    nvm_flash_cfg_t             flashCfgUpload = { };                //! This is the flashConfig that was most recently sent to the device
+    unsigned int                flashCfgUploadTimeMs = 0;            //! (ms) non-zero time indicates an upload is in progress and local flashCfg should not be overwritten
+    unsigned int                flashSyncCheckTimeMs = 0;
+    uint32_t                    flashCfgUploadChecksum = 0;
+    evb_flash_cfg_t             evbFlashCfg = { };
+    system_command_t            sysCmd = { };
+    manufacturing_info_t        manfInfo = {};
 
-    std::shared_ptr<cDeviceLog> devLogger;
+
+    std::shared_ptr<cDeviceLog> devLogger = { };
     fwUpdate::update_status_e closeStatus = { };
 
-    struct {
-        float percent = 0.f;
-        bool hasError = false;
-        uint16_t lastSlot = 0;
-        fwUpdate::target_t lastTarget = fwUpdate::TARGET_UNKNOWN;
-        fwUpdate::update_status_e lastStatus = fwUpdate::NOT_STARTED;
-        std::string lastMessage;
 
-        std::vector<std::string> target_idents;
-        std::vector<std::string> target_messages;
-    } fwState = {};
-    ISFirmwareUpdater *fwUpdater = nullptr;
+    // TODO: make these private or protected
+    ISFirmwareUpdater* fwUpdater = NULLPTR;
+    float fwPercent = 0;
+    bool fwHasError = false;
+    std::vector<std::tuple<std::string, std::string, std::string>> fwErrors;
+    uint16_t fwLastSlot = 0;
+    fwUpdate::target_t fwLastTarget = fwUpdate::TARGET_UNKNOWN;
+    fwUpdate::update_status_e fwLastStatus = fwUpdate::NOT_STARTED;
+    std::string fwLastMessage;
+
+    std::vector<std::string> target_idents;
+    std::vector<std::string> target_messages;
+
+    uint32_t lastResetRequest = 0;              //! system time when the last reset requests was sent
+    uint32_t resetRequestThreshold = 5000;      //! Don't allow to send reset requests more frequently than this...
+    uint32_t nextResetTime = 0;                 //! used to throttle reset requests
+
+    is_operation_result updateFirmware(fwUpdate::target_t targetDevice, std::vector<std::string> cmds,
+            ISBootloader::pfnBootloadProgress uploadProgress, ISBootloader::pfnBootloadProgress verifyProgress, ISBootloader::pfnBootloadStatus infoProgress, void (*waitAction)()
+    );
 
     bool fwUpdateInProgress();
     bool fwUpdate();
 
-    static ISDevice invalidRef;
+    bool operator==(const ISDevice& a) const { return (a.devInfo.serialNumber == devInfo.serialNumber) && (a.devInfo.hardwareType == devInfo.hardwareType); };
 
-    ISDevice() {
-        hdwId = 0;
-        hdwRunState = HDW_STATE_UNKNOWN;
-        portHandle = -1;
-        serialPort = {};
-        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
-    };
+    bool handshakeISbl();
+    bool queryDeviceInfoISbl();
 
-    ISDevice(int ph, const serial_port_t & sp) {
-        hdwId = 0;
-        hdwRunState = HDW_STATE_UNKNOWN;
-        portHandle = ph;
-        serialPort = sp;
-        sysParams.flashCfgChecksum = 0xFFFFFFFF;		// Invalidate flash config checksum to trigger sync event
-    }
-
-    /**
-     * Associates this IS device with the specified serial port instance. This call is used when a port is
-     * known to have a device, but the device itself is not known. This will associate which ever device is
-     * connected to the specified port, even if that device is different from the current instance's device.
-     * @param port
-     * @return true if a valid device was discovered and bound, otherwise false
-     */
-    bool bindDevice(serial_port_t& port);
-
-    /**
-     * Attempts to locate the port which hosts this device. This call is used to find a specific device from
-     * a set of ports, by querying each available port and checking whether the device on that port matches
-     * the current device information. If the device is found on one of the provided port, it is bound to
-     * that port.
-     * @return true if the device was found and successfully bound to the port, otherwise false.
-     */
-    bool findDevice(std::vector<serial_port_t&> ports);
-
-    /**
-     * Opens the bound port, and enables communication with the device.  NOTE: THIS MAYBE UNNECESSARY as the
-     * port is likely already opened when initially bound. Ultimately, we want the connection opened/close
-     * and the device independent of that connection, ie, device.connection.open(...)
-     * @param baudRate the baud rate to open the connection at
-     * @param validate performs device comms validation after opening the port; ensures that the device is alive and well
-     * @return true if successfully opened, otherwise false
-     */
-    bool open(int baudRate, bool validate);
-
-    /**
-     * @return true if this device has an option port/connection, otherwise false
-     */
-    bool isOpen();
-
-    int writeTo(const unsigned char* buf, int len);
-
-    int readFrom(unsigned char* buf, int len);
-
-    /**
-     * Closes the current connection/port.
-     */
-    void close();
-
-    /**
-     * Queries the device info from the bound port, and populates devInfo.
-     * @return true if the device was successfully queried, and devInfo populated, otherwise false
-     */
-    bool queryDeviceInfo();
-
-    bool stopBroadcasts(bool allPorts = false);
-    bool enableBroadcast(int did, int period);
-    bool sendReset();
-
-protected:
-    bool handshakeISB();
-    bool queryDeviceInfoISB();
-    bool queryDeviceInfoDFU();
-    bool validateDevice(uint32_t timeout);
-
-    void processRxData(p_data_t* data);
-    void processRxNmea(const uint8_t* msg, int msgSize);
-
-    void getData(uint16_t did, uint16_t size, uint16_t offset, uint16_t period);
-
-    void stepComms();
-
-private:
-    typedef std::function<void(ISDevice* device, p_data_t* data)> pfnHandleBinaryData;
-    typedef void(*pfnStepLogFunction)(ISDevice* device, const p_data_t* data);
-    typedef int(*pfnDeviceRmcHandler)(port_handle_t port, p_data_get_t* req);
-    typedef int(*pfnDeviceGenMsgHandler)(ISDevice* device, const unsigned char* msg, int msgSize);
-    typedef int(*pfnDeviceParseErrorHandler)(ISDevice* device, is_comm_instance_t* comm);
+    static const int SYNC_FLASH_CFG_CHECK_PERIOD_MS =    200;
+    static const int SYNC_FLASH_CFG_TIMEOUT_MS =        3000;
 
     enum queryTypes {
         QUERYTYPE_NMEA = 0,
@@ -175,36 +242,6 @@ private:
         QUERYTYPE_mcuBoot,
         QUERYTYPE_MAX = QUERYTYPE_mcuBoot,
     };
-
-    std::vector<broadcast_msg_t> broadcastMsgs;
-
-    typedef struct {
-        uint8_t updated;
-        uint32_t lastRxTime;
-        pfnHandleBinaryData callback;
-    } did_info_t;
-
-    pfnHandleBinaryData binaryCallbackGlobal;
-    std::map<int, did_info_t> binaryCallbacks;
-
-    uint32_t m_timeMs;
-    pfnDeviceRmcHandler         m_handlerRmc = NULLPTR;
-    pfnDeviceGenMsgHandler      m_handlerNmea = NULLPTR;
-    pfnDeviceGenMsgHandler      m_handlerUblox = NULLPTR;
-    pfnDeviceGenMsgHandler      m_handlerRtcm3 = NULLPTR;
-    pfnDeviceGenMsgHandler      m_handlerSpartn = NULLPTR;
-    pfnDeviceParseErrorHandler  m_handlerError = NULLPTR;
-
-    pfnStepLogFunction stepLogFunction;
-
-    struct {
-        is_comm_instance_t comm;            //! Comm instances
-        uint8_t comm_buffer[PKT_BUF_SIZE];  //! Comm instance data buffer
-
-        #if ENABLE_PACKET_CONTINUATION
-        p_data_t con;       //! Continuation data for packets
-        #endif
-    } cmPort;
 };
 
 

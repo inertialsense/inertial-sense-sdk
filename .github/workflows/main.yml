@@ -17,6 +17,8 @@ on:
     pull_request:
       - 'develop'
       - 'main'
+    tags:
+      - '\d+.\d.+\d+*'
 
 concurrency:
   group: ${{ github.ref }}
@@ -59,7 +61,9 @@ jobs:
         run: ./build_cltool.sh
 
       - name: Build LogInspector
-        run: ./build_log_inspector.sh
+        run: |
+          ./install_log_inspector_dependencies.sh
+          ./build_log_inspector.sh
 
       - name: Build SDK Examples
         run: ./build_test_cmake.sh --build "SDK Example Projects" ../ExampleProjects
@@ -85,8 +89,11 @@ jobs:
       - name: Clean all
         run: ./clean_all.bat
 
-#      - name: SDK Unit Tests
-#        run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
+      - name: Build SDK
+        run: ./build_is_sdk.bat
+
+      # - name: SDK Unit Tests
+      #   run: ./build_test_cmake.sh --build --test "SDK Unit Tests" ../tests
 
       - name: Build CLTool
         run: ./build_cltool.bat
@@ -98,9 +105,9 @@ jobs:
         run: ./build_sdk_examples.bat
 
   ros-bridge-tests:
-    name: "ROS Bridge Tests"
-    runs-on: [self-hosted, Linux, X64, docker]
-    if: false  # disable this job
+    name: "ROS1 Bridge Tests"
+    runs-on: [self-hosted, Linux, X64, docker, focal]
+    # if: false  # disable this job
 
     env:
       ROS_CI_DESKTOP: "`lsb_release -cs`"  # e.g. [trusty|xenial|...]
@@ -108,32 +115,48 @@ jobs:
 
     container:
       image: ros:noetic
-      options: --privileged -v /dev:/dev
+      #options: --privileged -v /dev:/dev
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
 
     defaults:
       run:
-        working-directory: scripts
+        working-directory: ../ROS/catkin_ws
         shell: bash
 
     steps:
-      - name: Update Git version to make actions/checkout happy
+      - name: Update Git & CMake versions
+        working-directory: .
         run: |
           echo "::group::Install software-properties-common and dependencies."
-          apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev
+          apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev gpg wget curl
           echo "::endgroup::"
-          echo "::group::Configure git-core ppa and install latest."
+          echo "::group::Configure git-core PPA and install latest."
           add-apt-repository ppa:git-core/ppa -y && apt -y install git
           echo "::endgroup::"
           git --version
+          echo "::group::Configure Kitware CMake PPA and install latest."
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+          echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ `lsb_release -sc` main" | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+          apt-get update
+          test -f /usr/share/doc/kitware-archive-keyring/copyright ||
+          rm /usr/share/keyrings/kitware-archive-keyring.gpg  
+          apt-get -y install kitware-archive-keyring cmake
+          echo "::endgroup::"
+          cmake --version
 
       - name: Checkout source and submodules
         uses: actions/checkout@v4
         with:
           # token: ${{ secrets.ALL_REPO_PAT }}
+          fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
           submodules: recursive
 
       - name: Install dependencies
+        working-directory: scripts
         run: |
+          apt-get update && apt-get -y install python3-pip python3-venv python3-git python3-semver
           ./install_sdk_dependencies.sh
           ./install_gtest.sh
   
@@ -143,23 +166,102 @@ jobs:
           echo "::group::Install ROS packages."
           apt -y install ros-${ROS_DISTRO}-tf libusb-1.0-0-dev
           echo "::endgroup::"
+          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
 
       - name: Setup Catkin Workspace and Build
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          cd ${GITHUB_WORKSPACE}/..
-          cd ${GITHUB_WORKSPACE}/../catkin_ws && catkin_make && catkin_make test_unit_tests && catkin_make test_ros_bridge 
+          catkin_make -DCATKIN_BLACKLIST_PACKAGES="inertial_sense_ros2"
+          catkin_make test_unit_tests
+          catkin_make test_ros_bridge 
 
       - name: Run Unit Tests
         run: |          
-          cd ${GITHUB_WORKSPACE}/../catkin_ws && source devel/setup.bash
+          source devel/setup.bash
           rm -rf build/test_results
           roscore &
-          catkin_make run_tests_inertial_sense_ros_gtest_test_unit_tests && catkin_test_results
+          catkin_make run_tests_inertial_sense_ros_gtest_test_unit_tests
+          catkin_test_results
           pkill roscore
 
       - name: Run Functional/Integration Tests (via hardware)
         run: |
-          cd ${GITHUB_WORKSPACE}/../catkin_ws && source devel/setup.bash
-            rostest inertial_sense_ros test_ros_bridge.launch && catkin_test_results || (rostest --text inertial_sense_ros test_ros_bridge.launch && catkin_test_results && false)
+          source devel/setup.bash
+          roscore &
+          catkin_make run_tests_inertial_sense_ros_gtest_test_ros_bridge
+          catkin_test_results
 
+  ros2-bridge-tests:
+    name: "ROS2 Bridge Tests"
+    runs-on: [self-hosted, Linux, X64, docker, focal]
+    # if: false  # disable this job
+
+    container:
+      image: osrf/ros:jazzy-desktop
+      options: --device-cgroup-rule="c 166:* rmw"
+      volumes:
+        - "/dev:/dev"
+
+    defaults:
+      run:
+        working-directory: ../ROS/ros2_ws # This is outside the scope of git
+        shell: bash
+
+    steps:
+      - name: Update Git & CMake versions
+        working-directory: .
+        run: |
+          echo "::group::Install software-properties-common and dependencies."
+          apt-get update && apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates libyaml-cpp-dev gpg wget curl
+          echo "::endgroup::"
+          echo "::group::Configure git-core PPA and install latest."
+          add-apt-repository ppa:git-core/ppa -y && apt -y install git
+          echo "::endgroup::"
+          git --version
+          echo "::group::Configure Kitware CMake PPA and install latest."
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+          echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ `lsb_release -sc` main" | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+          apt-get update
+          test -f /usr/share/doc/kitware-archive-keyring/copyright ||
+          rm /usr/share/keyrings/kitware-archive-keyring.gpg  
+          apt-get -y install kitware-archive-keyring cmake
+          echo "::endgroup::"
+          cmake --version
+
+      - name: Install libboost and other pre-checkout dependencies
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          mkdir -p .cache/pip
+          apt-get update && apt-get -y install libboost-all-dev python3-pip python3-venv python3-git python3-semver
+          rm -rf ../../inertial-sense-sdk/* log/ build/ install/ &>/dev/null || true 
+          "
+
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0  # Fetches full commit history, needed for repo info steps in build
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          cd ../../inertial-sense-sdk/scripts
+          ./install_sdk_dependencies.sh
+          ./install_gtest.sh
+          chown -R 1003:1003 ../../
+          "
+
+      - name: Build ROS2 bridge
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "
+          git config --global --add safe.directory /__w/inertial-sense-sdk/inertial-sense-sdk
+          colcon build
+          "
+
+      - name: Run Functional/Integration Tests (via hardware)
+        run: |
+          /ros_entrypoint.sh /bin/bash -e -c "          
+          source install/setup.bash
+          ros2 run inertial_sense_ros2 test_inertial_sense_ros2
+          "

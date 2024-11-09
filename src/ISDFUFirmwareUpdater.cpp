@@ -554,6 +554,13 @@ dfu_error DFUDevice::open() {
     if (libusb_open(usbDevice, &usbHandle) < LIBUSB_SUCCESS)
         return DFU_ERROR_DEVICE_NOTFOUND;
 
+        // Not entirely sure this is needed, but it doesn't seem to hurt either.
+        int kernelActive = libusb_kernel_driver_active(usbHandle, 0);
+        if(kernelActive == 1) {
+            ret_libusb = libusb_detach_kernel_driver(usbHandle, 0);
+        }
+        libusb_reset_device(usbHandle);
+
     ret_libusb = libusb_claim_interface(usbHandle, 0);
     if (ret_libusb < LIBUSB_SUCCESS) {
         ret_dfu = DFU_ERROR_DEVICE_BUSY;
@@ -1028,6 +1035,7 @@ dfu_error DFUDevice::close() {
     }
 
     libusb_release_interface(usbHandle, 0);
+        usbHandle = nullptr;
 
     return DFU_ERROR_NONE;
 }

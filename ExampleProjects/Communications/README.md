@@ -6,7 +6,7 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 
 #### Project Files
 
-* [ISCommunicationsExample.c](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications/ISCommunicationsExample.c)
+* [ISCommunicationsExample.cpp](https://github.com/inertialsense/inertial-sense-sdk/tree/release/ExampleProjects/Communications/ISCommunicationsExample.cpp)
 
 #### SDK Files
 
@@ -37,7 +37,7 @@ This [ISCommunicationsExample](https://github.com/inertialsense/inertial-sense-s
 	uint8_t buffer[2048];
 
 	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer));
+	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Consider using callbacks
 ```
 
 ### Step 3: Initialize and open serial port

@@ -10,6 +10,9 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
 #include <ctime>
 #include <sstream>
 #include <sys/types.h>
@@ -17,9 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <functional>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -28,6 +29,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISFileManager.h"
 #include "ISLogger.h"
 #include "ISDataMappings.h"
+#include "ISDisplay.h"
 #include "ISLogFileFactory.h"
 #include "ISUtilities.h"
 
@@ -46,43 +48,67 @@ using namespace std;
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ		0
-
+#define STATS_ALL_FILENAME          "/stats_all.txt"
 
 const string cISLogger::g_emptyString;
 
 #if !PLATFORM_IS_EMBEDDED
-static std::mutex g_devices_mutex;
+class SimpleMutex {
+private:
+    std::atomic_flag flag = ATOMIC_FLAG_INIT; // Atomic flag for lock status
+
+public:
+    void lock() {
+        // Spin-wait loop until the lock is acquired
+        while (flag.test_and_set(std::memory_order_acquire)) {
+            // Busy-wait until the lock is acquired
+            SLEEP_MS(1);
+        }
+    }
+
+    void unlock() {
+        // Release the lock
+        flag.clear(std::memory_order_release);
+    }
+};
+
+SimpleMutex myMutex;
+
+#define LOCK_MUTEX()        myMutex.lock()
+#define UNLOCK_MUTEX()      myMutex.unlock()
+
+#else
+
+#define LOCK_MUTEX()
+#define UNLOCK_MUTEX()
+
 #endif
+
 
 bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
 {
     bool isCorrupt = true;
 
     if (hdr != NULL)
-    {
-        // if any case is true this is corrupt
+    {   // if any case is true this is corrupt
         isCorrupt = (hdr->size == 0 ||
             hdr->offset + hdr->size > MAX_DATASET_SIZE ||
             hdr->id == 0 ||
             hdr->offset % 4 != 0);
-
     }
 
     return isCorrupt;
 }
-
 
 bool cISLogger::isDataCorrupt(const p_data_buf_t *data)
 {
     return m_useChunkHeader && data != NULL && isHeaderCorrupt(&data->hdr);
 }
 
-
 cISLogger::cISLogger()
 {
     m_logStats.Clear();
 }
-
 
 cISLogger::~cISLogger()
 {
@@ -90,36 +116,50 @@ cISLogger::~cISLogger()
     m_errorFile.close();
 }
 
-
 void cISLogger::Cleanup()
 {
-#if !PLATFORM_IS_EMBEDDED
-    const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+    LOCK_MUTEX();
     m_devices.clear();
     m_logStats.Clear();
+    UNLOCK_MUTEX();
 }
-
 
 void cISLogger::Update()
 {
-    // if we have a timeout param and the time has elapsed, shutdown
+    time_t timeSec = GetTime();
+
     if (m_lastCommTime == 0)
     {
-        m_lastCommTime = GetTime();
+        m_lastCommTime = timeSec;
     }
-    else if (m_timeoutFlushSeconds > 0 && GetTime() - m_lastCommTime >= m_timeoutFlushSeconds)
+    else if (m_timeoutFlushSeconds > 0 && timeSec - m_lastCommTime >= m_timeoutFlushSeconds)
     {
         for (auto it : m_devices)
         {
             it.second->Flush();
         }
     }
-    ISFileManager::TouchFile(m_directory + "/stats.txt");
+
+    if (m_enabled && m_maxDiskSpace!=0 &&
+        m_timeoutFileCullingSeconds > 0 &&
+        timeSec - m_lastFileCullingTime >= m_timeoutFileCullingSeconds)
+    {   // File culling
+        m_lastFileCullingTime = timeSec;
+
+        // Update amount of drive space for parent log directory
+        m_usedDiskSpace = ISFileManager::GetDirectorySpaceUsed(m_rootDirectory);
+
+        if (m_usedDiskSpace > m_maxDiskSpace)
+        {   // Need to remove files
+           ISFileManager::RemoveOldestFiles(m_rootDirectory, m_maxDiskSpace);
+           ISFileManager::RemoveEmptyDirectories(m_rootDirectory);
+        }
+    }
+
+    ISFileManager::TouchFile(m_directory + STATS_ALL_FILENAME);
 }
 
-
-bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const string &subDirectory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
 {
     static const int minFileCount = 50;
     static const int maxFileCount = 10000;
@@ -127,47 +167,65 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     // Close any open files
     CloseAllFiles();
 
-    m_logType = logType;
-    m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
-    maxDiskSpacePercent = _CLAMP(maxDiskSpacePercent, 0.01f, 0.99f);
-    uint64_t availableSpace = ISFileManager::GetDirectorySpaceAvailable(m_directory);
-    m_maxDiskSpace = (maxDiskSpacePercent <= 0.0f ? availableSpace : (uint64_t)(availableSpace * maxDiskSpacePercent));
+    m_logType = options.logType;
+    m_timeStamp = (options.timeStamp.empty() ? CreateCurrentTimestamp() : options.timeStamp);
+    m_rootDirectory = m_directory = (directory.empty() ? DEFAULT_LOGS_DIRECTORY : directory);
+
+    // Drive usage limit
+    m_maxDiskSpace = 0;                 // disable log file culling
+    if (options.driveUsageLimitPercent > 0.0f)
+    {   // Percent limit enabled
+        // options.driveUsageLimitPercent = _CLAMP(options.driveUsageLimitPercent, 0.01f, 0.99f);
+        uint64_t totalDiskSize = ISFileManager::GetDirectoryDriveTotalSize(m_rootDirectory);
+        m_maxDiskSpace = (uint64_t)(totalDiskSize * options.driveUsageLimitPercent);
+    }
+    if (options.driveUsageLimitMb > 0.0f)
+    {   // Size limit enabled
+        m_maxDiskSpace = _MIN(m_maxDiskSpace, (uint64_t)(options.driveUsageLimitMb*1024*1024));
+    }
+
+    // Limit to available size
+    uint64_t availableSpace = ISFileManager::GetDirectorySpaceAvailable(m_rootDirectory);
+    m_maxDiskSpace = _MIN(m_maxDiskSpace, availableSpace);
+
+    // Amount of drive space used by parent log directory (i.e. "IS_log")
+    m_usedDiskSpace = ISFileManager::GetDirectorySpaceUsed(m_rootDirectory);
 
     // ensure there are between min and max file count
-    if (maxFileSize > m_maxDiskSpace / minFileCount)
+    if (options.maxFileSize > availableSpace / minFileCount)
     {
-        m_maxFileSize = (uint32_t)(m_maxDiskSpace / minFileCount);
+        m_maxFileSize = (uint32_t)(availableSpace / minFileCount);
     }
-    else if (maxFileSize < m_maxDiskSpace / maxFileCount)
+    else if (options.maxFileSize < availableSpace / maxFileCount)
     {
-        m_maxFileSize = (uint32_t)(m_maxDiskSpace / maxFileCount);
+        m_maxFileSize = (uint32_t)(availableSpace / maxFileCount);
     }
     else
     {
-        m_maxFileSize = maxFileSize;
+        m_maxFileSize = options.maxFileSize;
     }
 
-    m_maxFileSize = _MIN(m_maxFileSize, maxFileSize);
+    m_maxFileSize = _MIN(m_maxFileSize, options.maxFileSize);
 
     // create root dir
-    _MKDIR(m_directory.c_str());
+    _MKDIR(m_rootDirectory.c_str());
 
-    if (useSubFolderTimestamp)
+    if (options.useSubFolderTimestamp || options.subDirectory.size()>0)
     {
         // create time stamp dir
-        m_directory = directory + "/" + m_timeStamp;
+        m_directory = m_rootDirectory + "/" + m_timeStamp;
         _MKDIR(m_directory.c_str());
 
-        if (!subDirectory.empty())
+        if (!options.subDirectory.empty())
         {
             // create sub dir
-            m_directory += "/" + subDirectory;
+            m_directory += "/" + options.subDirectory;
             _MKDIR(m_directory.c_str());
         }
     }
 
     // create empty stats file to track timestamps
-    string str = m_directory + (subDirectory.empty() ? "" : "/" + subDirectory) + "/stats.txt";
+    string str = m_directory + (options.subDirectory.empty() ? "" : "/" + options.subDirectory) + STATS_ALL_FILENAME;
     cISLogFileBase *statsFile = CreateISLogFile(str, "w");
     CloseISLogFile(statsFile);
 
@@ -176,6 +234,29 @@ bool cISLogger::InitSaveCommon(eLogType logType, const string &directory, const 
     return ISFileManager::PathIsDir(m_directory);
 }
 
+[[deprecated("Not recommended for future development.")]]
+bool cISLogger::InitSave(eLogType logType, const string &directory, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+{
+    sSaveOptions options;
+    options.logType                 = logType;
+    options.driveUsageLimitPercent  = driveUsageLimitPercent;
+    options.maxFileSize             = maxFileSize;
+    options.useSubFolderTimestamp   = useSubFolderTimestamp;
+    return InitSave(directory, options);
+}
+
+[[deprecated("Not recommended for future development.")]]
+bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float driveUsageLimitPercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
+{
+    sSaveOptions options;
+    options.logType                 = logType;
+    options.driveUsageLimitPercent  = driveUsageLimitPercent;
+    options.maxFileSize             = maxFileSize;
+    options.useSubFolderTimestamp   = useSubFolderTimestamp;
+    options.timeStamp               = timeStamp;
+    options.subDirectory            = subDirectory;
+    return InitSave(directory, options);
+}
 
 string cISLogger::CreateCurrentTimestamp()
 {
@@ -202,63 +283,40 @@ string cISLogger::CreateCurrentTimestamp()
     return string(buf);
 }
 
+std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice* device) {
+    if (!device)
+        return nullptr;
 
-bool cISLogger::InitSave(eLogType logType, const string &directory, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
-{
-    m_timeStamp = CreateCurrentTimestamp();
-    return InitSaveCommon(logType, directory, g_emptyString, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
-}
-
-
-bool cISLogger::InitSaveTimestamp(const string &timeStamp, const string &directory, const string &subDirectory, eLogType logType, float maxDiskSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp)
-{
-    if (timeStamp.length() == 0)
+    if (!device->devLogger)
     {
-        m_timeStamp = CreateCurrentTimestamp();
-    }
-    else
-    {
-        // Only use first 15 characters for the timestamp
-        // m_timeStamp = timeStamp.substr(0, IS_LOG_TIMESTAMP_LENGTH);
-        m_timeStamp = timeStamp;
-    }
-
-    return InitSaveCommon(logType, directory, subDirectory, maxDiskSpacePercent, maxFileSize, useSubFolderTimestamp);
-}
-
-
-std::shared_ptr<cDeviceLog> cISLogger::registerDevice(ISDevice& device) {
-    if (device.devLogger.get() == nullptr) {
-        switch (m_logType) {
+        switch (m_logType)
+        {
             default:
             case LOGTYPE_DAT:
-                device.devLogger = make_shared<cDeviceLogSerial>(&device);
+                device->devLogger = make_shared<cDeviceLogSerial>(device);
                 break;
             case LOGTYPE_RAW:
-                device.devLogger = make_shared<cDeviceLogRaw>(&device);
+                device->devLogger = make_shared<cDeviceLogRaw>(device);
                 break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-            case LOGTYPE_SDAT:
-                device.devLogger = make_shared<cDeviceLogSorted>(&device);
-                break;
             case LOGTYPE_CSV:
-                device.devLogger = make_shared<cDeviceLogCSV>(&device);
+                device->devLogger = make_shared<cDeviceLogCSV>(device);
                 break;
             case LOGTYPE_JSON:
-                device.devLogger = make_shared<cDeviceLogJSON>(&device);
+                device->devLogger = make_shared<cDeviceLogJSON>(device);
                 break;
             case LOGTYPE_KML:
-                device.devLogger = make_shared<cDeviceLogKML>(&device);
+                device->devLogger = make_shared<cDeviceLogKML>(device);
                 break;
 #endif
         }
     }
-    device.devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
-    m_devices[device.devInfo.serialNumber] = device.devLogger;
+    device->devLogger->InitDeviceForWriting(m_timeStamp, m_directory, m_maxDiskSpace, m_maxFileSize);
+    m_devices[device->devInfo.serialNumber] = device->devLogger;
+    setPortLogger(device->port, logPortData, (void*)this);
 
-    return device.devLogger;
+    return device->devLogger;
 }
-
 
 std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t serialNo) {
     std::shared_ptr<cDeviceLog> deviceLog;
@@ -268,7 +326,6 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
         case LOGTYPE_DAT:   deviceLog = make_shared<cDeviceLogSerial>(hdwId, serialNo);  break;
         case LOGTYPE_RAW:   deviceLog = make_shared<cDeviceLogRaw>(hdwId, serialNo);     break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-        case LOGTYPE_SDAT:  deviceLog = make_shared<cDeviceLogSorted>(hdwId, serialNo);  break;
         case LOGTYPE_CSV:   deviceLog = make_shared<cDeviceLogCSV>(hdwId, serialNo);     break;
         case LOGTYPE_JSON:  deviceLog = make_shared<cDeviceLogJSON>(hdwId, serialNo);    break;
         case LOGTYPE_KML:   deviceLog = make_shared<cDeviceLogKML>(hdwId, serialNo);     break;
@@ -280,21 +337,19 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     return deviceLog;
 }
 
-
-bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
+bool cISLogger::InitDevicesForWriting(std::vector<ISDevice*>& devices)
 {
     // Remove all devices
     Cleanup();
 
     // Add new devices
     {
-#if !PLATFORM_IS_EMBEDDED
-        const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+        LOCK_MUTEX();
         // for (int i = 0; i < numDevices; i++)
-        for (auto& d : devices) {
+        for (auto d : devices) {
             registerDevice(d);
         }
+        UNLOCK_MUTEX();
     }
 
     //m_errorFile = CreateISLogFile((m_directory + "/errors.txt"), "w");
@@ -302,7 +357,6 @@ bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 
     return ISFileManager::PathIsDir(m_directory);
 }
-
 
 bool nextStreamDigit(stringstream &ss, string &str)
 {
@@ -319,7 +373,7 @@ bool nextStreamDigit(stringstream &ss, string &str)
     return true;
 }
 
-
+// Return true for valid filenames, only if they contain 1.) serial number, date, time, and index number, or 2.) only an index number.
 bool cISLogger::ParseFilename(string filename, int &serialNum, string &date, string &time, int &index)
 {
     serialNum = 0;
@@ -377,7 +431,6 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     default:
     case cISLogger::LOGTYPE_DAT: fileExtensionRegex = "\\.dat$"; break;
     case cISLogger::LOGTYPE_RAW: fileExtensionRegex = "\\.raw$"; break;
-    case cISLogger::LOGTYPE_SDAT: fileExtensionRegex = "\\.sdat$"; break;
     case cISLogger::LOGTYPE_CSV: fileExtensionRegex = "\\.csv$"; break;
     case cISLogger::LOGTYPE_JSON: fileExtensionRegex = "\\.json$"; break;
     case cISLogger::LOGTYPE_KML: return false; // fileExtensionRegex = "\\.kml$"; break; // kml read not supported
@@ -397,7 +450,10 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     for (size_t i = 0; i < files.size(); i++)
     {
         string name = ISFileManager::GetFileName(files[i].name);
-        ParseFilename(name, serialNum, date, time, index);
+        if (!ParseFilename(name, serialNum, date, time, index))
+        {   // Skip invalid filename
+            continue;
+        }
 
         if (serialNum >= 0)
         {
@@ -423,9 +479,7 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
 
                     // Add devices
                     {
-#if !PLATFORM_IS_EMBEDDED
-                        const std::lock_guard<std::mutex> lock(g_devices_mutex);
-#endif
+                        LOCK_MUTEX();
                         std::shared_ptr<cDeviceLog> deviceLog;
                         switch (logType)
                         {
@@ -433,13 +487,13 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
                         case cISLogger::LOGTYPE_DAT:    deviceLog = make_shared<cDeviceLogSerial>(0, serialNum); break;
                         case cISLogger::LOGTYPE_RAW:    deviceLog = make_shared<cDeviceLogRaw>(0, serialNum); break;
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-                        case cISLogger::LOGTYPE_SDAT:   deviceLog = make_shared<cDeviceLogSorted>(0, serialNum); break;
                         case cISLogger::LOGTYPE_CSV:    deviceLog = make_shared<cDeviceLogCSV>(0, serialNum); break;
                         case cISLogger::LOGTYPE_JSON:   deviceLog = make_shared<cDeviceLogJSON>(0, serialNum); break;
 #endif
                         }
                         deviceLog->SetupReadInfo(directory, serialNumber, m_timeStamp);
                         m_devices[serialNum] = deviceLog;
+                        UNLOCK_MUTEX();
                     }
 
 #if (LOG_DEBUG_GEN == 2)
@@ -457,7 +511,6 @@ bool cISLogger::LoadFromDirectory(const string &directory, eLogType logType, vec
     }
     return (m_devices.size() != 0);
 }
-
 
 bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dataHdr, const uint8_t *dataBuf)
 {
@@ -486,8 +539,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        double timestamp = cISDataMappings::GetTimestamp(dataHdr, dataBuf);
-        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -512,18 +564,21 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     return true;
 }
 
-
 bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, const uint8_t *dataBuf)
 {
     // This method is ONLY for LOGTYPE_RAW
-    if (!m_enabled || (m_logType != LOGTYPE_RAW) || (dataSize <= 0) || (dataBuf == NULL)) {
+    if (!m_enabled || (m_logType != LOGTYPE_RAW)) {
         return false;
     }
 
-    if (deviceLog == NULL)
+    if ((deviceLog == NULL) && !m_devices.empty()) {
+        deviceLog = m_devices.begin()->second;
+    }
+
+    if (deviceLog == NULL || dataSize <= 0 || dataBuf == NULL)
     {
         // if we don't have a logger, we probably should set one up...
-        m_errorFile.lprintf("Invalid device handle.\r\n");
+        m_errorFile.lprintf("Invalid device handle or NULL data.\r\n");
         return false;
     }
 
@@ -540,7 +595,6 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     return true;
 }
 
-
 p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
 {
     if (deviceLog == nullptr) {
@@ -556,20 +610,17 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        double timestamp = cISDataMappings::GetTimestamp(&data->hdr, data->buf);
-        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
+        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
     }
     return data;
 }
-
 
 p_data_buf_t *cISLogger::ReadData(size_t devIndex) {
     if (devIndex >= m_devices.size())
         return nullptr;
 
-    return ReadData(m_devices[devIndex]);
+    return ReadData(DeviceLogs()[devIndex]);
 }
-
 
 p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 {
@@ -579,6 +630,10 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
         if (data == NULL)
         {
             ++devIndex;
+            if (devIndex >= m_devices.size()) {
+                devIndex = 0;
+                return NULL;
+            }
         }
         else
         {
@@ -588,19 +643,67 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
     return NULL;
 }
 
+packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, std::shared_ptr<cDeviceLog> deviceLog)
+{
+    if (deviceLog == nullptr) {
+        return NULL;
+    }
+
+    packet_t *pkt = deviceLog->ReadPacket(ptype);
+    if (ptype == _PTYPE_PARSE_ERROR)
+    {
+        m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)pkt->dataHdr.id, (unsigned long)pkt->dataHdr.offset, (unsigned long)pkt->dataHdr.size);
+        m_logStats.LogError(&pkt->dataHdr);
+    }
+    if (pkt != NULL)
+    {
+        double timestamp = cISDataMappings::Timestamp(&pkt->dataHdr, pkt->data.ptr);
+        m_logStats.LogData(ptype, pkt->dataHdr.id, timestamp);
+    }
+    return pkt;
+}
+
+packet_t *cISLogger::ReadPacket(protocol_type_t& ptype, size_t devIndex) {
+    if (devIndex >= m_devices.size())
+        return nullptr;
+
+    return ReadPacket(ptype, DeviceLogs()[devIndex]);
+}
+
+packet_t* cISLogger::ReadNextPacket(protocol_type_t& ptype, size_t& devIndex)
+{
+    while (devIndex < m_devices.size())
+    {
+        packet_t *pkt = ReadPacket(ptype, devIndex);
+        if (pkt == NULL)
+        {
+            ++devIndex;
+            if (devIndex >= m_devices.size())
+                devIndex = 0;
+        }
+        else
+        {
+            return pkt;
+        }
+    }
+    return NULL;
+}
+
 
 void cISLogger::CloseAllFiles()
 {
+    // PrintStatistics();
+    PrintIsCommStatus();
+
     for (auto it : m_devices)
     {
         if (it.second != nullptr)
             it.second->CloseAllFiles();
     }
 
-    m_logStats.WriteToFile(m_directory + "/stats.txt");
+    m_logStats.WriteToFile(m_directory + STATS_ALL_FILENAME);
     m_errorFile.close();
 }
-
 
 void cISLogger::FlushToFile()
 {
@@ -610,7 +713,6 @@ void cISLogger::FlushToFile()
     }
 }
 
-
 void cISLogger::OpenWithSystemApp()
 {
     for (auto it : m_devices)
@@ -618,7 +720,6 @@ void cISLogger::OpenWithSystemApp()
         it.second->OpenWithSystemApp();
     }
 }
-
 
 void cISLogger::ShowParseErrors(bool show)
 {
@@ -629,12 +730,10 @@ void cISLogger::ShowParseErrors(bool show)
     m_showParseErrors = show;
 }
 
-
 uint64_t cISLogger::LogSize(uint32_t devSerialNo)
 {
     return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() : -1;
 }
-
 
 uint64_t cISLogger::LogSizeAll()
 {
@@ -646,24 +745,20 @@ uint64_t cISLogger::LogSizeAll()
     return size;
 }
 
-
 float cISLogger::LogSizeAllMB()
 {
     return LogSizeAll() * 0.000001f;
 }
-
 
 float cISLogger::LogSizeMB(uint32_t devSerialNo)
 {
     return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0;
 }
 
-
 float cISLogger::FileSizeMB(uint32_t devSerialNo)
 {
     return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0;
 }
-
 
 uint32_t cISLogger::FileCount(uint32_t devSerialNo)
 {
@@ -712,35 +807,30 @@ const dev_info_t *cISLogger::DeviceInfo(unsigned int device)
 int g_copyReadCount;
 int g_copyReadDid;
 
-/**
- * FIXME:  Not sure what to do here... this seems to be making a copy of a cISLogger instance, but I'm not sure why...
- * @param log
- * @param timestamp
- * @param outputDir
- * @param logType
- * @param maxLogSpacePercent
- * @param maxFileSize
- * @param useSubFolderTimestamp
- * @param enableCsvIns2ToIns1Conversion
- * @return
- */
-bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, float maxLogSpacePercent, uint32_t maxFileSize, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
+bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float driveUsageLimitPercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
     m_logStats.Clear();
-    if (!InitSaveTimestamp(timestamp, outputDir, g_emptyString, logType, maxLogSpacePercent, maxFileSize, useSubFolderTimestamp))
+
+    sSaveOptions options;
+    options.logType                 = logType;
+    options.driveUsageLimitPercent  = driveUsageLimitPercent;
+    options.maxFileSize             = maxFileSize;
+    options.useSubFolderTimestamp   = useSubFolderTimestamp;
+    options.timeStamp               = timestamp;
+    if (!InitSave(outputDir, options))
     {
         return false;
     }
 
     is_comm_instance_t comm;
     uint8_t commBuf[PKT_BUF_SIZE];
-    is_comm_init(&comm, commBuf, sizeof(commBuf));
+    is_comm_init(&comm, commBuf, sizeof(commBuf), NULL);
 
     EnableLogging(true);
     p_data_buf_t *data = NULL;
     for ( auto& srcDev : log.DeviceLogs() )
     {
-        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice(*(srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
+        auto dstDev = ( srcDev->Device() != nullptr ? registerDevice((srcDev->Device())) : registerDevice(0, srcDev->SerialNumber()) );
 
 #if LOG_DEBUG_GEN == 2
         // Don't print status here
@@ -756,7 +846,7 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
         {
 
 #if LOG_DEBUG_PRINT_READ
-            double timestamp = cISDataMappings::GetTimestamp(&(data->hdr), data->buf);
+            double timestamp = cISDataMappings::Timestamp(&(data->hdr), data->buf);
             printf("read: %d DID: %3d time: %.4lf\n", g_copyReadCount, data->hdr.id, timestamp);
             g_copyReadDid = data->hdr.id;
 #endif
@@ -764,11 +854,15 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
 #if LOG_DEBUG_GEN == 2
             PrintProgress();
 #endif
-
             // CSV special cases 
             if (logType == eLogType::LOGTYPE_CSV && enableCsvIns2ToIns1Conversion)
             {
-                if (data->hdr.id == DID_INS_2)
+                static bool hasIns1 = false;
+                if (data->hdr.id == DID_INS_1)
+                {   // Indicate log contains DID_INS_1 so we don't need to convert from DID_INS_2
+                    hasIns1 = true;
+                }
+                if (data->hdr.id == DID_INS_2 && !hasIns1)
                 {	// Convert INS2 to INS1 when creating .csv logs
                     ins_1_t ins1;
                     ins_2_t ins2;
@@ -864,10 +958,72 @@ void cISLogger::PrintProgress()
 #endif
 }
 
+void cISLogger::PrintStatistics()
+{
+    for (auto it : m_devices)
+    {   // Print message statistics
+        std::shared_ptr<cDeviceLog> dev = it.second;
+        if (dev==NULL)
+            continue;
+        cout << endl;
+        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
+        cout << dev->LogStatsString();
+    }
+
+    PrintIsCommStatus();
+}
+
+void cISLogger::PrintIsCommStatus()
+{
+    for (auto it : m_devices)
+    {   // Print errors
+        std::shared_ptr<cDeviceLog> dev = it.second;
+        if (dev==NULL)
+            continue;
+        cout << endl;
+        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
+        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
+    }
+}
+
+void cISLogger::PrintLogDiskUsage()
+{
+    float logSize = LogSizeAll();
+    if (logSize < 0.5e6f)
+        printf("\nLogging %5.1f KB to: %s", logSize * 1.0e-3f, LogDirectory().c_str());
+    else
+        printf("\nLogging %5.2f MB to: %s", logSize * 1.0e-6f, LogDirectory().c_str());
+
+    // Disk usage
+    if (MaxDiskSpaceMB() > 0.0f)
+    {   // Limit enabled
+        float percentUsed = 100.0f * UsedDiskSpaceMB() / MaxDiskSpaceMB();
+        printf("      %s disk usage/limit: %.0f/%.0f MB (%.0f%%) ", RootDirectory().c_str(), UsedDiskSpaceMB(), MaxDiskSpaceMB(), percentUsed);
+        if (percentUsed > 98)
+        {
+            printf("...deleting old logs ");
+        }
+    }
+    else
+    {   // Limit disabled
+        printf(",    %s disk usage: %.0f MB ", RootDirectory().c_str(), UsedDiskSpaceMB());
+    }
+    printf("\n");
+}
+
 std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {
     std::vector<std::shared_ptr<cDeviceLog>> out;
-    for (auto it : m_devices) {
-        out.push_back(it.second);
+    for (auto& [serialNo, devLog] : m_devices) {
+        out.push_back(devLog);
     }
     return out;
 }
+
+std::shared_ptr<cDeviceLog> cISLogger::getDeviceLogByPort(port_handle_t port) {
+    for (auto& [serialNo, devLog] : m_devices) {
+        if (devLog->getDevice() && devLog->getDevice()->port == port)
+            return devLog;
+    }
+    return nullptr;
+}
+

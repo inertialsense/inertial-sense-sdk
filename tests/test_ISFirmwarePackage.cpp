@@ -146,7 +146,7 @@ TEST(ISFirmwarePackage, packages__extract_archive) {
 // temporary package, but that's not going to happen today.
 TEST(ISFirmwarePackage, parse_package) {
     dev_info_t devInfo = {};
-    ISFirmwareUpdater* updater = new ISFirmwareUpdater(0, "/dev/ttyACM0", &devInfo);
+    ISFirmwareUpdater* updater = new ISFirmwareUpdater(0, &devInfo);
     updater->openFirmwarePackage("/home/kylemallory/is-zephyr/is-gpx/firmware.pkg/IS_firmware_2.0.0.11.fpk");
     do {
         updater->fwUpdate_step();

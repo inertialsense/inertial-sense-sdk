@@ -41,7 +41,7 @@ using namespace std;
 int cDataJSON::WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix)
 {
 	// Verify file pointer
-	if (pFile == NULLPTR || cISDataMappings::GetSize(dataHdr.id) == 0)
+	if (pFile == NULLPTR || cISDataMappings::DataSize(dataHdr.id) == 0)
 	{
 		return 0;
 	}
@@ -72,12 +72,12 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
     }
     uint32_t id = strtoul(s.c_str() + pos + 5, NULLPTR, 10);
     hdr.id = id;
-	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(hdr.id);
+	const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfoMap(hdr.id);
     if (offsetMap == NULLPTR)
 	{
 		return false;
 	}
-    hdr.size = cISDataMappings::GetSize(hdr.id);
+    hdr.size = cISDataMappings::DataSize(hdr.id);
 	char c;
 	char pc = 0;
 	map_name_to_info_t::const_iterator offset;
@@ -118,7 +118,7 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 			{
 				offset = offsetMap->find(fieldName);
                 string json = s.substr(fieldStart, i - fieldStart);
-                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, 10, true))
+                if (offset != offsetMap->end() && !cISDataMappings::StringToData(json.c_str(), (int)json.size(), &hdr, buf, offset->second, true))
 				{
 					return false;
 				}
@@ -137,7 +137,7 @@ bool cDataJSON::StringJSONToData(string& s, p_data_hdr_t& hdr, uint8_t* buf, uin
 bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, string& json)
 {
     json.clear();
-	const map_name_to_info_t* offsetMap = cISDataMappings::GetMapInfo(hdr.id);
+	const map_name_to_info_t* offsetMap = cISDataMappings::NameToInfoMap(hdr.id);
 	if (offsetMap == NULLPTR)
 	{
 		return false;
@@ -145,7 +145,7 @@ bool cDataJSON::DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, st
 	char tmp[IS_DATA_MAPPING_MAX_STRING_LENGTH];
 	const uint8_t* bufPtr = buf;
 	uint8_t tmpBuffer[MAX_DATASET_SIZE];
-	uint32_t size = cISDataMappings::GetSize(hdr.id);
+	uint32_t size = cISDataMappings::DataSize(hdr.id);
 	if (size > hdr.size)
 	{
 		// copy into temp buffer, zeroing out bytes that are not part of this packet

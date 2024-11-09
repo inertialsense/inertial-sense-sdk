@@ -26,7 +26,7 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, m_port->port, 100) == 0)
+    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -67,10 +67,10 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);   // TODO: Should we be using callbacks??  Probably
     int messageSize, n, i;
 
-    // clear the Rx serial buffer
+    // clear the Rx serial buffer. is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
     n = is_comm_free(&comm);
 
     // In testing it was found that @ 330kb/s The buffer would take 10-11
@@ -99,7 +99,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
     }
 
     protocol_type_t ptype;
-    n = is_comm_free(&comm);
+    n = is_comm_free(&comm);        // is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.start.
     uint32_t valid_signatures = 0;
     if ((n = serialPortReadTimeout(m_port, comm.rxBuf.start, n, 200)))
     {
@@ -193,6 +193,7 @@ is_operation_result cISBootloaderAPP::reboot_down(uint8_t major, char minor, boo
         else serialPortFlush(m_port);
     }
 
+    SLEEP_MS(5000); // we need about 5 seconds for the targeted device to reboot back into the IS-bootloader mode
     return IS_OP_OK;
 }
 
@@ -203,7 +204,7 @@ uint32_t cISBootloaderAPP::get_device_info()
     // Get DID_DEV_INFO from the IMX.
     is_comm_instance_t comm;
     uint8_t buffer[2048];
-    is_comm_init(&comm, buffer, sizeof(buffer));
+    is_comm_init(&comm, buffer, sizeof(buffer), NULL);   // TODO: Should we be using callbacks??  Probably -- more likely, we should be using the m_port COMM buffer/callbacks
     int messageSize;
    
     for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.

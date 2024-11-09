@@ -15,6 +15,10 @@
 #include "ISDevice.h"
 #include "ISFileManager.h"
 #include "ISUtilities.h"
+#include "util/md5.h"
+#include "ISDFUFirmwareUpdater.h"
+#include "ISBootloaderBase.h"
+#include "ISUtilities.h"
 
 #include "miniz.h"
 
@@ -32,6 +36,53 @@ extern "C"
 }
 
 class ISFirmwareUpdater : public fwUpdate::FirmwareUpdateHost {
+private:
+    std::istream *srcFile = nullptr;    //! the file that we are currently sending to a remote device, or nullptr if none
+    uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
+    int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
+
+    int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
+    uint16_t attemptInterval = 350;     //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
+
+    uint16_t last_resent_chunk = 0;     //! the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
+    uint16_t resent_chunkid_count = 0;  //! the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
+    uint32_t resent_chunkid_time = 0;   //! time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
+
+    uint16_t chunkDelay = 15;           //! provides a throttling mechanism
+    uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
+    uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
+    uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
+
+    float percentComplete = 0.f;        //! the current percent complete as reported by the device
+
+    fwUpdate::pfnProgressCb pfnUploadProgress_cb = nullptr;
+    fwUpdate::pfnProgressCb pfnVerifyProgress_cb = nullptr;
+    fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
+    std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
+
+    std::vector<std::string> commands;
+    std::string activeStep;             //! the name of the currently executing step name, from the manifest when available
+    std::string activeCommand;          //! the name (without parameters) of the currently executing command
+    std::string failLabel;              //! a label to jump to, when an error occurs
+    bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
+    int slotNum = 0, chunkSize = 512, progressRate = 250;
+    bool forceUpdate = false;
+    uint32_t pingInterval = 1000;       //! delay between attempts to communicate with a target device
+    uint32_t pingNextRetry = 0;         //! time for next ping
+    uint32_t pingTimeout = 0;           //! time when the ping operation will timeout if no response before then
+    uint32_t pauseUntil = 0;            //! delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
+    std::string filename;
+    fwUpdate::target_t target;
+
+    mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
+    //dfu::ISDFUFirmwareUpdater *dfuUpdater = nullptr;
+    fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
+    dev_info_t remoteDevInfo = {};
+
+    std::vector<std::tuple<std::string, std::string, std::string>> stepErrors;
+
+    void runCommand(std::string cmd);
+
 public:
 
     enum pkg_error_e {
@@ -50,14 +101,18 @@ public:
     };
 
     // const ISDevice& device;
-    ISDevice &device;                       //! a reference to the ISDevice associated with this updater (the root device which the SDK uses to communicate with the target device).
+    port_handle_t port = 0;                 //! a handle to the comm port which we use to talk to the device
+    const dev_info_t *devInfo = nullptr;    //! the root device info connected on this port
     dev_info_t *target_devInfo = nullptr;   //! the target's device info, if any
 
     /**
      * Constructor to initiate and manage updating a firmware image of a device connected on the specified port
-     * @param device ISDevice reference to the root device that we are connecting to to manage the update (port info, etc).
+     * @param portHandle handle to the port (typically serial) to which the device is connected
+     * @param portName a named reference to the connected port handle (ie, COM1 or /dev/ttyACM0)
      */
-    ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), device(device) { };
+    ISFirmwareUpdater(port_handle_t port, const dev_info_t *devInfo) : FirmwareUpdateHost(), port(port), devInfo(devInfo) { };
+
+    ISFirmwareUpdater(ISDevice& device) : FirmwareUpdateHost(), port(device.port), devInfo(&device.devInfo) { };
 
     ~ISFirmwareUpdater() override {};
 
@@ -72,6 +127,10 @@ public:
     bool isWaitingResponse() { return requestPending; }
 
     bool hasPendingCommands() { return !commands.empty(); }
+
+    bool hasErrors() { return !stepErrors.empty(); }
+
+    std::vector<std::tuple<std::string, std::string, std::string>> getStepErrors() { return stepErrors; }
 
     int getPendingCommands() { return commands.size(); }
     int getPendingUploads() {
@@ -109,7 +168,7 @@ public:
      * @param progressRate the period (ms) in which progress updates are sent back to this class to report back to the UI, etc.
      * @return return true if the ISDFUFirmwareUpdater was instantiated and validations passed indicating that the device is ready to start receiving image data.
      */
-    // fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
+    fwUpdate::update_status_e initializeDFUUpdate(libusb_device *usbDevice, fwUpdate::target_t target, uint32_t deviceId, const std::string &filename, int flags = 0, int progressRate = 500);
 
     fwUpdate::update_status_e initializeUpdate(fwUpdate::target_t _target, const std::string &filename, int slot = 0, int flags = 0, bool forceUpdate = false, int chunkSize = 2048, int progressRate = 200);
 
@@ -192,50 +251,6 @@ public:
     int cmd_Upload(std::vector<std::string> &args);
 
     int cmd_Reset(std::vector<std::string> &args);
-
-private:
-    std::istream *srcFile = nullptr;    //! the file that we are currently sending to a remote device, or nullptr if none
-    uint32_t nextStartAttempt = 0;      //! the number of millis (uptime?) that we will next attempt to start an upgrade
-    int8_t startAttempts = 0;           //! the number of attempts that have been made to request that an update be started
-
-    int8_t maxAttempts = 5;             //! the maximum number of attempts that will be made before we give up.
-    uint16_t attemptInterval = 350;     //! the number of millis between attempts - default is to try every quarter-second, for 5 seconds
-
-    uint16_t last_resent_chunk = 0;     //! the chunk id of the last/previous received req_resend  (are we getting multiple requests for the same chunk?)
-    uint16_t resent_chunkid_count = 0;  //! the number of consecutive req_resend for the same chunk, reset if the current resend request is different than last_resent_chunk
-    uint32_t resent_chunkid_time = 0;   //! time (ms uptime) of the first failed write for the given chunk id (also reset if the resend request's chunk is different)
-
-    uint16_t chunkDelay = 15;           //! provides a throttling mechanism
-    uint16_t nextChunkDelay = 250;      //! provides a throttling mechanism
-    uint32_t nextChunkSend = 0;         //! don't send the next chunk until this time has expired.
-    uint32_t updateStartTime = 0;       //! the system time when the firmware was started (for performance reporting)
-
-    float percentComplete = 0.f;        //! the current percent complete as reported by the device
-
-    fwUpdate::pfnProgressCb pfnUploadProgress_cb = nullptr;
-    fwUpdate::pfnProgressCb pfnVerifyProgress_cb = nullptr;
-    fwUpdate::pfnStatusCb pfnStatus_cb = nullptr;
-
-    std::deque<uint8_t> toHost;           //! a "data stream" that contains the raw-byte responses from the local FirmwareUpdateDevice (to the host)
-
-    std::vector<std::string> commands;
-    std::string activeCommand;          //! the name (without parameters) of the currently executing command
-    std::string failLabel;              //! a label to jump to, when an error occurs
-    bool requestPending = false;        //! true is an update has been requested, but we're still waiting on a response.
-    int slotNum = 0, chunkSize = 512, progressRate = 250;
-    bool forceUpdate = false;
-    uint32_t pingInterval = 1000;       //! delay between attempts to communicate with a target device
-    uint32_t pingNextRetry = 0;         //! time for next ping
-    uint32_t pingTimeout = 0;           //! time when the ping operation will timeout if no response before then
-    uint32_t pauseUntil = 0;            //! delays next command execution until this time (but still allows the fwUpdate to step/receive responses).
-    std::string filename;
-    fwUpdate::target_t target;
-
-    mz_zip_archive *zip_archive = nullptr; // is NOT null IF we are updating from a firmware package (zip archive).
-    fwUpdate::FirmwareUpdateDevice *deviceUpdater = nullptr;
-    dev_info_t remoteDevInfo = {};
-
-    void runCommand(std::string cmd);
 
 };
 #endif //SDK_ISFIRMWAREUPDATER_H

@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(IS-SDK_unit-tests)
 
@@ -36,12 +36,18 @@ add_executable(${PROJECT_NAME}
     runtime/device_runtime_tests.cpp
 
     # test_ISLogger.cpp
-    # test_protocol_nmea.cpp
-    # test_time_conversion.cpp
-    
     # test_data_utils.cpp
+
+    # test_protocol_nmea.cpp
+    # test_time_conversion.cpp    
     # test_runtime_tests.cpp
+    # test_data_utils.cpp
 )
 
 # Link InertialSenseSDK static library to the executable
 target_link_libraries(${PROJECT_NAME} gtest_main InertialSenseSDK ${GTEST_LIBRARIES} udev pthread m)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY C_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+

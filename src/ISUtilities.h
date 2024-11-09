@@ -47,7 +47,7 @@ std::string base64Decode(const std::string& encoded_string);
 * @param result cleared and then filled with split strings
 * @return the number of items in result
 */
-size_t splitString(const std::string& str, const char delimiter, std::vector<std::string>& result);
+size_t splitString(const std::string str, const char delimiter, std::vector<std::string>& result);
 
 /**
 * Join vector of strings with character
@@ -152,9 +152,12 @@ extern "C" {
     #endif
 #endif
 
+double current_timeSecD();
 unsigned int current_timeSec();
 unsigned int current_timeMs();
 uint64_t current_timeUs();
+
+uint32_t current_uptimeMs();
 
 uint64_t timerUsStart();
 uint64_t timerUsEnd(uint64_t start);

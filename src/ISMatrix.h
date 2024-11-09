@@ -25,17 +25,29 @@ extern "C" {
 //_____ M A C R O S ________________________________________________________
 
 // Magnitude Squared or Dot Product of vector w/ itself
-#define dot_Vec2(v) ((v)[0]*(v)[0] + (v)[1]*(v)[1])
-#define dot_Vec3(v) ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2])
-#define dot_Vec4(v) ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2] + (v)[3]*(v)[3])
+#if 0 	// Inline functions
+#define dot_Vec2(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1])
+#define dot_Vec3(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2])
+#define dot_Vec4(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2] + (v)[3]*(v)[3])
+#define dot_Vec2d(v)    dot_Vec2(v)
+#define dot_Vec3d(v)    dot_Vec3(v)
+#define dot_Vec4d(v)    dot_Vec4(v)
+#else	// Normal functions (less instruction space)
+#define dot_Vec2(v)     dot_Vec2_Vec2(v,v)
+#define dot_Vec3(v)     dot_Vec3_Vec3(v,v)
+#define dot_Vec4(v)     dot_Vec4_Vec4(v,v)
+#define dot_Vec2d(v)    dot_Vec2d_Vec2d(v,v)
+#define dot_Vec3d(v)    dot_Vec3d_Vec3d(v,v)
+#define dot_Vec4d(v)    dot_Vec4d_Vec4d(v,v)
+#endif
 
 // Magnitude or Norm 
-#define mag_Vec2(v) (_SQRT(dot_Vec2(v)))
-#define mag_Vec3(v) (_SQRT(dot_Vec3(v)))
-#define mag_Vec4(v) (_SQRT(dot_Vec4(v)))
-#define mag_Vec2d(v) (sqrt(dot_Vec2(v)))
-#define mag_Vec3d(v) (sqrt(dot_Vec3(v)))
-#define mag_Vec4d(v) (sqrt(dot_Vec4(v)))
+#define mag_Vec2(v)     (_SQRT(dot_Vec2(v)))
+#define mag_Vec3(v)     (_SQRT(dot_Vec3(v)))
+#define mag_Vec4(v)     (_SQRT(dot_Vec4(v)))
+#define mag_Vec2d(v)    (sqrt(dot_Vec2d(v)))
+#define mag_Vec3d(v)    (sqrt(dot_Vec3d(v)))
+#define mag_Vec4d(v)    (sqrt(dot_Vec4d(v)))
 
 #define EPSF32 (1.0e-16f)  // Smallest number for safe division
 #define EPSF64 (1.0e-16l)  // Smallest number for safe division
@@ -256,7 +268,9 @@ void abs_Vec4d( ixVector4d result, const ixVector4d v );
 f_t dot_Vec2_Vec2(const ixVector2 v1, const ixVector2 v2 );
 f_t dot_Vec3_Vec3(const ixVector3 v1, const ixVector3 v2 );
 f_t dot_Vec4_Vec4(const ixVector4 v1, const ixVector4 v2 );
+double dot_Vec2d_Vec2d(const ixVector2d v1, const ixVector2d v2 );
 double dot_Vec3d_Vec3d(const ixVector3d v1, const ixVector3d v2 );
+double dot_Vec4d_Vec4d(const ixVector4d v1, const ixVector4d v2 );
 
 /* Cross product
  * result(3) = v1(3) x v2(3)

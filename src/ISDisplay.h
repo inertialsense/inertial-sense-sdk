@@ -20,8 +20,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "com_manager.h"
 #include "data_sets.h"
+
 #include "ISConstants.h"
 #include "ISDataMappings.h"
+#include "ISDevice.h"
+
+#include "serialPortPlatform.h"
 
 #if !PLATFORM_IS_WINDOWS
 
@@ -42,15 +46,17 @@ public:
 		map_name_to_info_t::const_iterator 	mapInfoSelection;
 		map_name_to_info_t::const_iterator 	mapInfoBegin;
 		map_name_to_info_t::const_iterator 	mapInfoEnd;
+		uint32_t		selectionArrayIdx;
 
+		bool            readOnlyMode;
 		bool            editEnabled;
 		std::string     field;
 		uint32_t        did;
 		bool            uploadNeeded;
 		uint8_t 		data[MAX_DATASET_SIZE];
 		data_info_t 	info;
-		uint8_t			pDataBuffer[MAX_DATASET_SIZE];
-		p_data_t		pData = {{},pDataBuffer};
+		uint8_t			pDataBuf[MAX_DATASET_SIZE];
+		p_data_t		pData = {{}, pDataBuf};
 	} edit_data_t;
 
 	enum eDisplayMode
@@ -75,6 +81,7 @@ public:
 	void Home(void);
 	void GoToRow(int y);
 	void GoToColumnAndRow(int x, int y);
+	std::string Header();
 	std::string Hello();
 	std::string Connected();
 	std::string Replay(double speed=1.0);
@@ -88,8 +95,10 @@ public:
 	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
+	void ProcessData(p_data_buf_t* data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
+	static std::string PrintIsCommStatus(is_comm_instance_t *comm);
 	void DataToStats(const p_data_t* data);
 	void PrintStats();
 	std::string DataToString(const p_data_t* data);
@@ -130,22 +139,28 @@ public:
 	std::string DatasetToString(const p_data_t* data);
 
 	void GetKeyboardInput();
-	void SelectEditDataset(int did);
+	void SelectEditDataset(int did, bool readOnlyMode=false);
 	void VarSelectIncrement();
 	void VarSelectDecrement();
 	void StopEditing();
 	bool UploadNeeded() { bool uploadNeeded = m_editData.uploadNeeded; m_editData.uploadNeeded = false; return uploadNeeded; };
 	edit_data_t *EditData() { return &m_editData; }
 	void setOutputOnceDid(int did) { m_outputOnceDid = did; m_interactiveMode = m_outputOnceDid == 0; }
+    void setDevice(ISDevice* device) { m_device = device; }
+	// void SetSerialPort(serial_port_t* port) { m_port = port; }
+	// void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
 private:
-	std::string VectortoString();
+	std::string VectorToString();
 	void DataToVector(const p_data_t* data);
 
 	bool m_nonblockingkeyboard = false;
 	std::vector<std::string> m_didMsgs;
 	eDisplayMode m_displayMode = DMODE_QUIET;
-	uint16_t m_rxCount = 0;
+	uint32_t m_startMs = 0;
+    ISDevice* m_device = NULL;
+	// serial_port_t* m_port = NULL;
+	// is_comm_instance_t* m_comm = NULL;
 
 	bool m_enableReplay = false;
 	double m_replaySpeedX = 1.0;

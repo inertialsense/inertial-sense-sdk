@@ -30,6 +30,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <vector>
 #include <mutex>
 
+#include "serialPort.h"
 #include "ISUtilities.h"
 #include "ISBootloaderBase.h"
 
@@ -39,7 +40,43 @@ public:
     cISBootloaderThread() {};
     ~cISBootloaderThread() {};
 
-    typedef struct 
+    class thread_serial_t{
+    public:
+        void* thread;
+        serial_port_t serialPort;
+        ISBootloader::cISBootloaderBase* ctx;
+        bool done;
+        bool reuse_port;
+        bool force_isb;
+
+        thread_serial_t(const std::string& port_name, bool force_isb_update = false) {
+            // FIXME: This is pretty jank... and ridiculous.  I can do better!
+            port_handle_t port = (port_handle_t)&(serialPort);
+            serialPortInit(port, m_serial_threads.size(), PORT_TYPE__UART | PORT_TYPE__COMM);
+            serialPortPlatformInit(port);
+            serialPortSetPort(port, port_name.c_str());
+
+            ctx = NULL;
+            done = false;
+            force_isb = force_isb_update;
+        }
+        virtual ~thread_serial_t() {
+            serialPortClose((port_handle_t)&serialPort);
+            thread = NULL;
+            done = true;
+        }
+    };
+
+    class thread_libusb_t {
+    public:
+        void* thread;
+        libusb_device_handle* handle;
+        char uid[100];
+        ISBootloader::cISBootloaderBase* ctx;
+        bool done;
+    };
+
+    typedef struct
     {
         uint32_t sn;
         uint8_t major;
@@ -53,7 +90,7 @@ public:
         fwUpdate::pfnProgressCb                 uploadProgress,
         fwUpdate::pfnProgressCb                 verifyProgress,
         fwUpdate::pfnStatusCb                   infoProgress,
-        void						            (*waitAction)()
+        void                                    (*waitAction)()
     );
 
     static is_operation_result update(
@@ -64,27 +101,8 @@ public:
         fwUpdate::pfnProgressCb                 uploadProgress,
         fwUpdate::pfnProgressCb                 verifyProgress,
         fwUpdate::pfnStatusCb                   infoProgress,
-        void						            (*waitAction)()
+        void                                    (*waitAction)()
     );
-
-    typedef struct 
-    {
-        void* thread;
-        char serial_name[100];
-        ISBootloader::cISBootloaderBase* ctx;
-        bool done;
-        bool reuse_port;
-        bool force_isb;
-    } thread_serial_t;
-
-    typedef struct 
-    {
-        void* thread;
-        libusb_device_handle* handle;
-        char uid[100];
-        ISBootloader::cISBootloaderBase* ctx;
-        bool done;
-    } thread_libusb_t;
 
     static std::vector<ISBootloader::cISBootloaderBase*> ctx;
     static std::mutex m_ctx_mutex;

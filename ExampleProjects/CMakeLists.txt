@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21.0)
 
 project(ExampleProjects)
 
@@ -17,6 +17,8 @@ find_library(SDK_LIBRARY_PATH InertialSenseSDK PATHS ${IS_SDK_DIR})
 if(NOT SDK_LIBRARY_PATH AND NOT TARGET InertialSenseSDK)
     # InertialSenseSDK library not prebuilt and not already include in project.  Include in this project.
     add_subdirectory(${IS_SDK_DIR} InertialSenseSDK)
+else()
+    link_directories(${IS_SDK_DIR}/Build/Release)
 endif()
 
 if(WIN32)
@@ -29,8 +31,8 @@ add_subdirectory(Ascii)
 add_subdirectory(Bootloader)
 add_subdirectory(Communications)
 add_subdirectory(IS_firmwareUpdate_v2)
-add_subdirectory(ISLogger)
-add_subdirectory(ISLoggerSimple)
-add_subdirectory(LogReader)
+add_subdirectory(ISLogger_read)
+add_subdirectory(ISLogger_write)
+add_subdirectory(InertialSense_logger)
 add_subdirectory(NTRIP_rover)
 add_subdirectory(IS_NMEAProtocolCheckSum)

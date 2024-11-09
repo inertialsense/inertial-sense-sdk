@@ -11,22 +11,19 @@ set MSBUILD_OPTIONS=/maxcpucount:7 /p:MP=7 /t:Clean /p:Configuration=Release
 ::  Builds and Tests
 ::###############################################################################
 
-@REM Remove build directory
-rd /S /Q %~dp0\build 2> NUL
-
 call :clean_header "IS_SDK_lib"
-rd /S /Q %~dp0..\build 2> NUL
-rd /S /Q %~dp0..\out 2> NUL
+rd /S /Q %SDK_DIR%\build 2> NUL
+rd /S /Q %SDK_DIR%\out 2> NUL
 call :clean_footer
 
 call :clean_header "cltool"
-rd /S /Q %~dp0..\cltool\build 2> NUL
-rd /S /Q %~dp0..\cltool\out 2> NUL
+rd /S /Q %SDK_DIR%\cltool\build 2> NUL
+rd /S /Q %SDK_DIR%\cltool\out 2> NUL
 call :clean_footer
 
 call :clean_header "IS_SDK_Examples"
-rd /S /Q %~dp0..\ExampleProjects\build 2> NUL
-rd /S /Q %~dp0..\ExampleProjects\out 2> NUL
+rd /S /Q %SDK_DIR%\ExampleProjects\build 2> NUL
+rd /S /Q %SDK_DIR%\ExampleProjects\out 2> NUL
 call :clean_footer
 
 call :clean_header "LogInspector"

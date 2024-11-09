@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source "$(dirname "$(realpath $0)")/lib/python_venv.sh" # Load python virtual enviroment must be ran before pushd
 pushd "$(dirname "$(realpath $0)")" > /dev/null
 
 source ./lib/echo_color.sh
@@ -14,7 +15,7 @@ build_header "logInspector"
 ./build_log_inspector.sh
 build_footer $?
 
-pushd ../python/logInspector
+pushd ../python/inertialsense/logInspector
 python3 logInspectorInternal.py
 popd
 

@@ -1,6 +1,9 @@
 #ifndef PROTOCOL_NMEA_H_
 #define PROTOCOL_NMEA_H_
 
+#include <vector>
+#include <string>
+
 #include "data_sets.h"
 #include "time_conversion.h"
 
@@ -11,8 +14,6 @@
 #define NMEA_CMD_SOFTWARE_RESET                         "$SRST*06\r\n"
 #define NMEA_CMD_SIZE                                   10
 
-#define UINT32_MATCH(u1,u2)	((*(uint32_t*)(u1)) == (*(uint32_t*)(u2)))
-
 enum eNmeaProtocolVersion
 {
     NMEA_PROTOCOL_2P3 		= 0,	// <4.10
@@ -22,6 +23,10 @@ enum eNmeaProtocolVersion
 //////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////
+void nmea_setGsvFilter(int constellation, uint8_t filter);
+void nmea_setGsvFilter(uint8_t* filters);
+int nmea_getGsvFilter(int constellation);
+void nmea_getGsvFilter(uint8_t* filters);
 void nmea_enable_stream(uint32_t& bits, uint8_t* period, uint32_t nmeaId, uint8_t periodMultiple);
 void nmea_set_protocol_version(int protocol_version);
 void nmea_set_gnss_id(int gnssId);
@@ -39,8 +44,6 @@ char *ASCII_to_vec3d(double vec[], char *ptr);
 double ddmm2deg(double ddmm);
 void set_gpsPos_status_mask(uint32_t *status, uint32_t state, uint32_t mask);
 void nmea_GPSTimeToUTCTimeMsPrecision(char* a, int aSize, int &offset, gps_pos_t &pos);
-int getNmeaMsgId(const void* a, int aSize);
-int nmeaMsgIdToTalker(int msgId, void *str, int strSize);
 int ssnprintf(char buf[], int bufSize, const char *fmt, ...);
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,6 +69,12 @@ int nmea_gsv_gnss(char a[], const int aSize, gps_sat_t &gsat, gps_sig_t &gsig, u
 int nmea_gsv(char a[], const int aSize, gps_sat_t &gpsSat, gps_sig_t &gpsSig);
 int nmea_intel(char a[], const int aSize, dev_info_t &info, gps_pos_t &pos, gps_vel_t &vel);
 
+/**
+ * Converts NMEA message ID (eNmeaMsgIdInx) to talker string.
+ * Returns the talker string on success, or an an empty string on error
+*/
+std::string nmeaMsgIdToTalker(int msgId);
+
 //////////////////////////////////////////////////////////////////////////
 // NMEA to Binary
 //////////////////////////////////////////////////////////////////////////
@@ -76,8 +85,10 @@ int nmea_parse_ppimu(pimu_t &pimu, const char a[], const int aSize);
 int nmea_parse_pins1(ins_1_t &ins, const char a[], const int aSize);
 int nmea_parse_pins2(ins_2_t &ins, const char a[], const int aSize);
 int nmea_parse_pgpsp(gps_pos_t &gpsPos, gps_vel_t &gpsVel, const char a[], const int aSize);
-uint32_t nmea_parse_asce(int pHandle, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
-uint32_t nmea_parse_asce_grmci(int pHandle, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
+//uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, rmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce(port_handle_t port, const char a[], int aSize, std::vector<rmci_t*> rmci);
+//uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, grmci_t rmci[NUM_COM_PORTS]);
+uint32_t nmea_parse_asce_grmci(port_handle_t port, const char a[], int aSize, std::vector<grmci_t*> grmci);
 // NMEA standard messages
 int nmea_parse_gns(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);
 int nmea_parse_gga(const char a[], const int aSize, gps_pos_t &gpsPos, utc_time_t &utcTime, int utcWeekday, uint32_t statusFlags=0);

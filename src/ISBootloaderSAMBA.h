@@ -29,10 +29,10 @@ public:
         fwUpdate::pfnProgressCb upload_cb,
         fwUpdate::pfnProgressCb verify_cb,
         fwUpdate::pfnStatusCb info_cb,
-        serial_port_t* port
+        port_handle_t port
     ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
-        m_port = port;
+        m_port = (port_handle_t)port;
         m_device_type = ISBootloader::IS_DEV_TYPE_SAMBA;
     }
     

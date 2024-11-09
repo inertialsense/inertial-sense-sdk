@@ -9,6 +9,6 @@ echo_blue "==============================================="
 
 sudo apt install -y cmake unzip zip libyaml-cpp-dev libudev-dev
 
-source ~/.bashrc
+if [[ -e ~/.bashrc ]]; then source ~/.bashrc; fi
 
 popd > /dev/null

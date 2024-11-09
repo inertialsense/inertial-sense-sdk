@@ -26,14 +26,9 @@ using namespace std;
 
 static cISStream *s_clientStream;
 
-
-int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int stop_message_broadcasting(port_handle_t port)
 {
-	uint8_t buf[1024];
-	// Stop all broadcasts on the device
-	int n = is_comm_write_to_buf(buf, sizeof(buf), comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);    
-
-	if (n != serialPortWrite(serialPort, buf, n))
+	if (is_comm_stop_broadcasts_all_ports(port))
 	{
 		printf("Failed to encode and write stop broadcasts message\r\n");
 		return -3;
@@ -42,17 +37,15 @@ int stop_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *com
 }
 
 
-int enable_message_broadcasting(serial_port_t *serialPort, is_comm_instance_t *comm)
+int enable_message_broadcasting(port_handle_t port)
 {
-	uint8_t buf[1024];
-	int n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_POS, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, buf, n))
+	if (is_comm_get_data(port, DID_GPS1_POS, 0, 0, 1))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
 	}
-	n = is_comm_get_data_to_buf(buf, sizeof(buf), comm, DID_GPS1_RTK_POS_REL, 0, 0, 1);
-	if (n != serialPortWrite(serialPort, buf, n))
+
+	if (is_comm_get_data(port, DID_GPS1_RTK_POS_REL, 0, 0, 1))
 	{
 		printf("Failed to encode and write get GPS message\r\n");
 		return -5;
@@ -68,7 +61,7 @@ static struct
 	uint8_t			baseCount;
 } s_rx = {};
 
-void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
+void handle_isbData(is_comm_instance_t *comm, cISStream *clientStream)
 {
 	switch (comm->rxPkt.hdr.id)
 	{
@@ -120,15 +113,16 @@ void handle_uINS_data(is_comm_instance_t *comm, cISStream *clientStream)
 }
 
 
-void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+void read_isbData(port_handle_t port, cISStream *clientStream)
 {
 	protocol_type_t ptype;
+    is_comm_instance_t* comm = is_comm_get_port_instance(port);
 
-	// Get available size of comm buffer
+	// Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
 	int n = is_comm_free(comm);
 
 	// Read data directly into comm buffer
-	if ((n = serialPortRead(serialPort, comm->rxBuf.tail, n)))
+	if ((n = serialPortRead(port, comm->rxBuf.tail, n)))
 	{
 		// Update comm buffer tail pointer
 		comm->rxBuf.tail += n;
@@ -138,18 +132,19 @@ void read_uINS_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStre
 		{
 			if (ptype == _PTYPE_INERTIAL_SENSE_DATA)
 			{
-				handle_uINS_data(comm, clientStream);
+				handle_isbData(comm, clientStream);
 			}
 		}
 	}
 }
 
 
-void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cISStream *clientStream)
+void read_RTK_base_data(port_handle_t port, cISStream *clientStream)
 {
 	protocol_type_t ptype;
+    is_comm_instance_t* comm = is_comm_get_port_instance(port);
 
-	// Get available size of comm buffer
+	// Get available size of comm buffer.  is_comm_free() modifies comm->rxBuf pointers, call it before using comm->rxBuf.tail.
 	int n = is_comm_free(comm);
 
 	// Read data from RTK Base station
@@ -163,7 +158,7 @@ void read_RTK_base_data(serial_port_t* serialPort, is_comm_instance_t *comm, cIS
 		{
 			if (ptype == _PTYPE_RTCM3)
 			{	// Forward RTCM3 packets to uINS
-				serialPortWrite(serialPort, comm->rxPkt.data.ptr, comm->rxPkt.data.size);
+				serialPortWrite(port, comm->rxPkt.data.ptr, comm->rxPkt.data.size);
 				s_rx.baseCount++;
 			}
 		}
@@ -181,12 +176,12 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// STEP 2: Init comm instance
-	is_comm_instance_t comm;
-	uint8_t buffer[2048];
-
-	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
-	is_comm_init(&comm, buffer, sizeof(buffer));
+	// STEP 2: Init comm instance [[deprecated]] - serial_port_t includes the comm instance
+    //	is_comm_instance_t comm;
+    //	uint8_t buffer[2048];
+    //
+    //	// Initialize the comm instance, sets up state tracking, packet parsing, etc.
+    //	is_comm_init(&comm, buffer, sizeof(buffer), NULL);  // TODO: Should we be using callbacks??  Probably
 
 	// STEP 3: Initialize and open serial port
 	serial_port_t serialPort;
@@ -218,13 +213,13 @@ int main(int argc, char* argv[])
 	int error;
 
 	// STEP 5: Stop any message broadcasting
-	if ((error = stop_message_broadcasting(&serialPort, &comm)))
+	if ((error = stop_message_broadcasting(&serialPort)))
 	{
 		return error;
 	}
 
 	// STEP 6: Enable message broadcasting
-	if ((error = enable_message_broadcasting(&serialPort, &comm)))
+	if ((error = enable_message_broadcasting(&serialPort)))
 	{
 		return error;
 	}
@@ -235,9 +230,9 @@ int main(int argc, char* argv[])
 	// Main loop
 	while (1)
 	{
-		read_uINS_data(&serialPort, &comm, s_clientStream);
+		read_isbData((port_handle_t)&serialPort, s_clientStream);
 
-		read_RTK_base_data(&serialPort, &comm, s_clientStream);
+		read_RTK_base_data(&serialPort, s_clientStream);
 
 		SLEEP_MS(1);	// sleep for 1ms, serial port reads are non-blocking
 	}

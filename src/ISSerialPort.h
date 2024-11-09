@@ -26,7 +26,7 @@ class cISSerialPort : public cISStream
 private:
 	cISSerialPort(const cISSerialPort& copy); // disable copy constructor
 
-	serial_port_t m_serial;
+	port_handle_t port;
 	int m_timeout;
 	bool m_blocking;
 
@@ -35,7 +35,7 @@ public:
 	* Constructor
 	* @param serial inner serial port implementation or NULL for default, if not NULL, it will be copied
 	*/
-	cISSerialPort(serial_port_t* serial = NULL);
+	cISSerialPort(port_handle_t port = NULL);
 
 	/**
 	* Destructor - closes the serial port
@@ -56,7 +56,7 @@ public:
 	* Checks if the serial port is open
 	* @return true if open, false otherwise
 	*/
-	bool IsOpen() { return (serialPortIsOpen(&m_serial) != 0); }
+	bool IsOpen() { return (serialPortIsOpen(port) != 0); }
 
 	/**
 	* Close the serial port
