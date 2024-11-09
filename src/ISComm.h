@@ -398,9 +398,6 @@ typedef struct
 
     /** Packet size including header and checksum */
     uint16_t            size;
-
-    /** Packet ID */
-    uint16_t            id;
 } packet_t;
 
 /** Represents a packet header and body */

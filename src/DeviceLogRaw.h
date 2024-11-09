@@ -40,7 +40,6 @@ public:
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
     std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }
 	void Flush() OVERRIDE;
-	is_comm_instance_t* IsCommInstance() { return &m_comm; }
 
 	cDataChunk m_chunk;
 
