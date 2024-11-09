@@ -590,7 +590,7 @@ bool cInertialSenseDisplay::PrintData(unsigned int refreshPeriodMs)
 
 string cInertialSenseDisplay::PrintIsCommStatus(is_comm_instance_t *comm)
 {
-	if (comm == NULL)
+//	if (comm == NULL)
 		return "";
 
 	std::stringstream ss;
@@ -759,9 +759,9 @@ string cInertialSenseDisplay::DataToString(const p_data_t* data)
 		}
 		else
 		{
-			std::ostringstream oss;
-		    oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id));
-			str = oss.str();
+//			std::ostringstream oss;
+//		    oss << "(" << std::setw(3) << std::to_string(data->hdr.id) << ") " << std::string(cISDataMappings::DataName(data->hdr.id));
+//			str = oss.str();
 		}
 		break;
 	}
