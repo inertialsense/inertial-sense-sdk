@@ -25,23 +25,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cLogStatMsgId::cLogStatMsgId()
-{
-    count = 0;
-    errors = 0;
-    averageTimeDelta = 0.0;
-    totalTimeDelta = 0.0;
-    lastTimestamp = 0.0;
-    lastTimestampDelta = 0.0;
-    maxTimestampDelta = 0.0;
-    minTimestampDelta = 1.0E6;
-    timestampDeltaCount = 0;
-    timestampIrregCount = 0;
-}
-
-void cLogStatMsgId::LogTimestamp(double timestamp)
-{    
-}
 
 cLogStats::cLogStats()
 {

@@ -21,32 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISComm.h"
 
 
-typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
-
-class cLogStatMsgId
-{
-public:
-	unsigned int count;         // count for this data id
-	unsigned int errors;        // error count for this data id
-	double averageTimeDelta; // average time delta for the data id
-	double totalTimeDelta; // sum of all time deltas
-	double lastTimestamp;
-	double lastTimestampDelta;
-	double minTimestampDelta;
-	double maxTimestampDelta;
-	unsigned int timestampDeltaCount;
-	unsigned int timestampIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
-
-	cLogStatMsgId();
-	void LogTimestamp(double timestamp);
-};
-
-struct sLogStatPType
-{
-	std::map<int, cLogStatMsgId> stats;     // ID, cLogStatMsgId
-	unsigned int count;                     // count of all message ids
-	unsigned int errors;                    // total error count
-};
 
 class cLogStats
 {
