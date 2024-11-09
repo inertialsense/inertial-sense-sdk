@@ -21,5 +21,49 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISComm.h"
 
 
+typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
+
+class cLogStatDataId
+{
+public:
+	uint64_t count; // count for this data id
+	uint64_t errorCount; // error count for this data id
+	double averageTimeDelta; // average time delta for the data id
+	double totalTimeDelta; // sum of all time deltas
+	double lastTimestamp;
+	double lastTimestampDelta;
+	double minTimestampDelta;
+	double maxTimestampDelta;
+	uint64_t timestampDeltaCount;
+	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
+
+	cLogStatDataId();
+	void LogTimestamp(double timestamp);
+	void Printf();
+};
+
+class cLogStats
+{
+public:
+	std::map<int, cLogStatDataId> isbStats;
+	std::map<int, cLogStatDataId> nmeaStats;
+	std::map<int, cLogStatDataId> rtcm3Stats;
+	std::map<int, cLogStatDataId> ubloxStats;
+	uint64_t count; // count of all data ids
+	uint64_t errorCount; // total error count
+	cISLogFileBase* statsFile;
+
+	cLogStats();
+	void Clear();
+	void LogError(const p_data_hdr_t* hdr);
+	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t id);
+	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
+	void Printf();
+	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
+	void WriteToFile(const std::string& fileName);
+};
+
+
 
 #endif // IS_LOG_STATS_H

@@ -234,6 +234,8 @@ p_data_buf_t* cDeviceLogRaw::ReadData()
         }
     }
 
+    // Read is good
+    cDeviceLog::OnReadData(data);
     return data;
 }
 
