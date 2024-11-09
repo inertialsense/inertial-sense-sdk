@@ -49,7 +49,7 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_"))
 {
-    printf("InertialSenseROS::InertialSenseROS() 2\n");
+    RCLCPP_INFO(rclcpp::get_logger("start"),"InertialSenseROS::InertialSenseROS() 2");
 
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
@@ -207,7 +207,7 @@ void InertialSenseROS::initializeROS()
 
 void InertialSenseROS::load_params(YAML::Node &node)
 {
-    printf("InertialSenseROS::load_params()\n");
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params()" );
 
     // Load parameters from yaml node if provided.  Otherwise load from ROS parameter server.
     bool useParamSvr = !node.IsDefined();
@@ -239,8 +239,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
-	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 2" );
-    printf("InertialSenseROS::load_params() debug 2\n");
+	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 2" );
 
     if(ports_.size() < 1)
     {
@@ -250,7 +249,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param_1);
     }
 
-    printf("InertialSenseROS::load_params() debug 3\n");
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 3" );
 
     bool factory_reset = nh_->declare_parameter<bool>("factory_reset", false);
     ph.nodeParam("factory_reset", factory_reset_, factory_reset);
@@ -264,7 +263,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     bool log_enabled = nh_->declare_parameter<bool>("enable_log", false);
     ph.nodeParam("enable_log", log_enabled_, log_enabled);
 
-    printf("InertialSenseROS::load_params() debug 4\n");
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 4" );
 
     // advanced Parameters
     int io_config_bits = nh_->declare_parameter<int>("io_config", 39624800);
@@ -291,7 +290,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_, platform_config);
 
 	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 5" );
-    printf("InertialSenseROS::load_params() debug 5\n");
 
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
@@ -316,7 +314,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.strobe_in, "strobe_in");
     node["sensors"]["messages"] = sensorsMsgs;
 
-    printf("InertialSenseROS::load_params() debug 6\n");
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 6" );
 
     // INS
     YAML::Node insNode = ph.node(node, "ins");
@@ -348,8 +346,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
                                             "DYNAMIC_MODEL_WRIST",
                                             "DYNAMIC_MODEL_INDOOR" };
 
-	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 7" );
-    printf("InertialSenseROS::load_params() debug 7\n");
+	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 7" );
 
     int dynamic_model = nh_->declare_parameter<int>("dynamic_model", DYNAMIC_MODEL_AIRBORNE_4G);
     ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, dynamic_model);
@@ -388,7 +385,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
 
-    printf("InertialSenseROS::load_params() debug 8\n");
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 8" );
 
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
@@ -453,7 +450,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     int rs_gps2_nsf_period = nh_->declare_parameter<int>("msg/gps2_navsatfix/period", 1);
     ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", false, rs_gps2_nsf_period, rs_gps2_nsf);
 
-    printf("InertialSenseROS::load_params() debug 9\n");
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 9" );
 
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
@@ -465,8 +462,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     int evb_cb_options = nh_->declare_parameter<int>("cb_options", 0);
     ph.nodeParam("cb_options", evb_.cb_options, evb_cb_options);
 
-	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 10" );
-    printf("InertialSenseROS::load_params() debug 10\n");
+	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 10" );
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
     if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
@@ -480,8 +476,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     bool rs_diagnostics_enabled = nh_->declare_parameter<bool>("msg/diagnostics/enable", false);
     ph.nodeParam("enable", rs_.diagnostics.enabled, rs_diagnostics_enabled);
 
-	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() end" );
-    printf("InertialSenseROS::load_params() end\n");
+	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() end" );
 
     // Print entire yaml node tree
      //printf("Node Tree:\n");
