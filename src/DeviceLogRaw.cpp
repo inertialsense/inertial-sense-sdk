@@ -85,7 +85,7 @@ bool cDeviceLogRaw::FlushToFile()
 }
 
 
-bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
+bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf)
 {
     // Parse messages for statistics and DID_DEV_INFO
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)
@@ -140,10 +140,6 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &gl
                 }
                 break;
             }
-
-            // Update log statistics
-//        	m_logStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
-//            globalLogStats.LogData(ptype, m_comm.rxPkt.id, timestamp);
         }
     }
 
@@ -261,13 +257,10 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
                 break;
 
             default:
-//                m_logStats.LogData(ptype, m_comm.rxPkt.id);
                 break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
-//                m_logStats.LogData(ptype, m_comm.rxPkt.id, cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr));
-
                 m_pData.hdr = m_comm.rxPkt.dataHdr;
                 memcpy(m_pData.buf, m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset, m_comm.rxPkt.dataHdr.size);
                 return &m_pData;

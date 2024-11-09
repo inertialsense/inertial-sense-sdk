@@ -26,7 +26,3 @@ using namespace std;
 
 
 
-cLogStats::cLogStats()
-{
-}
-

@@ -32,7 +32,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 cDeviceLog::cDeviceLog() {
-    // m_logStats.Clear();
 }
 
 cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
@@ -40,11 +39,9 @@ cDeviceLog::cDeviceLog(const ISDevice* dev) : device(dev)  {
         throw std::invalid_argument("cDeviceLog() must be passed a valid ISDevice instance.");
     m_devHdwId = ENCODE_DEV_INFO_TO_HDW_ID(dev->devInfo);
     m_devSerialNo = dev->devInfo.serialNumber;
-    // m_logStats.Clear();
 }
 
 cDeviceLog::cDeviceLog(uint16_t hdwId, uint32_t serial) : m_devHdwId(hdwId), m_devSerialNo(serial) {
-    // m_logStats.Clear();
 }
 
 cDeviceLog::~cDeviceLog()
@@ -63,7 +60,6 @@ void cDeviceLog::InitDeviceForWriting(std::string timestamp, std::string directo
 	m_maxFileSize = maxFileSize;
 	m_logSize = 0;
 	m_writeMode = true;
-	// m_logStats.Clear();
 }
 
 
@@ -73,7 +69,6 @@ void cDeviceLog::InitDeviceForReading()
 	m_logSize = 0;
 	m_fileCount = 0;
 	m_writeMode = false;
-	// m_logStats.Clear();
 }
 
 bool cDeviceLog::CloseAllFiles()
@@ -83,7 +78,6 @@ bool cDeviceLog::CloseAllFiles()
 
     if (m_writeMode) {
         string str = m_directory + "/stats_SN" + to_string(device->devInfo.serialNumber) + ".txt";
-        // m_logStats.WriteToFile(str);
     }
     return true;
 }
@@ -107,12 +101,11 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
     if (dataHdr != NULL)
     {
 		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::Timestamp(dataHdr, dataBuf) : 0.0);
-        // m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp, ptype);
 	}
     return true;
 }
 
-bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
+bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf)
 {
    return true;
 }
@@ -247,7 +240,6 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
     if (data != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-        // m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
 }
 

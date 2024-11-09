@@ -22,15 +22,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 
-class cLogStats
-{
-public:
-	// std::map<protocol_type_t, sLogStatPType> msgs;
-	// cISLogFileBase* statsFile = NULL;
-
-	cLogStats();
-};
-
-
-
 #endif // IS_LOG_STATS_H
