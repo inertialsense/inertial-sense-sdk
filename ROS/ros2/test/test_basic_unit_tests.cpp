@@ -25,6 +25,8 @@ TEST(BasicTestSuite, test_config_params)
 
     InertialSenseROS isROS(config);
 
+    RCLCPP_INFO(rclcpp::get_logger("start"),"DEBUG A");
+
     // check various parts of the config to ensure it was read and parameters were parsed and configured properly.
     // This is a very high level test, and is not intended to test every parameter, just a few key ones (of different types, nested, etc).
 
@@ -34,7 +36,11 @@ TEST(BasicTestSuite, test_config_params)
     EXPECT_EQ(isROS.ports_[0], "/dev/ttyACM0");
     EXPECT_EQ(isROS.baudrate_, 921600);
 
+    RCLCPP_INFO(rclcpp::get_logger("start"),"DEBUG B");
+
     EXPECT_EQ(isROS.rs_.gps1.enabled, true);
+
+    RCLCPP_INFO(rclcpp::get_logger("start"),"DEBUG C");
 }
 
 TEST(BasicTestSuite, test_rtk_rover)
