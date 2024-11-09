@@ -69,6 +69,8 @@ cLogStats::cLogStats()
 
 void cLogStats::Clear()
 {
+	return;
+
     for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it)
     {
         // protocol_type_t ptype = it->first;
@@ -85,6 +87,8 @@ void cLogStats::Clear()
 
 void cLogStats::LogError(const p_data_hdr_t* hdr, protocol_type_t ptype)
 {
+	return;
+
     sLogStatPType &msg = msgs[ptype];
 
     msg.errors++;
@@ -97,6 +101,8 @@ void cLogStats::LogError(const p_data_hdr_t* hdr, protocol_type_t ptype)
 
 void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
 {
+	return;
+
     sLogStatPType &msg = msgs[ptype];
     cLogStatMsgId &d = msg.stats[id];
     msg.count++;
@@ -110,6 +116,8 @@ void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
 
 string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime, bool showErrors)
 {
+	return;
+
     string msgName;
     int colWidName = 24;
     switch (ptype)
@@ -123,7 +131,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
     case _PTYPE_RTCM3:                      msgName = "RTCM3";          break;
     case _PTYPE_SPARTN:                     msgName = "SPARTN";         break;
     case _PTYPE_SONY:                       msgName = "SONY";           break;
-}
+	}
 
     std::stringstream ss;
     ss << msgName << ": count " << msg.count << ", errors " << msg.errors << " _____________________" << endl;
@@ -195,6 +203,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 
 unsigned int cLogStats::Count()
 {
+	return;
     unsigned int count = 0;
     for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
     {
@@ -205,6 +214,7 @@ unsigned int cLogStats::Count()
 
 unsigned int cLogStats::Errors()
 {
+	return;
     unsigned int errors = 0;
     for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
     {
@@ -215,6 +225,7 @@ unsigned int cLogStats::Errors()
 
 string cLogStats::Stats()
 {
+	return;
     std::stringstream ss;
     unsigned int count = Count();
     ss << "Total: count " << count << endl;
@@ -237,6 +248,7 @@ string cLogStats::Stats()
 
 void cLogStats::WriteToFile(const string& file_name)
 {
+	return;
     unsigned int count = Count();
     // unsigned int errors = Errors();
     if (count != 0)
