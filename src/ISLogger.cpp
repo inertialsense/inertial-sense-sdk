@@ -519,8 +519,6 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        cISDataMappings::Timestamp(dataHdr, dataBuf);
-
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
             // write to diagnostic text file
@@ -558,14 +556,6 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     }
 
     m_lastCommTime = GetTime();
-    // if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
-    // {	// Save Error
-    //     m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-    // }
-    // else
-    // {	// Success
-
-    // }
     return true;
 }
 
@@ -580,10 +570,6 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
         data = NULL;
-    }
-    if (data != NULL)
-    {
-        cISDataMappings::Timestamp(&data->hdr, data->buf);
     }
     return data;
 }
