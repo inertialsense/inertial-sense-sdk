@@ -405,11 +405,67 @@ public:
 	void AddLlaDegM(const std::string& name, 
 		uint32_t offset,
 		const std::string& description = "",
+		const std::string& descriptionAltitude = "",
 		int flags = 0)
     {
-		AddMember2(name + "[0]", offset + 0*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[1]", offset + 1*sizeof(double), DATA_TYPE_F64, "°", description, flags | DATA_FLAGS_FIXED_DECIMAL_8);
-		AddMember2(name + "[2]", offset + 2*sizeof(double), DATA_TYPE_F64, "m", description, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+		eDataType type = DATA_TYPE_F64;
+		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, "°", description + " latitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, "°", description + " longitude", flags | DATA_FLAGS_FIXED_DECIMAL_8);
+		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, "m", description + " " + descriptionAltitude, flags | DATA_FLAGS_FIXED_DECIMAL_3);
+	}
+
+	void AddVec3(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description1 = "",
+		const std::string& description2 = "",
+		const std::string& description3 = "",
+		int flags = 0,
+		double conversion = 1.0)
+    {
+		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
+		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
+		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
+	}
+
+	void AddVec4(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description1 = "",
+		const std::string& description2 = "",
+		const std::string& description3 = "",
+		const std::string& description4 = "",
+		int flags = 0,
+		double conversion = 1.0)
+    {
+		AddMember2(name + "[0]", offset + 0*s_eDataTypeSize[type], type, units, description1, flags, conversion);
+		AddMember2(name + "[1]", offset + 1*s_eDataTypeSize[type], type, units, description2, flags, conversion);
+		AddMember2(name + "[2]", offset + 2*s_eDataTypeSize[type], type, units, description3, flags, conversion);
+		AddMember2(name + "[3]", offset + 3*s_eDataTypeSize[type], type, units, description4, flags, conversion);
+	}
+
+	void AddVec3Xyz(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description = "",
+		int flags = 0,
+		double conversion = 1.0)
+	{
+		AddVec3(name, offset, type, units, "X "+description, "Y "+description, "Z "+description, flags, conversion);
+	}
+
+	void AddVec3Rpy(const std::string& name, 
+		uint32_t offset,
+		eDataType type,
+		const std::string& units = "",
+		const std::string& description = "",
+		int flags = 0,
+		double conversion = 1.0)
+	{
+		AddVec3(name, offset, type, units, "Roll "+description, "Pitch "+description, "Yaw "+description, flags, conversion);
 	}
 
 private:
@@ -545,6 +601,14 @@ public:
 	* @return timestamp, or 0.0 if no timestamp available
 	*/
     static double Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf);
+
+	/**
+	* Get a timestamp from data if available.  If not, use the current local time.
+	* @param hdr data header
+	* @param buf data buffer
+	* @return timestamp, or current local time if no timestamp available
+	*/
+	static double TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf);
 
 	/**
 	* Check whether field data can be retrieved given a data packet

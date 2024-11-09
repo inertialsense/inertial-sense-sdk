@@ -137,7 +137,7 @@ p_data_buf_t* cDeviceLogJSON::ReadData()
         }
 	}
 	p_data_buf_t* data = ReadDataFromFile();
-    cDeviceLog::OnReadData(data);
+    cDeviceLog::UpdateStatsFromFile(data);
 	return data;
 }
 

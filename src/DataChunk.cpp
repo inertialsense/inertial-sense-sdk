@@ -218,12 +218,6 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 
 		// Read additional chunk header
 		nBytes += ReadAdditionalChunkHeader(pFile);
-
-//     // Error check data size
-//     if (m_hdr.dataSize > MAX_DATASET_SIZE)
-//     {
-//         return -1;
-//     }
 	}
 	else
 	{

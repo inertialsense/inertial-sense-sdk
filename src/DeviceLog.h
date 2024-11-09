@@ -58,7 +58,6 @@ public:
 
     virtual void SetSerialNumber(uint32_t serialNumber) = 0;
 
-
     virtual std::string LogFileExtention() = 0;
 
     virtual void Flush() {}
@@ -92,12 +91,16 @@ public:
 
     void ShowParseErrors(bool show) { m_showParseErrors = show; }
 
+    void UpdateStatsFromFile(p_data_buf_t *data);
+    void UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp);
+    std::string LogStatsString() { return m_logStats.Stats(); }
+
+    virtual is_comm_instance_t* IsCommInstance() { return NULL; }
+
 protected:
     bool OpenNewSaveFile();
 
     bool OpenNextReadFile();
-
-    void OnReadData(p_data_buf_t *data);
 
     const ISDevice *device = nullptr;               //! ISDevice reference to source of data
 
@@ -122,8 +125,6 @@ protected:
     bool m_showPoints;
     bool m_showPointTimestamps = true;
     double m_pointUpdatePeriodSec = 1.0f;
-
-private:
     cLogStats m_logStats;
 };
 
