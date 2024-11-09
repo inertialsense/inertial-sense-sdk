@@ -51,8 +51,8 @@ struct sLogStatPType
 class cLogStats
 {
 public:
-	std::map<protocol_type_t, sLogStatPType> msgs;
-	cISLogFileBase* statsFile = NULL;
+	// std::map<protocol_type_t, sLogStatPType> msgs;
+	// cISLogFileBase* statsFile = NULL;
 
 	cLogStats();
 	void Clear();
