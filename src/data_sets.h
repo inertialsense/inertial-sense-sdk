@@ -599,6 +599,38 @@ typedef struct PACKED
 /** Add missing hardware descriptor to dev_info_t. */
 void devInfoPopulateMissingHardware(dev_info_t *devInfo);
 
+/**
+ * @brief Convert NMEA talker string to ID (eNmeaMsgId).
+ * 
+ * @param a NMEA talker string
+ * @param aSize Length of the talker string
+ * @return int NMEA ID (eNmeaMsgId) on success or negative for failure. -1 for NMEA head not found, -2 for invalid length, -3 other error
+ */
+int getNmeaMsgId(const void* msg, int msgSize);
+
+/**
+ * @brief Convert NMEA ID (eNmeaMsgId) to talker string
+ * 
+ * @param msgId NMEA ID (eNmeaMsgId)
+ * @param buf Talker id string output 
+ * @param bufSize Max size of buffer talker string will be written to.  Must be 5 or larger.
+ * @return int 0 on success, -1 on failure.
+ */
+int nmeaMsgIdToTalker(int msgId, void *buf, int bufSize);
+
+/**
+ * @brief Get RTCM ID from 
+ * 
+ * @param buff 
+ * @param pos 
+ * @param len 
+ * @return unsigned int 
+ */
+unsigned int messageStatsGetbitu(const unsigned char *buff, int pos, int len);
+
+#define RTCM3_MSG_ID(msg)       messageStatsGetbitu((const unsigned char*)msg, 24, 12)
+#define RTCM3_MSG_LENGTH(msg)   messageStatsGetbitu((const unsigned char*)msg, 14, 10)
+
 /** (DID_MANUFACTURING_INFO) Manufacturing info */
 typedef struct PACKED
 {
