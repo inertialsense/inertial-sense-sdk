@@ -24,7 +24,7 @@ using namespace std;
 cLogStatDataId::cLogStatDataId()
 {
     count = 0;
-    errorCount = 0;
+    errors = 0;
     averageTimeDelta = 0.0;
     totalTimeDelta = 0.0;
     lastTimestamp = 0.0;
@@ -63,7 +63,7 @@ void cLogStatDataId::Printf()
 
 #if !PLATFORM_IS_EMBEDDED
 
-    printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
+    printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errors);
     printf(" Time delta: (ave, min, max) %f, %f, %f\r\n", averageTimeDelta, minTimestampDelta, maxTimestampDelta);
     printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
 
@@ -93,7 +93,7 @@ void cLogStats::LogError(const p_data_hdr_t* hdr)
     if (hdr != NULL && hdr->id < DID_COUNT)
     {
         cLogStatDataId& d = isbStats[hdr->id];
-        d.errorCount++;
+        d.errors++;
     }
 }
 
@@ -164,7 +164,7 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
     {
         uint32_t id = it->first;
         cLogStatDataId& stat = it->second;
-        if (stat.count == 0 && stat.errorCount == 0)
+        if (stat.count == 0 && stat.errors == 0)
         {   // Exclude zero count stats
             continue;
         }
@@ -197,7 +197,7 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
             statsFile->lprintf("%s - ID: %d\r\n", msgName, id);
             break;
         }
-        statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errorCount);
+        statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errors);
         statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
         statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
         statsFile->lprintf("\r\n");
@@ -209,8 +209,6 @@ void cLogStats::WriteToFile(const string& file_name)
     if (count != 0)
     {
         // flush log stats to disk
-        statsFile = CreateISLogFile(file_name, "wb");
-        statsFile->lprintf("Total msg count: %d,   Total errors: %d\r\n\r\n", count, errorCount);
 
         WriteMsgStats(isbStats,   "ISB",   _PTYPE_INERTIAL_SENSE_DATA);
         WriteMsgStats(nmeaStats,  "NMEA" , _PTYPE_NMEA);

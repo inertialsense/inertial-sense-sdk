@@ -275,7 +275,7 @@ void InertialSense::LoggerThread(void* info)
             // log the packets
             for (map<int, vector<p_data_buf_t>>::iterator i = packets.begin(); i != packets.end(); i++)
             {
-                if (inertialSense->m_logger.GetType() != cISLogger::LOGTYPE_RAW) {
+                if (inertialSense->m_logger.Type() != cISLogger::LOGTYPE_RAW) {
                     size_t numPackets = i->second.size();
                     for (size_t j = 0; j < numPackets; j++) {
                         auto device = inertialSense->m_comManagerState.devices[i->first];

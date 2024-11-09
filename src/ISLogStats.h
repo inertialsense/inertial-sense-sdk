@@ -26,8 +26,8 @@ typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
 class cLogStatDataId
 {
 public:
-	uint64_t count; // count for this data id
-	uint64_t errorCount; // error count for this data id
+	unsigned int count;         // count for this data id
+	unsigned int errors;        // error count for this data id
 	double averageTimeDelta; // average time delta for the data id
 	double totalTimeDelta; // sum of all time deltas
 	double lastTimestamp;
@@ -60,6 +60,8 @@ public:
 	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
 	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
 	void Printf();
+	unsigned int Count() { return 0; }
+	unsigned int Errors() { return 0; }
 	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
 	void WriteToFile(const std::string& fileName);
 };
