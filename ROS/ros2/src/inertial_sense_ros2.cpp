@@ -87,10 +87,12 @@ void InertialSenseROS::terminate()
     RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::terminate()" );
 
     IS_.Close();
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::terminate() debug 1" );
     IS_.CloseServerConnection();
     sdk_connected_ = false;
 
     // ROS equivalent to shutdown advertisers, etc.
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::terminate() end" );
 }
 
 void InertialSenseROS::initializeIS(bool configFlashParameters)
