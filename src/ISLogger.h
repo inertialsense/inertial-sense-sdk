@@ -162,7 +162,7 @@ public:
         float driveUsageLimitPercent = 0.5f, 
         bool useSubFolderTimestamp = true,
         bool enableCsvIns2ToIns1Conversion = true);
-    eLogType Type() { return m_logType; }
+    eLogType GetType() { return m_logType; }
 
     /**
     * Get the timeout flush parameter in seconds
