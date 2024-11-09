@@ -52,7 +52,7 @@ class cLogStats
 {
 public:
 	std::map<protocol_type_t, sLogStatPType> msgs;
-	cISLogFileBase* statsFile;
+	cISLogFileBase* statsFile = NULL;
 
 	cLogStats();
 	void Clear();
