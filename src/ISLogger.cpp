@@ -524,7 +524,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     else
     {	// Success
         double timestamp = cISDataMappings::Timestamp(dataHdr, dataBuf);
-//        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
+        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -591,7 +591,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     if (data != NULL)
     {
         double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-//        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
+        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
     return data;
 }
