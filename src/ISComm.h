@@ -910,6 +910,7 @@ uint16_t is_comm_xor16(uint16_t cksum_init, const void* data, uint32_t size);
 #define is_comm_isb_checksum16  is_comm_fletcher16
 // #define is_comm_isb_checksum16  is_comm_xor16
 
+
 // -------------------------------------------------------------------------------------------------------------------------------
 // Common packet encode / decode functions
 // -------------------------------------------------------------------------------------------------------------------------------
