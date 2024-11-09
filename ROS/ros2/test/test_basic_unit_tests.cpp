@@ -23,7 +23,7 @@ TEST(BasicTestSuite, test_config_params)
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
 
-    RCLCPP_INFO(rclcpp::get_logger("start"),"DEBUG START");
+    RCLCPP_INFO(rclcpp::get_logger("start"),"WALT_DEBUG test_config_params");
 
     InertialSenseROS isROS(config);
 
@@ -47,6 +47,8 @@ TEST(BasicTestSuite, test_config_params)
 
 TEST(BasicTestSuite, test_rtk_rover)
 {
+    RCLCPP_INFO(rclcpp::get_logger("start"),"WALT_DEBUG test_rtk_rover");
+
     // typical runtime location is <repo-root>/catkin_ws/build/inertial-sense-sdk/ros
     std::ifstream yaml(PARAM_YAML_FILE);
     ASSERT_FALSE(yaml.fail()) << "Unable to locate or access " << PARAM_YAML_FILE << ".  CWD is " << getcwd(cwd_buff, sizeof(cwd_buff)) << ", errno=" << errno;
