@@ -635,7 +635,7 @@ bool InertialSense::IsOpen()
 
 void InertialSense::Close()
 {
-    EnableLogger(false);
+    // EnableLogger(false);
     if (m_disableBroadcastsOnClose)
     {
         StopBroadcasts();
