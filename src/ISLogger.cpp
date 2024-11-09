@@ -676,15 +676,18 @@ float cISLogger::LogSizeAllMB()
     return LogSizeAll() * 0.000001f;
 }
 
+
 float cISLogger::LogSizeMB(uint32_t devSerialNo)
 {
     return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0;
 }
 
+
 float cISLogger::FileSizeMB(uint32_t devSerialNo)
 {
     return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0;
 }
+
 
 uint32_t cISLogger::FileCount(uint32_t devSerialNo)
 {
@@ -882,58 +885,6 @@ void cISLogger::PrintProgress()
     }
 #endif
 #endif
-}
-
-void cISLogger::PrintStatistics()
-{
-	return;
-
-    for (auto it : m_devices)
-    {   // Print message statistics 
-        std::shared_ptr<cDeviceLog> dev = it.second;
-        if (dev==NULL)
-            continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << dev->LogStatsString();
-    }
-
-    for (auto it : m_devices)
-    {   // Print errors
-        std::shared_ptr<cDeviceLog> dev = it.second;
-        if (dev==NULL)
-            continue;
-        cout << endl;
-        cout << "SN" << std::setw(6) << dev->SerialNumber() << " ";
-        cout << cInertialSenseDisplay::PrintIsCommStatus(dev->IsCommInstance());
-    }
-}
-
-void cISLogger::PrintLogDiskUsage()
-{
-	return;
-
-    float logSize = LogSizeAll();
-    if (logSize < 0.5e6f)
-        printf("\nLogging %5.1f KB to: %s", logSize * 1.0e-3f, LogDirectory().c_str());
-    else
-        printf("\nLogging %5.2f MB to: %s", logSize * 1.0e-6f, LogDirectory().c_str());
-
-    // Disk usage
-    if (MaxDiskSpaceMB() > 0.0f)
-    {   // Limit enabled
-        float percentUsed = 100.0f * UsedDiskSpaceMB() / MaxDiskSpaceMB();
-        printf("      %s disk usage/limit: %.0f/%.0f MB (%.0f%%) ", RootDirectory().c_str(), UsedDiskSpaceMB(), MaxDiskSpaceMB(), percentUsed);
-        if (percentUsed > 98)
-        {
-            printf("...deleting old logs ");
-        }
-    }
-    else
-    {   // Limit disabled
-        printf(",    %s disk usage: %.0f MB ", RootDirectory().c_str(), UsedDiskSpaceMB());
-    }
-    printf("\n");
 }
 
 std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {

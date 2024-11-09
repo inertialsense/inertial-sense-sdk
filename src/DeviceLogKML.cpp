@@ -558,7 +558,7 @@ p_data_buf_t* cDeviceLogKML::ReadData()
 	}
 
 	// Read is good
-    cDeviceLog::UpdateStatsFromFile(data);
+    cDeviceLog::OnReadData(data);
 	return data;
 }
 

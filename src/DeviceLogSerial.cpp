@@ -168,7 +168,7 @@ p_data_buf_t *cDeviceLogSerial::ReadData() {
     }
 
     // Read is good
-    cDeviceLog::UpdateStatsFromFile(data);
+    cDeviceLog::OnReadData(data);
     return data;
 }
 

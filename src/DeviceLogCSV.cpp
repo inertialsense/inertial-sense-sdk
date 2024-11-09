@@ -282,7 +282,7 @@ tryAgain:
 		goto tryAgain;
 	}
 
-    cDeviceLog::UpdateStatsFromFile(data);
+    cDeviceLog::OnReadData(data);
 	return data;
 }
 
