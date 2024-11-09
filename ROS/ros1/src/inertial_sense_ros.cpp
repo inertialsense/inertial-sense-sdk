@@ -48,6 +48,8 @@ void odometryIdentity(nav_msgs::Odometry& msg_odom) {
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(), nh_private_("~")
 {
+    printf("InertialSenseROS::InertialSenseROS() 1\n");
+
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
     rs_.did_ins1.topic = "did_ins1";
@@ -63,7 +65,7 @@ InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParamet
 
 void InertialSenseROS::initialize(bool configFlashParameters)
 {
-    ROS_INFO("======  Starting Inertial Sense ROS  ======");
+    ROS_INFO("======  Starting Inertial Sense ROS1  ======");
 
     initializeIS(true);
     if (sdk_connected_) 
@@ -201,6 +203,8 @@ void InertialSenseROS::initializeROS()
 
 void InertialSenseROS::load_params(YAML::Node &node)
 {
+    printf("InertialSenseROS::load_params()\n");
+
     // Load parameters from yaml node if provided.  Otherwise load from ROS parameter server.
     bool useParamSvr = !node.IsDefined();
     ros::NodeHandle nh;
@@ -231,6 +235,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
+    printf("InertialSenseROS::load_params() debug 2\n");
+
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
@@ -239,6 +245,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
         printf("\nNo Ports detected!");
         sleep(1000);
     }
+
+    printf("InertialSenseROS::load_params() debug 3\n");
 
     ph.nodeParam("factory_reset", factory_reset_, false);
 
@@ -256,6 +264,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("publishTf", publishTf_);
     setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_);
 
+    printf("InertialSenseROS::load_params() debug 5\n");
+
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
     YAML::Node sensorsMsgs = ph.node(sensorsNode, "messages", 2);
@@ -265,6 +275,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.barometer, "barometer", "baro");
     ph.msgParams(rs_.strobe_in, "strobe_in");
     node["sensors"]["messages"] = sensorsMsgs;
+
+    printf("InertialSenseROS::load_params() debug 6\n");
 
     // INS
     YAML::Node insNode = ph.node(node, "ins");
@@ -284,6 +296,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
                                             "DYNAMIC_MODEL_WRIST",
                                             "DYNAMIC_MODEL_INDOOR" };
 
+    printf("InertialSenseROS::load_params() debug 7\n");
+
     ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, DYNAMIC_MODEL_AIRBORNE_4G);
     ph.nodeParam("enable_covariance", covariance_enabled_, false);
     YAML::Node insMsgs = ph.node(insNode, "messages", 2);
@@ -296,6 +310,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.inl2_states, "inl2_states");
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
+
+    printf("InertialSenseROS::load_params() debug 8\n");
 
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
@@ -319,6 +335,9 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.gps2_info, "info", "gps2/info");
     ph.msgParams(rs_.gps2_raw, "raw", "gps2/raw");
     ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix");
+
+    printf("InertialSenseROS::load_params() debug 9\n");
+
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 
@@ -336,6 +355,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     YAML::Node diagNode = ph.node(node, "diagnostics");
     ph.nodeParam("enable", rs_.diagnostics.enabled);
+
+    printf("InertialSenseROS::load_params() end\n");
 
     // Print entire yaml node tree
     // printf("Node Tree:\n");

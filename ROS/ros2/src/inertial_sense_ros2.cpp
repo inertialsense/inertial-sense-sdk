@@ -49,7 +49,7 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_"))
 {
-    printf("InertialSenseROS::InertialSenseROS()\n");
+    printf("InertialSenseROS::InertialSenseROS() 2\n");
 
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
