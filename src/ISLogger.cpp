@@ -28,7 +28,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ISFileManager.h"
 #include "ISLogger.h"
 #include "ISDataMappings.h"
-#include "ISDisplay.h"
 #include "ISLogFileFactory.h"
 #include "ISUtilities.h"
 
@@ -47,7 +46,7 @@ using namespace std;
 
 // #define DONT_CHECK_LOG_DATA_SET_SIZE		// uncomment to allow reading in of new data logs into older code sets
 #define LOG_DEBUG_PRINT_READ		0
-#define STATS_ALL_FILENAME          "/stats_all.txt"
+
 
 const string cISLogger::g_emptyString;
 
@@ -89,11 +88,13 @@ bool cISLogger::isHeaderCorrupt(const p_data_hdr_t *hdr)
     bool isCorrupt = true;
 
     if (hdr != NULL)
-    {   // if any case is true this is corrupt
+    {
+        // if any case is true this is corrupt
         isCorrupt = (hdr->size == 0 ||
             hdr->offset + hdr->size > MAX_DATASET_SIZE ||
             hdr->id == 0 ||
             hdr->offset % 4 != 0);
+
     }
 
     return isCorrupt;
@@ -155,7 +156,7 @@ void cISLogger::Update()
         }
     }
 
-    ISFileManager::TouchFile(m_directory + STATS_ALL_FILENAME);
+    ISFileManager::TouchFile(m_directory + "/stats.txt");
 }
 
 bool cISLogger::InitSave(const string &directory, const sSaveOptions &options) 
@@ -224,7 +225,7 @@ bool cISLogger::InitSave(const string &directory, const sSaveOptions &options)
     }
 
     // create empty stats file to track timestamps
-    string str = m_directory + (options.subDirectory.empty() ? "" : "/" + options.subDirectory) + STATS_ALL_FILENAME;
+    string str = m_directory + (options.subDirectory.empty() ? "" : "/" + options.subDirectory) + "/stats.txt";
     cISLogFileBase *statsFile = CreateISLogFile(str, "w");
     CloseISLogFile(statsFile);
 
@@ -522,7 +523,8 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-//        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
+        double timestamp = cISDataMappings::Timestamp(dataHdr, dataBuf);
+//        m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -588,7 +590,8 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-//        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
+//        m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
     }
     return data;
 }
@@ -619,17 +622,16 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 
 void cISLogger::CloseAllFiles()
 {
-    // PrintStatistics();
-
     for (auto it : m_devices)
     {
         if (it.second != nullptr)
             it.second->CloseAllFiles();
     }
 
-//    m_logStats.WriteToFile(m_directory + STATS_ALL_FILENAME);
+    m_logStats.WriteToFile(m_directory + "/stats.txt");
     m_errorFile.close();
 }
+
 
 void cISLogger::FlushToFile()
 {
@@ -638,6 +640,7 @@ void cISLogger::FlushToFile()
         it.second->FlushToFile();
     }
 }
+
 
 void cISLogger::OpenWithSystemApp()
 {

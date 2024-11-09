@@ -92,16 +92,12 @@ public:
 
     void ShowParseErrors(bool show) { m_showParseErrors = show; }
 
-    void UpdateStatsFromFile(p_data_buf_t *data);
-    void UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp);
-    std::string LogStatsString() { return m_logStats.Stats(); }
-
 protected:
     bool OpenNewSaveFile();
 
     bool OpenNextReadFile();
 
-    void OnReadData(p_data_buf_t *data) { }
+    void OnReadData(p_data_buf_t *data);
 
     const ISDevice *device = nullptr;               //! ISDevice reference to source of data
 

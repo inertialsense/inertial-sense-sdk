@@ -78,10 +78,13 @@ void cDeviceLog::InitDeviceForReading()
 
 bool cDeviceLog::CloseAllFiles()
 {
-//    if (m_writeMode) {
-//        string str = m_directory + "/stats_SN" + to_string(m_devSerialNo) + ".txt";
-//        m_logStats.WriteToFile(str);
-//    }
+    if (device == nullptr)
+        return false;
+
+    if (m_writeMode) {
+        string str = m_directory + "/stats_SN" + to_string(device->devInfo.serialNumber) + ".txt";
+        m_logStats.WriteToFile(str);
+    }
     return true;
 }
 
@@ -101,13 +104,11 @@ bool cDeviceLog::OpenWithSystemApp()
 
 bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protocol_type_t ptype)
 {
-	// Update log statistics
-//    if (dataHdr != NULL)
-//    {
-//		double timestamp = (ptype == _PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::TimestampOrCurrentTime(dataHdr, dataBuf) : current_timeSecD());
-//        m_logStats.LogData(ptype, dataHdr->id, timestamp);
-//	}
-
+    if (dataHdr != NULL)
+    {
+		double timestamp = (ptype==_PTYPE_INERTIAL_SENSE_DATA ? cISDataMappings::Timestamp(dataHdr, dataBuf) : 0.0);
+        // m_logStats.LogDataAndTimestamp(dataHdr->id, timestamp, ptype);
+	}
     return true;
 }
 
@@ -234,21 +235,20 @@ string cDeviceLog::GetNewFileName(uint32_t serialNumber, uint32_t fileCount, con
     );
 }
 
-void cDeviceLog::UpdateStatsFromFile(p_data_buf_t *data)
-{ 
-//	double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
-//	m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, timestamp);  
-}
-
-void cDeviceLog::UpdateStatsFromFile(protocol_type_t ptype, int id, double timestamp)
-{ 
-//	m_logStats.LogData(ptype, id, timestamp);  
-}
-
 ISDevice* cDeviceLog::Device() {
     return (ISDevice*)device;
 }
 const dev_info_t* cDeviceLog::DeviceInfo() {
     return (dev_info_t*)&(device->devInfo);
 }
+
+void cDeviceLog::OnReadData(p_data_buf_t* data)
+{
+    if (data != NULL)
+    {
+        double timestamp = cISDataMappings::Timestamp(&data->hdr, data->buf);
+        // m_logStats.LogDataAndTimestamp(data->hdr.id, timestamp);
+    }
+}
+
 
