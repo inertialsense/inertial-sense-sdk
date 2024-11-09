@@ -70,7 +70,6 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 unsigned int cLogStats::Count()
 {
 	return 0;
-;
 }
 
 unsigned int cLogStats::Errors()

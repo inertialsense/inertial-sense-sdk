@@ -107,7 +107,7 @@ bool cISLogger::isDataCorrupt(const p_data_buf_t *data)
 
 cISLogger::cISLogger()
 {
-    m_logStats.Clear();
+    // m_logStats.Clear();
 }
 
 cISLogger::~cISLogger()
@@ -120,7 +120,7 @@ void cISLogger::Cleanup()
 {
     LOCK_MUTEX();
     m_devices.clear();
-    m_logStats.Clear();
+    // m_logStats.Clear();
     UNLOCK_MUTEX();
 }
 
@@ -513,12 +513,12 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
     if (isHeaderCorrupt(dataHdr))
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)dataHdr->id, (unsigned long)dataHdr->offset, (unsigned long)dataHdr->size);
-        m_logStats.LogError(dataHdr);
+        // m_logStats.LogError(dataHdr);
     }
     else if (!deviceLog->SaveData(dataHdr, dataBuf))
     {
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats.LogError(dataHdr);
+        // m_logStats.LogError(dataHdr);
     }
 #if 1
     else
@@ -566,7 +566,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, int dataSize, con
     if (!deviceLog->SaveData(dataSize, dataBuf, m_logStats))
     {	// Save Error
         m_errorFile.lprintf("Underlying log implementation failed to save\r\n");
-        m_logStats.LogError(NULL);
+        // m_logStats.LogError(NULL);
     }
     else
     {	// Success
@@ -585,7 +585,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     while (isDataCorrupt(data = deviceLog->ReadData()))
     {
         m_errorFile.lprintf("Corrupt log header, id: %lu, offset: %lu, size: %lu\r\n", (unsigned long)data->hdr.id, (unsigned long)data->hdr.offset, (unsigned long)data->hdr.size);
-        m_logStats.LogError(&data->hdr);
+        // m_logStats.LogError(&data->hdr);
         data = NULL;
     }
     if (data != NULL)
@@ -628,7 +628,7 @@ void cISLogger::CloseAllFiles()
             it.second->CloseAllFiles();
     }
 
-    m_logStats.WriteToFile(m_directory + "/stats.txt");
+    // m_logStats.WriteToFile(m_directory + "/stats.txt");
     m_errorFile.close();
 }
 
@@ -741,7 +741,7 @@ int g_copyReadDid;
 
 bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &outputDir, eLogType logType, uint32_t maxFileSize, float driveUsageLimitPercent, bool useSubFolderTimestamp, bool enableCsvIns2ToIns1Conversion)
 {
-    m_logStats.Clear();
+    // m_logStats.Clear();
 
     sSaveOptions options;
     options.logType                 = logType;
