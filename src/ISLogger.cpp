@@ -522,7 +522,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 #if 1
     else
     {	// Success
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
+//        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, dataHdr->id);
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
@@ -588,7 +588,7 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     }
     if (data != NULL)
     {
-        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
+//        m_logStats.LogData(_PTYPE_INERTIAL_SENSE_DATA, data->hdr.id, cISDataMappings::Timestamp(&data->hdr, data->buf));
     }
     return data;
 }
@@ -627,7 +627,7 @@ void cISLogger::CloseAllFiles()
             it.second->CloseAllFiles();
     }
 
-    m_logStats.WriteToFile(m_directory + STATS_ALL_FILENAME);
+//    m_logStats.WriteToFile(m_directory + STATS_ALL_FILENAME);
     m_errorFile.close();
 }
 
@@ -886,6 +886,8 @@ void cISLogger::PrintProgress()
 
 void cISLogger::PrintStatistics()
 {
+	return;
+
     for (auto it : m_devices)
     {   // Print message statistics 
         std::shared_ptr<cDeviceLog> dev = it.second;
@@ -909,6 +911,8 @@ void cISLogger::PrintStatistics()
 
 void cISLogger::PrintLogDiskUsage()
 {
+	return;
+
     float logSize = LogSizeAll();
     if (logSize < 0.5e6f)
         printf("\nLogging %5.1f KB to: %s", logSize * 1.0e-3f, LogDirectory().c_str());
