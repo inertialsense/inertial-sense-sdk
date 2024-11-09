@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 using namespace std;
 
 
-cLogStatDataId::cLogStatDataId()
+cLogStatMsgId::cLogStatMsgId()
 {
     count = 0;
     errors = 0;
@@ -32,10 +32,10 @@ cLogStatDataId::cLogStatDataId()
     maxTimestampDelta = 0.0;
     minTimestampDelta = 1.0E6;
     timestampDeltaCount = 0;
-    timestampDropCount = 0;
+    timestampIrregCount = 0;
 }
 
-void cLogStatDataId::LogTimestamp(double timestamp)
+void cLogStatMsgId::LogTimestamp(double timestamp)
 {
     // check for corrupt data
     if (_ISNAN(timestamp) || timestamp < 0.0 || timestamp > 999999999999.0)
@@ -51,24 +51,11 @@ void cLogStatDataId::LogTimestamp(double timestamp)
         averageTimeDelta = (totalTimeDelta / (double)++timestampDeltaCount);
         if (lastTimestampDelta != 0.0 && (fabs(delta - lastTimestampDelta) > (lastTimestampDelta * 0.5)))
         {
-            timestampDropCount++;
+            timestampIrregCount++;
         }
         lastTimestampDelta = delta;
     }
     lastTimestamp = timestamp;
-}
-
-void cLogStatDataId::Printf()
-{
-
-#if !PLATFORM_IS_EMBEDDED
-
-    printf(" Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errors);
-    printf(" Time delta: (ave, min, max) %f, %f, %f\r\n", averageTimeDelta, minTimestampDelta, maxTimestampDelta);
-    printf(" Time delta drop: %llu\r\n", (unsigned long long)timestampDropCount);
-
-#endif
-
 }
 
 cLogStats::cLogStats()
@@ -92,12 +79,12 @@ void cLogStats::LogError(const p_data_hdr_t* hdr)
     errorCount++;
     if (hdr != NULL && hdr->id < DID_COUNT)
     {
-        cLogStatDataId& d = isbStats[hdr->id];
+        cLogStatMsgId& d = isbStats[hdr->id];
         d.errors++;
     }
 }
 
-cLogStatDataId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
+cLogStatMsgId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
 {
     switch (ptype)
     {
@@ -112,7 +99,7 @@ cLogStatDataId* cLogStats::MsgStats(protocol_type_t ptype, uint32_t id)
 
 void cLogStats::LogData(uint32_t id, protocol_type_t ptype)
 {
-    cLogStatDataId *d = MsgStats(ptype, id);
+    cLogStatMsgId *d = MsgStats(ptype, id);
     if (d)
     {
         d->count++;
@@ -122,7 +109,7 @@ void cLogStats::LogData(uint32_t id, protocol_type_t ptype)
 
 void cLogStats::LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype)
 {
-    cLogStatDataId *d = MsgStats(ptype, id);
+    cLogStatMsgId *d = MsgStats(ptype, id);
     if (d)
     {
         d->count++;
@@ -134,36 +121,12 @@ void cLogStats::LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type
     count++;
 }
 
-void cLogStats::Printf()
-{
-
-#if !PLATFORM_IS_EMBEDDED
-
-    printf("LOG STATS\r\n");
-    printf("----------");
-    printf("Count: %llu,   Errors: %llu\r\n", (unsigned long long)count, (unsigned long long)errorCount);
-    for (auto it = isbStats.begin(); it != isbStats.end(); ++it) 
-    {
-        int id = it->first;
-        cLogStatDataId &d = it->second;
-        if (d.count != 0)
-        {
-            printf(" ISB: %d\r\n", id);
-            d.Printf();
-            printf("\r\n");
-        }
-	}
-
-#endif
-
-}
-
-void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype)
+void cLogStats::WriteMsgStats(std::map<int, cLogStatMsgId> &msgStats, const char* msgName, protocol_type_t ptype)
     {
     for (auto it = msgStats.begin(); it != msgStats.end(); ++it) 
     {
         uint32_t id = it->first;
-        cLogStatDataId& stat = it->second;
+        cLogStatMsgId& stat = it->second;
         if (stat.count == 0 && stat.errors == 0)
         {   // Exclude zero count stats
             continue;
@@ -199,7 +162,7 @@ void cLogStats::WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const cha
         }
         statsFile->lprintf("Count: %d,   Errors: %d\r\n", stat.count, stat.errors);
         statsFile->lprintf("Timestamp Delta (ave, min, max): %.4f, %.4f, %.4f\r\n", stat.averageTimeDelta, stat.minTimestampDelta, stat.maxTimestampDelta);
-        statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampDropCount);
+        statsFile->lprintf("Timestamp Drops: %d\r\n", stat.timestampIrregCount);
         statsFile->lprintf("\r\n");
     }
 }

@@ -23,7 +23,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 typedef void (*FuncLogDataAndTimestamp)(uint32_t dataId, double timestamp);
 
-class cLogStatDataId
+class cLogStatMsgId
 {
 public:
 	unsigned int count;         // count for this data id
@@ -34,21 +34,20 @@ public:
 	double lastTimestampDelta;
 	double minTimestampDelta;
 	double maxTimestampDelta;
-	uint64_t timestampDeltaCount;
-	uint64_t timestampDropCount; // count of delta timestamps > 50% different from previous delta timestamp
+	unsigned int timestampDeltaCount;
+	unsigned int timestampIrregCount; 	// count of irregularities in delta timestamps (> 50% different from previous delta timestamp)
 
-	cLogStatDataId();
+	cLogStatMsgId();
 	void LogTimestamp(double timestamp);
-	void Printf();
 };
 
 class cLogStats
 {
 public:
-	std::map<int, cLogStatDataId> isbStats;
-	std::map<int, cLogStatDataId> nmeaStats;
-	std::map<int, cLogStatDataId> rtcm3Stats;
-	std::map<int, cLogStatDataId> ubloxStats;
+	std::map<int, cLogStatMsgId> isbStats;
+	std::map<int, cLogStatMsgId> nmeaStats;
+	std::map<int, cLogStatMsgId> rtcm3Stats;
+	std::map<int, cLogStatMsgId> ubloxStats;
 	uint64_t count; // count of all data ids
 	uint64_t errorCount; // total error count
 	cISLogFileBase* statsFile;
@@ -56,13 +55,12 @@ public:
 	cLogStats();
 	void Clear();
 	void LogError(const p_data_hdr_t* hdr);
-	cLogStatDataId* MsgStats(protocol_type_t ptype, uint32_t id);
+	cLogStatMsgId* MsgStats(protocol_type_t ptype, uint32_t id);
 	void LogData(uint32_t id, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
 	void LogDataAndTimestamp(uint32_t id, double timestamp, protocol_type_t ptype=_PTYPE_INERTIAL_SENSE_DATA);
-	void Printf();
 	unsigned int Count() { return 0; }
 	unsigned int Errors() { return 0; }
-	void WriteMsgStats(std::map<int, cLogStatDataId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
+	void WriteMsgStats(std::map<int, cLogStatMsgId> &msgStats, const char* msgName, protocol_type_t ptype=_PTYPE_NONE);
 	void WriteToFile(const std::string& fileName);
 };
 
