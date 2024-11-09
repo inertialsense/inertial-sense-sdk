@@ -374,6 +374,8 @@ void cInertialSenseDisplay::SetExitProgram()
 
 void cInertialSenseDisplay::ProcessData(p_data_buf_t* data, bool enableReplay, double replaySpeedX)
 {
+	return;
+
 	p_data_t pdata = {};
 	pdata.hdr = data->hdr;
 	pdata.ptr = data->buf;

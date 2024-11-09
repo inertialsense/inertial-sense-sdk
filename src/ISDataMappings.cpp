@@ -1977,6 +1977,8 @@ double cISDataMappings::Timestamp(const p_data_hdr_t* hdr, const uint8_t* buf)
 
 double cISDataMappings::TimestampOrCurrentTime(const p_data_hdr_t* hdr, const uint8_t* buf)
 {
+	return 0;
+
     double timestamp = Timestamp(hdr, buf);
     if (timestamp==0.0) { timestamp = current_timeSecD(); }
     return timestamp;

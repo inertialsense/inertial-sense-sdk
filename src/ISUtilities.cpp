@@ -202,6 +202,7 @@ extern "C" {
 
 /** System time in seconds */
 double current_timeSecD() {
+	return 0;
 #if PLATFORM_IS_WINDOWS
     // Time since week start (Sunday morning) in seconds, GMT
     LARGE_INTEGER StartingTime;
