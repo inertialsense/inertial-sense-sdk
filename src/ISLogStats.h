@@ -41,6 +41,13 @@ public:
 	void LogTimestamp(double timestamp);
 };
 
+struct sLogStatPType
+{
+	std::map<int, cLogStatMsgId> stats;     // ID, cLogStatMsgId
+	unsigned int count;                     // count of all message ids
+	unsigned int errors;                    // total error count
+};
+
 class cLogStats
 {
 public:
