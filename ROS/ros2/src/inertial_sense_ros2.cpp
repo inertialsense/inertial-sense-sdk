@@ -239,6 +239,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
+	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 2" );
     printf("InertialSenseROS::load_params() debug 2\n");
 
     if(ports_.size() < 1)
@@ -289,6 +290,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     int platform_config = nh_->declare_parameter<int>("platformConfig", 0);
     setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_, platform_config);
 
+	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 5" );
     printf("InertialSenseROS::load_params() debug 5\n");
 
     // Sensors
@@ -346,6 +348,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
                                             "DYNAMIC_MODEL_WRIST",
                                             "DYNAMIC_MODEL_INDOOR" };
 
+	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 7" );
     printf("InertialSenseROS::load_params() debug 7\n");
 
     int dynamic_model = nh_->declare_parameter<int>("dynamic_model", DYNAMIC_MODEL_AIRBORNE_4G);
@@ -462,6 +465,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     int evb_cb_options = nh_->declare_parameter<int>("cb_options", 0);
     ph.nodeParam("cb_options", evb_.cb_options, evb_cb_options);
 
+	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 10" );
     printf("InertialSenseROS::load_params() debug 10\n");
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
@@ -476,6 +480,7 @@ void InertialSenseROS::load_params(YAML::Node &node)
     bool rs_diagnostics_enabled = nh_->declare_parameter<bool>("msg/diagnostics/enable", false);
     ph.nodeParam("enable", rs_.diagnostics.enabled, rs_diagnostics_enabled);
 
+	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() end" );
     printf("InertialSenseROS::load_params() end\n");
 
     // Print entire yaml node tree
