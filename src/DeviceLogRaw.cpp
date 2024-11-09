@@ -23,7 +23,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include "DeviceLogRaw.h"
 #include "ISDataMappings.h"
-#include "ISDisplay.h"
 #include "ISLogger.h"
 #include "ISLogFileFactory.h"
 #include "message_stats.h"
@@ -98,7 +97,21 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf)
             switch (ptype)
             {
             default:
-//                timestamp = current_timeSecD();
+                break;
+
+            case _PTYPE_RTCM3:
+                m_comm.rxPkt.dataHdr.id = messageStatsGetbitu((const unsigned char*)m_comm.rxPkt.data.ptr, 24, 12);
+                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+                break;
+
+			case _PTYPE_UBLOX:
+				m_comm.rxPkt.dataHdr.id = *(m_comm.rxPkt.data.ptr+2);
+				cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
+				break;
+
+            case _PTYPE_NMEA:
+                m_comm.rxPkt.dataHdr.id = getNmeaMsgId(m_comm.rxPkt.data.ptr, m_comm.rxPkt.dataHdr.size);
+                cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr, ptype);
                 break;
 
 			case _PTYPE_PARSE_ERROR:
@@ -114,10 +127,14 @@ bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf)
             case _PTYPE_INERTIAL_SENSE_DATA:
             case _PTYPE_INERTIAL_SENSE_CMD:
                 {
-//                    timestamp = cISDataMappings::TimestampOrCurrentTime(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
-
                     dev_info_t tmpInfo = {};
                     dev_info_t* devInfo = &tmpInfo;
+
+                    uint8_t *dataPtr = m_comm.rxPkt.data.ptr + m_comm.rxPkt.dataHdr.offset;
+
+                    timestamp = cISDataMappings::Timestamp(&m_comm.rxPkt.dataHdr, dataPtr);
+
+                    cDeviceLog::SaveData(&m_comm.rxPkt.dataHdr, m_comm.rxPkt.data.ptr);
 
                     if (m_comm.rxPkt.dataHdr.id == DID_DEV_INFO) {
                         // if we have a device struct, let's use it, otherwise we'll just copy into our local copy
@@ -249,14 +266,18 @@ p_data_buf_t* cDeviceLogRaw::ReadDataFromChunk()
         {
             switch (ptype)
             {
+            default:
+            // case _PTYPE_RTCM3:
+            // case _PTYPE_UBLOX:
+            // case _PTYPE_NMEA:
+                // Do nothing
+                break;
+
             case _PTYPE_PARSE_ERROR:
                 if (m_showParseErrors)
                 {
                     if (m_comm.rxErrorCount > 1) { printf("SN%d ReadDataFromChunk() parse errors: %d\n", m_devSerialNo, m_comm.rxErrorCount); }
                 }
-                break;
-
-            default:
                 break;
 
             case _PTYPE_INERTIAL_SENSE_DATA:
