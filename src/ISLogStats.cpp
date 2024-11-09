@@ -116,7 +116,7 @@ void cLogStats::LogData(protocol_type_t ptype, int id, double timestamp)
 
 string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool showDeltaTime, bool showErrors)
 {
-	return;
+	return "";
 
     string msgName;
     int colWidName = 24;
@@ -203,7 +203,7 @@ string cLogStats::MessageStats(protocol_type_t ptype, sLogStatPType &msg, bool s
 
 unsigned int cLogStats::Count()
 {
-	return;
+	return 0;
     unsigned int count = 0;
     for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
     {
@@ -214,7 +214,7 @@ unsigned int cLogStats::Count()
 
 unsigned int cLogStats::Errors()
 {
-	return;
+	return 0;
     unsigned int errors = 0;
     for (std::map<protocol_type_t, sLogStatPType>::iterator it = msgs.begin(); it != msgs.end(); ++it) 
     {
@@ -225,7 +225,7 @@ unsigned int cLogStats::Errors()
 
 string cLogStats::Stats()
 {
-	return;
+	return "";
     std::stringstream ss;
     unsigned int count = Count();
     ss << "Total: count " << count << endl;
