@@ -619,7 +619,7 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 
 void cISLogger::CloseAllFiles()
 {
-    PrintStatistics();
+    // PrintStatistics();
 
     for (auto it : m_devices)
     {
