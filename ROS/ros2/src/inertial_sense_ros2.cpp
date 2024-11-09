@@ -49,7 +49,7 @@ void odometryIdentity(nav_msgs::msg::Odometry& msg_odom) {
 
 InertialSenseROS::InertialSenseROS(YAML::Node paramNode, bool configFlashParameters): nh_(rclcpp::Node::make_shared("nh_"))
 {
-    RCLCPP_INFO(rclcpp::get_logger("start"),"InertialSenseROS::InertialSenseROS() 2");
+    RCLCPP_INFO(rclcpp::get_logger("start"),"InertialSenseROS::InertialSenseROS()");
 
     // Should always be enabled by default
     rs_.did_ins1.enabled = true;
@@ -84,6 +84,8 @@ void InertialSenseROS::initialize(bool configFlashParameters)
 
 void InertialSenseROS::terminate()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::terminate()" );
+
     IS_.Close();
     IS_.CloseServerConnection();
     sdk_connected_ = false;
@@ -93,6 +95,8 @@ void InertialSenseROS::terminate()
 
 void InertialSenseROS::initializeIS(bool configFlashParameters)
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::initializeIS()" );
+
     if (factory_reset_)
     {
         if (connect())
@@ -121,10 +125,14 @@ void InertialSenseROS::initializeIS(bool configFlashParameters)
             //configure_flash_parameters();
         }
     }
+
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::initializeIS() end" );
 }
 
 void InertialSenseROS::initializeROS()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::initializeROS() end" );
+
     //////////////////////////////////////////////////////////
     // Start Up ROS service servers
     refLLA_set_value_srv_           = nh_->create_service<inertial_sense_ros2::srv::RefLLAUpdate>("set_refLLA_value", std::bind(&InertialSenseROS::set_refLLA_to_value, this, std::placeholders::_1, std::placeholders::_2));
@@ -239,8 +247,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ports_.push_back(param);
     }
 
-	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 2" );
-
     if(ports_.size() < 1)
     {
         //No ports specified. Use default
@@ -248,8 +254,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
         ph.nodeParam("port_1", param_1, param_1);
         ports_.push_back(param_1);
     }
-
-    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 3" );
 
     bool factory_reset = nh_->declare_parameter<bool>("factory_reset", false);
     ph.nodeParam("factory_reset", factory_reset_, factory_reset);
@@ -262,8 +266,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.nodeParam("frame_id", frame_id_, frame_id);
     bool log_enabled = nh_->declare_parameter<bool>("enable_log", false);
     ph.nodeParam("enable_log", log_enabled_, log_enabled);
-
-    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 4" );
 
     // advanced Parameters
     int io_config_bits = nh_->declare_parameter<int>("io_config", 39624800);
@@ -289,8 +291,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     int platform_config = nh_->declare_parameter<int>("platformConfig", 0);
     setPlatformConfig_ = ph.nodeParam("platformConfig", platformConfig_, platform_config);
 
-	RCLCPP_INFO(rclcpp::get_logger("load_config_yaml"), "InertialSenseROS::load_params() debug 5" );
-
     // Sensors
     YAML::Node sensorsNode = ph.node(node, "sensors");
     YAML::Node sensorsMsgs = ph.node(sensorsNode, "messages", 2);
@@ -313,8 +313,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     ph.msgParams(rs_.strobe_in, "strobe_in");
     node["sensors"]["messages"] = sensorsMsgs;
-
-    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 6" );
 
     // INS
     YAML::Node insNode = ph.node(node, "ins");
@@ -345,8 +343,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
                                             "DYNAMIC_MODEL_AIRBORNE_4G",
                                             "DYNAMIC_MODEL_WRIST",
                                             "DYNAMIC_MODEL_INDOOR" };
-
-	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 7" );
 
     int dynamic_model = nh_->declare_parameter<int>("dynamic_model", DYNAMIC_MODEL_AIRBORNE_4G);
     ph.nodeParamEnum("dynamic_model", dynamicModel_, dyn_model_set, dynamic_model);
@@ -384,8 +380,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     ph.msgParams(rs_.inl2_states, "inl2_states", "", false, did_inl2_period, did_inl2_enable);
     insNode["messages"] = insMsgs;
     node["ins"] = insNode;
-
-    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 8" );
 
     // GPS 1
     YAML::Node gps1Node = ph.node(node, "gps1");
@@ -450,8 +444,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
     int rs_gps2_nsf_period = nh_->declare_parameter<int>("msg/gps2_navsatfix/period", 1);
     ph.msgParams(rs_.gps2_navsatfix, "navsatfix", "gps2/NavSatFix", false, rs_gps2_nsf_period, rs_gps2_nsf);
 
-    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 9" );
-
     gps2Node["messages"] = gps2Msgs;
     node["gps2"] = gps2Node;
 
@@ -461,8 +453,6 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
     int evb_cb_options = nh_->declare_parameter<int>("cb_options", 0);
     ph.nodeParam("cb_options", evb_.cb_options, evb_cb_options);
-
-	RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::load_params() debug 10" );
 
     YAML::Node rtkRoverNode = ph.node(node, "rtk_rover");
     if (rtkRoverNode.IsDefined() && !rtkRoverNode.IsNull())
@@ -488,6 +478,8 @@ void InertialSenseROS::load_params(YAML::Node &node)
 
 void InertialSenseROS::configure_data_streams()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::configure_data_streams()" );
+
     configure_data_streams(false);
 }
 
@@ -521,6 +513,8 @@ void InertialSenseROS::configure_data_streams()
 
 void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is true each step will be attempted without returning
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::configure_data_streams(firstrun)" );
+
     if (!rs_.gps1.streaming_pos) // we always need GPS for Fix status
     {
         rclcpp::Logger logger_gps1pos = rclcpp::get_logger("gps1_pos");
@@ -670,6 +664,8 @@ void InertialSenseROS::configure_data_streams(bool firstrun) // if firstrun is t
 
 void InertialSenseROS::start_log()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::start_log()" );
+
     std::string filename = getenv("HOME");
     filename += "/Documents/Inertial_Sense/Logs/" + cISLogger::CreateCurrentTimestamp();
     RCLCPP_INFO_STREAM(rclcpp::get_logger("creating_log"),"InertialSenseROS: Creating log in " << filename << " folder");
@@ -699,6 +695,8 @@ void InertialSenseROS::configure_ascii_output()
  */
 bool InertialSenseROS::connect(float timeout)
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::connect()" );
+
     uint32_t end_time = nh_->now().seconds() + timeout;
     auto ports_iterator = ports_.begin();
 
@@ -726,6 +724,8 @@ bool InertialSenseROS::connect(float timeout)
 
 bool InertialSenseROS::firmware_compatiblity_check()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::firmware_compatiblity_check()" );
+
     char local_protocol[4] = { PROTOCOL_VERSION_CHAR0, PROTOCOL_VERSION_CHAR1, PROTOCOL_VERSION_CHAR2, PROTOCOL_VERSION_CHAR3 };
     char diff_protocol[4] = { 0, 0, 0, 0 };
     for (int i = 0; i < sizeof(local_protocol); i++)  diff_protocol[i] = local_protocol[i] - IS_.DeviceInfo().protocolVer[i];
@@ -813,10 +813,12 @@ bool vecF64Match(double v1[], double v2[], int size=3)
 
 void InertialSenseROS::configure_flash_parameters()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::configure_flash_parameters()" );
+
     bool reboot = false;
     nvm_flash_cfg_t current_flash_cfg;
     IS_.FlashConfig(current_flash_cfg);
-    //RCLCPP_INFO(rclcpp::get_logger("E"),"InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
+    // RCLCPP_INFO(rclcpp::get_logger("E"),"InertialSenseROS: Configuring flash: \nCurrent: %i, \nDesired: %i\n", current_flash_cfg.ioConfig, ioConfig_);
 
     if (current_flash_cfg.startupNavDtMs != ins_nav_dt_ms_)
     {
@@ -1105,6 +1107,8 @@ void InertialSenseROS::configure_rtk()
 
 void InertialSenseROS::flash_config_callback(eDataIDs DID, const nvm_flash_cfg_t *const msg)
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"),"InertialSenseROS::flash_config_callback");
+
     STREAMING_CHECK(flashConfigStreaming_, DID);
 
     setRefLla(msg->refLla);
@@ -1706,6 +1710,8 @@ void InertialSenseROS::GPS_vel_callback(eDataIDs DID, const gps_vel_t *const msg
 
 void InertialSenseROS::publishGPS1()
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"), "InertialSenseROS::publishGPS1()" );
+
     double dt = (gps1_velEcef.header.stamp.sec - msg_gps1.header.stamp.sec);
     if (abs(dt) < 2.0e-3)
     {
@@ -2106,6 +2112,8 @@ void InertialSenseROS::GPS_obs_bundle_timer_callback()
 
 void InertialSenseROS::GPS_eph_callback(eDataIDs DID, const eph_t *const msg)
 {
+    RCLCPP_INFO(rclcpp::get_logger("DEBUG"),"InertialSenseROS::GPS_eph_callback");
+
     inertial_sense_ros2::msg::GNSSEphemeris eph;
     eph.sat = msg->sat;
     eph.iode = msg->iode;
