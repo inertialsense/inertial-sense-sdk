@@ -23,6 +23,8 @@ TEST(BasicTestSuite, test_config_params)
     YAML::Node config = YAML::Load(yaml);
     ASSERT_TRUE(config.IsDefined()) << "Unable to parse YAML file. Is the file valid?";
 
+    RCLCPP_INFO(rclcpp::get_logger("start"),"DEBUG START");
+
     InertialSenseROS isROS(config);
 
     RCLCPP_INFO(rclcpp::get_logger("start"),"DEBUG A");
