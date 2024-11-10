@@ -39,3 +39,4 @@ ros/ros2/log/
 
 ExampleProjects/Arduino/ReadIS/src/
 ExampleProjects/LogReader_RegCmp/Log/
+python/inertialsense.egg-info/
