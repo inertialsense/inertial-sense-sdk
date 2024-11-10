@@ -632,6 +632,48 @@ void abs_Vec4d( ixVector4d result, const ixVector4d v )
 	result[3] = fabs(v[3]);
 }
 
+f_t dot_Vec2( const ixVector2 v)
+{
+	return  v[0] * v[0] +
+			v[1] * v[1];
+}
+
+f_t dot_Vec3( const ixVector3 v)
+{
+	return  v[0] * v[0] +
+	        v[1] * v[1] +
+	        v[2] * v[2];
+}
+
+f_t dot_Vec4( const ixVector4 v)
+{
+	return  v[0] * v[0] +
+	        v[1] * v[1] +
+	        v[2] * v[2] +
+	        v[3] * v[3];
+}
+
+double dot_Vec2d( const ixVector2d v)
+{
+    return  v[0] * v[0] +
+            v[1] * v[1];
+}
+
+double dot_Vec3d( const ixVector3d v)
+{
+    return  v[0] * v[0] +
+            v[1] * v[1] +
+            v[2] * v[2];
+}
+
+double dot_Vec4d( const ixVector4d v)
+{
+    return  v[0] * v[0] +
+            v[1] * v[1] +
+            v[2] * v[2] +
+            v[3] * v[3];
+}
+
 f_t dot_Vec2_Vec2( const ixVector2 v1, const ixVector2 v2 )
 {
 	return  v1[0] * v2[0] +
@@ -672,6 +714,21 @@ double dot_Vec4d_Vec4d( const ixVector4d v1, const ixVector4d v2 )
             v1[1] * v2[1] +
             v1[2] * v2[2] +
             v1[3] * v2[3];
+}
+
+f_t mag_Vec2( const ixVector2 v)
+{
+    return _SQRT(dot_Vec2(v));
+}
+
+f_t mag_Vec3( const ixVector3 v)
+{
+    return _SQRT(dot_Vec3(v));
+}
+
+f_t mag_Vec4( const ixVector4 v)
+{
+    return _SQRT(dot_Vec4(v));
 }
 
 //_______________________________________________________________________________________________
@@ -868,6 +925,13 @@ void mean_Vec3d_Vec3d( ixVector3d result, const ixVector3d v1, const ixVector3d 
 {
 	add_Vec3d_Vec3d(result, v1, v2);
 	mul_Vec3d_X(result, result, 0.5);
+}
+
+int mat3x3_IsIdentity(const f_t m[])
+{
+    return  (m[0]==1.0f) && (m[1]==0.0f) && (m[2]==0.0f) &&
+            (m[3]==0.0f) && (m[4]==1.0f) && (m[5]==0.0f) &&
+            (m[6]==0.0f) && (m[7]==0.0f) && (m[8]==1.0f);
 }
 
 void cpy_MatRxC_MatMxN( f_t *result, i_t r, i_t c, i_t r_offset, i_t c_offset, f_t *A, i_t m, i_t n )

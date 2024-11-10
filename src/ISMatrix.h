@@ -25,57 +25,42 @@ extern "C" {
 //_____ M A C R O S ________________________________________________________
 
 // Magnitude Squared or Dot Product of vector w/ itself
-#if 0 	// Inline functions
-#define dot_Vec2(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1])
-#define dot_Vec3(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2])
-#define dot_Vec4(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2] + (v)[3]*(v)[3])
-#define dot_Vec2d(v)    dot_Vec2(v)
-#define dot_Vec3d(v)    dot_Vec3(v)
-#define dot_Vec4d(v)    dot_Vec4(v)
-#else	// Normal functions (less instruction space)
-#define dot_Vec2(v)     dot_Vec2_Vec2(v,v)
-#define dot_Vec3(v)     dot_Vec3_Vec3(v,v)
-#define dot_Vec4(v)     dot_Vec4_Vec4(v,v)
-#define dot_Vec2d(v)    dot_Vec2d_Vec2d(v,v)
-#define dot_Vec3d(v)    dot_Vec3d_Vec3d(v,v)
-#define dot_Vec4d(v)    dot_Vec4d_Vec4d(v,v)
-#endif
+// Inline macros (faster).  Call functions (i.e. dot_Vec3()) for slower but better memory usage.
+#define DOT_VEC2(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1])
+#define DOT_VEC3(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2])
+#define DOT_VEC4(v)     ((v)[0]*(v)[0] + (v)[1]*(v)[1] + (v)[2]*(v)[2] + (v)[3]*(v)[3])
 
 // Magnitude or Norm 
-#define mag_Vec2(v)     (_SQRT(dot_Vec2(v)))
-#define mag_Vec3(v)     (_SQRT(dot_Vec3(v)))
-#define mag_Vec4(v)     (_SQRT(dot_Vec4(v)))
-#define mag_Vec2d(v)    (sqrt(dot_Vec2d(v)))
-#define mag_Vec3d(v)    (sqrt(dot_Vec3d(v)))
-#define mag_Vec4d(v)    (sqrt(dot_Vec4d(v)))
+#define MAG_VEC2(v)     (_SQRT(DOT_VEC2(v)))
+#define MAG_VEC3(v)     (_SQRT(DOT_VEC3(v)))
+#define MAG_VEC4(v)     (_SQRT(DOT_VEC4(v)))
+#define MAG_VEC2D(v)    (sqrt(DOT_VEC2(v)))
+#define MAG_VEC3D(v)    (sqrt(DOT_VEC3(v)))
+#define MAG_VEC4D(v)    (sqrt(DOT_VEC4(v)))
 
 #define EPSF32 (1.0e-16f)  // Smallest number for safe division
 #define EPSF64 (1.0e-16l)  // Smallest number for safe division
 
-#define recipNorm_Vec2(v)	(1.0f/_MAX(mag_Vec2(v), EPSF32))
-#define recipNorm_Vec3(v)	(1.0f/_MAX(mag_Vec3(v), EPSF32))
-#define recipNorm_Vec4(v)	(1.0f/_MAX(mag_Vec4(v), EPSF32))
-#define recipNorm_Vec3d(v)	(1.0l/_MAX(mag_Vec3d(v), EPSF64))
-#define recipNorm_Vec4d(v)	(1.0l/_MAX(mag_Vec4d(v), EPSF64))
+#define RECIPNORM_VEC2(v)	(1.0f/_MAX(MAG_VEC2(v), EPSF32))
+#define RECIPNORM_VEC3(v)	(1.0f/_MAX(MAG_VEC3(v), EPSF32))
+#define RECIPNORM_VEC4(v)	(1.0f/_MAX(MAG_VEC4(v), EPSF32))
+#define RECIPNORM_VEC3D(v)	(1.0l/_MAX(MAG_VEC3D(v), EPSF64))
+#define RECIPNORM_VEC4D(v)	(1.0l/_MAX(MAG_VEC4D(v), EPSF64))
 
-#define unwrap_Vec3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
+#define UNWRAP_VEC3(v)	{UNWRAP_RAD_F32(v[0]); UNWRAP_RAD_F32(v[1]); UNWRAP_RAD_F32(v[2]) }
 
-#define Vec3_OneLessThan_X(v,x)		( ((v[0])<(x))  || ((v[1])<(x))  || ((v[2])<(x)) )
-#define Vec3_OneGrtrThan_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )
-#define Vec3_AllLessThan_X(v,x)		( ((v[0])<(x))  && ((v[1])<(x))  && ((v[2])<(x)) )
-#define Vec3_AllGrtrThan_X(v,x)		( ((v[0])>(x))  && ((v[1])>(x))  && ((v[2])>(x)) )
-#define Vec3_IsZero(v)				( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
-#define Vec3_IsAnyZero(v)			( ((v[0])==(0.0f))  || ((v[1])==(0.0f))  || ((v[2])==(0.0f)) )
-#define Vec3_IsAnyNonZero(v)		( ((v[0])!=(0.0f))  || ((v[1])!=(0.0f))  || ((v[2])!=(0.0f)) )
+#define VEC3_ONELESSTHAN_X(v,x)		( ((v[0])<(x))  || ((v[1])<(x))  || ((v[2])<(x)) )
+#define VEC3_ONEGRTRTHAN_X(v,x)		( ((v[0])>(x))  || ((v[1])>(x))  || ((v[2])>(x)) )
+#define VEC3_ALLLESSTHAN_X(v,x)		( ((v[0])<(x))  && ((v[1])<(x))  && ((v[2])<(x)) )
+#define VEC3_ALLGRTRTHAN_X(v,x)		( ((v[0])>(x))  && ((v[1])>(x))  && ((v[2])>(x)) )
+#define VEC3_ISZERO(v)				( ((v[0])==(0.0f))  && ((v[1])==(0.0f))  && ((v[2])==(0.0f)) )
+#define VEC3_ISANYZERO(v)			( ((v[0])==(0.0f))  || ((v[1])==(0.0f))  || ((v[2])==(0.0f)) )
+#define VEC3_ISANYNONZERO(v)		( ((v[0])!=(0.0f))  || ((v[1])!=(0.0f))  || ((v[2])!=(0.0f)) )
 
-#define Mat3x3_IsIdentity(m)        ( (m[0]==1.0f) && (m[1]==0.0f) && (m[2]==0.0f) && \
-                                      (m[3]==0.0f) && (m[4]==1.0f) && (m[5]==0.0f) && \
-                                      (m[6]==0.0f) && (m[7]==0.0f) && (m[8]==1.0f) )
+#define SET_VEC3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
+#define SET_VEC4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
 
-#define set_Vec3_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); }
-#define set_Vec4_X(v,x)				{ (v[0])=(x); (v[1])=(x); (v[2])=(x); (v[3])=(x); }
-
-#define is_NaN(v)					((v) != (v))
+#define IS_NAN(v)					((v) != (v))
 
 // Zero order low-pass filter 
 typedef struct
@@ -263,6 +248,16 @@ void abs_Vec3d( ixVector3d result, const ixVector3d v );
 void abs_Vec4d( ixVector4d result, const ixVector4d v );
 
 /* Dot product
+ * result = v(n) dot v(n)
+ */
+f_t dot_Vec2(const ixVector2 v);
+f_t dot_Vec3(const ixVector3 v);
+f_t dot_Vec4(const ixVector4 v);
+double dot_Vec2d(const ixVector2d v);
+double dot_Vec3d(const ixVector3d v);
+double dot_Vec4d(const ixVector4d v);
+
+/* Dot product
  * result = v1(n) dot v2(n)
  */
 f_t dot_Vec2_Vec2(const ixVector2 v1, const ixVector2 v2 );
@@ -271,6 +266,13 @@ f_t dot_Vec4_Vec4(const ixVector4 v1, const ixVector4 v2 );
 double dot_Vec2d_Vec2d(const ixVector2d v1, const ixVector2d v2 );
 double dot_Vec3d_Vec3d(const ixVector3d v1, const ixVector3d v2 );
 double dot_Vec4d_Vec4d(const ixVector4d v1, const ixVector4d v2 );
+
+/* Vector magnitude
+ * result = sqrt( v(n) dot v(n) )
+ */
+f_t mag_Vec2( const ixVector2 v);
+f_t mag_Vec3( const ixVector3 v);
+f_t mag_Vec4( const ixVector4 v);
 
 /* Cross product
  * result(3) = v1(3) x v2(3)
@@ -510,6 +512,10 @@ static __inline void zero_MatMxN( f_t *M, i_t m, i_t n )
 	}
 }
 
+/**
+ * Return 1 if 3x3 matrix is an identity, 0 if not.
+ */
+int mat3x3_IsIdentity(const f_t m[]);
 
 /* Copy vector
  * result(3) = v(3)
@@ -637,7 +643,7 @@ char inv_Mat4( ixMatrix4 result, const ixMatrix4 m );
 static __inline void normalize_Vec2( ixVector2 v )
 {
     // Normalize vector
-    mul_Vec2_X( v, v, recipNorm_Vec2(v) );
+    mul_Vec2_X( v, v, RECIPNORM_VEC2(v) );
 }
 
 /*
@@ -646,7 +652,7 @@ static __inline void normalize_Vec2( ixVector2 v )
 static __inline void normalize_Vec3( ixVector3 result, const ixVector3 v )
 {
     // Normalize vector
-	mul_Vec3_X( result, v, recipNorm_Vec3(v) );
+	mul_Vec3_X( result, v, RECIPNORM_VEC3(v) );
 }
 
 /*
@@ -655,12 +661,12 @@ static __inline void normalize_Vec3( ixVector3 result, const ixVector3 v )
 static __inline void normalize_Vec4( ixVector4 result, const ixVector4 v )
 {
     // Normalize vector
-    mul_Vec4_X( result, v, recipNorm_Vec4(v) );
+    mul_Vec4_X( result, v, RECIPNORM_VEC4(v) );
 }
 static __inline void normalize_Vec4d( ixVector4d result, const ixVector4d v )
 {
 	// Normalize vector
-	mul_Vec4d_X( result, v, recipNorm_Vec4d(v) );
+	mul_Vec4d_X( result, v, RECIPNORM_VEC4D(v) );
 }
 
 /*
@@ -726,7 +732,7 @@ static __inline int isNan_array( f_t *a, int size )
 
     for( i=0; i<size; i++ )
     {
-        if( is_NaN(a[i]) )
+        if( IS_NAN(a[i]) )
             return 1;
     }
 
@@ -743,7 +749,7 @@ static __inline int isNan_array_d( double *a, int size )
 
     for( i=0; i<size; i++ )
     {
-        if( is_NaN(a[i]) )
+        if( IS_NAN(a[i]) )
             return 1;
     }
 
