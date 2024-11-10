@@ -526,14 +526,7 @@ bool cISLogger::LogData(std::shared_ptr<cDeviceLog> deviceLog, p_data_hdr_t *dat
 
         if (dataHdr->id == DID_DIAGNOSTIC_MESSAGE)
         {
-            // write to diagnostic text file
-#if 0        
-            std::ostringstream outFilePath;
-            outFilePath << m_directory << "/diagnostic_" << m_devices[device]->DeviceInfo()->serialNumber << ".txt";
-            cISLogFileBase *outfile = CreateISLogFile(outFilePath.str(), "a");
-#else
             cISLogFileBase *outfile = CreateISLogFile(m_directory + "/diagnostic_" + std::to_string(deviceLog->DeviceInfo()->serialNumber) + ".txt", "a");
-#endif            
             std::string msg = (((diag_msg_t *)dataBuf)->message);
             outfile->write(msg.c_str(), msg.length());
             if (msg.length() > 0 && *msg.end() != '\n')
@@ -658,7 +651,7 @@ void cISLogger::ShowParseErrors(bool show)
 
 uint64_t cISLogger::LogSize(uint32_t devSerialNo)
 {
-    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() : -1;
+    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() : 0);
 }
 
 uint64_t cISLogger::LogSizeAll()
@@ -678,57 +671,23 @@ float cISLogger::LogSizeAllMB()
 
 float cISLogger::LogSizeMB(uint32_t devSerialNo)
 {
-    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0;
+    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0);
 }
 
 float cISLogger::FileSizeMB(uint32_t devSerialNo)
 {
-    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0;
+    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0);
 }
 
 uint32_t cISLogger::FileCount(uint32_t devSerialNo)
 {
-    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->FileCount() : 0;
+    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->FileCount() : 0);
 }
 
 std::string cISLogger::GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char *suffix)
 {
-    return (m_devices.find(devSerialNo) == m_devices.end()) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : std::string("");
+    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : "");
 }
-
-/*
-bool cISLogger::SetDevice(const ISDevice *info)
-{
-    if (device >= m_devices.size() || info == NULL)
-    {
-        return false;
-    }
-
-    m_devices[device]->SetDeviceInfo(info);
-    return true;
-}
-
-bool cISLogger::SetDeviceInfo(const dev_info_t *info, unsigned int device)
-{
-    if (device >= m_devices.size() || info == NULL)
-    {
-        return false;
-    }
-
-    m_devices[device]->SetDeviceInfo(info);
-    return true;
-}
-
-const dev_info_t *cISLogger::DeviceInfo(unsigned int device)
-{
-    if (device >= m_devices.size())
-    {
-        return NULL;
-    }
-
-    return m_devices[device]->DeviceInfo();
-}
-*/
 
 int g_copyReadCount;
 int g_copyReadDid;
@@ -820,54 +779,6 @@ bool cISLogger::CopyLog(cISLogger &log, const string &timestamp, const string &o
     return true;
 }
 
-/*
-bool cISLogger::ReadAllLogDataIntoMemory(const string &directory, map<uint32_t, vector<vector<uint8_t>>> &data)
-{
-    cISLogger logger;
-    if (!logger.LoadFromDirectory(directory))
-    {
-        return false;
-    }
-    unsigned int deviceId = 0;
-    unsigned int lastDeviceId = 0xFFFFFEFE;
-    p_data_buf_t *p;
-    vector<vector<uint8_t>> *currentDeviceData = NULL;
-    const dev_info_t *info;
-    uint8_t *ptr, *ptrEnd;
-    data.clear();
-
-    // read every piece of data out of every device log
-    while ((p = logger.ReadNextData(deviceId)) != NULL)
-    {
-        // if this is a new device, we need to add the device to the map using the serial number
-        if (deviceId != lastDeviceId)
-        {
-            lastDeviceId = deviceId;
-            // info = logger.DeviceInfo(deviceId);
-            data[info->serialNumber] = vector<vector<uint8_t>>();
-            currentDeviceData = &data[info->serialNumber];
-        }
-
-        assert(currentDeviceData != NULL);
-
-        // add slots until we have slots at least equal to the data id
-        while (currentDeviceData->size() < p->hdr.id)
-        {
-            currentDeviceData->push_back(vector<uint8_t>());
-        }
-
-        // append each byte of the packet to the slot
-        ptrEnd = p->buf + p->hdr.size;
-        vector<uint8_t> &stream = (*currentDeviceData)[p->hdr.id];
-        for (ptr = p->buf; ptr != ptrEnd; ptr++)
-        {
-            stream.push_back(*ptr);
-        }
-    }
-    return true;
-}
- */
-
 void cISLogger::PrintProgress()
 {
 #if (LOG_DEBUG_GEN == 2)
@@ -932,7 +843,8 @@ void cISLogger::PrintLogDiskUsage()
     printf("\n");
 }
 
-std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() {
+std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs() 
+{
     std::vector<std::shared_ptr<cDeviceLog>> out;
     for (auto it : m_devices) {
         out.push_back(it.second);
