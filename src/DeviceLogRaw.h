@@ -35,7 +35,7 @@ public:
     void InitDeviceForWriting(std::string timestamp, std::string directory, uint64_t maxDiskSpace, uint32_t maxFilesize) OVERRIDE;
 	bool CloseAllFiles() OVERRIDE;
 	bool FlushToFile() OVERRIDE;
-	bool SaveData(int dataSize, const uint8_t* dataBuf) OVERRIDE;
+	bool SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats) OVERRIDE;
 	p_data_buf_t* ReadData() OVERRIDE;
 	void SetSerialNumber(uint32_t serialNumber) OVERRIDE;
     std::string LogFileExtention() OVERRIDE { return std::string(".raw"); }

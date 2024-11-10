@@ -105,7 +105,7 @@ bool cDeviceLog::SaveData(p_data_hdr_t *dataHdr, const uint8_t* dataBuf, protoco
     return true;
 }
 
-bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf)
+bool cDeviceLog::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
 {
    return true;
 }
