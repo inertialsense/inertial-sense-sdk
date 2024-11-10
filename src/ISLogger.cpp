@@ -319,6 +319,11 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
     return deviceLog;
 }
 
+bool cISLogger::DeviceFind(int serialNum)
+{
+    return m_devices.find(serialNum) != m_devices.end();
+}
+
 bool cISLogger::InitDevicesForWriting(std::vector<ISDevice>& devices)
 {
     // Remove all devices
@@ -651,7 +656,7 @@ void cISLogger::ShowParseErrors(bool show)
 
 uint64_t cISLogger::LogSize(uint32_t devSerialNo)
 {
-    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() : 0);
+    return (DeviceFind(devSerialNo) ? m_devices[devSerialNo]->LogSize() : 0);
 }
 
 uint64_t cISLogger::LogSizeAll()
@@ -671,22 +676,22 @@ float cISLogger::LogSizeAllMB()
 
 float cISLogger::LogSizeMB(uint32_t devSerialNo)
 {
-    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0);
+    return (DeviceFind(devSerialNo) ? m_devices[devSerialNo]->LogSize() * 0.000001f : 0);
 }
 
 float cISLogger::FileSizeMB(uint32_t devSerialNo)
 {
-    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0);
+    return (DeviceFind(devSerialNo) ? m_devices[devSerialNo]->FileSize() * 0.000001f : 0);
 }
 
 uint32_t cISLogger::FileCount(uint32_t devSerialNo)
 {
-    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->FileCount() : 0);
+    return (DeviceFind(devSerialNo) ? m_devices[devSerialNo]->FileCount() : 0);
 }
 
 std::string cISLogger::GetNewFileName(uint32_t devSerialNo, uint32_t fileCount, const char *suffix)
 {
-    return (m_devices.contains(devSerialNo) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : "");
+    return (DeviceFind(devSerialNo) ? m_devices[devSerialNo]->GetNewFileName(devSerialNo, fileCount, suffix) : "");
 }
 
 int g_copyReadCount;
