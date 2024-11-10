@@ -267,6 +267,7 @@ private:
     uint64_t				m_maxDiskSpace = 0;		// Limit for logging.  Zero to disable file culling drive management.
     uint64_t				m_usedDiskSpace = 0;	// Size of all logs
     uint32_t				m_maxFileSize = 0;
+    uint32_t                m_dummy[10000] = {0};
     cLogStats				m_logStats;
 #if PLATFORM_IS_EVB_2
     cISLogFileFatFs         m_errorFile;
