@@ -84,7 +84,7 @@ bool cDeviceLogRaw::FlushToFile()
 }
 
 
-bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf, cLogStats &globalLogStats)
+bool cDeviceLogRaw::SaveData(int dataSize, const uint8_t* dataBuf)
 {
     // Parse messages for statistics and DID_DEV_INFO
     for (const uint8_t *dPtr = dataBuf; dPtr < dataBuf+dataSize; dPtr++)

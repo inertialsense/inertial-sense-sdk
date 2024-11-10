@@ -52,7 +52,7 @@ public:
 
     virtual bool SaveData(p_data_hdr_t *dataHdr, const uint8_t *dataBuf, protocol_type_t ptype = _PTYPE_INERTIAL_SENSE_DATA);
 
-    virtual bool SaveData(int dataSize, const uint8_t *dataBuf, cLogStats &globalLogStats);
+    virtual bool SaveData(int dataSize, const uint8_t *dataBuf);
 
     virtual p_data_buf_t *ReadData() = 0;
 
