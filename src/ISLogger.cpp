@@ -320,7 +320,7 @@ std::shared_ptr<cDeviceLog> cISLogger::registerDevice(uint16_t hdwId, uint32_t s
 }
 
 bool cISLogger::DeviceFind(int serialNum)
-{
+{   // Device is in the map
     return m_devices.find(serialNum) != m_devices.end();
 }
 
@@ -591,7 +591,8 @@ p_data_buf_t *cISLogger::ReadData(std::shared_ptr<cDeviceLog> deviceLog)
     return data;
 }
 
-p_data_buf_t *cISLogger::ReadData(size_t devIndex) {
+p_data_buf_t *cISLogger::ReadData(size_t devIndex) 
+{
     if (devIndex >= m_devices.size())
         return nullptr;
 
