@@ -66,6 +66,10 @@ void InertialSenseROS::initialize(bool configFlashParameters)
 {
     RCLCPP_INFO(rclcpp::get_logger("start"),"======  Starting Inertial Sense ROS2  ======");
 
+    if (IS_.DetectOobError()) { 
+            RCLCPP_INFO(rclcpp::get_logger("DetectOobError"), "Line " + std::to_string(__LINE__));        
+    }
+
     initializeIS(true);
     if (sdk_connected_)
     {
@@ -78,15 +82,27 @@ void InertialSenseROS::initialize(bool configFlashParameters)
 
         // configure_ascii_output(); // Currently not functional
     }
+
+    if (IS_.DetectOobError()) { 
+            RCLCPP_INFO(rclcpp::get_logger("DetectOobError"), "Line " + std::to_string(__LINE__));        
+    }
 }
 
 void InertialSenseROS::terminate()
 {
+    if (IS_.DetectOobError()) { 
+            RCLCPP_INFO(rclcpp::get_logger("DetectOobError"), "Line " + std::to_string(__LINE__));        
+    }
+
     IS_.Close();
     IS_.CloseServerConnection();
     sdk_connected_ = false;
 
     // ROS equivalent to shutdown advertisers, etc.
+
+    if (IS_.DetectOobError()) { 
+            RCLCPP_INFO(rclcpp::get_logger("DetectOobError"), "Line " + std::to_string(__LINE__));        
+    }
 }
 
 void InertialSenseROS::initializeIS(bool configFlashParameters)
