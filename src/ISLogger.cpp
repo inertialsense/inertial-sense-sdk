@@ -892,4 +892,6 @@ bool cISLogger::DetectOobError()
             return true;
         }
     }
+
+    return false;
 }
