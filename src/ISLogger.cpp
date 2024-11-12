@@ -857,18 +857,3 @@ std::vector<std::shared_ptr<cDeviceLog>> cISLogger::DeviceLogs()
     }
     return out;
 }
-
-bool cISLogger::DetectOobError()
-{
-    int size = sizeof(m_empty)/sizeof(m_empty[0]);
-    for (int i=0; i<size; i++)
-    {
-        if (m_empty[i] != 0)
-        {
-            printf("\nDetected OOB Error!!!   =============================== \n\n");
-            return true;
-        }
-    }
-
-    return false;
-}

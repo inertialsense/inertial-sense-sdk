@@ -603,8 +603,6 @@ public:
     InertialSense::com_manager_cpp_state_t* ComManagerState() { return &m_comManagerState; }
     ISDevice* ComManagerDevice(int pHandle=0) { if (pHandle >= (int)m_comManagerState.devices.size()) return NULLPTR; return &(m_comManagerState.devices[pHandle]); }
 
-    bool DetectOobError(){ return m_logger.DetectOobError(); }
-
 protected:
     bool OnClientPacketReceived(const uint8_t* data, uint32_t dataLength);
     void OnClientConnecting(cISTcpServer* server) OVERRIDE;
