@@ -3,13 +3,23 @@
 echo Installing Log Inspector dependencies...
 echo.
 
-:: Set SDK_DIR as  directory path
+:: Set SDK_DIR as directory path
 for %%i in (%~dp0..\..) do SET SDK_DIR=%%~fi
-cd %SDK_DIR%\python\
+
+:: Build SDK cpp needed by LogInspector
+call %SDK_DIR%\scripts\windows\build_is_sdk.bat
 
 :: Install dependencies
-pip install logInspector/
-cd logInspector
+pushd %SDK_DIR%\python\
+pip3 install setuptools pybind11 wheel
+::pip3 install logInspector/
+popd 
+if %errorlevel% neq 0 ( echo Error installing Log Inspector dependencies! & exit /b %errorlevel% )
+
+:: Build Log Inspector locally (which also installs dependencies)
+pushd %SDK_DIR%\python
 python setup.py build_ext --inplace
+popd
+if %errorlevel% neq 0 ( echo Error building Log Inspector locally! & exit /b %errorlevel% )
 
 pause
