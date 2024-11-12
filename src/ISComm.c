@@ -258,12 +258,13 @@ static inline void validPacketReset(is_comm_instance_t* c, int pktSize)
     c->rxErrorState = 0;
 }
 
-static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int dataSize)
+static inline void validPacketFound(is_comm_instance_t* c, int pktSize, int dataSize, uint16_t id)
 {
     // Update data pointer and info
     c->rxPkt.size      = pktSize;
     c->rxPkt.data.ptr  = c->rxBuf.head;
     c->rxPkt.data.size = dataSize;
+    c->rxPkt.id        = id;
     c->rxPkt.hdr.id    = 0;
     c->rxPkt.offset    = 0;
 
@@ -345,13 +346,13 @@ static protocol_type_t processIsbPkt(void* v)
     // Header
     pkt->hdr.preamble      = isbPkt->hdr.preamble;
     pkt->hdr.flags         = isbPkt->hdr.flags;
-    pkt->hdr.id            = isbPkt->hdr.id;
+    pkt->hdr.id = pkt->id  = isbPkt->hdr.id;
     pkt->hdr.payloadSize   = payloadSize;
 
     // Payload
     if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET)
     {	// Offset is first two bytes in payload
-        pkt->data.size     = _MAX(payloadSize-2, 0);
+        pkt->data.size     = (payloadSize < 2 ? 0 : payloadSize - 2);
         pkt->data.ptr      = (pkt->data.size ? payload+2 : NULL);	// Data starts after offset if data size is non-zero
         pkt->offset        = *((uint16_t*)payload);
         pkt->dataHdr.size  = pkt->data.size;		// rxPkt.hdr.payloadSize and rxPkt.dataHdr.size share same memory.  Remove offset size from payload/data size.
@@ -480,7 +481,7 @@ static protocol_type_t processNmeaPkt(void* v)
 
     /////////////////////////////////////////////////////////
     // Valid packet found - Checksum passed - Populate rxPkt
-    validPacketFound(c, numBytes, numBytes);
+    validPacketFound(c, numBytes, numBytes, getNmeaMsgId(c->rxBuf.head, numBytes));
 
     return _PTYPE_NMEA;
 }
@@ -559,7 +560,7 @@ static protocol_type_t processUbloxPkt(void* v)
 
     /////////////////////////////////////////////////////////
     // Valid packet found - Checksum passed - Populate rxPkt
-    validPacketFound(c, numBytes, p->size);
+    validPacketFound(c, numBytes, p->size, c->rxBuf.head[2]);
 
     return _PTYPE_UBLOX;
 }
@@ -620,7 +621,7 @@ static protocol_type_t processRtcm3Pkt(void* v)
 
     /////////////////////////////////////////////////////////
     // Valid packet found - Checksum passed - Populate rxPkt
-    validPacketFound(c, numBytes, p->size);
+    validPacketFound(c, numBytes, p->size, RTCM3_MSG_ID(c->rxBuf.head));
 
     return _PTYPE_RTCM3;
 }
@@ -744,7 +745,7 @@ static protocol_type_t processSonyByte(void* v)
 
     /////////////////////////////////////////////////////////
     // Valid packet found - Checksum passed - Populate rxPkt
-    validPacketFound(c, numBytes, p->size);
+    validPacketFound(c, numBytes, p->size, c->rxBuf.head[3]);
 
     return _PTYPE_SONY;
 }
@@ -874,7 +875,7 @@ static protocol_type_t processSpartnByte(void* v)
             /////////////////////////////////////////////////////////
             // Valid packet found - Checksum passed - Populate rxPkt
             int numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
-            validPacketFound(c, numBytes, numBytes);
+            validPacketFound(c, numBytes, numBytes, 0);
 
             return _PTYPE_SPARTN;
         }
@@ -977,7 +978,7 @@ protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
             case SPARTN_START_BYTE:         if (c->config.enabledMask & ENABLE_PROTOCOL_SPARTN) { setParserStart(c, processSpartnByte); }  break;
             case SONY_START_BYTE:           if (c->config.enabledMask & ENABLE_PROTOCOL_SONY)   { setParserStart(c, processSonyByte); }    break;
             default:                        
-                if (reportParseError(c, EPARSE_STREAM_UNPARSEABLE))
+                if (reportParseError(c, EPARSE_STREAM_UNPARSABLE))
                 { 
                     return _PTYPE_PARSE_ERROR; 
                 }                                       

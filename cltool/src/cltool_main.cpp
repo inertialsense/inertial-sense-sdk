@@ -134,27 +134,7 @@ static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 		return;
 	}
 
-    float logSize = logger.LogSizeAll();
-    if (logSize < 0.5e6f)
-        printf("\nLogging %.1f KB to: %s", logSize * 1.0e-3f, logger.LogDirectory().c_str());
-    else
-        printf("\nLogging %.2f MB to: %s", logSize * 1.0e-6f, logger.LogDirectory().c_str());
-
-    // Disk usage
-    if (logger.MaxDiskSpaceMB() > 0.0f)
-    {   // Limit enabled
-        float percentUsed = 100.0f * logger.UsedDiskSpaceMB() / logger.MaxDiskSpaceMB();
-        printf("      %s disk usage/limit: %.0f/%.0f MB (%.0f%%) ", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB(), logger.MaxDiskSpaceMB(), percentUsed);
-        if (percentUsed > 98)
-        {
-            printf("...deleting old logs ");
-        }
-    }
-    else
-    {   // Limit disabled
-        printf(",    %s disk usage: %.0f MB ", logger.RootDirectory().c_str(), logger.UsedDiskSpaceMB());
-    }
-    printf("\n");
+    logger.PrintLogDiskUsage();
 }
 
 static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
@@ -183,7 +163,7 @@ static int cltool_errorCallback(unsigned int port, is_comm_instance_t* comm)
             "INVALID_HEADER",
             "INVALID_PAYLOAD",
             "RXBUFFER_FLUSHED",
-            "STREAM_UNPARSEABLE",
+            "STREAM_UNPARSABLE",
     };
 
     typedef union
@@ -917,9 +897,9 @@ static void sendNmea(serial_port_t &port, string nmeaMsg)
 
 static int inertialSenseMain()
 {
-    // clear display
     g_inertialSenseDisplay.SetDisplayMode((cInertialSenseDisplay::eDisplayMode)g_commandLineOptions.displayMode);
     g_inertialSenseDisplay.SetKeyboardNonBlocking();
+    g_inertialSenseDisplay.Clear();     // clear display
 
     // if replay data log specified on command line, do that now and return
     if (g_commandLineOptions.replayDataLog)

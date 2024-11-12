@@ -347,6 +347,8 @@ bool LogReader::load()
         forwardData(i);
     }
 
+	logger_.CloseAllFiles();
+
     return true;
 }
 
@@ -375,7 +377,7 @@ void LogReader::ins1ToIns2(int device_id)
     printf("LogReader::ins1ToIns2() converting ins1 to ins2 for device: %d\n", device_id);
     ins_2_t ins2;
     dev_log_->ins2.clear();
-    for (int i=0; i<dev_log_->ins1.size(); i++)
+    for (unsigned int i=0; i<dev_log_->ins1.size(); i++)
     {
         convertIns1ToIns2(&(dev_log_->ins1[i]), &ins2);
         dev_log_->ins2.push_back(ins2);

@@ -97,7 +97,7 @@ class SuperNPP():
                     self.log.calculateRMS()
                     passRMS = self.log.printRMSReport()
                     if passRMS == 1:
-                        f.write("[ pass ] " + sdir + "\n")
+                        f.write("[PASSED] " + sdir + "\n")
                         self.rmsPassResults.append(sdir)
                     else:
                         f.write("[FAILED] " + sdir + "\n")
@@ -121,7 +121,7 @@ class SuperNPP():
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
-                if (".sdat" in file or ".dat" in file or ".raw" in file) and (not "base_station.raw" in file) :
+                if (".sdat" in file or ".dat" in file or ".raw" in file) and (not "base_station.raw" in file):
                     ser = int(re.sub('[^0-9]','', file.split("_")[1]))
                     if ser not in serials:
                         serials.append(ser)
@@ -279,7 +279,7 @@ if __name__ == "__main__":
     testSummaryFilename = directory+"/test_summary.txt"
     nppPrint("\n")
     nppPrint("====================  Super NPP Results  ====================")
-    print_case(testSummaryFilename, "  RMS Test PASSED:", "[ pass ]")
+    print_case(testSummaryFilename, "  RMS Test PASSED:", "[PASSED]")
     print_case(testSummaryFilename, "  RMS Test FAILED:", "[FAILED]")
     print_case(testSummaryFilename, "  Failed to Reprocess:", "[NODATA]")
     nppPrint("=============================================================")

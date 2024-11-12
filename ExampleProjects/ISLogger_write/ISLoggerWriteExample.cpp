@@ -42,7 +42,6 @@ void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0)
 	serialPortWrite(&s_serialPort, buf, len);
 }
 
-
 int main(int argc, char* argv[])
 {
 	if (argc < 2)
@@ -55,13 +54,12 @@ int main(int argc, char* argv[])
 	int baudrate = 921600;
 	string logPath = "test_log";
 
-    // Setup and enable logger.  Select the LOGTYPE (i.e. dat, raw, csv)
+    // Setup and enable logger
     cISLogger logger;
-    auto devLog = logger.registerDevice(IS_HARDWARE_TYPE_IMX, 12345);   // if you know this information, you can pass it, but it's not important that it match your actual hardware.
-
     cISLogger::sSaveOptions options;
     options.logType = cISLogger::LOGTYPE_RAW;
     logger.InitSave(logPath, options);
+    auto devLog = logger.registerDevice(IS_HARDWARE_TYPE_IMX, 12345);   // if you know this information, you can pass it, but it's not important that it match your actual hardware.
     logger.EnableLogging(true);
 
     // Open serial port
@@ -75,26 +73,45 @@ int main(int argc, char* argv[])
     // Enable PPD data stream without disabling other messages
 	stream_configure_rmc_preset(RMC_PRESET_IMX_PPD, RMC_OPTIONS_PRESERVE_CTRL);
 
+	// Enable NMEA messages: PINS1, PPIMU, and GNGGA
+	const uint8_t asceMsg[] = "$ASCE,0,PINS1,2,PPIMU,1,GNGGA,1*16\r\n";
+	serialPortWrite(&s_serialPort, asceMsg, sizeof(asceMsg));
+
 	cout << "Started logger.  Press ctrl-c to quit." << endl;
 
 	// Utility class for ctrl-c handling
 	cInertialSenseDisplay display;
+    display.SetKeyboardNonBlocking();
 	while (!display.ExitProgram())
     {
-		// Prevent CPU overload
-    	SLEEP_MS(1);
-
 		uint8_t buf[512];
 		if (int len = serialPortRead(&s_serialPort, buf, sizeof(buf)))
 		{
 			// Log serial port data to file
 			logger.LogData(devLog, len, buf);
 
-			printf("Log file size: %.3f MB \r", logger.LogSizeAllMB());
+#if 0
+			printf("\rLog size: %.2f MB  ", logger.LogSizeAllMB());
+#else		// Print message statistics
+			display.Clear();
+			display.Home();
+			display.Hello();
+			logger.PrintStatistics();
+			logger.PrintLogDiskUsage();
+#endif
 		}
+
+		// Prevent CPU overload
+    	SLEEP_MS(1);
+
+		// Scan for "q" press to exit program
+		display.GetKeyboardInput();
     }
+	// Revert non-blocking keyboard
+	display.ResetTerminalMode();
 
 	// Write remaining data and close log file(s)
 	logger.CloseAllFiles();
+	cout << endl << "Log files closed." << endl;
 }
 

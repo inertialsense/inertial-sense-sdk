@@ -92,8 +92,10 @@ public:
 	void SetExitProgram();
 
 	// for the binary protocol, this processes a packet of data
+	void ProcessData(p_data_buf_t* data, bool enableReplay = false, double replaySpeedX = 1.0);
 	void ProcessData(p_data_t *data, bool enableReplay = false, double replaySpeedX = 1.0);
 	bool PrintData(unsigned int refreshPeriodMs = 100);		// 100ms = 10Hz
+	static std::string PrintIsCommStatus(is_comm_instance_t *comm);
 	void DataToStats(const p_data_t* data);
 	void PrintStats();
 	std::string DataToString(const p_data_t* data);
@@ -145,7 +147,7 @@ public:
 	void SetCommInstance(is_comm_instance_t* comm) { m_comm = comm; }
 
 private:
-	std::string VectortoString();
+	std::string VectorToString();
 	void DataToVector(const p_data_t* data);
 
 	bool m_nonblockingkeyboard = false;

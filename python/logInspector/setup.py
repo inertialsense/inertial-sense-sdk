@@ -27,11 +27,6 @@ class get_pybind_include(object):
         import pybind11
         return pybind11.get_include(self.user)
 
-if platform.system() == 'Windows':
-    macros = [("UNICODE", "1")]     # Necessary for ISFileManager.cpp
-else:
-    macros = []
-
 ext_modules = [
     Extension('log_reader',
         ['src/log_reader.cpp',
@@ -74,8 +69,7 @@ ext_modules = [
          '../../src/tinyxmlparser.cpp',
          '../../src/util/md5.cpp',
          ],
-        define_macros=macros,
-        include_dirs = [
+        include_dirs=[
             # Path to pybind11 headers
             'include',
             '../src',
