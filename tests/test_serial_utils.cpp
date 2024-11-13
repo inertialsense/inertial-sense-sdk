@@ -56,7 +56,7 @@ void serWriteInPieces(port_handle_t port, const unsigned char *buf, int length)
 void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t &serialPortBridge, port_handle_t srcPort, port_handle_t dstPort, uint32_t led, int testMode)
 {
 #if TEST_ENABLE_MANUAL_TX   // Manual Tx Test - Uncomment and run device_tx_manual_test in run test_serial_driver.cpp 
-    while(1)
+    while (1)
     {
         uint8_t txBuf[200];
         int n = test_serial_generate_ordered_data(txBuf, sizeof(txBuf));
@@ -84,8 +84,8 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
 
 #if TEST_ENABLE_MANUAL_RX   // Manual Rx Test - Uncomment and run device_onboard_rx_manual_test in run test_serial_driver.cpp 
     if (test_serial_rx_receive(comm.rxBuf.tail, n) < 0)
-    {	// Catch error here
-    	while(1);
+    {   // Catch error here
+        while (1);
     }
     return;  // Return to prevent Tx
 #endif
@@ -116,18 +116,18 @@ void serial_port_bridge_forward_unidirectional(is_comm_instance_t &comm, uint8_t
         comm.config.enabledMask = ENABLE_PROTOCOL_ISB;      // Disable all protocols except ISB to prevent delays in parsing that could cause data drop
     }
     protocol_type_t ptype;
-    while((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
+    while ((ptype = is_comm_parse(&comm)) != _PTYPE_NONE)
     {
         switch (ptype)
-        {	
-        default:	break;	// Do nothing
+        {
+        default:    break;    // Do nothing
 
         case _PTYPE_INERTIAL_SENSE_DATA:
             if (comm.rxPkt.dataHdr.id == DID_SYS_CMD)
             {
                 system_command_t *cmd = (system_command_t*)(comm.rxPkt.data.ptr);
                 if (cmd->command == ~cmd->invCommand)
-                {	// Valid command
+                {   // Valid command
                     switch (cmd->command)
                     {
                     case SYS_CMD_DISABLE_SERIAL_PORT_BRIDGE:
@@ -219,7 +219,7 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
         
         if (rxBuf[i] != testVal)
         {   // Uncomment and put breakpoint here
-            while(1);
+            while (1);
         }
         rxBufLast = rxBuf[i];
         testValLast = testVal;
@@ -275,7 +275,7 @@ int64_t test_serial_rx_receive(uint8_t rxBuf[], int len, bool waitForStartSequen
             // Run the test (exclude zero because it is used to reset test)
             if (rx.u16 != 0 && rx.u16 != testVal)
             {   // Uncomment and put breakpoint here
-//                while(1);
+//                while (1);
                 return -1;
             }
             testVal++;

@@ -528,7 +528,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
     EXPECT_EQ(outMsg->data.chunk.session_id, session_id);
     EXPECT_EQ(outMsg->data.chunk.chunk_id, 1234);
     EXPECT_EQ(outMsg->data.chunk.data_len, 512);
-    EXPECT_EQ( memcmp((void *)(&outMsg->data.chunk.data), (void *)chnk_data, sizeof(chnk_data)), 0);
+    EXPECT_EQ(memcmp((void *)(&outMsg->data.chunk.data), (void *)chnk_data, sizeof(chnk_data)), 0);
 
     uint8_t aux_data[1024];
     int unpack_len = fuSDK.fwUpdate_unpackPayload(buffer, packed_size, fuMsg, aux_data, sizeof(aux_data));
@@ -539,7 +539,7 @@ TEST(ISFirmwareUpdate, pack_unpack__chunk)
     EXPECT_EQ(outMsg->data.chunk.session_id, fuMsg.data.chunk.session_id);
     EXPECT_EQ(outMsg->data.chunk.chunk_id, fuMsg.data.chunk.chunk_id);
     EXPECT_EQ(outMsg->data.chunk.data_len, fuMsg.data.chunk.data_len);
-    EXPECT_EQ( memcmp((void *)(&outMsg->data.chunk.data), (void *)chnk_data, sizeof(chnk_data)), 0);
+    EXPECT_EQ(memcmp((void *)(&outMsg->data.chunk.data), (void *)chnk_data, sizeof(chnk_data)), 0);
 }
 
 TEST(ISFirmwareUpdate, pack_unpack__req_resend)
@@ -615,7 +615,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     EXPECT_EQ(outMsg->data.progress.totl_chunks, 512);
     EXPECT_EQ(outMsg->data.progress.msg_level, 2);
     EXPECT_EQ(outMsg->data.progress.msg_len, strlen((const char *)progress_msg));
-    EXPECT_EQ( memcmp((void *)(&outMsg->data.progress.message), (void *)progress_msg, strlen((const char *)progress_msg)), 0);
+    EXPECT_EQ(memcmp((void *)(&outMsg->data.progress.message), (void *)progress_msg, strlen((const char *)progress_msg)), 0);
 
     // Now let's unpack the packed buffer, and verify that all the same data is there.
 
@@ -630,7 +630,7 @@ TEST(ISFirmwareUpdate, pack_unpack__progress)
     EXPECT_EQ(outMsg->data.progress.totl_chunks, fuMsg.data.progress.totl_chunks);
     EXPECT_EQ(outMsg->data.progress.msg_level, fuMsg.data.progress.msg_level);
     EXPECT_EQ(outMsg->data.progress.msg_len, fuMsg.data.progress.msg_len);
-    EXPECT_EQ( memcmp((void *)(aux_data), (void *)progress_msg, fuMsg.data.progress.msg_len), 0);
+    EXPECT_EQ(memcmp((void *)(aux_data), (void *)progress_msg, fuMsg.data.progress.msg_len), 0);
 }
 
 TEST(ISFirmwareUpdate, exchange__req_update_repl) 
@@ -740,7 +740,7 @@ TEST(ISFirmwareUpdate, exchange__req_resend)
     EXPECT_EQ(fuSDK.fwUpdate_getNextChunkID(), 5); // at this point, our NextChunkID should be 5 (since we resent 4)
 
     // and now we resume with the remaining chunks
-    while(fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) {
+    while (fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) {
         if ((fuSDK.fwUpdate_getSessionStatus() == fwUpdate::READY) || (fuSDK.fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) {
             fuSDK.fwUpdate_sendNextChunk();
         }
@@ -777,7 +777,7 @@ TEST(ISFirmwareUpdate, exchange__invalid_checksum)
 
     // from here out, this should be normal.
     int i = 0;
-    while(fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) {
+    while (fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) {
         i++;
         if (fuSDK.fwUpdate_getSessionStatus() >= fwUpdate::READY) {
             fuSDK.fwUpdate_sendNextChunk();
@@ -830,7 +830,7 @@ TEST(ISFirmwareUpdate, exchange__success)
     EXPECT_EQ(fuSDK.fwUpdate_getSessionStatus(), fwUpdate::READY);
 
     // from here out, this should be normal.
-    while((fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != -1)) {
+    while ((fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != -1)) {
         if ((fuSDK.fwUpdate_getSessionStatus() == fwUpdate::READY) || (fuSDK.fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) {
             fuSDK.fwUpdate_sendNextChunk();
         }
@@ -872,7 +872,7 @@ TEST(ISFirmwareUpdate, exchange__success_non_chunk_boundary)
     EXPECT_EQ(fuSDK.fwUpdate_getSessionStatus(), fwUpdate::READY);
 
     // from here out, this should be normal.
-    while((fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != 65536)) {
+    while ((fuSDK.fwUpdate_getSessionStatus() < fwUpdate::FINISHED) && (fuDev.GetNextExpectedChunk() != 65536)) {
         if ((fuSDK.fwUpdate_getSessionStatus() == fwUpdate::READY) || (fuSDK.fwUpdate_getSessionStatus() == fwUpdate::IN_PROGRESS)) {
             fuSDK.fwUpdate_sendNextChunk();
         }

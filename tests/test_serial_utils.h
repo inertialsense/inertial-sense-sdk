@@ -16,13 +16,13 @@ typedef struct test_port_s {
         comm_port_t comm;
     };
 
-    rmci_t rmci;
-    uint8_t rmciUPMcnt[DID_COUNT];
-    uint8_t rmciNMEAcnt[NMEA_MSG_ID_COUNT];
+    rmci_t      rmci;
+    uint8_t     rmciUPMcnt[DID_COUNT];
+    uint8_t     rmciNMEAcnt[NMEA_MSG_ID_COUNT];
 
     // Used to simulate serial ports
-    ring_buf_t				loopbackPortBuf;
-    uint8_t					loopbackportBuffer[PORT_BUFFER_SIZE];
+    ring_buf_t  loopbackPortBuf;
+    uint8_t     loopbackportBuffer[PORT_BUFFER_SIZE];
 } test_port_t;
 
 extern test_port_t g_testPorts[NUM_COM_PORTS];
