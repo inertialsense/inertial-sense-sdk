@@ -50,7 +50,7 @@ class DepthGuard final {
 public:
   DepthGuard(int & depth_, const Mark& mark_, const std::string& msg_) : m_depth(depth_) {
     ++m_depth;
-    if ( max_depth <= m_depth ) {
+    if (max_depth <= m_depth) {
         throw DeepRecursion{m_depth, mark_, msg_};
     }
   }

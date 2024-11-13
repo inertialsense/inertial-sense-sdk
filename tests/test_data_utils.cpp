@@ -270,14 +270,14 @@ bool GenerateISB(test_message_t &msg, int i, float f)
         
         CurrentGpsTimeMs(s_gpsTowOffsetMs, s_gpsWeek);
         s_timeMs = 0;
-        GeneratePimu( msg, s_pimu,   i, f, true);
-        GenerateIns1( msg, s_ins1,   i, f, true);
+        GeneratePimu(msg, s_pimu,   i, f, true);
+        GenerateIns1(msg, s_ins1,   i, f, true);
         GenerateGpsPos(msg, s_gpsPos, i, f, true);
         GenerateGpsVel(msg, s_gpsVel, i, f, true);
     }
 
-    if (GeneratePimu( msg, s_pimu,   i, f))  { return true; }
-    if (GenerateIns1( msg, s_ins1,   i, f))  { return true; }
+    if (GeneratePimu(msg, s_pimu,   i, f))  { return true; }
+    if (GenerateIns1(msg, s_ins1,   i, f))  { return true; }
     if (GenerateGpsPos(msg, s_gpsPos, i, f)) { return true; }
     if (GenerateGpsVel(msg, s_gpsVel, i, f)) { return true; }
 
