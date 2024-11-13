@@ -26,7 +26,7 @@ is_operation_result cISBootloaderAPP::match_test(void* param)
 {
     const char* serial_name = (const char*)param;
 
-    if(strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
+    if (strnlen(serial_name, 100) != 0 && strncmp(serial_name, ((serial_port_t*)m_port)->portName, 100) == 0)
     {
         return IS_OP_OK;
     }
@@ -138,7 +138,7 @@ eImageSignature cISBootloaderAPP::check_is_compatible()
                 switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.data.size))
                 {
                 case NMEA_MSG_ID_INFO:
-                    {	// IMX device Info
+                    {   // IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
                         memcpy(m_app.uins_version, devInfo.hardwareVer, 4);
@@ -207,7 +207,7 @@ uint32_t cISBootloaderAPP::get_device_info()
     is_comm_init(&comm, buffer, sizeof(buffer), NULL);   // TODO: Should we be using callbacks??  Probably -- more likely, we should be using the m_port COMM buffer/callbacks
     int messageSize;
    
-    for(int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
+    for (int i = 0; i < 2; i++)  // HACK: Send this twice. After leaving DFU mode, the serial port doesn't respond to the first request.
     if (NMEA_CMD_SIZE != serialPortWrite(m_port, (const unsigned char*)NMEA_CMD_QUERY_DEVICE_INFO, NMEA_CMD_SIZE))
     {
         // serialPortClose(&ctx->handle.port);
@@ -259,7 +259,7 @@ uint32_t cISBootloaderAPP::get_device_info()
                 case DID_EVB_STATUS:
                     evb_status_t* evb_status;
                     evb_status = (evb_status_t*)comm.rxPkt.data.ptr;
-                    if(evb_status->firmwareVer[0]) memcpy(m_app.evb_version, evb_version, 4);
+                    if (evb_status->firmwareVer[0]) memcpy(m_app.evb_version, evb_version, 4);
                     else memset(m_app.evb_version, 0, 4);
                     break;
                 }
@@ -269,7 +269,7 @@ uint32_t cISBootloaderAPP::get_device_info()
                 switch (getNmeaMsgId(comm.rxPkt.data.ptr, comm.rxPkt.data.size))
                 {
                 case NMEA_MSG_ID_INFO:
-                    {	// IMX device Info
+                    {   // IMX device Info
                         dev_info_t devInfo;
                         nmea_parse_info(devInfo, (const char*)comm.rxPkt.data.ptr, comm.rxPkt.data.size);
                         memcpy(m_app.uins_version, devInfo.hardwareVer, 4);

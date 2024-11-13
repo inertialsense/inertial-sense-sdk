@@ -63,7 +63,7 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
     m_libusb_thread_mutex.lock();
     cISBootloaderDFU::list_devices(&dfu_list);
     for (size_t i = 0; i < dfu_list.present; i++)
-    {	// Create contexts for devices in DFU mode
+    {   // Create contexts for devices in DFU mode
         bool found = false;
 
         for (size_t j = 0; j < ctx.size(); j++)
@@ -91,7 +91,7 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
     }
     m_libusb_thread_mutex.unlock();
 
-    while(m_continue_update)
+    while (m_continue_update)
     {
         m_libusb_thread_mutex.lock();
 
@@ -119,7 +119,7 @@ void cISBootloaderThread::mgmt_thread_libusb(void* context)
 
     cISBootloaderDFU::m_DFUmutex.unlock();
     
-    if(m_use_dfu) { libusb_exit(NULL); }
+    if (m_use_dfu) { libusb_exit(NULL); }
 }
 
 void cISBootloaderThread::mode_thread_serial_app(void* context)
@@ -267,7 +267,7 @@ void cISBootloaderThread::update_thread_serial(void* context)
         thread_info->ctx = new_context;
         m_serial_thread_mutex.unlock();
     }
-    else if(result == IS_OP_CLOSED)
+    else if (result == IS_OP_CLOSED)
     {
         // Device is resetting (may have updated if it was a SAM-BA device)
         m_serial_thread_mutex.lock();
@@ -309,7 +309,7 @@ void cISBootloaderThread::update_thread_libusb(void* context)
         thread_info->ctx = new_context;
         m_libusb_thread_mutex.unlock();
     }
-    else if(result == IS_OP_CLOSED)
+    else if (result == IS_OP_CLOSED)
     {
         // Device is resetting
     }
@@ -329,7 +329,7 @@ void cISBootloaderThread::update_thread_libusb(void* context)
 
 bool cISBootloaderThread::true_if_cancelled(void)
 {
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED)
+    if (m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED)
     {
         m_continue_update = false;
         return true;
@@ -345,7 +345,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ISBootloader::pfnBootloadProgress       uploadProgress, 
     ISBootloader::pfnBootloadProgress       verifyProgress,
     ISBootloader::pfnBootloadStatus         infoProgress,
-    void						            (*waitAction)()
+    void                                    (*waitAction)()
 )
 {
     // Only allow one firmware update sequence to happen at a time
@@ -392,7 +392,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
     // Put all devices in the correct mode
     m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Waiting for devices to initialize...");
-    while(m_continue_update && !true_if_cancelled())
+    while (m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
         SLEEP_MS(100);
@@ -475,7 +475,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
         for (auto serialThread : m_serial_threads)
         {
-            if(!serialThread->done)
+            if (!serialThread->done)
             {
                 m_continue_update = true;
             }
@@ -497,12 +497,12 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_threads.clear();
     }
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if (m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
+        if (m_waitAction) m_waitAction(); 
         return vector<confirm_bootload_t>(); 
     }
 
@@ -514,7 +514,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
     ////////////////////////////////////////////////////////////////////////////
 
     // Put all devices in the correct mode
-    while(m_continue_update && !true_if_cancelled())
+    while (m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
         SLEEP_MS(10);
@@ -595,7 +595,7 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
 
         for (auto serialThread : m_serial_threads)
         {
-            if(!serialThread->done)
+            if (!serialThread->done)
             {
                 m_continue_update = true;
             }
@@ -618,19 +618,19 @@ vector<cISBootloaderThread::confirm_bootload_t> cISBootloaderThread::set_mode_an
         m_serial_threads.clear();
     }
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if (m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
+        if (m_waitAction) m_waitAction(); 
         return vector<confirm_bootload_t>(); 
     }
     m_ctx_mutex.lock();
 
-    for(size_t i = 0; i < ctx.size(); i++)
+    for (size_t i = 0; i < ctx.size(); i++)
     {
-        if(ctx[i]->isb_mightUpdate)
+        if (ctx[i]->isb_mightUpdate)
         {
             confirm_bootload_t confirm;
             confirm.major = ctx[i]->m_isb_major;
@@ -656,7 +656,7 @@ is_operation_result cISBootloaderThread::update(
     pfnBootloadProgress         uploadProgress,
     pfnBootloadProgress         verifyProgress,
     pfnBootloadStatus           infoProgress,
-    void						(*waitAction)()
+    void                        (*waitAction)()
 )
 {
     string tmp;
@@ -691,12 +691,12 @@ is_operation_result cISBootloaderThread::update(
             comPorts.begin(), comPorts.end(),
             back_inserter(ports_user_ignore));
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if (m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
+        if (m_waitAction) m_waitAction(); 
         return IS_OP_CANCELLED; 
     }
     m_continue_update = true;
@@ -706,7 +706,7 @@ is_operation_result cISBootloaderThread::update(
     // Run `mode_thread_serial_isb` to put all ISB devices into ROM-bootloader (DFU/SAM-BA) mode if necessary
     ////////////////////////////////////////////////////////////////////////////
 
-    while(m_continue_update && !true_if_cancelled())
+    while (m_continue_update && !true_if_cancelled())
     {
         if (m_waitAction) m_waitAction();
         SLEEP_MS(1000);
@@ -774,7 +774,7 @@ is_operation_result cISBootloaderThread::update(
 
         for (size_t l = 0; l < m_serial_threads.size(); l++)
         {
-            if(!m_serial_threads[l]->done)
+            if (!m_serial_threads[l]->done)
             {
                 m_continue_update = true;
             }
@@ -794,12 +794,12 @@ is_operation_result cISBootloaderThread::update(
         m_serial_thread_mutex.unlock();
     }
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if (m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
+        if (m_waitAction) m_waitAction(); 
         return IS_OP_CANCELLED; 
     }
     m_infoProgress(NULL, IS_LOG_LEVEL_INFO, "Updating...");
@@ -927,19 +927,19 @@ is_operation_result cISBootloaderThread::update(
 
     threadJoinAndFree(libusb_thread);
 
-    if(m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
+    if (m_uploadProgress(NULL, 0.0f) == IS_OP_CANCELLED) 
     { 
         m_continue_update = false; 
         m_update_in_progress = false; 
         m_update_mutex.unlock(); 
-        if(m_waitAction) m_waitAction(); 
+        if (m_waitAction) m_waitAction(); 
         return IS_OP_CANCELLED; 
     }
     
     // Reset all serial devices up a level into APP or IS-bootloader mode
     for (size_t i = 0; i < ctx.size(); i++)
     {
-        if(!ctx[i]->m_port_name.empty())
+        if (!ctx[i]->m_port_name.empty())
         {
             serial_port_t serialPort;
             port_handle_t port = (port_handle_t)&serialPort;
@@ -971,7 +971,7 @@ is_operation_result cISBootloaderThread::update(
     m_update_in_progress = false;
     m_update_mutex.unlock();
 
-    if(m_waitAction) m_waitAction();     // Final UI update
+    if (m_waitAction) m_waitAction();     // Final UI update
 
     return IS_OP_OK;
 }

@@ -33,7 +33,7 @@ public:
         ISBootloader::pfnBootloadProgress verify_cb,
         ISBootloader::pfnBootloadStatus info_cb,
         port_handle_t port
-    ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
+  ) : cISBootloaderBase{ upload_cb, verify_cb, info_cb } 
     {
         m_port = port;
         m_device_type = ISBootloader::IS_DEV_TYPE_ISB;
@@ -123,4 +123,4 @@ private:
     static std::mutex rst_serial_list_mutex;
 };
 
-#endif	// __IS_BOOTLOADER_ISB_H
+#endif    // __IS_BOOTLOADER_ISB_H

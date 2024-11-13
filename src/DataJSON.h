@@ -22,19 +22,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 static inline bool IS_JSON_ESCAPE_CHAR(char c)
 {
-	switch (c)
-	{
-	case '"':
-	case '\\':
-	case '/':
-	case '\b':
-	case '\f':
-	case '\n':
-	case '\r':
-	case '\t':
-		return true;
-	}
-	return false;
+    switch (c)
+    {
+    case '"':
+    case '\\':
+    case '/':
+    case '\b':
+    case '\f':
+    case '\n':
+    case '\r':
+    case '\t':
+        return true;
+    }
+    return false;
 }
 
 class cDataJSON
@@ -49,22 +49,22 @@ public:
     */
     int WriteDataToFile(cISLogFileBase* pFile, const p_data_hdr_t& dataHdr, const uint8_t* dataBuf, const char* prefix);
 
-	/**
+    /**
     * Parse a json string into a data packet
-	* data needs the id set to the proper data id
-	* buf memory to fill with data
-	* bufSize size of available memory in buf
-	* order id contains the value for ordering data
-	* returns true if success, false if no map found
-	*/
+    * data needs the id set to the proper data id
+    * buf memory to fill with data
+    * bufSize size of available memory in buf
+    * order id contains the value for ordering data
+    * returns true if success, false if no map found
+    */
     bool StringJSONToData(std::string& s, p_data_hdr_t& hdr, uint8_t* buf, uint32_t bufSize);
 
-	/**
+    /**
     * Convert data to a json string
-	* buf is assumed to be large enough to hold the data structure
+    * buf is assumed to be large enough to hold the data structure
     * json filled with json data
-	* return true if success, false if no map found
-	*/
+    * return true if success, false if no map found
+    */
     bool DataToStringJSON(const p_data_hdr_t& hdr, const uint8_t* buf, std::string& json);
 };
 
