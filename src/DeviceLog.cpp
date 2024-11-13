@@ -290,8 +290,7 @@ void cDeviceLog::OnReadData(p_data_buf_t* data)
 void cDeviceLog::addIndexRecord() {
 
     uint32_t timeSinceStart = current_uptimeMs() - m_logStartUpTime;
-    index_record_t& lastRec = m_indexChunks.back();
-    if (m_indexChunks.empty() || (timeSinceStart > lastRec.time)) {
+    if (m_indexChunks.empty() || (timeSinceStart > m_indexChunks.back().time)) {
         index_record_t newRec;
         newRec.time = timeSinceStart;
         newRec.offset = m_lastIndexOffset;
