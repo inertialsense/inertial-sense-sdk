@@ -109,7 +109,7 @@ namespace fwUpdate {
             aux_len = payload.data.progress.msg_len;
 
         if ((aux_len > 0) && (aux_data != nullptr)) {
-            memcpy( ((uint8_t*)buffer) + payload_size, (uint8_t*)aux_data, aux_len);
+            memcpy(((uint8_t*)buffer) + payload_size, (uint8_t*)aux_data, aux_len);
         }
 
         return payload_size + aux_len;
@@ -142,7 +142,7 @@ namespace fwUpdate {
 
         memcpy((void *)(&payload), buffer, payload_size);
         if ((aux_len <= max_aux) && (aux_data != nullptr)) {
-            memcpy( aux_data, aux_ptr, aux_len);
+            memcpy(aux_data, aux_ptr, aux_len);
         }
 
         return payload_size + aux_len;
