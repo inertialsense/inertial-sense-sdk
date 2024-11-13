@@ -22,8 +22,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 //_____ D E F I N I T I O N S ______________________________________________
 
-#define C_NEG_MG_DIV_KT0_F			-1.18558314779367E-04f		// - (M * g)  / (K * T0)
-#define C_NEG_KT0_DIV_MG_F			-8.43466779922578000E+03f	// - (K * T0) / (M * g)
+#define C_NEG_MG_DIV_KT0_F      -1.18558314779367E-04f      // - (M * g)  / (K * T0)
+#define C_NEG_KT0_DIV_MG_F      -8.43466779922578000E+03f   // - (K * T0) / (M * g)
 
 //_____ G L O B A L S ______________________________________________________
 
@@ -31,33 +31,33 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 //_____ F U N C T I O N S __________________________________________________
 
-#define POWA2	40680631590769.000	// = pow(6378137.0,2)
-#define POWB2	40408299984661.453	// = pow(6356752.31424518,2)
-#define POWA2_F	40680631590769.000f	// = pow(6378137.0,2)
-#define POWB2_F	40408299984661.453f	// = pow(6356752.31424518,2)
-#define ONE_MINUS_F 0.996647189335253 // (1 - f), where f = 1.0 / 298.257223563 is Earth flattening
-#define E_SQ  0.006694379990141 // e2 = 1 - (1-f)*(1-f) - square of first eccentricity
-#define E_SQ_f 0.006694379990141f
-#define E1     0.081819190842621  // e = sqrt(e2) = sqrt(2*f - f^2)
-#define E1_f   0.081819190842621f // e = sqrt(e2) = sqrt(2*f - f^2)
-#define E_PRIME_SQ 0.006739496742276 // ep2 = e2 / (1 - e2)
-#define E_POW4 4.481472345240464e-05 // e4 = e^4, first eccentricity power 4
-#define ONE_MINUS_E_SQ 0.993305620009859 // (1 - e^2)
-#define ONE_DIV_ONE_MINUS_E_SQ  1.006739496742276  // 1 / (1 - e^2)
-#define ONE_DIV_E_SQ  1.493790315865963e+02 // 1/e^2
-#define REQ 6378137.0         // Re - Equatorial radius, m
-#define REQ_f 6378137.0f
-#define REP 6356752.314245179 // Rp - Polar radius, m
-#define E2xREQ 42697.67270717795 // e2 * Re
-#define E2xREQdivIFE 42841.31151331153 // e2 * Re / (1 -f)
-#define GEQ 9.7803253359f        // Equatorial gravity
-#define K_GRAV 0.00193185265241f // defined gravity constants
-#define K3_GRAV 3.0877e-6f       // 
-#define K4_GRAV 4.0e-9f          //
-#define K5_GRAV 7.2e-14f         //
+#define POWA2                   40680631590769.000          // = pow(6378137.0,2)
+#define POWB2                   40408299984661.453          // = pow(6356752.31424518,2)
+#define POWA2_F                 40680631590769.000f         // = pow(6378137.0,2)
+#define POWB2_F                 40408299984661.453f         // = pow(6356752.31424518,2)
+#define ONE_MINUS_F             0.996647189335253           // (1 - f), where f = 1.0 / 298.257223563 is Earth flattening
+#define E_SQ                    0.006694379990141           // e2 = 1 - (1-f)*(1-f) - square of first eccentricity
+#define E_SQ_f                  0.006694379990141f
+#define E1                      0.081819190842621           // e = sqrt(e2) = sqrt(2*f - f^2)
+#define E1_f                    0.081819190842621f          // e = sqrt(e2) = sqrt(2*f - f^2)
+#define E_PRIME_SQ              0.006739496742276           // ep2 = e2 / (1 - e2)
+#define E_POW4                  4.481472345240464e-05       // e4 = e^4, first eccentricity power 4
+#define ONE_MINUS_E_SQ          0.993305620009859           // (1 - e^2)
+#define ONE_DIV_ONE_MINUS_E_SQ  1.006739496742276           // 1 / (1 - e^2)
+#define ONE_DIV_E_SQ            1.493790315865963e+02       // 1/e^2
+#define REQ                     6378137.0                   // Re - Equatorial radius, m
+#define REQ_f                   6378137.0f
+#define REP                     6356752.314245179           // Rp - Polar radius, m
+#define E2xREQ                  42697.67270717795           // e2 * Re
+#define E2xREQdivIFE            42841.31151331153           // e2 * Re / (1 -f)
+#define GEQ                     9.7803253359f               // Equatorial gravity
+#define K_GRAV                  0.00193185265241f           // defined gravity constants
+#define K3_GRAV                 3.0877e-6f                  // 
+#define K4_GRAV                 4.0e-9f                     //
+#define K5_GRAV                 7.2e-14f                    //
 
 #ifndef ECEF2LLA_METHOD
-#define ECEF2LLA_METHOD 5
+#define ECEF2LLA_METHOD         5
 #endif
 
 /* Coordinate transformation from ECEF coordinates to latitude/longitude/altitude (rad,rad,m) */
@@ -415,13 +415,13 @@ void lla2ned(ixVector3 llaRef, ixVector3 lla, ixVector3 result)
     deltaLLA[1] = lla[1] - llaRef[1];
     deltaLLA[2] = lla[2] - llaRef[2];
     
-	// Handle longitude wrapping 
-	UNWRAP_F32(deltaLLA[1]);
+    // Handle longitude wrapping 
+    UNWRAP_F32(deltaLLA[1]);
 
     // Find NED
-	result[0] =  deltaLLA[0] * EARTH_RADIUS_F;
-	result[1] =  deltaLLA[1] * EARTH_RADIUS_F * _COS( llaRef[0] );
-	result[2] = -deltaLLA[2];
+    result[0] =  deltaLLA[0] * EARTH_RADIUS_F;
+    result[1] =  deltaLLA[1] * EARTH_RADIUS_F * _COS(llaRef[0]);
+    result[2] = -deltaLLA[2];
 }
 
 
@@ -439,13 +439,13 @@ void lla2ned_d(double llaRef[3], double lla[3], ixVector3 result)
     deltaLLA[1] = (f_t)(lla[1] - llaRef[1]);
     deltaLLA[2] = (f_t)(lla[2] - llaRef[2]);
 
-	// Handle longitude wrapping in radians
-	UNWRAP_F32(deltaLLA[1]);
+    // Handle longitude wrapping in radians
+    UNWRAP_F32(deltaLLA[1]);
     
     // Find NED
-	result[0] =  deltaLLA[0] * EARTH_RADIUS_F;
-	result[1] =  deltaLLA[1] * EARTH_RADIUS_F * _COS( ((f_t)llaRef[0]) );
-	result[2] = -deltaLLA[2];
+    result[0] =  deltaLLA[0] * EARTH_RADIUS_F;
+    result[1] =  deltaLLA[1] * EARTH_RADIUS_F * _COS(((f_t)llaRef[0]));
+    result[2] = -deltaLLA[2];
 }
 
 /*
@@ -462,13 +462,13 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result)
     deltaLLA[1] = (f_t)(lla[1] - llaRef[1]);
     deltaLLA[2] = (f_t)(lla[2] - llaRef[2]);
 
-	// Handle longitude wrapping 
-	UNWRAP_DEG_F32(deltaLLA[1]);
+    // Handle longitude wrapping 
+    UNWRAP_DEG_F32(deltaLLA[1]);
     
     // Find NED
-	result[0] =  deltaLLA[0] * DEG2RAD_EARTH_RADIUS_F;
-	result[1] =  deltaLLA[1] * DEG2RAD_EARTH_RADIUS_F * _COS( ((f_t)llaRef[0]) * C_DEG2RAD_F );
-	result[2] = -deltaLLA[2];
+    result[0] =  deltaLLA[0] * DEG2RAD_EARTH_RADIUS_F;
+    result[1] =  deltaLLA[1] * DEG2RAD_EARTH_RADIUS_F * _COS(((f_t)llaRef[0]) * C_DEG2RAD_F);
+    result[2] = -deltaLLA[2];
 }
 
 
@@ -482,7 +482,7 @@ void llaDeg2ned_d(double llaRef[3], double lla[3], ixVector3 result)
 void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result)
 {
     ixVector3 deltaLLA;
-    ned2DeltaLla( ned, llaRef, deltaLLA );
+    ned2DeltaLla(ned, llaRef, deltaLLA);
     
     // Find LLA
     result[0] = llaRef[0] + deltaLLA[0];
@@ -501,12 +501,12 @@ void ned2lla(ixVector3 ned, ixVector3 llaRef, ixVector3 result)
 void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3])
 {
     double deltaLLA[3];
-    ned2DeltaLla_d( ned, llaRef, deltaLLA );
+    ned2DeltaLla_d(ned, llaRef, deltaLLA);
     
     // Find LLA
-	result[0] = llaRef[0] + deltaLLA[0];
-	result[1] = llaRef[1] + deltaLLA[1];
-	result[2] = llaRef[2] + deltaLLA[2];
+    result[0] = llaRef[0] + deltaLLA[0];
+    result[1] = llaRef[1] + deltaLLA[1];
+    result[2] = llaRef[2] + deltaLLA[2];
 }
 
 
@@ -519,13 +519,13 @@ void ned2lla_d(ixVector3 ned, double llaRef[3], double result[3])
 */
 void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
 {
-	double deltaLLA[3];
-	ned2DeltaLlaDeg_d(ned, llaRef, deltaLLA);
+    double deltaLLA[3];
+    ned2DeltaLlaDeg_d(ned, llaRef, deltaLLA);
 
-	// Find LLA
-	result[0] = llaRef[0] + deltaLLA[0];
-	result[1] = llaRef[1] + deltaLLA[1];
-	result[2] = llaRef[2] + deltaLLA[2];
+    // Find LLA
+    result[0] = llaRef[0] + deltaLLA[0];
+    result[1] = llaRef[1] + deltaLLA[1];
+    result[2] = llaRef[2] + deltaLLA[2];
 }
 
 
@@ -536,12 +536,12 @@ void ned2llaDeg_d(ixVector3 ned, double llaRef[3], double result[3])
  *  baroKPa = (kPa) barometric pressure in kilopascals
  *  return = (m) msl altitude in meters
  */
-f_t baro2msl( f_t pKPa )
+f_t baro2msl(f_t pKPa)
 {
-	if( pKPa <= _ZERO )
-		return _ZERO;
-	else
-		return C_NEG_KT0_DIV_MG_F * _LOG( pKPa * C_INV_P0_KPA_F );
+    if (pKPa <= _ZERO)
+        return _ZERO;
+    else
+        return C_NEG_KT0_DIV_MG_F * _LOG(pKPa * C_INV_P0_KPA_F);
 }
 
 
@@ -550,13 +550,13 @@ f_t baro2msl( f_t pKPa )
  *
  *  return = (m) distance in meters
  */
-f_t llaRadDistance( double lla1[3], double lla2[3] )
+f_t llaRadDistance(double lla1[3], double lla2[3])
 {
-	ixVector3 ned;
-	
-	lla2ned_d( lla1, lla2, ned );
+    ixVector3 ned;
+    
+    lla2ned_d(lla1, lla2, ned);
 
-	return _SQRT( ned[0]*ned[0] + ned[1]*ned[1] + ned[2]*ned[2] );
+    return _SQRT(ned[0]*ned[0] + ned[1]*ned[1] + ned[2]*ned[2]);
 }
 
 /*
@@ -564,57 +564,57 @@ f_t llaRadDistance( double lla1[3], double lla2[3] )
  *
  *  return = (m) distance in meters
  */
-f_t llaDegDistance( double lla1[3], double lla2[3] )
+f_t llaDegDistance(double lla1[3], double lla2[3])
 {
-	ixVector3 ned;
-	
-	llaDeg2ned_d( lla1, lla2, ned );
+    ixVector3 ned;
+    
+    llaDeg2ned_d(lla1, lla2, ned);
 
-	return _SQRT( ned[0]*ned[0] + ned[1]*ned[1] + ned[2]*ned[2] );
+    return _SQRT(ned[0]*ned[0] + ned[1]*ned[1] + ned[2]*ned[2]);
 }
 
 void ned2DeltaLla(ixVector3 ned, ixVector3 llaRef, ixVector3 deltaLLA)
 {
-	deltaLLA[0] =  ned[0] * INV_EARTH_RADIUS_F;
-	deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(llaRef[0]);
-	deltaLLA[2] = -ned[2];
+    deltaLLA[0] =  ned[0] * INV_EARTH_RADIUS_F;
+    deltaLLA[1] =  ned[1] * INV_EARTH_RADIUS_F / _COS(llaRef[0]);
+    deltaLLA[2] = -ned[2];
 }
 
 void ned2DeltaLla_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 {
-	deltaLLA[0] = (double)( ned[0] * INV_EARTH_RADIUS_F);
-	deltaLLA[1] = (double)( ned[1] * INV_EARTH_RADIUS_F / _COS(((f_t)llaRef[0])) );
-	deltaLLA[2] = (double)(-ned[2]);
+    deltaLLA[0] = (double)(ned[0] * INV_EARTH_RADIUS_F);
+    deltaLLA[1] = (double)(ned[1] * INV_EARTH_RADIUS_F / _COS(((f_t)llaRef[0])));
+    deltaLLA[2] = (double)(-ned[2]);
 }
 
 void ned2DeltaLlaDeg_d(ixVector3 ned, double llaRef[3], double deltaLLA[3])
 {
-	deltaLLA[0] = (double)(ned[0] * INV_EARTH_RADIUS_F * C_RAD2DEG_F);
-	deltaLLA[1] = (double)(ned[1] * INV_EARTH_RADIUS_F * C_RAD2DEG_F / _COS( (((f_t)llaRef[0])*C_DEG2RAD_F) ) );
-	deltaLLA[2] = (double)(-ned[2]);
+    deltaLLA[0] = (double)(ned[0] * INV_EARTH_RADIUS_F * C_RAD2DEG_F);
+    deltaLLA[1] = (double)(ned[1] * INV_EARTH_RADIUS_F * C_RAD2DEG_F / _COS((((f_t)llaRef[0])*C_DEG2RAD_F)));
+    deltaLLA[2] = (double)(-ned[2]);
 }
 
 // Convert LLA from radians to degrees
 void lla_Rad2Deg_d(double result[3], double lla[3])
 {
-	result[0] = C_RAD2DEG * lla[0];
-	result[1] = C_RAD2DEG * lla[1];
-	result[2] = lla[2];
+    result[0] = C_RAD2DEG * lla[0];
+    result[1] = C_RAD2DEG * lla[1];
+    result[2] = lla[2];
 }
 
 // Convert LLA from degrees to radians
 void lla_Deg2Rad_d(double result[3], double lla[3])
 {
-	result[0] = C_DEG2RAD * lla[0];
-	result[1] = C_DEG2RAD * lla[1];
-	result[2] = lla[2];
+    result[0] = C_DEG2RAD * lla[0];
+    result[1] = C_DEG2RAD * lla[1];
+    result[2] = lla[2];
 }
 
 void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt)
 {
-	result[0] = C_DEG2RAD * lat;
-	result[1] = C_DEG2RAD * lon;
-	result[2] = alt;
+    result[0] = C_DEG2RAD * lat;
+    result[1] = C_DEG2RAD * lon;
+    result[2] = alt;
 }
 
 /*
@@ -622,7 +622,7 @@ void lla_Deg2Rad_d2(double result[3], double lat, double lon, double alt)
  *
  *  return 1 on success, 0 on failure.
  */
-int llaDegValid( double lla[3] )
+int llaDegValid(double lla[3])
 {
     return 
         (fabs(lla[0]) <= 90.0) &&           // Lat
@@ -657,24 +657,24 @@ float gravity_igf80(float lat_rad, float alt)
 */
 // void quatEcef2Ned(ixVector4 Qe2n, const ixVector3d lla)
 // {
-// 	ixVector3 Ee2nLL;
-// 	ixVector4 Qe2n0LL, Qe2nLL;
+//     ixVector3 Ee2nLL;
+//     ixVector4 Qe2n0LL, Qe2nLL;
 // 
-// 	//Qe2n0LL is reference attitude [NED w/r/t ECEF] at zero latitude and longitude (elsewhere qned0)
-// 	Qe2n0LL[0] = cosf(-C_PIDIV4_F);
-// 	Qe2n0LL[1] = 0.0f;
-// 	Qe2n0LL[2] = sinf(-C_PIDIV4_F);
-// 	Qe2n0LL[3] = 0.0f;
+//     //Qe2n0LL is reference attitude [NED w/r/t ECEF] at zero latitude and longitude (elsewhere qned0)
+//     Qe2n0LL[0] = cosf(-C_PIDIV4_F);
+//     Qe2n0LL[1] = 0.0f;
+//     Qe2n0LL[2] = sinf(-C_PIDIV4_F);
+//     Qe2n0LL[3] = 0.0f;
 // 
-// 	//Qe2nLL is delta reference attitude [NED w/r/t ECEF] accounting for latitude and longitude (elsewhere qned)
-// 	Ee2nLL[0] = 0.0f;
-// 	Ee2nLL[1] = (float)(-lla[0]);
-// 	Ee2nLL[2] = (float)(lla[1]);
+//     //Qe2nLL is delta reference attitude [NED w/r/t ECEF] accounting for latitude and longitude (elsewhere qned)
+//     Ee2nLL[0] = 0.0f;
+//     Ee2nLL[1] = (float)(-lla[0]);
+//     Ee2nLL[2] = (float)(lla[1]);
 // 
-// 	euler2quat(Ee2nLL, Qe2nLL);
+//     euler2quat(Ee2nLL, Qe2nLL);
 // 
-// 	//Qe2b=Qe2n*Qn2b is vehicle attitude [BOD w/r/t ECEF]
-// 	mul_Quat_Quat(Qe2n, Qe2n0LL, Qe2nLL);
+//     //Qe2b=Qe2n*Qn2b is vehicle attitude [BOD w/r/t ECEF]
+//     mul_Quat_Quat(Qe2n, Qe2n0LL, Qe2nLL);
 // }
 
 
@@ -695,11 +695,11 @@ void quat_ecef2ned(float lat, float lon, float *qe2n)
 */
 void qe2b2EulerNedEcef(ixVector3 eul, const ixVector4 qe2b, const ixVector3d ecef)
 {
-	ixVector3d lla;
+    ixVector3d lla;
 
-// 	ecef2lla_d(ecef, lla);
-	ecef2lla(ecef, lla);
-	qe2b2EulerNedLLA(eul, qe2b, lla);
+//     ecef2lla_d(ecef, lla);
+    ecef2lla(ecef, lla);
+    qe2b2EulerNedLLA(eul, qe2b, lla);
 }
 
 
@@ -786,7 +786,7 @@ void rangeBearing_from_lla(const ixVector3d lla1, const ixVector3d lla2, ixVecto
 
 void rotMat_ned2ecef(const double *latlon, float *R)
 {
-	double Smu, Cmu, Sl, Cl;
+    double Smu, Cmu, Sl, Cl;
 
     Smu = sin(latlon[0]);
     Cmu = cos(latlon[0]);

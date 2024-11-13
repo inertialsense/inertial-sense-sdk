@@ -182,7 +182,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<port_monitor_t> mapper(data_set, did);
     mapper.AddMember("activePorts", &port_monitor_t::activePorts, DATA_TYPE_UINT8, "", "Number of active ports", DATA_FLAGS_READ_ONLY);    
-    for( int i=0; i<NUM_SERIAL_PORTS; i++)
+    for (int i=0; i<NUM_SERIAL_PORTS; i++)
     {
         mapper.AddMember2("[" + std::to_string(i) + "].portInfo",           i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, portInfo), DATA_TYPE_UINT8, "", "High nib port type (see ePortMonPortType) low nib index.", DATA_FLAGS_READ_ONLY | DATA_FLAGS_DISPLAY_HEX);
         mapper.AddMember2("[" + std::to_string(i) + "].status",             i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, status), DATA_TYPE_UINT32, "", "", DATA_FLAGS_DISPLAY_HEX);
@@ -190,7 +190,7 @@ void PopulateMapPortMonitor(data_set_t data_set[DID_COUNT], uint32_t did)
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytesPerSec",      i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytesPerSec), DATA_TYPE_UINT32, "bytes/s", "Rx data rate", DATA_FLAGS_READ_ONLY);
         mapper.AddMember2("[" + std::to_string(i) + "].txBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytes), DATA_TYPE_UINT32, "bytes", "Tx byte count");
         mapper.AddMember2("[" + std::to_string(i) + "].rxBytes",            i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxBytes), DATA_TYPE_UINT32, "bytes", "Rx byte count");
-        mapper.AddMember2("[" + std::to_string(i) + "].txOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txOverflows), DATA_TYPE_UINT32, "", "Tx buffer overflow occurrences");			
+        mapper.AddMember2("[" + std::to_string(i) + "].txOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txOverflows), DATA_TYPE_UINT32, "", "Tx buffer overflow occurrences");            
         mapper.AddMember2("[" + std::to_string(i) + "].rxOverflows",        i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxOverflows), DATA_TYPE_UINT32, "", "Rx buffer overflow occurrences");        
         mapper.AddMember2("[" + std::to_string(i) + "].txBytesDropped",     i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, txBytesDropped), DATA_TYPE_UINT32, "bytes", "Tx number of bytes that were not sent");
         mapper.AddMember2("[" + std::to_string(i) + "].rxChecksumErrors",   i*sizeof(port_monitor_set_t) + offsetof(port_monitor_set_t, rxChecksumErrors), DATA_TYPE_UINT32, "", "Rx number of checksum failures");
@@ -201,10 +201,10 @@ void PopulateMapNmeaMsgs(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<nmea_msgs_t> mapper(data_set, did);
     mapper.AddMember("options", &nmea_msgs_t::options, DATA_TYPE_UINT32, "", "Port selection[0x0=current, 0xFF=all, 0x1=ser0, 0x2=ser1, 0x4=ser2, 0x8=USB]. (see RMC_OPTIONS_...)", DATA_FLAGS_DISPLAY_HEX);    
-    for( int i=0; i<MAX_nmeaBroadcastMsgPairs; i++)
+    for (int i=0; i<MAX_nmeaBroadcastMsgPairs; i++)
     {
-        mapper.AddMember2( "[" + std::to_string(i) + "].ID",     i*sizeof(nmeaBroadcastMsgPair_t) + offsetof(nmeaBroadcastMsgPair_t, msgID),     DATA_TYPE_UINT8, "", "NMEA_ID (See eNmeaAsciiMsgId)");
-        mapper.AddMember2( "[" + std::to_string(i) + "].Period", i*sizeof(nmeaBroadcastMsgPair_t) + offsetof(nmeaBroadcastMsgPair_t, msgPeriod), DATA_TYPE_UINT8, "", "NMEA_PerieNmeaMsgIdin multiples of 200ms. Ie value of 1 is 200ms or 5 is 1000ms/1s. A value of 0 stops the message broadcast.");
+        mapper.AddMember2("[" + std::to_string(i) + "].ID",     i*sizeof(nmeaBroadcastMsgPair_t) + offsetof(nmeaBroadcastMsgPair_t, msgID),     DATA_TYPE_UINT8, "", "NMEA_ID (See eNmeaAsciiMsgId)");
+        mapper.AddMember2("[" + std::to_string(i) + "].Period", i*sizeof(nmeaBroadcastMsgPair_t) + offsetof(nmeaBroadcastMsgPair_t, msgPeriod), DATA_TYPE_UINT8, "", "NMEA_PerieNmeaMsgIdin multiples of 200ms. Ie value of 1 is 200ms or 5 is 1000ms/1s. A value of 0 stops the message broadcast.");
     }
 }
 
@@ -257,14 +257,14 @@ static void PopulateMapSysSensors(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddArray("pqr", &sys_sensors_t::pqr, DATA_TYPE_F32, 3, SYM_DEG_PER_S, "Angular rate", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4, C_RAD2DEG);
     mapper.AddArray("acc", &sys_sensors_t::acc, DATA_TYPE_F32, 3, SYM_M_PER_S, "Linear acceleration", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddArray("mag", &sys_sensors_t::mag, DATA_TYPE_F32, 3, "", "Magnetometer normalized gauss", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
-    mapper.AddMember("bar", &sys_sensors_t::bar, DATA_TYPE_F32, "kPa", "Barometric pressure", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
-    mapper.AddMember("barTemp", &sys_sensors_t::barTemp, DATA_TYPE_F32, "m", "Barometer MSL altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2 );
+    mapper.AddMember("bar", &sys_sensors_t::bar, DATA_TYPE_F32, "kPa", "Barometric pressure", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("barTemp", &sys_sensors_t::barTemp, DATA_TYPE_F32, "m", "Barometer MSL altitude", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
     mapper.AddMember("mslBar", &sys_sensors_t::mslBar, DATA_TYPE_F32, "C", "Barometer temperature", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
     mapper.AddMember("humidity", &sys_sensors_t::humidity, DATA_TYPE_F32, "%rH", "Relative humidity, 0%-100%", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
-    mapper.AddMember("vin", &sys_sensors_t::vin, DATA_TYPE_F32, "V", "System input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2 );
-    mapper.AddMember("ana1", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 1 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
-    mapper.AddMember("ana3", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 3 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
-    mapper.AddMember("ana4", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 4 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3 );
+    mapper.AddMember("vin", &sys_sensors_t::vin, DATA_TYPE_F32, "V", "System input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_2);
+    mapper.AddMember("ana1", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 1 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("ana3", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 3 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
+    mapper.AddMember("ana4", &sys_sensors_t::ana1, DATA_TYPE_F32, "V", "ADC analog 4 input voltage", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3);
 }
 
 static void PopulateMapRmc(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -279,8 +279,8 @@ void PopulateMapIns1(data_set_t data_set[DID_COUNT], uint32_t did)
     std::string str;
     DataMapper<ins_1_t> mapper(data_set, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("week", &ins_1_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags );
-    mapper.AddMember("timeOfWeek", &ins_1_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    mapper.AddMember("week", &ins_1_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags);
+    mapper.AddMember("timeOfWeek", &ins_1_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("insStatus", &ins_1_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_1_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     mapper.AddVec3Rpy("theta", offsetof(ins_1_t, theta), DATA_TYPE_F32, SYM_DEG, "euler angle", flags | DATA_FLAGS_ANGLE, C_RAD2DEG); // ERROR_THRESH_ROLLPITCH);
@@ -294,8 +294,8 @@ static void PopulateMapIns2(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_2_t> mapper(data_set, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("week", &ins_2_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags );
-    mapper.AddMember("timeOfWeek", &ins_2_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    mapper.AddMember("week", &ins_2_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags);
+    mapper.AddMember("timeOfWeek", &ins_2_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("insStatus", &ins_2_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_2_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     std::string str = " quaternion body rotation with respect to NED";
@@ -308,8 +308,8 @@ static void PopulateMapIns3(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_3_t> mapper(data_set, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("week", &ins_3_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags );
-    mapper.AddMember("timeOfWeek", &ins_3_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    mapper.AddMember("week", &ins_3_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags);
+    mapper.AddMember("timeOfWeek", &ins_3_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("insStatus", &ins_3_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_3_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     std::string str = " quaternion body rotation with respect to NED";
@@ -323,8 +323,8 @@ static void PopulateMapIns4(data_set_t data_set[DID_COUNT], uint32_t did)
 {
     DataMapper<ins_4_t> mapper(data_set, did);
     uint32_t flags = DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_3;
-    mapper.AddMember("week", &ins_4_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags );
-    mapper.AddMember("timeOfWeek", &ins_4_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4 );
+    mapper.AddMember("week", &ins_4_t::week, DATA_TYPE_UINT32, "week", "Weeks since Jan 6, 1980", flags);
+    mapper.AddMember("timeOfWeek", &ins_4_t::timeOfWeek, DATA_TYPE_F64, "s", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY | DATA_FLAGS_FIXED_DECIMAL_4);
     mapper.AddMember("insStatus", &ins_4_t::insStatus, DATA_TYPE_UINT32,  "", s_insStatusDescription, DATA_FLAGS_DISPLAY_HEX | DATA_FLAGS_INS_STATUS);
     mapper.AddMember("hdwStatus", &ins_4_t::hdwStatus, DATA_TYPE_UINT32,  "", s_hdwStatusDescription, DATA_FLAGS_DISPLAY_HEX);
     std::string str = " quaternion body rotation with respect to ECEF";
@@ -368,7 +368,7 @@ static void PopulateMapGpsSat(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &gps_sat_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("numSats", &gps_sat_t::numSats, DATA_TYPE_UINT32, "", "Number of satellites in sky", DATA_FLAGS_READ_ONLY);
 
-    for( int n=0; n<MAX_NUM_SATELLITES; n++)
+    for (int n=0; n<MAX_NUM_SATELLITES; n++)
     {
         mapper.AddMember2("sat" + std::to_string(n) + ".gnssId",    n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].gnssId),    DATA_TYPE_UINT8);
         mapper.AddMember2("sat" + std::to_string(n) + ".svId",      n*sizeof(gps_sat_sv_t) + offsetof(gps_sat_t, sat[0].svId),      DATA_TYPE_UINT8);
@@ -385,7 +385,7 @@ static void PopulateMapGpsSig(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("timeOfWeekMs", &gps_sig_t::timeOfWeekMs, DATA_TYPE_UINT32, "ms", "Time of week since Sunday morning, GMT", DATA_FLAGS_READ_ONLY);
     mapper.AddMember("numSigs", &gps_sig_t::numSigs, DATA_TYPE_UINT32, "", "Number of signals in sky", DATA_FLAGS_READ_ONLY);
 
-    for( int n=0; n<MAX_NUM_SAT_SIGNALS; n++)
+    for (int n=0; n<MAX_NUM_SAT_SIGNALS; n++)
     {
         mapper.AddMember2("sig" + std::to_string(n) + ".gnssId",    n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].gnssId),    DATA_TYPE_UINT8);
         mapper.AddMember2("sig" + std::to_string(n) + ".svId",      n*sizeof(gps_sig_sv_t) + offsetof(gps_sig_t, sig[0].svId),      DATA_TYPE_UINT8);
@@ -417,7 +417,7 @@ static void PopulateMapGpsTimepulse(data_set_t data_set[DID_COUNT], uint32_t did
     mapper.AddMember("ppsInterruptReinitCount", &gps_timepulse_t::ppsInterruptReinitCount, DATA_TYPE_UINT8, "", "Counter for GPS PPS interrupt re-initalization.");
     mapper.AddMember("plsCount", &gps_timepulse_t::plsCount, DATA_TYPE_UINT8, "", "");
     mapper.AddMember("lastSyncTimeMs", &gps_timepulse_t::lastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Local timestamp of last valid PPS sync.");
-    mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");			
+    mapper.AddMember("sinceLastSyncTimeMs", &gps_timepulse_t::sinceLastSyncTimeMs, DATA_TYPE_UINT32, "ms", "Time since last valid PPS sync.");            
 }
 
 static void PopulateMapMagnetometer(data_set_t data_set[DID_COUNT], uint32_t did)
@@ -585,8 +585,8 @@ static void PopulateMapNvmFlashCfg(data_set_t data_set[DID_COUNT], uint32_t did)
     mapper.AddMember("lastLlaWeek", &nvm_flash_cfg_t::lastLlaWeek, DATA_TYPE_UINT32, "week", "Last LLA update Weeks since Jan 6, 1980");
     mapper.AddMember("lastLlaUpdateDistance", &nvm_flash_cfg_t::lastLlaUpdateDistance, DATA_TYPE_F32, "m", "Distance between current and last LLA that triggers an update of lastLLA)");
     mapper.AddMember("magDeclination", &nvm_flash_cfg_t::magDeclination, DATA_TYPE_F32,  SYM_DEG, "Magnetic north declination (heading offset from true north)", DATA_FLAGS_FIXED_DECIMAL_2, C_RAD2DEG);
-	mapper.AddMember("magInterferenceThreshold", &nvm_flash_cfg_t::magInterferenceThreshold, DATA_TYPE_F32, "", "Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection.");
-	mapper.AddMember("magCalibrationQualityThreshold", &nvm_flash_cfg_t::magCalibrationQualityThreshold, DATA_TYPE_F32, "", "Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good.");
+    mapper.AddMember("magInterferenceThreshold", &nvm_flash_cfg_t::magInterferenceThreshold, DATA_TYPE_F32, "", "Magnetometer interference sensitivity threshold. Typical range is 2-10 (3 default) and 1000 to disable mag interference detection.");
+    mapper.AddMember("magCalibrationQualityThreshold", &nvm_flash_cfg_t::magCalibrationQualityThreshold, DATA_TYPE_F32, "", "Magnetometer calibration quality sensitivity threshold. Typical range is 10-20 (10 default) and 1000 to disable mag calibration quality check, forcing it to be always good.");
     str = "rotation from INS Sensor Frame to Intermediate Output Frame.  Order applied: heading, pitch, roll.";
     mapper.AddArray("zeroVelRotation", &nvm_flash_cfg_t::zeroVelRotation, DATA_TYPE_F32, 3, SYM_DEG, "Roll, pitch, yaw " + str, 0, C_RAD2DEG);
     // Do not change `zeroVelOffset` registration from mapper.AddArray() to mapper.AddVec3Xyz() as it is used in a ci test.  
@@ -1255,7 +1255,7 @@ cISDataMappings cISDataMappings::s_map;
 #endif
 
 const char* const cISDataMappings::m_dataIdNames[] =
-{    // Matches data identifier list (eDataIDs) in data_sets.h
+{   // Matches data identifier list (eDataIDs) in data_sets.h
     "DID_NULL",                         // 0
     "DID_DEV_INFO",                     // 1
     "DID_SYS_FAULT",                    // 2
@@ -1393,126 +1393,126 @@ const char* const cISDataMappings::m_dataIdNames[] =
 
 cISDataMappings::cISDataMappings()
 {
-    for(eDataIDs i=0; i<DID_COUNT; i++)
+    for (eDataIDs i=0; i<DID_COUNT; i++)
     {   // Init to zero
         m_data_set[i] = {};
     }
 
     // CONFIG
-    PopulateMapNvmFlashCfg(         m_data_set, DID_FLASH_CONFIG);
-    PopulateMapGpxFlashCfg(         m_data_set, DID_GPX_FLASH_CFG);
+    PopulateMapNvmFlashCfg(m_data_set, DID_FLASH_CONFIG);
+    PopulateMapGpxFlashCfg(m_data_set, DID_GPX_FLASH_CFG);
 
     // DEBUG
-    PopulateMapDebugString(         m_data_set, DID_DEBUG_STRING);
-    PopulateMapDebugArray(          m_data_set, DID_DEBUG_ARRAY);
-    PopulateMapDebugArray(          m_data_set, DID_GPX_DEBUG_ARRAY);
-    // PopulateMapDiagMsg(          m_data_set, DID_DIAGNOSTIC_MESSAGE);
+    PopulateMapDebugString(m_data_set, DID_DEBUG_STRING);
+    PopulateMapDebugArray(m_data_set, DID_DEBUG_ARRAY);
+    PopulateMapDebugArray(m_data_set, DID_GPX_DEBUG_ARRAY);
+    // PopulateMapDiagMsg(m_data_set, DID_DIAGNOSTIC_MESSAGE);
 
     // SOLUTION
-    PopulateMapIns1(                m_data_set, DID_INS_1);
-    PopulateMapIns2(                m_data_set, DID_INS_2);
-    PopulateMapIns3(                m_data_set, DID_INS_3);
-    PopulateMapIns4(                m_data_set, DID_INS_4);
-    PopulateMapSysParams(           m_data_set, DID_SYS_PARAMS);
+    PopulateMapIns1(m_data_set, DID_INS_1);
+    PopulateMapIns2(m_data_set, DID_INS_2);
+    PopulateMapIns3(m_data_set, DID_INS_3);
+    PopulateMapIns4(m_data_set, DID_INS_4);
+    PopulateMapSysParams(m_data_set, DID_SYS_PARAMS);
 
     // EKF
-    PopulateMapInl2States(          m_data_set, DID_INL2_STATES);
-    PopulateMapInl2NedSigma(        m_data_set, DID_INL2_NED_SIGMA);
-    PopulateMapInl2MagObsInfo(      m_data_set, DID_INL2_MAG_OBS_INFO);
+    PopulateMapInl2States(m_data_set, DID_INL2_STATES);
+    PopulateMapInl2NedSigma(m_data_set, DID_INL2_NED_SIGMA);
+    PopulateMapInl2MagObsInfo(m_data_set, DID_INL2_MAG_OBS_INFO);
     PopulateMapRosCovariancePoseTwist(m_data_set, DID_ROS_COVARIANCE_POSE_TWIST);
     
     // SENSORS
-    PopulateMapPimu(                m_data_set, DID_PIMU, "Preintegrated IMU.");
-    PopulateMapImu(                 m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
-    PopulateMapImu(                 m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
-    PopulateMapImu3(                m_data_set, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
-    PopulateMapImu3(                m_data_set, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
+    PopulateMapPimu(m_data_set, DID_PIMU, "Preintegrated IMU.");
+    PopulateMapImu(m_data_set, DID_IMU, "IMU data down-sampled from IMU rate to navigation rate.");
+    PopulateMapImu(m_data_set, DID_IMU_RAW, "IMU data averaged from DID_IMU3_RAW.");
+    PopulateMapImu3(m_data_set, DID_IMU3_RAW, "Triple IMU data calibrated from DID_IMU3_UNCAL.");
+    PopulateMapImu3(m_data_set, DID_IMU3_UNCAL, "Triple IMU data directly from sensor (uncalibrated).");
 
-    PopulateMapImu(                 m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
-    PopulateMapPimu(                m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
-    PopulateMapMagnetometer(        m_data_set, DID_REFERENCE_MAGNETOMETER);
+    PopulateMapImu(m_data_set, DID_REFERENCE_IMU, "Reference IMU.");
+    PopulateMapPimu(m_data_set, DID_REFERENCE_PIMU, "Reference PIMU.");
+    PopulateMapMagnetometer(m_data_set, DID_REFERENCE_MAGNETOMETER);
 
-    PopulateMapMagnetometer(        m_data_set, DID_MAGNETOMETER);
-    PopulateMapBarometer(           m_data_set, DID_BAROMETER);
-    PopulateMapWheelEncoder(        m_data_set, DID_WHEEL_ENCODER);
+    PopulateMapMagnetometer(m_data_set, DID_MAGNETOMETER);
+    PopulateMapBarometer(m_data_set, DID_BAROMETER);
+    PopulateMapWheelEncoder(m_data_set, DID_WHEEL_ENCODER);
 
-    PopulateMapGpsPos(              m_data_set, DID_GPS1_RTK_POS);
-    PopulateMapGpsRtkRel(           m_data_set, DID_GPS1_RTK_POS_REL);
-    PopulateMapGpsRtkMisc(          m_data_set, DID_GPS1_RTK_POS_MISC);
-    PopulateMapGpsRtkRel(           m_data_set, DID_GPS2_RTK_CMP_REL);
-    PopulateMapGpsRtkMisc(          m_data_set, DID_GPS2_RTK_CMP_MISC);
+    PopulateMapGpsPos(m_data_set, DID_GPS1_RTK_POS);
+    PopulateMapGpsRtkRel(m_data_set, DID_GPS1_RTK_POS_REL);
+    PopulateMapGpsRtkMisc(m_data_set, DID_GPS1_RTK_POS_MISC);
+    PopulateMapGpsRtkRel(m_data_set, DID_GPS2_RTK_CMP_REL);
+    PopulateMapGpsRtkMisc(m_data_set, DID_GPS2_RTK_CMP_MISC);
 
-    PopulateMapGpsPos(              m_data_set, DID_GPS1_POS);
-    PopulateMapGpsPos(              m_data_set, DID_GPS2_POS);
-    PopulateMapGpsVel(              m_data_set, DID_GPS1_VEL);
-    PopulateMapGpsVel(              m_data_set, DID_GPS2_VEL);
-    PopulateMapGpsPos(              m_data_set, DID_GPS1_RCVR_POS);
+    PopulateMapGpsPos(m_data_set, DID_GPS1_POS);
+    PopulateMapGpsPos(m_data_set, DID_GPS2_POS);
+    PopulateMapGpsVel(m_data_set, DID_GPS1_VEL);
+    PopulateMapGpsVel(m_data_set, DID_GPS2_VEL);
+    PopulateMapGpsPos(m_data_set, DID_GPS1_RCVR_POS);
 
-#if 0	// Too much data, we don't want to log this. WHJ
-    PopulateMapGpsSat(              m_data_set, DID_GPS1_SAT);
-    PopulateMapGpsSat(              m_data_set, DID_GPS2_SAT);
-    PopulateMapGpsSig(              m_data_set, DID_GPS1_SIG);
-    PopulateMapGpsSig(              m_data_set, DID_GPS2_SIG);
+#if 0    // Too much data, we don't want to log this. WHJ
+    PopulateMapGpsSat(m_data_set, DID_GPS1_SAT);
+    PopulateMapGpsSat(m_data_set, DID_GPS2_SAT);
+    PopulateMapGpsSig(m_data_set, DID_GPS1_SIG);
+    PopulateMapGpsSig(m_data_set, DID_GPS2_SIG);
 #endif
 
-    PopulateMapGpsVersion(          m_data_set, DID_GPS1_VERSION);
-    PopulateMapGpsVersion(          m_data_set, DID_GPS2_VERSION);
-    PopulateMapGpsTimepulse(        m_data_set, DID_GPS1_TIMEPULSE);
+    PopulateMapGpsVersion(m_data_set, DID_GPS1_VERSION);
+    PopulateMapGpsVersion(m_data_set, DID_GPS2_VERSION);
+    PopulateMapGpsTimepulse(m_data_set, DID_GPS1_TIMEPULSE);
 
-    PopulateMapGpsRaw(              m_data_set, DID_GPS1_RAW);
-    PopulateMapGpsRaw(              m_data_set, DID_GPS2_RAW);
-    PopulateMapGpsRaw(              m_data_set, DID_GPS_BASE_RAW);
+    PopulateMapGpsRaw(m_data_set, DID_GPS1_RAW);
+    PopulateMapGpsRaw(m_data_set, DID_GPS2_RAW);
+    PopulateMapGpsRaw(m_data_set, DID_GPS_BASE_RAW);
 
-    PopulateMapStrobeInTime(        m_data_set, DID_STROBE_IN_TIME);
-    PopulateMapSysSensors(          m_data_set, DID_SYS_SENSORS);
-    PopulateMapSensorsADC(          m_data_set, DID_SENSORS_ADC);
-    PopulateMapSensorsADC(          m_data_set, DID_SENSORS_ADC_SIGMA);
+    PopulateMapStrobeInTime(m_data_set, DID_STROBE_IN_TIME);
+    PopulateMapSysSensors(m_data_set, DID_SYS_SENSORS);
+    PopulateMapSensorsADC(m_data_set, DID_SENSORS_ADC);
+    PopulateMapSensorsADC(m_data_set, DID_SENSORS_ADC_SIGMA);
 
-    PopulateMapPimuMag(             m_data_set, DID_PIMU_MAG);
-    PopulateMapImuMag(              m_data_set, DID_IMU_MAG);
+    PopulateMapPimuMag(m_data_set, DID_PIMU_MAG);
+    PopulateMapImuMag(m_data_set, DID_IMU_MAG);
 
     // CALIBRATION
-    PopulateMapMagCal(              m_data_set, DID_MAG_CAL);
-    PopulateMapInfieldCal(          m_data_set, DID_INFIELD_CAL);
-    PopulateMapGroundVehicle(       m_data_set, DID_GROUND_VEHICLE);
+    PopulateMapMagCal(m_data_set, DID_MAG_CAL);
+    PopulateMapInfieldCal(m_data_set, DID_INFIELD_CAL);
+    PopulateMapGroundVehicle(m_data_set, DID_GROUND_VEHICLE);
     
     // SYSTEM
-    PopulateMapDeviceInfo(          m_data_set, DID_DEV_INFO);
-    PopulateMapDeviceInfo(          m_data_set, DID_GPX_DEV_INFO);
+    PopulateMapDeviceInfo(m_data_set, DID_DEV_INFO);
+    PopulateMapDeviceInfo(m_data_set, DID_GPX_DEV_INFO);
 
-    PopulateMapSystemCommand(       m_data_set, DID_SYS_CMD);
-    PopulateMapBit(                 m_data_set, DID_BIT);
-    PopulateMapGpxBit(              m_data_set, DID_GPX_BIT);
-    PopulateMapGpxStatus(           m_data_set, DID_GPX_STATUS);
-    PopulateMapSurveyIn(            m_data_set, DID_SURVEY_IN);
-    PopulateMapRtosInfo(            m_data_set, DID_RTOS_INFO);
+    PopulateMapSystemCommand(m_data_set, DID_SYS_CMD);
+    PopulateMapBit(m_data_set, DID_BIT);
+    PopulateMapGpxBit(m_data_set, DID_GPX_BIT);
+    PopulateMapGpxStatus(m_data_set, DID_GPX_STATUS);
+    PopulateMapSurveyIn(m_data_set, DID_SURVEY_IN);
+    PopulateMapRtosInfo(m_data_set, DID_RTOS_INFO);
     // m_data_set[DID_GPX_RTOS_INFO].size = sizeof(gpx_rtos_info_t);
-    PopulateMapSystemFault(         m_data_set, DID_SYS_FAULT);
+    PopulateMapSystemFault(m_data_set, DID_SYS_FAULT);
 
     // COMMUNICATIONS
-    PopulateMapPortMonitor(         m_data_set, DID_PORT_MONITOR);
-    PopulateMapPortMonitor(         m_data_set, DID_GPX_PORT_MONITOR);
-    PopulateMapNmeaMsgs(            m_data_set, DID_NMEA_BCAST_PERIOD);
-    PopulateMapCanConfig(           m_data_set, DID_CAN_CONFIG);
-    PopulateMapRmc(                 m_data_set, DID_RMC);
-    PopulateMapRmc(                 m_data_set, DID_GPX_RMC);
-    PopulateMapIO(                  m_data_set, DID_IO);
-    PopulateMapISEvent(             m_data_set, DID_EVENT);
+    PopulateMapPortMonitor(m_data_set, DID_PORT_MONITOR);
+    PopulateMapPortMonitor(m_data_set, DID_GPX_PORT_MONITOR);
+    PopulateMapNmeaMsgs(m_data_set, DID_NMEA_BCAST_PERIOD);
+    PopulateMapCanConfig(m_data_set, DID_CAN_CONFIG);
+    PopulateMapRmc(m_data_set, DID_RMC);
+    PopulateMapRmc(m_data_set, DID_GPX_RMC);
+    PopulateMapIO(m_data_set, DID_IO);
+    PopulateMapISEvent(m_data_set, DID_EVENT);
 
     // EVB
-    PopulateMapEvbStatus(           m_data_set, DID_EVB_STATUS);
-    PopulateMapEvbFlashCfg(         m_data_set, DID_EVB_FLASH_CFG);
-    PopulateMapDebugArray(          m_data_set, DID_EVB_DEBUG_ARRAY);
-    // PopulateMapEvbRtosInfo(      m_data_set, DID_EVB_RTOS_INFO);
-    PopulateMapDeviceInfo(          m_data_set, DID_EVB_DEV_INFO);
+    PopulateMapEvbStatus(m_data_set, DID_EVB_STATUS);
+    PopulateMapEvbFlashCfg(m_data_set, DID_EVB_FLASH_CFG);
+    PopulateMapDebugArray(m_data_set, DID_EVB_DEBUG_ARRAY);
+    // PopulateMapEvbRtosInfo(m_data_set, DID_EVB_RTOS_INFO);
+    PopulateMapDeviceInfo(m_data_set, DID_EVB_DEV_INFO);
 
     // MANUFACTURING
-    PopulateMapManufacturingInfo(   m_data_set, DID_MANUFACTURING_INFO);
-    PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_UCAL);
-    PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_TCAL);
-    PopulateMapSensorsWTemp(        m_data_set, DID_SENSORS_MCAL);
-    PopulateMapSensors(             m_data_set, DID_SENSORS_TC_BIAS);
-    PopulateMapSensorCompensation(  m_data_set, DID_SCOMP);
+    PopulateMapManufacturingInfo(m_data_set, DID_MANUFACTURING_INFO);
+    PopulateMapSensorsWTemp(m_data_set, DID_SENSORS_UCAL);
+    PopulateMapSensorsWTemp(m_data_set, DID_SENSORS_TCAL);
+    PopulateMapSensorsWTemp(m_data_set, DID_SENSORS_MCAL);
+    PopulateMapSensors(m_data_set, DID_SENSORS_TC_BIAS);
+    PopulateMapSensorCompensation(m_data_set, DID_SCOMP);
 
     // This must come last
     for (uint32_t did = 0; did < DID_COUNT; did++)
@@ -1556,7 +1556,7 @@ uint32_t cISDataMappings::Did(string name)
     for (eDataIDs did = 0; did < DID_COUNT; did++)
     {
         if (strcmp(name.c_str(), m_dataIdNames[did]) == 0)
-        {    // Found match
+        {   // Found match
             return did;
         }
     }
@@ -1589,7 +1589,7 @@ const data_info_t* cISDataMappings::ElementToInfo(uint32_t did, uint32_t element
 {
     data_set_t* ds = DataSet(did);
     if (!ds) { return NULLPTR; }
-	if (ds->elementToInfo.find(element) == ds->elementToInfo.end()) { return NULLPTR; }
+    if (ds->elementToInfo.find(element) == ds->elementToInfo.end()) { return NULLPTR; }
     arrayIndex = ds->elementToArraySize[element];
     return ds->elementToInfo[element];
 }
@@ -2027,7 +2027,7 @@ const data_info_t* cISDataMappings::FieldInfoByOffset(uint32_t did, uint16_t off
 {
     data_info_t* fieldInfo = NULL;
     auto infoMap = IndexToInfoMap(did);
-    for ( auto [index, info] : *infoMap ) {
+    for (auto [index, info] : *infoMap) {
         if ((offset >= info->offset) && (offset <= (info->offset + info->size - 1)))
             fieldInfo = info;
     }
