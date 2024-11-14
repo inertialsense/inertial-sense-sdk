@@ -692,7 +692,7 @@ typedef struct PACKED
     double      lla[3];
 
     /** North, east and down (meters) offset from reference latitude, longitude, and altitude to current latitude, longitude, and altitude */
-    float       ed[3];
+    float       ned[3];
 } ins_1_t;
 
 
