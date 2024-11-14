@@ -619,7 +619,8 @@ p_data_buf_t *cISLogger::ReadNextData(size_t& devIndex)
 
 void cISLogger::CloseAllFiles()
 {
-    PrintStatistics();
+    // PrintStatistics();
+    PrintIsCommStatus();
 
     for (auto it : m_devices)
     {
@@ -886,6 +887,8 @@ void cISLogger::PrintProgress()
 
 void cISLogger::PrintStatistics()
 {
+    return;
+    
     for (auto it : m_devices)
     {   // Print message statistics 
         std::shared_ptr<cDeviceLog> dev = it.second;
@@ -896,6 +899,11 @@ void cISLogger::PrintStatistics()
         cout << dev->LogStatsString();
     }
 
+    PrintIsCommStatus();
+}
+
+void cISLogger::PrintIsCommStatus()
+{
     for (auto it : m_devices)
     {   // Print errors
         std::shared_ptr<cDeviceLog> dev = it.second;

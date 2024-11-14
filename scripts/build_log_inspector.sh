@@ -40,9 +40,10 @@ fi
 pushd "../python/logInspector" > /dev/null
     if [ "${CLEAN}" == "true" ]; then
         echo -e "\n\n=== Running make clean... ==="
-        rm -rf build
+        rm -rf tmp build log_reader.egg-info log_reader.cpython*
         rm -f *.so
         rm -f *.pyc
+        find .. -type d -name '__pycache__' -exec rm -rf {} +
     else
         echo -e "\n\n=== Running make... (${BUILD_TYPE}) ==="
         cd ..
