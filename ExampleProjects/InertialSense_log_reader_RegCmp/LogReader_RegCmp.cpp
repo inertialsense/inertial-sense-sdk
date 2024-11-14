@@ -180,7 +180,7 @@ typedef enum
 typedef struct
 {
     serial_options_t    coding;
-    IRQn_Type 		    interrupt;
+    IRQn_Type           interrupt;
 } usart_cfg_t;
 
 typedef struct
@@ -206,44 +206,44 @@ typedef void(*dma_callback_function)(void*);
 
 typedef struct
 {
-    void* parent;				// Pointer to parent peripheral management struct
-    uint8_t 				mode;				// DMA_MODE_...
-    dma_callback_function 	tc_handler;			// If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
-    IRQn_Type				interrupt;
-    uint8_t 				interrupt_priority;
-    uint8_t 				priority;			// DMA priority (DMA_PRIO_...)
-    uint8_t					request_num;		// DMA request ID, links channel to peripheral (DMA_IDX_... for index)
-    uint32_t				periph_reg;			// target 8-bit peripheral register (DMA_IDX_... for index)
-    uint8_t* buf;
-    uint16_t				buf_len;			// Actual usable buffer length is one less (buf_len - 1)
+    void*                   parent;             // Pointer to parent peripheral management struct
+    uint8_t                 mode;               // DMA_MODE_...
+    dma_callback_function   tc_handler;         // If non-null, this function pointer is called from within transfer complete interrupt handler when all data including queued data has been transferred.
+    IRQn_Type               interrupt;
+    uint8_t                 interrupt_priority;
+    uint8_t                 priority;           // DMA priority (DMA_PRIO_...)
+    uint8_t                 request_num;        // DMA request ID, links channel to peripheral (DMA_IDX_... for index)
+    uint32_t                periph_reg;         // target 8-bit peripheral register (DMA_IDX_... for index)
+    uint8_t*                buf;
+    uint16_t                buf_len;            // Actual usable buffer length is one less (buf_len - 1)
 } dma_config_t;
 
 typedef struct
 {
-    uint32_t 		br1;   // transfer size
-    uint32_t 		sar;   // source address
-    uint32_t 		llr;   // next linked list address
+    uint32_t                br1;   // transfer size
+    uint32_t                sar;   // source address
+    uint32_t                llr;   // next linked list address
 
 } dma_tx_lli_t;
 
 typedef struct
 {
-    uint32_t 		cdar;
+    uint32_t         cdar;
 } dma_rx_circ_lli_t;
 
-#define DMA_TX_LLI_COUNT	3
+#define DMA_TX_LLI_COUNT    3
 typedef union
 {
-    dma_tx_lli_t			tx[DMA_TX_LLI_COUNT];
-    dma_rx_circ_lli_t		rx;
+    dma_tx_lli_t            tx[DMA_TX_LLI_COUNT];
+    dma_rx_circ_lli_t       rx;
 } dma_lli_u;
 
 typedef struct
 {
-    volatile uint16_t 		active_tx_len;
-    dma_tx_lli_t* lli_head;		// Linked list output to dma
-    dma_tx_lli_t* lli_tail;		// Linked list input from dma_buffer_write() 
-    volatile bool			dma_running;
+    volatile uint16_t       active_tx_len;
+    dma_tx_lli_t*           lli_head;        // Linked list output to dma
+    dma_tx_lli_t*           lli_tail;        // Linked list input from dma_buffer_write() 
+    volatile bool           dma_running;
 } dma_tx_state_t;
 
 typedef struct dma_channel_
@@ -251,11 +251,11 @@ typedef struct dma_channel_
     DMA_Channel_TypeDef* instance;
     volatile uint8_t* ptr_start;
     volatile uint8_t* ptr_end;
-    dma_config_t			cfg;
-    dma_lli_u				lli;				// Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
-    dma_tx_state_t			txState;
-    int 					lastDmaUsed;
-    uint8_t					overflow;			// Buffer overflow
+    dma_config_t            cfg;
+    dma_lli_u               lli;                // Linked list memory.  DMA_MODE_TX_LLI uses 6, DMA_MODE_RX_CIRC uses 1.
+    dma_tx_state_t          txState;
+    int                     lastDmaUsed;
+    uint8_t                 overflow;            // Buffer overflow
 } dma_ch_t;
 
 typedef struct
@@ -302,11 +302,11 @@ typedef struct
     DMA_Channel_TypeDef*    instance;
     uint8_t*                ptr_start;
     uint8_t*                ptr_end;
-    uint16_t 		        active_tx_len;
-    bool 			        done;							// Currently only used in TX
-    dma_config_t			cfg;
-    int 					lastDmaUsed;					// Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
-    uint8_t					overflow;						// Buffer overflow
+    uint16_t                active_tx_len;
+    bool                    done;                            // Currently only used in TX
+    dma_config_t            cfg;
+    int                     lastDmaUsed;                    // Number of bytes in the buffer minus bytes last read.  This is used to identify buffer overflow.
+    uint8_t                 overflow;                        // Buffer overflow
 } dma_ch_t_IMX;
 
 typedef struct
@@ -904,8 +904,8 @@ void writeGpioRxReg(uint8_t* evScratch, std::string fileName)
 
 static void msgHandlerIsb(InertialSense* i, p_data_t* data, int pHandle)
 {
-	static uint64_t dataCount;
-	printf("Data count: %" PRIu64 "          \r", ++dataCount);
+    static uint64_t dataCount;
+    printf("Data count: %" PRIu64 "          \r", ++dataCount);
 }
 
 int main(int argc, char* argv[])
@@ -917,12 +917,12 @@ int main(int argc, char* argv[])
     std::time_t logTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::string outDir = "out/";// + logTime;
 
-	if (argc < 1)
-	{
-		printf("Please pass the data log directory path (i.e. \"C:\\Users\\[username]\\Documents\\Inertial Sense\\Logs\\20180716_172323)\"\r\n");
-		// In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
-		return -1;
-	}
+    if (argc < 1)
+    {
+        printf("Please pass the data log directory path (i.e. \"C:\\Users\\[username]\\Documents\\Inertial Sense\\Logs\\20180716_172323)\"\r\n");
+        // In Visual Studio IDE, this can be done through "Project Properties -> Debugging -> Command Arguments: COM3 kml" 
+        return -1;
+    }
 
 
     cISLogger logger;

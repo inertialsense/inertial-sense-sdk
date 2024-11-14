@@ -30,24 +30,24 @@ void stream_configure_rmc_preset(uint64_t bits = 0, uint32_t options = 0)
 {
     is_comm_port_init(&s_serialPort.comm, NULL); // TODO: Should we be using callbacks??  Probably
 
-	rmc_t rmc;
-	rmc.bits = bits;
-	rmc.options = options;
+    rmc_t rmc;
+    rmc.bits = bits;
+    rmc.options = options;
 
-	is_comm_data(&s_serialPort, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
+    is_comm_data(&s_serialPort, DID_RMC, sizeof(rmc_t), 0, (void*)&rmc);
 }
 
 int main(int argc, char* argv[])
 {
-	if (argc < 2)
-	{
-		printf("Provide the port as an argument: $ ./ISLoggerExample /dev/ttyACM0\n");
-		return -1;
-	}
+    if (argc < 2)
+    {
+        printf("Provide the port as an argument: $ ./ISLoggerExample /dev/ttyACM0\n");
+        return -1;
+    }
 
-	string portName = string(argv[1]);
-	int baudrate = 921600;
-	string logPath = "test_log";
+    string portName = string(argv[1]);
+    int baudrate = 921600;
+    string logPath = "test_log";
 
     // Setup and enable logger
     cISLogger logger;
@@ -58,55 +58,55 @@ int main(int argc, char* argv[])
     logger.EnableLogging(true);
 
     // Open serial port
-	serialPortPlatformInit((port_handle_t)&s_serialPort);
-	if (serialPortOpen((port_handle_t)&s_serialPort, portName.c_str(), baudrate, 0) == 0)
-	{
-		cout << "Failed to open port: " << portName;
-		return -1;
-	}
+    serialPortPlatformInit((port_handle_t)&s_serialPort);
+    if (serialPortOpen((port_handle_t)&s_serialPort, portName.c_str(), baudrate, 0) == 0)
+    {
+        cout << "Failed to open port: " << portName;
+        return -1;
+    }
 
     // Enable PPD data stream without disabling other messages
-	stream_configure_rmc_preset(RMC_PRESET_IMX_PPD, RMC_OPTIONS_PRESERVE_CTRL);
+    stream_configure_rmc_preset(RMC_PRESET_IMX_PPD, RMC_OPTIONS_PRESERVE_CTRL);
 
-	// Enable NMEA messages: PINS1, PPIMU, and GNGGA
-	const uint8_t asceMsg[] = "$ASCE,0,PINS1,2,PPIMU,1,GNGGA,1*16\r\n";
-	serialPortWrite(&s_serialPort, asceMsg, sizeof(asceMsg));
+    // Enable NMEA messages: PINS1, PPIMU, and GNGGA
+    const uint8_t asceMsg[] = "$ASCE,0,PINS1,2,PPIMU,1,GNGGA,1*16\r\n";
+    serialPortWrite(&s_serialPort, asceMsg, sizeof(asceMsg));
 
-	cout << "Started logger.  Press ctrl-c to quit." << endl;
+    cout << "Started logger.  Press ctrl-c to quit." << endl;
 
-	// Utility class for ctrl-c handling
-	cInertialSenseDisplay display;
+    // Utility class for ctrl-c handling
+    cInertialSenseDisplay display;
     display.SetKeyboardNonBlocking();
-	while (!display.ExitProgram())
+    while (!display.ExitProgram())
     {
-		uint8_t buf[512];
-		if (int len = serialPortRead((port_handle_t)&s_serialPort, buf, sizeof(buf)))
-		{
-			// Log serial port data to file
-			logger.LogData(devLog, len, buf);
+        uint8_t buf[512];
+        if (int len = serialPortRead((port_handle_t)&s_serialPort, buf, sizeof(buf)))
+        {
+            // Log serial port data to file
+            logger.LogData(devLog, len, buf);
 
 #if 0
-			printf("\rLog size: %.2f MB  ", logger.LogSizeAllMB());
-#else		// Print message statistics
-			display.Clear();
-			display.Home();
-			display.Hello();
-			logger.PrintStatistics();
-			logger.PrintLogDiskUsage();
+            printf("\rLog size: %.2f MB  ", logger.LogSizeAllMB());
+#else        // Print message statistics
+            display.Clear();
+            display.Home();
+            display.Hello();
+            logger.PrintStatistics();
+            logger.PrintLogDiskUsage();
 #endif
-		}
+        }
 
-		// Prevent CPU overload
-    	SLEEP_MS(1);
+        // Prevent CPU overload
+        SLEEP_MS(1);
 
-		// Scan for "q" press to exit program
-		display.GetKeyboardInput();
+        // Scan for "q" press to exit program
+        display.GetKeyboardInput();
     }
-	// Revert non-blocking keyboard
-	display.ResetTerminalMode();
+    // Revert non-blocking keyboard
+    display.ResetTerminalMode();
 
-	// Write remaining data and close log file(s)
-	logger.CloseAllFiles();
-	cout << endl << "Log files closed." << endl;
+    // Write remaining data and close log file(s)
+    logger.CloseAllFiles();
+    cout << endl << "Log files closed." << endl;
 }
 
