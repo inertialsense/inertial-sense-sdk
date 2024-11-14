@@ -137,9 +137,9 @@ void RtkRoverCorrectionProvider_Ntrip::connect_rtk_client()
 
 void RtkRoverCorrectionProvider_Ntrip::connectivity_watchdog_timer_callback(
 #ifdef ROS1
-		const ros::TimerEvent &timer_event
+        const ros::TimerEvent &timer_event
 #endif
-		)
+      )
 {
     if (connecting_ && (is_ != nullptr))
         return;

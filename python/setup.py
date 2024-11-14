@@ -73,13 +73,13 @@ ext_modules = [
     #     sources = source_files,
     #     include_dirs = include_dirs,
     #     extra_objects=extra_objects
-    # ),
+    #),
     Pybind11Extension(
         "inertialsense.logs.log_reader",
         sorted(glob.glob("inertialsense/logs/src/*.cpp")),  # Sort source files for reproducibility
         include_dirs = include_dirs,
         extra_objects=extra_objects
-    ),
+  ),
 ]
 
 

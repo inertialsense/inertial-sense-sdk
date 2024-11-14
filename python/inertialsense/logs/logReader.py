@@ -105,7 +105,7 @@ class Log:
             self.refData = self.data[self.refIdx].copy()
 
         self.numIns = self.numDev 
-        if(len(self.serials) > len(self.refSerials)):
+        if (len(self.serials) > len(self.refSerials)):
             self.numIns = self.numIns - self.numRef
 
         self.mount_bias_euler = np.zeros([self.numDev, 3], dtype=float)
@@ -338,7 +338,7 @@ class Log:
         with open(self.mount_bias_filepath, 'w') as file:
             yaml.dump(mount_bias_output, file)
 
-        # RMS = sqrt ( 1/N sum(e^2) )
+        # RMS = sqrt (1/N sum(e^2))
         self.RMSNED = np.sqrt(np.mean(np.square(self.stateArray[:, :, 1:4] - self.truth[:,0:3]), axis=1)) # [ pos ]
         self.RMSUVW = np.sqrt(np.mean(np.square(self.uvw_error), axis=1)) # [ vel }
         self.RMSAtt = np.sqrt(np.mean(np.square(self.att_error), axis=1)) # [ att }
@@ -410,7 +410,7 @@ class Log:
         f = open(filename, 'w')
         f.write('*****   Performance Analysis Report - %s   *****\n' % (self.directory))
         f.write('\n')
-        mode = ('IMX-5' if hardware == 5 else 'uINS-3' )
+        mode = ('IMX-5' if hardware == 5 else 'uINS-3')
         mode += (", NAV" if self.navMode else ", AHRS")
         if self.rtk:        mode += ", RTK"
         if self.compassing: mode += ", DUAL GNSS"
@@ -564,7 +564,7 @@ class Log:
         plt.title("velocity error")
         for m in range(3):
             for n in range(len(self.stateArray)):
-                plt.plot(self.stateArray[n,:,0], self.stateArray[n, :, m+4], color = colors[m] )
+                plt.plot(self.stateArray[n,:,0], self.stateArray[n, :, m+4], color = colors[m])
             plt.plot(self.stateArray[0,:,0], self.truth[:, m+3], linewidth=2, color = colors[m])
         plt.subplot(3,1,3)
         plt.title("attitude")

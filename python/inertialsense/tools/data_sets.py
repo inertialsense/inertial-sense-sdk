@@ -251,8 +251,8 @@ class eRawDataType(Enum):
 class eInsStatusRtkBase(Enum):
     """RTK base portion of INS status"""
     INS_STATUS_RTK_BASE_ERR_NO_OBSERV   = 0x08000000 # GPS base NO observations received (i.e. RTK differential corrections)
-    INS_STATUS_RTK_BASE_ERR_NO_POSITION	= 0x10000000 # GPS base NO position received
-    INS_STATUS_RTK_BASE_POSITION_MOVING	= 0x20000000 # GPS base position is moving
+    INS_STATUS_RTK_BASE_ERR_NO_POSITION = 0x10000000 # GPS base NO position received
+    INS_STATUS_RTK_BASE_POSITION_MOVING = 0x20000000 # GPS base position is moving
 
     @staticmethod
     def from_ins_status(insStatus):
@@ -305,25 +305,25 @@ class eConfigSystem(IntEnum):
 
 
 class eSysConfigBits(Enum):
-	SYS_CFG_USE_REFERENCE_IMU_IN_EKF = 0x01000000
+    SYS_CFG_USE_REFERENCE_IMU_IN_EKF = 0x01000000
 
 
 class eScompCalState(IntEnum):
-	SC_RUNTIME                      = 0     # Calibration off
-	SC_TCAL_MONITOR_TEMP            = 1
-	SC_TCAL_INIT                    = 2
-	SC_TCAL_STARTUP_MEAN_LSB        = 3
-	SC_TCAL_STARTUP_DELAY           = 4
-	SC_TCAL_READY_TO_RUN            = 5
-	SC_TCAL_RUNNING                 = 6
-	SC_TCAL_STOP                    = 7
-	SC_TCAL_DONE                    = 8
-	SC_ACCEL_ALIGN_CHECK            = 9
-	SC_MCAL_SAMPLE_INIT             = 10
-	SC_MCAL_SAMPLE_MEAN_UCAL         = 11    # Uncalibrated sensor
-	SC_MCAL_SAMPLE_MEAN_TCAL        = 12    # Temperature compensated sensor 
-	SC_MCAL_SAMPLE_STOP             = 13
-	SC_LPF_SAMPLE                   = 14
-	SC_LPF_SAMPLE_FAST              = 15
-	SC_DONE                         = 16
-	SC_LINEARITY_MEAN_TCAL          = 17    # Like SC_MCAL_SAMPLE_MEAN_TCAL, but goes back to SC_RUNTIME after some samples
+    SC_RUNTIME                      = 0     # Calibration off
+    SC_TCAL_MONITOR_TEMP            = 1
+    SC_TCAL_INIT                    = 2
+    SC_TCAL_STARTUP_MEAN_LSB        = 3
+    SC_TCAL_STARTUP_DELAY           = 4
+    SC_TCAL_READY_TO_RUN            = 5
+    SC_TCAL_RUNNING                 = 6
+    SC_TCAL_STOP                    = 7
+    SC_TCAL_DONE                    = 8
+    SC_ACCEL_ALIGN_CHECK            = 9
+    SC_MCAL_SAMPLE_INIT             = 10
+    SC_MCAL_SAMPLE_MEAN_UCAL        = 11    # Uncalibrated sensor
+    SC_MCAL_SAMPLE_MEAN_TCAL        = 12    # Temperature compensated sensor 
+    SC_MCAL_SAMPLE_STOP             = 13
+    SC_LPF_SAMPLE                   = 14
+    SC_LPF_SAMPLE_FAST              = 15
+    SC_DONE                         = 16
+    SC_LINEARITY_MEAN_TCAL          = 17    # Like SC_MCAL_SAMPLE_MEAN_TCAL, but goes back to SC_RUNTIME after some samples

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.normpath(file_path + '/../..'))
 from inertialsense.logs.logReader import Log
 
 class SuperNPP():
-    def __init__(self, directory, config_serials, startMode=0, computeRMS=0):		# start mode 0=hot, 1=cold, 2=factory
+    def __init__(self, directory, config_serials, startMode=0, computeRMS=0):        # start mode 0=hot, 1=cold, 2=factory
         self.config_serials = config_serials
         self.directory = os.path.normpath(Path(directory))
         self.startMode = startMode
@@ -67,7 +67,7 @@ class SuperNPP():
         print('  log count: ' + str(len(self.subdirs)))
         for subdir in self.subdirs:
             print("   " + subdir)
-        time.sleep(2)	# seconds
+        time.sleep(2)    # seconds
         self.rmsFailResults = []
         self.rmsPassResults = []
 
@@ -153,17 +153,17 @@ class SuperNPP():
 
         if self.startMode == 1:
             for i in range(len(cmds)):
-                cmds[i] += ' -mode COLD -kml'		# Cold init, enable KML output
+                cmds[i] += ' -mode COLD -kml'        # Cold init, enable KML output
 
         if self.startMode == 2:
             for i in range(len(cmds)):
-                cmds[i] += ' -mode FACTORY -kml'	# Factory init, enable KML output
+                cmds[i] += ' -mode FACTORY -kml'    # Factory init, enable KML output
 
         for i in range(len(cmds)):
-            cmds[i] += ' --outputoff'				# disable INS display output
+            cmds[i] += ' --outputoff'                # disable INS display output
 
         for i in range(len(cmds)):
-            cmds[i] += ' --disableBaroFusion'		# disable barometer fusion
+            cmds[i] += ' --disableBaroFusion'        # disable barometer fusion
 
         print("Running NPP...")
 
@@ -189,11 +189,11 @@ class SuperNPP():
         # self._key_lock.acquire()
         # passRMS = log.printRMSReport()
         # if passRMS == 1:
-        # 	self.rmsPassResults.append(sdir)
-        # 	print("RMS Test PASSED: " + sdir)
+        #     self.rmsPassResults.append(sdir)
+        #     print("RMS Test PASSED: " + sdir)
         # else:
-        # 	self.rmsFailResults.append(sdir)
-        # 	print("RMS Test FAILED: " + sdir)
+        #     self.rmsFailResults.append(sdir)
+        #     print("RMS Test FAILED: " + sdir)
         # self._key_lock.release()
         ### Compute RMS ##################################################
 
@@ -209,7 +209,7 @@ def buildNPP(npp_build_folder):
     process.wait()
  
 def nppPrint(str):
-    print(str)	# Comment out to disable output
+    print(str)    # Comment out to disable output
     pass
 
 def file_contains_string_count(file_path, search_string):

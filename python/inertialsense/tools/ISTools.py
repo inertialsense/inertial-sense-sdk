@@ -42,7 +42,7 @@ def plotdata(opt, pe, settings_file):
         directory += subdir
         
     # Set Reference LLA (deg, deg, m) used for NED - Salem, UT   
-    itd.setRefLla( np.r_[ 40.0557114, -111.6585476, 1426.77 ] )
+    itd.setRefLla(np.r_[ 40.0557114, -111.6585476, 1426.77 ])
     
     if pe['postProcess']==1:
         # Temporarily Turn off certain plots for reference
@@ -118,7 +118,7 @@ def plotlog(log, directory, serialNumbers, opt, pe):
 #         if pe['postProcess==1:
 #             referencePlot = True    # Color reference plots one color
             
-        f = itp.IsLoggerPlot( pe, device2, startFigure=figNum, saveFigs=opt['saveFigs'], saveFigsDirectory=dst, referencePlot=referencePlot, numDevs=len(log.devices))
+        f = itp.IsLoggerPlot(pe, device2, startFigure=figNum, saveFigs=opt['saveFigs'], saveFigsDirectory=dst, referencePlot=referencePlot, numDevs=len(log.devices))
 
         if opt['combinePlots']==0:
             figNum += f        

@@ -21,14 +21,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 cDataChunk::cDataChunk()
 {
-	Clear();
-	m_hdr.marker = DATA_CHUNK_MARKER;
+    Clear();
+    m_hdr.marker = DATA_CHUNK_MARKER;
     #ifdef CHUNK_VER_1
-	m_hdr.v1.version = 1;
-	m_hdr.v1.classification = ' ' << 8 | 'U';
-	m_hdr.v1.grpNum = 0;				//!< Chunk group number
-	m_hdr.v1.devSerialNum = 0;			//!< Serial number
-	m_hdr.v1.reserved = 0;				//!< Reserved
+    m_hdr.v1.version = 1;
+    m_hdr.v1.classification = ' ' << 8 | 'U';
+    m_hdr.v1.grpNum = 0;        //!< Chunk group number
+    m_hdr.v1.devSerialNum = 0;  //!< Serial number
+    m_hdr.v1.reserved = 0;      //!< Reserved
     #else
     m_hdr.version = 2;
     m_hdr.dataOffset = 34;
@@ -42,31 +42,31 @@ cDataChunk::cDataChunk()
     m_hdr.fwVersion[3] = 0xff;                              //!< -1 indicated that this is the SDK version (it should be overwritten if the device submits devInfo)
     #endif
     m_buffTail = m_buffHead + DEFAULT_CHUNK_DATA_SIZE;
-	m_dataHead = m_buffHead;
-	m_dataTail = m_buffHead;
+    m_dataHead = m_buffHead;
+    m_dataTail = m_buffHead;
 
-	SetName("PDAT");
+    SetName("PDAT");
 }
 
 
 cDataChunk::~cDataChunk()
 {
-	
+    
 }
 
 
 void cDataChunk::SetName(const char name[4])
 {
-	if (name == NULL)
-	{
-		return;
-	}
+    if (name == NULL)
+    {
+        return;
+    }
 
-	memcpy(m_hdr.name, name, 4);
-	m_hdr.invName[0] = ~m_hdr.name[0];
-	m_hdr.invName[1] = ~m_hdr.name[1];
-	m_hdr.invName[2] = ~m_hdr.name[2];
-	m_hdr.invName[3] = ~m_hdr.name[3];
+    memcpy(m_hdr.name, name, 4);
+    m_hdr.invName[0] = ~m_hdr.name[0];
+    m_hdr.invName[1] = ~m_hdr.name[1];
+    m_hdr.invName[2] = ~m_hdr.name[2];
+    m_hdr.invName[3] = ~m_hdr.name[3];
 }
 
 void cDataChunk::SetDevInfo(const dev_info_t& devInfo)
@@ -83,64 +83,64 @@ void cDataChunk::SetDevInfo(const dev_info_t& devInfo)
 
 int32_t cDataChunk::PushBack(uint8_t* d1, int32_t d1Size, uint8_t* d2, int32_t d2Size)
 {
-	// Ensure data will fit
-	int32_t nBytes = d1Size + d2Size;
-	if (m_dataHead == NULLPTR ||
-		nBytes > GetBuffFree())
-	{
-		return 0;
-	}
-	if (d1Size > 0)
-	{
+    // Ensure data will fit
+    int32_t nBytes = d1Size + d2Size;
+    if (m_dataHead == NULLPTR ||
+        nBytes > GetBuffFree())
+    {
+        return 0;
+    }
+    if (d1Size > 0)
+    {
         memcpy(m_dataTail, d1, d1Size);
         m_dataTail += d1Size;
-		m_hdr.dataSize += d1Size;
-	}
-	if (d2Size > 0)
-	{
+        m_hdr.dataSize += d1Size;
+    }
+    if (d2Size > 0)
+    {
         memcpy(m_dataTail, d2, d2Size);
         m_dataTail += d2Size;
-		m_hdr.dataSize += d2Size;
-	}
-	m_hdr.invDataSize = ~m_hdr.dataSize;
-	return nBytes;
+        m_hdr.dataSize += d2Size;
+    }
+    m_hdr.invDataSize = ~m_hdr.dataSize;
+    return nBytes;
 }
 
 
 uint8_t* cDataChunk::GetDataPtr()
 {
-	return (GetDataSize() <= 0 ? NULLPTR : m_dataHead);
+    return (GetDataSize() <= 0 ? NULLPTR : m_dataHead);
 }
 
 
 bool cDataChunk::PopFront(int32_t size)
 {
-	assert(m_dataHead != NULLPTR);
+    assert(m_dataHead != NULLPTR);
 
-	if (size <= GetDataSize())
-	{
+    if (size <= GetDataSize())
+    {
         m_dataHead += size;
-		m_hdr.dataSize -= size;
-		m_hdr.invDataSize = ~m_hdr.dataSize;
-		return true;
-	}
-	else
-	{
+        m_hdr.dataSize -= size;
+        m_hdr.invDataSize = ~m_hdr.dataSize;
+        return true;
+    }
+    else
+    {
         Clear();
-		return false;
-	}
+        return false;
+    }
 }
 
 
 void cDataChunk::Clear()
 {
-	m_hdr.dataSize = 0; //!< Byte size of data in this chunk
-	m_hdr.invDataSize = (uint32_t)~0; //!< Bitwise inverse of m_Size
+    m_hdr.dataSize = 0; //!< Byte size of data in this chunk
+    m_hdr.invDataSize = (uint32_t)~0; //!< Bitwise inverse of m_Size
     m_dataHead = m_buffHead;
     m_dataTail = m_buffHead;
 
 #if LOG_CHUNK_STATS
-	memset(m_stats, 0, sizeof(m_stats));
+    memset(m_stats, 0, sizeof(m_stats));
 #endif
 
 }
@@ -148,64 +148,64 @@ void cDataChunk::Clear()
 // Returns number of bytes written, or -1 for error
 int32_t cDataChunk::WriteToFile(cISLogFileBase* pFile, int groupNumber, bool writeHeader)
 {
-	if (pFile == NULLPTR)
-	{
-		return -1;
-	}
+    if (pFile == NULLPTR)
+    {
+        return -1;
+    }
 
-	assert(m_dataHead != NULLPTR);
+    assert(m_dataHead != NULLPTR);
 
-	m_hdr.grpNum = groupNumber;
+    m_hdr.grpNum = groupNumber;
 
-	int32_t nBytes = 0;
-	if (writeHeader)
-	{
-		// Write chunk header to file
-		nBytes += static_cast<int32_t>(pFile->write(&m_hdr, sizeof(sChunkHeader)));
+    int32_t nBytes = 0;
+    if (writeHeader)
+    {
+        // Write chunk header to file
+        nBytes += static_cast<int32_t>(pFile->write(&m_hdr, sizeof(sChunkHeader)));
 
-		// Write any additional chunk header
-		nBytes += WriteAdditionalChunkHeader(pFile);
-	}
+        // Write any additional chunk header
+        nBytes += WriteAdditionalChunkHeader(pFile);
+    }
 
-	// Write chunk data to file
-	nBytes += static_cast<int32_t>(pFile->write(m_dataHead, m_hdr.dataSize));
+    // Write chunk data to file
+    nBytes += static_cast<int32_t>(pFile->write(m_dataHead, m_hdr.dataSize));
 
 #if LOG_DEBUG_CHUNK_WRITE
-	static int totalBytes = 0;
-	totalBytes += nBytes;
-	printf("cDataChunk::WriteToFile %d : %d  -  %x %d", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
-	if (nBytes != (sizeof(sChunkHeader) + (int)m_hdr.dataSize))
-		printf("ERROR WRITING!");
-	printf("\n");
+    static int totalBytes = 0;
+    totalBytes += nBytes;
+    printf("cDataChunk::WriteToFile %d : %d  -  %x %d", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
+    if (nBytes != (sizeof(sChunkHeader) + (int)m_hdr.dataSize))
+        printf("ERROR WRITING!");
+    printf("\n");
 #endif
 
-	// Error writing to file
-	if (writeHeader && (nBytes != GetHeaderSize() + (int)m_hdr.dataSize))
-	{
-		return -1;
-	}
+    // Error writing to file
+    if (writeHeader && (nBytes != GetHeaderSize() + (int)m_hdr.dataSize))
+    {
+        return -1;
+    }
 
-	// Clear chunk data
-	Clear();
+    // Clear chunk data
+    Clear();
 
-	return nBytes;
+    return nBytes;
 }
 
 
 // Returns number of bytes read, or -1 for error
 int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
 {
-	if (pFile == NULLPTR)
-	{
-		return -1;
-	}
+    if (pFile == NULLPTR)
+    {
+        return -1;
+    }
 
-	// reset state, prepare to read from file
-	Clear();
+    // reset state, prepare to read from file
+    Clear();
 
-	int32_t nBytes = 0;
+    int32_t nBytes = 0;
     if (readHeader)
-	{
+    {
         auto hdrSize = sizeof(sChunkHeader);
         nBytes = static_cast<int32_t>(pFile->read(&m_hdr, hdrSize));
 
@@ -221,119 +221,119 @@ int32_t cDataChunk::ReadFromFile(cISLogFileBase* pFile, bool readHeader)
         if (m_hdr.version == 1) {
         } else {
         }
-	}
-	else
-	{
-		m_hdr.dataSize = GetBuffFree();
-	}
+    }
+    else
+    {
+        m_hdr.dataSize = GetBuffFree();
+    }
 
-	// Read chunk data
-	m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
-	nBytes += GetDataSize();
+    // Read chunk data
+    m_dataTail += static_cast<int32_t>(pFile->read(m_buffHead, m_hdr.dataSize));
+    nBytes += GetDataSize();
 
 #if LOG_DEBUG_CHUNK_READ
-	static int totalBytes = 0;
-	totalBytes += nBytes;
-	printf("cDataChunk::ReadFromFile %d : %d  -  %x %d  ", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
-	if ((nBytes > 0) && (m_hdr.marker != DATA_CHUNK_MARKER))
-	{
-		printf("MARKER MISMATCH!");
-	}
-	printf("\n");
+    static int totalBytes = 0;
+    totalBytes += nBytes;
+    printf("cDataChunk::ReadFromFile %d : %d  -  %x %d  ", totalBytes, nBytes, m_hdr.marker, m_hdr.dataSize);
+    if ((nBytes > 0) && (m_hdr.marker != DATA_CHUNK_MARKER))
+    {
+        printf("MARKER MISMATCH!");
+    }
+    printf("\n");
 #endif
 
-	if (!readHeader)
-	{	// No chunk header
-		m_hdr.dataSize = nBytes;
-		return (m_hdr.dataSize > 0 ? m_hdr.dataSize : -1);	// Return -1 when empty 
-	}
-	else
-	{	// Use chunk header
-		if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == static_cast<int>(GetHeaderSize() + m_hdr.dataSize))
-		{
+    if (!readHeader)
+    {   // No chunk header
+        m_hdr.dataSize = nBytes;
+        return (m_hdr.dataSize > 0 ? m_hdr.dataSize : -1);    // Return -1 when empty 
+    }
+    else
+    {   // Use chunk header
+        if (m_hdr.marker == DATA_CHUNK_MARKER && nBytes == static_cast<int>(GetHeaderSize() + m_hdr.dataSize))
+        {
 
-	#if LOG_CHUNK_STATS
-			static bool start = true;
-			int totalBytes = 0;
-			for (eDataIDs id = 0; id < DID_COUNT; id++)
-				if (m_stats[id].total)
-				{
-					if (start)
-					{
-						start = false;
-						logStats("------------------------------------------------\n");
-						logStats("Chunk Data Summary\n");
-						logStats("   ID:  Count:  Sizeof:  Total:\n");
-					}
-					logStats(" %4d%8d    %5d %7d\n", id, m_stats[id].count, m_stats[id].size, m_stats[id].total);
-					totalBytes += m_stats[id].total;
-				}
-			start = true;
-			if (totalBytes)
-			{
-				logStats("------------------------------------------------\n");
-				logStats("                      %8d Total bytes\n", totalBytes);
-			}
-			logStats("\n");
-			logStats("================================================\n");
-			logStats("            *.dat Data Log File\n");
-			logStats("================================================\n");
-			m_hdr.print();
-	#if LOG_CHUNK_STATS==2
-			logStats("------------------------------------------------\n");
-			logStats("Chunk Data\n");
-	#endif
-			memset(m_stats, 0, sizeof(m_stats));
-	#endif
+    #if LOG_CHUNK_STATS
+            static bool start = true;
+            int totalBytes = 0;
+            for (eDataIDs id = 0; id < DID_COUNT; id++)
+                if (m_stats[id].total)
+                {
+                    if (start)
+                    {
+                        start = false;
+                        logStats("------------------------------------------------\n");
+                        logStats("Chunk Data Summary\n");
+                        logStats("   ID:  Count:  Sizeof:  Total:\n");
+                    }
+                    logStats(" %4d%8d    %5d %7d\n", id, m_stats[id].count, m_stats[id].size, m_stats[id].total);
+                    totalBytes += m_stats[id].total;
+                }
+            start = true;
+            if (totalBytes)
+            {
+                logStats("------------------------------------------------\n");
+                logStats("                      %8d Total bytes\n", totalBytes);
+            }
+            logStats("\n");
+            logStats("================================================\n");
+            logStats("            *.dat Data Log File\n");
+            logStats("================================================\n");
+            m_hdr.print();
+    #if LOG_CHUNK_STATS==2
+            logStats("------------------------------------------------\n");
+            logStats("Chunk Data\n");
+    #endif
+            memset(m_stats, 0, sizeof(m_stats));
+    #endif
 
-			return nBytes;
-		}
-		else
-		{
-			Clear();
+            return nBytes;
+        }
+        else
+        {
+            Clear();
 
-			// Error reading from file
-			return -1;
-		}
-	}
+            // Error reading from file
+            return -1;
+        }
+    }
 }
 
 
 int32_t cDataChunk::WriteAdditionalChunkHeader(cISLogFileBase* /*pFile*/)
 {
-	return 0;
+    return 0;
 }
 
 
 int32_t cDataChunk::ReadAdditionalChunkHeader(cISLogFileBase* /*pFile*/)
 {
-	return 0;
+    return 0;
 }
 
 
 int32_t cDataChunk::GetHeaderSize()
 {
-	return (int32_t)sizeof(sChunkHeader);
+    return (int32_t)sizeof(sChunkHeader);
 }
 
 
 // LOG_CHUNK_STATS
-void logStats( const char *format, ... )
+void logStats(const char *format, ...)
 {
 #if !defined(PLATFORM_IS_EVB_2) || !PLATFORM_IS_EVB_2
-	static cISLogFileBase* pFile = NULL;
+    static cISLogFileBase* pFile = NULL;
 #endif
 
-	va_list args;
-	va_start( args, format );
+    va_list args;
+    va_start(args, format);
 
 #if PLATFORM_IS_EVB_2
-	vprintf( format, args );			// print to terminal
+    vprintf(format, args);            // print to terminal
 #else
-	if( pFile == NULL ) {
-		pFile = CreateISLogFile("STATS_.txt", "w");
-	}
-	pFile->vprintf(format, args);	// print to file
+    if (pFile == NULL) {
+        pFile = CreateISLogFile("STATS_.txt", "w");
+    }
+    pFile->vprintf(format, args);    // print to file
 #endif
-	va_end( args );
+    va_end(args);
 }

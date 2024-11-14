@@ -122,17 +122,17 @@ static void display_server_client_status(InertialSense* i, bool server=false, bo
 
 static void display_logger_status(InertialSense* i, bool refreshDisplay=false)
 {
-	if (!i || !refreshDisplay)
-	{
-		return;
-	}
+    if (!i || !refreshDisplay)
+    {
+        return;
+    }
 
-	cISLogger &logger = *(i->Logger());
+    cISLogger &logger = *(i->Logger());
 
-	if (!logger.Enabled())
-	{
-		return;
-	}
+    if (!logger.Enabled())
+    {
+        return;
+    }
 
     logger.PrintLogDiskUsage();
 }
@@ -171,8 +171,8 @@ static int cltool_errorCallback(port_handle_t port)
         uint16_t ck;
         struct
         {
-            uint8_t a;	// Lower 8 bits
-            uint8_t b;	// Upper 8 bits
+            uint8_t a;    // Lower 8 bits
+            uint8_t b;    // Upper 8 bits
         };
     } checksum16_u;
 
@@ -195,9 +195,9 @@ static int cltool_errorCallback(port_handle_t port)
 
 #if DISPLAY_DELTA_TIME==1
     static double lastTime[2] = { 0 };
-	double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
-	lastTime[i] = wheel.timeOfWeek;
-	ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
+    double dtMs = 1000.0*(wheel.timeOfWeek - lastTime[i]);
+    lastTime[i] = wheel.timeOfWeek;
+    ptr += SNPRINTF(ptr, ptrEnd - ptr, " %4.1lfms", dtMs);
 #else
 #endif
     ptr += SNPRINTF(ptr, ptrEnd - ptr, "\n");
@@ -490,7 +490,7 @@ static int cltool_updateFirmware()
     cout << "Updating application firmware: " << g_commandLineOptions.updateAppFirmwareFilename << endl;
 
     firmwareProgressContexts.clear();
-    if(InertialSense::BootloadFile(
+    if (InertialSense::BootloadFile(
             g_commandLineOptions.comPort,
             0,
             g_commandLineOptions.updateAppFirmwareFilename,
@@ -501,7 +501,7 @@ static int cltool_updateFirmware()
             (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
             cltool_bootloadUpdateInfo,
             cltool_firmwareUpdateWaiter
-    ) == IS_OP_OK) return 0;
+  ) == IS_OP_OK) return 0;
     return -1;
 }
 
@@ -565,7 +565,7 @@ void printProgress()
 
 is_operation_result bootloadUpdateCallback(void* obj, float percent)
 {
-    if(obj)
+    if (obj)
     {
         ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
         ctx->m_update_progress = percent;
@@ -575,7 +575,7 @@ is_operation_result bootloadUpdateCallback(void* obj, float percent)
 
 is_operation_result bootloadVerifyCallback(void* obj, float percent)
 {
-    if(obj)
+    if (obj)
     {
         ISBootloader::cISBootloaderBase* ctx = (ISBootloader::cISBootloaderBase*)obj;
         ctx->m_verify_progress = percent;
@@ -594,7 +594,7 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     vsnprintf(buffer, sizeof(buffer) - 1, str, ap);
     va_end(ap);
 
-    if(obj == NULL)
+    if (obj == NULL)
     {
         cout << buffer << endl;
         print_mutex.unlock();
@@ -607,7 +607,7 @@ void cltool_bootloadUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
     {
         printf("    | %s (SN%d):", ctx->m_port_name.c_str(), ctx->m_sn);
     }
-    else if(ctx->m_sn != 0)
+    else if (ctx->m_sn != 0)
     {
         printf("    | (SN%d):", ctx->m_sn);
     }
@@ -641,7 +641,7 @@ void cltool_firmwareUpdateInfo(void* obj, ISBootloader::eLogLevel level, const c
         va_end(ap);
     }
 
-    if(obj == NULL) {
+    if (obj == NULL) {
         cout << buffer << endl;
     } else {
         ISFirmwareUpdater *fwCtx = (ISFirmwareUpdater *) obj;
@@ -704,7 +704,7 @@ static int cltool_createHost()
         }
         g_inertialSenseDisplay.Home();
         cout << g_inertialSenseDisplay.Hello();
-		display_logger_status(&inertialSenseInterface, refresh);
+        display_logger_status(&inertialSenseInterface, refresh);
         display_server_client_status(&inertialSenseInterface, true, true, refresh);
     }
     cout << "Shutting down..." << endl;
@@ -737,7 +737,7 @@ static int cltool_dataStreaming()
         std::map<std::string, std::string, nat_cmp> portDevices;
         for (auto device : inertialSenseInterface.getDevices()) {
             if (ENCODE_DEV_INFO_TO_HDW_ID(device->devInfo) != 0) {
-                std::string pName( portName(device->port) );
+                std::string pName(portName(device->port));
                 portDevices[pName] = "" + device->getName() + " " + device->getFirmwareInfo(1);
             }
         }
@@ -766,7 +766,7 @@ static int cltool_dataStreaming()
         try
         {
             if ((g_commandLineOptions.updateFirmwareTarget != fwUpdate::TARGET_HOST) && !g_commandLineOptions.fwUpdateCmds.empty()) {
-                if(inertialSenseInterface.updateFirmware(
+                if (inertialSenseInterface.updateFirmware(
                         g_commandLineOptions.comPort,
                         g_commandLineOptions.baudRate,
                         g_commandLineOptions.updateFirmwareTarget,
@@ -775,7 +775,7 @@ static int cltool_dataStreaming()
                         (g_commandLineOptions.bootloaderVerify ? bootloadVerifyCallback : 0),
                         cltool_firmwareUpdateInfo,
                         cltool_firmwareUpdateWaiter
-                ) != IS_OP_OK) {
+              ) != IS_OP_OK) {
                     // No need to Close() the InertialSense class interface; It will be closed when destroyed.
                     return -1;
                 };

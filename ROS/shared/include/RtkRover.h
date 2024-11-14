@@ -56,7 +56,7 @@ public:
     bool connectivity_watchdog_enabled_ = true;
     float connectivity_watchdog_timer_frequency_ = 1;
     ROS_TIMER connectivity_watchdog_timer_;
-    void connectivity_watchdog_timer_callback( ROS1_TIMEREVENT_ARG ); 
+    void connectivity_watchdog_timer_callback(ROS1_TIMEREVENT_ARG); 
     RtkRoverCorrectionProvider_Ntrip(YAML::Node& node) : RtkRoverCorrectionProvider(node, "ntrip") { configure(node); }
     void configure(YAML::Node& node);
     std::string get_connection_string();
