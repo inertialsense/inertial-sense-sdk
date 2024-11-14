@@ -79,7 +79,7 @@ class SuperNPP():
             thread.join()
 
         # Record list of logs to be processed
-        logListFilename = directory+"/test_summary.txt"        
+        logListFilename = self.directory+"/test_summary.txt"        
         try:
             os.remove(logListFilename)      # Remove old file
         except OSError:
@@ -121,6 +121,8 @@ class SuperNPP():
         # subdir = os.path.basename(os.path.normpath(folder))
         (folder, subdir) = os.path.split(folder)
 
+        # Find serial numbers, and determine the log type
+        logType = "DAT"
         if config_serials == ["ALL"]:
             serials = []
             for file in os.listdir(os.path.join(folder,subdir)):
@@ -139,14 +141,8 @@ class SuperNPP():
         print("serial numbers")
         print(serials)
 
-        # Determine the log type
-        logType = "DAT"
-        for file in os.listdir(os.path.join(folder,subdir)):
-            if ".dat" in file:
-                logType = "DAT"
-            elif ".raw" in file:
-                logType = "RAW"
-
+        if os.name == 'posix':
+            cmds = ['./navpp -d "' + folder + '" -s ' + str(s) + " -sd " + subdir + " -l " + logType for s in serials]
         file_path = os.path.dirname(os.path.realpath(__file__))
         npp_build_folder = os.path.normpath(file_path + '../../../../cpp/NavPostProcess/build')
         if os.name == 'posix':  # Linux
